@@ -92,13 +92,10 @@ function processMessage(message) {
     plainTextBody = htmlBody = base64Decode(message.payload.body.data)
   }
 
-  appendPre("From: " + from);
-  appendPre("Subject: " + subject);
-  appendPre("Labels: " + labelIds.join(' '));
-  if (htmlBody)
-    appendHtml(htmlBody);
-  else
-    appendPre(plainTextBody);
+  writeHeader(`From: ${from}
+Subject: ${subject}
+Labels: ${labelIds.join(' ')}`);
+  writeMailBody(htmlBody || plainTextBody);
 }
 
 var g_state = {
@@ -135,7 +132,7 @@ function fetchThreadDetails(index, callback) {
 
 function renderCurrentThread() {
   updateCounter(g_state.currentThreadIndex);
-  document.getElementById('content').textContent = '';
+  writeMailBody('');
 
   var callback = () => {
     // If you cycle through threads quickly, then the callback for the previous
@@ -167,17 +164,13 @@ function handleSignoutClick(event) {
   gapi.auth2.getAuthInstance().signOut();
 }
 
-function appendHtml(html) {
-  var div = document.createElement('div');
-  div.innerHTML = html;
-  var container = document.getElementById('content');
-  container.appendChild(div);
+function writeMailBody(html) {
+  var frame = document.getElementById('mailbody');
+  frame.contentDocument.write(html);
 }
 
-function appendPre(message) {
-  var pre = document.getElementById('content');
-  var textContent = document.createTextNode(message + '\n');
-  pre.appendChild(textContent);
+function writeHeader(header) {
+  document.getElementById('content').textContent = header;
 }
 
 function fetchThreads(userId, callback) {

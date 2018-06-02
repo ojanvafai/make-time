@@ -1,4 +1,4 @@
-
+- Use a sandboxed iframe for the HTML contents so innerHTML can be done without fear.
 
 Feature Creeep
 - Undo previous action
