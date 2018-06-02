@@ -59,7 +59,23 @@ function updateCounter(index) {
   counter.textContent = (index + 1) + '/' + g_state.threads.length;
 }
 
-function processMessage(message) {
+function getMessageBody(mimeParts, body) {
+  for (var part of mimeParts) {
+    switch (part.mimeType) {
+      case 'text/plain':
+        body.plain = base64Decode(part.body.data);
+        break;
+      case 'text/html':
+        body.html = base64Decode(part.body.data);
+        break;
+      case 'multipart/alternative':
+        getMessageBody(part.parts, body);
+        break;
+    }
+  }
+}
+
+function renderMessage(message) {
   var labelIds = message.labelIds;
 
   var from;
@@ -75,27 +91,36 @@ function processMessage(message) {
     }
   }
 
+  var body = {
+    plain: '',
+    html: '',
+  }
   var plainTextBody;
   var htmlBody;
   if (message.payload.parts) {
-    for (var part of message.payload.parts) {
-      switch (part.mimeType) {
-        case 'text/plain':
-          plainTextBody = base64Decode(part.body.data);
-          break;
-        case 'text/html':
-          htmlBody = base64Decode(part.body.data);
-          break;
-      }
-    }
+    getMessageBody(message.payload.parts, body);
   } else {
-    plainTextBody = htmlBody = base64Decode(message.payload.body.data)
+    body.plain = body.html = base64Decode(message.payload.body.data)
   }
 
-  writeHeader(`From: ${from}
+  var messageDiv = document.createElement('div');
+  messageDiv.className = 'message';
+
+  var readState = labelIds.includes('UNREAD') ? 'unread' : 'read';
+  messageDiv.classList.add(readState);
+
+  messageDiv.textContent = `From: ${from}
 Subject: ${subject}
-Labels: ${labelIds.join(' ')}`);
-  writeMailBody(htmlBody || plainTextBody);
+Labels: ${labelIds.join(' ')}`;
+
+  // TODO: Do we need iframes or does gmail strip dangerous things for us.
+  // Seems like we might need it for styling isolation at least, but gmail doesn't
+  // seem to use iframes, so we probably don't if they strip things for us.
+  // iframes making everythign complicated (e.g for capturing keypresses, etc.).
+  var bodyContainer = document.createElement('div');
+  bodyContainer.innerHTML = body.html || body.plain;
+  messageDiv.appendChild(bodyContainer);
+  return messageDiv;
 }
 
 var g_state = {
@@ -132,7 +157,8 @@ function fetchThreadDetails(index, callback) {
 
 function renderCurrentThread() {
   updateCounter(g_state.currentThreadIndex);
-  writeMailBody('');
+  var content = document.getElementById('content');
+  content.textContent = '';
 
   var callback = () => {
     // If you cycle through threads quickly, then the callback for the previous
@@ -142,7 +168,17 @@ function renderCurrentThread() {
     if (!(g_state.currentThreadIndex in g_state.threadDetails))
       return;
     var threadDetails = g_state.threadDetails[g_state.currentThreadIndex];
-    processMessage(threadDetails.messages[0]);
+    var lastMessage;
+    for (var message of threadDetails.messages) {
+      lastMessage = renderMessage(message);
+      content.appendChild(lastMessage);
+    }
+    // Always show the last message.
+    // TODO: Do something less hacky than pretending it's unread.
+    lastMessage.classList.remove('read');
+    lastMessage.classList.add('unread');
+    document.querySelector('.unread').scrollIntoView();
+    content.scrollTop = content.scrollTop - 25;
   }
 
   if (g_state.currentThreadIndex in g_state.threadDetails)
@@ -162,15 +198,6 @@ function handleAuthClick(event) {
 
 function handleSignoutClick(event) {
   gapi.auth2.getAuthInstance().signOut();
-}
-
-function writeMailBody(html) {
-  var frame = document.getElementById('mailbody');
-  frame.contentDocument.write(html);
-}
-
-function writeHeader(header) {
-  document.getElementById('content').textContent = header;
 }
 
 function fetchThreads(userId, callback) {

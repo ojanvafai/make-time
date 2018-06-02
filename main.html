@@ -18,9 +18,23 @@
       #counter {
         flex: 1;
       }
-      #mailbody {
+      #content {
         flex: 1;
         width: 100%;
+        white-space: pre-wrap;
+        overflow: auto;
+      }
+      #content iframe {
+        width: 100%;
+      }
+      .message {
+        border-top: 1px solid;
+        padding: 16px 0;
+      }
+      .message.read {
+        height: 30px;
+        overflow: hidden;
+        background: linear-gradient(white, lightgrey);
       }
     </style>
   </head>
@@ -30,8 +44,7 @@
       <button id="authorize-button" style="display: none;">Authorize</button>
       <button id="signout-button" style="display: none;">Sign Out</button>
     </div>
-    <pre id="content"></pre>
-    <iframe id="mailbody"></iframe>
+    <div id="content"></div>
 
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="/static/main.js"></script>

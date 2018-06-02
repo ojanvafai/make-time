@@ -1,6 +1,22 @@
+
+- Rework the code to not be spaghetti
+- Make pretty
+- Don't show per message labels, just what label you're currently triaging.
+- Make read items expandable
 - Use a sandboxed iframe for the HTML contents so innerHTML can be done without fear.
+- add done, process, reply, blocked, mute, task shortcuts
+- add buttons for all the shortcuts
+- add timer
+- Sort by label
+- show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
+- preload the next N threads
+- add a concept of the quick triage first, then the process triage where you get more time per message
+- add stats of how much time you spend in each phase and what aggregations of actions taken with threads
+- reply takes it out of the triage queue
+- Block snoozes and removes any autolabels. Needs a UI for picking date/time.
+- To start with, the task button just puts it in the task tracker with no ability to customize.
 
 Feature Creeep
 - Undo previous action
-- Task manager
+- Task manager for efficient eisenhower + goodweek planning
 - Google Assistant integration
