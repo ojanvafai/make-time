@@ -41,8 +41,10 @@ function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.style.display = 'none';
     signoutButton.style.display = 'block';
-    var query = 'in:inbox';
-    listThreads(USER_ID, query, renderInbox);
+    // TODO: have both of these be promises and use Promise.all
+    // before rendering anything.
+    fetchThreads(USER_ID, renderInbox);
+    fetchLabels();
   } else {
     authorizeButton.style.display = 'block';
     signoutButton.style.display = 'none';
@@ -179,16 +181,10 @@ function appendPre(message) {
   pre.appendChild(textContent);
 }
 
-/**
- * @param  {String} userId User's email address. The special value 'me'
- * can be used to indicate the authenticated user.
- * @param  {String} query String used to filter the Threads listed.
- * @param  {Function} callback Function to call when the request is complete.
- */
-function listThreads(userId, query, callback) {
+function fetchThreads(userId, callback) {
   var requestParams = {
     'userId': userId,
-    'q': query,
+    'q': 'in:inbox',
   }
   var getPageOfThreads = function(result) {
     var request = gapi.client.gmail.users.threads.list(requestParams);
@@ -206,26 +202,10 @@ function listThreads(userId, query, callback) {
   getPageOfThreads([]);
 }
 
-function listLabels() {
+function fetchLabels() {
   gapi.client.gmail.users.labels.list({
     'userId': USER_ID
   }).then(function(response) {
-    var labels = response.result.labels.sort((a, b) => {
-      if (a.name > b.name)
-        return 1;
-      if (a.name < b.name)
-        return -1;
-      return 0;
-    });
-    appendPre('Labels:');
-
-    if (labels && labels.length > 0) {
-      for (i = 0; i < labels.length; i++) {
-        var label = labels[i];
-        appendPre(label.name)
-      }
-    } else {
-      appendPre('No Labels found.');
-    }
+    g_state.labels = response.result.labels
   });
 }
