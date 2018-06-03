@@ -1,10 +1,15 @@
 
-// TODO: Get these values out of the go/pedantic-gmail-labeler sheet.
-// For now, make sure the values in your spreadsheet match these and vice versa.
-var AUTO_LABEL = 'auto';
-var LABELER_IMPLEMENTATION_LABEL = 'labeler';
-var READ_LATER_LABEL = 'readlater';
-var NEEDS_REPLY_LABEL = 'needsreply';
+var TRIAGER_LABEL = 'triager';
+
+function triagerLabel(labelName) {
+  return TRIAGER_LABEL + '/' + labelName;
+}
+
+var READ_LATER_LABEL = triagerLabel('readlater');
+var NEEDS_REPLY_LABEL = triagerLabel('needsreply');
+var BLOCKED_LABEL = triagerLabel('needsnooze');
+var MUTED_LABEL = triagerLabel('needsmute');
+var TASK_LABEL = triagerLabel('needstask');
 
 // Client ID and API key from the Developer Console
 var CLIENT_ID = '520704056454-99upe5p4nb6ce7jsf0fmlmqhcs6c0gbe.apps.googleusercontent.com';
@@ -136,8 +141,12 @@ var g_state = {
 };
 
 function renderNextThread() {
-  g_state.currentThreadIndex = Math.min(g_state.currentThreadIndex + 1, g_state.threads.length - 1);
+  g_state.currentThreadIndex = nextThreadIndex();
   renderCurrentThread();
+}
+
+function nextThreadIndex() {
+  return Math.min(g_state.currentThreadIndex + 1, g_state.threads.length - 1);
 }
 
 document.body.addEventListener('keydown', (e) => {
@@ -148,52 +157,36 @@ document.body.addEventListener('keydown', (e) => {
 function dispatchShortcut(key) {
   switch (key) {
     case 'j':
+      renderNextThread();
       break;
 
     case 'd':
-      done();
+      var addLabelIds = [];
+      var removeLabelIds = ['UNREAD', 'INBOX'];
+      modifyCurrentThread(addLabelIds, removeLabelIds);
       break;
 
     case 'l':
-      readLater();
+      addLabelToCurrentThread(READ_LATER_LABEL);
       break;
 
     case 'r':
-      reply();
+      addLabelToCurrentThread(NEEDS_REPLY_LABEL);
       break;
 
     case 'b':
-      blocked();
+      addLabelToCurrentThread(BLOCKED_LABEL);
       break;
 
     case 'm':
-      mute();
+      addLabelToCurrentThread(MUTED_LABEL);
       break;
 
     case 't':
-      task();
+      addLabelToCurrentThread(TASK_LABEL);
       break;
   }
 };
-
-function done() {
-  var request = gapi.client.gmail.users.threads.modify({
-    'userId': USER_ID,
-    'id': g_state.threads[g_state.currentThreadIndex].id,
-    'removeLabelIds': ['UNREAD', 'INBOX'],
-  });
-  // TODO: Move immediately to the next thread, but give an indication
-  // in the UI when the previous action successfully completes.
-  // And handle failure to complete gracefully.
-  request.execute(renderNextThread);
-}
-
-// TODO: Once we add a proper read later queue, put this in the
-// LABELER_IMPLEMENTATION_LABEL parent label so it's implementation detail.
-// For now, expose readlater to the user in gmail.
-function readLaterLabelName() {
-  return AUTO_LABEL + '/' + READ_LATER_LABEL;
-}
 
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
 function createLabel(labelName) {
@@ -235,12 +228,12 @@ async function getLabelId(labelName, callback) {
   return g_state.labelToId[labelName];
 }
 
-async function readLater() {
-  var id = await getLabelId(readLaterLabelName());
+async function modifyCurrentThread(addLabelIds, removeLabelIds) {
   var request = gapi.client.gmail.users.threads.modify({
     'userId': USER_ID,
     'id': g_state.threads[g_state.currentThreadIndex].id,
-    'addLabelIds': [id],
+    'addLabelIds': addLabelIds,
+    'removeLabelIds': removeLabelIds,
   });
   // TODO: Move immediately to the next thread, but give an indication
   // in the UI when the previous action successfully completes.
@@ -248,20 +241,10 @@ async function readLater() {
   request.execute(renderNextThread);
 }
 
-async function reply() {
-  alert('reply not implemented');
-}
-
-async function blocked() {
-  alert('blocked not implemented');
-}
-
-async function mute() {
-  alert('mute not implemented');
-}
-
-async function task() {
-  alert('task not implemented');
+async function addLabelToCurrentThread(labelName) {
+  var addLabelIds = [await getLabelId(labelName)];
+  var removeLabelIds = [];
+  modifyCurrentThread(addLabelIds, removeLabelIds);
 }
 
 function fetchThreadDetails(index, callback) {
@@ -273,7 +256,7 @@ function fetchThreadDetails(index, callback) {
   var request = gapi.client.gmail.users.threads.get(requestParams);
   request.execute((resp) => {
     g_state.threadDetails[index] = resp;
-    callback();
+    callback(index);
   });
 }
 
@@ -282,12 +265,10 @@ function renderCurrentThread() {
   var content = document.getElementById('content');
   content.textContent = '';
 
-  var callback = () => {
+  var callback = (index) => {
     // If you cycle through threads quickly, then the callback for the previous
     // thread finishes before the current on has it's data.
-    // TODO: Use promises and reject the fetch promise when the user has
-    // gone to the next message so we don't get in this state in the first place.
-    if (!(g_state.currentThreadIndex in g_state.threadDetails))
+    if (index != g_state.currentThreadIndex)
       return;
     var threadDetails = g_state.threadDetails[g_state.currentThreadIndex];
     var lastMessage;
@@ -301,10 +282,16 @@ function renderCurrentThread() {
     lastMessage.classList.add('unread');
     document.querySelector('.unread').scrollIntoView();
     content.scrollTop = content.scrollTop - 25;
+
+    // Prefetch the next thread for instant access.
+    // TODO: prefetch the next N threads?
+    fetchThreadDetails(nextThreadIndex(), (index) => {
+      console.log(`Prefetched thread index: ${index})`);
+    });
   }
 
   if (g_state.currentThreadIndex in g_state.threadDetails)
-    callback();
+    callback(g_state.currentThreadIndex);
   else
     fetchThreadDetails(g_state.currentThreadIndex, callback);
 }
@@ -325,7 +312,7 @@ function handleSignoutClick(event) {
 function fetchThreads(userId, callback) {
   var requestParams = {
     'userId': userId,
-    'q': 'in:inbox -in:' + readLaterLabelName(),
+    'q': 'in:inbox -in:' + READ_LATER_LABEL,
   }
   var getPageOfThreads = function(result) {
     var request = gapi.client.gmail.users.threads.list(requestParams);

@@ -1,5 +1,5 @@
 
-- move client ID out of github
+- Get all the config values out of the spreadsheet instead of hard coding
 - Rework the code to not be spaghetti
 - Make pretty
 - Don't show per message labels, just what label you're currently triaging.
@@ -11,7 +11,6 @@
 - add timer
 - Sort by label
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
-- preload the next N threads
 - add a concept of the quick triage first, then the process triage where you get more time per message
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
 - reply takes it out of the triage queue
@@ -19,6 +18,9 @@
 - To start with, the task button just puts it in the task tracker with no ability to customize.
 
 Maybe TODOs
+- Add option to expand out the read items
+- add options to show labels on each message (useful for debugging)
+- preload the next N threads instead of just the next one
 - Use a sandboxed iframe for the HTML contents so innerHTML can be done without fear.
 
 Feature Creeep
