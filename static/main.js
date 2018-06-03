@@ -343,8 +343,9 @@ async function fetchThreadList(label, currentIndex) {
 
   var threads = await getPageOfThreads(label);
   g_state.threads = g_state.threads.concat(threads);
+  var unprefixedLabel = label.replace(new RegExp('^' + TO_TRIAGE_LABEL + '/'), '');
   for (var i = 0; i < threads.length; i++) {
-    g_state.labelForIndex[currentIndex++] = label;
+    g_state.labelForIndex[currentIndex++] = unprefixedLabel;
   }
 }
 
