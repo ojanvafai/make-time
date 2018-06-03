@@ -1,19 +1,18 @@
 
 - Get all the config values out of the spreadsheet instead of hard coding
-- Show some UI to show success/failure of requests.
-- Retry failures
+- Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - Rework the code to not be spaghetti
 - Make pretty
 - Don't show per message labels, just what label you're currently triaging.
-- taking an action takes it out of the triage queue
-- done/reply/blocked/mute should mark all the messages as read. process proably shouldn't. What about task?
-- get high lighthouse score and add to homescreen
 - add timer
 - Sort by label
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
 
 Maybe TODOs
+- get high lighthouse score and add to homescreen
+- automatically update to add new threads as they come in (right now requires reloading the page)
+- Should readlater/task mark the messages as read?
 - Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.
 - Figure out a way to make block snooze. Might involve implementing our own snooze functionality entirely, but then that means we can't use snooze or rely on in the gmail UI?
 - add a concept of the quick triage first, then the process triage where you get more time per message

@@ -52,10 +52,7 @@ function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.style.display = 'none';
     signoutButton.style.display = 'block';
-    // TODO: have both of these be promises and use Promise.all
-    // before rendering anything.
     fetchThreads(USER_ID, renderInbox);
-    updateLabelList();
   } else {
     authorizeButton.style.display = 'block';
     signoutButton.style.display = 'none';
@@ -67,8 +64,9 @@ function base64Decode(str) {
 }
 
 function updateCounter(index) {
+  var threadsLeft = g_state.threads.length - index
   var counter = document.getElementById('counter');
-  counter.textContent = (index + 1) + '/' + g_state.threads.length;
+  counter.textContent = threadsLeft + ' threads left';
 }
 
 function getMessageBody(mimeParts, body) {
@@ -146,7 +144,7 @@ function renderNextThread() {
 }
 
 function nextThreadIndex() {
-  return Math.min(g_state.currentThreadIndex + 1, g_state.threads.length - 1);
+  return Math.min(g_state.currentThreadIndex + 1, g_state.threads.length);
 }
 
 document.body.addEventListener('keydown', (e) => {
@@ -167,15 +165,15 @@ function dispatchShortcut(key) {
       break;
 
     case 'r':
-      addLabelToCurrentThread(NEEDS_REPLY_LABEL);
+      markReadAndAddLabelToCurrentThread(NEEDS_REPLY_LABEL);
       break;
 
     case 'b':
-      addLabelToCurrentThread(BLOCKED_LABEL);
+      markReadAndAddLabelToCurrentThread(BLOCKED_LABEL);
       break;
 
     case 'm':
-      addLabelToCurrentThread(MUTED_LABEL);
+      markReadAndAddLabelToCurrentThread(MUTED_LABEL);
       break;
 
     case 't':
@@ -241,6 +239,12 @@ async function modifyCurrentThread(addLabelIds, removeLabelIds) {
   renderNextThread();
 }
 
+async function markReadAndAddLabelToCurrentThread(labelName) {
+  var addLabelIds = [await getLabelId(labelName)];
+  var removeLabelIds = ['UNREAD'];
+  modifyCurrentThread(addLabelIds, removeLabelIds);
+}
+
 async function addLabelToCurrentThread(labelName) {
   var addLabelIds = [await getLabelId(labelName)];
   var removeLabelIds = [];
@@ -248,6 +252,10 @@ async function addLabelToCurrentThread(labelName) {
 }
 
 function fetchThreadDetails(index, callback) {
+  // This happens when we triage the last message.
+  if (index == g_state.threads.length)
+    return;
+
   var thread = g_state.threads[index];
   var requestParams = {
     'userId': USER_ID,
@@ -263,6 +271,10 @@ function fetchThreadDetails(index, callback) {
 function renderCurrentThread() {
   updateCounter(g_state.currentThreadIndex);
   var content = document.getElementById('content');
+  if (g_state.currentThreadIndex == g_state.threads.length) {
+    content.textContent = 'All done triaging! \\o/ Reload to check for new threads.';
+    return;
+  }
   content.textContent = '';
 
   var callback = (index) => {
@@ -285,7 +297,6 @@ function renderCurrentThread() {
     content.scrollTop = content.scrollTop - 25;
 
     // Prefetch the next thread for instant access.
-    // TODO: prefetch the next N threads?
     fetchThreadDetails(nextThreadIndex(), (index) => {
       console.log(`Prefetched thread index: ${index})`);
     });
@@ -310,15 +321,17 @@ function handleSignoutClick(event) {
   gapi.auth2.getAuthInstance().signOut();
 }
 
-function fetchThreads(userId, callback) {
+async function fetchThreads(userId, callback) {
+  await updateLabelList();
   var requestParams = {
     'userId': userId,
-    'q': 'in:inbox -in:' + READ_LATER_LABEL,
+    // In the inbox and not in any triager labels.
+    'q': 'in:inbox -(in:' + g_state.triagerLabels.join(" OR in:") + ")",
   }
   var getPageOfThreads = function(result) {
     var request = gapi.client.gmail.users.threads.list(requestParams);
     request.execute(function (resp) {
-      result = result.concat(resp.threads);
+      result = resp.threads ? result.concat(resp.threads) : [];
       var nextPageToken = resp.nextPageToken;
       if (nextPageToken) {
         requestParams.pageToken = nextPageToken;
@@ -338,8 +351,12 @@ async function updateLabelList() {
 
   g_state.labelToId = {};
   g_state.idToLabel = {};
+  g_state.triagerLabels = [];
   for (var label of response.result.labels) {
     g_state.labelToId[label.name] = label.id;
     g_state.idToLabel[label.id] = label.name;
+
+    if (label.name.startsWith(TRIAGER_LABEL + '/'))
+      g_state.triagerLabels.push(label.name);
   }
 }
