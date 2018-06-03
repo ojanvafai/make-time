@@ -1,4 +1,11 @@
 
+// TODO: Get these values out of the go/pedantic-gmail-labeler sheet.
+// For now, make sure the values in your spreadsheet match these and vice versa.
+var AUTO_LABEL = 'auto';
+var LABELER_IMPLEMENTATION_LABEL = 'labeler';
+var READ_LATER_LABEL = 'readlater';
+var NEEDS_REPLY_LABEL = 'needsreply';
+
 // Client ID and API key from the Developer Console
 var CLIENT_ID = '520704056454-99upe5p4nb6ce7jsf0fmlmqhcs6c0gbe.apps.googleusercontent.com';
 
@@ -43,7 +50,7 @@ function updateSigninStatus(isSignedIn) {
     // TODO: have both of these be promises and use Promise.all
     // before rendering anything.
     fetchThreads(USER_ID, renderInbox);
-    fetchLabels();
+    updateLabelList();
   } else {
     authorizeButton.style.display = 'block';
     signoutButton.style.display = 'none';
@@ -128,19 +135,134 @@ var g_state = {
   currentThreadIndex: 0,
 };
 
+function renderNextThread() {
+  g_state.currentThreadIndex = Math.min(g_state.currentThreadIndex + 1, g_state.threads.length - 1);
+  renderCurrentThread();
+}
+
 document.body.addEventListener('keydown', (e) => {
-  switch (e.key) {
+  if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+    dispatchShortcut(e.key);
+});
+
+function dispatchShortcut(key) {
+  switch (key) {
     case 'j':
-      g_state.currentThreadIndex = Math.min(g_state.currentThreadIndex + 1, g_state.threads.length - 1);
-      renderCurrentThread();
       break;
 
-    case 'k':
-      g_state.currentThreadIndex = Math.max(g_state.currentThreadIndex - 1, 0);
-      renderCurrentThread();
+    case 'd':
+      done();
+      break;
+
+    case 'l':
+      readLater();
+      break;
+
+    case 'r':
+      reply();
+      break;
+
+    case 'b':
+      blocked();
+      break;
+
+    case 'm':
+      mute();
+      break;
+
+    case 't':
+      task();
       break;
   }
-});
+};
+
+function done() {
+  var request = gapi.client.gmail.users.threads.modify({
+    'userId': USER_ID,
+    'id': g_state.threads[g_state.currentThreadIndex].id,
+    'removeLabelIds': ['UNREAD', 'INBOX'],
+  });
+  // TODO: Move immediately to the next thread, but give an indication
+  // in the UI when the previous action successfully completes.
+  // And handle failure to complete gracefully.
+  request.execute(renderNextThread);
+}
+
+// TODO: Once we add a proper read later queue, put this in the
+// LABELER_IMPLEMENTATION_LABEL parent label so it's implementation detail.
+// For now, expose readlater to the user in gmail.
+function readLaterLabelName() {
+  return AUTO_LABEL + '/' + READ_LATER_LABEL;
+}
+
+// TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
+function createLabel(labelName) {
+  return new Promise(resolve => {
+    var request = gapi.client.gmail.users.labels.create({
+      userId: USER_ID,
+      name: labelName,
+      messageListVisibility: 'show',
+      labelListVisibility: 'labelShow',
+    });
+    request.execute(resolve);
+  });
+}
+
+async function getLabelId(labelName, callback) {
+  if (g_state.labelToId[labelName])
+    return g_state.labelToId[labelName];
+
+  await updateLabelList();
+  var parts = labelName.split('/');
+
+  // Create all the parent labels as well as the final label.
+  var labelSoFar = '';
+  for (var part of parts) {
+    var prefix = labelSoFar ? '/' : '';
+    labelSoFar += prefix + part;
+    // creating a label 409's if the label already exists.
+    // Technically we should handle the race if the label
+    // gets created in between the start of the create call and this line. Meh.
+    if (g_state.labelToId[labelSoFar])
+      continue;
+
+    var result = await createLabel(labelSoFar);
+    var id = result.id;
+    g_state.labelToId[labelName] = id;
+    g_state.idToLabel[id] = labelName;
+  }
+
+  return g_state.labelToId[labelName];
+}
+
+async function readLater() {
+  var id = await getLabelId(readLaterLabelName());
+  var request = gapi.client.gmail.users.threads.modify({
+    'userId': USER_ID,
+    'id': g_state.threads[g_state.currentThreadIndex].id,
+    'addLabelIds': [id],
+  });
+  // TODO: Move immediately to the next thread, but give an indication
+  // in the UI when the previous action successfully completes.
+  // And handle failure to complete gracefully.
+  request.execute(renderNextThread);
+}
+
+function reply() {
+  alert('reply not implemented');
+}
+
+function blocked() {
+  alert('blocked not implemented');
+}
+
+function mute() {
+  alert('mute not implemented');
+}
+
+function task() {
+  alert('task not implemented');
+}
 
 function fetchThreadDetails(index, callback) {
   var thread = g_state.threads[index];
@@ -203,7 +325,7 @@ function handleSignoutClick(event) {
 function fetchThreads(userId, callback) {
   var requestParams = {
     'userId': userId,
-    'q': 'in:inbox',
+    'q': 'in:inbox -in:' + readLaterLabelName(),
   }
   var getPageOfThreads = function(result) {
     var request = gapi.client.gmail.users.threads.list(requestParams);
@@ -221,10 +343,15 @@ function fetchThreads(userId, callback) {
   getPageOfThreads([]);
 }
 
-function fetchLabels() {
-  gapi.client.gmail.users.labels.list({
+async function updateLabelList() {
+  var response = await gapi.client.gmail.users.labels.list({
     'userId': USER_ID
-  }).then(function(response) {
-    g_state.labels = response.result.labels
-  });
+  })
+
+  g_state.labelToId = {};
+  g_state.idToLabel = {};
+  for (var label of response.result.labels) {
+    g_state.labelToId[label.name] = label.id;
+    g_state.idToLabel[label.id] = label.name;
+  }
 }
