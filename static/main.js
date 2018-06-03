@@ -1,5 +1,6 @@
 
 var TRIAGER_LABEL = 'triager';
+var TO_TRIAGE_LABEL = 'auto';
 
 function triagerLabel(labelName) {
   return TRIAGER_LABEL + '/' + labelName;
@@ -48,11 +49,12 @@ function initClient() {
   });
 }
 
-function updateSigninStatus(isSignedIn) {
+async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.style.display = 'none';
     signoutButton.style.display = 'block';
-    fetchThreads(USER_ID, renderInbox);
+    await updateThreadList();
+    renderCurrentThread();
   } else {
     authorizeButton.style.display = 'block';
     signoutButton.style.display = 'none';
@@ -63,10 +65,14 @@ function base64Decode(str) {
   return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
 }
 
-function updateCounter(index) {
-  var threadsLeft = g_state.threads.length - index
+function updateCounter() {
+  var index = g_state.currentThreadIndex;
+  var threadsLeft = g_state.threads.length - index;
   var counter = document.getElementById('counter');
-  counter.textContent = threadsLeft + ' threads left';
+  var text = `${threadsLeft} threads left.`
+  if (threadsLeft)
+    text += ` Current queue: ${g_state.labelForIndex[index]}`
+  counter.textContent = text;
 }
 
 function getMessageBody(mimeParts, body) {
@@ -86,8 +92,6 @@ function getMessageBody(mimeParts, body) {
 }
 
 function renderMessage(message) {
-  var labelIds = message.labelIds;
-
   var from;
   var subject;
   for (var header of message.payload.headers) {
@@ -116,12 +120,11 @@ function renderMessage(message) {
   var messageDiv = document.createElement('div');
   messageDiv.className = 'message';
 
-  var readState = labelIds.includes('UNREAD') ? 'unread' : 'read';
+  var readState = message.labelIds.includes('UNREAD') ? 'unread' : 'read';
   messageDiv.classList.add(readState);
 
   messageDiv.textContent = `From: ${from}
-Subject: ${subject}
-Labels: ${labelIds.join(' ')}`;
+Subject: ${subject}`;
 
   // TODO: Do we need iframes or does gmail strip dangerous things for us.
   // Seems like we might need it for styling isolation at least, but gmail doesn't
@@ -134,7 +137,9 @@ Labels: ${labelIds.join(' ')}`;
 }
 
 var g_state = {
+  threads: [],
   threadDetails: [],
+  labelForIndex: [],
   currentThreadIndex: 0,
 };
 
@@ -269,7 +274,7 @@ function fetchThreadDetails(index, callback) {
 }
 
 function renderCurrentThread() {
-  updateCounter(g_state.currentThreadIndex);
+  updateCounter();
   var content = document.getElementById('content');
   if (g_state.currentThreadIndex == g_state.threads.length) {
     content.textContent = 'All done triaging! \\o/ Reload to check for new threads.';
@@ -308,11 +313,6 @@ function renderCurrentThread() {
     fetchThreadDetails(g_state.currentThreadIndex, callback);
 }
 
-function renderInbox(threads) {
-  g_state.threads = threads;
-  renderCurrentThread();
-}
-
 function handleAuthClick(event) {
   gapi.auth2.getAuthInstance().signIn();
 }
@@ -321,27 +321,44 @@ function handleSignoutClick(event) {
   gapi.auth2.getAuthInstance().signOut();
 }
 
-async function fetchThreads(userId, callback) {
-  await updateLabelList();
-  var requestParams = {
-    'userId': userId,
-    // In the inbox and not in any triager labels.
-    'q': 'in:inbox -(in:' + g_state.triagerLabels.join(" OR in:") + ")",
-  }
-  var getPageOfThreads = function(result) {
-    var request = gapi.client.gmail.users.threads.list(requestParams);
-    request.execute(function (resp) {
-      result = resp.threads ? result.concat(resp.threads) : [];
-      var nextPageToken = resp.nextPageToken;
-      if (nextPageToken) {
-        requestParams.pageToken = nextPageToken;
-        getPageOfThreads(result);
-      } else {
-        callback(result);
-      }
+async function fetchThreadList(label, currentIndex) {
+  var query = 'in:inbox';
+  // We only have triager labels once they've actually been created.
+  if (g_state.triagerLabels.length)
+    query += ' -(in:' + g_state.triagerLabels.join(' OR in:') + ')';
+
+  var getPageOfThreads = async function(label) {
+    var resp = await gapi.client.gmail.users.threads.list({
+      'userId': USER_ID,
+      'q': query + ' in: ' + label,
     });
+    var nextPageToken = resp.result.nextPageToken;
+    var result = resp.result.threads || [];
+    if (nextPageToken) {
+      requestParams.pageToken = nextPageToken;
+      result = result.concat(await getPageOfThreads(label));
+    }
+    return result;
   };
-  getPageOfThreads([]);
+
+  var threads = await getPageOfThreads(label);
+  g_state.threads = g_state.threads.concat(threads);
+  for (var i = 0; i < threads.length; i++) {
+    g_state.labelForIndex[currentIndex++] = label;
+  }
+}
+
+async function fetchThreadLists(labels) {
+  for (var label of labels) {
+    await fetchThreadList(label, g_state.threads.length);
+    updateCounter();
+  }
+}
+
+async function updateThreadList(callback) {
+  await updateLabelList();
+  await fetchThreadList(g_state.toTriageLabels[0], 0);
+  fetchThreadLists(g_state.toTriageLabels.slice(1));
 }
 
 async function updateLabelList() {
@@ -352,11 +369,17 @@ async function updateLabelList() {
   g_state.labelToId = {};
   g_state.idToLabel = {};
   g_state.triagerLabels = [];
+  g_state.toTriageLabels = [];
   for (var label of response.result.labels) {
     g_state.labelToId[label.name] = label.id;
     g_state.idToLabel[label.id] = label.name;
 
     if (label.name.startsWith(TRIAGER_LABEL + '/'))
       g_state.triagerLabels.push(label.name);
+
+    if (label.name.startsWith(TO_TRIAGE_LABEL + '/'))
+      g_state.toTriageLabels.push(label.name);
+
+    g_state.toTriageLabels.sort();
   }
 }

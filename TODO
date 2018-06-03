@@ -1,15 +1,13 @@
-
-- Get all the config values out of the spreadsheet instead of hard coding
-- Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - Rework the code to not be spaghetti
 - Make pretty
-- Don't show per message labels, just what label you're currently triaging.
+- Get all the TRIAGER_LABEL and TO_TRIAGE_LABEL values out of the spreadsheet instead of hard coding
+- Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - add timer
-- Sort by label
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
 
 Maybe TODOs
+- provide a way to sort labels other than alphabetical
 - get high lighthouse score and add to homescreen
 - automatically update to add new threads as they come in (right now requires reloading the page)
 - Should readlater/task mark the messages as read?
