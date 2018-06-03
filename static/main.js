@@ -156,10 +156,6 @@ document.body.addEventListener('keydown', (e) => {
 
 function dispatchShortcut(key) {
   switch (key) {
-    case 'j':
-      renderNextThread();
-      break;
-
     case 'd':
       var addLabelIds = [];
       var removeLabelIds = ['UNREAD', 'INBOX'];
@@ -229,16 +225,20 @@ async function getLabelId(labelName, callback) {
 }
 
 async function modifyCurrentThread(addLabelIds, removeLabelIds) {
-  var request = gapi.client.gmail.users.threads.modify({
+  var index = g_state.currentThreadIndex;
+  gapi.client.gmail.users.threads.modify({
     'userId': USER_ID,
-    'id': g_state.threads[g_state.currentThreadIndex].id,
+    'id': g_state.threads[index].id,
     'addLabelIds': addLabelIds,
     'removeLabelIds': removeLabelIds,
+  }).then((resp) => {
+    if (resp.status == '200') {
+      // hide spinner
+    } else {
+      // retry? Show some error UI?
+    }
   });
-  // TODO: Move immediately to the next thread, but give an indication
-  // in the UI when the previous action successfully completes.
-  // And handle failure to complete gracefully.
-  request.execute(renderNextThread);
+  renderNextThread();
 }
 
 async function addLabelToCurrentThread(labelName) {
@@ -277,7 +277,8 @@ function renderCurrentThread() {
       content.appendChild(lastMessage);
     }
     // Always show the last message.
-    // TODO: Do something less hacky than pretending it's unread.
+    // TODO: Do something less hacky than pretending the last message is unread
+    // so it shows and gets scrolled to.
     lastMessage.classList.remove('read');
     lastMessage.classList.add('unread');
     document.querySelector('.unread').scrollIntoView();
