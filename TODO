@@ -1,12 +1,20 @@
 - Rework the code to not be spaghetti
 - Make pretty
+- Fix encoding issues (e.g. see any email with JS Blocks)
+- elide repeated bits from messages
 - Get all the TRIAGER_LABEL and TO_TRIAGE_LABEL values out of the spreadsheet instead of hard coding
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - add timer
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
+- remove triager labels from auto/snoozed items
+- make all ojru-mail tasks archive
+- add ability to see the to addresses as well...maybe not by default though
+- remove triager labels when mail is processed so it gets fully retriaged...or maybe show the current queue and let you decide whether to keep or change the queue?
+- Need to make labeler not remove labels on things that have triager + auto labels, but no inbox.
 
 Maybe TODOs
+- have a default max-width that's settable
 - provide a way to sort labels other than alphabetical
 - get high lighthouse score and add to homescreen
 - automatically update to add new threads as they come in (right now requires reloading the page)
