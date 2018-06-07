@@ -28,6 +28,13 @@ var signoutButton = document.getElementById('signout-button');
 
 var base64 = new Base64();
 
+var g_state = {
+  threads: [],
+  threadDetails: [],
+  labelForIndex: [],
+  currentThreadIndex: 0,
+};
+
 function handleClientLoad() {
   gapi.load('client:auth2', initClient);
 }
@@ -142,13 +149,6 @@ Subject: ${subject}`;
     text: messageText,
   }
 }
-
-var g_state = {
-  threads: [],
-  threadDetails: [],
-  labelForIndex: [],
-  currentThreadIndex: 0,
-};
 
 function renderNextThread() {
   g_state.currentThreadIndex = nextThreadIndex();
@@ -354,19 +354,26 @@ async function fetchThreadList(label, currentIndex) {
   for (var i = 0; i < threads.length; i++) {
     g_state.labelForIndex[currentIndex++] = unprefixedLabel;
   }
-}
-
-async function fetchThreadLists(labels) {
-  for (var label of labels) {
-    await fetchThreadList(label, g_state.threads.length);
-    updateCounter();
-  }
+  updateCounter();
 }
 
 async function updateThreadList(callback) {
+  document.getElementById('loader').style.display = 'inline-block';
   await updateLabelList();
-  await fetchThreadList(g_state.toTriageLabels[0], 0);
-  fetchThreadLists(g_state.toTriageLabels.slice(1));
+
+  var foundNonEmptyQueue = false;
+  for (var label of g_state.toTriageLabels) {
+    var currentIndex = g_state.threads.length;
+    // Only block on returning from updateThreadList until we've found at least
+    // one thread to render so we can show the first thread as quickly as possible.
+    if (foundNonEmptyQueue)
+      fetchThreadList(label, currentIndex);
+    else
+      await fetchThreadList(label, currentIndex);
+    foundNonEmptyQueue |= g_state.threads.length;
+  }
+
+  document.getElementById('loader').style.display = 'none';
 }
 
 async function updateLabelList() {

@@ -40,10 +40,48 @@
         font-weight: bold;
         text-decoration: underline;
       }
+
+      /* Spinner */
+      #loader {
+        display: none;
+      }
+      #loader,
+      #loader:after {
+        border-radius: 50%;
+        width: 1ex;
+        height: 1ex;
+      }
+      #loader {
+        position: relative;
+        text-indent: -9999em;
+        border-top: 3px solid grey;
+        border-right: 3px solid grey;
+        border-bottom: 3px solid grey;
+        border-left: 3px solid black;
+        transform: translateZ(0);
+        animation: load8 1.1s infinite linear;
+      }
+      @-webkit-keyframes load8 {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes load8 {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
     <div class="toolbar">
+      <div id="loader"></div>
       <div id="counter"></div>
       <button id="authorize-button" style="display: none;">Authorize</button>
       <button id="signout-button" style="display: none;">Sign Out</button>
