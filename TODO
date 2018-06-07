@@ -1,7 +1,9 @@
 - Rework the code to not be spaghetti
 - Make pretty
 - Fix encoding issues (e.g. see any email with JS Blocks)
+- don't return from fetchLabels until the first fetch that returns non-zero threads. Otherwise, we never render the first thread of the queue that does.
 - elide repeated bits from messages
+  poor man's quote finder: split email into N word chunks, make hashes, elide anything that's M or more contiguous chunks. The in followup work can walk forwards/backwards to find the actual boundary and to include the "on ... wrote:" text. Then further followup can try to do well-formed HTML. hash computation function https://cs.corp.google.com/piper///depot/google3/java/com/google/caribou/base/QuoteFinder.java?q=quotefinder&sq=package:piper+file://depot/google3+-file:google3/experimental&dr=CSs&l=332
 - Get all the TRIAGER_LABEL and TO_TRIAGE_LABEL values out of the spreadsheet instead of hard coding
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - add timer
@@ -12,6 +14,9 @@
 - add ability to see the to addresses as well...maybe not by default though
 - remove triager labels when mail is processed so it gets fully retriaged...or maybe show the current queue and let you decide whether to keep or change the queue?
 - Need to make labeler not remove labels on things that have triager + auto labels, but no inbox.
+- For daily/weekly/monthly queues, show just subject lines and let me select the ones I want to review more (with easy way to select all). The rest all get archived.
+- add a favicon
+- put scrolling on the outer page so wheel scrolling works anywhere on the page (e.g. in the body margin)
 
 Maybe TODOs
 - have a default max-width that's settable

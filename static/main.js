@@ -1,4 +1,3 @@
-
 var TRIAGER_LABEL = 'triager';
 var TO_TRIAGE_LABEL = 'auto';
 
@@ -26,6 +25,8 @@ var USER_ID = 'me';
 
 var authorizeButton = document.getElementById('authorize-button');
 var signoutButton = document.getElementById('signout-button');
+
+var base64 = new Base64();
 
 function handleClientLoad() {
   gapi.load('client:auth2', initClient);
@@ -61,10 +62,6 @@ async function updateSigninStatus(isSignedIn) {
   }
 }
 
-function base64Decode(str) {
-  return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
-}
-
 function updateCounter() {
   var index = g_state.currentThreadIndex;
   var threadsLeft = g_state.threads.length - index;
@@ -79,16 +76,21 @@ function getMessageBody(mimeParts, body) {
   for (var part of mimeParts) {
     switch (part.mimeType) {
       case 'text/plain':
-        body.plain = base64Decode(part.body.data);
+        body.plain = base64.decode(part.body.data);
         break;
       case 'text/html':
-        body.html = base64Decode(part.body.data);
+        body.html = base64.decode(part.body.data);
         break;
       case 'multipart/alternative':
         getMessageBody(part.parts, body);
         break;
     }
   }
+}
+
+function elideReply(messageText) {
+  // TODO: actually do the eliding. :)
+  return messageText;
 }
 
 function renderMessage(message) {
@@ -105,6 +107,7 @@ function renderMessage(message) {
     }
   }
 
+  // TODO: We could probably be more efficient by only grabbing one of these.
   var body = {
     plain: '',
     html: '',
@@ -131,9 +134,13 @@ Subject: ${subject}`;
   // seem to use iframes, so we probably don't if they strip things for us.
   // iframes making everythign complicated (e.g for capturing keypresses, etc.).
   var bodyContainer = document.createElement('div');
-  bodyContainer.innerHTML = body.html || body.plain;
+  var messageText = body.html || body.plain;
+  bodyContainer.innerHTML = elideReply(messageText);
   messageDiv.appendChild(bodyContainer);
-  return messageDiv;
+  return {
+    element: messageDiv,
+    text: messageText,
+  }
 }
 
 var g_state = {
@@ -290,14 +297,14 @@ function renderCurrentThread() {
     var threadDetails = g_state.threadDetails[g_state.currentThreadIndex];
     var lastMessage;
     for (var message of threadDetails.messages) {
-      lastMessage = renderMessage(message);
-      content.appendChild(lastMessage);
+      lastMessage = renderMessage(message, lastMessage ? lastMessage.text : null);
+      content.appendChild(lastMessage.element);
     }
     // Always show the last message.
     // TODO: Do something less hacky than pretending the last message is unread
     // so it shows and gets scrolled to.
-    lastMessage.classList.remove('read');
-    lastMessage.classList.add('unread');
+    lastMessage.element.classList.remove('read');
+    lastMessage.element.classList.add('unread');
     document.querySelector('.unread').scrollIntoView();
     content.scrollTop = content.scrollTop - 25;
 
