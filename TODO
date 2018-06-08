@@ -16,6 +16,7 @@
 - add a favicon
 - put scrolling on the outer page so wheel scrolling works anywhere on the page (e.g. in the body margin)
 
+
 Maybe TODOs
 - have a default max-width that's settable
 - provide a way to sort labels other than alphabetical
@@ -34,3 +35,11 @@ Feature Creeep
 - Undo previous action
 - Task manager for efficient eisenhower + goodweek planning
 - Google Assistant integration
+
+To incorporate above
+- s/triager/triaged
+- triaged removes all auto labels
+- s/snoozed/blocked
+- super mute
+- show To field
+- tweet replies

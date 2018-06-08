@@ -1,15 +1,19 @@
-var TRIAGER_LABEL = 'triager';
+var TRIAGER_LABEL = 'triaged';
 var TO_TRIAGE_LABEL = 'auto';
 
 function triagerLabel(labelName) {
-  return TRIAGER_LABEL + '/' + labelName;
+  return `${TRIAGER_LABEL}/${labelName}`;
 }
 
-var READ_LATER_LABEL = triagerLabel('readlater');
+function needsTriageLabel(labelName) {
+  return `${TO_TRIAGE_LABEL}/${labelName}`; 
+}
+
+var READ_LATER_LABEL = triagerLabel('longread');
 var NEEDS_REPLY_LABEL = triagerLabel('needsreply');
-var BLOCKED_LABEL = triagerLabel('needsnooze');
-var MUTED_LABEL = triagerLabel('needsmute');
-var TASK_LABEL = triagerLabel('needstask');
+var BLOCKED_LABEL = triagerLabel('blocked');
+var MUTED_LABEL = triagerLabel('supermuted');
+var TASK_LABEL = triagerLabel('tasks');
 
 // Client ID and API key from the Developer Console
 var CLIENT_ID = '520704056454-99upe5p4nb6ce7jsf0fmlmqhcs6c0gbe.apps.googleusercontent.com';
@@ -165,33 +169,34 @@ document.body.addEventListener('keydown', (e) => {
 });
 
 function dispatchShortcut(key) {
+  var destination = '';
   switch (key) {
     case 'd':
-      var addLabelIds = [];
-      var removeLabelIds = ['UNREAD', 'INBOX'];
-      modifyCurrentThread(addLabelIds, removeLabelIds);
+      // No destination label for DONE
       break;
 
     case 'l':
-      addLabelToCurrentThread(READ_LATER_LABEL);
+      destination = READ_LATER_LABEL;
       break;
 
     case 'r':
-      markReadAndAddLabelToCurrentThread(NEEDS_REPLY_LABEL);
+      destination = NEEDS_REPLY_LABEL;
       break;
 
     case 'b':
-      markReadAndAddLabelToCurrentThread(BLOCKED_LABEL);
+      destination = BLOCKED_LABEL;
       break;
 
     case 'm':
-      markReadAndAddLabelToCurrentThread(MUTED_LABEL);
+      destination = MUTED_LABEL;
       break;
 
     case 't':
-      addLabelToCurrentThread(TASK_LABEL);
+      destination = TASK_LABEL;
       break;
   }
+
+  markTriaged(g_state.currentThreadIndex, destination);
 };
 
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
@@ -234,11 +239,10 @@ async function getLabelId(labelName, callback) {
   return g_state.labelToId[labelName];
 }
 
-async function modifyCurrentThread(addLabelIds, removeLabelIds) {
-  var index = g_state.currentThreadIndex;
+async function modifyThread(threadIndex, addLabelIds, removeLabelIds) {
   gapi.client.gmail.users.threads.modify({
     'userId': USER_ID,
-    'id': g_state.threads[index].id,
+    'id': g_state.threads[threadIndex].id,
     'addLabelIds': addLabelIds,
     'removeLabelIds': removeLabelIds,
   }).then((resp) => {
@@ -251,16 +255,16 @@ async function modifyCurrentThread(addLabelIds, removeLabelIds) {
   renderNextThread();
 }
 
-async function markReadAndAddLabelToCurrentThread(labelName) {
-  var addLabelIds = [await getLabelId(labelName)];
-  var removeLabelIds = ['UNREAD'];
-  modifyCurrentThread(addLabelIds, removeLabelIds);
-}
+async function markTriaged(threadIndex, destination) {
+  var triageQueue = needsTriageLabel(g_state.labelForIndex[threadIndex]);
+  console.log(triageQueue);
+  
+  var addLabelIds = [];
+  if(destination) 
+    addLabelIds.push(await getLabelId(destination));
 
-async function addLabelToCurrentThread(labelName) {
-  var addLabelIds = [await getLabelId(labelName)];
-  var removeLabelIds = [];
-  modifyCurrentThread(addLabelIds, removeLabelIds);
+  var removeLabelIds = ['UNREAD', 'INBOX', await getLabelId(triageQueue)];
+  modifyThread(threadIndex, addLabelIds, removeLabelIds);
 }
 
 function fetchThreadDetails(index, callback) {
