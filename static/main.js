@@ -108,6 +108,7 @@ function renderMessage(message) {
   var from;
   var subject;
   for (var header of message.payload.headers) {
+    console.log(header);
     switch (header.name) {
       case 'Subject':
         subject = header.value;
