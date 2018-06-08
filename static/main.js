@@ -124,7 +124,7 @@ function renderMessage(message) {
   if (message.payload.parts) {
     getMessageBody(message.payload.parts, body);
   } else {
-    body.plain = body.html = base64Decode(message.payload.body.data)
+    body.plain = body.html = base64.decode(message.payload.body.data)
   }
 
   var messageDiv = document.createElement('div');
