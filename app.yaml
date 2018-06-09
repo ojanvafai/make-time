@@ -13,11 +13,11 @@ handlers:
   secure: always
 
 - url: /
-  static_files: main.html
-  upload: main.html
+  static_files: index.html
+  upload: index.html
   secure: always
 
 - url: /.*
-  static_files: main.html
-  upload: main.html
+  static_files: index.html
+  upload: index.html
   secure: always
