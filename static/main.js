@@ -216,8 +216,8 @@ async function getLabelId(labelName, callback) {
 
     var result = await createLabel(labelSoFar);
     var id = result.id;
-    g_state.labelToId[labelName] = id;
-    g_state.idToLabel[id] = labelName;
+    g_state.labelToId[labelSoFar] = id;
+    g_state.idToLabel[id] = labelSoFar;
   }
 
   return g_state.labelToId[labelName];
