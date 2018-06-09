@@ -1,12 +1,12 @@
 var TRIAGER_LABEL = 'triaged';
-var TO_TRIAGE_LABEL = 'auto';
+var TO_TRIAGE_LABEL = 'needstriage';
 
 function triagerLabel(labelName) {
   return `${TRIAGER_LABEL}/${labelName}`;
 }
 
 function needsTriageLabel(labelName) {
-  return `${TO_TRIAGE_LABEL}/${labelName}`; 
+  return `${TO_TRIAGE_LABEL}/${labelName}`;
 }
 
 var READ_LATER_LABEL = triagerLabel('longread');
@@ -108,7 +108,6 @@ function renderMessage(message) {
   var from;
   var subject;
   for (var header of message.payload.headers) {
-    console.log(header);
     switch (header.name) {
       case 'Subject':
         subject = header.value;
@@ -169,35 +168,19 @@ document.body.addEventListener('keydown', (e) => {
     dispatchShortcut(e.key);
 });
 
+var keyToDestination = {
+  'd': null, // No destination label for DONE
+  'l': READ_LATER_LABEL,
+  'r': NEEDS_REPLY_LABEL,
+  'b': BLOCKED_LABEL,
+  'm': MUTED_LABEL,
+  't': TASK_LABEL,
+}
+
 function dispatchShortcut(key) {
-  var destination = '';
-  switch (key) {
-    case 'd':
-      // No destination label for DONE
-      break;
-
-    case 'l':
-      destination = READ_LATER_LABEL;
-      break;
-
-    case 'r':
-      destination = NEEDS_REPLY_LABEL;
-      break;
-
-    case 'b':
-      destination = BLOCKED_LABEL;
-      break;
-
-    case 'm':
-      destination = MUTED_LABEL;
-      break;
-
-    case 't':
-      destination = TASK_LABEL;
-      break;
-  }
-
-  markTriaged(g_state.currentThreadIndex, destination);
+  var destination = keyToDestination[key];
+  if (destination !== undefined)
+    markTriaged(g_state.currentThreadIndex, destination);
 };
 
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
@@ -257,13 +240,11 @@ async function modifyThread(threadIndex, addLabelIds, removeLabelIds) {
 }
 
 async function markTriaged(threadIndex, destination) {
-  var triageQueue = needsTriageLabel(g_state.labelForIndex[threadIndex]);
-  console.log(triageQueue);
-  
   var addLabelIds = [];
-  if(destination) 
+  if(destination)
     addLabelIds.push(await getLabelId(destination));
 
+  var triageQueue = needsTriageLabel(g_state.labelForIndex[threadIndex]);
   var removeLabelIds = ['UNREAD', 'INBOX', await getLabelId(triageQueue)];
   modifyThread(threadIndex, addLabelIds, removeLabelIds);
 }
