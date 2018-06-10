@@ -1,0 +1,28 @@
+<script src="static/LabelUtils.js"></script>
+<script>
+function assert(result, expected) {
+  if (result == expected) {
+  } else {
+    console.log(`FAILED. expected: ${expected}, got: ${result}`);
+  }
+}
+
+function testSortLabels() {
+  let unprefixed =
+      ['a', 'b', 'random/a', 'random/b', 'daily/a', 'daily/b', 'weekly/a', 'weekly/b', 'monthly/a', 'monthly/b'];
+
+  let expected = unprefixed.map(triagerLabel);
+  let actual = expected.concat().reverse();
+  LabelUtils.sort(actual);
+
+  for (var i = 0; i < expected.length; i++) {
+    if (actual[i] != expected[i]) {
+      console.log('Expected: ', expected, ' got: ', actual);
+      throw 'FAILED';
+    }
+  }
+  console.log('PASSED. Got: ', actual);
+}
+
+testSortLabels();
+</script>

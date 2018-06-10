@@ -1,20 +1,3 @@
-var TRIAGED_LABEL = 'triaged';
-var TO_TRIAGE_LABEL = 'needstriage';
-
-function triagerLabel(labelName) {
-  return `${TRIAGED_LABEL}/${labelName}`;
-}
-
-function needsTriageLabel(labelName) {
-  return `${TO_TRIAGE_LABEL}/${labelName}`;
-}
-
-var READ_LATER_LABEL = triagerLabel('tldr');
-var NEEDS_REPLY_LABEL = triagerLabel('needsreply');
-var BLOCKED_LABEL = triagerLabel('blocked');
-var MUTED_LABEL = triagerLabel('supermuted');
-var ACTION_ITEM_LABEL = triagerLabel('actionitem');
-
 // Client ID and API key from the Developer Console
 var CLIENT_ID = '520704056454-99upe5p4nb6ce7jsf0fmlmqhcs6c0gbe.apps.googleusercontent.com';
 
@@ -352,7 +335,7 @@ async function fetchThreadList(label) {
   // but before we append to it.
   var currentIndex = g_state.threads.length;
   g_state.threads = g_state.threads.concat(threads);
-  var unprefixedLabel = label.replace(new RegExp('^' + TO_TRIAGE_LABEL + '/'), '');
+  var unprefixedLabel = removeTriagedPrefix(label);
   for (var i = 0; i < threads.length; i++) {
     g_state.labelForIndex[currentIndex++] = unprefixedLabel;
   }
@@ -401,6 +384,6 @@ async function updateLabelList() {
     if (label.name.startsWith(TO_TRIAGE_LABEL + '/'))
       g_state.toTriageLabels.push(label.name);
 
-    g_state.toTriageLabels.sort();
+    LabelUtils.sort(g_state.toTriageLabels);
   }
 }
