@@ -1,18 +1,16 @@
 - s/snoozed/blocked
 - super mute
 - show To field
-- allow tweet replies
 - play with different windowsize and minimum lengths for eliding quoted responses
 - Fix race condition where if new message comes in after ojru has prefetched, the archiving will archive that as well.
 - add timer
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
-- add ability to see the "to" addresses as well...maybe not by default though
-- For daily/weekly/monthly queues, show just subject lines and let me select the ones I want to review more (with easy way to select all). The rest all get archived.
 - add a favicon
 - Put daily weekly monthly things into sublabels so ojrumail can treat them specially. And if the dequeue is just based off the label name, then ojrumail can rely on it to dequeue without tight integration...blocked items just go into queued/Tuesday/blocked or something like that. Queueing w daily weekly monthly breaks if the user changes the spreadsheet though since there would be some things queued at the old granularity...how to handle that gracefully? Could check all the existing queues at start and migrate them to appropriate places? That code would break due to not being tested often. Maybe should just require you to put link to spreadsheet if you want blocked to be a feature you use so we can figure out when to deliver. Ooor could just allow both things...blocked can use one label syntax and the spreadsheet can use another, but they all dequeue into daily/weekly/monthly parent labels.
 
 Maybe TODOs
+- allow tweet length replies
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - do diffing on more than just the previous message in case mutiple replies come in replying to different previous messages
 - use virtual scroller!

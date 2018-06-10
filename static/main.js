@@ -88,6 +88,13 @@ function toggleDisplayInline(element) {
   element.style.display = current == 'none' ? 'inline' : 'none';
 }
 
+// Don't want stylesheets in emails to style the whole page.
+function disableStyleSheets(messageText) {
+  if (messageText.indexOf('LGTM3') != -1)
+    console.log(messageText);
+  return messageText.replace(/<style/g, '<style type="not-css"');
+}
+
 function elideReply(messageText, previousMessageText) {
   var guid = nextGuid();
   let windowSize = 100;
@@ -147,7 +154,11 @@ Subject: ${subject}`;
   // seem to use iframes, so we probably don't if they strip things for us.
   // iframes making everythign complicated (e.g for capturing keypresses, etc.).
   var bodyContainer = document.createElement('div');
+  // TODO: Probably need to html escape body.plain before using it.
   var messageText = body.html || body.plain;
+  // TODO: Don't need to do this for the body.plain code path.
+  // TODO: Test eliding works if current message is html but previous is plain or vice versa.
+  messageText = disableStyleSheets(messageText);
   if (previousMessageText !== null)
     messageText = elideReply(messageText, previousMessageText);
   bodyContainer.innerHTML = messageText;
