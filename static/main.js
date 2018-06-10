@@ -99,12 +99,33 @@ function getMessageBody(mimeParts, body) {
   }
 }
 
-function elideReply(messageText) {
+let guidPrefix = 'guidprefix_';
+let guidCount = 0;
+function nextGuid() {
+  return guidPrefix + guidCount++;
+}
+
+function toggleDisplayInline(element) {
+  var current = getComputedStyle(element).display;
+  element.style.display = current == 'none' ? 'inline' : 'none';
+}
+
+function elideReply(messageText, previousMessageText) {
+  var guid = nextGuid();
+  let windowSize = 100;
+  let minimumLength = 100;
+  // Lazy hacks to get the element whose display to toggle
+  // and to get this to render centered-ish elipsis without using an image.
+  let prefix = `<div style="overflow:hidden"><div style="margin-top:-7px"><div class="toggler" onclick="toggleDisplayInline(this.parentNode.parentNode.nextSibling)">...</div></div></div><span class="elide">`;
+  let postfix = `</span>`;
+  let differ = new Differ(prefix, postfix, windowSize, minimumLength);
+  return differ.diff(messageText, previousMessageText);
+
   // TODO: actually do the eliding. :)
   return messageText;
 }
 
-function renderMessage(message) {
+function renderMessage(message, previousMessageText) {
   var from;
   var subject;
   for (var header of message.payload.headers) {
@@ -146,7 +167,8 @@ Subject: ${subject}`;
   // iframes making everythign complicated (e.g for capturing keypresses, etc.).
   var bodyContainer = document.createElement('div');
   var messageText = body.html || body.plain;
-  bodyContainer.innerHTML = elideReply(messageText);
+  if (previousMessageText !== null)
+    bodyContainer.innerHTML = elideReply(messageText, previousMessageText);
   messageDiv.appendChild(bodyContainer);
   return {
     element: messageDiv,

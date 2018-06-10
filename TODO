@@ -1,8 +1,10 @@
 - Rework the code to not be spaghetti
 - Make pretty
-- elide repeated bits from messages
-  poor man's quote finder: split email into N word chunks, make hashes, elide anything that's M or more contiguous chunks. The in followup work can walk forwards/backwards to find the actual boundary and to include the "on ... wrote:" text. Then further followup can try to do well-formed HTML. hash computation function https://cs.corp.google.com/piper///depot/google3/java/com/google/caribou/base/QuoteFinder.java?q=quotefinder&sq=package:piper+file://depot/google3+-file:google3/experimental&dr=CSs&l=332
-- Get the TRIAGER_LABEL and TO_TRIAGE_LABEL values out of the spreadsheet instead of hard coding
+- last read item doesn't expand...don't collapse read items...just scroll to the right one?
+- queue is "undefined" sometimes...appears to be a bug not specific to any queue
+- do diffing on more than just the previous message in case mutiple replies come in replying to different previous messages
+- Fix race condition where if new message comes in after ojru has prefetched, the archiving will archive that as well.
+- Center everything and give it a Max width
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - add timer
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
@@ -15,10 +17,12 @@
 - For daily/weekly/monthly queues, show just subject lines and let me select the ones I want to review more (with easy way to select all). The rest all get archived.
 - add a favicon
 - put scrolling on the outer page so wheel scrolling works anywhere on the page (e.g. in the body margin)
+- Put daily weekly monthly things into sublabels so ojrumail can treat them specially. And if the dequeue is just based off the label name, then ojrumail can rely on it to dequeue without tight integration...blocked items just go into queued/Tuesday/blocked or something like that. Queueing w daily weekly monthly breaks if the user changes the spreadsheet though since there would be some things queued at the old granularity...how to handle that gracefully? Could check all the existing queues at start and migrate them to appropriate places? That code would break due to not being tested often. Maybe should just require you to put link to spreadsheet if you want blocked to be a feature you use so we can figure out when to deliver. Ooor could just allow both things...blocked can use one label syntax and the spreadsheet can use another, but they all dequeue into daily/weekly/monthly parent labels.
 
 
 Maybe TODOs
 - have a default max-width that's settable
+- use virtual scroller!
 - provide a way to sort labels other than alphabetical
 - get high lighthouse score and add to homescreen
 - automatically update to add new threads as they come in (right now requires reloading the page)
@@ -29,11 +33,10 @@ Maybe TODOs
 - Add option to expand out the read items
 - add options to show labels on each message (useful for debugging)
 - preload the next N threads instead of just the next one
-- Use a sandboxed iframe for the HTML contents so innerHTML can be done without fear.
 
 Feature Creeep
 - Undo previous action
-- Task manager for efficient eisenhower + goodweek planning
+- Task manager for efficient eisenhower + goodweek planning. Maybe put non email tasks into Google Tasks? Does it let you do labels?
 - Google Assistant integration
 
 To incorporate above

@@ -40,6 +40,18 @@
         font-weight: bold;
         text-decoration: underline;
       }
+      .elide {
+        display: none;
+      }
+      .toggler {
+        display: inline-block;
+        background-color: #ddd;
+        user-select: none;
+        padding: 1px 4px;
+      }
+      .toggler:hover {
+        background-color: #bbb;
+      }
       /* Spinner */
       #loader {
         display: none;
@@ -97,6 +109,7 @@
     <!-- Switch to using modules. -->
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="static/base64.js"></script>
+    <script src="static/differ.js"></script>
     <script src="static/main.js"></script>
   </body>
 </html>
