@@ -28,7 +28,6 @@ var SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
 var USER_ID = 'me';
 
 var authorizeButton = document.getElementById('authorize-button');
-var signoutButton = document.getElementById('signout-button');
 
 var base64 = new Base64();
 
@@ -57,19 +56,15 @@ function initClient() {
     // Handle the initial sign-in state.
     updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
     authorizeButton.onclick = handleAuthClick;
-    signoutButton.onclick = handleSignoutClick;
   });
 }
 
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
-    authorizeButton.style.display = 'none';
-    signoutButton.style.display = '';
     await updateThreadList();
     renderCurrentThread();
   } else {
-    authorizeButton.style.display = '';
-    signoutButton.style.display = 'none';
+    authorizeButton.parentNode.style.display = '';
   }
 }
 
@@ -77,10 +72,10 @@ function updateCounter() {
   var index = g_state.currentThreadIndex;
   var threadsLeft = g_state.threads.length - index;
   var counter = document.getElementById('counter');
-  var text = `${threadsLeft} threads left.`
+  var text = `${threadsLeft} threads left`
   if (threadsLeft)
-    text += ` Current queue: ${g_state.labelForIndex[index]}`
-  counter.textContent = text;
+    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${g_state.labelForIndex[index]}`
+  counter.innerHTML = text;
 }
 
 function getMessageBody(mimeParts, body) {
@@ -332,10 +327,6 @@ function handleAuthClick(event) {
   gapi.auth2.getAuthInstance().signIn();
 }
 
-function handleSignoutClick(event) {
-  gapi.auth2.getAuthInstance().signOut();
-}
-
 async function fetchThreadList(label) {
   var query = 'in:' + label;
   // We only have triager labels once they've actually been created.
@@ -376,6 +367,7 @@ async function fetchThreadLists(opt_startIndex) {
     if (!opt_startIndex && g_state.threads.length)
       return i + 1;
   }
+  document.getElementById('loader').style.display = 'none';
 }
 
 async function updateThreadList(callback) {
@@ -388,7 +380,6 @@ async function updateThreadList(callback) {
   // but fetch those threads sequentially in fetchThreadLists still so they
   // get put into g_state in order and don't flood the network.
   fetchThreadLists(lastIndexFetched);
-  document.getElementById('loader').style.display = 'none';
 }
 
 async function updateLabelList() {
