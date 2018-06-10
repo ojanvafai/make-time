@@ -1,8 +1,8 @@
-var TRIAGER_LABEL = 'triaged';
+var TRIAGED_LABEL = 'triaged';
 var TO_TRIAGE_LABEL = 'needstriage';
 
 function triagerLabel(labelName) {
-  return `${TRIAGER_LABEL}/${labelName}`;
+  return `${TRIAGED_LABEL}/${labelName}`;
 }
 
 function needsTriageLabel(labelName) {
@@ -336,16 +336,16 @@ function handleSignoutClick(event) {
   gapi.auth2.getAuthInstance().signOut();
 }
 
-async function fetchThreadList(label, currentIndex) {
-  var query = 'in:inbox';
+async function fetchThreadList(label) {
+  var query = 'in:' + label;
   // We only have triager labels once they've actually been created.
-  if (g_state.triagerLabels.length)
-    query += ' -(in:' + g_state.triagerLabels.join(' OR in:') + ')';
+  if (g_state.triagedLabels.length)
+    query += ' -(in:' + g_state.triagedLabels.join(' OR in:') + ')';
 
   var getPageOfThreads = async function(label) {
     var resp = await gapi.client.gmail.users.threads.list({
       'userId': USER_ID,
-      'q': query + ' in: ' + label,
+      'q': query,
     });
     var nextPageToken = resp.result.nextPageToken;
     var result = resp.result.threads || [];
@@ -357,6 +357,9 @@ async function fetchThreadList(label, currentIndex) {
   };
 
   var threads = await getPageOfThreads(label);
+  // Make sure to grab the length of g_state.threads after the await call above
+  // but before we append to it.
+  var currentIndex = g_state.threads.length;
   g_state.threads = g_state.threads.concat(threads);
   var unprefixedLabel = label.replace(new RegExp('^' + TO_TRIAGE_LABEL + '/'), '');
   for (var i = 0; i < threads.length; i++) {
@@ -365,22 +368,26 @@ async function fetchThreadList(label, currentIndex) {
   updateCounter();
 }
 
+async function fetchThreadLists(opt_startIndex) {
+  var startIndex = opt_startIndex || 0;
+  for (var i = startIndex; i < g_state.toTriageLabels.length; i++) {
+    let label = g_state.toTriageLabels[i];
+    await fetchThreadList(label);
+    if (!opt_startIndex && g_state.threads.length)
+      return i + 1;
+  }
+}
+
 async function updateThreadList(callback) {
   document.getElementById('loader').style.display = 'inline-block';
   await updateLabelList();
-
-  var foundNonEmptyQueue = false;
-  for (var label of g_state.toTriageLabels) {
-    var currentIndex = g_state.threads.length;
-    // Only block on returning from updateThreadList until we've found at least
-    // one thread to render so we can show the first thread as quickly as possible.
-    if (foundNonEmptyQueue)
-      fetchThreadList(label, currentIndex);
-    else
-      await fetchThreadList(label, currentIndex);
-    foundNonEmptyQueue |= g_state.threads.length;
-  }
-
+  // Only block until the first queue that has non-zero threads so we can
+  // show the first thread as quickly as possible.
+  let lastIndexFetched = await fetchThreadLists();
+  // Then fetch the rest of the threads without blocking updateThreadList,
+  // but fetch those threads sequentially in fetchThreadLists still so they
+  // get put into g_state in order and don't flood the network.
+  fetchThreadLists(lastIndexFetched);
   document.getElementById('loader').style.display = 'none';
 }
 
@@ -391,14 +398,14 @@ async function updateLabelList() {
 
   g_state.labelToId = {};
   g_state.idToLabel = {};
-  g_state.triagerLabels = [];
+  g_state.triagedLabels = [];
   g_state.toTriageLabels = [];
   for (var label of response.result.labels) {
     g_state.labelToId[label.name] = label.id;
     g_state.idToLabel[label.id] = label.name;
 
-    if (label.name.startsWith(TRIAGER_LABEL + '/'))
-      g_state.triagerLabels.push(label.name);
+    if (label.name.startsWith(TRIAGED_LABEL + '/'))
+      g_state.triagedLabels.push(label.name);
 
     if (label.name.startsWith(TO_TRIAGE_LABEL + '/'))
       g_state.toTriageLabels.push(label.name);

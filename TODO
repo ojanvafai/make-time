@@ -1,11 +1,8 @@
 - Rework the code to not be spaghetti
 - Make pretty
-- last read item doesn't expand...don't collapse read items...just scroll to the right one?
-- queue is "undefined" sometimes...appears to be a bug not specific to any queue
-- do diffing on more than just the previous message in case mutiple replies come in replying to different previous messages
+- play with different windowsize and minimum lengths for eliding quoted responses
 - Fix race condition where if new message comes in after ojru has prefetched, the archiving will archive that as well.
 - Center everything and give it a Max width
-- Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - add timer
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
@@ -21,7 +18,8 @@
 
 
 Maybe TODOs
-- have a default max-width that's settable
+- Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
+- do diffing on more than just the previous message in case mutiple replies come in replying to different previous messages
 - use virtual scroller!
 - provide a way to sort labels other than alphabetical
 - get high lighthouse score and add to homescreen
