@@ -16,7 +16,7 @@
         max-width: 800px;
         margin: 0px;
       }
-      #toolbar {
+      .toolbar {
         display: flex;
         text-align: center;
         background-color: black;
@@ -27,7 +27,7 @@
         right: 0px;
         padding: 3px;
       }
-      #bottom-toolbar {
+      .bottom-toolbar {
         display: flex;
         justify-content: center;
         position: fixed;
@@ -35,7 +35,7 @@
         left: 0px;
         right: 0px;
       }
-      #bottom-toolbar > button {
+      .bottom-toolbar > button {
         margin: 4px;
         padding: 8px;
         font-size: 16px;
@@ -44,20 +44,21 @@
       #counter {
         flex: 1;
       }
-      #content {
-        padding: 8px;
-        white-space: pre-wrap;
+      .content-wrapper {
         background-color: white;
+      }
+      #content {
+        padding: 0 8px;
+        white-space: pre-wrap;
       }
       #content iframe {
         width: 100%;
       }
-      .message {
-        border-top: 1px solid;
-        padding-top: 16px;
-      }
       .message > .headers {
         background-color: #ddd;
+        padding: 8px;
+        margin: 0 -8px;
+        border-top: 1px solid;
       }
       .shortcut {
         font-weight: bold;
@@ -111,17 +112,26 @@
           transform: rotate(360deg);
         }
       }
+      .dummyToolbar {
+        position: static;
+        visibility: hidden;
+      }
     </style>
   </head>
   <body>
-    <div id="toolbar">
+    <div class="toolbar">
       <div id="loader"></div>
       <div id="counter"></div>
       <button id="authorize-button" style="display: none;">Authorize</button>
       <button id="signout-button" style="display: none;">Sign Out</button>
     </div>
-    <div id="content"></div>
-    <div id="bottom-toolbar">
+    <div class="content-wrapper">
+      <!-- Put in dummy toolbars so they take up the same vertical space as the position:fixed toolbars. -->
+      <div class="toolbar dummyToolbar">Dummy Text</div>
+      <div id="content"></div>
+      <div class="bottom-toolbar dummyToolbar"><button>Dummy Text</button></div>
+    </div>
+    <div class="bottom-toolbar">
       <button onclick="dispatchShortcut('d')"><span class="shortcut">D</span>one</button>
       <button onclick="dispatchShortcut('l')"><span class="shortcut">L</span>ong Read</button>
       <button onclick="dispatchShortcut('r')"><span class="shortcut">R</span>eply Needed</button>
