@@ -64,11 +64,11 @@ function initClient() {
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.style.display = 'none';
-    signoutButton.style.display = 'block';
+    signoutButton.style.display = '';
     await updateThreadList();
     renderCurrentThread();
   } else {
-    authorizeButton.style.display = 'block';
+    authorizeButton.style.display = '';
     signoutButton.style.display = 'none';
   }
 }
@@ -158,8 +158,11 @@ function renderMessage(message, previousMessageText) {
   var readState = message.labelIds.includes('UNREAD') ? 'unread' : 'read';
   messageDiv.classList.add(readState);
 
-  messageDiv.textContent = `From: ${from}
+  var headerDiv = document.createElement('div');
+  headerDiv.classList.add('headers');
+  headerDiv.textContent = `From: ${from}
 Subject: ${subject}`;
+  messageDiv.appendChild(headerDiv);
 
   // TODO: Do we need iframes or does gmail strip dangerous things for us.
   // Seems like we might need it for styling isolation at least, but gmail doesn't
@@ -168,8 +171,10 @@ Subject: ${subject}`;
   var bodyContainer = document.createElement('div');
   var messageText = body.html || body.plain;
   if (previousMessageText !== null)
-    bodyContainer.innerHTML = elideReply(messageText, previousMessageText);
+    messageText = elideReply(messageText, previousMessageText);
+  bodyContainer.innerHTML = messageText;
   messageDiv.appendChild(bodyContainer);
+
   return {
     element: messageDiv,
     text: messageText,
@@ -308,13 +313,8 @@ function renderCurrentThread() {
       lastMessage = renderMessage(message, lastMessage ? lastMessage.text : null);
       content.appendChild(lastMessage.element);
     }
-    // Always show the last message.
-    // TODO: Do something less hacky than pretending the last message is unread
-    // so it shows and gets scrolled to.
-    lastMessage.element.classList.remove('read');
-    lastMessage.element.classList.add('unread');
-    document.querySelector('.unread').scrollIntoView();
-    content.scrollTop = content.scrollTop - 25;
+    lastMessage.element.scrollIntoView();
+    document.documentElement.scrollTop -= 50;
 
     // Prefetch the next thread for instant access.
     fetchThreadDetails(nextThreadIndex(), (index) => {
