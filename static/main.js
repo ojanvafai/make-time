@@ -9,11 +9,11 @@ function needsTriageLabel(labelName) {
   return `${TO_TRIAGE_LABEL}/${labelName}`;
 }
 
-var READ_LATER_LABEL = triagerLabel('longread');
+var READ_LATER_LABEL = triagerLabel('tldr');
 var NEEDS_REPLY_LABEL = triagerLabel('needsreply');
 var BLOCKED_LABEL = triagerLabel('blocked');
 var MUTED_LABEL = triagerLabel('supermuted');
-var TASK_LABEL = triagerLabel('tasks');
+var ACTION_ITEM_LABEL = triagerLabel('actionitem');
 
 // Client ID and API key from the Developer Console
 var CLIENT_ID = '520704056454-99upe5p4nb6ce7jsf0fmlmqhcs6c0gbe.apps.googleusercontent.com';
@@ -192,11 +192,11 @@ document.body.addEventListener('keydown', (e) => {
 
 var keyToDestination = {
   'd': null, // No destination label for DONE
-  'l': READ_LATER_LABEL,
+  't': READ_LATER_LABEL,
   'r': NEEDS_REPLY_LABEL,
   'b': BLOCKED_LABEL,
   'm': MUTED_LABEL,
-  't': TASK_LABEL,
+  'a': ACTION_ITEM_LABEL,
 }
 
 function dispatchShortcut(key) {
