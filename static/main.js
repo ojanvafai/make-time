@@ -61,11 +61,28 @@ function updateCounter() {
   counter.innerHTML = text;
 }
 
+function htmlEscape(html) {
+  return html.replace(/[&<>"']/g, function(m) {
+    switch (m) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case `'`:
+        return '&#039;';
+    }
+  });
+};
+
 function getMessageBody(mimeParts, body) {
   for (var part of mimeParts) {
     switch (part.mimeType) {
       case 'text/plain':
-        body.plain = base64.decode(part.body.data);
+        body.htmlEscapedPlain = htmlEscape(base64.decode(part.body.data));
         break;
       case 'text/html':
         body.html = base64.decode(part.body.data);
@@ -134,7 +151,9 @@ function renderMessage(message, previousMessageText) {
   if (message.payload.parts) {
     getMessageBody(message.payload.parts, body);
   } else {
-    body.plain = body.html = base64.decode(message.payload.body.data)
+    // TODO: Not clear if this is a plain text or HTML payload.
+    // Find out and actually use the right one.
+    body.htmlEscapedPlain = htmlEscape(base64.decode(message.payload.body.data));
   }
 
   var messageDiv = document.createElement('div');
@@ -154,11 +173,10 @@ Subject: ${subject}`;
   // seem to use iframes, so we probably don't if they strip things for us.
   // iframes making everythign complicated (e.g for capturing keypresses, etc.).
   var bodyContainer = document.createElement('div');
-  // TODO: Probably need to html escape body.plain before using it.
-  var messageText = body.html || body.plain;
-  // TODO: Don't need to do this for the body.plain code path.
+  var messageText = body.html || body.htmlEscapedPlain;
   // TODO: Test eliding works if current message is html but previous is plain or vice versa.
-  messageText = disableStyleSheets(messageText);
+  if (!body.html)
+    messageText = disableStyleSheets(messageText);
   if (previousMessageText !== null)
     messageText = elideReply(messageText, previousMessageText);
   bodyContainer.innerHTML = messageText;
