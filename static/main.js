@@ -21,29 +21,27 @@ var g_state = {
   currentThreadIndex: 0,
 };
 
-function handleClientLoad() {
-  gapi.load('client:auth2', initClient);
-}
-
-window.onload = handleClientLoad();
-
-function initClient() {
-  gapi.client.init({
-    discoveryDocs: DISCOVERY_DOCS,
-    clientId: CLIENT_ID,
-    scope: SCOPES
-  }).then(function () {
-    // Listen for sign-in state changes.
-    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-
-    // Handle the initial sign-in state.
-    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-    authorizeButton.onclick = handleAuthClick;
+window.onload = () => {
+  gapi.load('client:auth2', () => {
+    gapi.client.init({
+      discoveryDocs: DISCOVERY_DOCS,
+      clientId: CLIENT_ID,
+      scope: SCOPES
+    }).then(function () {
+      // Listen for sign-in state changes.
+      gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+      // Handle the initial sign-in state.
+      updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+      authorizeButton.onclick = () => {
+        gapi.auth2.getAuthInstance().signIn();
+      };
+    });
   });
-}
+};
 
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
+    authorizeButton.parentNode.style.display = 'none';
     await updateThreadList();
     renderCurrentThread();
   } else {
@@ -333,10 +331,6 @@ function renderCurrentThread() {
     callback(g_state.currentThreadIndex);
   else
     fetchThreadDetails(g_state.currentThreadIndex, callback);
-}
-
-function handleAuthClick(event) {
-  gapi.auth2.getAuthInstance().signIn();
 }
 
 async function fetchThreadList(label) {
