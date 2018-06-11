@@ -341,7 +341,7 @@ function handleAuthClick(event) {
 
 async function fetchThreadList(label) {
   var query = 'in:' + label;
-  // We only have triager labels once they've actually been created.
+  // We only have triaged labels once they've actually been created.
   if (g_state.triagedLabels.length)
     query += ' -(in:' + g_state.triagedLabels.join(' OR in:') + ')';
 

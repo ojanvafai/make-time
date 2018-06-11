@@ -1,15 +1,14 @@
-- s/snoozed/blocked
-- super mute
+P0
+- Make blocked show items once a week. Not quite sure how to implement this while keeping it decoupled from the spreadsheet logic. If the dequeue supports dequeueing just based off the label name, then ojrumail can rely on it to dequeue without tight integration just for blocked items...blocked items just go into queued/Tuesday/blocked or something like that. But it still requires you to use the spreadsheet if you want blocked to do anything other than put a label on it.
+- super mute. Not quite sure how to implement this. If in the spreadsheet apps script, could walk the history of the thread to see if any of the messages are supermuted? That tightly couples the apps script and ojru-mail though.
 - show To field
-- play with different windowsize and minimum lengths for eliding quoted responses
 - Fix race condition where if new message comes in after ojru has prefetched, the archiving will archive that as well.
-- add timer
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
-- add stats of how much time you spend in each phase and what aggregations of actions taken with threads
-- add a favicon
-- Put daily weekly monthly things into sublabels so ojrumail can treat them specially. And if the dequeue is just based off the label name, then ojrumail can rely on it to dequeue without tight integration...blocked items just go into queued/Tuesday/blocked or something like that. Queueing w daily weekly monthly breaks if the user changes the spreadsheet though since there would be some things queued at the old granularity...how to handle that gracefully? Could check all the existing queues at start and migrate them to appropriate places? That code would break due to not being tested often. Maybe should just require you to put link to spreadsheet if you want blocked to be a feature you use so we can figure out when to deliver. Ooor could just allow both things...blocked can use one label syntax and the spreadsheet can use another, but they all dequeue into daily/weekly/monthly parent labels.
 
-Maybe TODOs
+P1
+- add timer
+- add stats of how much time you spend in each phase and what aggregations of actions taken with threads
+- play with different windowsize and minimum lengths for eliding quoted responses
 - allow tweet length replies
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - do diffing on more than just the previous message in case mutiple replies come in replying to different previous messages
@@ -24,8 +23,5 @@ Maybe TODOs
 - Add option to expand out the read items
 - add options to show labels on each message (useful for debugging)
 - preload the next N threads instead of just the next one
-
-Feature Creeep
 - Undo previous action
-- Task manager for efficient eisenhower + goodweek planning. Maybe put non email tasks into Google Tasks? Does it let you do labels?
 - Google Assistant integration
