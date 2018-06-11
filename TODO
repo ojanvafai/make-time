@@ -1,14 +1,14 @@
 P0
+- show To field
+- show the date/time of messages
 - Make blocked show items once a week. Not quite sure how to implement this while keeping it decoupled from the spreadsheet logic. If the dequeue supports dequeueing just based off the label name, then ojrumail can rely on it to dequeue without tight integration just for blocked items...blocked items just go into queued/Tuesday/blocked or something like that. But it still requires you to use the spreadsheet if you want blocked to do anything other than put a label on it.
 - super mute. Not quite sure how to implement this. If in the spreadsheet apps script, could walk the history of the thread to see if any of the messages are supermuted? That tightly couples the apps script and ojru-mail though.
-- show To field
 - Fix race condition where if new message comes in after ojru has prefetched, the archiving will archive that as well.
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
 
 P1
 - add timer
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
-- play with different windowsize and minimum lengths for eliding quoted responses
 - allow tweet length replies
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - use virtual scroller!

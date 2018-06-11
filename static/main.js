@@ -17,6 +17,7 @@ var base64 = new Base64();
 var g_state = {
   threads: [],
   threadDetails: [],
+  processedThreadDetails: [],
   labelForIndex: [],
   currentThreadIndex: 0,
 };
@@ -105,8 +106,6 @@ function toggleDisplayInline(element) {
 
 // Don't want stylesheets in emails to style the whole page.
 function disableStyleSheets(messageText) {
-  if (messageText.indexOf('LGTM3') != -1)
-    console.log(messageText);
   return messageText.replace(/<style/g, '<style type="not-css"');
 }
 
@@ -120,12 +119,9 @@ function elideReply(messageText, previousMessageText) {
   let postfix = `</span>`;
   let differ = new Differ(prefix, postfix, windowSize, minimumLength);
   return differ.diff(messageText, previousMessageText);
-
-  // TODO: actually do the eliding. :)
-  return messageText;
 }
 
-function renderMessage(message, previousMessageText) {
+function processMessage(message, previousMessageText) {
   var from;
   var subject;
   for (var header of message.payload.headers) {
@@ -149,41 +145,46 @@ function renderMessage(message, previousMessageText) {
   if (message.payload.parts) {
     getMessageBody(message.payload.parts, body);
   } else {
-    // TODO: Not clear if this is a plain text or HTML payload.
-    // Find out and actually use the right one.
-    body.htmlEscapedPlain = htmlEscape(base64.decode(message.payload.body.data));
+    body.html = base64.decode(message.payload.body.data);
   }
-
-  var messageDiv = document.createElement('div');
-  messageDiv.className = 'message';
-
-  var readState = message.labelIds.includes('UNREAD') ? 'unread' : 'read';
-  messageDiv.classList.add(readState);
-
-  var headerDiv = document.createElement('div');
-  headerDiv.classList.add('headers');
-  headerDiv.textContent = `From: ${from}
-Subject: ${subject}`;
-  messageDiv.appendChild(headerDiv);
 
   // TODO: Do we need iframes or does gmail strip dangerous things for us.
   // Seems like we might need it for styling isolation at least, but gmail doesn't
   // seem to use iframes, so we probably don't if they strip things for us.
   // iframes making everythign complicated (e.g for capturing keypresses, etc.).
-  var bodyContainer = document.createElement('div');
-  var messageText = body.html || body.htmlEscapedPlain;
+  let raw = html = body.html || body.htmlEscapedPlain;
   // TODO: Test eliding works if current message is html but previous is plain or vice versa.
+  if (previousMessageText)
+    html = elideReply(html, previousMessageText);
   if (!body.html)
-    messageText = disableStyleSheets(messageText);
-  if (previousMessageText !== null)
-    messageText = elideReply(messageText, previousMessageText);
-  bodyContainer.innerHTML = messageText;
-  messageDiv.appendChild(bodyContainer);
+    html = disableStyleSheets(html);
 
   return {
-    element: messageDiv,
-    text: messageText,
+    isUnread: message.labelIds.includes('UNREAD'),
+    html: html,
+    from: from,
+    subject: subject,
+    raw: raw,
   }
+}
+
+function renderMessage(processedMessage) {
+  var messageDiv = document.createElement('div');
+  messageDiv.className = 'message';
+
+  messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
+
+  var headerDiv = document.createElement('div');
+  headerDiv.classList.add('headers');
+  headerDiv.textContent = `From: ${processedMessage.from}
+Subject: ${processedMessage.subject}`;
+  messageDiv.appendChild(headerDiv);
+
+  var bodyContainer = document.createElement('div');
+  bodyContainer.innerHTML = processedMessage.html;
+  messageDiv.appendChild(bodyContainer);
+
+  return messageDiv;
 }
 
 function renderNextThread() {
@@ -294,6 +295,14 @@ function fetchThreadDetails(index, callback) {
   var request = gapi.client.gmail.users.threads.get(requestParams);
   request.execute((resp) => {
     g_state.threadDetails[index] = resp;
+    let messages = [];
+    for (var message of resp.messages) {
+      let previousMessageText = messages.length && messages[messages.length - 1].raw;
+      messages.push(processMessage(message, previousMessageText));
+    }
+    g_state.processedThreadDetails[index] = {
+      messages: messages,
+    };
     callback(index);
   });
 }
@@ -312,13 +321,14 @@ function renderCurrentThread() {
     // thread finishes before the current on has it's data.
     if (index != g_state.currentThreadIndex)
       return;
-    var threadDetails = g_state.threadDetails[g_state.currentThreadIndex];
-    var lastMessage;
+    var threadDetails = g_state.processedThreadDetails[g_state.currentThreadIndex];
+    var lastMessageElement;
     for (var message of threadDetails.messages) {
-      lastMessage = renderMessage(message, lastMessage ? lastMessage.text : null);
-      content.appendChild(lastMessage.element);
+      lastMessageElement = renderMessage(message);
+      content.appendChild(lastMessageElement);
     }
-    lastMessage.element.scrollIntoView();
+    var elementToScrollTo = document.querySelector('.unread') || lastMessageElement;
+    elementToScrollTo.scrollIntoView();
     document.documentElement.scrollTop -= 50;
 
     // Prefetch the next thread for instant access.
