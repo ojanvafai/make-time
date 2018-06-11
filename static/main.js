@@ -156,7 +156,7 @@ function processMessage(message, previousMessageText) {
   // TODO: Test eliding works if current message is html but previous is plain or vice versa.
   if (previousMessageText)
     html = elideReply(html, previousMessageText);
-  if (!body.html)
+  if (body.html)
     html = disableStyleSheets(html);
 
   return {
