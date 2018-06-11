@@ -344,7 +344,8 @@ function renderCurrentThread() {
 }
 
 async function fetchThreadList(label) {
-  var query = 'in:' + label;
+  // Use in:inbox to exclude snoozed items.
+  var query = 'in:inbox in:' + label;
   // We only have triaged labels once they've actually been created.
   if (g_state.triagedLabels.length)
     query += ' -(in:' + g_state.triagedLabels.join(' OR in:') + ')';
