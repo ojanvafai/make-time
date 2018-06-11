@@ -11,17 +11,13 @@ P1
 - play with different windowsize and minimum lengths for eliding quoted responses
 - allow tweet length replies
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
-- do diffing on more than just the previous message in case mutiple replies come in replying to different previous messages
 - use virtual scroller!
-- provide a way to sort labels other than alphabetical
 - get high lighthouse score and add to homescreen
 - automatically update to add new threads as they come in (right now requires reloading the page)
-- Should readlater/task mark the messages as read?
-- Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.
-- Figure out a way to make block snooze. Might involve implementing our own snooze functionality entirely, but then that means we can't use snooze or rely on in the gmail UI?
-- add a concept of the quick triage first, then the process triage where you get more time per message
-- Add option to expand out the read items
 - add options to show labels on each message (useful for debugging)
 - preload the next N threads instead of just the next one
 - Undo previous action
 - Google Assistant integration
+- Once the triage is done, allow for pick which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
+- Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.
+- Feature request for once we have a reply mode: by default send "dones", but also add send & blocked for things where you want to make sure there is followup.
