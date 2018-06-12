@@ -55,6 +55,11 @@ test(`foob<div>a <a>bar@foo.com</a></div>`,
     `b<div>a <a>bar@foo.com</a></div>`,
     `foo<span class="elide">b<div>a <a>bar@foo.com</a></div></span>`);
 
+// This test fails. It elides when it shouldn't because it counts the markup as part of the run length.
+// test(`<a href="https://domain.com/123456789">Open</a>`,
+//   `<a href="https://domain.com/123456789">Open</a>`,
+//   `<a href="https://domain.com/123456789">Open</a>`);
+
 let previous = `hello<div>Full Name <a>bar@foo.com</a></div>`;
 let current =
 `goodbye<div>On Jun 7 Full Name &lt;<a>bar@foo.com</a>&gt; wrote:</div>hello<div>Full Name <a>bar@foo.com</a></div>`;

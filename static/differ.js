@@ -59,6 +59,7 @@ class Differ {
 
     let parts = text.split('');
     let inTag = false;
+    let inScript = false;
     let windowStartIndex = 0;
     for (let i = 0; i < parts.length; i++) {
       var char = parts[i];
@@ -68,9 +69,28 @@ class Differ {
         inTag = false;
         continue;
       }
-      if (char == '<')
+      if (char == '<') {
+        if (inScript) {
+          inScript = parts[i+1] != '/' ||
+            parts[i+2] != 's' ||
+            parts[i+3] != 'c' ||
+            parts[i+4] != 'r' ||
+            parts[i+5] != 'i' ||
+            parts[i+6] != 'p' ||
+            parts[i+7] != 't' ||
+            (parts[i+8] != ' ' && parts[i+8] != '>');
+        } else {
+          inScript = parts[i+1] == 's' &&
+            parts[i+2] == 'c' &&
+            parts[i+3] == 'r' &&
+            parts[i+4] == 'i' &&
+            parts[i+5] == 'p' &&
+            parts[i+6] == 't' &&
+            (parts[i+7] == ' ' || parts[i+7] == '>');
+        }
         inTag = true;
-      if (inTag)
+      }
+      if (inTag || inScript)
         continue;
       nextChr(this, char);
       let checksum = this.value.toString(36);

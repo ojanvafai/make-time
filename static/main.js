@@ -54,9 +54,7 @@ async function updateSigninStatus(isSignedIn) {
 function setupResizeObservers() {
   let ro = new ResizeObserver(entries => {
     for (let entry of entries) {
-      let id = entry.target.id;
-      let dummyElement = document.getElementById('dummy-' + id);
-      console.log(dummyElement);
+      let dummyElement = document.getElementById('dummy-' + entry.target.id);
       dummyElement.style.height = entry.contentRect.height + 'px';
     }
   });
@@ -107,12 +105,6 @@ function getMessageBody(mimeParts, body) {
   }
 }
 
-let guidPrefix = 'guidprefix_';
-let guidCount = 0;
-function nextGuid() {
-  return guidPrefix + guidCount++;
-}
-
 function toggleDisplayInline(element) {
   var current = getComputedStyle(element).display;
   element.style.display = current == 'none' ? 'inline' : 'none';
@@ -124,13 +116,13 @@ function disableStyleSheets(messageText) {
 }
 
 function elideReply(messageText, previousMessageText) {
-  var guid = nextGuid();
   let windowSize = 100;
   let minimumLength = 100;
   // Lazy hacks to get the element whose display to toggle
   // and to get this to render centered-ish elipsis without using an image.
-  let prefix = `<div style="overflow:hidden"><div style="margin-top:-7px"><div class="toggler" onclick="toggleDisplayInline(this.parentNode.parentNode.nextSibling)">...</div></div></div><span class="elide">`;
-  let postfix = `</span>`;
+  let prefix = `<div style="overflow:hidden"><div style="margin-top:-7px"><div class="toggler" onclick="toggleDisplayInline(this.parentNode.parentNode.nextSibling)">...</div></div></div><div class="elide">`;
+  let postfix = `</div>`;
+
   let differ = new Differ(prefix, postfix, windowSize, minimumLength);
   return differ.diff(messageText, previousMessageText);
 }
@@ -167,9 +159,11 @@ function processMessage(message, previousMessageText) {
   // seem to use iframes, so we probably don't if they strip things for us.
   // iframes making everythign complicated (e.g for capturing keypresses, etc.).
   let raw = html = body.html || body.htmlEscapedPlain;
+
   // TODO: Test eliding works if current message is html but previous is plain or vice versa.
   if (previousMessageText)
     html = elideReply(html, previousMessageText);
+
   if (body.html)
     html = disableStyleSheets(html);
 
