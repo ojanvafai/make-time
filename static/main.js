@@ -43,11 +43,25 @@ window.onload = () => {
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.parentNode.style.display = 'none';
+    setupResizeObservers();
     await updateThreadList();
     renderCurrentThread();
   } else {
     authorizeButton.parentNode.style.display = '';
   }
+}
+
+function setupResizeObservers() {
+  let ro = new ResizeObserver(entries => {
+    for (let entry of entries) {
+      let id = entry.target.id;
+      let dummyElement = document.getElementById('dummy-' + id);
+      console.log(dummyElement);
+      dummyElement.style.height = entry.contentRect.height + 'px';
+    }
+  });
+  ro.observe(document.getElementById('header'));
+  ro.observe(document.getElementById('footer'));
 }
 
 function updateCounter() {
@@ -176,8 +190,7 @@ function renderMessage(processedMessage) {
 
   var headerDiv = document.createElement('div');
   headerDiv.classList.add('headers');
-  headerDiv.textContent = `From: ${processedMessage.from}
-Subject: ${processedMessage.subject}`;
+  headerDiv.textContent = `From: ${processedMessage.from}`;
   messageDiv.appendChild(headerDiv);
 
   var bodyContainer = document.createElement('div');
@@ -321,15 +334,24 @@ function renderCurrentThread() {
     // thread finishes before the current on has it's data.
     if (index != g_state.currentThreadIndex)
       return;
+
     var threadDetails = g_state.processedThreadDetails[g_state.currentThreadIndex];
+
+    var subject = document.getElementById('subject');
+    subject.textContent = threadDetails.messages[0].subject;
+
     var lastMessageElement;
     for (var message of threadDetails.messages) {
       lastMessageElement = renderMessage(message);
-      content.appendChild(lastMessageElement);
+      content.append(lastMessageElement);
     }
     var elementToScrollTo = document.querySelector('.unread') || lastMessageElement;
     elementToScrollTo.scrollIntoView();
-    document.documentElement.scrollTop -= 50;
+    // Make sure that there's at least 50px of space above for showing that there's a
+    // previous message.
+    let y = elementToScrollTo.getBoundingClientRect().y;
+    if (y < 50)
+      document.documentElement.scrollTop -= 50 - y;
 
     // Prefetch the next thread for instant access.
     fetchThreadDetails(nextThreadIndex(), (index) => {

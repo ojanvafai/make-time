@@ -17,18 +17,27 @@
         max-width: 800px;
         margin: 0px;
       }
+      #header {
+        position: fixed;
+        top: 0px;
+        left: 0px;
+        right: 0px;
+      }
+      #subject {
+        font-size: 18px;
+        text-align: center;
+        padding: 2px;
+        background-color: #eee;
+        border-bottom: 1px solid black;
+      }
       .toolbar {
         display: flex;
         justify-content: center;
         background-color: black;
         color: white;
-        position: fixed;
-        top: 0px;
-        left: 0px;
-        right: 0px;
         padding: 3px;
       }
-      .bottom-toolbar {
+      #footer {
         display: flex;
         justify-content: center;
         position: fixed;
@@ -36,7 +45,7 @@
         left: 0px;
         right: 0px;
       }
-      .bottom-toolbar > button {
+      #footer > button {
         margin: 4px;
         padding: 8px;
         font-size: 16px;
@@ -58,6 +67,9 @@
         padding: 8px;
         margin: 0 -8px;
         border-top: 1px solid;
+      }
+      .message:first-child > .headers {
+        border: none;
       }
       .shortcut {
         font-weight: bold;
@@ -108,10 +120,6 @@
           transform: rotate(360deg);
         }
       }
-      .dummyToolbar {
-        position: static;
-        visibility: hidden;
-      }
       .authorize-wrapper {
         position: fixed;
         left: 0px;
@@ -128,17 +136,20 @@
     <div class="authorize-wrapper" style="display: none;">
       <button id="authorize-button" style="font-size: 40px;">Log In</button>
     </div>
-    <div class="toolbar">
-      <div id="loader"></div>
-      <div id="counter">&nbsp;</div>
+    <div id="header">
+      <div class="toolbar">
+        <div id="loader"></div>
+        <div id="counter">&nbsp;</div>
+      </div>
+      <div id="subject"></div>
     </div>
     <div class="content-wrapper">
-      <!-- Put in dummy toolbars so they take up the same vertical space as the position:fixed toolbars. -->
-      <div class="toolbar dummyToolbar">Dummy Text</div>
+      <!-- Put in dummy header/footer so they take up the same vertical space as the position:fixed elements. -->
+      <div id="dummy-header"></div>
       <div id="content"></div>
-      <div class="bottom-toolbar dummyToolbar"><button>Dummy Text</button></div>
+      <div id="dummy-footer"></div>
     </div>
-    <div class="bottom-toolbar">
+    <div id="footer">
       <button onclick="dispatchShortcut('d')"><span class="shortcut">D</span>one</button>
       <button onclick="dispatchShortcut('t')"><span class="shortcut">T</span>L;DR</button>
       <button onclick="dispatchShortcut('r')"><span class="shortcut">R</span>eply Needed</button>

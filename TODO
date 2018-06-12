@@ -7,7 +7,7 @@ P0
 - show week/month queues as a queue, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
 
 P1
-- Log performance of showing next thread after an action was taken so we can see if we need to improve it.
+- Log performance of showing next thread after an action was taken so we can see if we need to improve it. One of these services should make it pretty easy.
 - add timer
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
 - allow tweet length replies
