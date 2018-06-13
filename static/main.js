@@ -68,7 +68,7 @@ function updateCounter() {
   var counter = document.getElementById('counter');
   var text = `${threadsLeft} threads left`
   if (threadsLeft)
-    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${g_state.labelForIndex[index]}`
+    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(g_state.labelForIndex[index])}`;
   counter.innerHTML = text;
 }
 
@@ -284,7 +284,7 @@ async function markTriaged(threadIndex, destination) {
   if(destination)
     addLabelIds.push(await getLabelId(destination));
 
-  var triageQueue = needsTriageLabel(g_state.labelForIndex[threadIndex]);
+  var triageQueue = g_state.labelForIndex[threadIndex];
   var removeLabelIds = ['UNREAD', 'INBOX', await getLabelId(triageQueue)];
   modifyThread(threadIndex, addLabelIds, removeLabelIds);
 }
@@ -385,9 +385,8 @@ async function fetchThreadList(label) {
   // but before we append to it.
   var currentIndex = g_state.threads.length;
   g_state.threads = g_state.threads.concat(threads);
-  var unprefixedLabel = removeTriagedPrefix(label);
   for (var i = 0; i < threads.length; i++) {
-    g_state.labelForIndex[currentIndex++] = unprefixedLabel;
+    g_state.labelForIndex[currentIndex++] = label;
   }
   updateCounter();
 }
