@@ -377,17 +377,22 @@ async function fetchThreads(label) {
   if (g_state.triagedLabels.length)
     query += ' -(in:' + g_state.triagedLabels.join(' OR in:') + ')';
 
-  var getPageOfThreads = async function(label) {
-    var resp = await gapi.client.gmail.users.threads.list({
+  var getPageOfThreads = async function(label, opt_pageToken) {
+    let requestParams = {
       'userId': USER_ID,
       'q': query,
-    });
-    var nextPageToken = resp.result.nextPageToken;
-    var result = resp.result.threads || [];
-    if (nextPageToken) {
-      requestParams.pageToken = nextPageToken;
+    };
+
+    if (opt_pageToken)
+      requestParams.pageToken = opt_pageToken;
+
+    let resp = await gapi.client.gmail.users.threads.list(requestParams);
+    let result = resp.result.threads || [];
+
+    let nextPageToken = resp.result.nextPageToken;
+    if (nextPageToken)
       result = result.concat(await getPageOfThreads(label));
-    }
+
     return result;
   };
 
