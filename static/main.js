@@ -22,6 +22,14 @@ var g_state = {
   currentThreadIndex: 0,
 };
 
+// Make sure links open in new tabs.
+document.body.addEventListener('click', (e) => {
+  if (e.target.tagName == 'A') {
+    e.target.target = '_blank';
+    e.target.rel = 'noopener';
+  }
+});
+
 window.onload = () => {
   gapi.load('client:auth2', () => {
     gapi.client.init({
@@ -320,8 +328,10 @@ function compareThreads(a, b) {
 function renderCurrentThread() {
   updateCounter();
   var content = document.getElementById('content');
+  var subject = document.getElementById('subject');
   if (g_state.currentThreadIndex == g_state.threads.length) {
     content.textContent = 'All done triaging! \\o/ Reload to check for new threads.';
+    subject.textContent = '';
     return;
   }
   content.textContent = '';
@@ -334,7 +344,6 @@ function renderCurrentThread() {
 
     let thread = g_state.threads[g_state.currentThreadIndex];
 
-    var subject = document.getElementById('subject');
     subject.textContent = thread.messages[0].subject;
 
     var lastMessageElement;
@@ -437,15 +446,11 @@ async function updateLabelList() {
   g_state.labelToId = {};
   g_state.idToLabel = {};
   g_state.triagedLabels = [];
-  g_state.toTriageLabels = [];
   for (var label of response.result.labels) {
     g_state.labelToId[label.name] = label.id;
     g_state.idToLabel[label.id] = label.name;
 
     if (label.name.startsWith(TRIAGED_LABEL + '/'))
       g_state.triagedLabels.push(label.name);
-
-    if (label.name.startsWith(TO_TRIAGE_LABEL + '/'))
-      g_state.toTriageLabels.push(label.name);
   }
 }
