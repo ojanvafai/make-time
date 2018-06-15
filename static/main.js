@@ -15,10 +15,10 @@ var authorizeButton = document.getElementById('authorize-button');
 var base64 = new Base64();
 
 var g_state = {
+  // Ordered list of threads.
   threads: [],
-  threadDetails: [],
-  processedThreadDetails: [],
-  labelForIndex: [],
+  // threadId --> thread map.
+  threadMap: {},
   currentThreadIndex: 0,
 };
 
@@ -68,7 +68,7 @@ function updateCounter() {
   var counter = document.getElementById('counter');
   var text = `${threadsLeft} threads left`
   if (threadsLeft)
-    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(g_state.labelForIndex[index])}`;
+    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(g_state.threads[index].queue)}`;
   counter.innerHTML = text;
 }
 
@@ -284,12 +284,14 @@ async function markTriaged(threadIndex, destination) {
   if(destination)
     addLabelIds.push(await getLabelId(destination));
 
-  var triageQueue = g_state.labelForIndex[threadIndex];
-  var removeLabelIds = ['UNREAD', 'INBOX', await getLabelId(triageQueue)];
+  var removeLabelIds = ['UNREAD', 'INBOX'];
+  var triageQueue = g_state.threads[threadIndex].queue;
+  if (triageQueue)
+    removeLabelIds.push(await getLabelId(triageQueue));
   modifyThread(threadIndex, addLabelIds, removeLabelIds);
 }
 
-function fetchThreadDetails(index, callback) {
+function fetchMessages(index, callback) {
   // This happens when we triage the last message.
   if (index == g_state.threads.length)
     return;
@@ -301,17 +303,18 @@ function fetchThreadDetails(index, callback) {
   }
   var request = gapi.client.gmail.users.threads.get(requestParams);
   request.execute((resp) => {
-    g_state.threadDetails[index] = resp;
     let messages = [];
     for (var message of resp.messages) {
       let previousMessageText = messages.length && messages[messages.length - 1].raw;
       messages.push(processMessage(message, previousMessageText));
     }
-    g_state.processedThreadDetails[index] = {
-      messages: messages,
-    };
+    thread.addMessages(messages);
     callback(index);
   });
+}
+
+function compareThreads(a, b) {
+  return LabelUtils.compareLabels(a.queue, b.queue);
 }
 
 function renderCurrentThread() {
@@ -329,13 +332,13 @@ function renderCurrentThread() {
     if (index != g_state.currentThreadIndex)
       return;
 
-    var threadDetails = g_state.processedThreadDetails[g_state.currentThreadIndex];
+    let thread = g_state.threads[g_state.currentThreadIndex];
 
     var subject = document.getElementById('subject');
-    subject.textContent = threadDetails.messages[0].subject;
+    subject.textContent = thread.messages[0].subject;
 
     var lastMessageElement;
-    for (var message of threadDetails.messages) {
+    for (var message of thread.messages) {
       lastMessageElement = renderMessage(message);
       content.append(lastMessageElement);
     }
@@ -348,20 +351,19 @@ function renderCurrentThread() {
       document.documentElement.scrollTop -= 50 - y;
 
     // Prefetch the next thread for instant access.
-    fetchThreadDetails(nextThreadIndex(), (index) => {
+    fetchMessages(nextThreadIndex(), (index) => {
       console.log(`Prefetched thread index: ${index})`);
     });
   }
 
-  if (g_state.currentThreadIndex in g_state.threadDetails)
+  if (g_state.threads[g_state.currentThreadIndex].messages)
     callback(g_state.currentThreadIndex);
   else
-    fetchThreadDetails(g_state.currentThreadIndex, callback);
+    fetchMessages(g_state.currentThreadIndex, callback);
 }
 
-async function fetchThreadList(label) {
-  // Use in:inbox to exclude snoozed items.
-  var query = 'in:inbox in:' + label;
+async function fetchThreads(label) {
+  var query = 'in:inbox';
   // We only have triaged labels once they've actually been created.
   if (g_state.triagedLabels.length)
     query += ' -(in:' + g_state.triagedLabels.join(' OR in:') + ')';
@@ -380,38 +382,51 @@ async function fetchThreadList(label) {
     return result;
   };
 
-  var threads = await getPageOfThreads(label);
-  // Make sure to grab the length of g_state.threads after the await call above
-  // but before we append to it.
-  var currentIndex = g_state.threads.length;
-  g_state.threads = g_state.threads.concat(threads);
-  for (var i = 0; i < threads.length; i++) {
-    g_state.labelForIndex[currentIndex++] = label;
-  }
-  updateCounter();
-}
-
-async function fetchThreadLists(opt_startIndex) {
-  var startIndex = opt_startIndex || 0;
-  for (var i = startIndex; i < g_state.toTriageLabels.length; i++) {
-    let label = g_state.toTriageLabels[i];
-    await fetchThreadList(label);
-    if (!opt_startIndex && g_state.threads.length)
-      return i + 1;
-  }
-  document.getElementById('loader').style.display = 'none';
+  return await getPageOfThreads(label);
 }
 
 async function updateThreadList(callback) {
   document.getElementById('loader').style.display = 'inline-block';
   await updateLabelList();
-  // Only block until the first queue that has non-zero threads so we can
-  // show the first thread as quickly as possible.
-  let lastIndexFetched = await fetchThreadLists();
-  // Then fetch the rest of the threads without blocking updateThreadList,
-  // but fetch those threads sequentially in fetchThreadLists still so they
-  // get put into g_state in order and don't flood the network.
-  fetchThreadLists(lastIndexFetched);
+
+  let threads = await fetchThreads();
+
+  if (threads.length) {
+    var batch = gapi.client.newBatch();
+
+    for (let i = 0; i < threads.length; i++) {
+      let thread = threads[i];
+      let threadWrapper = new Thread(thread);
+      g_state.threads.push(threadWrapper);
+      g_state.threadMap[thread.id] = threadWrapper;
+
+      // Fetch the labels for each thread.
+      batch.add(gapi.client.gmail.users.threads.get({
+        'userId': USER_ID,
+        'id': thread.id,
+        'fields': 'id,messages/labelIds',
+      }));
+    }
+
+    let resp = await batch;
+    // For now just pretend that the labels on a thread are the union of the labels
+    // on all it's messages.
+    for (let index in resp.result) {
+      let result = resp.result[index].result;
+      let labelIds = new Set();
+      for (let message of result.messages) {
+        for (let labelId of message.labelIds) {
+          labelIds.add(labelId);
+        }
+      }
+      g_state.threadMap[result.id].addLabelIds(labelIds, g_state.idToLabel);
+    }
+
+    g_state.threads.sort(compareThreads);
+  }
+
+  updateCounter();
+  document.getElementById('loader').style.display = 'none';
 }
 
 async function updateLabelList() {
@@ -432,7 +447,5 @@ async function updateLabelList() {
 
     if (label.name.startsWith(TO_TRIAGE_LABEL + '/'))
       g_state.toTriageLabels.push(label.name);
-
-    LabelUtils.sort(g_state.toTriageLabels);
   }
 }

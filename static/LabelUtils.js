@@ -10,6 +10,8 @@ function triagerLabel(labelName) {
 }
 
 function removeTriagedPrefix(label) {
+  if (!label)
+    return 'inbox';
   return label.replace(new RegExp('^' + TO_TRIAGE_LABEL + '/'), '');
 }
 
@@ -40,6 +42,13 @@ let queueOrder = {
 }
 
 function compareLabels(a, b) {
+  if (a == b)
+    return 0;
+  if (!a)
+    return -1;
+  if (!b)
+    return 1;
+
   let aParts = a.split('/');
   let bParts = b.split('/');
   let aHasQueue = aParts.length > 2;
@@ -69,7 +78,5 @@ function compareLabels(a, b) {
   return 0;
 }
 
-LabelUtils.sort = (labels) => {
-  labels.sort(compareLabels);
-}
+LabelUtils.compareLabels = compareLabels;
 })();
