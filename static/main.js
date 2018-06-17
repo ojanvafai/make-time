@@ -15,9 +15,6 @@ var authorizeButton = document.getElementById('authorize-button');
 
 var base64 = new Base64();
 
-// TODO: Get this out of a magic email.
-const SPREADSHEET_ID = '1Z47Aovn53_o405wQG16wgKLaUwKnMmC6PmNnv0Wt0uI';
-
 var g_state = {
   // Ordered list of threads.
   threads: [],
@@ -52,17 +49,28 @@ window.onload = () => {
   });
 };
 
-async function fetchSheet(sheetName) {
+function getSettingsSpreadsheetId() {
+  if (localStorage.spreadsheetId)
+    return localStorage.spreadsheetId;
+  let url = prompt("Insert the URL of your settings spreadsheet. If you don't have one, go to go/make-time-settings, create a copy of it, and then use the URL of the new spreadsheet.");
+  // Spreadsheets URLS are of the form
+  // https://docs.google.com/spreadsheets[POSSIBLE_STUFF_HERE]/d/[ID_HERE]/[POSSIBLE_STUFF_HERE]
+  let id = url.split('/d/')[1].split('/')[0];
+  localStorage.spreadsheetId = id;
+  return id;
+}
+
+async function fetchSheet(spreadsheetId, sheetName) {
   let response =  await gapi.client.sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
+    spreadsheetId: spreadsheetId,
     range: sheetName,
   });
   return response.result.values;
 };
 
-async function fetch2ColumnSheet(sheetName, opt_startRowIndex) {
+async function fetch2ColumnSheet(spreadsheetId, sheetName, opt_startRowIndex) {
   let result = {};
-  let values = await fetchSheet(sheetName);
+  let values = await fetchSheet(spreadsheetId, sheetName);
   if (!values)
     return result;
 
@@ -79,9 +87,11 @@ async function updateSigninStatus(isSignedIn) {
     authorizeButton.parentNode.style.display = 'none';
     setupResizeObservers();
 
+    let spreadsheetId = getSettingsSpreadsheetId();
     // TODO: Fetch these two in parallel.
-    var settings = await fetch2ColumnSheet(CONFIG_SHEET_NAME, 1);
-    settings.queuedLabelMap = await fetch2ColumnSheet(QUEUED_LABELS_SHEET_NAME, 1);
+    var settings = await fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1);
+    settings.spreadsheetId = spreadsheetId;
+    settings.queuedLabelMap = await fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
 
     let mailProcessor = new MailProcessor(settings);
 

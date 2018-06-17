@@ -143,7 +143,7 @@ class MailProcessor {
   async readRulesRows() {
     var startTime = new Date();
 
-    var rawRules = await fetchSheet(FILTERS_SHEET_NAME);
+    var rawRules = await fetchSheet(this.settings.spreadsheetId, FILTERS_SHEET_NAME);
     var rules = [];
     var labels = {};
     var output = {
@@ -193,7 +193,7 @@ class MailProcessor {
   async appendToSheet(sheetName, rows) {
     let rowCount = Object.keys(rows).length;
     let requestParams = {
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId: this.settings.spreadsheetId,
       range: sheetName,
       valueInputOption: 'RAW',
       insertDataOption: 'INSERT_ROWS',
@@ -208,7 +208,7 @@ class MailProcessor {
   async write2ColumnSheet(sheetName, rows) {
     let rowCount = Object.keys(rows).length;
     let requestParams = {
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId: this.settings.spreadsheetId,
       range: sheetName + '!A1:B' + rowCount,
       valueInputOption: 'RAW',
     };
@@ -234,7 +234,7 @@ class MailProcessor {
 
   async getSheetId(sheetName) {
     let response = await gapi.client.sheets.spreadsheets.get({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId: this.settings.spreadsheetId,
       ranges: [sheetName],
     });
     // TODO: Handle response.status != 200.
@@ -243,7 +243,7 @@ class MailProcessor {
 
   async deleteRows(sheetName, startIndex, endIndex) {
     var params = {
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId: this.settings.spreadsheetId,
     };
 
     var sheetId = await this.getSheetId(sheetName);
@@ -276,7 +276,7 @@ class MailProcessor {
 
   async collapseStats() {
     let stats;
-    var rows = await fetchSheet(STATISTICS_SHEET_NAME);
+    var rows = await fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
     let todayYearMonthDay = this.getYearMonthDay(Date.now());
     let currentYearMonthDay;
 
@@ -628,7 +628,7 @@ class MailProcessor {
     console.log('Processing queues');
     var startTime = new Date();
 
-    const rawBackendValues = await fetch2ColumnSheet(BACKEND_SHEET_NAME);
+    const rawBackendValues = await fetch2ColumnSheet(this.settings.spreadsheetId, BACKEND_SHEET_NAME);
     const backendValues = {};
     // Strip no longer supported backend keys.
     for (let i = 0; i < BACKEND_KEYS.length; i++) {
