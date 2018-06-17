@@ -1,0 +1,76 @@
+<script src="../static/MailProcessor.js"></script>
+<script>
+function assert(result, expected) {
+  if (result == expected) {
+  } else {
+    console.log(`FAILED. expected: ${expected}, got: ${result}`);
+  }
+}
+
+function assertArraysEqual(result, expected) {
+  if (result.length != expected.length) {
+    console.log(`FAILED. expected: ${expected}, got: ${result}`);
+    return;
+  }
+
+  for (var i = 0; i < result.length; i++) {
+    if (result[i] != expected[i]) {
+      console.log(`FAILED. expected: ${expected}, got: ${result}`);
+      return;
+    }
+  }
+
+  console.log(`PASSED. got: ${result}`);
+}
+
+function test_categoriesToDequeue() {
+  // Th Jul 15 2018 08:00:00
+  let endDateTime = new Date(2018, 6, 12, 8).getTime();
+
+  let dummySettings = {};
+  let mailProcessor = new MailProcessor(dummySettings);
+
+  // Last year
+  var date = new Date(endDateTime);
+  date.setFullYear(date.getFullYear() - 1);
+  assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime),
+    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Daily', 'Monthly']);
+
+  // Last month
+  var date = new Date(endDateTime);
+  date.setMonth(date.getMonth() - 1);
+  assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime),
+    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Daily', 'Monthly']);
+
+  // Yesterday
+  var date = new Date(endDateTime);
+  date.setDate(date.getDate() - 1);
+  assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime),
+    ['Friday', 'Daily']);
+
+  // Earlier in the week
+  var date = new Date(endDateTime);
+  date.setDate(date.getDate() - 4);
+  assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime),
+    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Daily']);
+
+  // Today
+  var date = new Date(endDateTime);
+  date.setHours(date.getHours() - 5);
+  assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime), []);
+
+  // Late last week
+  var date = new Date(endDateTime);
+  date.setDate(date.getDate() - 6);
+  assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime),
+    ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Daily']);
+
+  // Last week
+  var date = new Date(endDateTime);
+  date.setDate(date.getDate() - 7);
+  assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime),
+    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Daily']);
+}
+
+test_categoriesToDequeue();
+</script>

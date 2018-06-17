@@ -1,7 +1,13 @@
-TODOs for AppsScript Labeler:
+TODOs for filters:
+- Add ability to require a filter rule to apply to all messages in the thread.
 - add the ability to filter messages with no list-id as those are probably more urgent.
 - If something is already in the inbox, don't daily/weekly/monthly queue it, just apply the label as needstriage directly, otherwise it will get delayed fruther before you see it.
 - add back in the ability to put something in the inbox with no label since the triager now treats that as most urgent
+- if the last message is vacation responder, and the message before that one is read, and it's not in a triager/auto queue, then auto archive
+- Add "-" or "!" for -foo@bar.com
+- Have one filter field with to:, etc. and proper boolean logic with !, ||, &&. whitespace trimming, and quotes around strings
+- Allow regexps with special regexp syntax, e.g. r'regexphere'.
+- Make logs save to Drive for retroactive debugging.
 
 P0
 - show To field

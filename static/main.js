@@ -2,17 +2,21 @@
 var CLIENT_ID = '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
-var DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest"];
+var DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
+    "https://sheets.googleapis.com/$discovery/rest?version=v4"];
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-var SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
+var SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets';
 
 var USER_ID = 'me';
 
 var authorizeButton = document.getElementById('authorize-button');
 
 var base64 = new Base64();
+
+// TODO: Get this out of a magic email.
+const SPREADSHEET_ID = '1Z47Aovn53_o405wQG16wgKLaUwKnMmC6PmNnv0Wt0uI';
 
 var g_state = {
   // Ordered list of threads.
@@ -48,12 +52,44 @@ window.onload = () => {
   });
 };
 
+async function fetchSheet(sheetName) {
+  let response =  await gapi.client.sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: sheetName,
+  });
+  return response.result.values;
+};
+
+async function fetch2ColumnSheet(sheetName, opt_startRowIndex) {
+  let result = {};
+  let values = await fetchSheet(sheetName);
+  if (!values)
+    return result;
+
+  let startRowIndex = opt_startRowIndex || 0;
+  for (var i = startRowIndex; i < values.length; i++) {
+    let value = values[i];
+    result[value[0]] = value[1];
+  }
+  return result;
+}
+
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.parentNode.style.display = 'none';
     setupResizeObservers();
-    await updateThreadList();
-    renderCurrentThread();
+
+    // TODO: Fetch these two in parallel.
+    var settings = await fetch2ColumnSheet(CONFIG_SHEET_NAME, 1);
+    settings.queuedLabelMap = await fetch2ColumnSheet(QUEUED_LABELS_SHEET_NAME, 1);
+
+    let mailProcessor = new MailProcessor(settings);
+
+    await updateThreadList(mailProcessor);
+    await renderCurrentThread();
+
+    // TODO: Move this to a cron, but for now at least do it after showing the first thread.
+    guardedCall(mailProcessor.collapseStats.bind(mailProcessor));
   } else {
     authorizeButton.parentNode.style.display = '';
   }
@@ -97,22 +133,6 @@ function htmlEscape(html) {
   });
 };
 
-function getMessageBody(mimeParts, body) {
-  for (var part of mimeParts) {
-    switch (part.mimeType) {
-      case 'text/plain':
-        body.htmlEscapedPlain = htmlEscape(base64.decode(part.body.data));
-        break;
-      case 'text/html':
-        body.html = base64.decode(part.body.data);
-        break;
-      case 'multipart/alternative':
-        getMessageBody(part.parts, body);
-        break;
-    }
-  }
-}
-
 function toggleDisplayInline(element) {
   var current = getComputedStyle(element).display;
   element.style.display = current == 'none' ? 'inline' : 'none';
@@ -135,55 +155,6 @@ function elideReply(messageText, previousMessageText) {
   return differ.diff(messageText, previousMessageText);
 }
 
-function processMessage(message, previousMessageText) {
-  var from;
-  var subject;
-  for (var header of message.payload.headers) {
-    switch (header.name) {
-      case 'Subject':
-        subject = header.value;
-        break;
-      case 'From':
-        from = header.value;
-        break;
-    }
-  }
-
-  // TODO: We could probably be more efficient by only grabbing one of these.
-  var body = {
-    plain: '',
-    html: '',
-  }
-  var plainTextBody;
-  var htmlBody;
-  if (message.payload.parts) {
-    getMessageBody(message.payload.parts, body);
-  } else {
-    body.html = base64.decode(message.payload.body.data);
-  }
-
-  // TODO: Do we need iframes or does gmail strip dangerous things for us.
-  // Seems like we might need it for styling isolation at least, but gmail doesn't
-  // seem to use iframes, so we probably don't if they strip things for us.
-  // iframes making everythign complicated (e.g for capturing keypresses, etc.).
-  let raw = html = body.html || body.htmlEscapedPlain;
-
-  // TODO: Test eliding works if current message is html but previous is plain or vice versa.
-  if (previousMessageText)
-    html = elideReply(html, previousMessageText);
-
-  if (body.html)
-    html = disableStyleSheets(html);
-
-  return {
-    isUnread: message.labelIds.includes('UNREAD'),
-    html: html,
-    from: from,
-    subject: subject,
-    raw: raw,
-  }
-}
-
 function renderMessage(processedMessage) {
   var messageDiv = document.createElement('div');
   messageDiv.className = 'message';
@@ -196,7 +167,7 @@ function renderMessage(processedMessage) {
   messageDiv.appendChild(headerDiv);
 
   var bodyContainer = document.createElement('div');
-  bodyContainer.innerHTML = processedMessage.html;
+  bodyContainer.innerHTML = processedMessage.processedHtml;
   messageDiv.appendChild(bodyContainer);
 
   return messageDiv;
@@ -244,7 +215,7 @@ function createLabel(labelName) {
   });
 }
 
-async function getLabelId(labelName, callback) {
+async function getLabelId(labelName) {
   if (g_state.labelToId[labelName])
     return g_state.labelToId[labelName];
 
@@ -271,20 +242,19 @@ async function getLabelId(labelName, callback) {
   return g_state.labelToId[labelName];
 }
 
-async function modifyThread(threadIndex, addLabelIds, removeLabelIds) {
-  gapi.client.gmail.users.threads.modify({
+async function modifyThread(thread, addLabelIds, removeLabelIds) {
+  let resp = await gapi.client.gmail.users.threads.modify({
     'userId': USER_ID,
-    'id': g_state.threads[threadIndex].id,
+    'id': thread.id,
     'addLabelIds': addLabelIds,
     'removeLabelIds': removeLabelIds,
-  }).then((resp) => {
-    if (resp.status == '200') {
-      // hide spinner
-    } else {
-      // retry? Show some error UI?
-    }
   });
-  renderNextThread();
+
+  if (resp.status == '200') {
+    // TODO: Show a spinner at the start so we can hide it here hide spinner
+  } else {
+    // retry? Show some error UI?
+  }
 }
 
 async function markTriaged(threadIndex, destination) {
@@ -296,36 +266,24 @@ async function markTriaged(threadIndex, destination) {
   var triageQueue = g_state.threads[threadIndex].queue;
   if (triageQueue)
     removeLabelIds.push(await getLabelId(triageQueue));
-  modifyThread(threadIndex, addLabelIds, removeLabelIds);
+  modifyThread(g_state.threads[threadIndex], addLabelIds, removeLabelIds);
+  renderNextThread();
 }
 
-function fetchMessages(index, callback) {
+async function fetchMessages(index) {
   // This happens when we triage the last message.
   if (index == g_state.threads.length)
     return;
 
   var thread = g_state.threads[index];
-  var requestParams = {
-    'userId': USER_ID,
-    'id': thread.id,
-  }
-  var request = gapi.client.gmail.users.threads.get(requestParams);
-  request.execute((resp) => {
-    let messages = [];
-    for (var message of resp.messages) {
-      let previousMessageText = messages.length && messages[messages.length - 1].raw;
-      messages.push(processMessage(message, previousMessageText));
-    }
-    thread.addMessages(messages);
-    callback(index);
-  });
+  return await thread.fetchMessages();
 }
 
 function compareThreads(a, b) {
   return LabelUtils.compareLabels(a.queue, b.queue);
 }
 
-function renderCurrentThread() {
+async function renderCurrentThread() {
   updateCounter();
   var content = document.getElementById('content');
   var subject = document.getElementById('subject');
@@ -336,7 +294,8 @@ function renderCurrentThread() {
   }
   content.textContent = '';
 
-  var callback = (index) => {
+  // TODO: Inline this callback now that fetchMessagesForIndex is async.
+  var callback = async (index) => {
     // If you cycle through threads quickly, then the callback for the previous
     // thread finishes before the current on has it's data.
     if (index != g_state.currentThreadIndex)
@@ -344,7 +303,7 @@ function renderCurrentThread() {
 
     let thread = g_state.threads[g_state.currentThreadIndex];
 
-    subject.textContent = thread.messages[0].subject;
+    subject.textContent = thread.subject;
 
     var lastMessageElement;
     for (var message of thread.messages) {
@@ -360,24 +319,26 @@ function renderCurrentThread() {
       document.documentElement.scrollTop -= 50 - y;
 
     // Prefetch the next thread for instant access.
-    fetchMessages(nextThreadIndex(), (index) => {
-      console.log(`Prefetched thread index: ${index})`);
-    });
+    fetchMessages(nextThreadIndex());
   }
 
   if (g_state.threads[g_state.currentThreadIndex].messages)
     callback(g_state.currentThreadIndex);
-  else
-    fetchMessages(g_state.currentThreadIndex, callback);
+  else {
+    let index = g_state.currentThreadIndex;
+    await fetchMessages(index);
+    callback(index);
+  }
 }
 
 async function fetchThreads(label) {
-  var query = 'in:inbox';
+  var query = 'in:' + label;
+
   // We only have triaged labels once they've actually been created.
   if (g_state.triagedLabels.length)
     query += ' -(in:' + g_state.triagedLabels.join(' OR in:') + ')';
 
-  var getPageOfThreads = async function(label, opt_pageToken) {
+  var getPageOfThreads = async function(opt_pageToken) {
     let requestParams = {
       'userId': USER_ID,
       'q': query,
@@ -391,53 +352,80 @@ async function fetchThreads(label) {
 
     let nextPageToken = resp.result.nextPageToken;
     if (nextPageToken)
-      result = result.concat(await getPageOfThreads(label));
-
+      result = result.concat(await getPageOfThreads(nextPageToken));
     return result;
   };
 
-  return await getPageOfThreads(label);
+  return await getPageOfThreads();
 }
 
-async function updateThreadList(callback) {
+async function fillLabelsForThreads(threads, outputArray, opt_outputMap) {
+  let outputMap = opt_outputMap || {};
+  var batch = gapi.client.newBatch();
+
+  for (let i = 0; i < threads.length; i++) {
+    let thread = threads[i];
+    let threadWrapper = new Thread(thread);
+    outputArray.push(threadWrapper);
+    outputMap[thread.id] = threadWrapper;
+
+    // Fetch the labels for each thread.
+    batch.add(gapi.client.gmail.users.threads.get({
+      'userId': USER_ID,
+      'id': thread.id,
+      'fields': 'id,messages/labelIds',
+    }));
+  }
+
+  let resp = await batch;
+  // For now just pretend that the labels on a thread are the union of the labels
+  // on all it's messages.
+  for (let index in resp.result) {
+    let result = resp.result[index].result;
+    let labelIds = new Set();
+    for (let message of result.messages) {
+      for (let labelId of message.labelIds) {
+        labelIds.add(labelId);
+      }
+    }
+    outputMap[result.id].addLabelIds(labelIds, g_state.idToLabel);
+  }
+}
+
+async function guardedCall(func) {
+  try {
+    return await func();
+  } catch (e) {
+    var emailBody = 'Captured an error processing mail.' + e;
+
+    if (e.body)
+      emailBody += '\n' + e.body;
+
+    if (e.name) {
+      emailBody += '\n' + e.name;
+      emailBody += '\nMessage: ' + e.message;
+      emailBody += '\n\n' + e.stack;
+    }
+
+    // TODO: figure out how to send emails once this is back on a cron.
+    alert(emailBody);
+    throw e;
+  }
+};
+
+async function updateThreadList(mailProcessor) {
   document.getElementById('loader').style.display = 'inline-block';
   await updateLabelList();
 
-  let threads = await fetchThreads();
+  // TODO: Move this to a cron
+  await guardedCall(mailProcessor.processMail.bind(mailProcessor));
+  await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
 
-  if (threads.length) {
-    var batch = gapi.client.newBatch();
+  let threads = await fetchThreads('inbox');
+  if (threads.length)
+    await fillLabelsForThreads(threads, g_state.threads, g_state.threadMap);
 
-    for (let i = 0; i < threads.length; i++) {
-      let thread = threads[i];
-      let threadWrapper = new Thread(thread);
-      g_state.threads.push(threadWrapper);
-      g_state.threadMap[thread.id] = threadWrapper;
-
-      // Fetch the labels for each thread.
-      batch.add(gapi.client.gmail.users.threads.get({
-        'userId': USER_ID,
-        'id': thread.id,
-        'fields': 'id,messages/labelIds',
-      }));
-    }
-
-    let resp = await batch;
-    // For now just pretend that the labels on a thread are the union of the labels
-    // on all it's messages.
-    for (let index in resp.result) {
-      let result = resp.result[index].result;
-      let labelIds = new Set();
-      for (let message of result.messages) {
-        for (let labelId of message.labelIds) {
-          labelIds.add(labelId);
-        }
-      }
-      g_state.threadMap[result.id].addLabelIds(labelIds, g_state.idToLabel);
-    }
-
-    g_state.threads.sort(compareThreads);
-  }
+  g_state.threads.sort(compareThreads);
 
   updateCounter();
   document.getElementById('loader').style.display = 'none';
