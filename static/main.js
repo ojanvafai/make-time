@@ -21,6 +21,7 @@ var g_state = {
   // threadId --> thread map.
   threadMap: {},
   currentThreadIndex: 0,
+  settings: null,
 };
 
 // Make sure links open in new tabs.
@@ -92,6 +93,8 @@ async function updateSigninStatus(isSignedIn) {
     var settings = await fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1);
     settings.spreadsheetId = spreadsheetId;
     settings.queuedLabelMap = await fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
+
+    g_state.settings = settings;
 
     let mailProcessor = new MailProcessor(settings);
 
@@ -201,12 +204,14 @@ var keyToDestination = {
   'd': null, // No destination label for DONE
   't': READ_LATER_LABEL,
   'r': NEEDS_REPLY_LABEL,
-  'b': BLOCKED_LABEL,
   'm': MUTED_LABEL,
   'a': ACTION_ITEM_LABEL,
 }
 
 function dispatchShortcut(key) {
+  if (!keyToDestination.b)
+    keyToDestination.b = addQueuedPrefix(g_state.settings, BLOCKED_LABEL_SUFFIX);
+
   var destination = keyToDestination[key];
   if (destination !== undefined)
     markTriaged(g_state.currentThreadIndex, destination);

@@ -17,7 +17,6 @@ P0
 - add a needs filter option?
 - add an urgent action item? what about important?
 - Don't elide inside style tags and need to make sure that eliding respects markup.
-- Make blocked show items once a week. Not quite sure how to implement this while keeping it decoupled from the spreadsheet logic. If the dequeue supports dequeueing just based off the label name, then ojrumail can rely on it to dequeue without tight integration just for blocked items...blocked items just go into queued/Tuesday/blocked or something like that. But it still requires you to use the spreadsheet if you want blocked to do anything other than put a label on it.
 - Fix race condition where if new message comes in after ojru has prefetched, the archiving will archive that as well.
 - show week/month queues as a list, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
 

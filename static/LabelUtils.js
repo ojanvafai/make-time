@@ -19,9 +19,17 @@ function needsTriageLabel(labelName) {
   return `${TO_TRIAGE_LABEL}/${labelName}`;
 }
 
+function addLabelerPrefix(settings, labelName) {
+  return settings.labeler_implementation_label + '/' + labelName;
+}
+
+function addQueuedPrefix(settings, labelName) {
+  return this.addLabelerPrefix(settings, settings.queued_label + "/" + labelName);
+}
+
 var READ_LATER_LABEL = triagerLabel('tldr');
 var NEEDS_REPLY_LABEL = triagerLabel('needsreply');
-var BLOCKED_LABEL = triagerLabel('blocked');
+var BLOCKED_LABEL_SUFFIX = 'blocked';
 var MUTED_LABEL = triagerLabel('supermuted');
 var ACTION_ITEM_LABEL = triagerLabel('actionitem');
 

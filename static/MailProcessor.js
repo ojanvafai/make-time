@@ -94,16 +94,8 @@ class MailProcessor {
 
   addLabelPrefix(labelName) {
     if (this.settings.queuedLabelMap[labelName])
-      return this.addQueuedPrefix(labelName);
+      return addQueuedPrefix(this.settings, labelName);
     return this.addAutoPrefix(labelName);
-  }
-
-  addLabelerPrefix(labelName) {
-    return this.settings.labeler_implementation_label + '/' + labelName;
-  }
-
-  addQueuedPrefix(labelName) {
-    return this.addLabelerPrefix(this.settings.queued_label + "/" + labelName);
   }
 
   addAutoPrefix(labelName) {
@@ -528,7 +520,7 @@ class MailProcessor {
         addLabelIds.push(prefixedLabelId);
         removeLabelIds = labelIdsToRemove.filter(id => id != prefixedLabelId);
 
-        if (prefixedLabelName != this.addQueuedPrefix(labelName))
+        if (prefixedLabelName != addQueuedPrefix(this.settings, labelName))
           addLabelIds.push('INBOX');
       }
 
@@ -553,7 +545,7 @@ class MailProcessor {
   }
 
   async dequeue(labelName, queue) {
-    var queuedLabelName = this.addQueuedPrefix(labelName);
+    var queuedLabelName = addQueuedPrefix(this.settings, labelName);
     var queuedLabel = await getLabelId(queuedLabelName);
     var autoLabel = await getLabelId(this.addAutoPrefix(queuePrefixMap[queue] + '/' + labelName));
     var threads = await fetchThreads(queuedLabelName);
