@@ -132,7 +132,20 @@
         display: flex;
         justify-content: center;
         align-items: center;
-       }
+      }
+      .right-toolbar {
+        display: flex;
+        position: absolute;
+        padding: 3px;
+        top: 0;
+        left: 0;
+        right: 0;
+        justify-content: flex-end;
+        color: white;
+      }
+      #settings {
+        color: white;
+      }
     </style>
   </head>
   <body>
@@ -143,6 +156,9 @@
       <div class="toolbar">
         <div id="loader"></div>
         <div id="counter">&nbsp;</div>
+      </div>
+      <div class="right-toolbar">
+        <a id="settings" href="">Settings</a>
       </div>
       <div id="subject"></div>
     </div>

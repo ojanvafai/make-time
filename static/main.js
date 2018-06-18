@@ -89,6 +89,8 @@ async function updateSigninStatus(isSignedIn) {
     setupResizeObservers();
 
     let spreadsheetId = getSettingsSpreadsheetId();
+
+    document.getElementById('settings').href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
     // TODO: Fetch these two in parallel.
     var settings = await fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1);
     settings.spreadsheetId = spreadsheetId;
