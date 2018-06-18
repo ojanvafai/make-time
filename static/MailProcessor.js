@@ -419,9 +419,6 @@ class MailProcessor {
     await thread.fetchMessages();
 
     var startTime = new Date();
-    var oldestToProcess = startTime.getTime() -
-        this.settings.frequency_to_run_process_minutes * 2 * 60000;
-
     this.debugLog('Processing thread with subject ' + thread.subject);
 
     var result = {};
@@ -449,13 +446,13 @@ class MailProcessor {
     return { label: label };
   }
 
-  hasTriageLabel(thread) {
+  currentTriagedLabel(thread) {
     var labels = thread.labelNames;
     for (var i = 0; i < labels.length; i++) {
       if (labels[i].startsWith(TRIAGER_LABELS.triaged + '/'))
-        return true;
+        return labels[i];
     }
-    return false;
+    return null;
   }
 
   async processMail() {
@@ -490,9 +487,19 @@ class MailProcessor {
       var thread = threads[i];
       var labelName;
 
+      let removeLabelIds = [unprocessedLabelId];
+      let addLabelIds = [];
+      if (processedLabelId)
+        addLabelIds.push(processedLabelId);
+
       // Triaged items when reprocessed go in the rtriage queue regardless of what label they
       // might otherwise go in.
-      if (this.hasTriageLabel(thread)) {
+      let currentTriagedLabel = this.currentTriagedLabel(thread);
+      if (currentTriagedLabel) {
+        if (currentTriagedLabel == MUTED_LABEL) {
+          await modifyThread(thread, addLabelIds, removeLabelIds);
+          continue;
+        }
         labelName = TRIAGER_LABELS.retriage;
       } else {
         var result = await this.processThread(thread, rulesSheet.rules);
@@ -505,8 +512,6 @@ class MailProcessor {
 
       this.debugLog("Applying label: " + labelName);
       var alreadyHadLabel = false;
-      let addLabelIds = [];
-      let removeLabelIds = [];
 
       if (labelName == this.settings.archive_label) {
         if (thread.isInInbox())
@@ -526,10 +531,6 @@ class MailProcessor {
         if (prefixedLabelName != this.addQueuedPrefix(labelName))
           addLabelIds.push('INBOX');
       }
-
-      removeLabelIds.push(unprocessedLabelId);
-      if (processedLabelId)
-        addLabelIds.push(processedLabelId);
 
       // TODO: Could modify all the threads in parallel.
       await modifyThread(thread, addLabelIds, removeLabelIds);
