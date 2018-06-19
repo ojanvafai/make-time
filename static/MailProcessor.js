@@ -518,7 +518,7 @@ class MailProcessor {
         alreadyHadLabel = thread.labelIds.has(prefixedLabelId);
 
         addLabelIds.push(prefixedLabelId);
-        removeLabelIds = labelIdsToRemove.filter(id => id != prefixedLabelId);
+        removeLabelIds = removeLabelIds.concat(labelIdsToRemove.filter(id => id != prefixedLabelId));
 
         if (prefixedLabelName != addQueuedPrefix(this.settings, labelName))
           addLabelIds.push('INBOX');
