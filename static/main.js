@@ -121,14 +121,17 @@ function setupResizeObservers() {
   ro.observe(document.getElementById('footer'));
 }
 
+function updateTitle(title) {
+  document.getElementById('counter').innerHTML = title;
+}
+
 function updateCounter() {
   var index = g_state.currentThreadIndex;
   var threadsLeft = g_state.threads.length - index;
-  var counter = document.getElementById('counter');
   var text = `${threadsLeft} threads left`
   if (threadsLeft)
     text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(g_state.threads[index].queue)}`;
-  counter.innerHTML = text;
+  updateTitle(text);
 }
 
 function htmlEscape(html) {
@@ -259,13 +262,17 @@ async function getLabelId(labelName) {
   return g_state.labelToId[labelName];
 }
 
-async function modifyThread(thread, addLabelIds, removeLabelIds) {
-  let resp = await gapi.client.gmail.users.threads.modify({
+function modifyThreadRequest(thread, addLabelIds, removeLabelIds) {
+  return gapi.client.gmail.users.threads.modify({
     'userId': USER_ID,
     'id': thread.id,
     'addLabelIds': addLabelIds,
     'removeLabelIds': removeLabelIds,
   });
+}
+
+async function modifyThread(thread, addLabelIds, removeLabelIds) {
+  let resp = await modifyThreadRequest(thread, addLabelIds, removeLabelIds);
 
   if (resp.status == '200') {
     // TODO: Show a spinner at the start so we can hide it here hide spinner
@@ -376,9 +383,8 @@ async function fetchThreads(label) {
   return await getPageOfThreads();
 }
 
-async function fillLabelsForThreads(threads, outputArray, opt_outputMap) {
-  let outputMap = opt_outputMap || {};
-  var batch = gapi.client.newBatch();
+async function fillLabelsForThreads(threads, outputArray, outputMap) {
+  let batch = new BatchRequester();
 
   for (let i = 0; i < threads.length; i++) {
     let thread = threads[i];
@@ -394,11 +400,11 @@ async function fillLabelsForThreads(threads, outputArray, opt_outputMap) {
     }));
   }
 
-  let resp = await batch;
+  let responses = await batch.complete();
   // For now just pretend that the labels on a thread are the union of the labels
   // on all it's messages.
-  for (let index in resp.result) {
-    let result = resp.result[index].result;
+  for (let response of responses) {
+    let result = response.result;
     let labelIds = new Set();
     for (let message of result.messages) {
       for (let labelId of message.labelIds) {
@@ -437,6 +443,8 @@ async function updateThreadList(mailProcessor) {
   // TODO: Move this to a cron
   await guardedCall(mailProcessor.processMail.bind(mailProcessor));
   await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
+
+  updateTitle('Fetching threads to triage...');
 
   let threads = await fetchThreads('inbox');
   if (threads.length)

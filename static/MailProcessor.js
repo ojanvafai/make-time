@@ -407,9 +407,7 @@ class MailProcessor {
     return null;
   }
 
-  async processThread(thread, rules) {
-    await thread.fetchMessages();
-
+  processThread(thread, rules) {
     var startTime = new Date();
     this.debugLog('Processing thread with subject ' + thread.subject);
 
@@ -448,36 +446,50 @@ class MailProcessor {
   }
 
   async processMail() {
-    var rawThreads = await fetchThreads(this.settings.unprocessed_label);
+    let rawThreads = await fetchThreads(this.settings.unprocessed_label);
     if (!rawThreads.length)
       return;
 
+    updateTitle(`Processing ${rawThreads.length} unprocessed threads`);
+
     console.log('Processing mail');
-    var startTime = new Date();
+    let startTime = new Date();
 
+    let threadMap = {};
     let threads = [];
-    await fillLabelsForThreads(rawThreads, threads);
+    await fillLabelsForThreads(rawThreads, threads, threadMap);
 
-    var rulesSheet = await this.readRulesRows();
+    let rulesSheet = await this.readRulesRows();
 
-    var labelIdsToRemove = await this.getLabelNames();
+    let labelIdsToRemove = await this.getLabelNames();
 
-    var newlyLabeledThreadsCount = 0;
-    var perLabelCounts = {};
+    let newlyLabeledThreadsCount = 0;
+    let perLabelCounts = {};
 
-    var processedLabelId;
+    let processedLabelId;
     if (this.settings.processed_label) {
       this.debugLog(
         'Adding processed_label ' + this.settings.processed_label + ' to all threads.');
       processedLabelId = await getLabelId(this.settings.processed_label);
     }
 
-    var unprocessedLabelId = await getLabelId(this.settings.unprocessed_label);
+    let unprocessedLabelId = await getLabelId(this.settings.unprocessed_label);
 
-    // Work through the threads from oldest first.
-    for (var i = threads.length - 1; i >= 0; --i) {
-      var thread = threads[i];
-      var labelName;
+    // Fetch the messages for all the threads in parallel.
+    let batch = new BatchRequester();
+    for (let i = 0; i < threads.length; i++) {
+      batch.add(threads[i].createFetchMessageRequest());
+    }
+    let responses = await batch.complete();
+    for (let response of responses) {
+      let threadId = response.result.id;
+      threadMap[threadId].handleFetchMessageResponse(response);
+    }
+
+    batch = new BatchRequester();
+    for (var i = 0; i < threads.length; i++) {
+      let thread = threads[i];
+      let labelName;
 
       let removeLabelIds = [unprocessedLabelId];
       let addLabelIds = [];
@@ -489,21 +501,17 @@ class MailProcessor {
       let currentTriagedLabel = this.currentTriagedLabel(thread);
       if (currentTriagedLabel) {
         if (currentTriagedLabel == MUTED_LABEL) {
-          await modifyThread(thread, addLabelIds, removeLabelIds);
+          batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
           continue;
         }
         labelName = TRIAGER_LABELS.retriage;
       } else {
-        var result = await this.processThread(thread, rulesSheet.rules);
-        if (result.error) {
-          // Usually an error in fetching messages from the thread. If this happens, don't do any actions.
-          continue;
-        }
+        let result = this.processThread(thread, rulesSheet.rules);
         labelName = result.label || this.settings.fallback_label;
       }
 
       this.debugLog("Applying label: " + labelName);
-      var alreadyHadLabel = false;
+      let alreadyHadLabel = false;
 
       if (labelName == this.settings.archive_label) {
         if (thread.isInInbox())
@@ -524,8 +532,7 @@ class MailProcessor {
           addLabelIds.push('INBOX');
       }
 
-      // TODO: Could modify all the threads in parallel.
-      await modifyThread(thread, addLabelIds, removeLabelIds);
+      batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
 
       if (!alreadyHadLabel) {
         if (!perLabelCounts[labelName])
@@ -535,41 +542,45 @@ class MailProcessor {
       }
     }
 
+    await batch.complete();
+
     if (newlyLabeledThreadsCount) {
       this.writeToStatsPage(
         startTime.getTime(), newlyLabeledThreadsCount, perLabelCounts, Date.now() - startTime.getTime());
     }
 
-    this.logTiming('Finished processing', startTime);
+    this.logTiming(`Finished processing ${threads.length} threads`, startTime);
     return threads.length;
   }
 
   async dequeue(labelName, queue) {
+    updateTitle(`Dequeuing ${labelName} bundle...`);
     var queuedLabelName = addQueuedPrefix(this.settings, labelName);
     var queuedLabel = await getLabelId(queuedLabelName);
     var autoLabel = await getLabelId(this.addAutoPrefix(queuePrefixMap[queue] + '/' + labelName));
     var threads = await fetchThreads(queuedLabelName);
+
+    if (!threads.length)
+      return;
+
+    let batch = new BatchRequester();
     for (var i = 0; i < threads.length; i++) {
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
       let removeLabelIds = [queuedLabel];
-      // TODO: Could modify all the threads in parallel.
-      await modifyThread(thread, addLabelIds, removeLabelIds);
+      batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
     }
-    return threads.length;
+    await batch.complete();
   }
 
   async processSingleQueue(queue) {
-    var threadsProcessedCount = 0;
-    var labelNames = Object.keys(this.settings.queuedLabelMap);
-    var start = Date.now();
+    let threadsProcessedCount = 0;
+    let labelNames = Object.keys(this.settings.queuedLabelMap);
+    let start = Date.now();
     for (var i = 0; i < labelNames.length; i++) {
-      var labelName = labelNames[i];
-      if (this.settings.queuedLabelMap[labelName] == queue) {
-        // TODO: Could theoretically process the queues in parallel.
-        var threadsProcessed = await this.dequeue(labelName, queue);
-        this.debugLog(`Dequeued ${threadsProcessed} from ${labelName}`);
-      }
+      let labelName = labelNames[i];
+      if (this.settings.queuedLabelMap[labelName] == queue)
+        await this.dequeue(labelName, queue);
     }
   }
 
@@ -630,6 +641,7 @@ class MailProcessor {
     }
     const lastDequeueTime = backendValues[LAST_DEQUEUE_TIME_KEY];
     const categories = this.categoriesToDequeue(lastDequeueTime);
+
     for (const category of categories) {
       this.debugLog(`Dequeueing ${category}`);
       await this.processSingleQueue(category);
@@ -641,7 +653,7 @@ class MailProcessor {
       this.write2ColumnSheet(BACKEND_SHEET_NAME, Object.entries(backendValues))
     }
 
-    this.logTiming('Finished dequeueing', startTime);
+    this.logTiming(`Finished dequeueing ${categories}`, startTime);
   }
 
 }

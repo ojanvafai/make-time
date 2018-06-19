@@ -24,11 +24,19 @@ class Thread {
   }
 
   async fetchMessages() {
+    let resp = await this.createFetchMessageRequest();
+    this.handleFetchMessageResponse(resp);
+  }
+
+  createFetchMessageRequest() {
     var requestParams = {
       'userId': USER_ID,
       'id': this.id,
     }
-    var resp = await gapi.client.gmail.users.threads.get(requestParams);
+    return gapi.client.gmail.users.threads.get(requestParams);
+  }
+
+  handleFetchMessageResponse(resp) {
     let messages = [];
     for (var message of resp.result.messages) {
       let previousMessageText = messages.length && messages[messages.length - 1].rawHtml;
@@ -40,15 +48,16 @@ class Thread {
 
   getMessageBody_(mimeParts, output) {
     for (var part of mimeParts) {
+      // For the various 'multipart/*" mime types.
+      if (part.parts)
+        this.getMessageBody_(part.parts, output);
+
       switch (part.mimeType) {
         case 'text/plain':
           output.plain = base64.decode(part.body.data);
           break;
         case 'text/html':
           output.html = base64.decode(part.body.data);
-          break;
-        case 'multipart/alternative':
-          this.getMessageBody_(part.parts, output);
           break;
       }
     }
