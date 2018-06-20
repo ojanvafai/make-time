@@ -615,9 +615,7 @@ class MailProcessor {
   }
 
   async processQueues() {
-    console.log('Processing queues');
-    var startTime = new Date();
-
+    this.debugLog('Fetching backend sheet to process queues.');
     const rawBackendValues = await fetch2ColumnSheet(this.settings.spreadsheetId, BACKEND_SHEET_NAME);
     const backendValues = {};
     // Strip no longer supported backend keys.
@@ -628,16 +626,19 @@ class MailProcessor {
     const lastDequeueTime = backendValues[LAST_DEQUEUE_TIME_KEY];
     const categories = this.categoriesToDequeue(lastDequeueTime);
 
+    if (!categories.length)
+      return;
+
+    console.log('Processing queues');
+    var startTime = new Date();
+
     for (const category of categories) {
       this.debugLog(`Dequeueing ${category}`);
       await this.processSingleQueue(category);
     }
 
-    // Only write the last dequeue time to the backend if we dequeued anything.
-    if (categories.length) {
-      backendValues[LAST_DEQUEUE_TIME_KEY] = Date.now();
-      this.write2ColumnSheet(BACKEND_SHEET_NAME, Object.entries(backendValues))
-    }
+    backendValues[LAST_DEQUEUE_TIME_KEY] = Date.now();
+    this.write2ColumnSheet(BACKEND_SHEET_NAME, Object.entries(backendValues))
 
     this.logTiming(`Finished dequeueing ${categories}`, startTime);
   }
