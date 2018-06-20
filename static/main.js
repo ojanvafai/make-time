@@ -393,7 +393,7 @@ async function fillLabelsForThreads(threads, outputArray, outputMap) {
     outputMap[thread.id] = threadWrapper;
 
     // Fetch the labels for each thread.
-    batch.add(gapi.client.gmail.users.threads.get({
+    await batch.add(gapi.client.gmail.users.threads.get({
       'userId': USER_ID,
       'id': thread.id,
       'fields': 'id,messages/labelIds',

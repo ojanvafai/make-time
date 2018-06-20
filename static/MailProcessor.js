@@ -407,12 +407,13 @@ class MailProcessor {
     return null;
   }
 
-  processThread(thread, rules) {
+  async processThread(thread, rules) {
     var startTime = new Date();
     this.debugLog('Processing thread with subject ' + thread.subject);
 
     var result = {};
 
+    await thread.fetchMessages();
     var messages = thread.messages;
     var label = this.customProcessedLabel(messages);
 
@@ -475,18 +476,7 @@ class MailProcessor {
 
     let unprocessedLabelId = await getLabelId(this.settings.unprocessed_label);
 
-    // Fetch the messages for all the threads in parallel.
     let batch = new BatchRequester();
-    for (let i = 0; i < threads.length; i++) {
-      batch.add(threads[i].createFetchMessageRequest());
-    }
-    let responses = await batch.complete();
-    for (let response of responses) {
-      let threadId = response.result.id;
-      threadMap[threadId].handleFetchMessageResponse(response);
-    }
-
-    batch = new BatchRequester();
     for (var i = 0; i < threads.length; i++) {
       let thread = threads[i];
       let labelName;
@@ -501,7 +491,7 @@ class MailProcessor {
       let currentTriagedLabel = this.currentTriagedLabel(thread);
       if (currentTriagedLabel) {
         if (currentTriagedLabel == MUTED_LABEL) {
-          batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
+          await batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
           continue;
         }
         labelName = TRIAGER_LABELS.retriage;
@@ -532,7 +522,7 @@ class MailProcessor {
           addLabelIds.push('INBOX');
       }
 
-      batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
+      await batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
 
       if (!alreadyHadLabel) {
         if (!perLabelCounts[labelName])
@@ -568,7 +558,7 @@ class MailProcessor {
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
       let removeLabelIds = [queuedLabel];
-      batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
+      await batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
     }
     await batch.complete();
   }

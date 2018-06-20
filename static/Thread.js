@@ -24,22 +24,14 @@ class Thread {
   }
 
   async fetchMessages() {
-    let resp = await this.createFetchMessageRequest();
-    this.handleFetchMessageResponse(resp);
-  }
-
-  createFetchMessageRequest() {
     var requestParams = {
       'userId': USER_ID,
       'id': this.id,
     }
-    return gapi.client.gmail.users.threads.get(requestParams);
-  }
-
-  handleFetchMessageResponse(resp) {
+    let resp = await gapi.client.gmail.users.threads.get(requestParams);
     let messages = [];
     for (var message of resp.result.messages) {
-      let previousMessageText = messages.length && messages[messages.length - 1].rawHtml;
+      let previousMessageText = messages.length && messages[messages.length - 1].html;
       messages.push(this.processMessage_(message, previousMessageText));
     }
     this.subject = messages[0].subject;

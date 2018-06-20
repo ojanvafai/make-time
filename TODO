@@ -10,6 +10,7 @@ TODOs for filters:
 - Make logs save to Drive for retroactive debugging.
 
 P0
+- Nit: doing an action after being finished triaging throws an error.
 - show To field
 - show the date/time of messages
 - Make subject a link to Gmail for easily getting to the email in gmail
