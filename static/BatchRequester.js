@@ -17,7 +17,6 @@ class BatchRequester {
   }
 
   async awaitResponses_() {
-    console.log('pendingsize', this.pendingSize_);
     let batch = this.batch;
     this.reset_();
     let responses = await batch;

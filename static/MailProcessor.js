@@ -411,8 +411,6 @@ class MailProcessor {
     var startTime = new Date();
     this.debugLog('Processing thread with subject ' + thread.subject);
 
-    var result = {};
-
     await thread.fetchMessages();
     var messages = thread.messages;
     var label = this.customProcessedLabel(messages);
@@ -433,8 +431,7 @@ class MailProcessor {
       label = this.settings.fallback_label;
 
     this.debugLogTiming('Thread processing completed', startTime);
-
-    return { label: label };
+    return label;
   }
 
   currentTriagedLabel(thread) {
@@ -496,8 +493,7 @@ class MailProcessor {
         }
         labelName = TRIAGER_LABELS.retriage;
       } else {
-        let result = this.processThread(thread, rulesSheet.rules);
-        labelName = result.label || this.settings.fallback_label;
+        labelName = await this.processThread(thread, rulesSheet.rules);
       }
 
       this.debugLog("Applying label: " + labelName);
