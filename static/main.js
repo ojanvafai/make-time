@@ -318,7 +318,12 @@ async function fetchThreads(label) {
     return result;
   };
 
-  return await getPageOfThreads();
+  let rawThreads = await getPageOfThreads();
+  let threads = [];
+  for (let thread of rawThreads) {
+    threads.push(new Thread(thread));
+  }
+  return threads;
 }
 
 async function guardedCall(func) {
@@ -346,17 +351,10 @@ function showLoader(show) {
   document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
 }
 
-async function addThread(rawThread) {
-  let thread = new Thread(rawThread);
+async function addThread(thread) {
   await thread.fetchMessageDetails();
   g_state.threads.push(thread);
   updateCounter();
-}
-
-async function addRemainingThreads(rawThreads) {
-  for (let rawThread of rawThreads) {
-    await addThread(rawThread);
-  }
 }
 
 async function updateThreadList() {
@@ -364,10 +362,13 @@ async function updateThreadList() {
   updateTitle('Fetching threads to triage...');
 
   await updateLabelList();
-  let rawThreads = await fetchThreads('inbox');
-  await addThread(rawThreads.pop());
+  let threads = await fetchThreads('inbox');
+  await addThread(threads.pop());
   await renderNextThread();
-  await addRemainingThreads(rawThreads);
+
+  for (let thread of threads) {
+    await addThread(thread);
+  }
 
   // TODO: Move this to a cron
   let mailProcessor = new MailProcessor(await getSettings());

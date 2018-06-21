@@ -17,7 +17,7 @@ class Thread {
       let previousMessageText = messages.length && messages[messages.length - 1].html;
       processedMessages.push(this.processMessage_(message, previousMessageText));
     }
-    this.subject = messages[0].subject;
+    this.subject = processedMessages[0].subject;
     this.processedMessages = processedMessages;
 
     this.labelNames = [];
@@ -41,9 +41,7 @@ class Thread {
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
-    let resp = await gapi.client.gmail.users.threads.modify(request);
-    console.log(resp);
-    return resp;
+    return await gapi.client.gmail.users.threads.modify(request);
   }
 
   isInInbox() {

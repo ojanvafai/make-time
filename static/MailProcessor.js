@@ -443,19 +443,15 @@ class MailProcessor {
   }
 
   async processMail() {
-    let rawThreads = await fetchThreads(this.settings.unprocessed_label);
-    if (!rawThreads.length)
+    let threads = await fetchThreads(this.settings.unprocessed_label);
+    if (!threads.length)
       return;
 
-    updateTitle(`Processing ${rawThreads.length} unprocessed threads`);
+    updateTitle(`Processing ${threads.length} unprocessed threads`);
 
     console.log('Processing mail');
     let startTime = new Date();
 
-    let threads = [];
-    for (let thread of rawThreads) {
-      threads.push(new Thread(thread));
-    }
     let rulesSheet = await this.readRulesRows();
 
     let labelIdsToRemove = await this.getLabelNames();
