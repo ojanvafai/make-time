@@ -20,11 +20,6 @@ class ThreadList {
     this.length++;
   }
 
-  prefetchNext() {
-    let list = this.threads_[this.currentQueue()];
-    list[list.length - 1].fetchMessages();
-  }
-
   currentQueue() {
     return this.queues_[0];
   }
@@ -33,7 +28,8 @@ class ThreadList {
     if (!this.length)
       return null;
 
-    let list = this.threads_[this.currentQueue()];
+    let queue = this.currentQueue();
+    let list = this.threads_[queue];
     // Clear out the queue if it will be empty after this call.
     if (list.length == 1) {
       delete this.threads_[queue];

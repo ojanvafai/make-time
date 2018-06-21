@@ -2,13 +2,28 @@ class Thread {
   constructor(thread) {
     this.id = thread.id;
     this.snippet = thread.snippet;
+    if (thread.messages)
+      this.processMessages_(thread.messages);
   }
 
-  addLabelIds(labelIds, idToLabelNames) {
-    this.labelIds = labelIds;
+  processMessages_(messages) {
+    this.labelIds = new Set();
+    let processedMessages = [];
+    for (var message of messages) {
+      for (let labelId of message.labelIds) {
+        this.labelIds.add(labelId);
+      }
+
+      let previousMessageText = messages.length && messages[messages.length - 1].html;
+      processedMessages.push(this.processMessage_(message, previousMessageText));
+    }
+    this.subject = messages[0].subject;
+    this.processedMessages = processedMessages;
+
     this.labelNames = [];
-    for (let id of labelIds) {
-      let name = idToLabelNames[id];
+    for (let id of this.labelIds) {
+      // TODO: Don't use global state!
+      let name = g_state.idToLabel[id];
       if (!name) {
         console.log(`Label id does not exist. WTF. ${id}`);
         continue;
@@ -19,23 +34,32 @@ class Thread {
     }
   }
 
+  async modify(addLabelIds, removeLabelIds) {
+    let request = {
+      'userId': USER_ID,
+      'id': this.id,
+      'addLabelIds': addLabelIds,
+      'removeLabelIds': removeLabelIds,
+    };
+    let resp = await gapi.client.gmail.users.threads.modify(request);
+    console.log(resp);
+    return resp;
+  }
+
   isInInbox() {
     return this.labelIds.has('INBOX');
   }
 
-  async fetchMessages() {
+  async fetchMessageDetails() {
+    if (this.processedMessages)
+      return;
+
     var requestParams = {
       'userId': USER_ID,
       'id': this.id,
     }
     let resp = await gapi.client.gmail.users.threads.get(requestParams);
-    let messages = [];
-    for (var message of resp.result.messages) {
-      let previousMessageText = messages.length && messages[messages.length - 1].html;
-      messages.push(this.processMessage_(message, previousMessageText));
-    }
-    this.subject = messages[0].subject;
-    this.messages = messages;
+    this.processMessages_(resp.result.messages);
   }
 
   getMessageBody_(mimeParts, output) {

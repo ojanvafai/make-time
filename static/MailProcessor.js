@@ -411,8 +411,7 @@ class MailProcessor {
     var startTime = new Date();
     this.debugLog('Processing thread with subject ' + thread.subject);
 
-    await thread.fetchMessages();
-    var messages = thread.messages;
+    var messages = thread.processedMessages;
     var label = this.customProcessedLabel(messages);
 
     if (!label) {
@@ -453,10 +452,10 @@ class MailProcessor {
     console.log('Processing mail');
     let startTime = new Date();
 
-    let threadMap = {};
     let threads = [];
-    await fillLabelsForThreads(rawThreads, threads, threadMap);
-
+    for (let thread of rawThreads) {
+      threads.push(new Thread(thread));
+    }
     let rulesSheet = await this.readRulesRows();
 
     let labelIdsToRemove = await this.getLabelNames();
@@ -473,7 +472,6 @@ class MailProcessor {
 
     let unprocessedLabelId = await getLabelId(this.settings.unprocessed_label);
 
-    let batch = new BatchRequester();
     for (var i = 0; i < threads.length; i++) {
       let thread = threads[i];
       let labelName;
@@ -483,12 +481,14 @@ class MailProcessor {
       if (processedLabelId)
         addLabelIds.push(processedLabelId);
 
+      await thread.fetchMessageDetails();
+
       // Triaged items when reprocessed go in the rtriage queue regardless of what label they
       // might otherwise go in.
       let currentTriagedLabel = this.currentTriagedLabel(thread);
       if (currentTriagedLabel) {
         if (currentTriagedLabel == MUTED_LABEL) {
-          await batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
+          await thread.modify(addLabelIds, removeLabelIds);
           continue;
         }
         labelName = TRIAGER_LABELS.retriage;
@@ -518,7 +518,7 @@ class MailProcessor {
           addLabelIds.push('INBOX');
       }
 
-      await batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
+      await thread.modify(addLabelIds, removeLabelIds);
 
       if (!alreadyHadLabel) {
         if (!perLabelCounts[labelName])
@@ -527,8 +527,6 @@ class MailProcessor {
         newlyLabeledThreadsCount++;
       }
     }
-
-    await batch.complete();
 
     if (newlyLabeledThreadsCount) {
       this.writeToStatsPage(
@@ -549,14 +547,12 @@ class MailProcessor {
     if (!threads.length)
       return;
 
-    let batch = new BatchRequester();
     for (var i = 0; i < threads.length; i++) {
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
       let removeLabelIds = [queuedLabel];
-      await batch.add(modifyThreadRequest(thread, addLabelIds, removeLabelIds));
+      await thread.modify(addLabelIds, removeLabelIds);
     }
-    await batch.complete();
   }
 
   async processSingleQueue(queue) {

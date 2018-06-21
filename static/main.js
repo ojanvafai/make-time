@@ -18,8 +18,6 @@ var base64 = new Base64();
 var g_state = {
   // Ordered list of threads.
   threads: new ThreadList(),
-  // threadId --> thread map.
-  threadMap: {},
   currentThread: 0,
 };
 
@@ -248,25 +246,6 @@ async function getLabelId(labelName) {
   return g_state.labelToId[labelName];
 }
 
-function modifyThreadRequest(thread, addLabelIds, removeLabelIds) {
-  return gapi.client.gmail.users.threads.modify({
-    'userId': USER_ID,
-    'id': thread.id,
-    'addLabelIds': addLabelIds,
-    'removeLabelIds': removeLabelIds,
-  });
-}
-
-async function modifyThread(thread, addLabelIds, removeLabelIds) {
-  let resp = await modifyThreadRequest(thread, addLabelIds, removeLabelIds);
-
-  if (resp.status == '200') {
-    // TODO: Show a spinner at the start so we can hide it here hide spinner
-  } else {
-    // retry? Show some error UI?
-  }
-}
-
 async function markTriaged(thread, destination) {
   var addLabelIds = [];
   if(destination)
@@ -276,7 +255,7 @@ async function markTriaged(thread, destination) {
   var triageQueue = g_state.threads.currentQueue();
   if (triageQueue)
     removeLabelIds.push(await getLabelId(triageQueue));
-  modifyThread(thread, addLabelIds, removeLabelIds);
+  thread.modify(addLabelIds, removeLabelIds);
   renderNextThread();
 }
 
@@ -284,7 +263,7 @@ function compareThreads(a, b) {
   return LabelUtils.compareLabels(a.queue, b.queue);
 }
 
-async function renderNextThread() {
+function renderNextThread() {
   g_state.currentThread = g_state.threads.pop();
 
   updateCounter();
@@ -297,38 +276,21 @@ async function renderNextThread() {
   }
   content.textContent = '';
 
-  var callback = async (thread) => {
-    // If you cycle through threads quickly, then the callback for the previous
-    // thread finishes before the current on has it's data.
-    if (thread != g_state.currentThread)
-      return;
+  let thread = g_state.currentThread;
+  subject.textContent = thread.subject;
 
-    subject.textContent = thread.subject;
-
-    var lastMessageElement;
-    for (var message of thread.messages) {
-      lastMessageElement = renderMessage(message);
-      content.append(lastMessageElement);
-    }
-    var elementToScrollTo = document.querySelector('.unread') || lastMessageElement;
-    elementToScrollTo.scrollIntoView();
-    // Make sure that there's at least 50px of space above for showing that there's a
-    // previous message.
-    let y = elementToScrollTo.getBoundingClientRect().y;
-    if (y < 50)
-      document.documentElement.scrollTop -= 50 - y;
-
-    // Prefetch the next thread for instant access.
-    g_state.threads.prefetchNext();
+  var lastMessageElement;
+  for (var message of thread.processedMessages) {
+    lastMessageElement = renderMessage(message);
+    content.append(lastMessageElement);
   }
-
-  if (g_state.currentThread.messages)
-    callback(g_state.currentThread);
-  else {
-    let thread = g_state.currentThread;
-    await thread.fetchMessages();
-    callback(thread);
-  }
+  var elementToScrollTo = document.querySelector('.unread') || lastMessageElement;
+  elementToScrollTo.scrollIntoView();
+  // Make sure that there's at least 50px of space above for showing that there's a
+  // previous message.
+  let y = elementToScrollTo.getBoundingClientRect().y;
+  if (y < 50)
+    document.documentElement.scrollTop -= 50 - y;
 }
 
 async function fetchThreads(label) {
@@ -359,38 +321,6 @@ async function fetchThreads(label) {
   return await getPageOfThreads();
 }
 
-async function fillLabelsForThreads(threads, outputArray, outputMap) {
-  let batch = new BatchRequester();
-
-  for (let i = 0; i < threads.length; i++) {
-    let thread = new Thread(threads[i]);
-    outputMap[thread.id] = thread;
-
-    // Fetch the labels for each thread.
-    await batch.add(gapi.client.gmail.users.threads.get({
-      'userId': USER_ID,
-      'id': thread.id,
-      'fields': 'id,messages/labelIds',
-    }));
-  }
-
-  let responses = await batch.complete();
-  // For now just pretend that the labels on a thread are the union of the labels
-  // on all it's messages.
-  for (let response of responses) {
-    let result = response.result;
-    let labelIds = new Set();
-    for (let message of result.messages) {
-      for (let labelId of message.labelIds) {
-        labelIds.add(labelId);
-      }
-    }
-    let thread = outputMap[result.id];
-    thread.addLabelIds(labelIds, g_state.idToLabel);
-    outputArray.push(thread);
-  }
-}
-
 async function guardedCall(func) {
   try {
     return await func();
@@ -416,15 +346,28 @@ function showLoader(show) {
   document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
 }
 
+async function addThread(rawThread) {
+  let thread = new Thread(rawThread);
+  await thread.fetchMessageDetails();
+  g_state.threads.push(thread);
+  updateCounter();
+}
+
+async function addRemainingThreads(rawThreads) {
+  for (let rawThread of rawThreads) {
+    await addThread(rawThread);
+  }
+}
+
 async function updateThreadList() {
   showLoader(true);
   updateTitle('Fetching threads to triage...');
 
   await updateLabelList();
-  let threads = await fetchThreads('inbox');
-  if (threads.length)
-    await fillLabelsForThreads(threads, g_state.threads, g_state.threadMap);
+  let rawThreads = await fetchThreads('inbox');
+  await addThread(rawThreads.pop());
   await renderNextThread();
+  await addRemainingThreads(rawThreads);
 
   // TODO: Move this to a cron
   let mailProcessor = new MailProcessor(await getSettings());
@@ -432,7 +375,6 @@ async function updateThreadList() {
   await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
 
   updateTitle('');
-  updateCounter();
   showLoader(false);
 
   // TODO: Move this to a cron, but for now at least do it after all the other network work.
