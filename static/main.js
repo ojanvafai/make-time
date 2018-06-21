@@ -21,8 +21,9 @@ var g_state = {
   // threadId --> thread map.
   threadMap: {},
   currentThread: 0,
-  settings: null,
 };
+
+let settings_;
 
 // Make sure links open in new tabs.
 document.body.addEventListener('click', (e) => {
@@ -83,28 +84,23 @@ async function fetch2ColumnSheet(spreadsheetId, sheetName, opt_startRowIndex) {
   return result;
 }
 
+async function getSettings() {
+  if (!settings_) {
+    let spreadsheetId = getSettingsSpreadsheetId();
+    document.getElementById('settings').href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+    // TODO: Fetch these two in parallel.
+    settings_ = await fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1);
+    settings_.spreadsheetId = spreadsheetId;
+    settings_.queuedLabelMap = await fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
+  }
+  return settings_;
+}
+
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.parentNode.style.display = 'none';
     setupResizeObservers();
-
-    let spreadsheetId = getSettingsSpreadsheetId();
-
-    document.getElementById('settings').href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
-    // TODO: Fetch these two in parallel.
-    var settings = await fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1);
-    settings.spreadsheetId = spreadsheetId;
-    settings.queuedLabelMap = await fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
-
-    g_state.settings = settings;
-
-    let mailProcessor = new MailProcessor(settings);
-
-    await updateThreadList(mailProcessor);
-    await renderNextThread();
-
-    // TODO: Move this to a cron, but for now at least do it after showing the first thread.
-    guardedCall(mailProcessor.collapseStats.bind(mailProcessor));
+    await updateThreadList();
   } else {
     authorizeButton.parentNode.style.display = '';
   }
@@ -122,7 +118,7 @@ function setupResizeObservers() {
 }
 
 function updateTitle(title) {
-  document.getElementById('counter').innerHTML = title;
+  document.getElementById('title').textContent = title;
 }
 
 function updateCounter() {
@@ -130,7 +126,7 @@ function updateCounter() {
   var text = `${threadsLeft} threads left`
   if (threadsLeft)
     text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(g_state.threads.currentQueue())}`;
-  updateTitle(text);
+  document.getElementById('counter').innerHTML = text;
 }
 
 function htmlEscape(html) {
@@ -190,9 +186,9 @@ function renderMessage(processedMessage) {
   return messageDiv;
 }
 
-document.body.addEventListener('keydown', (e) => {
+document.body.addEventListener('keydown', async (e) => {
   if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
-    dispatchShortcut(e.key);
+    await dispatchShortcut(e.key);
 });
 
 var keyToDestination = {
@@ -203,9 +199,9 @@ var keyToDestination = {
   'a': ACTION_ITEM_LABEL,
 }
 
-function dispatchShortcut(key) {
+async function dispatchShortcut(key) {
   if (!keyToDestination.b)
-    keyToDestination.b = addQueuedPrefix(g_state.settings, BLOCKED_LABEL_SUFFIX);
+    keyToDestination.b = addQueuedPrefix(await getSettings(), BLOCKED_LABEL_SUFFIX);
 
   var destination = keyToDestination[key];
   if (destination !== undefined)
@@ -416,22 +412,31 @@ async function guardedCall(func) {
   }
 };
 
-async function updateThreadList(mailProcessor) {
-  document.getElementById('loader').style.display = 'inline-block';
-  await updateLabelList();
+function showLoader(show) {
+  document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
+}
 
-  // TODO: Move this to a cron
-  await guardedCall(mailProcessor.processMail.bind(mailProcessor));
-  await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
-
+async function updateThreadList() {
+  showLoader(true);
   updateTitle('Fetching threads to triage...');
 
+  await updateLabelList();
   let threads = await fetchThreads('inbox');
   if (threads.length)
     await fillLabelsForThreads(threads, g_state.threads, g_state.threadMap);
+  await renderNextThread();
 
+  // TODO: Move this to a cron
+  let mailProcessor = new MailProcessor(await getSettings());
+  await guardedCall(mailProcessor.processMail.bind(mailProcessor));
+  await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
+
+  updateTitle('');
   updateCounter();
-  document.getElementById('loader').style.display = 'none';
+  showLoader(false);
+
+  // TODO: Move this to a cron, but for now at least do it after all the other network work.
+  guardedCall(mailProcessor.collapseStats.bind(mailProcessor));
 }
 
 async function updateLabelList() {
