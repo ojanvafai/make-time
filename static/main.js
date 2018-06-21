@@ -17,10 +17,10 @@ var base64 = new Base64();
 
 var g_state = {
   // Ordered list of threads.
-  threads: [],
+  threads: new ThreadList(),
   // threadId --> thread map.
   threadMap: {},
-  currentThreadIndex: 0,
+  currentThread: 0,
   settings: null,
 };
 
@@ -101,7 +101,7 @@ async function updateSigninStatus(isSignedIn) {
     let mailProcessor = new MailProcessor(settings);
 
     await updateThreadList(mailProcessor);
-    await renderCurrentThread();
+    await renderNextThread();
 
     // TODO: Move this to a cron, but for now at least do it after showing the first thread.
     guardedCall(mailProcessor.collapseStats.bind(mailProcessor));
@@ -126,11 +126,10 @@ function updateTitle(title) {
 }
 
 function updateCounter() {
-  var index = g_state.currentThreadIndex;
-  var threadsLeft = g_state.threads.length - index;
+  var threadsLeft = g_state.threads.length;
   var text = `${threadsLeft} threads left`
   if (threadsLeft)
-    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(g_state.threads[index].queue)}`;
+    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(g_state.threads.currentQueue())}`;
   updateTitle(text);
 }
 
@@ -191,15 +190,6 @@ function renderMessage(processedMessage) {
   return messageDiv;
 }
 
-function renderNextThread() {
-  g_state.currentThreadIndex = nextThreadIndex();
-  renderCurrentThread();
-}
-
-function nextThreadIndex() {
-  return Math.min(g_state.currentThreadIndex + 1, g_state.threads.length);
-}
-
 document.body.addEventListener('keydown', (e) => {
   if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
     dispatchShortcut(e.key);
@@ -219,7 +209,7 @@ function dispatchShortcut(key) {
 
   var destination = keyToDestination[key];
   if (destination !== undefined)
-    markTriaged(g_state.currentThreadIndex, destination);
+    markTriaged(g_state.currentThread, destination);
 };
 
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
@@ -281,51 +271,41 @@ async function modifyThread(thread, addLabelIds, removeLabelIds) {
   }
 }
 
-async function markTriaged(threadIndex, destination) {
+async function markTriaged(thread, destination) {
   var addLabelIds = [];
   if(destination)
     addLabelIds.push(await getLabelId(destination));
 
   var removeLabelIds = ['UNREAD', 'INBOX'];
-  var triageQueue = g_state.threads[threadIndex].queue;
+  var triageQueue = g_state.threads.currentQueue();
   if (triageQueue)
     removeLabelIds.push(await getLabelId(triageQueue));
-  modifyThread(g_state.threads[threadIndex], addLabelIds, removeLabelIds);
+  modifyThread(thread, addLabelIds, removeLabelIds);
   renderNextThread();
-}
-
-async function fetchMessages(index) {
-  // This happens when we triage the last message.
-  if (index == g_state.threads.length)
-    return;
-
-  var thread = g_state.threads[index];
-  return await thread.fetchMessages();
 }
 
 function compareThreads(a, b) {
   return LabelUtils.compareLabels(a.queue, b.queue);
 }
 
-async function renderCurrentThread() {
+async function renderNextThread() {
+  g_state.currentThread = g_state.threads.pop();
+
   updateCounter();
   var content = document.getElementById('content');
   var subject = document.getElementById('subject');
-  if (g_state.currentThreadIndex == g_state.threads.length) {
+  if (!g_state.currentThread) {
     content.textContent = 'All done triaging! \\o/ Reload to check for new threads.';
     subject.textContent = '';
     return;
   }
   content.textContent = '';
 
-  // TODO: Inline this callback now that fetchMessagesForIndex is async.
-  var callback = async (index) => {
+  var callback = async (thread) => {
     // If you cycle through threads quickly, then the callback for the previous
     // thread finishes before the current on has it's data.
-    if (index != g_state.currentThreadIndex)
+    if (thread != g_state.currentThread)
       return;
-
-    let thread = g_state.threads[g_state.currentThreadIndex];
 
     subject.textContent = thread.subject;
 
@@ -343,15 +323,15 @@ async function renderCurrentThread() {
       document.documentElement.scrollTop -= 50 - y;
 
     // Prefetch the next thread for instant access.
-    fetchMessages(nextThreadIndex());
+    g_state.threads.prefetchNext();
   }
 
-  if (g_state.threads[g_state.currentThreadIndex].messages)
-    callback(g_state.currentThreadIndex);
+  if (g_state.currentThread.messages)
+    callback(g_state.currentThread);
   else {
-    let index = g_state.currentThreadIndex;
-    await fetchMessages(index);
-    callback(index);
+    let thread = g_state.currentThread;
+    await thread.fetchMessages();
+    callback(thread);
   }
 }
 
@@ -387,10 +367,8 @@ async function fillLabelsForThreads(threads, outputArray, outputMap) {
   let batch = new BatchRequester();
 
   for (let i = 0; i < threads.length; i++) {
-    let thread = threads[i];
-    let threadWrapper = new Thread(thread);
-    outputArray.push(threadWrapper);
-    outputMap[thread.id] = threadWrapper;
+    let thread = new Thread(threads[i]);
+    outputMap[thread.id] = thread;
 
     // Fetch the labels for each thread.
     await batch.add(gapi.client.gmail.users.threads.get({
@@ -411,7 +389,9 @@ async function fillLabelsForThreads(threads, outputArray, outputMap) {
         labelIds.add(labelId);
       }
     }
-    outputMap[result.id].addLabelIds(labelIds, g_state.idToLabel);
+    let thread = outputMap[result.id];
+    thread.addLabelIds(labelIds, g_state.idToLabel);
+    outputArray.push(thread);
   }
 }
 
@@ -449,8 +429,6 @@ async function updateThreadList(mailProcessor) {
   let threads = await fetchThreads('inbox');
   if (threads.length)
     await fillLabelsForThreads(threads, g_state.threads, g_state.threadMap);
-
-  g_state.threads.sort(compareThreads);
 
   updateCounter();
   document.getElementById('loader').style.display = 'none';

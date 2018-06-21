@@ -10,6 +10,8 @@ TODOs for filters:
 - Make logs save to Drive for retroactive debugging.
 
 P0
+- Change the processing logic to show the first queue'd item, and then start processing incrementally in the background. This involves being able to insert items into the list of threads in the queue dynamically. So, if we do that, we should also remove completed items from g_state.threads and put them in a completed queue (evnetually?) so we can allow for undo. In fact, lets just show the first thread in the inbox immediately, and then do the rest of the threads in order as we incrementally process them.
+- Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Nit: doing an action after being finished triaging throws an error.
 - dequeuing monthly bundles is broken. Need to pick a day of the month to dequeue on.
 - show To field
