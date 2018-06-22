@@ -2,8 +2,13 @@ class Thread {
   constructor(thread) {
     this.id = thread.id;
     this.snippet = thread.snippet;
-    if (thread.messages)
-      this.processMessages_(thread.messages);
+  }
+
+  clearDetails_() {
+    this.labelIds_ = null;
+    this.labelNames_ = null;
+    this.queue_ = null;
+    this.processedMessages_ = null;
   }
 
   processLabels_(messages) {
@@ -26,7 +31,7 @@ class Thread {
         continue;
       }
       if (name.startsWith(TO_TRIAGE_LABEL + '/'))
-        this.queue = name;
+        this.queue_ = name;
       this.labelNames_.push(name);
     }
   }
@@ -53,7 +58,12 @@ class Thread {
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
-    return await gapi.client.gmail.users.threads.modify(request);
+    let response = await gapi.client.gmail.users.threads.modify(request);
+    // TODO: Handle response.status != 200.
+
+    // Once a modify has happend the stored message details are stale and will need refeteching
+    // if this Thread instance continued to be used.
+    this.clearDetails_();
   }
 
   isInInbox() {
@@ -82,11 +92,11 @@ class Thread {
 
   async getQueue() {
     await this.fetchOnlyLabels_();
-    return this.queue;
+    return this.queue_;
   }
 
   async fetchOnlyLabels_() {
-    if (this.queue)
+    if (this.queue_)
       return;
 
     await this.fetchMessageDetails({

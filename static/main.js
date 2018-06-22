@@ -15,9 +15,23 @@ var authorizeButton = document.getElementById('authorize-button');
 
 var base64 = new Base64();
 
+async function updateCounter() {
+  if (!g_state.currentThread)
+    renderNextThread();
+
+  // Include the current thread in the count of threads left.
+  var threadsLeft = g_state.currentThread ? g_state.threads.length + 1 : 0;
+  var text = `${threadsLeft} threads left`
+  if (g_state.currentThread) {
+    let queue = await g_state.currentThread.getQueue();
+    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(queue)}`;
+  }
+  document.getElementById('counter').innerHTML = text;
+}
+
 var g_state = {
   // Ordered list of threads.
-  threads: new ThreadList(),
+  threads: new ThreadList(updateCounter),
   currentThread: 0,
 };
 
@@ -117,14 +131,6 @@ function setupResizeObservers() {
 
 function updateTitle(title) {
   document.getElementById('title').textContent = title;
-}
-
-function updateCounter() {
-  var threadsLeft = g_state.threads.length;
-  var text = `${threadsLeft} threads left`
-  if (threadsLeft)
-    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(g_state.threads.currentQueue())}`;
-  document.getElementById('counter').innerHTML = text;
 }
 
 function htmlEscape(html) {
@@ -262,7 +268,6 @@ async function markTriaged(thread, destination) {
 async function renderNextThread() {
   g_state.currentThread = g_state.threads.pop();
 
-  updateCounter();
   var content = document.getElementById('content');
   var subject = document.getElementById('subject');
   if (!g_state.currentThread) {
@@ -351,7 +356,6 @@ function showLoader(show) {
 
 async function addThread(thread) {
   await g_state.threads.push(thread);
-  updateCounter();
 }
 
 async function updateThreadList() {
@@ -360,15 +364,16 @@ async function updateThreadList() {
 
   await updateLabelList();
   let threads = await fetchThreads('inbox');
-  await addThread(threads.pop());
-  await renderNextThread();
+  let firstThread = threads.pop();
+  if (firstThread)
+    await addThread(firstThread);
 
   for (let thread of threads) {
     await addThread(thread);
   }
 
   // TODO: Move this to a cron
-  let mailProcessor = new MailProcessor(await getSettings());
+  let mailProcessor = new MailProcessor(await getSettings(), g_state.threads);
   await guardedCall(mailProcessor.processMail.bind(mailProcessor));
   await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
 
