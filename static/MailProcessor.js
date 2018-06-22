@@ -502,7 +502,14 @@ class MailProcessor {
           alreadyHadLabel = true;
         removeLabelIds = removeLabelIds.concat(labelIdsToRemove);
       } else {
-        let prefixedLabelName = this.addLabelPrefix(labelName);
+        let prefixedLabelName;
+
+        // Make sure not to put things into the inbox into queued labels.
+        if (thread.isInInbox())
+          prefixedLabelName = this.addAutoPrefix(labelName);
+        else
+          prefixedLabelName = this.addLabelPrefix(labelName);
+
         let prefixedLabelId = await getLabelId(prefixedLabelName);
 
         let labelIds = await thread.getLabelIds();
