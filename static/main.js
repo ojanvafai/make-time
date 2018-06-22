@@ -360,9 +360,10 @@ async function addThread(thread) {
 
 async function updateThreadList() {
   showLoader(true);
-  updateTitle('Fetching threads to triage...');
 
+  updateTitle('Fetching threads to triage...');
   await updateLabelList();
+
   let threads = await fetchThreads('inbox');
   let firstThread = threads.pop();
   if (firstThread)
@@ -372,17 +373,24 @@ async function updateThreadList() {
     await addThread(thread);
   }
 
+  processMail();
+  showLoader(false);
+}
+
+async function processMail() {
   // TODO: Move this to a cron
   let mailProcessor = new MailProcessor(await getSettings(), g_state.threads);
   await guardedCall(mailProcessor.processMail.bind(mailProcessor));
   await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
 
   updateTitle('');
-  showLoader(false);
 
   // TODO: Move this to a cron, but for now at least do it after all the other network work.
   guardedCall(mailProcessor.collapseStats.bind(mailProcessor));
 }
+
+let TEN_MINUTES_IN_MS = 1000 * 60 * 10;
+setInterval(processMail, TEN_MINUTES_IN_MS);
 
 async function updateLabelList() {
   var response = await gapi.client.gmail.users.labels.list({
