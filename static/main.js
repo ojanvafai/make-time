@@ -256,14 +256,10 @@ async function markTriaged(thread, destination) {
   if (triageQueue)
     removeLabelIds.push(await getLabelId(triageQueue));
   thread.modify(addLabelIds, removeLabelIds);
-  renderNextThread();
+  await renderNextThread();
 }
 
-function compareThreads(a, b) {
-  return LabelUtils.compareLabels(a.queue, b.queue);
-}
-
-function renderNextThread() {
+async function renderNextThread() {
   g_state.currentThread = g_state.threads.pop();
 
   updateCounter();
@@ -274,13 +270,13 @@ function renderNextThread() {
     subject.textContent = '';
     return;
   }
+
   content.textContent = '';
+  subject.textContent = await g_state.currentThread.getSubject();
 
-  let thread = g_state.currentThread;
-  subject.textContent = thread.subject;
-
+  let messages = await g_state.currentThread.getMessages();
   var lastMessageElement;
-  for (var message of thread.processedMessages) {
+  for (var message of messages) {
     lastMessageElement = renderMessage(message);
     content.append(lastMessageElement);
   }
@@ -289,8 +285,10 @@ function renderNextThread() {
   // Make sure that there's at least 50px of space above for showing that there's a
   // previous message.
   let y = elementToScrollTo.getBoundingClientRect().y;
-  if (y < 50)
-    document.documentElement.scrollTop -= 50 - y;
+  if (y < 70)
+    document.documentElement.scrollTop -= 70 - y;
+
+  g_state.threads.prefetchFirst();
 }
 
 async function fetchThreads(label) {
@@ -352,8 +350,7 @@ function showLoader(show) {
 }
 
 async function addThread(thread) {
-  await thread.fetchMessageDetails();
-  g_state.threads.push(thread);
+  await g_state.threads.push(thread);
   updateCounter();
 }
 

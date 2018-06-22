@@ -2,26 +2,37 @@ class ThreadList {
   constructor() {
     this.threads_ = {};
     this.length = 0;
-    this.queues_ = [];
+    this.queueNames_ = [];
   }
 
   createQueue_(queue) {
     if (this.threads_[queue])
       return;
     this.threads_[queue] = [];
-    this.queues_.push(queue);
-    this.queues_.sort(LabelUtils.compareLabels);
+    this.queueNames_.push(queue);
+    this.queueNames_.sort(LabelUtils.compareLabels);
   }
 
-  push(thread) {
-    this.createQueue_(thread.queue);
-    let list = this.threads_[thread.queue];
+  async push(thread) {
+    let queue = await thread.getQueue();
+    this.createQueue_(queue);
+    let list = this.threads_[queue];
     list.push(thread);
     this.length++;
+
+    if (this.length == 1)
+      this.prefetchFirst();
   }
 
   currentQueue() {
-    return this.queues_[0];
+    return this.queueNames_[0];
+  }
+
+  prefetchFirst() {
+    let queue = this.currentQueue();
+    let list = this.threads_[queue];
+    if (list)
+      list[list.length - 1].fetchMessageDetails();
   }
 
   pop() {
@@ -33,7 +44,7 @@ class ThreadList {
     // Clear out the queue if it will be empty after this call.
     if (list.length == 1) {
       delete this.threads_[queue];
-      this.queues_.shift();
+      this.queueNames_.shift();
     }
     this.length--;
     return list.pop();

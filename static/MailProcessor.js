@@ -409,15 +409,16 @@ class MailProcessor {
 
   async processThread(thread, rules) {
     var startTime = new Date();
-    this.debugLog('Processing thread with subject ' + thread.subject);
+    let subject = await thread.getSubject();
+    this.debugLog('Processing thread with subject ' + subject);
 
-    var messages = thread.processedMessages;
+    var messages = await thread.getMessages();
     var label = this.customProcessedLabel(messages);
 
     if (!label) {
       var minRuleIndex = rules.length;
       for (let message of messages) {
-        var ruleTriggered = this.processMessage(message, rules, thread.subject);
+        var ruleTriggered = this.processMessage(message, rules, subject);
         minRuleIndex = Math.min(minRuleIndex, ruleTriggered);
       }
 
@@ -433,8 +434,8 @@ class MailProcessor {
     return label;
   }
 
-  currentTriagedLabel(thread) {
-    var labels = thread.labelNames;
+  async currentTriagedLabel(thread) {
+    var labels = await thread.getLabelNames();
     for (var i = 0; i < labels.length; i++) {
       if (labels[i].startsWith(TRIAGER_LABELS.triaged + '/'))
         return labels[i];
@@ -477,11 +478,9 @@ class MailProcessor {
       if (processedLabelId)
         addLabelIds.push(processedLabelId);
 
-      await thread.fetchMessageDetails();
-
       // Triaged items when reprocessed go in the rtriage queue regardless of what label they
       // might otherwise go in.
-      let currentTriagedLabel = this.currentTriagedLabel(thread);
+      let currentTriagedLabel = await this.currentTriagedLabel(thread);
       if (currentTriagedLabel) {
         if (currentTriagedLabel == MUTED_LABEL) {
           await thread.modify(addLabelIds, removeLabelIds);
@@ -505,7 +504,8 @@ class MailProcessor {
         let prefixedLabelName = this.addLabelPrefix(labelName);
         let prefixedLabelId = await getLabelId(prefixedLabelName);
 
-        alreadyHadLabel = thread.labelIds.has(prefixedLabelId);
+        let labelIds = await thread.getLabelIds();
+        alreadyHadLabel = labelIds.has(prefixedLabelId);
 
         addLabelIds.push(prefixedLabelId);
         removeLabelIds = removeLabelIds.concat(labelIdsToRemove.filter(id => id != prefixedLabelId));

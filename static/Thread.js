@@ -6,22 +6,19 @@ class Thread {
       this.processMessages_(thread.messages);
   }
 
-  processMessages_(messages) {
-    this.labelIds = new Set();
-    let processedMessages = [];
+  processLabels_(messages) {
+    if (this.labelIds_)
+      return;
+
+    this.labelIds_ = new Set();
     for (var message of messages) {
       for (let labelId of message.labelIds) {
-        this.labelIds.add(labelId);
+        this.labelIds_.add(labelId);
       }
-
-      let previousMessageText = messages.length && messages[messages.length - 1].html;
-      processedMessages.push(this.processMessage_(message, previousMessageText));
     }
-    this.subject = processedMessages[0].subject;
-    this.processedMessages = processedMessages;
 
-    this.labelNames = [];
-    for (let id of this.labelIds) {
+    this.labelNames_ = [];
+    for (let id of this.labelIds_) {
       // TODO: Don't use global state!
       let name = g_state.idToLabel[id];
       if (!name) {
@@ -30,8 +27,23 @@ class Thread {
       }
       if (name.startsWith(TO_TRIAGE_LABEL + '/'))
         this.queue = name;
-      this.labelNames.push(name);
+      this.labelNames_.push(name);
     }
+  }
+
+  processMessages_(messages) {
+    this.processLabels_(messages);
+
+    // Check if we only fetched labels or if we also have message content.
+    if (!messages[0].payload)
+      return;
+
+    let processedMessages = [];
+    for (var message of messages) {
+      let previousMessageText = messages.length && messages[messages.length - 1].html;
+      processedMessages.push(this.processMessage_(message, previousMessageText));
+    }
+    this.processedMessages_ = processedMessages;
   }
 
   async modify(addLabelIds, removeLabelIds) {
@@ -45,17 +57,51 @@ class Thread {
   }
 
   isInInbox() {
-    return this.labelIds.has('INBOX');
+    return this.labelIds_.has('INBOX');
   }
 
-  async fetchMessageDetails() {
-    if (this.processedMessages)
+  async getLabelIds() {
+    await this.fetchOnlyLabels_();
+    return this.labelIds_;
+  }
+
+  async getLabelNames() {
+    await this.fetchOnlyLabels_();
+    return this.labelNames_;
+  }
+
+  async getSubject() {
+    await this.fetchMessageDetails();
+    return this.processedMessages_[0].subject;
+  }
+
+  async getMessages() {
+    await this.fetchMessageDetails();
+    return this.processedMessages_;
+  }
+
+  async getQueue() {
+    await this.fetchOnlyLabels_();
+    return this.queue;
+  }
+
+  async fetchOnlyLabels_() {
+    if (this.queue)
       return;
 
-    var requestParams = {
-      'userId': USER_ID,
-      'id': this.id,
-    }
+    await this.fetchMessageDetails({
+      fields: 'id,messages/labelIds',
+    })
+  }
+
+  async fetchMessageDetails(opt_extraParams) {
+    if (this.processedMessages_)
+      return;
+
+    let requestParams = opt_extraParams || {};
+    requestParams.userId = USER_ID;
+    requestParams.id = this.id;
+
     let resp = await gapi.client.gmail.users.threads.get(requestParams);
     this.processMessages_(resp.result.messages);
   }
