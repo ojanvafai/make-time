@@ -49,7 +49,7 @@
       .right-toolbar > a {
         color: white;
       }
-      #footer {
+      .footer {
         display: flex;
         justify-content: center;
         position: fixed;
@@ -57,7 +57,7 @@
         left: 0px;
         right: 0px;
       }
-      #footer > button {
+      button {
         margin: 4px;
         padding: 8px;
         font-size: 16px;
@@ -171,9 +171,9 @@
       <!-- Put in dummy header/footer so they take up the same vertical space as the position:fixed elements. -->
       <div id="dummy-header"></div>
       <div id="content"></div>
-      <div id="dummy-footer"></div>
+      <div id="dummy-thread-at-a-time-footer"></div>
     </div>
-    <div id="footer">
+    <div class="footer" id="thread-at-a-time-footer">
       <button onclick="dispatchShortcut('d')"><span class="shortcut">D</span>one</button>
       <button onclick="dispatchShortcut('t')"><span class="shortcut">T</span>L;DR</button>
       <button onclick="dispatchShortcut('r')"><span class="shortcut">R</span>eply Needed</button>

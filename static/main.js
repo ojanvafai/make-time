@@ -120,7 +120,7 @@ async function viewThreadAtATime(threadsToDone, threadsToTriage) {
   for (let thread of threadsToTriage) {
     await g_state.threads.push(thread);
   }
-  document.getElementById('footer').style.display = '';
+  document.getElementById('thread-at-a-time-footer').style.display = '';
 
   for (let thread of threadsToDone) {
     await markTriaged(thread)
@@ -150,7 +150,7 @@ async function viewAll(e) {
   content.textContent = '';
   content.append(g_state.threads);
 
-  document.getElementById('footer').style.display = 'none';
+  document.getElementById('thread-at-a-time-footer').style.display = 'none';
 }
 
 async function updateSigninStatus(isSignedIn) {
@@ -172,7 +172,7 @@ function setupResizeObservers() {
     }
   });
   ro.observe(document.getElementById('header'));
-  ro.observe(document.getElementById('footer'));
+  ro.observe(document.getElementById('thread-at-a-time-footer'));
 }
 
 function updateTitle(title) {

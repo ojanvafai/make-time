@@ -17,17 +17,21 @@ class Vueue extends HTMLElement {
     let nextThread = this.threadlist_.pop();
     while (nextThread) {
       let nextRow = new VueueRow_(nextThread);
-      this.initialThreadsView_.appendChild(nextRow);
+      this.initialThreadsView_.append(nextRow);
 
       nextThread = this.threadlist_.pop();
     }
 
-    this.appendChild(this.initialThreadsView_);
+    this.append(this.initialThreadsView_);
 
+    let footer = document.createElement('div');
+    footer.className = 'footer';
     this.doneBtn_ = document.createElement('button');
     this.doneBtn_.innerHTML = "Archive selected and begin triage";
     this.doneBtn_.addEventListener('click', this.handleDone_);
-    this.appendChild(this.doneBtn_);
+    footer.append(this.doneBtn_);
+
+    this.append(footer);
   }
 
   handleDone_ () {
