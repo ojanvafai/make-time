@@ -66,15 +66,14 @@ class VueueRow_ extends HTMLElement {
 
     this.thread_.getQueue()
     .then( queue => {
+      let label = document.createElement('label');
+
       this.checkBox_ = document.createElement('input');
       this.checkBox_.type = 'checkbox';
-      this.appendChild(this.checkBox_);
+      label.append(this.checkBox_);
+      label.append(`${queue} - ${this.thread_.snippet}`);
 
-      let rowText = `${queue} - ${this.thread_.snippet}`;
-      let rowWrapper = document.createElement('div');
-      rowWrapper.innerHTML = rowText;
-
-      this.appendChild(rowWrapper);
+      this.appendChild(label);
     })
 
     this.style.display = 'flex';

@@ -16,6 +16,12 @@ var authorizeButton = document.getElementById('authorize-button');
 var base64 = new Base64();
 
 async function updateCounter() {
+  let counter = document.getElementById('counter');
+  if (!g_state.threads || g_state.threads instanceof Vueue) {
+    counter.textContent = '';
+    return;
+  }
+
   if (!g_state.currentThread)
     renderNextThread();
 
@@ -26,7 +32,7 @@ async function updateCounter() {
     let queue = await g_state.currentThread.getQueue();
     text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(queue)}`;
   }
-  document.getElementById('counter').innerHTML = text;
+  counter.innerHTML = text;
 }
 
 var g_state = {};
@@ -130,15 +136,19 @@ async function viewAll(e) {
   if (!g_state.threads.length)
     return;
 
-  await g_state.threads.push(g_state.currentThread);
-  let newView = new Vueue(g_state.threads, viewThreadAtATime);
-  g_state.threads = newView;
+  let threads = g_state.threads;
+  // Null this out so that pushing the current thread doesn't update the counter.
+  g_state.threads = null;
+  await threads.push(g_state.currentThread);
 
+  g_state.threads = new Vueue(threads, viewThreadAtATime);
+
+  await updateCounter();
   getSubjectContainer().textContent = '';
 
   var content = getContentContainer();
   content.textContent = '';
-  content.append(newView);
+  content.append(g_state.threads);
 
   document.getElementById('footer').style.display = 'none';
 }
