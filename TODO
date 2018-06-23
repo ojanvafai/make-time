@@ -8,7 +8,6 @@ TODOs for filters:
 
 P0
 - Move the thread at a time view code into its own custom element.
-- Nit: doing an action after being finished triaging throws an error.
 - dequeuing monthly bundles is broken. Need to pick a day of the month to dequeue on.
 - show To field
 - show the date/time of messages

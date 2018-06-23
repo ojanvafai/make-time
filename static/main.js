@@ -65,6 +65,23 @@ window.onload = () => {
   });
 };
 
+window.addEventListener('error', (e) => {
+  console.log(e.stack);
+
+  var emailBody = 'Captured an error: ' + e.message;
+  if (e.body)
+    emailBody += '\n' + e.body;
+  if (e.stack)
+    emailBody += '\n\n' + e.stack;
+
+  // TODO: figure out how to send emails once this is back on a cron.
+  alert(emailBody);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  alert(`Unhandled rejection ${e.reason.stack}`);
+});
+
 function getSettingsSpreadsheetId() {
   if (localStorage.spreadsheetId)
     return localStorage.spreadsheetId;
@@ -263,7 +280,7 @@ var keyToDestination = {
 }
 
 async function dispatchShortcut(key) {
-  if (g_state.threads instanceof Vueue)
+  if (!g_state.currentThread)
     return;
 
   if (!keyToDestination.b)
@@ -343,13 +360,13 @@ function renderAllDone() {
 
 async function renderNextThread() {
   g_state.currentThread = g_state.threads.pop();
-  updateCounter();
 
   if (!g_state.currentThread) {
     renderAllDone();
     return;
   }
 
+  updateCounter();
   getSubjectContainer().textContent = await g_state.currentThread.getSubject();
 
   var content = getContentContainer();
@@ -405,27 +422,6 @@ async function fetchThreads(label) {
   return threads;
 }
 
-async function guardedCall(func) {
-  try {
-    return await func();
-  } catch (e) {
-    var emailBody = 'Captured an error processing mail.' + e;
-
-    if (e.body)
-      emailBody += '\n' + e.body;
-
-    if (e.name) {
-      emailBody += '\n' + e.name;
-      emailBody += '\nMessage: ' + e.message;
-      emailBody += '\n\n' + e.stack;
-    }
-
-    // TODO: figure out how to send emails once this is back on a cron.
-    alert(emailBody);
-    throw e;
-  }
-};
-
 function showLoader(show) {
   document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
   if (!show);
@@ -463,11 +459,11 @@ async function processMail() {
   updateTitle('Processing mail backlog...');
   // TODO: Move this to a cron
   let mailProcessor = new MailProcessor(await getSettings(), g_state.threads);
-  await guardedCall(mailProcessor.processMail.bind(mailProcessor));
-  await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
+  await mailProcessor.processMail();
+  await mailProcessor.processQueues();
 
   // TODO: Move this to a cron, but for now at least do it after all the other network work.
-  guardedCall(mailProcessor.collapseStats.bind(mailProcessor));
+  mailProcessor.collapseStats();
 }
 
 let TEN_MINUTES_IN_MS = 1000 * 60 * 10;
