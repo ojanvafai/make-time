@@ -284,13 +284,13 @@ class MailProcessor {
     for (var i = 1; i < rows.length; ++i) {
       // timestamp, threads_processed, messages_processed, total_time, perLabelThreadCountJSON
 
-      let timestamp = rows[i][0];
+      let timestamp = Number(rows[i][0]);
       // Ignore empty rows
       if (!timestamp) {
         continue;
       }
 
-      let yearMonthDay = this.getYearMonthDay(Number(timestamp));
+      let yearMonthDay = this.getYearMonthDay(timestamp);
 
       if (todayYearMonthDay < yearMonthDay)
         throw `Something is wrong with the statistics spreadsheet. Some rows have dates in the future: ${yearMonthDay}`;
@@ -321,11 +321,11 @@ class MailProcessor {
       lastRowProcessed = i;
 
       stats.numInvocations++;
-      stats.totalThreads += rows[i][1];
+      stats.totalThreads += Number(rows[i][1]);
 
       stats.totalTime += Number(rows[i][2]);
-      stats.minTime = Math.min(stats.minTime, rows[i][2]);
-      stats.maxTime = Math.max(stats.maxTime, rows[i][2]);
+      stats.minTime = Math.min(stats.minTime, Number(rows[i][2]));
+      stats.maxTime = Math.max(stats.maxTime, Number(rows[i][2]));
 
       var labelCounts = JSON.parse(rows[i][3]);
       for (var label in labelCounts) {
@@ -389,56 +389,32 @@ class MailProcessor {
     return matches;
   }
 
-  processMessage(message, rules, threadSubject) {
-    for (var i = 0; i < rules.length; i++) {
-      var rule = rules[i];
-      if (this.matchesRule(rule, message)) {
-        this.debugLog('Matched rule ' + JSON.stringify(rule));
-        return i;
-      }
-    }
-    return rules.length;
-  };
+  async processThread(thread, rules) {
+    var messages = await thread.getMessages();
 
-  allMessagesAre(messages, criteria) {
-    for (var i = 0; i < messages.length(); i++) {
-      if (!criteria(messages.get(i)))
-        return false;
-    }
-    return true;
-  }
-
-  customProcessedLabel(messages) {
     if (this.settings.auto_responder_label && messages.length == 1 && messages[0].xAutoreply)
       return this.settings.auto_responder_label;
-    return null;
-  }
 
-  async processThread(thread, rules) {
-    var startTime = new Date();
-    let subject = await thread.getSubject();
-    this.debugLog('Processing thread with subject ' + subject);
-
-    var messages = await thread.getMessages();
-    var label = this.customProcessedLabel(messages);
-
-    if (!label) {
-      var minRuleIndex = rules.length;
-      for (let message of messages) {
-        var ruleTriggered = this.processMessage(message, rules, subject);
-        minRuleIndex = Math.min(minRuleIndex, ruleTriggered);
+    for (let rule of rules) {
+      if (rule.matchallmessages == 'yes') {
+        let matches = false;
+        for (let message of messages) {
+          matches = this.matchesRule(rule, message);
+          if (!matches)
+            break;
+        }
+        if (matches)
+          return rule.label;
+      } else {
+        for (let message of messages) {
+          if (this.matchesRule(rule, message))
+            return rule.label;
+        }
       }
-
-      if (minRuleIndex != rules.length)
-        label = rules[minRuleIndex].label;
     }
 
     // Ensure there's always some label to make sure bugs don't cause emails to get lost silently.
-    if (!label)
-      label = this.settings.fallback_label;
-
-    this.debugLogTiming('Thread processing completed', startTime);
-    return label;
+    return this.settings.fallback_label;
   }
 
   async currentTriagedLabel(thread) {

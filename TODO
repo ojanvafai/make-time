@@ -1,17 +1,13 @@
 TODOs for filters:
-- Add ability to require a filter rule to apply to all messages in the thread.
 - add the ability to filter messages with no list-id as those are probably more urgent.
-- If something is already in the inbox, don't daily/weekly/monthly queue it, just apply the label as needstriage directly, otherwise it will get delayed fruther before you see it.
-- add back in the ability to put something in the inbox with no label since the triager now treats that as most urgent
+- add the ability to put something in the inbox with no label since the triager now treats that as most urgent
 - if the last message is vacation responder, and the message before that one is read, and it's not in a triager/auto queue, then auto archive
 - Add "-" or "!" for -foo@bar.com
 - Have one filter field with to:, etc. and proper boolean logic with !, ||, &&. whitespace trimming, and quotes around strings
 - Allow regexps with special regexp syntax, e.g. r'regexphere'.
-- Make logs save to Drive for retroactive debugging.
 
 P0
 - Move the thread at a time view code into its own custom element.
-- Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Nit: doing an action after being finished triaging throws an error.
 - dequeuing monthly bundles is broken. Need to pick a day of the month to dequeue on.
 - show To field
@@ -23,25 +19,20 @@ P0
 - add a needs filter option?
 - add an urgent action item? what about important?
 - Don't elide inside style tags and need to make sure that eliding respects markup.
-- Fix race condition where if new message comes in after ojru has prefetched, the archiving will archive that as well.
-- show week/month queues as a list, not as individual messages, with the option to done/expand/track (if track, then it auto-dones at the end of the week/month)
+- Fix race condition where if new message comes in after make-time has prefetched, the archiving will archive that as well.
+- Undo previous action
 
 P1
+- Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Add keyboard shortcuts for Vueue mode. j/k/x next/previous/toggle
 - disable title tags in emails. They currently update the title of make-time.
 - Provide a way to modify which spreadsheet is used as the settings sheet.
 - Log performance of showing next thread after an action was taken so we can see if we need to improve it. One of these services should make it pretty easy.
-- add timer
+- add per thread countdown timer
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
 - allow tweet length replies
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
-- use virtual scroller!
-- get high lighthouse score and add to homescreen
-- automatically update to add new threads as they come in (right now requires reloading the page)
-- add options to show labels on each message (useful for debugging)
-- preload the next N threads instead of just the next one
-- Undo previous action
 - Google Assistant integration
-- Once the triage is done, allow for pick which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
+- Once the triage is done, allow picking which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
 - Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.
 - Feature request for once we have a reply mode: by default send "dones", but also add send & blocked for things where you want to make sure there is followup.
