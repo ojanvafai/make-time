@@ -104,31 +104,6 @@ async function getSettings() {
   return settings_;
 }
 
-class Vueue extends HTMLElement {
-  constructor(threadList, cleanupDelegate) {
-    super();
-    this.textContent = JSON.stringify(threadList);
-    let done = document.createElement('button');
-    done.textContent = 'done';
-    this.append(done);
-    
-    let threadsToDone = [];
-    let threadsToTriage = [];
-    while (threadList.length) {
-      threadsToTriage.push(threadList.pop());
-    }
-    
-    done.onclick = () => {
-      cleanupDelegate(threadsToDone, threadsToTriage);
-    }
-  }
-  push(thread) {
-    console.log('not implemented. push thread with id', thread.id);
-  }
-}
-
-window.customElements.define('mt-vueue', Vueue);
-
 function resetThreadList() {
   g_state.threads = new ThreadList(updateCounter);
   g_state.currentThread = null;
@@ -139,10 +114,11 @@ async function viewThreadAtATime(threadsToDone, threadsToTriage) {
   for (let thread of threadsToTriage) {
     await g_state.threads.push(thread);
   }
-  for (let thread of threadsToDone) {
-    console.log('done not implemented');
-  }
   document.getElementById('footer').style.display = '';
+
+  for (let thread of threadsToDone) {
+    await markTriaged(thread)
+  }
 }
 
 async function viewAll(e) {
@@ -150,20 +126,20 @@ async function viewAll(e) {
 
   if (g_state.threads instanceof Vueue)
     return;
-  
+
   if (!g_state.threads.length)
     return;
-  
+
   await g_state.threads.push(g_state.currentThread);
   let newView = new Vueue(g_state.threads, viewThreadAtATime);
   g_state.threads = newView;
-  
+
   getSubjectContainer().textContent = '';
 
   var content = getContentContainer();
   content.textContent = '';
   content.append(newView);
-  
+
   document.getElementById('footer').style.display = 'none';
 }
 
@@ -266,13 +242,15 @@ var keyToDestination = {
 async function dispatchShortcut(key) {
   if (g_state.threads instanceof Vueue)
     return;
-    
+
   if (!keyToDestination.b)
     keyToDestination.b = addQueuedPrefix(await getSettings(), BLOCKED_LABEL_SUFFIX);
 
   var destination = keyToDestination[key];
-  if (destination !== undefined)
+  if (destination !== undefined) {
     markTriaged(g_state.currentThread, destination);
+    await renderNextThread();
+  }
 };
 
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
@@ -324,8 +302,7 @@ async function markTriaged(thread, destination) {
   var triageQueue = g_state.threads.currentQueue();
   if (triageQueue)
     removeLabelIds.push(await getLabelId(triageQueue));
-  thread.modify(addLabelIds, removeLabelIds);
-  await renderNextThread();
+  await thread.modify(addLabelIds, removeLabelIds);
 }
 
 function getContentContainer() {
@@ -338,6 +315,7 @@ function getSubjectContainer() {
 
 async function renderNextThread() {
   g_state.currentThread = g_state.threads.pop();
+  updateCounter();
 
   var content = getContentContainer();
   var subject = getSubjectContainer();

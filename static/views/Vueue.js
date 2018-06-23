@@ -15,7 +15,7 @@ class Vueue extends HTMLElement {
     this.initialThreadsView_ = document.createElement('div');
 
     let nextThread = this.threadlist_.pop();
-    while(nextThread) {
+    while (nextThread) {
       let nextRow = new VueueRow_(nextThread);
       this.initialThreadsView_.appendChild(nextRow);
 
@@ -33,13 +33,13 @@ class Vueue extends HTMLElement {
   handleDone_ () {
     let selectedThreads = [];
     let unselectedThreads = [];
-    for(let child of this.initialThreadsView_.children) {
+    for (let child of this.initialThreadsView_.children) {
       let destination = child.checked ? selectedThreads : unselectedThreads;
       destination.push(child.thread);
     }
 
     let unprocessedThread = this.recentlyProcessed_.pop();
-    while(unprocessedThread) {
+    while (unprocessedThread) {
       unselectedThreads.push(unprocessedThread);
       unprocessedThread = this.recentlyProcessed_.pop();
     }
