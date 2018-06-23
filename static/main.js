@@ -29,11 +29,7 @@ async function updateCounter() {
   document.getElementById('counter').innerHTML = text;
 }
 
-var g_state = {
-  // Ordered list of threads.
-  threads: new ThreadList(updateCounter),
-  currentThread: 0,
-};
+var g_state = {};
 
 let settings_;
 
@@ -108,9 +104,73 @@ async function getSettings() {
   return settings_;
 }
 
+class Vueue extends HTMLElement {
+  constructor(threadList, cleanupDelegate) {
+    super();
+    this.textContent = JSON.stringify(threadList);
+    let done = document.createElement('button');
+    done.textContent = 'done';
+    this.append(done);
+    
+    let threadsToDone = [];
+    let threadsToTriage = [];
+    while (threadList.length) {
+      threadsToTriage.push(threadList.pop());
+    }
+    
+    done.onclick = () => {
+      cleanupDelegate(threadsToDone, threadsToTriage);
+    }
+  }
+  push(thread) {
+    console.log('not implemented. push thread with id', thread.id);
+  }
+}
+
+window.customElements.define('mt-vueue', Vueue);
+
+function resetThreadList() {
+  g_state.threads = new ThreadList(updateCounter);
+  g_state.currentThread = null;
+}
+
+async function viewThreadAtATime(threadsToDone, threadsToTriage) {
+  resetThreadList();
+  for (let thread of threadsToTriage) {
+    await g_state.threads.push(thread);
+  }
+  for (let thread of threadsToDone) {
+    console.log('done not implemented');
+  }
+  document.getElementById('footer').style.display = '';
+}
+
+async function viewAll(e) {
+  e.preventDefault();
+
+  if (g_state.threads instanceof Vueue)
+    return;
+  
+  if (!g_state.threads.length)
+    return;
+  
+  await g_state.threads.push(g_state.currentThread);
+  let newView = new Vueue(g_state.threads, viewThreadAtATime);
+  g_state.threads = newView;
+  
+  getSubjectContainer().textContent = '';
+
+  var content = getContentContainer();
+  content.textContent = '';
+  content.append(newView);
+  
+  document.getElementById('footer').style.display = 'none';
+}
+
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.parentNode.style.display = 'none';
+    document.getElementById('view-all').onclick = viewAll;
     setupResizeObservers();
     await updateThreadList();
   } else {
@@ -204,6 +264,9 @@ var keyToDestination = {
 }
 
 async function dispatchShortcut(key) {
+  if (g_state.threads instanceof Vueue)
+    return;
+    
   if (!keyToDestination.b)
     keyToDestination.b = addQueuedPrefix(await getSettings(), BLOCKED_LABEL_SUFFIX);
 
@@ -265,11 +328,19 @@ async function markTriaged(thread, destination) {
   await renderNextThread();
 }
 
+function getContentContainer() {
+  return document.getElementById('content');
+}
+
+function getSubjectContainer() {
+  return document.getElementById('subject');
+}
+
 async function renderNextThread() {
   g_state.currentThread = g_state.threads.pop();
 
-  var content = document.getElementById('content');
-  var subject = document.getElementById('subject');
+  var content = getContentContainer();
+  var subject = getSubjectContainer();
   if (!g_state.currentThread) {
     content.textContent = 'All done triaging! \\o/ Reload to check for new threads.';
     subject.textContent = '';
@@ -360,6 +431,7 @@ async function addThread(thread) {
 
 async function updateThreadList() {
   showLoader(true);
+  resetThreadList();
 
   updateTitle('Fetching threads to triage...');
   await updateLabelList();

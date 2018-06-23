@@ -43,9 +43,11 @@
       #counter {
         text-align: center;
       }
-      #settings {
-        color: white;
+      .right-toolbar {
         text-align: right;
+      }
+      .right-toolbar > a {
+        color: white;
       }
       #footer {
         display: flex;
@@ -156,10 +158,15 @@
           <span id="title">&nbsp;</span>
         </div>
         <div id="counter">&nbsp;</div>
-        <a id="settings" href="">Settings</a>
+        <div class='right-toolbar'>
+          <!-- todo: use proper routing with urls that work for things like open in new tab -->
+          <a href='' id="view-all">View All Threads</a>
+          <a id="settings" href="">Settings</a>
+        </div>
       </div>
       <div id="subject"></div>
     </div>
+    
     <div class="content-wrapper">
       <!-- Put in dummy header/footer so they take up the same vertical space as the position:fixed elements. -->
       <div id="dummy-header"></div>
