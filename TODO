@@ -10,6 +10,7 @@ TODOs for filters:
 - Make logs save to Drive for retroactive debugging.
 
 P0
+- Add keyboard shortcuts for Vueue mode.
 - Move the thread at a time view code into its own custom element.
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Nit: doing an action after being finished triaging throws an error.

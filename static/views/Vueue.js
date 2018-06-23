@@ -1,8 +1,8 @@
 class Vueue extends HTMLElement {
   constructor(threadlist, cleanupDelegate) {
     super();
+    this.style.display = 'block';
 
-    console.log('Constructor called');
     this.threadlist_ = threadlist;
     this.recentlyProcessed_ = new ThreadList(this.updateRecentlyProcessed_);
     this.cleanupDelegate_ = cleanupDelegate;
@@ -11,13 +11,21 @@ class Vueue extends HTMLElement {
     this.handleDone_ = this.handleDone_.bind(this);
   }
 
-  connectedCallback() {
+  async connectedCallback() {
     this.initialThreadsView_ = document.createElement('div');
 
     let nextThread = this.threadlist_.pop();
+
+    let currentRowGroup;
     while (nextThread) {
-      let nextRow = new VueueRow_(nextThread);
-      this.initialThreadsView_.append(nextRow);
+      let queue = await nextThread.getDisplayableQueue();
+
+      if (!currentRowGroup || queue != currentRowGroup.queue) {
+        currentRowGroup = new VueueRowGroup_(queue);
+        this.initialThreadsView_.append(currentRowGroup);
+      }
+
+      currentRowGroup.push(nextThread);
 
       nextThread = this.threadlist_.pop();
     }
@@ -37,7 +45,7 @@ class Vueue extends HTMLElement {
   handleDone_ () {
     let selectedThreads = [];
     let unselectedThreads = [];
-    for (let child of this.initialThreadsView_.children) {
+    for (let child of this.initialThreadsView_.querySelectorAll('mt-vueue-row')) {
       let destination = child.checked ? selectedThreads : unselectedThreads;
       destination.push(child.thread);
     }
@@ -58,33 +66,97 @@ class Vueue extends HTMLElement {
   async updateRecentlyProcessed_() {
     // TODO :D
   }
-
 }
 window.customElements.define('mt-vueue', Vueue);
+
+class VueueRowGroup_ extends HTMLElement {
+  constructor(queue) {
+    super();
+    this.style.display = 'block';
+
+    this.queue_ = queue;
+
+    // TODO: Make custom elements for queue container and row container so they
+    // can be independently styled instead of using inline styling.
+    let queueSpan = document.createElement('b')
+    queueSpan.append(queue);
+
+    let queueContainer = document.createElement('div');
+    queueContainer.append(
+      'Select ',
+      this.createSelector_('all', this.selectAll_),
+      this.createSelector_('none', this.selectNone_),
+      `in `,
+      queueSpan);
+
+    queueContainer.style.marginRight = '6px';
+
+    this.rowContainer_ = document.createElement('div');
+    this.append(queueContainer, this.rowContainer_);
+  }
+
+  push(thread) {
+    this.rowContainer_.append(new VueueRow_(thread));
+  }
+
+  createSelector_(textContent, callback) {
+    let selector = document.createElement('span');
+    selector.textContent = textContent;
+    selector.style.textDecoration = 'underline';
+    selector.style.marginRight = '4px';
+    selector.onclick = callback.bind(this);
+    return selector;
+  }
+
+  selectAll_() {
+    this.selectRows_(true);
+  }
+
+  selectNone_() {
+    this.selectRows_(false);
+  }
+
+  selectRows_(value) {
+    for (let child of this.rowContainer_.children) {
+      child.checked = value;
+    }
+  }
+
+  get queue() {
+    return this.queue_;
+  }
+}
+window.customElements.define('mt-vueue-row-group', VueueRowGroup_);
 
 class VueueRow_ extends HTMLElement {
   constructor(thread) {
     super();
+    this.style.display = 'flex';
 
     this.thread_ = thread;
 
-    this.thread_.getDisplayableQueue()
-    .then( queue => {
+    this.thread_.getSubject()
+    .then(subject => {
       let label = document.createElement('label');
 
       this.checkBox_ = document.createElement('input');
       this.checkBox_.type = 'checkbox';
       label.append(this.checkBox_);
-      label.append(`${queue} - ${this.thread_.snippet}`);
+      let snippet = document.createElement('span');
+      snippet.style.color = '#666';
+      snippet.textContent = ` - ${this.thread_.snippet}`;
+      label.append(subject, snippet);
 
       this.appendChild(label);
-    })
-
-    this.style.display = 'flex';
+    });
   }
 
   get checked() {
     return this.checkBox_.checked;
+  }
+
+  set checked(value) {
+    this.checkBox_.checked = value;
   }
 
   get thread() {

@@ -116,15 +116,26 @@ function resetThreadList() {
 }
 
 async function viewThreadAtATime(threadsToDone, threadsToTriage) {
+  if (threadsToDone.length) {
+    showLoader(true);
+    updateTitle(`Archiving ${threadsToDone.length} threads...`);
+  }
+
   resetThreadList();
   for (let thread of threadsToTriage) {
     await g_state.threads.push(thread);
   }
-  document.getElementById('thread-at-a-time-footer').style.display = '';
+
+  if (!g_state.currentThread)
+    renderAllDone();
+
+  document.getElementById('thread-at-a-time-footer').style.visibility = '';
 
   for (let thread of threadsToDone) {
     await markTriaged(thread)
   }
+
+  showLoader(false);
 }
 
 async function viewAll(e) {
@@ -133,7 +144,7 @@ async function viewAll(e) {
   if (g_state.threads instanceof Vueue)
     return;
 
-  if (!g_state.threads.length)
+  if (!g_state.currentThread)
     return;
 
   let threads = g_state.threads;
@@ -150,7 +161,9 @@ async function viewAll(e) {
   content.textContent = '';
   content.append(g_state.threads);
 
-  document.getElementById('thread-at-a-time-footer').style.display = 'none';
+  // Don't display none, since this is the thing that keeps space for the toolbar at the bottom.
+  // TODO: Make this less brittle as we move the thread-at-a-time view code into it's own element.
+  document.getElementById('thread-at-a-time-footer').style.visibility = 'hidden';
 }
 
 async function updateSigninStatus(isSignedIn) {
@@ -305,13 +318,13 @@ async function getLabelId(labelName) {
 
 async function markTriaged(thread, destination) {
   var addLabelIds = [];
-  if(destination)
+  if (destination)
     addLabelIds.push(await getLabelId(destination));
 
   var removeLabelIds = ['UNREAD', 'INBOX'];
-  var triageQueue = g_state.threads.currentQueue();
-  if (triageQueue)
-    removeLabelIds.push(await getLabelId(triageQueue));
+  var queue = await thread.getQueue();
+  if (queue)
+    removeLabelIds.push(await getLabelId(queue));
   await thread.modify(addLabelIds, removeLabelIds);
 }
 
@@ -323,20 +336,24 @@ function getSubjectContainer() {
   return document.getElementById('subject');
 }
 
+function renderAllDone() {
+  getContentContainer().textContent = 'All done triaging! \\o/ Reload to check for new threads.';
+  getSubjectContainer().textContent = '';
+}
+
 async function renderNextThread() {
   g_state.currentThread = g_state.threads.pop();
   updateCounter();
 
-  var content = getContentContainer();
-  var subject = getSubjectContainer();
   if (!g_state.currentThread) {
-    content.textContent = 'All done triaging! \\o/ Reload to check for new threads.';
-    subject.textContent = '';
+    renderAllDone();
     return;
   }
 
+  getSubjectContainer().textContent = await g_state.currentThread.getSubject();
+
+  var content = getContentContainer();
   content.textContent = '';
-  subject.textContent = await g_state.currentThread.getSubject();
 
   let messages = await g_state.currentThread.getMessages();
   var lastMessageElement;
@@ -411,6 +428,8 @@ async function guardedCall(func) {
 
 function showLoader(show) {
   document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
+  if (!show);
+    updateTitle('');
 }
 
 async function addThread(thread) {
@@ -433,6 +452,9 @@ async function updateThreadList() {
     await addThread(thread);
   }
 
+  if (!g_state.currentThread)
+    renderAllDone();
+
   processMail();
   showLoader(false);
 }
@@ -442,8 +464,6 @@ async function processMail() {
   let mailProcessor = new MailProcessor(await getSettings(), g_state.threads);
   await guardedCall(mailProcessor.processMail.bind(mailProcessor));
   await guardedCall(mailProcessor.processQueues.bind(mailProcessor));
-
-  updateTitle('');
 
   // TODO: Move this to a cron, but for now at least do it after all the other network work.
   guardedCall(mailProcessor.collapseStats.bind(mailProcessor));
