@@ -64,7 +64,7 @@ class VueueRow_ extends HTMLElement {
 
     this.thread_ = thread;
 
-    this.thread_.getQueue()
+    this.thread_.getDisplayableQueue()
     .then( queue => {
       let label = document.createElement('label');
 

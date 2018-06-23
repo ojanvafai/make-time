@@ -29,8 +29,8 @@ async function updateCounter() {
   var threadsLeft = g_state.currentThread ? g_state.threads.length + 1 : 0;
   var text = `${threadsLeft} threads left`
   if (g_state.currentThread) {
-    let queue = await g_state.currentThread.getQueue();
-    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${removeTriagedPrefix(queue)}`;
+    let queue = await g_state.currentThread.getDisplayableQueue();
+    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${queue}`;
   }
   counter.innerHTML = text;
 }

@@ -90,6 +90,13 @@ class Thread {
     return this.processedMessages_;
   }
 
+  async getDisplayableQueue() {
+    await this.fetchOnlyLabels_();
+    if (!this.queue_)
+      return 'inbox';
+    return removeTriagedPrefix(this.queue_);
+  }
+
   async getQueue() {
     await this.fetchOnlyLabels_();
     return this.queue_;
