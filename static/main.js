@@ -455,11 +455,12 @@ async function updateThreadList() {
   if (!g_state.currentThread)
     renderAllDone();
 
-  processMail();
+  await processMail();
   showLoader(false);
 }
 
 async function processMail() {
+  updateTitle('Processing mail backlog...');
   // TODO: Move this to a cron
   let mailProcessor = new MailProcessor(await getSettings(), g_state.threads);
   await guardedCall(mailProcessor.processMail.bind(mailProcessor));

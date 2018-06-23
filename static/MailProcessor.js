@@ -103,6 +103,12 @@ class MailProcessor {
     return TRIAGER_LABELS.needsTriage + "/" + labelName;
   }
 
+  dequeuedLabelName(queue, labelName) {
+    if (!queuePrefixMap[queue])
+      throw `Attempting to put label in a non-existant queue. queue: ${queue}, label: ${labelName}`;
+    return this.addAutoPrefix(queuePrefixMap[queue] + '/' + labelName);
+  }
+
   // TODO: Merge this with the other label code.
   async getLabelNames() {
     var response = await gapi.client.gmail.users.labels.list({
@@ -449,8 +455,6 @@ class MailProcessor {
     if (!threads.length)
       return;
 
-    updateTitle(`Processing ${threads.length} unprocessed threads`);
-
     console.log('Processing mail');
     let startTime = new Date();
 
@@ -471,6 +475,8 @@ class MailProcessor {
     let unprocessedLabelId = await getLabelId(this.settings.unprocessed_label);
 
     for (var i = 0; i < threads.length; i++) {
+      updateTitle(`Processing ${i + 1}/${threads.length} unprocessed threads...`);
+
       let thread = threads[i];
       let labelName;
 
@@ -494,6 +500,7 @@ class MailProcessor {
 
       this.debugLog("Applying label: " + labelName);
       let alreadyHadLabel = false;
+      let isAlreadyInInbox = thread.isInInbox();
 
       if (labelName == this.settings.archive_label) {
         if (thread.isInInbox())
@@ -505,10 +512,15 @@ class MailProcessor {
         let prefixedLabelName;
 
         // Make sure not to put things into the inbox into queued labels.
-        if (thread.isInInbox())
-          prefixedLabelName = this.addAutoPrefix(labelName);
-        else
+        if (isAlreadyInInbox) {
+          let queue = this.settings.queuedLabelMap[labelName];
+          if (queue)
+            prefixedLabelName = this.dequeuedLabelName(queue, labelName);
+          else
+            prefixedLabelName = this.addAutoPrefix(labelName);
+        } else {
           prefixedLabelName = this.addLabelPrefix(labelName);
+        }
 
         let prefixedLabelId = await getLabelId(prefixedLabelName);
 
@@ -523,7 +535,9 @@ class MailProcessor {
       }
 
       await thread.modify(addLabelIds, removeLabelIds);
-      if (addLabelIds.includes('INBOX'))
+      // TODO: If isAlreadyInInbox && !alreadyHadLabel, we should remove it from the threadlist
+      // and add it back in so it gets put into the right queue.
+      if (!isAlreadyInInbox && addLabelIds.includes('INBOX'))
         this.threadList_.push(thread);
 
       if (!alreadyHadLabel) {
@@ -544,16 +558,17 @@ class MailProcessor {
   }
 
   async dequeue(labelName, queue) {
-    updateTitle(`Dequeuing ${labelName} bundle...`);
     var queuedLabelName = addQueuedPrefix(this.settings, labelName);
     var queuedLabel = await getLabelId(queuedLabelName);
-    var autoLabel = await getLabelId(this.addAutoPrefix(queuePrefixMap[queue] + '/' + labelName));
+    var autoLabel = await getLabelId(this.dequeuedLabelName(queue, labelName));
     var threads = await fetchThreads(queuedLabelName);
 
     if (!threads.length)
       return;
 
     for (var i = 0; i < threads.length; i++) {
+      updateTitle(`Dequeuing ${i + 1}/${threads.length} from ${labelName}...`);
+
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
       let removeLabelIds = [queuedLabel];
@@ -632,7 +647,6 @@ class MailProcessor {
     if (!categories.length)
       return;
 
-    console.log('Processing queues');
     var startTime = new Date();
 
     for (const category of categories) {
