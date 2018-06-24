@@ -22,6 +22,9 @@ class ThreadView extends HTMLElement {
       font-size: 18px;
       padding: 2px;
       background-color: #eee;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
     `;
     this.toolbar_.style.cssText = `
       position: sticky;
@@ -109,7 +112,9 @@ class ThreadView extends HTMLElement {
       return;
     }
 
-    this.subject_.textContent = await this.currentThread_.getSubject() || '(no subject)';
+    let subject = await this.currentThread_.getSubject() || '(no subject)';
+    let url = `https://mail.google.com/mail/#inbox/${this.currentThread_.id}`;
+    this.subject_.innerHTML = `<a href="${url}">${subject}</a>`;
 
     this.messages_.textContent = '';
     let messages = await this.currentThread_.getMessages();

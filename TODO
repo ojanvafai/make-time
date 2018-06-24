@@ -1,7 +1,6 @@
 EASY
 - show To/CC/BCC fields
 - show the date/time of messages
-- Make subject a link to that thread in Gmail for easily getting to the email in gmail
 - have a counter showing how many items left in the current queue
 - Don't use "prompt" for getting the spreadsheet URL.
 
