@@ -62,13 +62,16 @@ window.addEventListener('error', (e) => {
 });
 
 window.addEventListener('unhandledrejection', (e) => {
-  alert(`Unhandled rejection ${e.reason.stack}`);
+  alert(e.reason.stack || e.reason);
 });
 
 function getSettingsSpreadsheetId() {
   if (localStorage.spreadsheetId)
     return localStorage.spreadsheetId;
   let url = prompt("Insert the URL of your settings spreadsheet. If you don't have one, go to go/make-time-settings, create a copy of it, and then use the URL of the new spreadsheet.");
+  if (!url)
+    throw "Prompt got dismissed. Please reload to be reprompted.";
+
   // Spreadsheets URLS are of the form
   // https://docs.google.com/spreadsheets[POSSIBLE_STUFF_HERE]/d/[ID_HERE]/[POSSIBLE_STUFF_HERE]
   let id = url.split('/d/')[1].split('/')[0];

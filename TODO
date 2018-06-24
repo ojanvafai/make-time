@@ -1,7 +1,6 @@
 EASY
 - show To/CC/BCC fields
 - show the date/time of messages
-- Don't use "prompt" for getting the spreadsheet URL.
 
 P0
 - Replace TL;DR button with tweet length reply button.
@@ -26,6 +25,7 @@ P1
 - Once the triage is done, allow picking which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
 - Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.
 - Feature request for once we have a reply mode: by default send "dones", but also add send & blocked for things where you want to make sure there is followup.
+- Don't use "prompt" for getting the spreadsheet URL.
 
 TODOs for filters:
 - add the ability to filter messages with no list-id as those are probably more urgent.

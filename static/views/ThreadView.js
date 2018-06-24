@@ -81,9 +81,7 @@ class ThreadView extends HTMLElement {
     if (this.currentThread_) {
       let displayableQueue = await this.currentThread_.getDisplayableQueue();
       let queue = await this.currentThread_.getQueue();
-      console.log(queue);
       let leftInQueue = this.threadList_.threadCountForQueue(queue);
-      console.log(leftInQueue);
       text = `${leftInQueue} threads left in ${displayableQueue}, ${this.threadList_.length} total`;
     }
 
