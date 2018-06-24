@@ -25,7 +25,7 @@ class Thread {
     this.labelNames_ = [];
     for (let id of this.labelIds_) {
       // TODO: Don't use global state!
-      let name = g_state.idToLabel[id];
+      let name = g_labels.idToLabel[id];
       if (!name) {
         console.log(`Label id does not exist. WTF. ${id}`);
         continue;
@@ -64,6 +64,18 @@ class Thread {
     // Once a modify has happend the stored message details are stale and will need refeteching
     // if this Thread instance continued to be used.
     this.clearDetails_();
+  }
+
+  async markTriaged(destination) {
+    var addLabelIds = [];
+    if (destination)
+      addLabelIds.push(await getLabelId(destination));
+
+    var removeLabelIds = ['UNREAD', 'INBOX'];
+    var queue = await this.getQueue();
+    if (queue)
+      removeLabelIds.push(await getLabelId(queue));
+    await this.modify(addLabelIds, removeLabelIds);
   }
 
   isInInbox() {

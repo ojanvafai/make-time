@@ -1,7 +1,5 @@
 class ThreadList {
-  constructor(itemAddedCallback) {
-    // TODO: Make ThreadList an EventTarget and use events instead.
-    this.itemAddedCallback_ = itemAddedCallback;
+  constructor() {
     this.threads_ = {};
     this.length = 0;
     this.queueNames_ = [];
@@ -21,7 +19,6 @@ class ThreadList {
     let list = this.threads_[queue];
     list.push(thread);
     this.length++;
-    this.itemAddedCallback_();
 
     if (this.length == 1)
       this.prefetchFirst();

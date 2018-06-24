@@ -5,31 +5,15 @@
     <link rel="shortcut icon" href="static/favicon.png" type="image/png">
     <style>
       html {
-        display: flex;
-        height: 100%;
-        justify-content: center;
         background-color: #eee;
         font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
       }
       body {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        max-width: 800px;
         margin: 0px;
       }
-      #header {
-        position: fixed;
-        top: 0px;
-        left: 0px;
-        right: 0px;
-      }
-      #subject {
-        font-size: 18px;
-        text-align: center;
-        padding: 2px;
-        background-color: #eee;
-        border-bottom: 1px solid black;
+      .header {
+        position: sticky;
+        top: 0;
       }
       .toolbar {
         display: flex;
@@ -50,30 +34,22 @@
       .right-toolbar > a {
         color: white;
       }
-      .footer {
-        display: flex;
-        justify-content: center;
-        position: fixed;
-        bottom: 0px;
-        left: 0px;
-        right: 0px;
-      }
       button {
         margin: 4px;
         padding: 8px;
         font-size: 16px;
         border: 1px solid;
       }
-      .content-wrapper {
+      #content {
         background-color: white;
         flex: 1;
-      }
-      #content {
-        padding: 0 8px;
+        width: 100%;
+        max-width: 800px;
+        margin: auto;
         white-space: pre-wrap;
       }
-      #content iframe {
-        width: 100%;
+      .message {
+        padding: 0 8px;
       }
       .message > .headers {
         background-color: #ddd;
@@ -146,6 +122,10 @@
         justify-content: center;
         align-items: center;
       }
+      mt-thread-view {
+        border: 1px solid #ccc;
+        border-width: 0px 1px;
+      }
       mt-vueue-row {
         padding: 6px 0;
         border-top: 1px solid #ddd;
@@ -163,36 +143,23 @@
     <div class="authorize-wrapper" style="display: none;">
       <button id="authorize-button" style="font-size: 40px;">Log In</button>
     </div>
-    <div id="header">
-      <div class="toolbar">
-        <div>
-          <span id="loader"></span>
-          <span id="title">&nbsp;</span>
-        </div>
-        <div id="counter">&nbsp;</div>
-        <div class='right-toolbar'>
-          <!-- todo: use proper routing with urls that work for things like open in new tab -->
-          <a href='' id="view-all">View All Threads</a>
-          <a id="settings" href="">Settings</a>
-        </div>
+    <div class="header">
+    <div class="toolbar">
+      <div>
+        <span id="loader"></span>
+        <span id="title">&nbsp;</span>
       </div>
-      <div id="subject"></div>
+      <div id="counter">&nbsp;</div>
+      <div class='right-toolbar'>
+        <!-- todo: use proper routing with urls that work for things like open in new tab -->
+        <a href='' id="view-all">View All Threads</a>
+        <a id="settings" href="">Settings</a>
+      </div>
+    </div>
     </div>
 
-    <div class="content-wrapper">
-      <!-- Put in dummy header/footer so they take up the same vertical space as the position:fixed elements. -->
-      <div id="dummy-header"></div>
-      <div id="content"></div>
-      <div id="dummy-thread-at-a-time-footer"></div>
-    </div>
-    <div class="footer" id="thread-at-a-time-footer">
-      <button onclick="dispatchShortcut('d')"><span class="shortcut">D</span>one</button>
-      <button onclick="dispatchShortcut('t')"><span class="shortcut">T</span>L;DR</button>
-      <button onclick="dispatchShortcut('r')"><span class="shortcut">R</span>eply Needed</button>
-      <button onclick="dispatchShortcut('b')"><span class="shortcut">B</span>locked</button>
-      <button onclick="dispatchShortcut('m')"><span class="shortcut">M</span>ute</button>
-      <button onclick="dispatchShortcut('t')"><span class="shortcut">A</span>ction Item</button>
-    </div>
+    <div id="content"></div>
+
     <!-- Switch to using modules. -->
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="static/base64.js"></script>
@@ -201,6 +168,7 @@
     <script src="static/ThreadList.js"></script>
     <script src="static/differ.js"></script>
     <script src="static/MailProcessor.js"></script>
+    <script src="static/views/ThreadView.js"></script>
     <script src="static/views/Vueue.js"></script>
     <script src="static/main.js"></script>
   </body>

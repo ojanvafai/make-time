@@ -15,28 +15,13 @@ var authorizeButton = document.getElementById('authorize-button');
 
 var base64 = new Base64();
 
-async function updateCounter() {
-  let counter = document.getElementById('counter');
-  if (!g_state.threads || g_state.threads instanceof Vueue) {
-    counter.textContent = '';
-    return;
-  }
-
-  if (!g_state.currentThread)
-    renderNextThread();
-
-  // Include the current thread in the count of threads left.
-  var threadsLeft = g_state.currentThread ? g_state.threads.length + 1 : 0;
-  var text = `${threadsLeft} threads left`
-  if (g_state.currentThread) {
-    let queue = await g_state.currentThread.getDisplayableQueue();
-    text += `&nbsp;&nbsp;|&nbsp;&nbsp;Currently triaging: ${queue}`;
-  }
-  counter.innerHTML = text;
+async function updateCounter(text) {
+  document.getElementById('counter').innerHTML = text;
 }
 
-var g_state = {};
-
+// TODO: Make this private to this file.
+var g_labels = {};
+let currentView_;
 let settings_;
 
 // Make sure links open in new tabs.
@@ -66,8 +51,6 @@ window.onload = () => {
 };
 
 window.addEventListener('error', (e) => {
-  console.log(e.stack);
-
   var emailBody = 'Captured an error: ' + e.message;
   if (e.body)
     emailBody += '\n' + e.body;
@@ -127,82 +110,60 @@ async function getSettings() {
   return settings_;
 }
 
-function resetThreadList() {
-  g_state.threads = new ThreadList(updateCounter);
-  g_state.currentThread = null;
-}
-
-async function viewThreadAtATime(threadsToDone, threadsToTriage) {
+async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
   if (threadsToDone.length) {
     showLoader(true);
     updateTitle(`Archiving ${threadsToDone.length} threads...`);
   }
 
-  resetThreadList();
-  for (let thread of threadsToTriage) {
-    await g_state.threads.push(thread);
-  }
-
-  if (!g_state.currentThread)
-    renderAllDone();
-
-  document.getElementById('thread-at-a-time-footer').style.visibility = '';
+  await viewThreadAtATime(threadsToTriage);
 
   for (let thread of threadsToDone) {
-    await markTriaged(thread)
+    await thread.markTriaged();
   }
-
   showLoader(false);
+}
+
+async function viewThreadAtATime(threads) {
+  let blockedLabel = addQueuedPrefix(await getSettings(), BLOCKED_LABEL_SUFFIX);
+
+  let threadList = new ThreadList();
+  for (let thread of threads) {
+    await threadList.push(thread);
+  }
+  setView(new ThreadView(threadList, updateCounter, blockedLabel));
 }
 
 async function viewAll(e) {
   e.preventDefault();
 
-  if (g_state.threads instanceof Vueue)
+  if (currentView_ instanceof Vueue)
     return;
 
-  if (!g_state.currentThread)
+  if (!currentView_.threadList.length)
     return;
 
-  let threads = g_state.threads;
-  // Null this out so that pushing the current thread doesn't update the counter.
-  g_state.threads = null;
-  await threads.push(g_state.currentThread);
+  let threads = currentView_.popAllThreads();
+  setView(new Vueue(threads, transitionBackToThreadAtATime));
 
-  g_state.threads = new Vueue(threads, viewThreadAtATime);
+  updateCounter('');
+}
 
-  await updateCounter();
-  getSubjectContainer().textContent = '';
-
-  var content = getContentContainer();
+function setView(view) {
+  currentView_ = view;
+  var content = document.getElementById('content');
   content.textContent = '';
-  content.append(g_state.threads);
-
-  // Don't display none, since this is the thing that keeps space for the toolbar at the bottom.
-  // TODO: Make this less brittle as we move the thread-at-a-time view code into it's own element.
-  document.getElementById('thread-at-a-time-footer').style.visibility = 'hidden';
+  content.append(view);
 }
 
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.parentNode.style.display = 'none';
     document.getElementById('view-all').onclick = viewAll;
-    setupResizeObservers();
     await updateThreadList();
   } else {
     authorizeButton.parentNode.style.display = '';
   }
-}
-
-function setupResizeObservers() {
-  let ro = new ResizeObserver(entries => {
-    for (let entry of entries) {
-      let dummyElement = document.getElementById('dummy-' + entry.target.id);
-      dummyElement.style.height = entry.contentRect.height + 'px';
-    }
-  });
-  ro.observe(document.getElementById('header'));
-  ro.observe(document.getElementById('thread-at-a-time-footer'));
 }
 
 function updateTitle(title) {
@@ -236,6 +197,7 @@ function disableStyleSheets(messageText) {
   return messageText.replace(/<style/g, '<style type="not-css"');
 }
 
+// TODO: Move this and associated code into Thread.js.
 function elideReply(messageText, previousMessageText) {
   let windowSize = 100;
   let minimumLength = 100;
@@ -248,50 +210,10 @@ function elideReply(messageText, previousMessageText) {
   return differ.diff(messageText, previousMessageText);
 }
 
-function renderMessage(processedMessage) {
-  var messageDiv = document.createElement('div');
-  messageDiv.className = 'message';
-
-  messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
-
-  var headerDiv = document.createElement('div');
-  headerDiv.classList.add('headers');
-  headerDiv.textContent = `From: ${processedMessage.from}`;
-  messageDiv.appendChild(headerDiv);
-
-  var bodyContainer = document.createElement('div');
-  bodyContainer.innerHTML = processedMessage.processedHtml;
-  messageDiv.appendChild(bodyContainer);
-
-  return messageDiv;
-}
-
 document.body.addEventListener('keydown', async (e) => {
   if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
-    await dispatchShortcut(e.key);
+    await currentView_.dispatchShortcut(e.key);
 });
-
-var keyToDestination = {
-  'd': null, // No destination label for DONE
-  't': READ_LATER_LABEL,
-  'r': NEEDS_REPLY_LABEL,
-  'm': MUTED_LABEL,
-  'a': ACTION_ITEM_LABEL,
-}
-
-async function dispatchShortcut(key) {
-  if (!g_state.currentThread)
-    return;
-
-  if (!keyToDestination.b)
-    keyToDestination.b = addQueuedPrefix(await getSettings(), BLOCKED_LABEL_SUFFIX);
-
-  var destination = keyToDestination[key];
-  if (destination !== undefined) {
-    markTriaged(g_state.currentThread, destination);
-    await renderNextThread();
-  }
-};
 
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
 function createLabel(labelName) {
@@ -307,8 +229,8 @@ function createLabel(labelName) {
 }
 
 async function getLabelId(labelName) {
-  if (g_state.labelToId[labelName])
-    return g_state.labelToId[labelName];
+  if (g_labels.labelToId[labelName])
+    return g_labels.labelToId[labelName];
 
   await updateLabelList();
   var parts = labelName.split('/');
@@ -321,80 +243,24 @@ async function getLabelId(labelName) {
     // creating a label 409's if the label already exists.
     // Technically we should handle the race if the label
     // gets created in between the start of the create call and this line. Meh.
-    if (g_state.labelToId[labelSoFar])
+    if (g_labels.labelToId[labelSoFar])
       continue;
 
     var result = await createLabel(labelSoFar);
     var id = result.id;
-    g_state.labelToId[labelSoFar] = id;
-    g_state.idToLabel[id] = labelSoFar;
+    g_labels.labelToId[labelSoFar] = id;
+    g_labels.idToLabel[id] = labelSoFar;
   }
 
-  return g_state.labelToId[labelName];
-}
-
-async function markTriaged(thread, destination) {
-  var addLabelIds = [];
-  if (destination)
-    addLabelIds.push(await getLabelId(destination));
-
-  var removeLabelIds = ['UNREAD', 'INBOX'];
-  var queue = await thread.getQueue();
-  if (queue)
-    removeLabelIds.push(await getLabelId(queue));
-  await thread.modify(addLabelIds, removeLabelIds);
-}
-
-function getContentContainer() {
-  return document.getElementById('content');
-}
-
-function getSubjectContainer() {
-  return document.getElementById('subject');
-}
-
-function renderAllDone() {
-  getContentContainer().textContent = 'All done triaging! \\o/ Reload to check for new threads.';
-  getSubjectContainer().textContent = '';
-}
-
-async function renderNextThread() {
-  g_state.currentThread = g_state.threads.pop();
-
-  if (!g_state.currentThread) {
-    renderAllDone();
-    return;
-  }
-
-  updateCounter();
-  getSubjectContainer().textContent = await g_state.currentThread.getSubject();
-
-  var content = getContentContainer();
-  content.textContent = '';
-
-  let messages = await g_state.currentThread.getMessages();
-  var lastMessageElement;
-  for (var message of messages) {
-    lastMessageElement = renderMessage(message);
-    content.append(lastMessageElement);
-  }
-  var elementToScrollTo = document.querySelector('.unread') || lastMessageElement;
-  elementToScrollTo.scrollIntoView();
-  // Make sure that there's at least 50px of space above for showing that there's a
-  // previous message.
-  let y = elementToScrollTo.getBoundingClientRect().y;
-  if (y < 70)
-    document.documentElement.scrollTop -= 70 - y;
-
-  g_state.threads.prefetchFirst();
+  return g_labels.labelToId[labelName];
 }
 
 async function fetchThreads(label) {
   var query = 'in:' + label;
 
   // We only have triaged labels once they've actually been created.
-  if (g_state.triagedLabels.length)
-    query += ' -(in:' + g_state.triagedLabels.join(' OR in:') + ')';
+  if (g_labels.triagedLabels.length)
+    query += ' -(in:' + g_labels.triagedLabels.join(' OR in:') + ')';
 
   var getPageOfThreads = async function(opt_pageToken) {
     let requestParams = {
@@ -429,15 +295,16 @@ function showLoader(show) {
 }
 
 async function addThread(thread) {
-  await g_state.threads.push(thread);
+  await currentView_.push(thread);
 }
 
 async function updateThreadList() {
   showLoader(true);
-  resetThreadList();
 
   updateTitle('Fetching threads to triage...');
   await updateLabelList();
+
+  await viewThreadAtATime([]);
 
   let threads = await fetchThreads('inbox');
   let firstThread = threads.pop();
@@ -448,9 +315,6 @@ async function updateThreadList() {
     await addThread(thread);
   }
 
-  if (!g_state.currentThread)
-    renderAllDone();
-
   await processMail();
   showLoader(false);
 }
@@ -458,7 +322,7 @@ async function updateThreadList() {
 async function processMail() {
   updateTitle('Processing mail backlog...');
   // TODO: Move this to a cron
-  let mailProcessor = new MailProcessor(await getSettings(), g_state.threads);
+  let mailProcessor = new MailProcessor(await getSettings(), currentView_.threadList);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
 
@@ -474,14 +338,14 @@ async function updateLabelList() {
     'userId': USER_ID
   })
 
-  g_state.labelToId = {};
-  g_state.idToLabel = {};
-  g_state.triagedLabels = [];
+  g_labels.labelToId = {};
+  g_labels.idToLabel = {};
+  g_labels.triagedLabels = [];
   for (var label of response.result.labels) {
-    g_state.labelToId[label.name] = label.id;
-    g_state.idToLabel[label.id] = label.name;
+    g_labels.labelToId[label.name] = label.id;
+    g_labels.idToLabel[label.id] = label.name;
 
     if (label.name.startsWith(TRIAGED_LABEL + '/'))
-      g_state.triagedLabels.push(label.name);
+      g_labels.triagedLabels.push(label.name);
   }
 }

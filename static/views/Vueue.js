@@ -1,20 +1,31 @@
 class Vueue extends HTMLElement {
-  constructor(threadlist, cleanupDelegate) {
+  constructor(threadList, cleanupDelegate) {
     super();
     this.style.display = 'block';
 
-    this.threadlist_ = threadlist;
-    this.recentlyProcessed_ = new ThreadList(this.updateRecentlyProcessed_);
+    this.threadList_ = threadList;
+    this.recentlyProcessed_ = new ThreadList();
     this.cleanupDelegate_ = cleanupDelegate;
 
     // I will never truly love javascript
     this.handleDone_ = this.handleDone_.bind(this);
   }
 
+  get threadList() {
+    return this.threadList_;
+  }
+
+  getTitle() {
+    return '';
+  }
+
+  async dispatchShortcut(key) {
+  }
+
   async connectedCallback() {
     this.initialThreadsView_ = document.createElement('div');
 
-    let nextThread = this.threadlist_.pop();
+    let nextThread = this.threadList_.pop();
 
     let currentRowGroup;
     while (nextThread) {
@@ -27,7 +38,7 @@ class Vueue extends HTMLElement {
 
       currentRowGroup.push(nextThread);
 
-      nextThread = this.threadlist_.pop();
+      nextThread = this.threadList_.pop();
     }
 
     this.append(this.initialThreadsView_);
@@ -56,7 +67,7 @@ class Vueue extends HTMLElement {
       unprocessedThread = this.recentlyProcessed_.pop();
     }
 
-    this.cleanupDelegate_(selectedThreads, unselectedThreads);
+    this.cleanupDelegate_(unselectedThreads, selectedThreads);
   }
 
   async push(thread) {
