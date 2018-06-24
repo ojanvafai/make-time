@@ -1,7 +1,6 @@
 EASY
 - show To/CC/BCC fields
 - show the date/time of messages
-- have a counter showing how many items left in the current queue
 - Don't use "prompt" for getting the spreadsheet URL.
 
 P0

@@ -28,6 +28,13 @@ class ThreadList {
     return this.queueNames_[0];
   }
 
+  threadCountForQueue(queue) {
+    let list = this.threads_[queue];
+    if (!list)
+      return 0;
+    return list.length;
+  }
+
   prefetchFirst() {
     let queue = this.currentQueue();
     let list = this.threads_[queue];
