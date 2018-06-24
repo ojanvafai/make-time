@@ -42,7 +42,10 @@ class ThreadView extends HTMLElement {
       this.toolbar_.append(button);
     }
 
-    this.renderNext_();
+    // Hack: Do this on a timer so that the ThreadView is in the DOM before renderNext_
+    // is called and tries to get offsetTop. This happens when going from the Vueue back
+    // to the ThreadView.
+    setTimeout(this.renderNext_.bind(this));
   }
 
   get threadList() {
