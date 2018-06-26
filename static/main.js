@@ -140,13 +140,16 @@ async function viewThreadAtATime(threads) {
 async function viewAll(e) {
   e.preventDefault();
 
+  if (!currentView_)
+    return;
+
   if (currentView_ instanceof Vueue)
     return;
 
   if (!currentView_.threadList.length)
     return;
 
-  let threads = currentView_.popAllThreads();
+  let threads = await currentView_.popAllThreads();
   setView(new Vueue(threads, transitionBackToThreadAtATime));
 
   updateCounter('');

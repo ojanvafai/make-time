@@ -8,6 +8,9 @@ P0
 - dequeuing monthly bundles is broken. Need to pick a day of the month to dequeue on.
 - Don't elide inside style tags and need to make sure that eliding respects markup.
 - Fix race condition where if new message comes in after make-time has prefetched, the archiving will archive that as well.
+- Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
+- Sort within a triage queue by date in the Vueue.
+- Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 
 P1
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
@@ -20,7 +23,6 @@ P1
 - Maybe have a generic list of filter buttons that can be configurable for quick experimentation with different labeling schemes. Keeps the principle of each thread gets a single keyborad shortcut action, but doesn't require the existing constrained set of labels. e.g. i find myself wanting to experiment with urgent/important options for action items and replies. Maybe this would all feel different if the action items actually went into the TODO list instead of the inbox though.
 - add a needs filter option?
 - add an urgent action item? what about important?
-- Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - Google Assistant integration
 - Once the triage is done, allow picking which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
 - Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.

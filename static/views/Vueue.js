@@ -1,22 +1,14 @@
 class Vueue extends HTMLElement {
-  constructor(threadList, cleanupDelegate) {
+  constructor(threads, cleanupDelegate) {
     super();
     this.style.display = 'block';
 
-    this.threadList_ = threadList;
+    this.threads_ = threads;
     this.recentlyProcessed_ = new ThreadList();
     this.cleanupDelegate_ = cleanupDelegate;
 
     // I will never truly love javascript
     this.handleDone_ = this.handleDone_.bind(this);
-  }
-
-  get threadList() {
-    return this.threadList_;
-  }
-
-  getTitle() {
-    return '';
   }
 
   async dispatchShortcut(key) {
@@ -25,20 +17,16 @@ class Vueue extends HTMLElement {
   async connectedCallback() {
     this.initialThreadsView_ = document.createElement('div');
 
-    let nextThread = this.threadList_.pop();
-
     let currentRowGroup;
-    while (nextThread) {
-      let queue = await nextThread.getDisplayableQueue();
+    for (let thread of this.threads_) {
+      let queue = await thread.getDisplayableQueue();
 
       if (!currentRowGroup || queue != currentRowGroup.queue) {
         currentRowGroup = new VueueRowGroup_(queue);
         this.initialThreadsView_.append(currentRowGroup);
       }
 
-      currentRowGroup.push(nextThread);
-
-      nextThread = this.threadList_.pop();
+      currentRowGroup.push(thread);
     }
 
     this.append(this.initialThreadsView_);
