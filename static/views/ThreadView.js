@@ -145,6 +145,7 @@ class ThreadView extends HTMLElement {
     headerDiv.textContent = `From: ${processedMessage.from}`;
 
     var bodyContainer = document.createElement('div');
+    bodyContainer.style.overflow = 'auto';
     bodyContainer.innerHTML = processedMessage.processedHtml;
 
     messageDiv.append(headerDiv, bodyContainer);

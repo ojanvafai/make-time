@@ -49,8 +49,13 @@
         width: 100%;
         max-width: 800px;
         margin: auto;
-        white-space: pre-wrap;
-        word-break: break-word;
+      }
+      #content * {
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+      }
+      blockquote {
+        min-width: 300px;
       }
       .message {
         padding: 0 8px;
