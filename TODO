@@ -11,6 +11,7 @@ P0
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 - Sort within a triage queue by date in the Vueue.
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
+- add a way of switching to a different queue in the thread at a time view
 
 P1
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.

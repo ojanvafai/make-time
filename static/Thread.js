@@ -45,7 +45,7 @@ class Thread {
 
     let processedMessages = [];
     for (var message of messages) {
-      let previousMessageText = messages.length && messages[messages.length - 1].html;
+      let previousMessageText = processedMessages.length && processedMessages[processedMessages.length - 1].html;
       processedMessages.push(this.processMessage_(message, previousMessageText));
     }
     this.processedMessages_ = processedMessages;
@@ -202,17 +202,63 @@ class Thread {
       output.plain = output.html = base64.decode(message.payload.body.data);
     }
 
-    let html = output.html || htmlEscape(output.plain);
+    let html = output.html || this.htmlEscape_(output.plain);
 
     // TODO: Test eliding works if current message is html but previous is plain or vice versa.
     if (previousMessageText)
-      html = elideReply(html, previousMessageText);
+      html = this.elideReply_(html, previousMessageText);
 
     if (output.html)
-      html = disableStyleSheets(html);
+      html = this.disableStyleSheets_(html);
 
     output.processedHtml = html;
     output.isUnread = message.labelIds.includes('UNREAD');
     return output;
   }
+
+  htmlEscape_(html) {
+    return html.replace(/[&<>"']/g, function(m) {
+      switch (m) {
+        case '&':
+          return '&amp;';
+        case '<':
+          return '&lt;';
+        case '>':
+          return '&gt;';
+        case '"':
+          return '&quot;';
+        case `'`:
+          return '&#039;';
+      }
+    });
+  };
+
+  // Don't want stylesheets in emails to style the whole page.
+  disableStyleSheets_(messageText) {
+    return messageText.replace(/<style/g, '<style type="not-css"');
+  }
+
+  // TODO: Move this and associated code into Thread.js.
+  elideReply_(messageText, previousMessageText) {
+    let windowSize = 100;
+    let minimumLength = 100;
+    // Lazy hacks to get the element whose display to toggle
+    // and to get this to render centered-ish elipsis without using an image.
+    let prefix = `<div style="overflow:hidden">
+      <div style="margin-top:-7px">
+        <div class="toggler" onclick="Thread.toggleDisplayInline(this.parentNode.parentNode.nextSibling)">...</div>
+      </div>
+    </div>
+    <div class="elide">`;
+    let postfix = `</div>`;
+
+    let differ = new Differ(prefix, postfix, windowSize, minimumLength);
+    return differ.diff(messageText, previousMessageText);
+  }
+
+}
+
+Thread.toggleDisplayInline = (element) => {
+  var current = getComputedStyle(element).display;
+  element.style.display = current == 'none' ? 'inline' : 'none';
 }

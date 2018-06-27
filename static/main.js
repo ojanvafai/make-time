@@ -176,47 +176,9 @@ function updateTitle(title) {
   document.getElementById('title').textContent = title;
 }
 
-function htmlEscape(html) {
-  return html.replace(/[&<>"']/g, function(m) {
-    switch (m) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      case `'`:
-        return '&#039;';
-    }
-  });
-};
-
-function toggleDisplayInline(element) {
-  var current = getComputedStyle(element).display;
-  element.style.display = current == 'none' ? 'inline' : 'none';
-}
-
-// Don't want stylesheets in emails to style the whole page.
-function disableStyleSheets(messageText) {
-  return messageText.replace(/<style/g, '<style type="not-css"');
-}
-
-// TODO: Move this and associated code into Thread.js.
-function elideReply(messageText, previousMessageText) {
-  let windowSize = 100;
-  let minimumLength = 100;
-  // Lazy hacks to get the element whose display to toggle
-  // and to get this to render centered-ish elipsis without using an image.
-  let prefix = `<div style="overflow:hidden"><div style="margin-top:-7px"><div class="toggler" onclick="toggleDisplayInline(this.parentNode.parentNode.nextSibling)">...</div></div></div><div class="elide">`;
-  let postfix = `</div>`;
-
-  let differ = new Differ(prefix, postfix, windowSize, minimumLength);
-  return differ.diff(messageText, previousMessageText);
-}
-
 document.body.addEventListener('keydown', async (e) => {
+  if (!currentView_)
+    return;
   if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
     await currentView_.dispatchShortcut(e.key);
 });
@@ -325,15 +287,15 @@ async function updateThreadList() {
   showLoader(false);
 }
 
+// TODO: Move this to a cron
 async function processMail() {
+  showLoader(true);
   updateTitle('Processing mail backlog...');
-  // TODO: Move this to a cron
   let mailProcessor = new MailProcessor(await getSettings(), currentView_.threadList);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
-
-  // TODO: Move this to a cron, but for now at least do it after all the other network work.
-  mailProcessor.collapseStats();
+  await mailProcessor.collapseStats();
+  showLoader(false);
 }
 
 let TEN_MINUTES_IN_MS = 1000 * 60 * 10;

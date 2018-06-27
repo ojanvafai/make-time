@@ -274,6 +274,8 @@ class MailProcessor {
   }
 
   async collapseStats() {
+    updateTitle('Writing stats...');
+
     let stats;
     var rows = await fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
     let todayYearMonthDay = this.getYearMonthDay(Date.now());
