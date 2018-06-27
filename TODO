@@ -4,7 +4,6 @@ EASY
 
 P0
 - Replace TL;DR button with tweet length reply button.
-- Undo previous action
 - dequeuing monthly bundles is broken. Need to pick a day of the month to dequeue on.
 - Don't elide inside style tags and need to make sure that eliding respects markup.
 - Fix race condition where if new message comes in after make-time has prefetched, the archiving will archive that as well.

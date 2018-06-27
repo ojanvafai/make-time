@@ -92,16 +92,35 @@ class ThreadView extends HTMLElement {
     if (!this.currentThread_)
       return;
 
+    if (key == 'u') {
+      this.undoLastAction_();
+      return;
+    }
+
     // Oof. Gross hack because top-level await is not allowed.
     var destination = key == 'b' ? this.blockedLabel_ : ThreadView.KEY_TO_DESTINATION[key];
     if (destination !== undefined) {
-      this.currentThread_.markTriaged(destination);
-      await this.renderNext_();
+      // renderNext_ changes this.currentThread_ so save off the thread to modify first.
+      let thread = this.currentThread_;
+      this.renderNext_();
+      this.lastAction_ = await thread.markTriaged(destination);
     }
   };
 
-  async renderNext_() {
-    this.currentThread_ = this.threadList_.pop();
+  async undoLastAction_() {
+    if (!this.lastAction_)
+      return;
+
+    showLoader(true);
+    updateTitle('Undoing last action...');
+    await this.threadList_.push(this.currentThread_);
+    await this.renderNext_(this.lastAction_.thread);
+    await this.lastAction_.thread.modify(this.lastAction_.removed, this.lastAction_.added);
+    showLoader(false);
+  }
+
+  async renderNext_(threadToRender) {
+    this.currentThread_ = threadToRender || this.threadList_.pop();
     this.updateTitle_();
 
     this.subject_.style.top = this.offsetTop + 'px';
@@ -168,6 +187,7 @@ ThreadView.KEY_TO_BUTTON_NAME = {
   b: 'Blocked',
   m: 'Mute',
   a: 'Action Item',
+  u: 'Undo',
 };
 
 window.customElements.define('mt-thread-view', ThreadView);

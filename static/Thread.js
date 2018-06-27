@@ -76,6 +76,11 @@ class Thread {
     if (queue)
       removeLabelIds.push(await getLabelId(queue));
     await this.modify(addLabelIds, removeLabelIds);
+    return {
+      added: addLabelIds,
+      removed: removeLabelIds,
+      thread: this,
+    }
   }
 
   isInInbox() {
