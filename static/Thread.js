@@ -251,10 +251,9 @@ class Thread {
     // and to get this to render centered-ish elipsis without using an image.
     let prefix = `<div style="overflow:hidden">
       <div style="margin-top:-7px">
-        <div class="toggler" onclick="Thread.toggleDisplayInline(this.parentNode.parentNode.nextSibling)">...</div>
+        <div class="toggler" onclick="Thread.toggleElided(event, this)">...</div>
       </div>
-    </div>
-    <div class="elide">`;
+    </div><div class="elide">`;
     let postfix = `</div>`;
 
     let differ = new Differ(prefix, postfix, windowSize, minimumLength);
@@ -263,7 +262,14 @@ class Thread {
 
 }
 
-Thread.toggleDisplayInline = (element) => {
-  var current = getComputedStyle(element).display;
-  element.style.display = current == 'none' ? 'inline' : 'none';
+Thread.toggleElided = (e, element) => {
+  // TODO: Remove this once we properly avoid eliding halfway through a link.
+  e.preventDefault();
+
+  while (!element.nextElementSibling || element.nextElementSibling.className != 'elide') {
+    element = element.parentNode;
+  }
+  let elided = element.nextElementSibling;
+  var current = getComputedStyle(elided).display;
+  elided.style.display = current == 'none' ? 'inline' : 'none';
 }
