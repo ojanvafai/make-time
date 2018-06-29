@@ -146,10 +146,10 @@ async function viewAll(e) {
   if (currentView_ instanceof Vueue)
     return;
 
-  if (!currentView_.threadList.length)
+  let threads = await currentView_.popAllThreads();
+  if (!threads.length)
     return;
 
-  let threads = await currentView_.popAllThreads();
   setView(new Vueue(threads, transitionBackToThreadAtATime));
 
   updateCounter('');
@@ -263,6 +263,12 @@ function showLoader(show) {
 }
 
 async function addThread(thread) {
+  let settings = await getSettings();
+  if (settings.vacation_subject) {
+    let subject = await thread.getSubject();
+    if (!subject.toLowerCase().includes(settings.vacation_subject.toLowerCase()))
+      return;
+  }
   await currentView_.push(thread);
 }
 
@@ -291,7 +297,7 @@ async function updateThreadList() {
 async function processMail() {
   showLoader(true);
   updateTitle('Processing mail backlog...');
-  let mailProcessor = new MailProcessor(await getSettings(), currentView_.threadList);
+  let mailProcessor = new MailProcessor(await getSettings(), addThread);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();

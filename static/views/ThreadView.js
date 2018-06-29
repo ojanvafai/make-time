@@ -51,10 +51,6 @@ class ThreadView extends HTMLElement {
     setTimeout(this.renderNext_.bind(this));
   }
 
-  get threadList() {
-    return this.threadList_;
-  }
-
   async popAllThreads() {
     let threads = [];
 

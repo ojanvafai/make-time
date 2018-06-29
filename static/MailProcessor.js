@@ -34,9 +34,9 @@ var queuePrefixMap = {
 }
 
 class MailProcessor {
-  constructor(settings, threadList) {
+  constructor(settings, pushThread) {
     this.settings = settings;
-    this.threadList_ = threadList;
+    this.pushThread_ = pushThread;
   }
 
   hasWhiteSpace(str) {
@@ -516,7 +516,7 @@ class MailProcessor {
       // TODO: If isAlreadyInInbox && !alreadyHadLabel, we should remove it from the threadlist
       // and add it back in so it gets put into the right queue.
       if (!isAlreadyInInbox && addLabelIds.includes('INBOX'))
-        this.threadList_.push(thread);
+        this.pushThread_(thread);
 
       if (!alreadyHadLabel) {
         if (!perLabelCounts[labelName])
@@ -551,7 +551,7 @@ class MailProcessor {
       let addLabelIds = ['INBOX', autoLabel];
       let removeLabelIds = [queuedLabel];
       await thread.modify(addLabelIds, removeLabelIds);
-      this.threadList_.push(thread);
+      this.pushThread_(thread);
     }
   }
 
