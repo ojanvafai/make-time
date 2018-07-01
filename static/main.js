@@ -172,7 +172,10 @@ async function updateSigninStatus(isSignedIn) {
   }
 }
 
-function updateTitle(title) {
+async function updateTitle(title) {
+  let settings = await getSettings();
+  if (settings.vacation_subject)
+    title = `Only showing threads with subject:${settings.vacation_subject} ${title}`;
   document.getElementById('title').textContent = title;
 }
 
@@ -223,8 +226,11 @@ async function getLabelId(labelName) {
   return g_labels.labelToId[labelName];
 }
 
-async function fetchThreads(label) {
+async function fetchThreads(label, opt_extraQuery) {
   var query = 'in:' + label;
+
+  if (opt_extraQuery)
+    query += ' ' + opt_extraQuery;
 
   // We only have triaged labels once they've actually been created.
   if (g_labels.triagedLabels.length)
@@ -280,7 +286,12 @@ async function updateThreadList() {
 
   await viewThreadAtATime([]);
 
-  let threads = await fetchThreads('inbox');
+  let settings = await getSettings();
+  let vacationQuery;
+  if (settings.vacation_subject)
+    vacationQuery = `subject:${settings.vacation_subject}`;
+
+  let threads = await fetchThreads('inbox', vacationQuery);
   let firstThread = threads.pop();
   if (firstThread)
     await addThread(firstThread);
