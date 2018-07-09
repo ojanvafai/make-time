@@ -42,11 +42,23 @@ function test_categoriesToDequeue() {
   assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime),
     ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Daily', 'Monthly']);
 
+  // // Less than a month ago, but includes the 1st
+  assertArraysEqual(mailProcessor.categoriesToDequeue(
+    new Date(2018, 4, 30, 8),
+    new Date(2018, 5, 2, 8).getTime()),
+    ['Thursday', 'Friday', 'Saturday', 'Daily', 'Monthly']);
+
+  // Exactly the first of the month.
+  assertArraysEqual(mailProcessor.categoriesToDequeue(
+    new Date(2018, 4, 31, 8),
+    new Date(2018, 5, 1, 8).getTime()),
+    ['Friday', 'Daily', 'Monthly']);
+
   // Yesterday
   var date = new Date(endDateTime);
   date.setDate(date.getDate() - 1);
   assertArraysEqual(mailProcessor.categoriesToDequeue(date, endDateTime),
-    ['Friday', 'Daily']);
+    ['Thursday', 'Daily']);
 
   // Earlier in the week
   var date = new Date(endDateTime);

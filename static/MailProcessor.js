@@ -592,8 +592,10 @@ class MailProcessor {
     if (diffDays >= 7)
       return WEEKDAYS.concat([DAILY]);
 
-    let startDay = new Date(start).getDay();
-    let endDay = new Date(end).getDay();
+    let startDate = new Date(start);
+    let endDate = new Date(end);
+    let startDay = startDate.getDay();
+    let endDay = endDate.getDay();
 
     // Have already processed today.
     if (startDay == endDay && diffDays < 1)
@@ -601,20 +603,17 @@ class MailProcessor {
 
     let days = [];
 
-    if (startDay < endDay) {
-      for (var i = startDay + 1; i <= endDay; i++) {
-        days.push(WEEKDAYS[i]);
-      }
-    } else {
-      for (var i = startDay + 1; i < WEEKDAYS.length; i++) {
-        days.push(WEEKDAYS[i]);
-      }
-      for (var i = 0; i <= endDay; i++) {
-        days.push(WEEKDAYS[i]);
-      }
+    while (true) {
+      var modded = ++startDay % WEEKDAYS.length;
+      days.push(WEEKDAYS[modded]);
+      if (modded == endDay)
+        break;
     }
 
     days.push(DAILY);
+
+    if (startDate.getMonth() < endDate.getMonth())
+      days.push(MONTHLY);
 
     return days;
   }
