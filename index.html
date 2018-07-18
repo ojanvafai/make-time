@@ -50,10 +50,6 @@
         max-width: 800px;
         margin: auto;
       }
-      #content * {
-        white-space: pre-wrap !important;
-        word-break: break-word !important;
-      }
       blockquote {
         min-width: 300px;
       }
@@ -65,6 +61,9 @@
         padding: 8px;
         margin: 0 -8px;
         border-top: 1px solid;
+        white-space: pre;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .message:first-child > .headers {
         border: none;

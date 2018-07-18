@@ -157,9 +157,17 @@ class ThreadView extends HTMLElement {
 
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
-    headerDiv.textContent = `From: ${processedMessage.from}`;
+    let headers = `From: ${processedMessage.from}`;
+    if (processedMessage.to)
+      headers += `\nTo: ${processedMessage.to}`;
+    if (processedMessage.cc)
+      headers += `\nBCC: ${processedMessage.cc}`;
+    if (processedMessage.bcc)
+      headers += `\nCC: ${processedMessage.bcc}`;
+    headerDiv.textContent = headers;
 
     var bodyContainer = document.createElement('div');
+    bodyContainer.classList.add('message-body');
     bodyContainer.style.overflow = 'auto';
     bodyContainer.innerHTML = processedMessage.processedHtml;
 
