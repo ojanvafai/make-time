@@ -130,24 +130,62 @@ window.customElements.define('mt-vueue-row-group', VueueRowGroup_);
 class VueueRow_ extends HTMLElement {
   constructor(thread) {
     super();
-    this.style.display = 'flex';
+    this.style.display = 'block';
 
     this.thread_ = thread;
 
     this.thread_.getSubject()
     .then(subject => {
-      let label = document.createElement('label');
+      this.thread_.getMessages()
+      .then(messages => {
+        let lastMessage = messages[messages.length - 1];
 
-      this.checkBox_ = document.createElement('input');
-      this.checkBox_.type = 'checkbox';
-      label.append(this.checkBox_);
-      let snippet = document.createElement('span');
-      snippet.style.color = '#666';
-      snippet.textContent = ` - ${this.thread_.snippet}`;
-      label.append(subject, snippet);
+        let label = document.createElement('label');
+        label.style.cssText = `
+          display: flex;
+        `;
 
-      this.appendChild(label);
+        this.checkBox_ = document.createElement('input');
+        this.checkBox_.type = 'checkbox';
+        this.checkBox_.style.cssText = `
+          margin-left: 5px;
+          margin-right: 5px;
+        `;
+
+        let from = document.createElement('span');
+        from.style.cssText = `
+          width: 150px;
+          overflow: hidden;
+          margin-right: 25px;
+        `;
+        from.textContent = lastMessage.fromName;
+
+        let snippet = document.createElement('span');
+        snippet.style.color = '#666';
+        snippet.textContent = ` - ${this.thread_.snippet}`;
+
+        let title = document.createElement('span');
+        title.append(subject, snippet);
+        title.style.cssText = `
+          overflow: hidden;
+          margin-right: 25px;
+          flex: 1;
+        `;
+
+        let date = document.createElement('div');
+        date.textContent = this.dateString_(lastMessage.date);
+
+        label.append(this.checkBox_, from, title, date);
+
+        this.append(label);
+      });
     });
+  }
+
+  dateString_(date) {
+    if (date.toDateString() == new Date().toDateString())
+      return date.toLocaleTimeString();
+    return date.toLocaleDateString();
   }
 
   get checked() {

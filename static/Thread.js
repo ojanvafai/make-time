@@ -173,6 +173,14 @@ class Thread {
     return emails;
   }
 
+  extractName_(str) {
+    console.log(str);
+    let parts = str.split('<');
+    if (parts.length > 1)
+      return parts[0].trim();
+    return str;
+  }
+
   processMessage_(message, previousMessageText) {
     let output = {};
 
@@ -186,6 +194,7 @@ class Thread {
           break;
         case 'From':
           output.from = this.extractEmails_(header.value);
+          output.fromName = this.extractName_(header.value);
           break;
         case 'To':
           output.to = this.extractEmails_(header.value);
