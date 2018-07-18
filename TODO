@@ -1,5 +1,5 @@
 EASY
-- show the date/time of messages
+- use moment.js or something to make the date strings nicer
 
 P0
 - Replace TL;DR button with tweet length reply button.

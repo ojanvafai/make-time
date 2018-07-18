@@ -181,6 +181,9 @@ class Thread {
         case 'Subject':
           output.subject = header.value;
           break;
+        case 'Date':
+          output.date = new Date(header.value);
+          break;
         case 'From':
           output.from = this.extractEmails_(header.value);
           break;

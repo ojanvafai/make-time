@@ -150,21 +150,35 @@ class ThreadView extends HTMLElement {
     this.threadList_.prefetchFirst();
   }
 
+  dateString_(date) {
+    if (date.toDateString() == new Date().toDateString())
+      return date.toLocaleTimeString();
+    return date.toLocaleString();
+  }
+
   renderMessage_(processedMessage) {
     var messageDiv = document.createElement('div');
     messageDiv.className = 'message';
     messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
 
+    let dateDiv = document.createElement('div');
+    dateDiv.classList.add('date');
+    dateDiv.textContent = this.dateString_(processedMessage.date);
+
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
-    let headers = `From: ${processedMessage.from}`;
+
+    let addresses = `From: ${processedMessage.from}`;
     if (processedMessage.to)
-      headers += `\nTo: ${processedMessage.to}`;
+      addresses += `\nTo: ${processedMessage.to}`;
     if (processedMessage.cc)
-      headers += `\nBCC: ${processedMessage.cc}`;
+      addresses += `\nBCC: ${processedMessage.cc}`;
     if (processedMessage.bcc)
-      headers += `\nCC: ${processedMessage.bcc}`;
-    headerDiv.textContent = headers;
+      addresses += `\nCC: ${processedMessage.bcc}`;
+    let addressDiv = document.createElement('div');
+    addressDiv.textContent = addresses;
+
+    headerDiv.append(dateDiv, addressDiv)
 
     var bodyContainer = document.createElement('div');
     bodyContainer.classList.add('message-body');
