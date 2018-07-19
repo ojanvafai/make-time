@@ -168,13 +168,13 @@ class ThreadView extends HTMLElement {
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
 
-    let addresses = `From: ${processedMessage.from}`;
+    let addresses = `from: ${processedMessage.from}`;
     if (processedMessage.to)
-      addresses += `\nTo: ${processedMessage.to}`;
+      addresses += `\nto: ${processedMessage.to}`;
     if (processedMessage.cc)
-      addresses += `\nBCC: ${processedMessage.cc}`;
+      addresses += `\ncc: ${processedMessage.cc}`;
     if (processedMessage.bcc)
-      addresses += `\nCC: ${processedMessage.bcc}`;
+      addresses += `\nbcc: ${processedMessage.bcc}`;
     let addressDiv = document.createElement('div');
     addressDiv.textContent = addresses;
 
