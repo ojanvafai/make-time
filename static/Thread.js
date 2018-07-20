@@ -185,7 +185,9 @@ class Thread {
   }
 
   processMessage_(message, previousMessageText) {
-    let output = {};
+    let output = {
+      id: message.id,
+    };
 
     for (var header of message.payload.headers) {
       switch (header.name) {

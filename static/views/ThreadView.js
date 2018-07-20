@@ -10,6 +10,17 @@ class ThreadView extends HTMLElement {
     this.currentThread_ = null;
 
     this.subject_ = document.createElement('div');
+    this.gmailLink_ = document.createElement('a');
+    this.subjectText_ = document.createElement('div');
+    this.subjectText_.style.cssText = `
+      flex: 1;
+      margin-right: 25px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    `;
+    this.subject_.append(this.subjectText_, this.gmailLink_);
+
     this.messages_ = document.createElement('div');
     this.toolbar_ = document.createElement('div');
 
@@ -22,9 +33,7 @@ class ThreadView extends HTMLElement {
       font-size: 18px;
       padding: 2px;
       background-color: #eee;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
+      display: flex;
     `;
     this.toolbar_.style.cssText = `
       position: sticky;
@@ -122,17 +131,23 @@ class ThreadView extends HTMLElement {
     this.subject_.style.top = this.offsetTop + 'px';
 
     if (!this.currentThread_) {
-      this.subject_.textContent = 'All Done! Nothing left to triage for now.';
+      this.subjectText_.textContent = 'All Done! Nothing left to triage for now.';
+      this.gmailLink_.textContent = '';
       this.messages_.textContent = '';
       return;
     }
 
-    let subject = await this.currentThread_.getSubject() || '(no subject)';
-    let url = `https://mail.google.com/mail/#inbox/${this.currentThread_.id}`;
-    this.subject_.innerHTML = `<a href="${url}">${subject}</a>`;
+    this.subjectText_.textContent = await this.currentThread_.getSubject() || '(no subject)';
+
+    let messages = await this.currentThread_.getMessages();
+
+    // In theory, linking to the threadId should work, but it doesn't for some threads.
+    // Linking to the messageId seems to work reliably. The message ID listed will be expanded
+    // in the gmail UI, so link to the last one since that one is definitionally always expanded.
+    this.gmailLink_.textContent = 'view in gmail';
+    this.gmailLink_.href = `https://mail.google.com/mail/#all/${messages[messages.length - 1].id}`;
 
     this.messages_.textContent = '';
-    let messages = await this.currentThread_.getMessages();
     var lastMessageElement;
     for (var message of messages) {
       lastMessageElement = this.renderMessage_(message);

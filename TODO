@@ -1,5 +1,4 @@
 P0
-- links to the thread in email seesm to be getting the wrong id in some cases
 - sort by date
 - fix eliding for reals
 - look at monorail examples...they don't wrap. are those plaintext? should they be wrapped in a pre-wrap maybe?
