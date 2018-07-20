@@ -146,6 +146,10 @@ class Thread {
       if (part.parts)
         this.getMessageBody_(part.parts, output);
 
+      // TODO: Show attachments.
+      if (part.body.attachmentId)
+        continue;
+
       switch (part.mimeType) {
         case 'text/plain':
           output.plain = base64.decode(part.body.data);

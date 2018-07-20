@@ -1,6 +1,3 @@
-EASY
-- use moment.js or something to make the date strings nicer
-
 P0
 - links to the thread in email seesm to be getting the wrong id in some cases
 - sort by date
