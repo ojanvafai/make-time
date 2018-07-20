@@ -182,6 +182,11 @@ async function updateTitle(title) {
 document.body.addEventListener('keydown', async (e) => {
   if (!currentView_)
     return;
+  // Don't allow actions to apply in rapid succession for each thread.
+  // This prevents accidents of archiving a lot of threads at once
+  // when your stupid keyboard gets stuck holding the archive key down. #sigh
+  if (e.repeat)
+    return false;
   if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
     await currentView_.dispatchShortcut(e.key);
 });
