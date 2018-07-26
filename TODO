@@ -17,7 +17,6 @@ P1
 - disable title tags in emails. They currently update the title of make-time.
 - Provide a way to modify which spreadsheet is used as the settings sheet.
 - Log performance of showing next thread after an action was taken so we can see if we need to improve it. One of these services should make it pretty easy.
-- add per thread countdown timer
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
 - Maybe have a generic list of filter buttons that can be configurable for quick experimentation with different labeling schemes. Keeps the principle of each thread gets a single keyborad shortcut action, but doesn't require the existing constrained set of labels. e.g. i find myself wanting to experiment with urgent/important options for action items and replies. Maybe this would all feel different if the action items actually went into the TODO list instead of the inbox though.
 - add a needs filter option?

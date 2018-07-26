@@ -128,13 +128,16 @@ async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
 }
 
 async function viewThreadAtATime(threads) {
-  let blockedLabel = addQueuedPrefix(await getSettings(), BLOCKED_LABEL_SUFFIX);
+  let settings = await getSettings();
+  let blockedLabel = addQueuedPrefix(settings, BLOCKED_LABEL_SUFFIX);
 
   let threadList = new ThreadList();
   for (let thread of threads) {
     await threadList.push(thread);
   }
-  setView(new ThreadView(threadList, updateCounter, blockedLabel));
+
+  let timeout = settings.timeout || 20;
+  setView(new ThreadView(threadList, updateCounter, blockedLabel, timeout));
 }
 
 async function viewAll(e) {

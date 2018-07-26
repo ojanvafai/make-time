@@ -1,11 +1,12 @@
 class ThreadView extends HTMLElement {
-  constructor(threadList, updateCounter, blockedLabel) {
+  constructor(threadList, updateCounter, blockedLabel, timeout) {
     super();
     this.style.display = 'block';
 
     this.threadList_ = threadList;
     this.updateCounter_ = updateCounter;
     this.blockedLabel_ = blockedLabel;
+    this.timeout_ = timeout;
 
     this.currentThread_ = null;
 
@@ -42,7 +43,18 @@ class ThreadView extends HTMLElement {
       right: 0;
       text-align: center;
     `;
-    this.append(this.subject_, this.messages_, this.toolbar_);
+
+    this.timer_ = document.createElement('div');
+    this.timer_.style.cssText = `
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      font-size: 36px;
+      color: red;
+      padding: 5px;
+    `;
+
+    this.append(this.subject_, this.messages_, this.toolbar_, this.timer_);
 
     for (let key in ThreadView.KEY_TO_BUTTON_NAME) {
       let name = ThreadView.KEY_TO_BUTTON_NAME[key];
@@ -53,6 +65,7 @@ class ThreadView extends HTMLElement {
       button.innerHTML = `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
       this.toolbar_.append(button);
     }
+
 
     // Hack: Do this on a timer so that the ThreadView is in the DOM before renderNext_
     // is called and tries to get offsetTop. This happens when going from the Vueue back
@@ -124,7 +137,52 @@ class ThreadView extends HTMLElement {
     showLoader(false);
   }
 
+  async nextTick_() {
+    if (this.timeout_ == -1)
+      return;
+
+    if (this.timeLeft_ <= 0) {
+      this.timer_.textContent = '';
+      let overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      let background = document.createElement('div');
+      background.style.cssText = `
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background-color: black;
+        opacity: 0.5;
+      `;
+      let text = document.createElement('div');
+      text.innerHTML = 'Out of time. Take an action!<br><br>Use the "timeout" setting in the config sheet to configure this. Use -1 to disable.';
+      text.style.cssText = `
+        position: absolute;
+        padding: 5px;
+        background-color: white;
+      `;
+      overlay.append(background, text);
+      this.messages_.append(overlay);
+      return;
+    }
+
+    this.timer_.textContent = this.timeLeft_;
+    setTimeout(this.nextTick_.bind(this), 1000);
+    this.timeLeft_--;
+  }
+
   async renderNext_(threadToRender) {
+    this.timeLeft_ = this.timeout_;
     this.currentThread_ = threadToRender || this.threadList_.pop();
     this.updateTitle_();
 
@@ -134,6 +192,7 @@ class ThreadView extends HTMLElement {
       this.subjectText_.textContent = 'All Done! Nothing left to triage for now.';
       this.gmailLink_.textContent = '';
       this.messages_.textContent = '';
+      this.timer_.textContent = '';
       return;
     }
 
@@ -162,6 +221,7 @@ class ThreadView extends HTMLElement {
     if (y < 70)
       document.documentElement.scrollTop -= 70 - y;
 
+    this.nextTick_();
     this.threadList_.prefetchFirst();
   }
 
