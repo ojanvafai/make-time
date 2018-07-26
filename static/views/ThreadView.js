@@ -1,5 +1,5 @@
 class ThreadView extends HTMLElement {
-  constructor(threadList, updateCounter, blockedLabel, timeout) {
+  constructor(threadList, updateCounter, blockedLabel, timeout, allowedReplyLength) {
     super();
     this.style.display = 'block';
 
@@ -7,6 +7,7 @@ class ThreadView extends HTMLElement {
     this.updateCounter_ = updateCounter;
     this.blockedLabel_ = blockedLabel;
     this.timeout_ = timeout;
+    this.allowedReplyLength_ = allowedReplyLength;
 
     this.currentThread_ = null;
 
@@ -115,6 +116,11 @@ class ThreadView extends HTMLElement {
       return;
     }
 
+    if (key == 'q') {
+      this.showQuickReply_();
+      return;
+    }
+
     // Oof. Gross hack because top-level await is not allowed.
     var destination = key == 'b' ? this.blockedLabel_ : ThreadView.KEY_TO_DESTINATION[key];
     if (destination !== undefined) {
@@ -137,11 +143,112 @@ class ThreadView extends HTMLElement {
     showLoader(false);
   }
 
+  clearQuickReply_() {
+    if (this.quickReply_) {
+      this.quickReply_.remove();
+      this.quickReply_ = null;
+    }
+
+    this.timeLeft_ = this.timeout_;
+    this.nextTick_();
+  }
+
+  showQuickReply_() {
+    if (this.quickReply_)
+      return;
+
+    this.timeLeft_ = -1;
+    this.quickReply_ = document.createElement('div');
+    this.quickReply_.style.cssText = `
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: white;
+      display: flex;
+    `;
+
+    let text = document.createElement('input');
+    text.style.cssText = `flex: 1; padding: 8px; margin: 4px;`;
+
+    let cancel = document.createElement('button');
+    cancel.textContent = 'cancel';
+    cancel.onclick = this.clearQuickReply_.bind(this);
+
+    let progress = document.createElement('progress');
+    progress.style.cssText = `width: 50px;`;
+    progress.max = this.allowedReplyLength_;
+    progress.value = 0;
+
+    this.quickReply_.append(text, cancel, progress);
+    this.toolbar_.append(this.quickReply_);
+
+    text.addEventListener('keydown', async (e) => {
+      e.stopPropagation();
+
+      if (e.key == 'Enter') {
+        await this.sendReply_(text.value);
+        // TODO: Don't depend on 'd' being the shortcut for Done.
+        this.dispatchShortcut('d');
+        return;
+      }
+
+      if (text.value.length == this.allowedReplyLength_)
+        e.preventDefault();
+      progress.value = text.value.length;
+    });
+
+    text.focus();
+  }
+
+  async sendReply_(replyText) {
+    let messages = await this.currentThread_.getMessages();
+    let lastMessage = messages[messages.length - 1];
+
+    // Gmail will remove dupes for us.
+    let to = lastMessage.rawFrom + ',' + lastMessage.rawTo;
+
+    let subject = lastMessage.subject;
+    let replyPrefix = 'Re: ';
+    if (!subject.startsWith(replyPrefix))
+      subject = replyPrefix + subject;
+
+    let email = `Subject: ${subject}
+In-Reply-To: ${lastMessage.messageId}
+To: ${to}
+Content-Type: text/html; charset="UTF-8"
+`;
+
+    if (lastMessage.rawCc)
+      email += `Cc: ${lastMessage.rawCc}\n`;
+
+    email += `
+  ${replyText}<br><br>${lastMessage.rawFrom} wrote:<br>
+  <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
+    ${lastMessage.html || lastMessage.plain}
+  </blockquote>`;
+
+    let base64 = new Base64();
+    let response = await gapi.client.gmail.users.messages.send({
+      'userId': USER_ID,
+      'resource': {
+        'raw': base64.encode(email),
+        'threadId': this.currentThread_.id,
+      }
+    });
+  }
+
   async nextTick_() {
     if (this.timeout_ == -1)
       return;
 
-    if (this.timeLeft_ <= 0) {
+    if (this.timeLeft_ == -1) {
+      this.timer_.textContent = '';
+      return;
+    }
+
+    if (this.timeLeft_ == 0) {
       this.timer_.textContent = '';
       let overlay = document.createElement('div');
       overlay.style.cssText = `
@@ -182,7 +289,7 @@ class ThreadView extends HTMLElement {
   }
 
   async renderNext_(threadToRender) {
-    this.timeLeft_ = this.timeout_;
+    this.clearQuickReply_();
     this.currentThread_ = threadToRender || this.threadList_.pop();
     this.updateTitle_();
 
@@ -221,7 +328,6 @@ class ThreadView extends HTMLElement {
     if (y < 70)
       document.documentElement.scrollTop -= 70 - y;
 
-    this.nextTick_();
     this.threadList_.prefetchFirst();
   }
 
@@ -277,6 +383,7 @@ ThreadView.KEY_TO_BUTTON_NAME = {
   d: 'Done',
   t: 'TL;DR',
   r: 'Reply Needed',
+  q: 'Quick Reply',
   b: 'Blocked',
   m: 'Mute',
   a: 'Action Item',

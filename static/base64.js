@@ -1,7 +1,6 @@
 class Base64 {
   constructor() {
     // Use modules and then put these in the module scope instead of the constructor.
-    this.b64c = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";   // base64 dictionary
     this.b64u = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";   // base64url dictionary
     this.b64pad = '=';
   }
@@ -29,6 +28,39 @@ class Base64 {
     }
 
     return decodeURIComponent(escape(dst))
+  }
+
+  encode(str) {
+    var data = unescape(encodeURIComponent(str));
+    var len = data.length;
+
+    var dst = ""
+    var i
+
+    for (i = 0; i <= len - 3; i += 3)
+    {
+        dst += this.b64u.charAt(data.charCodeAt(i) >>> 2)
+        dst += this.b64u.charAt(((data.charCodeAt(i) & 3) << 4) | (data.charCodeAt(i+1) >>> 4))
+        dst += this.b64u.charAt(((data.charCodeAt(i+1) & 15) << 2) | (data.charCodeAt(i+2) >>> 6))
+        dst += this.b64u.charAt(data.charCodeAt(i+2) & 63)
+    }
+
+    if (len % 3 == 2)
+    {
+        dst += this.b64u.charAt(data.charCodeAt(i) >>> 2)
+        dst += this.b64u.charAt(((data.charCodeAt(i) & 3) << 4) | (data.charCodeAt(i+1) >>> 4))
+        dst += this.b64u.charAt(((data.charCodeAt(i+1) & 15) << 2))
+        dst += this.b64pad
+    }
+    else if (len % 3 == 1)
+    {
+        dst += this.b64u.charAt(data.charCodeAt(i) >>> 2)
+        dst += this.b64u.charAt(((data.charCodeAt(i) & 3) << 4))
+        dst += this.b64pad
+        dst += this.b64pad
+    }
+
+    return dst;
   }
 
   charIndex(c) {

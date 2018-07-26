@@ -2,6 +2,7 @@ class Thread {
   constructor(thread) {
     this.id = thread.id;
     this.snippet = thread.snippet;
+    this.base64_ = new Base64();
   }
 
   clearDetails_() {
@@ -152,10 +153,10 @@ class Thread {
 
       switch (part.mimeType) {
         case 'text/plain':
-          output.plain = base64.decode(part.body.data);
+          output.plain = this.base64_.decode(part.body.data);
           break;
         case 'text/html':
-          output.html = base64.decode(part.body.data);
+          output.html = this.base64_.decode(part.body.data);
           break;
       }
     }
@@ -200,15 +201,21 @@ class Thread {
         case 'From':
           output.from = this.extractEmails_(header.value);
           output.fromName = this.extractName_(header.value);
+          output.rawFrom = header.value;
           break;
         case 'To':
           output.to = this.extractEmails_(header.value);
+          output.rawTo = header.value;
           break;
         case 'Cc':
           output.cc = this.extractEmails_(header.value);
+          output.rawCc = header.value;
           break;
         case 'Bcc':
           output.bcc = this.extractEmails_(header.value);
+          break;
+        case 'Message-ID':
+          output.messageId = header.value;
           break;
         case 'X-Autoreply':
           output.xAutoreply = header.value;
@@ -221,7 +228,7 @@ class Thread {
     if (message.payload.parts) {
       this.getMessageBody_(message.payload.parts, output);
     } else {
-      output.plain = output.html = base64.decode(message.payload.body.data);
+      output.plain = output.html = this.base64_.decode(message.payload.body.data);
     }
 
     let html = output.html || this.htmlEscape_(output.plain);

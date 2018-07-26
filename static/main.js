@@ -13,8 +13,6 @@ var USER_ID = 'me';
 
 var authorizeButton = document.getElementById('authorize-button');
 
-var base64 = new Base64();
-
 async function updateCounter(text) {
   document.getElementById('counter').innerHTML = text;
 }
@@ -137,7 +135,8 @@ async function viewThreadAtATime(threads) {
   }
 
   let timeout = settings.timeout || 20;
-  setView(new ThreadView(threadList, updateCounter, blockedLabel, timeout));
+  let allowedReplyLength = settings.allowed_reply_length || 150;
+  setView(new ThreadView(threadList, updateCounter, blockedLabel, timeout, allowedReplyLength));
 }
 
 async function viewAll(e) {
