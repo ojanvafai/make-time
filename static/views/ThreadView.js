@@ -47,15 +47,35 @@ class ThreadView extends HTMLElement {
 
     this.timer_ = document.createElement('div');
     this.timer_.style.cssText = `
+      width: 1em;
+      height: 1em;
+      color: red;
+      fill: blue;
+    `;
+
+    let timerContainer = document.createElement('div');
+    timerContainer.style.cssText = `
       position: fixed;
       right: 0;
       bottom: 0;
       font-size: 36px;
-      color: red;
       padding: 5px;
     `;
+    let timerButton = document.createElement('div');
+    timerContainer.append(this.timer_, timerButton);
 
-    this.append(this.subject_, this.messages_, this.toolbar_, this.timer_);
+    this.timerPaused_ = true;
+    let updatePlayButton = () => {
+      timerButton.textContent = this.timerPaused_ ? '▶️' : '⏸️';
+    }
+    updatePlayButton();
+    timerContainer.onclick = () => {
+      this.timerPaused_ = !this.timerPaused_;
+      updatePlayButton();
+      this.restartTimer_();
+    }
+
+    this.append(this.subject_, this.messages_, this.toolbar_, timerContainer);
 
     for (let key in ThreadView.KEY_TO_BUTTON_NAME) {
       let name = ThreadView.KEY_TO_BUTTON_NAME[key];
@@ -71,6 +91,14 @@ class ThreadView extends HTMLElement {
     // is called and tries to get offsetTop. This happens when going from the Vueue back
     // to the ThreadView.
     setTimeout(this.renderNext_.bind(this));
+  }
+
+  setTimerBackground_() {
+    if (this.timerPaused_) {
+      this.timer_.style.backgroundImage = '';
+    } else {
+      this.timer_.style.backgroundImage = '';
+    }
   }
 
   async popAllThreads() {
@@ -159,6 +187,11 @@ class ThreadView extends HTMLElement {
   }
 
   restartTimer_() {
+    if (this.timerPaused_) {
+      this.timer_.textContent = '';
+      return;
+    }
+
     this.timeLeft_ = this.timeout_;
     if (this.timerKey_) {
       clearTimeout(this.timerKey_);
@@ -262,10 +295,7 @@ Content-Type: text/html; charset="UTF-8"
   }
 
   async nextTick_() {
-    if (this.timeout_ == -1)
-      return;
-
-    if (this.timeLeft_ == -1) {
+    if (this.timerPaused_ || this.timeLeft_ == -1) {
       this.timer_.textContent = '';
       return;
     }

@@ -144,7 +144,10 @@ async function viewThreadAtATime(threads) {
     await threadList.push(thread);
   }
 
-  let timeout = settings.timeout || 20;
+  let timeout = 20;
+  if (settings.timeout > 0)
+    timeout = settings.timeout;
+
   let allowedReplyLength = settings.allowed_reply_length || 150;
   setView(new ThreadView(threadList, updateCounter, blockedLabel, timeout, allowedReplyLength));
 }
