@@ -14,6 +14,12 @@ class Vueue extends HTMLElement {
   async dispatchShortcut(key) {
   }
 
+  onHide() {
+  }
+
+  onShow() {
+  }
+
   async connectedCallback() {
     this.initialThreadsView_ = document.createElement('div');
 

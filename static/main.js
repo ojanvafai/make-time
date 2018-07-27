@@ -30,6 +30,16 @@ document.body.addEventListener('click', (e) => {
   }
 });
 
+document.addEventListener('visibilitychange', (e) => {
+  if (!currentView_)
+    return;
+  if (document.visibilityState == 'hidden')
+    currentView_.onHide();
+  else
+    currentView_.onShow();
+});
+
+
 window.onload = () => {
   gapi.load('client:auth2', () => {
     gapi.client.init({

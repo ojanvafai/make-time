@@ -67,7 +67,6 @@ class ThreadView extends HTMLElement {
       this.toolbar_.append(button);
     }
 
-
     // Hack: Do this on a timer so that the ThreadView is in the DOM before renderNext_
     // is called and tries to get offsetTop. This happens when going from the Vueue back
     // to the ThreadView.
@@ -143,21 +142,44 @@ class ThreadView extends HTMLElement {
     showLoader(false);
   }
 
+  onHide() {
+    this.cancelTimer_();
+    if (this.timerKey_) {
+      clearTimeout(this.timerKey_);
+      this.timerKey_ = null;
+    }
+  }
+
+  onShow() {
+    this.restartTimer_();
+  }
+
+  cancelTimer_() {
+    this.timeLeft_ = -1;
+  }
+
+  restartTimer_() {
+    this.timeLeft_ = this.timeout_;
+    if (this.timerKey_) {
+      clearTimeout(this.timerKey_);
+      this.timerKey_ = null;
+    }
+    this.nextTick_();
+  }
+
   clearQuickReply_() {
     if (this.quickReply_) {
       this.quickReply_.remove();
       this.quickReply_ = null;
     }
-
-    this.timeLeft_ = this.timeout_;
-    this.nextTick_();
+    this.restartTimer_();
   }
 
   showQuickReply_() {
     if (this.quickReply_)
       return;
 
-    this.timeLeft_ = -1;
+    this.cancelTimer_();
     this.quickReply_ = document.createElement('div');
     this.quickReply_.style.cssText = `
       position: absolute;
@@ -284,7 +306,7 @@ Content-Type: text/html; charset="UTF-8"
     }
 
     this.timer_.textContent = this.timeLeft_;
-    setTimeout(this.nextTick_.bind(this), 1000);
+    this.timerKey_ = setTimeout(this.nextTick_.bind(this), 1000);
     this.timeLeft_--;
   }
 
