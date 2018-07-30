@@ -228,17 +228,18 @@ class Thread {
     if (message.payload.parts) {
       this.getMessageBody_(message.payload.parts, output);
     } else {
-      output.plain = output.html = this.base64_.decode(message.payload.body.data);
+      output.plain = this.base64_.decode(message.payload.body.data);
     }
 
-    let html = output.html || this.htmlEscape_(output.plain);
+    let html;
+    if (output.html)
+      html = this.disableStyleSheets_(output.html);
+    else
+      html = `<div style="white-space:pre-wrap">${this.htmlEscape_(output.plain)}</div>`;
 
     // TODO: Test eliding works if current message is html but previous is plain or vice versa.
     if (previousMessageText)
       html = this.elideReply_(html, previousMessageText);
-
-    if (output.html)
-      html = this.disableStyleSheets_(html);
 
     output.processedHtml = html;
     output.isUnread = message.labelIds.includes('UNREAD');

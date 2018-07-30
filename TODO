@@ -1,4 +1,7 @@
 P0
+- Fix atrociously slow initial load time. For prefetch, fetch labels and messages in one request and make sure to prefetch before labels are grabbed. Also, why is the same thread getting fetched twice? And why is queued_labels fetched 3 times?
+- Keep processing mail if the current one throws for some reason
+- Detect needing to re-login/otp
 - sort by date
 - fix eliding for reals
 - look at monorail examples...they don't wrap. are those plaintext? should they be wrapped in a pre-wrap maybe?
