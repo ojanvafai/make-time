@@ -222,6 +222,7 @@ class ThreadView extends HTMLElement {
       left: 0;
       background-color: white;
       display: flex;
+      align-items: center;
     `;
 
     let text = document.createElement('input');
@@ -236,21 +237,38 @@ class ThreadView extends HTMLElement {
     progress.max = this.allowedReplyLength_;
     progress.value = 0;
 
-    this.quickReply_.append(text, cancel, progress);
+    let count = document.createElement('div');
+    count.style.cssText = `
+      margin: 4px;
+      color: red;
+    `;
+
+    this.quickReply_.append(text, cancel, progress, count);
     this.toolbar_.append(this.quickReply_);
 
     text.addEventListener('keydown', async (e) => {
       e.stopPropagation();
 
+      if (e.key == 'Escape') {
+        this.clearQuickReply_();
+        return;
+      }
+
       if (e.key == 'Enter') {
+        if (text.value.length >= this.allowedReplyLength_) {
+          alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Which is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
+          return;
+        }
         await this.sendReply_(text.value);
         // TODO: Don't depend on 'd' being the shortcut for Done.
         this.dispatchShortcut('d');
         return;
       }
 
-      if (text.value.length == this.allowedReplyLength_)
-        e.preventDefault();
+      let lengthDiff = this.allowedReplyLength_ - text.value.length;
+      let exceedsLength = text.value.length >= (this.allowedReplyLength_ - 10);
+      count.textContent = (lengthDiff < 10) ? lengthDiff : '';
+
       progress.value = text.value.length;
     });
 

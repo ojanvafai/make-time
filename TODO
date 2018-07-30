@@ -1,8 +1,7 @@
-P0
+P1
 - Fix atrociously slow initial load time. For prefetch, fetch labels and messages in one request and make sure to prefetch before labels are grabbed. Also, why is the same thread getting fetched twice? And why is queued_labels fetched 3 times?
 - Keep processing mail if the current one throws for some reason
 - Detect needing to re-login/otp
-- sort by date
 - fix eliding for reals
 - look at monorail examples...they don't wrap. are those plaintext? should they be wrapped in a pre-wrap maybe?
 - Don't elide inside style tags and need to make sure that eliding respects markup.
@@ -13,7 +12,8 @@ P0
 - add a way of switching to a different queue in the thread at a time view
 - Show attachments
 
-P1
+P2
+- sort by date
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Add keyboard shortcuts for Vueue mode. j/k/x next/previous/toggle
 - disable title tags in emails. They currently update the title of make-time.
