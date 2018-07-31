@@ -463,76 +463,81 @@ class MailProcessor {
     let unprocessedLabelId = await getLabelId(this.settings.unprocessed_label);
 
     for (var i = 0; i < threads.length; i++) {
-      updateTitle(`Processing ${i + 1}/${threads.length} unprocessed threads...`);
+      try {
+        updateTitle(`Processing ${i + 1}/${threads.length} unprocessed threads...`);
 
-      let thread = threads[i];
-      let labelName;
+        let thread = threads[i];
+        let labelName;
 
-      let removeLabelIds = [unprocessedLabelId];
-      let addLabelIds = [];
-      if (processedLabelId)
-        addLabelIds.push(processedLabelId);
+        let removeLabelIds = [unprocessedLabelId];
+        let addLabelIds = [];
+        if (processedLabelId)
+          addLabelIds.push(processedLabelId);
 
-      // Triaged items when reprocessed go in the rtriage queue regardless of what label they
-      // might otherwise go in.
-      let currentTriagedLabel = await this.currentTriagedLabel(thread);
-      if (currentTriagedLabel) {
-        if (currentTriagedLabel == MUTED_LABEL) {
-          await thread.modify(addLabelIds, removeLabelIds);
-          continue;
-        }
-        labelName = TRIAGER_LABELS.retriage;
-      } else {
-        labelName = await this.processThread(thread, rulesSheet.rules);
-      }
-
-      this.debugLog("Applying label: " + labelName);
-      let alreadyHadLabel = false;
-      let isAlreadyInInbox = thread.isInInbox();
-
-      if (labelName == this.settings.archive_label) {
-        if (thread.isInInbox())
-          removeLabelIds.push('INBOX');
-        else
-          alreadyHadLabel = true;
-        removeLabelIds = removeLabelIds.concat(labelIdsToRemove);
-      } else {
-        let prefixedLabelName;
-
-        // Make sure not to put things into the inbox into queued labels.
-        if (isAlreadyInInbox) {
-          let queue = this.settings.queuedLabelMap[labelName];
-          if (queue)
-            prefixedLabelName = this.dequeuedLabelName(queue, labelName);
-          else
-            prefixedLabelName = this.addAutoPrefix(labelName);
+        // Triaged items when reprocessed go in the rtriage queue regardless of what label they
+        // might otherwise go in.
+        let currentTriagedLabel = await this.currentTriagedLabel(thread);
+        if (currentTriagedLabel) {
+          if (currentTriagedLabel == MUTED_LABEL) {
+            await thread.modify(addLabelIds, removeLabelIds);
+            continue;
+          }
+          labelName = TRIAGER_LABELS.retriage;
         } else {
-          prefixedLabelName = this.addLabelPrefix(labelName);
+          labelName = await this.processThread(thread, rulesSheet.rules);
         }
 
-        let prefixedLabelId = await getLabelId(prefixedLabelName);
+        this.debugLog("Applying label: " + labelName);
+        let alreadyHadLabel = false;
+        let isAlreadyInInbox = thread.isInInbox();
 
-        let labelIds = await thread.getLabelIds();
-        alreadyHadLabel = labelIds.has(prefixedLabelId);
+        if (labelName == this.settings.archive_label) {
+          if (thread.isInInbox())
+            removeLabelIds.push('INBOX');
+          else
+            alreadyHadLabel = true;
+          removeLabelIds = removeLabelIds.concat(labelIdsToRemove);
+        } else {
+          let prefixedLabelName;
 
-        addLabelIds.push(prefixedLabelId);
-        removeLabelIds = removeLabelIds.concat(labelIdsToRemove.filter(id => id != prefixedLabelId));
+          // Make sure not to put things into the inbox into queued labels.
+          if (isAlreadyInInbox) {
+            let queue = this.settings.queuedLabelMap[labelName];
+            if (queue)
+              prefixedLabelName = this.dequeuedLabelName(queue, labelName);
+            else
+              prefixedLabelName = this.addAutoPrefix(labelName);
+          } else {
+            prefixedLabelName = this.addLabelPrefix(labelName);
+          }
 
-        if (prefixedLabelName != addQueuedPrefix(this.settings, labelName))
-          addLabelIds.push('INBOX');
-      }
+          let prefixedLabelId = await getLabelId(prefixedLabelName);
 
-      await thread.modify(addLabelIds, removeLabelIds);
-      // TODO: If isAlreadyInInbox && !alreadyHadLabel, we should remove it from the threadlist
-      // and add it back in so it gets put into the right queue.
-      if (!isAlreadyInInbox && addLabelIds.includes('INBOX'))
-        this.pushThread_(thread);
+          let labelIds = await thread.getLabelIds();
+          alreadyHadLabel = labelIds.has(prefixedLabelId);
 
-      if (!alreadyHadLabel) {
-        if (!perLabelCounts[labelName])
-          perLabelCounts[labelName] = 0;
-        perLabelCounts[labelName] += 1;
-        newlyLabeledThreadsCount++;
+          addLabelIds.push(prefixedLabelId);
+          removeLabelIds = removeLabelIds.concat(labelIdsToRemove.filter(id => id != prefixedLabelId));
+
+          if (prefixedLabelName != addQueuedPrefix(this.settings, labelName))
+            addLabelIds.push('INBOX');
+        }
+
+        await thread.modify(addLabelIds, removeLabelIds);
+        // TODO: If isAlreadyInInbox && !alreadyHadLabel, we should remove it from the threadlist
+        // and add it back in so it gets put into the right queue.
+        if (!isAlreadyInInbox && addLabelIds.includes('INBOX'))
+          this.pushThread_(thread);
+
+        if (!alreadyHadLabel) {
+          if (!perLabelCounts[labelName])
+            perLabelCounts[labelName] = 0;
+          perLabelCounts[labelName] += 1;
+          newlyLabeledThreadsCount++;
+        }
+      } catch (e) {
+        console.log(e);
+        alert(`Failed to process message. Left it in the unprocessed label.\n\n${JSON.stringify(e)}`);
       }
     }
 

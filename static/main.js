@@ -59,7 +59,7 @@ window.onload = () => {
 };
 
 window.addEventListener('error', (e) => {
-  var emailBody = 'Captured an error: ' + e.message;
+  var emailBody = 'Captured an error: ' + JSON.stringify(e);
   if (e.body)
     emailBody += '\n' + e.body;
   if (e.stack)

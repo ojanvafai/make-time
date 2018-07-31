@@ -1,18 +1,13 @@
-P1
+P1: Will try to do soonish.
 - Fix atrociously slow initial load time. For prefetch, fetch labels and messages in one request and make sure to prefetch before labels are grabbed. Also, why is the same thread getting fetched twice? And why is queued_labels fetched 3 times?
-- Keep processing mail if the current one throws for some reason
 - Detect needing to re-login/otp
-- fix eliding for reals
-- look at monorail examples...they don't wrap. are those plaintext? should they be wrapped in a pre-wrap maybe?
 - Don't elide inside style tags and need to make sure that eliding respects markup.
 - Fix race condition where if new message comes in after make-time has prefetched, the archiving will archive that as well.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
-- Sort within a triage queue by date in the Vueue.
 - Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
-- add a way of switching to a different queue in the thread at a time view
 - Show attachments
 
-P2
+P2: Will only do if something makes these seem worth doing.
 - sort by date
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Add keyboard shortcuts for Vueue mode. j/k/x next/previous/toggle
@@ -29,7 +24,7 @@ P2
 - Feature request for once we have a reply mode: by default send "dones", but also add send & blocked for things where you want to make sure there is followup.
 - Don't use "prompt" for getting the spreadsheet URL.
 - Send replys from the recieving address for multiple email users. Using "From: ". Not quite sure how to figure out which email address to use. For mailing lists, could use Delivered-To, that might be good enough.
-
+- add a way of switching to a different queue in the thread at a time view
 
 TODOs for filters:
 - add the ability to filter messages with no list-id as those are probably more urgent.
