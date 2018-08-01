@@ -322,8 +322,12 @@ async function updateThreadList() {
 
   let threads = await fetchThreads('inbox', vacationQuery);
   let firstThread = threads.pop();
-  if (firstThread)
+  if (firstThread) {
+    // Prefetch the message details for the first one so we don't serially request
+    // the labels for this thread just to then immediately fetch the full message details.
+    await firstThread.fetchMessageDetails();
     await addThread(firstThread);
+  }
 
   for (let thread of threads) {
     await addThread(thread);

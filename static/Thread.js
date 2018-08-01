@@ -126,18 +126,29 @@ class Thread {
 
     await this.fetchMessageDetails({
       fields: 'id,messages/labelIds',
-    })
+    });
   }
 
   async fetchMessageDetails(opt_extraParams) {
     if (this.processedMessages_)
       return;
 
-    let requestParams = opt_extraParams || {};
-    requestParams.userId = USER_ID;
-    requestParams.id = this.id;
+    let resp;
+    if (this.fetchPromise_) {
+      resp = await this.fetchPromise_;
+    } else {
+      let requestParams = opt_extraParams || {};
+      requestParams.userId = USER_ID;
+      requestParams.id = this.id;
 
-    let resp = await gapi.client.gmail.users.threads.get(requestParams);
+      let request = gapi.client.gmail.users.threads.get(requestParams)
+      if (opt_extraParams) {
+        resp = await request;
+      } else {
+        this.fetchPromise_ = request;
+        resp = await this.fetchPromise_;
+      }
+    }
     this.processMessages_(resp.result.messages);
   }
 
