@@ -21,6 +21,7 @@ async function updateCounter(text) {
 var g_labels = {};
 let currentView_;
 let settings_;
+let settingsPromise_;
 
 // Make sure links open in new tabs.
 document.body.addEventListener('click', (e) => {
@@ -109,14 +110,26 @@ async function fetch2ColumnSheet(spreadsheetId, sheetName, opt_startRowIndex) {
   return result;
 }
 
+async function fetchSettings() {
+  let spreadsheetId = getSettingsSpreadsheetId();
+  document.getElementById('settings').href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+  let [settings, queuedLabelMap] = await Promise.all([
+    fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1),
+    fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1),
+  ]);
+  settings.spreadsheetId = getSettingsSpreadsheetId();
+  settings.queuedLabelMap = queuedLabelMap;
+  settings_ = settings;
+}
+
 async function getSettings() {
-  if (!settings_) {
-    let spreadsheetId = getSettingsSpreadsheetId();
-    document.getElementById('settings').href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
-    // TODO: Fetch these two in parallel.
-    settings_ = await fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1);
-    settings_.spreadsheetId = spreadsheetId;
-    settings_.queuedLabelMap = await fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
+  // Make sure to fetch settings only once in the case that we call getSettings
+  // in multiple places while awaiting the fetchSettings network request.
+  if (settingsPromise_) {
+    await settingsPromise_;
+  } else if (!settings_) {
+    settingsPromise_ = fetchSettings();
+    await settingsPromise_;
   }
   return settings_;
 }
@@ -300,13 +313,9 @@ async function addThread(thread) {
 
 async function updateThreadList() {
   showLoader(true);
-
   updateTitle('Fetching threads to triage...');
-  await updateLabelList();
 
-  await viewThreadAtATime([]);
-
-  let settings = await getSettings();
+  let [_, settings] = await Promise.all([updateLabelList(), getSettings(), viewThreadAtATime([])]);
   let vacationQuery;
   if (settings.vacation_subject)
     vacationQuery = `subject:${settings.vacation_subject}`;
