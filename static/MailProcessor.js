@@ -556,7 +556,9 @@ class MailProcessor {
     var queuedLabelName = addQueuedPrefix(this.settings, labelName);
     var queuedLabel = await getLabelId(queuedLabelName);
     var autoLabel = await getLabelId(this.dequeuedLabelName(queue, labelName));
-    var threads = await fetchThreads(queuedLabelName);
+
+    let threads = [];
+    await fetchThreads(queuedLabelName, thread => threads.push(thread));
 
     if (!threads.length)
       return;
