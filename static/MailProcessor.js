@@ -439,7 +439,9 @@ class MailProcessor {
   }
 
   async processMail() {
-    let threads = await fetchThreads(this.settings.unprocessed_label);
+    let threads = [];
+    await fetchThreads(this.settings.unprocessed_label, thread => threads.push(thread));
+
     if (!threads.length)
       return;
 

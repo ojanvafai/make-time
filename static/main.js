@@ -259,8 +259,8 @@ async function getLabelId(labelName) {
   return g_labels.labelToId[labelName];
 }
 
-async function fetchThreads(label, opt_extraQuery) {
-  var query = 'in:' + label;
+async function fetchThreads(label, forEachThread, opt_extraQuery) {
+  let query = 'in:' + label;
 
   if (opt_extraQuery)
     query += ' ' + opt_extraQuery;
@@ -269,7 +269,7 @@ async function fetchThreads(label, opt_extraQuery) {
   if (g_labels.triagedLabels.length)
     query += ' -(in:' + g_labels.triagedLabels.join(' OR in:') + ')';
 
-  var getPageOfThreads = async function(opt_pageToken) {
+  let getPageOfThreads = async (opt_pageToken) => {
     let requestParams = {
       'userId': USER_ID,
       'q': query,
@@ -279,20 +279,17 @@ async function fetchThreads(label, opt_extraQuery) {
       requestParams.pageToken = opt_pageToken;
 
     let resp = await gapi.client.gmail.users.threads.list(requestParams);
-    let result = resp.result.threads || [];
+    let threads = resp.result.threads || [];
+    for (let thread of threads) {
+      await forEachThread(new Thread(thread));
+    }
 
     let nextPageToken = resp.result.nextPageToken;
     if (nextPageToken)
-      result = result.concat(await getPageOfThreads(nextPageToken));
-    return result;
+      await getPageOfThreads(nextPageToken);
   };
 
-  let rawThreads = await getPageOfThreads();
-  let threads = [];
-  for (let thread of rawThreads) {
-    threads.push(new Thread(thread));
-  }
-  return threads;
+  await getPageOfThreads();
 }
 
 function showLoader(show) {
@@ -320,19 +317,7 @@ async function updateThreadList() {
   if (settings.vacation_subject)
     vacationQuery = `subject:${settings.vacation_subject}`;
 
-  let threads = await fetchThreads('inbox', vacationQuery);
-  let firstThread = threads.pop();
-  if (firstThread) {
-    // Prefetch the message details for the first one so we don't serially request
-    // the labels for this thread just to then immediately fetch the full message details.
-    await firstThread.fetchMessageDetails();
-    await addThread(firstThread);
-  }
-
-  for (let thread of threads) {
-    await addThread(thread);
-  }
-
+  await fetchThreads('inbox', addThread, vacationQuery);
   await processMail();
   showLoader(false);
 }

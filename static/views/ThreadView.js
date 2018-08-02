@@ -115,10 +115,19 @@ class ThreadView extends HTMLElement {
   }
 
   async push(thread) {
+    if (!this.currentThread_) {
+      // Prefetch the message details for the first one so we don't serially request
+      // the labels for this thread just to then immediately fetch the full message details.
+      // Do this before calling any of the code below to ensure the labels don't implicitly
+      // get fetched.
+      thread.fetchMessageDetails();
+    }
+
     await this.threadList_.push(thread);
     await this.updateTitle_();
+
     if (!this.currentThread_)
-      this.renderNext_();
+      await this.renderNext_();
   }
 
   async updateTitle_() {
