@@ -157,6 +157,7 @@ class VueueRow_ extends HTMLElement {
           margin-left: 5px;
           margin-right: 5px;
         `;
+        this.checkBox_.onchange = this.updateHighlight_.bind(this);
 
         let from = document.createElement('span');
         from.style.cssText = `
@@ -188,6 +189,10 @@ class VueueRow_ extends HTMLElement {
     });
   }
 
+  updateHighlight_() {
+    this.style.backgroundColor = this.checkBox_.checked ? '#c2dbff' : '';
+  }
+
   dateString_(date) {
     if (date.toDateString() == new Date().toDateString())
       return date.toLocaleTimeString();
@@ -200,6 +205,7 @@ class VueueRow_ extends HTMLElement {
 
   set checked(value) {
     this.checkBox_.checked = value;
+    this.updateHighlight_();
   }
 
   get thread() {
