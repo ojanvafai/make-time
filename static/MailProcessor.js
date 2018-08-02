@@ -111,9 +111,9 @@ class MailProcessor {
 
   // TODO: Merge this with the other label code.
   async getLabelNames() {
-    var response = await gapi.client.gmail.users.labels.list({
+    var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
       'userId': USER_ID
-    })
+    });
 
     var labels = [];
 
@@ -200,7 +200,7 @@ class MailProcessor {
     let requestBody = {
       values: rows,
     };
-    let response = await gapi.client.sheets.spreadsheets.values.append(requestParams, requestBody);
+    let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.append, requestParams, requestBody);
     // TODO: Handle if response.status != 200.
   }
 
@@ -214,7 +214,7 @@ class MailProcessor {
     let requestBody = {
       values: rows,
     };
-    let response = await gapi.client.sheets.spreadsheets.values.update(requestParams, requestBody);
+    let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.update, requestParams, requestBody);
     // TODO: Handle if response.status != 200.
   }
 
@@ -241,7 +241,7 @@ class MailProcessor {
   }
 
   async getSheetId(sheetName) {
-    let response = await gapi.client.sheets.spreadsheets.get({
+    let response = await gapiFetch(gapi.client.sheets.spreadsheets.get, {
       spreadsheetId: this.settings.spreadsheetId,
       ranges: [sheetName],
     });
@@ -273,7 +273,7 @@ class MailProcessor {
       ],
     };
 
-    let response = await gapi.client.sheets.spreadsheets.batchUpdate(params, batchUpdateSpreadsheetRequestBody);
+    let response = await gapiFetch(gapi.client.sheets.spreadsheets.batchUpdate, params, batchUpdateSpreadsheetRequestBody);
     // TODO: Handle response.status != 200.
   }
 

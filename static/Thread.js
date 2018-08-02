@@ -59,7 +59,7 @@ class Thread {
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
-    let response = await gapi.client.gmail.users.threads.modify(request);
+    let response = await gapiFetch(gapi.client.gmail.users.threads.modify, request);
     // TODO: Handle response.status != 200.
 
     // Once a modify has happend the stored message details are stale and will need refeteching
@@ -141,7 +141,7 @@ class Thread {
       requestParams.userId = USER_ID;
       requestParams.id = this.id;
 
-      let request = gapi.client.gmail.users.threads.get(requestParams)
+      let request = gapiFetch(gapi.client.gmail.users.threads.get, requestParams)
       if (opt_extraParams) {
         resp = await request;
       } else {

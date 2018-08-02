@@ -67,11 +67,11 @@ window.addEventListener('error', (e) => {
     emailBody += '\n\n' + e.stack;
 
   // TODO: figure out how to send emails once this is back on a cron.
-  alert(emailBody);
+  alert(JSON.stringify(e));
 });
 
 window.addEventListener('unhandledrejection', (e) => {
-  alert(e.reason.stack || e.reason);
+  alert(JSON.stringify(e.reason));
 });
 
 function getSettingsSpreadsheetId() {
@@ -89,7 +89,7 @@ function getSettingsSpreadsheetId() {
 }
 
 async function fetchSheet(spreadsheetId, sheetName) {
-  let response =  await gapi.client.sheets.spreadsheets.values.get({
+  let response =  await gapiFetch(gapi.client.sheets.spreadsheets.values.get, {
     spreadsheetId: spreadsheetId,
     range: sheetName,
   });
@@ -220,7 +220,7 @@ document.body.addEventListener('keydown', async (e) => {
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
 function createLabel(labelName) {
   return new Promise(resolve => {
-    var request = gapi.client.gmail.users.labels.create({
+    var request = gapiFetch(gapi.client.gmail.users.labels.create, {
       userId: USER_ID,
       name: labelName,
       messageListVisibility: 'show',
@@ -276,7 +276,7 @@ async function fetchThreads(label, forEachThread, opt_extraQuery) {
     if (opt_pageToken)
       requestParams.pageToken = opt_pageToken;
 
-    let resp = await gapi.client.gmail.users.threads.list(requestParams);
+    let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let thread of threads) {
       await forEachThread(new Thread(thread));
@@ -335,7 +335,7 @@ let TEN_MINUTES_IN_MS = 1000 * 60 * 10;
 setInterval(processMail, TEN_MINUTES_IN_MS);
 
 async function updateLabelList() {
-  var response = await gapi.client.gmail.users.labels.list({
+  var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
     'userId': USER_ID
   })
 

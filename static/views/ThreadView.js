@@ -312,7 +312,7 @@ Content-Type: text/html; charset="UTF-8"
   </blockquote>`;
 
     let base64 = new Base64();
-    let response = await gapi.client.gmail.users.messages.send({
+    let response = await gapiFetch(gapi.client.gmail.users.messages.send, {
       'userId': USER_ID,
       'resource': {
         'raw': base64.encode(email),

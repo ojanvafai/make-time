@@ -3,9 +3,9 @@ P1: Will try to do soonish.
 - Don't elide inside style tags and need to make sure that eliding respects markup.
 - Fix race condition where if new message comes in after make-time has prefetched, the archiving will archive that as well.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
-- Handle network failures gracefully, e.g. retry failures and/or show success/failure of requests in UI.
 - Show attachments
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
+- handle going offline gracefully. Pause network activity and wait for coming back online.
 
 P2: Will only do if something makes these seem worth doing.
 - sort by date
