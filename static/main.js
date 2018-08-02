@@ -135,14 +135,12 @@ async function getSettings() {
 }
 
 async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
-  if (threadsToDone.length) {
-    showLoader(true);
-    updateTitle(`Archiving ${threadsToDone.length} threads...`);
-  }
-
   await viewThreadAtATime(threadsToTriage);
 
-  for (let thread of threadsToDone) {
+  for (let i = 0; i < threadsToDone.length; i++) {
+    showLoader(true);
+    updateTitle(`Archiving ${i + 1}/${threadsToDone.length} threads...`);
+    let thread = threadsToDone[i];
     await thread.markTriaged();
   }
   showLoader(false);
