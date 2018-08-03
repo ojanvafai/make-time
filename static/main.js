@@ -255,11 +255,15 @@ async function getLabelId(labelName) {
   return g_labels.labelToId[labelName];
 }
 
-async function fetchThreads(label, forEachThread, opt_extraQuery) {
+async function fetchThreads(label, forEachThread, options) {
   let query = 'in:' + label;
 
-  if (opt_extraQuery)
-    query += ' ' + opt_extraQuery;
+  if (options && options.query)
+    query += ' ' + options.query;
+
+  let queue = options && options.queue;
+  if (queue)
+    query += ' in:' + options.queue;
 
   // We only have triaged labels once they've actually been created.
   if (g_labels.triagedLabels.length)
@@ -276,8 +280,10 @@ async function fetchThreads(label, forEachThread, opt_extraQuery) {
 
     let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
-    for (let thread of threads) {
-      await forEachThread(new Thread(thread));
+    for (let rawThread of threads) {
+      let thread = new Thread(rawThread);
+      thread.setQueue(queue);
+      await forEachThread(thread);
     }
 
     let nextPageToken = resp.result.nextPageToken;
@@ -308,12 +314,21 @@ async function updateThreadList() {
   showLoader(true);
   updateTitle('Fetching threads to triage...');
 
-  let [_, settings] = await Promise.all([updateLabelList(), getSettings(), viewThreadAtATime([])]);
+  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewThreadAtATime([])]);
   let vacationQuery;
   if (settings.vacation_subject)
     vacationQuery = `subject:${settings.vacation_subject}`;
 
-  await fetchThreads('inbox', addThread, vacationQuery);
+  let labelsToFetch = await getLabelsWithThreads(settings);
+  labelsToFetch.sort(LabelUtils.compareLabels);
+
+  for (let label of labelsToFetch) {
+    await fetchThreads('inbox', addThread, {
+      query: vacationQuery,
+      queue: label,
+    });
+  }
+
   await processMail();
   showLoader(false);
 }
@@ -340,11 +355,42 @@ async function updateLabelList() {
   g_labels.labelToId = {};
   g_labels.idToLabel = {};
   g_labels.triagedLabels = [];
-  for (var label of response.result.labels) {
+  for (let label of response.result.labels) {
     g_labels.labelToId[label.name] = label.id;
     g_labels.idToLabel[label.id] = label.name;
-
     if (label.name.startsWith(TRIAGED_LABEL + '/'))
       g_labels.triagedLabels.push(label.name);
   }
+}
+
+async function getLabelsWithThreads(settings) {
+  let batch = gapi.client.newBatch();
+  let metaLabels = [TRIAGED_LABEL, settings.labeler_implementation_label, settings.unprocessed_label];
+
+  for (let id in g_labels.idToLabel) {
+    let name = g_labels.idToLabel[id];
+
+    if (metaLabels.includes(name) ||
+        name.startsWith(TRIAGED_LABEL + '/') ||
+        name.startsWith(settings.labeler_implementation_label + '/')) {
+      continue;
+    }
+
+    let isUserLabel = id.startsWith('Label_');
+    if (isUserLabel) {
+      batch.add(gapi.client.gmail.users.labels.get({
+        userId: USER_ID,
+        id: id,
+      }));
+    }
+  }
+
+  let labelsWithThreads = [];
+  let labelDetails = await batch;
+  for (let key in labelDetails.result) {
+    let details = labelDetails.result[key].result;
+    if (details.threadsTotal)
+      labelsWithThreads.push(details.name);
+  }
+  return labelsWithThreads;
 }

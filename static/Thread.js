@@ -29,7 +29,7 @@ class Thread {
         continue;
       }
       if (name.startsWith(TO_TRIAGE_LABEL + '/'))
-        this.queue_ = name;
+        this.setQueue(name);
       this.labelNames_.push(name);
     }
   }
@@ -100,15 +100,20 @@ class Thread {
     return this.processedMessages_;
   }
 
+  setQueue(queue) {
+    this.queue_ = queue;
+  }
+
   async getDisplayableQueue() {
-    await this.fetchMessageDetails();
-    if (!this.queue_)
+    let queue = await this.getQueue();
+    if (!queue)
       return 'inbox';
-    return removeTriagedPrefix(this.queue_);
+    return removeTriagedPrefix(queue);
   }
 
   async getQueue() {
-    await this.fetchMessageDetails();
+    if (!this.queue_)
+      await this.fetchMessageDetails();
     return this.queue_;
   }
 
