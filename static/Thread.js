@@ -214,6 +214,9 @@ class Thread {
           output.fromName = this.extractName_(header.value);
           output.rawFrom = header.value;
           break;
+        case 'Sender':
+          output.sender = this.extractEmails_(header.value);
+          break;
         case 'To':
           output.to = this.extractEmails_(header.value);
           output.rawTo = header.value;

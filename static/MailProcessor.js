@@ -381,6 +381,11 @@ class MailProcessor {
         return false;
       matches = true;
     }
+    if (rule.sender) {
+      if (!this.containsAddress(message.sender, rule.sender))
+        return false;
+      matches = true;
+    }
     // TODO: only need to do this once per thread.
     if (rule.subject) {
       if (!message.subject.includes(rule.subject))

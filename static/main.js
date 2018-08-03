@@ -218,16 +218,14 @@ document.body.addEventListener('keydown', async (e) => {
 });
 
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.
-function createLabel(labelName) {
-  return new Promise(resolve => {
-    var request = gapiFetch(gapi.client.gmail.users.labels.create, {
-      userId: USER_ID,
-      name: labelName,
-      messageListVisibility: 'show',
-      labelListVisibility: 'labelShow',
-    });
-    request.execute(resolve);
+async function createLabel(labelName) {
+  let resp = await gapiFetch(gapi.client.gmail.users.labels.create, {
+    userId: USER_ID,
+    name: labelName,
+    messageListVisibility: 'show',
+    labelListVisibility: 'labelShow',
   });
+  return resp.result;
 }
 
 async function getLabelId(labelName) {
