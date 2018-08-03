@@ -13,9 +13,6 @@ class Thread {
   }
 
   processLabels_(messages) {
-    if (this.labelIds_)
-      return;
-
     this.labelIds_ = new Set();
     for (var message of messages) {
       for (let labelId of message.labelIds) {
@@ -39,11 +36,6 @@ class Thread {
 
   processMessages_(messages) {
     this.processLabels_(messages);
-
-    // Check if we only fetched labels or if we also have message content.
-    if (!messages[0].payload)
-      return;
-
     let processedMessages = [];
     for (var message of messages) {
       let previousMessageText = processedMessages.length && processedMessages[processedMessages.length - 1].html;
@@ -89,12 +81,12 @@ class Thread {
   }
 
   async getLabelIds() {
-    await this.fetchOnlyLabels_();
+    await this.fetchMessageDetails();
     return this.labelIds_;
   }
 
   async getLabelNames() {
-    await this.fetchOnlyLabels_();
+    await this.fetchMessageDetails();
     return this.labelNames_;
   }
 
@@ -109,47 +101,32 @@ class Thread {
   }
 
   async getDisplayableQueue() {
-    await this.fetchOnlyLabels_();
+    await this.fetchMessageDetails();
     if (!this.queue_)
       return 'inbox';
     return removeTriagedPrefix(this.queue_);
   }
 
   async getQueue() {
-    await this.fetchOnlyLabels_();
+    await this.fetchMessageDetails();
     return this.queue_;
   }
 
-  async fetchOnlyLabels_() {
-    if (this.queue_)
-      return;
-
-    await this.fetchMessageDetails({
-      fields: 'id,messages/labelIds',
-    });
+  async updateMessageDetails() {
+    if (!this.fetchPromise_) {
+      this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
+        userId: USER_ID,
+        id: this.id,
+      })
+    }
+    let resp = await this.fetchPromise_;
+    this.processMessages_(resp.result.messages);
   }
 
-  async fetchMessageDetails(opt_extraParams) {
+  async fetchMessageDetails() {
     if (this.processedMessages_)
       return;
-
-    let resp;
-    if (this.fetchPromise_) {
-      resp = await this.fetchPromise_;
-    } else {
-      let requestParams = opt_extraParams || {};
-      requestParams.userId = USER_ID;
-      requestParams.id = this.id;
-
-      let request = gapiFetch(gapi.client.gmail.users.threads.get, requestParams)
-      if (opt_extraParams) {
-        resp = await request;
-      } else {
-        this.fetchPromise_ = request;
-        resp = await this.fetchPromise_;
-      }
-    }
-    this.processMessages_(resp.result.messages);
+    await this.updateMessageDetails();
   }
 
   getMessageBody_(mimeParts, output) {
