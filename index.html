@@ -7,13 +7,19 @@
       html {
         background-color: #eee;
         font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
+        height: 100%;
       }
       body {
         margin: 0px;
+        height: 100%;
+        overflow: auto;
       }
       .header {
-        position: sticky;
+        position: fixed;
         top: 0;
+        right: 0;
+        left: 0;
+        z-index: 100;
       }
       .toolbar {
         display: flex;
@@ -49,6 +55,7 @@
         width: 100%;
         max-width: 1000px;
         margin: auto;
+        height: 100%;
       }
       blockquote {
         min-width: 300px;
@@ -168,6 +175,8 @@
       </div>
     </div>
     </div>
+    <!-- Hacky way to get this to take up space for the position fixed header above. -->
+    <div class="header" style="position: static"><div class="toolbar">&nbsp;</div></div>
 
     <div id="content"></div>
 

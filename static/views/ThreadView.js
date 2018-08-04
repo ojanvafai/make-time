@@ -2,6 +2,7 @@ class ThreadView extends HTMLElement {
   constructor(threadList, updateCounter, blockedLabel, timeout, allowedReplyLength) {
     super();
     this.style.display = 'block';
+    this.style.position = 'relative';
 
     this.threadList_ = threadList;
     this.updateCounter_ = updateCounter;
@@ -13,6 +14,10 @@ class ThreadView extends HTMLElement {
 
     this.subject_ = document.createElement('div');
     this.gmailLink_ = document.createElement('a');
+    this.gmailLink_.style.cssText = `
+      position: absolute;
+      right: 4px;
+    `;
     this.subjectText_ = document.createElement('div');
     this.subjectText_.style.cssText = `
       flex: 1;
@@ -21,31 +26,43 @@ class ThreadView extends HTMLElement {
       text-overflow: ellipsis;
       overflow: hidden;
     `;
-    this.subject_.append(this.subjectText_, this.gmailLink_);
+    this.subject_.append(this.gmailLink_, this.subjectText_);
 
     this.messages_ = document.createElement('div');
+    this.messages_.style.cssText = `
+      position: relative;
+    `;
+
     this.toolbar_ = document.createElement('div');
 
+    // Take up space for the position:fixed subject.
+    let subjectPlaceholder = document.createElement('div');
+    subjectPlaceholder.textContent = '\xa0';
+
     // TODO: Move this to a stylesheet.
-    this.subject_.style.cssText = `
-      position: sticky;
+    subjectPlaceholder.style.cssText = this.subject_.style.cssText = `
+      position: fixed;
       left: 0;
       right: 0;
-      background-color: white;
       font-size: 18px;
       padding: 2px;
-      background-color: #eee;
-      display: flex;
+      background-color: #ccc;
+      text-align: center;
+      z-index: 100;
     `;
+    subjectPlaceholder.style.position = 'static';
+
     this.toolbar_.style.cssText = `
-      position: sticky;
+      position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
       text-align: center;
     `;
 
-    this.timer_ = document.createElement('div');
+    this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_);
+
+    this.timer_ = document.createElement('span');
     this.timer_.style.cssText = `
       width: 1em;
       height: 1em;
@@ -55,13 +72,12 @@ class ThreadView extends HTMLElement {
 
     let timerContainer = document.createElement('div');
     timerContainer.style.cssText = `
-      position: fixed;
-      right: 0;
-      bottom: 0;
-      font-size: 36px;
+      position: absolute;
+      right: 4px;
+      font-size: 32px;
       padding: 5px;
     `;
-    let timerButton = document.createElement('div');
+    let timerButton = document.createElement('span');
     timerContainer.append(this.timer_, timerButton);
 
     this.timerPaused_ = true;
@@ -75,7 +91,7 @@ class ThreadView extends HTMLElement {
       this.restartTimer_();
     }
 
-    this.append(this.subject_, this.messages_, this.toolbar_, timerContainer);
+    this.toolbar_.append(timerContainer);
 
     for (let key in ThreadView.KEY_TO_BUTTON_NAME) {
       let name = ThreadView.KEY_TO_BUTTON_NAME[key];
@@ -244,7 +260,7 @@ class ThreadView extends HTMLElement {
       color: red;
     `;
 
-    this.quickReply_.append(text, cancel, progress, count);
+    this.quickReply_.append(text, cancel, count, progress);
     this.toolbar_.append(this.quickReply_);
 
     text.addEventListener('keydown', async (e) => {
@@ -354,14 +370,21 @@ Content-Type: text/html; charset="UTF-8"
       return;
     }
 
-    this.timer_.textContent = this.timeLeft_;
+    this.timer_.textContent = this.timeLeft_ + '\xa0';
     this.timerKey_ = setTimeout(this.nextTick_.bind(this), 1000);
     this.timeLeft_--;
   }
 
   async renderNext_(threadToRender) {
     this.clearQuickReply_();
-    this.currentThread_ = threadToRender || this.threadList_.pop();
+
+    if (threadToRender) {
+      if (this.prerenderedThread_)
+        this.prerenderedThread_.remove();
+      this.clearPrefetchedThread();
+    }
+
+    this.currentThread_ = threadToRender || this.prefetchedThread_ || this.threadList_.pop();
 
     this.updateTitle_();
     this.subject_.style.top = this.offsetTop + 'px';
@@ -374,8 +397,26 @@ Content-Type: text/html; charset="UTF-8"
       return;
     }
 
-    let lastMessageElement = await this.renderCurrent_();
-    var elementToScrollTo = document.querySelector('.unread') || lastMessageElement;
+    let messages = await this.currentThread_.getMessages();
+
+    // In theory, linking to the threadId should work, but it doesn't for some threads.
+    // Linking to the messageId seems to work reliably. The message ID listed will be expanded
+    // in the gmail UI, so link to the last one since that one is definitionally always expanded.
+    this.gmailLink_.textContent = 'view in gmail';
+    this.gmailLink_.href = `https://mail.google.com/mail/#all/${messages[messages.length - 1].id}`;
+
+    this.subjectText_.textContent = await this.currentThread_.getSubject() || '(no subject)';
+
+    if (this.prerenderedThread_) {
+      this.currentlyRendered_.remove();
+      this.prerenderedThread_.style.left = 0;
+    }
+
+    this.currentlyRendered_ = this.prerenderedThread_ || await this.renderCurrent_();
+
+    this.clearPrefetchedThread();
+
+    var elementToScrollTo = document.querySelector('.unread') || this.currentlyRendered_.lastChild;
     elementToScrollTo.scrollIntoView();
     // Make sure that there's at least 50px of space above for showing that there's a
     // previous message.
@@ -384,7 +425,19 @@ Content-Type: text/html; charset="UTF-8"
       document.documentElement.scrollTop -= 70 - y;
 
     await this.updateCurrentThread();
-    this.threadList_.prefetchFirst();
+
+    this.prefetchedThread_ = await this.threadList_.prefetchFirst();
+    if (this.prefetchedThread_) {
+      this.prerenderedThread_ = await this.render_(this.prefetchedThread_);
+      this.prerenderedThread_.style.left = '-2000px';
+      this.messages_.append(this.prerenderedThread_);
+    }
+  }
+
+  clearPrefetchedThread() {
+    if (this.prerenderedThread_)
+      this.prerenderedThread_ = null;
+    this.prefetchedThread_ = null;
   }
 
   async updateCurrentThread() {
@@ -394,23 +447,26 @@ Content-Type: text/html; charset="UTF-8"
   }
 
   async renderCurrent_() {
-    this.subjectText_.textContent = await this.currentThread_.getSubject() || '(no subject)';
+    let renderedThread = await this.render_(this.currentThread_);
+    if (this.currentlyRendered_)
+      this.currentlyRendered_.remove();
+    this.messages_.append(renderedThread);
+    return renderedThread;
+  }
 
-    let messages = await this.currentThread_.getMessages();
-
-    // In theory, linking to the threadId should work, but it doesn't for some threads.
-    // Linking to the messageId seems to work reliably. The message ID listed will be expanded
-    // in the gmail UI, so link to the last one since that one is definitionally always expanded.
-    this.gmailLink_.textContent = 'view in gmail';
-    this.gmailLink_.href = `https://mail.google.com/mail/#all/${messages[messages.length - 1].id}`;
-
-    this.messages_.textContent = '';
-    var lastMessageElement;
+  async render_(thread) {
+    let messages = await thread.getMessages();
+    let container = document.createElement('div');
+    container.style.cssText = `
+      background-color: white;
+      position: relative;
+      top: 0;
+      max-width: 1000px;
+    `;
     for (var message of messages) {
-      lastMessageElement = this.renderMessage_(message);
-      this.messages_.append(lastMessageElement);
+      container.append(this.renderMessage_(message));
     }
-    return lastMessageElement;
+    return container;
   }
 
   dateString_(date) {
