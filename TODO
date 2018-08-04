@@ -1,14 +1,14 @@
 P1: Will try to do soonish.
-- Don't elide inside style tags and need to make sure that eliding respects markup.
-- Show attachments
+- handle going offline gracefully. Pause network activity and wait for coming back online.
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
+- Show attachments
+- Don't elide inside style tags and need to make sure that eliding respects markup.
 
 P2: Will only do if something makes these seem worth doing.
 - When updating messages, update the unread state even for old messages since that might have changed.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 - Add the ability to filter over arbitrary email headers (e.g. instead of allowing filtering over the sender header, allow sender:foo to filter over sender header, list-id:bar to filter over the list-id header, etc.
 - sort by date
-- handle going offline gracefully. Pause network activity and wait for coming back online.
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Add keyboard shortcuts for Vueue mode. j/k/x next/previous/toggle
 - disable title tags in emails. They currently update the title of make-time.

@@ -19,9 +19,6 @@ class ThreadList {
     let list = this.threads_[queue];
     list.push(thread);
     this.length++;
-
-    if (this.length == 1)
-      this.prefetchFirst();
   }
 
   currentQueue() {
@@ -35,17 +32,12 @@ class ThreadList {
     return list.length;
   }
 
-  async prefetchFirst() {
+  async peek() {
     let queue = this.currentQueue();
     let list = this.threads_[queue];
     if (!list)
       return null;
-
-    let thread = list[list.length - 1];
-    // Force update the list of messages in case any new messages have come in
-    // since we first processed this thread.
-    await thread.updateMessageDetails();
-    return thread;
+    return list[list.length - 1];
   }
 
   pop() {

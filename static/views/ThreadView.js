@@ -136,6 +136,8 @@ class ThreadView extends HTMLElement {
 
     if (!this.currentThread_)
       await this.renderNext_();
+    else if (this.threadList_.length == 1)
+      this.prerenderNext_();
   }
 
   async updateTitle_() {
@@ -410,6 +412,8 @@ Content-Type: text/html; charset="UTF-8"
     if (this.prerenderedThread_) {
       this.currentlyRendered_.remove();
       this.prerenderedThread_.style.left = 0;
+      this.prerenderedThread_.style.height = 'auto';
+      this.prerenderedThread_.style.overflow = 'visible';
     }
 
     this.currentlyRendered_ = this.prerenderedThread_ || await this.renderCurrent_();
@@ -425,11 +429,20 @@ Content-Type: text/html; charset="UTF-8"
       document.documentElement.scrollTop -= 70 - y;
 
     await this.updateCurrentThread();
+    this.prerenderNext_();
+  }
 
-    this.prefetchedThread_ = await this.threadList_.prefetchFirst();
+  async prerenderNext_() {
+    this.prefetchedThread_ = await this.threadList_.peek();
+
     if (this.prefetchedThread_) {
+      // Force update the list of messages in case any new messages have come in
+      // since we first processed this thread.
+      await this.prefetchedThread_.updateMessageDetails();
       this.prerenderedThread_ = await this.render_(this.prefetchedThread_);
       this.prerenderedThread_.style.left = '-2000px';
+      this.prerenderedThread_.style.height = 0;
+      this.prerenderedThread_.style.overflow = 'auto';
       this.messages_.append(this.prerenderedThread_);
     }
   }
