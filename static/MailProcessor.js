@@ -398,8 +398,7 @@ class MailProcessor {
       matches = true;
     }
     if (rule.htmlcontent) {
-      let content = message.html || message.plain;
-      if (!content.includes(rule.htmlcontent))
+      if (!message.getHtmlOrPlain().includes(rule.htmlcontent))
         return false;
       matches = true;
     }

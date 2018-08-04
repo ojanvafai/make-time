@@ -37,7 +37,7 @@ class Thread {
     this.processLabels_(messages);
     let processedMessages = [];
     for (var message of messages) {
-      let previousMessageText = processedMessages.length && processedMessages[processedMessages.length - 1].html;
+      let previousMessageText = processedMessages.length && processedMessages[processedMessages.length - 1].getHtmlOrPlain();
       processedMessages.push(new Message(message, previousMessageText));
     }
     this.processedMessages_ = processedMessages;

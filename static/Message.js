@@ -2,6 +2,9 @@ class Message {
   constructor(message, previousMessageText) {
     this.base64_ = new Base64();
 
+    this.rawMessage_ = message;
+    this.previousMessageText_ = previousMessageText;
+
     this.id = message.id;
 
     for (var header of message.payload.headers) {
@@ -39,27 +42,53 @@ class Message {
           break;
       }
     }
+    this.isUnread = message.labelIds.includes('UNREAD');
+  }
+
+  getPlain() {
+    this.parseMessageBody_();
+    return this.plain_;
+  }
+
+  getHtml() {
+    this.parseMessageBody_();
+    return this.html_;
+  }
+
+  getHtmlOrPlain() {
+    this.parseMessageBody_();
+    return this.html_ || this.plain_;
+  }
+
+  parseMessageBody_() {
+    if (this.plain_ || this.html_)
+      return;
 
     var plainTextBody;
     var htmlBody;
-    if (message.payload.parts) {
-      this.getMessageBody_(message.payload.parts, this);
+    if (this.rawMessage_.payload.parts) {
+      this.getMessageBody_(this.rawMessage_.payload.parts, this);
     } else {
-      this.plain = this.base64_.decode(message.payload.body.data);
+      this.plain_ = this.base64_.decode(this.rawMessage_.payload.body.data);
+    }
+  }
+
+  getProcessedHtml() {
+    if (!this.processedHtml_) {
+      let html;
+      if (this.getHtml())
+        html = this.disableStyleSheets_(this.getHtml());
+      else
+        html = `<div style="white-space:pre-wrap">${this.htmlEscape_(this.getPlain())}</div>`;
+
+      // TODO: Test eliding works if current message is html but previous is plain or vice versa.
+      if (this.previousMessageText_)
+        html = this.elideReply_(html, this.previousMessageText_);
+
+      this.processedHtml_ = html;
     }
 
-    let html;
-    if (this.html)
-      html = this.disableStyleSheets_(this.html);
-    else
-      html = `<div style="white-space:pre-wrap">${this.htmlEscape_(this.plain)}</div>`;
-
-    // TODO: Test eliding works if current message is html but previous is plain or vice versa.
-    if (previousMessageText)
-      html = this.elideReply_(html, previousMessageText);
-
-    this.processedHtml = html;
-    this.isUnread = message.labelIds.includes('UNREAD');
+    return this.processedHtml_;
   }
 
   // TODO: Restructure so people can search over the plain text of the emails as well.
@@ -97,10 +126,10 @@ class Message {
 
       switch (part.mimeType) {
         case 'text/plain':
-          this.plain = this.base64_.decode(part.body.data);
+          this.plain_ = this.base64_.decode(part.body.data);
           break;
         case 'text/html':
-          this.html = this.base64_.decode(part.body.data);
+          this.html_ = this.base64_.decode(part.body.data);
           break;
       }
     }

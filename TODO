@@ -1,5 +1,4 @@
 P1: Will try to do soonish.
-- Don't do diffing in the Vueue since it only needs subject lines.
 - When updating the messages on a thread, don't redo all the message processing for the messages that have already been processed. Just do it for the new message IDs.
 - Don't elide inside style tags and need to make sure that eliding respects markup.
 - Show attachments

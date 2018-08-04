@@ -300,7 +300,7 @@ Content-Type: text/html; charset="UTF-8"
     email += `
   ${replyText}<br><br>${lastMessage.rawFrom} wrote:<br>
   <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
-    ${lastMessage.html || lastMessage.plain}
+    ${lastMessage.getHtmlOrPlain()}
   </blockquote>`;
 
     let base64 = new Base64();
@@ -435,7 +435,7 @@ Content-Type: text/html; charset="UTF-8"
     var bodyContainer = document.createElement('div');
     bodyContainer.classList.add('message-body');
     bodyContainer.style.overflow = 'auto';
-    bodyContainer.innerHTML = processedMessage.processedHtml;
+    bodyContainer.innerHTML = processedMessage.getProcessedHtml();
 
     messageDiv.append(headerDiv, bodyContainer);
     return messageDiv;
