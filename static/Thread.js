@@ -37,12 +37,14 @@ class Thread {
     this.processLabels_(messages);
     if (!this.processedMessages_)
       this.processedMessages_ = [];
+    let hasNewMessages = this.processedMessages_.length != messages.length;
     // Only process new messages.
     for (let i = this.processedMessages_.length; i < messages.length; i++) {
       let message = messages[i];
       let previousMessageText = this.processedMessages_.length && this.processedMessages_[this.processedMessages_.length - 1].getHtmlOrPlain();
       this.processedMessages_.push(new Message(message, previousMessageText));
     }
+    return hasNewMessages;
   }
 
   async modify(addLabelIds, removeLabelIds) {
@@ -126,13 +128,14 @@ class Thread {
       })
     }
     let resp = await this.fetchPromise_;
-    this.processMessages_(resp.result.messages);
+    this.fetchPromise_ = null;
+    return this.processMessages_(resp.result.messages);
   }
 
   async fetchMessageDetails() {
     if (this.processedMessages_)
       return;
-    await this.updateMessageDetails();
+    return await this.updateMessageDetails();
   }
 }
 

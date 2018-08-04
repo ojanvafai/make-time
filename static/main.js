@@ -348,8 +348,10 @@ async function processMail() {
   showLoader(false);
 }
 
-let TEN_MINUTES_IN_MS = 1000 * 60 * 10;
-setInterval(processMail, TEN_MINUTES_IN_MS);
+setInterval(() => {
+  currentView_.updateCurrentThread();
+  processMail();
+}, 1000 * 60);
 
 async function updateLabelList() {
   var response = await gapiFetch(gapi.client.gmail.users.labels.list, {

@@ -362,8 +362,8 @@ Content-Type: text/html; charset="UTF-8"
   async renderNext_(threadToRender) {
     this.clearQuickReply_();
     this.currentThread_ = threadToRender || this.threadList_.pop();
-    this.updateTitle_();
 
+    this.updateTitle_();
     this.subject_.style.top = this.offsetTop + 'px';
 
     if (!this.currentThread_) {
@@ -374,6 +374,26 @@ Content-Type: text/html; charset="UTF-8"
       return;
     }
 
+    let lastMessageElement = await this.renderCurrent_();
+    var elementToScrollTo = document.querySelector('.unread') || lastMessageElement;
+    elementToScrollTo.scrollIntoView();
+    // Make sure that there's at least 50px of space above for showing that there's a
+    // previous message.
+    let y = elementToScrollTo.getBoundingClientRect().y;
+    if (y < 70)
+      document.documentElement.scrollTop -= 70 - y;
+
+    await this.updateCurrentThread();
+    this.threadList_.prefetchFirst();
+  }
+
+  async updateCurrentThread() {
+    let hasNewMessages = await this.currentThread_.updateMessageDetails();
+    if (hasNewMessages)
+      await this.renderCurrent_();
+  }
+
+  async renderCurrent_() {
     this.subjectText_.textContent = await this.currentThread_.getSubject() || '(no subject)';
 
     let messages = await this.currentThread_.getMessages();
@@ -390,16 +410,7 @@ Content-Type: text/html; charset="UTF-8"
       lastMessageElement = this.renderMessage_(message);
       this.messages_.append(lastMessageElement);
     }
-
-    var elementToScrollTo = document.querySelector('.unread') || lastMessageElement;
-    elementToScrollTo.scrollIntoView();
-    // Make sure that there's at least 50px of space above for showing that there's a
-    // previous message.
-    let y = elementToScrollTo.getBoundingClientRect().y;
-    if (y < 70)
-      document.documentElement.scrollTop -= 70 - y;
-
-    this.threadList_.prefetchFirst();
+    return lastMessageElement;
   }
 
   dateString_(date) {

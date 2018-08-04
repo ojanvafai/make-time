@@ -393,7 +393,7 @@ class MailProcessor {
       matches = true;
     }
     if (rule.plaintext) {
-      if (!message.plain.includes(rule.plaintext))
+      if (!message.getPlain().includes(rule.plaintext))
         return false;
       matches = true;
     }

@@ -20,6 +20,9 @@ class Vueue extends HTMLElement {
   onShow() {
   }
 
+  updateCurrentThread() {
+  }
+
   async connectedCallback() {
     this.initialThreadsView_ = document.createElement('div');
 

@@ -2,11 +2,10 @@ P1: Will try to do soonish.
 - Don't elide inside style tags and need to make sure that eliding respects markup.
 - Show attachments
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
-- update the messages in the current thread and the prefetched ones for the next thread regularly (e.g. for leaving the tab open over lunch)
 
 P2: Will only do if something makes these seem worth doing.
+- When updating messages, update the unread state even for old messages since that might have changed.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
-- Fix race condition where if new message comes in after make-time has prefetched, the archiving will archive that as well.
 - Add the ability to filter over arbitrary email headers (e.g. instead of allowing filtering over the sender header, allow sender:foo to filter over sender header, list-id:bar to filter over the list-id header, etc.
 - sort by date
 - handle going offline gracefully. Pause network activity and wait for coming back online.
