@@ -170,6 +170,11 @@ async function viewThreadAtATime(threads) {
 async function viewAll(e) {
   e.preventDefault();
 
+  if (!navigator.onLine) {
+    alert(`This action requires a network connection.`);
+    return;
+  }
+
   if (!currentView_)
     return;
 
@@ -212,6 +217,7 @@ async function updateTitle(title) {
 document.body.addEventListener('keydown', async (e) => {
   if (!currentView_)
     return;
+
   // Don't allow actions to apply in rapid succession for each thread.
   // This prevents accidents of archiving a lot of threads at once
   // when your stupid keyboard gets stuck holding the archive key down. #sigh
@@ -348,10 +354,22 @@ async function processMail() {
   showLoader(false);
 }
 
-setInterval(() => {
+function update() {
   currentView_.updateCurrentThread();
   processMail();
-}, 1000 * 60);
+}
+
+setInterval(update, 1000 * 60);
+
+window.addEventListener('offline', (e) => {
+  updateTitle('No network connection...');
+});
+
+window.addEventListener('online', (e) => {
+  updateTitle('');
+  update();
+});
+
 
 async function updateLabelList() {
   var response = await gapiFetch(gapi.client.gmail.users.labels.list, {

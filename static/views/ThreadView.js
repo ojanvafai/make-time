@@ -154,6 +154,11 @@ class ThreadView extends HTMLElement {
   }
 
   async dispatchShortcut(key) {
+    if (!navigator.onLine) {
+      alert(`This action requires a network connection.`);
+      return;
+    }
+
     if (!this.currentThread_)
       return;
 

@@ -51,6 +51,11 @@ class Vueue extends HTMLElement {
   }
 
   handleDone_ () {
+    if (!navigator.onLine) {
+      alert(`This action requires a network connection.`);
+      return;
+    }
+
     let selectedThreads = [];
     let unselectedThreads = [];
     for (let child of this.initialThreadsView_.querySelectorAll('mt-vueue-row')) {
