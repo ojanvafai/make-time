@@ -1,5 +1,6 @@
 P1: Will try to do soonish.
-- Detect needing to re-login/otp
+- Don't do diffing in the Vueue since it only needs subject lines.
+- When updating the messages on a thread, don't redo all the message processing for the messages that have already been processed. Just do it for the new message IDs.
 - Don't elide inside style tags and need to make sure that eliding respects markup.
 - Show attachments
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.

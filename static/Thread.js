@@ -2,7 +2,6 @@ class Thread {
   constructor(thread) {
     this.id = thread.id;
     this.snippet = thread.snippet;
-    this.base64_ = new Base64();
   }
 
   clearDetails_() {
@@ -39,7 +38,7 @@ class Thread {
     let processedMessages = [];
     for (var message of messages) {
       let previousMessageText = processedMessages.length && processedMessages[processedMessages.length - 1].html;
-      processedMessages.push(this.processMessage_(message, previousMessageText));
+      processedMessages.push(new Message(message, previousMessageText));
     }
     this.processedMessages_ = processedMessages;
   }
@@ -133,164 +132,5 @@ class Thread {
       return;
     await this.updateMessageDetails();
   }
-
-  getMessageBody_(mimeParts, output) {
-    for (var part of mimeParts) {
-      // For the various 'multipart/*" mime types.
-      if (part.parts)
-        this.getMessageBody_(part.parts, output);
-
-      // TODO: Show attachments.
-      if (part.body.attachmentId)
-        continue;
-
-      switch (part.mimeType) {
-        case 'text/plain':
-          output.plain = this.base64_.decode(part.body.data);
-          break;
-        case 'text/html':
-          output.html = this.base64_.decode(part.body.data);
-          break;
-      }
-    }
-  }
-
-  // TODO: Restructure so people can search over the plain text of the emails as well.
-  extractEmails_(str) {
-    var regex = new RegExp('<(.*?)>|(\\S*?@\\S*)', 'g');
-    str = str.toLowerCase();
-    var emails = [];
-    var match;
-    while ((match = regex.exec(str.toLowerCase())) !== null) {
-      for (var i = 1; i < match.length; ++i) {
-        if (match[i]) {
-          emails.push(String(match[i]));
-        }
-      }
-    }
-    return emails;
-  }
-
-  extractName_(str) {
-    let parts = str.split('<');
-    if (parts.length > 1)
-      return parts[0].trim();
-    return str;
-  }
-
-  processMessage_(message, previousMessageText) {
-    let output = {
-      id: message.id,
-    };
-
-    for (var header of message.payload.headers) {
-      switch (header.name) {
-        case 'Subject':
-          output.subject = header.value;
-          break;
-        case 'Date':
-          output.date = new Date(header.value);
-          break;
-        case 'From':
-          output.from = this.extractEmails_(header.value);
-          output.fromName = this.extractName_(header.value);
-          output.rawFrom = header.value;
-          break;
-        case 'Sender':
-          output.sender = this.extractEmails_(header.value);
-          break;
-        case 'To':
-          output.to = this.extractEmails_(header.value);
-          output.rawTo = header.value;
-          break;
-        case 'Cc':
-          output.cc = this.extractEmails_(header.value);
-          output.rawCc = header.value;
-          break;
-        case 'Bcc':
-          output.bcc = this.extractEmails_(header.value);
-          break;
-        case 'Message-ID':
-          output.messageId = header.value;
-          break;
-        case 'X-Autoreply':
-          output.xAutoreply = header.value;
-          break;
-      }
-    }
-
-    var plainTextBody;
-    var htmlBody;
-    if (message.payload.parts) {
-      this.getMessageBody_(message.payload.parts, output);
-    } else {
-      output.plain = this.base64_.decode(message.payload.body.data);
-    }
-
-    let html;
-    if (output.html)
-      html = this.disableStyleSheets_(output.html);
-    else
-      html = `<div style="white-space:pre-wrap">${this.htmlEscape_(output.plain)}</div>`;
-
-    // TODO: Test eliding works if current message is html but previous is plain or vice versa.
-    if (previousMessageText)
-      html = this.elideReply_(html, previousMessageText);
-
-    output.processedHtml = html;
-    output.isUnread = message.labelIds.includes('UNREAD');
-    return output;
-  }
-
-  htmlEscape_(html) {
-    return html.replace(/[&<>"']/g, function(m) {
-      switch (m) {
-        case '&':
-          return '&amp;';
-        case '<':
-          return '&lt;';
-        case '>':
-          return '&gt;';
-        case '"':
-          return '&quot;';
-        case `'`:
-          return '&#039;';
-      }
-    });
-  };
-
-  // Don't want stylesheets in emails to style the whole page.
-  disableStyleSheets_(messageText) {
-    return messageText.replace(/<style/g, '<style type="not-css"');
-  }
-
-  // TODO: Move this and associated code into Thread.js.
-  elideReply_(messageText, previousMessageText) {
-    let windowSize = 100;
-    let minimumLength = 100;
-    // Lazy hacks to get the element whose display to toggle
-    // and to get this to render centered-ish elipsis without using an image.
-    let prefix = `<div style="overflow:hidden">
-      <div style="margin-top:-7px">
-        <div class="toggler" onclick="Thread.toggleElided(event, this)">...</div>
-      </div>
-    </div><div class="elide">`;
-    let postfix = `</div>`;
-
-    let differ = new Differ(prefix, postfix, windowSize, minimumLength);
-    return differ.diff(messageText, previousMessageText);
-  }
-
 }
 
-Thread.toggleElided = (e, element) => {
-  // TODO: Remove this once we properly avoid eliding halfway through a link.
-  e.preventDefault();
-
-  while (!element.nextElementSibling || element.nextElementSibling.className != 'elide') {
-    element = element.parentNode;
-  }
-  let elided = element.nextElementSibling;
-  var current = getComputedStyle(elided).display;
-  elided.style.display = current == 'none' ? 'inline' : 'none';
-}

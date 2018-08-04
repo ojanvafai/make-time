@@ -71,7 +71,11 @@ window.addEventListener('error', (e) => {
 });
 
 window.addEventListener('unhandledrejection', (e) => {
-  alert(JSON.stringify(e.reason));
+  // 401 means the credentials are invalid and you probably need to 2 factor.
+  if (e.result.status == 401)
+    window.location.reload();
+  else
+    alert(JSON.stringify(e.reason));
 });
 
 function getSettingsSpreadsheetId() {
