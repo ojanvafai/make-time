@@ -35,12 +35,14 @@ class Thread {
 
   processMessages_(messages) {
     this.processLabels_(messages);
-    let processedMessages = [];
-    for (var message of messages) {
-      let previousMessageText = processedMessages.length && processedMessages[processedMessages.length - 1].getHtmlOrPlain();
-      processedMessages.push(new Message(message, previousMessageText));
+    if (!this.processedMessages_)
+      this.processedMessages_ = [];
+    // Only process new messages.
+    for (let i = this.processedMessages_.length; i < messages.length; i++) {
+      let message = messages[i];
+      let previousMessageText = this.processedMessages_.length && this.processedMessages_[this.processedMessages_.length - 1].getHtmlOrPlain();
+      this.processedMessages_.push(new Message(message, previousMessageText));
     }
-    this.processedMessages_ = processedMessages;
   }
 
   async modify(addLabelIds, removeLabelIds) {

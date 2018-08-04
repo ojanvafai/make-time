@@ -1,8 +1,8 @@
 P1: Will try to do soonish.
-- When updating the messages on a thread, don't redo all the message processing for the messages that have already been processed. Just do it for the new message IDs.
 - Don't elide inside style tags and need to make sure that eliding respects markup.
 - Show attachments
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
+- update the messages in the current thread and the prefetched ones for the next thread regularly (e.g. for leaving the tab open over lunch)
 
 P2: Will only do if something makes these seem worth doing.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
