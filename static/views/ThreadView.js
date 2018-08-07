@@ -150,7 +150,15 @@ class ThreadView extends HTMLElement {
       let displayableQueue = await this.currentThread_.getDisplayableQueue();
       let queue = await this.currentThread_.getQueue();
       let leftInQueue = this.threadList_.threadCountForQueue(queue);
-      text = `${leftInQueue} threads left in ${displayableQueue}, ${this.threadList_.length} total`;
+      let total = this.threadList_.length;
+      if (this.prefetchedThread_) {
+        let preftechQueue = await this.prefetchedThread_.getQueue();
+        if (preftechQueue == queue)
+          leftInQueue += 1;
+        total += 1;
+      }
+
+      text = `${leftInQueue} more in ${displayableQueue}, ${total} total`;
     }
 
     this.updateCounter_(text);
