@@ -120,6 +120,9 @@ class ThreadView extends HTMLElement {
   async popAllThreads() {
     let threads = [];
 
+    if (this.prefetchedThread_)
+      await this.threadList_.push(this.prefetchedThread_);
+
     if (this.currentThread_)
       await this.threadList_.push(this.currentThread_);
 
