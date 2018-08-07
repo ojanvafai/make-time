@@ -136,7 +136,7 @@ class ThreadView extends HTMLElement {
 
     if (!this.currentThread_)
       await this.renderNext_();
-    else if (this.threadList_.length == 1)
+    else if (!this.prefetchedThread_)
       this.prerenderNext_();
   }
 
@@ -388,7 +388,11 @@ Content-Type: text/html; charset="UTF-8"
     if (threadToRender) {
       if (this.prerenderedThread_)
         this.prerenderedThread_.remove();
-      this.clearPrefetchedThread();
+      // Requeue the prefetched thread.
+      if (this.prefetchedThread_) {
+        this.threadList_.push(this.prefetchedThread_);
+        this.clearPrefetchedThread();
+      }
     }
 
     this.currentThread_ = threadToRender || this.prefetchedThread_ || this.threadList_.pop();
@@ -422,7 +426,6 @@ Content-Type: text/html; charset="UTF-8"
     }
 
     this.currentlyRendered_ = this.prerenderedThread_ || await this.renderCurrent_();
-
     this.clearPrefetchedThread();
 
     var elementToScrollTo = document.querySelector('.unread') || this.currentlyRendered_.lastChild;
@@ -438,9 +441,11 @@ Content-Type: text/html; charset="UTF-8"
   }
 
   async prerenderNext_() {
-    this.prefetchedThread_ = await this.threadList_.peek();
+    this.prefetchedThread_ = await this.threadList_.pop();
 
     if (this.prefetchedThread_) {
+      this.prerenderedThread_ = null;
+
       // Force update the list of messages in case any new messages have come in
       // since we first processed this thread.
       await this.prefetchedThread_.updateMessageDetails();
@@ -468,6 +473,7 @@ Content-Type: text/html; charset="UTF-8"
     let renderedThread = await this.render_(this.currentThread_);
     if (this.currentlyRendered_)
       this.currentlyRendered_.remove();
+    this.currentlyRendered_ = renderedThread;
     this.messages_.append(renderedThread);
     return renderedThread;
   }

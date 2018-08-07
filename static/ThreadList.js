@@ -32,14 +32,6 @@ class ThreadList {
     return list.length;
   }
 
-  async peek() {
-    let queue = this.currentQueue();
-    let list = this.threads_[queue];
-    if (!list)
-      return null;
-    return list[list.length - 1];
-  }
-
   pop() {
     if (!this.length)
       return null;
