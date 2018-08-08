@@ -60,7 +60,18 @@ class ThreadView extends HTMLElement {
       text-align: center;
     `;
 
-    this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_);
+    this.queueSummary_ = document.createElement('div');
+    this.queueSummary_.style.cssText = `
+      background-color: white;
+      position: fixed;
+      bottom: 50px;
+      font-size: 10px;
+      right: 4px;
+      text-align: right;
+      opacity: 0.5;
+    `;
+
+    this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_, this.queueSummary_);
 
     this.timer_ = document.createElement('span');
     this.timer_.style.cssText = `
@@ -148,17 +159,33 @@ class ThreadView extends HTMLElement {
 
     if (this.currentThread_) {
       let displayableQueue = await this.currentThread_.getDisplayableQueue();
-      let queue = await this.currentThread_.getQueue();
-      let leftInQueue = this.threadList_.threadCountForQueue(queue);
+      let currentThreadQueue = await this.currentThread_.getQueue();
+      let leftInQueue = this.threadList_.threadCountForQueue(currentThreadQueue);
       let total = this.threadList_.length;
       if (this.prefetchedThread_) {
         let preftechQueue = await this.prefetchedThread_.getQueue();
-        if (preftechQueue == queue)
+        if (preftechQueue == currentThreadQueue)
           leftInQueue += 1;
         total += 1;
       }
 
       text = `${leftInQueue} more in ${displayableQueue}, ${total} total`;
+
+      let prefetchQueue = null;
+      if (this.prefetchedThread_)
+        prefetchQueue = await this.prefetchedThread_.getQueue();
+
+      let queueData = '';
+      let queues = this.threadList_.queues();
+      for (let queue of queues) {
+        let count = this.threadList_.threadCountForQueue(queue);
+        if (queue == prefetchQueue)
+          count++;
+        queueData += `<div>${removeTriagedPrefix(queue)}:&nbsp;${count}</div>`;
+      }
+      this.queueSummary_.innerHTML = queueData;
+    } else {
+      this.queueSummary_.innerHTML = '';
     }
 
     this.updateCounter_(text);

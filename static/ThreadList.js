@@ -25,6 +25,10 @@ class ThreadList {
     return this.queueNames_[0];
   }
 
+  queues() {
+    return this.queueNames_;
+  }
+
   threadCountForQueue(queue) {
     let list = this.threads_[queue];
     if (!list)
