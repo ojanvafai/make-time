@@ -1,4 +1,9 @@
+
 P1: Will try to do soonish.
+- Give reply/reply-all slider for quick reply
+- show placeholder in quick reply "hit enter to send"
+- off by one measuring length of quick reply
+- show histogram of labels in the ThreadView to see what's upcoming
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
 - Show attachments
 - Don't elide inside style tags and need to make sure that eliding respects markup.

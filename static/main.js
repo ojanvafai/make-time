@@ -343,15 +343,24 @@ async function updateThreadList() {
   showLoader(false);
 }
 
+var isProcessingMail = false;
+
 // TODO: Move this to a cron
 async function processMail() {
+  if (isProcessingMail)
+    return;
+
+  isProcessingMail = true;
   showLoader(true);
+
   updateTitle('Processing mail backlog...');
   let mailProcessor = new MailProcessor(await getSettings(), addThread);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
+
   showLoader(false);
+  isProcessingMail = false;
 }
 
 function update() {
