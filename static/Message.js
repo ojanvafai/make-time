@@ -69,7 +69,11 @@ class Message {
     if (this.rawMessage_.payload.parts) {
       this.getMessageBody_(this.rawMessage_.payload.parts, this);
     } else {
-      this.plain_ = this.base64_.decode(this.rawMessage_.payload.body.data);
+      let messageText = this.base64_.decode(this.rawMessage_.payload.body.data);;
+      if (this.rawMessage_.payload.mimeType == "text/html")
+        this.html_ = messageText;
+      else
+        this.plain_ = messageText;
     }
   }
 
