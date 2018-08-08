@@ -300,8 +300,26 @@ class ThreadView extends HTMLElement {
     cancel.textContent = 'cancel';
     cancel.onclick = this.clearQuickReply_.bind(this);
 
+    let sideBar = document.createElement('div');
+    sideBar.style.cssText = `margin: 4px;`;
+
+    let replyAllLabel = document.createElement('label');
+    let replyAll = document.createElement('input');
+    replyAll.type = 'checkbox';
+    replyAll.checked = true;
+    replyAllLabel.append(replyAll, 'reply all');
+
+    let progressContainer = document.createElement('div');
+    progressContainer.style.cssText = `
+      display: flex;
+      align-items: center;
+    `;
+
     let progress = document.createElement('progress');
-    progress.style.cssText = `width: 50px;`;
+    progress.style.cssText = `
+      flex: 1;
+      width: 0;
+    `;
     progress.max = this.allowedReplyLength_;
     progress.value = 0;
 
@@ -311,7 +329,11 @@ class ThreadView extends HTMLElement {
       color: red;
     `;
 
-    this.quickReply_.append(text, cancel, count, progress);
+    progressContainer.append(count, progress);
+
+    sideBar.append(replyAllLabel, progressContainer);
+
+    this.quickReply_.append(text, cancel, sideBar);
     this.toolbar_.append(this.quickReply_);
 
     text.addEventListener('keydown', async (e) => {
@@ -321,11 +343,13 @@ class ThreadView extends HTMLElement {
         return;
 
       case 'Enter':
+        if (!text.value.length)
+          return;
         if (text.value.length >= this.allowedReplyLength_) {
           alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Which is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
           return;
         }
-        await this.sendReply_(text.value);
+        await this.sendReply_(text.value, replyAll.checked);
         // TODO: Don't depend on 'd' being the shortcut for Done.
         this.dispatchShortcut('d');
         return;
@@ -342,12 +366,14 @@ class ThreadView extends HTMLElement {
     text.focus();
   }
 
-  async sendReply_(replyText) {
+  async sendReply_(replyText, shouldReplyAll) {
     let messages = await this.currentThread_.getMessages();
     let lastMessage = messages[messages.length - 1];
 
     // Gmail will remove dupes for us.
-    let to = lastMessage.rawFrom + ',' + lastMessage.rawTo;
+    let to = lastMessage.rawFrom
+    if (shouldReplyAll)
+      to += ',' + lastMessage.rawTo;
 
     let subject = lastMessage.subject;
     let replyPrefix = 'Re: ';
@@ -360,7 +386,7 @@ To: ${to}
 Content-Type: text/html; charset="UTF-8"
 `;
 
-    if (lastMessage.rawCc)
+    if (shouldReplyAll && lastMessage.rawCc)
       email += `Cc: ${lastMessage.rawCc}\n`;
 
     email += `
