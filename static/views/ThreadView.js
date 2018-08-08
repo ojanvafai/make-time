@@ -165,6 +165,11 @@ class ThreadView extends HTMLElement {
   }
 
   async dispatchShortcut(key) {
+    // Don't want key presses inside the quick reply to trigger actions, but
+    // also don't want to trigger actions if the quick reply is accidentally blurred.
+    if (this.quickReply_)
+      return;
+
     if (!navigator.onLine) {
       alert(`This action requires a network connection.`);
       return;
@@ -262,6 +267,7 @@ class ThreadView extends HTMLElement {
 
     let text = document.createElement('input');
     text.style.cssText = `flex: 1; padding: 8px; margin: 4px;`;
+    text.placeholder = 'Hit enter to send.';
 
     let cancel = document.createElement('button');
     cancel.textContent = 'cancel';
@@ -282,14 +288,12 @@ class ThreadView extends HTMLElement {
     this.toolbar_.append(this.quickReply_);
 
     text.addEventListener('keydown', async (e) => {
-      e.stopPropagation();
-
-      if (e.key == 'Escape') {
+      switch (e.key) {
+      case 'Escape':
         this.clearQuickReply_();
         return;
-      }
 
-      if (e.key == 'Enter') {
+      case 'Enter':
         if (text.value.length >= this.allowedReplyLength_) {
           alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Which is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
           return;
@@ -299,12 +303,13 @@ class ThreadView extends HTMLElement {
         this.dispatchShortcut('d');
         return;
       }
+    });
 
+    text.addEventListener('input', async (e) => {
+      progress.value = text.value.length;
       let lengthDiff = this.allowedReplyLength_ - text.value.length;
       let exceedsLength = text.value.length >= (this.allowedReplyLength_ - 10);
       count.textContent = (lengthDiff < 10) ? lengthDiff : '';
-
-      progress.value = text.value.length;
     });
 
     text.focus();
