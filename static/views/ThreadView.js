@@ -177,6 +177,10 @@ class ThreadView extends HTMLElement {
 
       let queueData = '';
       let queues = this.threadList_.queues();
+
+      if (!queues.includes(prefetchQueue))
+        queueData += `<div>${removeTriagedPrefix(prefetchQueue)}:&nbsp;1</div>`;
+
       for (let queue of queues) {
         let count = this.threadList_.threadCountForQueue(queue);
         if (queue == prefetchQueue)
