@@ -347,15 +347,22 @@ class ThreadView extends HTMLElement {
         return;
 
       case 'Enter':
+        if (this.isSending_)
+          return;
+
         if (!text.value.length)
           return;
         if (text.value.length >= this.allowedReplyLength_) {
           alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Which is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
           return;
         }
+
+        this.isSending_ = true;
         await this.sendReply_(text.value, replyAll.checked);
+        this.clearQuickReply_();
         // TODO: Don't depend on 'd' being the shortcut for Done.
         this.dispatchShortcut('d');
+        this.isSending_ = false;
         return;
       }
     });

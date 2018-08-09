@@ -6,6 +6,10 @@ function backOnline() {
   return new Promise(resolve => queuedRequests_.push(resolve));
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 window.addEventListener('online', (e) => {
   for (let request in queuedRequests_) {
     request();
