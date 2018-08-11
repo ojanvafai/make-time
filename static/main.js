@@ -7,7 +7,7 @@ var DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/res
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-var SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets';
+var SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds';
 
 var USER_ID = 'me';
 
@@ -25,9 +25,11 @@ let settingsPromise_;
 
 // Make sure links open in new tabs.
 document.body.addEventListener('click', (e) => {
-  if (e.target.tagName == 'A') {
-    e.target.target = '_blank';
-    e.target.rel = 'noopener';
+  for (let node of e.path) {
+    if (node.tagName == 'A') {
+      node.target = '_blank';
+      node.rel = 'noopener';
+    }
   }
 });
 
@@ -339,8 +341,33 @@ async function updateThreadList() {
     });
   }
 
+  fetchContacts(gapi.auth.getToken());
+
   await processMail();
   showLoader(false);
+}
+
+async function fetchContacts(token) {
+  // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send me all
+  // the data I don't want.
+  let resp = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0")
+  let json = await resp.json();
+  console.log(json);
+  let contacts = [];
+  for (let entry of json.feed.entry) {
+    if (!entry.gd$email)
+      continue;
+    let contact = {};
+    if (entry.title.$t)
+      contact.name = entry.title.$t;
+    contact.emails = [];
+    for (let email of entry.gd$email) {
+      contact.emails.push(email.address);
+    }
+    contacts.push(contact);
+  }
+  // TODO: Store the contacts and make autocomplete for quick reply.
+  console.log(contacts);
 }
 
 var isProcessingMail = false;

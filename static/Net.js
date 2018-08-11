@@ -11,7 +11,7 @@ function sleep(ms) {
 }
 
 window.addEventListener('online', (e) => {
-  for (let request in queuedRequests_) {
+  for (let request of queuedRequests_) {
     request();
   }
   queuedRequests_ = [];
