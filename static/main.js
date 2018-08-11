@@ -74,7 +74,7 @@ window.addEventListener('error', (e) => {
 
 window.addEventListener('unhandledrejection', (e) => {
   // 401 means the credentials are invalid and you probably need to 2 factor.
-  if (e.result && e.result.status == 401)
+  if (e.reason && e.reason.status == 401)
     window.location.reload();
   else
     alert(JSON.stringify(e.reason));
