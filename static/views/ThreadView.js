@@ -1,5 +1,5 @@
 class ThreadView extends HTMLElement {
-  constructor(threadList, updateCounter, blockedLabel, timeout, allowedReplyLength) {
+  constructor(threadList, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
@@ -9,6 +9,7 @@ class ThreadView extends HTMLElement {
     this.blockedLabel_ = blockedLabel;
     this.timeout_ = timeout;
     this.allowedReplyLength_ = allowedReplyLength;
+    this.contacts_ = contacts;
 
     this.currentThread_ = null;
 
@@ -57,7 +58,8 @@ class ThreadView extends HTMLElement {
       bottom: 0;
       left: 0;
       right: 0;
-      text-align: center;
+      display: flex;
+      justify-content: center;
     `;
 
     this.queueSummary_ = document.createElement('div');
@@ -73,6 +75,15 @@ class ThreadView extends HTMLElement {
 
     this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_, this.queueSummary_);
 
+    this.addButtons_();
+
+    // Hack: Do this on a timer so that the ThreadView is in the DOM before renderNext_
+    // is called and tries to get offsetTop. This happens when going from the Vueue back
+    // to the ThreadView.
+    setTimeout(this.renderNext_.bind(this));
+  }
+
+  addButtons_() {
     this.timer_ = document.createElement('span');
     this.timer_.style.cssText = `
       width: 1em;
@@ -113,11 +124,6 @@ class ThreadView extends HTMLElement {
       button.innerHTML = `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
       this.toolbar_.append(button);
     }
-
-    // Hack: Do this on a timer so that the ThreadView is in the DOM before renderNext_
-    // is called and tries to get offsetTop. This happens when going from the Vueue back
-    // to the ThreadView.
-    setTimeout(this.renderNext_.bind(this));
   }
 
   setTimerBackground_() {
@@ -198,7 +204,7 @@ class ThreadView extends HTMLElement {
   async dispatchShortcut(key) {
     // Don't want key presses inside the quick reply to trigger actions, but
     // also don't want to trigger actions if the quick reply is accidentally blurred.
-    if (this.quickReply_)
+    if (this.quickReplyOpen_)
       return;
 
     if (!navigator.onLine) {
@@ -272,33 +278,26 @@ class ThreadView extends HTMLElement {
   }
 
   clearQuickReply_() {
-    if (this.quickReply_) {
-      this.quickReply_.remove();
-      this.quickReply_ = null;
-    }
+    this.quickReplyOpen_ = false;
+    this.toolbar_.textContent = '';
+    this.toolbar_.style.backgroundColor = '';
+    this.addButtons_();
     this.restartTimer_();
   }
 
   showQuickReply_() {
-    if (this.quickReply_)
-      return;
-
+    this.quickReplyOpen_ = true;
+    this.toolbar_.textContent = '';
+    this.toolbar_.style.backgroundColor = 'white';
     this.cancelTimer_();
-    this.quickReply_ = document.createElement('div');
-    this.quickReply_.style.cssText = `
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      background-color: white;
-      display: flex;
-      align-items: center;
-    `;
 
-    let text = document.createElement('input');
-    text.style.cssText = `flex: 1; padding: 8px; margin: 4px;`;
-    text.placeholder = 'Hit enter to send.';
+    let compose = new Compose(this.contacts_);
+    compose.style.cssText = `
+      flex: 1;
+      margin: 4px;
+      display: flex;
+    `;
+    compose.placeholder = 'Hit enter to send.';
 
     let cancel = document.createElement('button');
     cancel.textContent = 'cancel';
@@ -337,47 +336,42 @@ class ThreadView extends HTMLElement {
 
     sideBar.append(replyAllLabel, progressContainer);
 
-    this.quickReply_.append(text, cancel, sideBar);
-    this.toolbar_.append(this.quickReply_);
+    this.toolbar_.append(compose, cancel, sideBar);
 
-    text.addEventListener('keydown', async (e) => {
-      switch (e.key) {
-      case 'Escape':
-        this.clearQuickReply_();
+    compose.addEventListener('cancel', this.clearQuickReply_.bind(this));
+
+    compose.addEventListener('submit', async (e) => {
+      if (!compose.value.length)
         return;
 
-      case 'Enter':
-        if (this.isSending_)
-          return;
-
-        if (!text.value.length)
-          return;
-        if (text.value.length >= this.allowedReplyLength_) {
-          alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Which is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
-          return;
-        }
-
-        this.isSending_ = true;
-        await this.sendReply_(text.value, replyAll.checked);
-        this.clearQuickReply_();
-        // TODO: Don't depend on 'd' being the shortcut for Done.
-        this.dispatchShortcut('d');
-        this.isSending_ = false;
+      if (compose.value.length >= this.allowedReplyLength_) {
+        alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
         return;
       }
-    });
 
-    text.addEventListener('input', async (e) => {
-      progress.value = text.value.length;
-      let lengthDiff = this.allowedReplyLength_ - text.value.length;
-      let exceedsLength = text.value.length >= (this.allowedReplyLength_ - 10);
+      if (this.isSending_)
+        return;
+      this.isSending_ = true;
+
+      await this.sendReply_(compose.value, compose.getEmails(), replyAll.checked);
+      this.clearQuickReply_();
+      // TODO: Don't depend on 'd' being the shortcut for Done.
+      this.dispatchShortcut('d');
+
+      this.isSending_ = false;
+    })
+
+    compose.addEventListener('input', (e) => {
+      progress.value = compose.value.length;
+      let lengthDiff = this.allowedReplyLength_ - compose.value.length;
+      let exceedsLength = compose.value.length >= (this.allowedReplyLength_ - 10);
       count.textContent = (lengthDiff < 10) ? lengthDiff : '';
     });
 
-    text.focus();
+    compose.focus();
   }
 
-  async sendReply_(replyText, shouldReplyAll) {
+  async sendReply_(replyText, extraEmails, shouldReplyAll) {
     let messages = await this.currentThread_.getMessages();
     let lastMessage = messages[messages.length - 1];
 
@@ -385,6 +379,9 @@ class ThreadView extends HTMLElement {
     let to = lastMessage.rawFrom
     if (shouldReplyAll)
       to += ',' + lastMessage.rawTo;
+
+    if (extraEmails.length)
+      to += ',' + extraEmails.join(',');
 
     let subject = lastMessage.subject;
     let replyPrefix = 'Re: ';
