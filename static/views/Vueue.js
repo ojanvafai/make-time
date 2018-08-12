@@ -4,8 +4,8 @@ class Vueue extends HTMLElement {
     this.style.display = 'block';
 
     this.threads_ = threads;
-    this.recentlyProcessed_ = new ThreadList();
     this.cleanupDelegate_ = cleanupDelegate;
+    this.groupByQueue_ = {};
 
     // I will never truly love javascript
     this.handleDone_ = this.handleDone_.bind(this);
@@ -25,19 +25,9 @@ class Vueue extends HTMLElement {
 
   async connectedCallback() {
     this.initialThreadsView_ = document.createElement('div');
-
-    let currentRowGroup;
     for (let thread of this.threads_) {
-      let queue = await thread.getDisplayableQueue();
-
-      if (!currentRowGroup || queue != currentRowGroup.queue) {
-        currentRowGroup = new VueueRowGroup_(queue);
-        this.initialThreadsView_.append(currentRowGroup);
-      }
-
-      currentRowGroup.push(thread);
+      await this.push(thread);
     }
-
     this.append(this.initialThreadsView_);
 
     let footer = document.createElement('div');
@@ -60,24 +50,21 @@ class Vueue extends HTMLElement {
     let unselectedThreads = [];
     for (let child of this.initialThreadsView_.querySelectorAll('mt-vueue-row')) {
       let destination = child.checked ? selectedThreads : unselectedThreads;
-      destination.push(child.thread);
+      let thread = child.thread;
+      destination.push(thread);
     }
-
-    let unprocessedThread = this.recentlyProcessed_.pop();
-    while (unprocessedThread) {
-      unselectedThreads.push(unprocessedThread);
-      unprocessedThread = this.recentlyProcessed_.pop();
-    }
-
     this.cleanupDelegate_(unselectedThreads, selectedThreads);
   }
 
   async push(thread) {
-    this.recentlyProcessed_.push(thread);
-  }
-
-  async updateRecentlyProcessed_() {
-    // TODO :D
+    let queue = await thread.getDisplayableQueue();
+    let rowGroup = this.groupByQueue_[queue];
+    if (!rowGroup) {
+      rowGroup = new VueueRowGroup_(queue);
+      this.groupByQueue_[queue] = rowGroup;
+      this.initialThreadsView_.append(rowGroup);
+    }
+    rowGroup.push(thread);
   }
 }
 window.customElements.define('mt-vueue', Vueue);
@@ -208,7 +195,8 @@ class VueueRow_ extends HTMLElement {
   }
 
   get checked() {
-    return this.checkBox_.checked;
+    // If we're mid construction of the row, then the checkbox may not exist yet.
+    return this.checkBox_ && this.checkBox_.checked;
   }
 
   set checked(value) {

@@ -3,37 +3,65 @@
       <script src="../static/LabelUtils.js"></script>
     <script src="../static/ThreadList.js"></script>
     <script src="../static/views/Vueue.js"></script>
+
+    <div class="header" style="position: static"><div class="toolbar">&nbsp;</div></div>
+
     <script>
       // Dummy class for testing
       class Thread {
         constructor(thread) {
           this.id = thread.id;
           this.snippet = thread.snippet;
-          this.idToQueue_ = ['abrupt', 'abrupt', 'me', 'me', 'org'];
+          this.idToQueue_ = ['abrupt', 'foo', 'me', 'bar', 'org'];
         }
 
-        async getQueue() {
-          return this.idToQueue_[this.id];
+        async getDisplayableQueue() {
+          let index = this.id % this.idToQueue_.length;
+          return this.idToQueue_[index];
         }
 
-        async fetchMessageDetails() {
-          // DO NOTHING
+        async getSubject() {
+          return 'subject';
+        }
+
+        async getMessages() {
+          return [{
+            fromName: 'Foo',
+            date: new Date(),
+          }];
         }
       }
 
       (async () => {
-        let threads = new ThreadList(() => {});
-        for(let i = 0; i < 5; i++) {
-          await threads.push(new Thread({
+        let threads = [];
+        for (let i = 0; i < 5; i++) {
+          let thread = new Thread({
             id: i,
-            snippet: `This is just a test: ${i}`
-          }));
+            snippet: `This is just a test: ${i}`,
+          });
+          threads.push(thread);
         }
         let vueue = new Vueue(threads, (selected, unselected) => {
           console.log(selected);
           console.log(unselected);
         });
         document.querySelector('body').appendChild(vueue);
+
+        let i = 0;
+        function addThreads() {
+          if (++i > 20)
+            return;
+
+          let thread = new Thread({
+            id: i,
+            snippet: `This is just a test: ${i}`,
+          });
+          vueue.push(thread);
+
+          setTimeout(addThreads, 1000);
+        }
+
+        setTimeout(addThreads(), 100);
       })();
     </script>
   </body>

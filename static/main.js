@@ -170,25 +170,11 @@ async function viewThreadAtATime(threads) {
 }
 
 async function viewAll(e) {
-  e.preventDefault();
-
-  if (!navigator.onLine) {
-    alert(`This action requires a network connection.`);
-    return;
-  }
-
-  if (!currentView_)
+  if (currentView_ && currentView_ instanceof Vueue)
     return;
 
-  if (currentView_ instanceof Vueue)
-    return;
-
-  let threads = await currentView_.popAllThreads();
-  if (!threads.length)
-    return;
-
+  let threads = currentView_ ? await currentView_.popAllThreads() : [];
   setView(new Vueue(threads, transitionBackToThreadAtATime));
-
   updateCounter('');
 }
 
@@ -202,7 +188,10 @@ function setView(view) {
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.parentNode.style.display = 'none';
-    document.getElementById('view-all').onclick = viewAll;
+    document.getElementById('view-all').onclick = (e) => {
+      e.preventDefault();
+      viewAll();
+    };
     await updateThreadList();
   } else {
     authorizeButton.parentNode.style.display = '';
@@ -326,15 +315,13 @@ async function updateThreadList() {
   showLoader(true);
   updateTitle('Fetching threads to triage...');
 
-  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewThreadAtATime([])]);
+  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewAll()]);
   let vacationQuery;
   if (settings.vacation_subject)
     vacationQuery = `subject:${settings.vacation_subject}`;
 
   let labelsToFetch = await getLabelsWithThreads(settings);
   labelsToFetch.sort(LabelUtils.compareLabels);
-
-  await fetchContacts(gapi.auth.getToken());
 
   for (let label of labelsToFetch) {
     await fetchThreads('inbox', addThread, {
@@ -343,7 +330,7 @@ async function updateThreadList() {
     });
   }
 
-
+  await fetchContacts(gapi.auth.getToken());
   await processMail();
   showLoader(false);
 }
@@ -355,7 +342,6 @@ async function fetchContacts(token) {
   // the data I don't want.
   let resp = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0")
   let json = await resp.json();
-  console.log(json);
   for (let entry of json.feed.entry) {
     if (!entry.gd$email)
       continue;

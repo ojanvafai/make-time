@@ -53,14 +53,7 @@ class ThreadView extends HTMLElement {
     `;
     subjectPlaceholder.style.position = 'static';
 
-    this.toolbar_.style.cssText = `
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: center;
-    `;
+    this.toolbar_.className = 'footer';
 
     this.queueSummary_ = document.createElement('div');
     this.queueSummary_.style.cssText = `
@@ -156,7 +149,7 @@ class ThreadView extends HTMLElement {
 
     if (!this.currentThread_)
       await this.renderNext_();
-    else if (!this.prefetchedThread_)
+    else
       this.prerenderNext_();
   }
 
@@ -518,6 +511,9 @@ Content-Type: text/html; charset="UTF-8"
   }
 
   async prerenderNext_() {
+    if (this.prefetchedThread_)
+      return;
+
     this.prefetchedThread_ = await this.threadList_.pop();
 
     if (this.prefetchedThread_) {
