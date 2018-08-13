@@ -452,6 +452,26 @@ Content-Type: text/html; charset="UTF-8"
     this.timeLeft_--;
   }
 
+  async renderAllDone_() {
+    this.currentThread_ = null;
+    this.subjectText_.textContent = 'All Done! Nothing left to triage for now.';
+    this.gmailLink_.textContent = '';
+    this.messages_.textContent = '';
+    this.timer_.textContent = '';
+
+    let labels = await getTheadCountForLabels(await getSettings(), (settings, labelId, labelName) => {
+      return labelName.startsWith(TRIAGED_LABEL + '/');
+    });
+
+    for (let label of labels) {
+      let link = document.createElement('a');
+      link.className = 'label-button';
+      link.href = `https://mail.google.com/mail/#label/${label.name}`;
+      link.textContent = `${label.name}(${label.count})`;
+      this.messages_.append(link);
+    }
+  }
+
   async renderNext_(threadToRender) {
     this.clearQuickReply_();
 
@@ -465,16 +485,18 @@ Content-Type: text/html; charset="UTF-8"
       }
     }
 
+    // When transitioning from all done to having messages again, clear the all
+    // done links.
+    if (!this.currentThread_)
+      this.messages_.textContent = '';
+
     this.currentThread_ = threadToRender || this.prefetchedThread_ || this.threadList_.pop();
 
     this.updateTitle_();
     this.subject_.style.top = this.offsetTop + 'px';
 
     if (!this.currentThread_) {
-      this.subjectText_.textContent = 'All Done! Nothing left to triage for now.';
-      this.gmailLink_.textContent = '';
-      this.messages_.textContent = '';
-      this.timer_.textContent = '';
+      await this.renderAllDone_();
       return;
     }
 
@@ -537,6 +559,9 @@ Content-Type: text/html; charset="UTF-8"
   }
 
   async updateCurrentThread() {
+    if (!this.currentThread_)
+      return;
+
     let hasNewMessages = await this.currentThread_.updateMessageDetails();
     if (hasNewMessages)
       await this.renderCurrent_();

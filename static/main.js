@@ -320,7 +320,8 @@ async function updateThreadList() {
   if (settings.vacation_subject)
     vacationQuery = `subject:${settings.vacation_subject}`;
 
-  let labelsToFetch = await getLabelsWithThreads(settings);
+  let labels = await getTheadCountForLabels(settings, isLabelToTriage);
+  let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
   labelsToFetch.sort(LabelUtils.compareLabels);
 
   for (let label of labelsToFetch) {
@@ -409,21 +410,23 @@ async function updateLabelList() {
   }
 }
 
-async function getLabelsWithThreads(settings) {
-  let batch = gapi.client.newBatch();
+function isLabelToTriage(settings, labelId, labelName) {
   let metaLabels = [TRIAGED_LABEL, settings.labeler_implementation_label, settings.unprocessed_label];
+  if (metaLabels.includes(labelName) ||
+      labelName.startsWith(TRIAGED_LABEL + '/') ||
+      labelName.startsWith(settings.labeler_implementation_label + '/')) {
+    return false;
+  }
+
+  let isUserLabel = labelId.startsWith('Label_');
+  return isUserLabel;
+}
+
+async function getTheadCountForLabels(settings, labelFilter) {
+  let batch = gapi.client.newBatch();
 
   for (let id in g_labels.idToLabel) {
-    let name = g_labels.idToLabel[id];
-
-    if (metaLabels.includes(name) ||
-        name.startsWith(TRIAGED_LABEL + '/') ||
-        name.startsWith(settings.labeler_implementation_label + '/')) {
-      continue;
-    }
-
-    let isUserLabel = id.startsWith('Label_');
-    if (isUserLabel) {
+    if (labelFilter(settings, id, g_labels.idToLabel[id])) {
       batch.add(gapi.client.gmail.users.labels.get({
         userId: USER_ID,
         id: id,
@@ -435,8 +438,10 @@ async function getLabelsWithThreads(settings) {
   let labelDetails = await batch;
   for (let key in labelDetails.result) {
     let details = labelDetails.result[key].result;
-    if (details.threadsTotal)
-      labelsWithThreads.push(details.name);
+    labelsWithThreads.push({
+      name: details.name,
+      count: details.threadsTotal,
+    });
   }
   return labelsWithThreads;
 }
