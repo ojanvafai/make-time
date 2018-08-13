@@ -460,7 +460,7 @@ Content-Type: text/html; charset="UTF-8"
     this.timer_.textContent = '';
 
     let labels = await getTheadCountForLabels(await getSettings(), (settings, labelId, labelName) => {
-      return labelName.startsWith(TRIAGED_LABEL + '/');
+      return labelName != MUTED_LABEL && labelName.startsWith(TRIAGED_LABEL + '/');
     });
 
     for (let label of labels) {
