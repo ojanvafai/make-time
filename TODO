@@ -5,6 +5,7 @@ P1: Will try to do soonish.
 - Show attachments
 - Add "send+blocked" button for things where you want to make sure there is followup.
 - Auto transition from Vueue to ThreadView if we are doing fetching and the Vueue is empty.
+- "Re: Ping on get-originals?" thread is a good one for performance optimizing the diffing. Takes 2.5 seconds on my macbook pro! The rendering work is almost instant though once it's prerendered. Alternately, could render messages incrementally starting with the one right before the earliest unread one, then render all the remaining unread ones, then render the read ones. Regardless, wait until the diffing code is rewritten first.
 
 P2: Will only do if something makes these seem worth doing.
 - Fix stats to show count of archived threads
