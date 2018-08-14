@@ -536,15 +536,22 @@ Content-Type: text/html; charset="UTF-8"
     if (this.prefetchedThread_)
       return;
 
-    this.prefetchedThread_ = await this.threadList_.pop();
+    let thread = await this.threadList_.pop();
+    this.prefetchedThread_ = thread;
 
-    if (this.prefetchedThread_) {
+    if (thread) {
       this.prerenderedThread_ = null;
 
       // Force update the list of messages in case any new messages have come in
       // since we first processed this thread.
-      await this.prefetchedThread_.updateMessageDetails();
-      this.prerenderedThread_ = await this.render_(this.prefetchedThread_);
+      await thread.updateMessageDetails();
+
+      // The await above can call this.prefetchedThread_ to actually be a later thread
+      // if threads are being archived very quickly.
+      if (thread != this.prefetchedThread_)
+        return;
+
+      this.prerenderedThread_ = await this.render_(thread);
       this.prerenderedThread_.style.left = '-2000px';
       this.prerenderedThread_.style.height = 0;
       this.prerenderedThread_.style.overflow = 'auto';
