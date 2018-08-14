@@ -512,9 +512,8 @@ Content-Type: text/html; charset="UTF-8"
 
     if (this.prerenderedThread_) {
       this.currentlyRendered_.remove();
-      this.prerenderedThread_.style.left = 0;
-      this.prerenderedThread_.style.height = 'auto';
-      this.prerenderedThread_.style.overflow = 'visible';
+      this.prerenderedThread_.style.bottom = '';
+      this.prerenderedThread_.style.visibility = 'visible';
     }
 
     this.currentlyRendered_ = this.prerenderedThread_ || await this.renderCurrent_();
@@ -552,9 +551,8 @@ Content-Type: text/html; charset="UTF-8"
         return;
 
       this.prerenderedThread_ = await this.render_(thread);
-      this.prerenderedThread_.style.left = '-2000px';
-      this.prerenderedThread_.style.height = 0;
-      this.prerenderedThread_.style.overflow = 'auto';
+      this.prerenderedThread_.style.bottom = '0';
+      this.prerenderedThread_.style.visibility = 'hidden';
       this.messages_.append(this.prerenderedThread_);
     }
   }
@@ -588,8 +586,9 @@ Content-Type: text/html; charset="UTF-8"
     let container = document.createElement('div');
     container.style.cssText = `
       background-color: white;
-      position: relative;
-      top: 0;
+      position: absolute;
+      left: 0;
+      right: 0;
       max-width: 1000px;
     `;
     for (var message of messages) {
