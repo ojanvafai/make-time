@@ -1,10 +1,11 @@
 class ThreadView extends HTMLElement {
-  constructor(threadList, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts) {
+  constructor(threadList, cleanupDelegate, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
 
     this.threadList_ = threadList;
+    this.cleanupDelegate_ = cleanupDelegate;
     this.updateCounter_ = updateCounter;
     this.blockedLabel_ = blockedLabel;
     this.timeout_ = timeout;
@@ -153,8 +154,13 @@ class ThreadView extends HTMLElement {
       this.prerenderNext_();
   }
 
+  async cleanup() {
+    let threads = await currentView_.popAllThreads();
+    this.cleanupDelegate_(threads);
+  }
+
   async updateTitle_() {
-    let text = '';
+    let title = [];
 
     if (this.currentThread_) {
       let displayableQueue = await this.currentThread_.getDisplayableQueue();
@@ -168,7 +174,14 @@ class ThreadView extends HTMLElement {
         total += 1;
       }
 
-      text = `${leftInQueue} more in ${displayableQueue}, ${total} total`;
+      title.push(`${leftInQueue} more in ${displayableQueue}, `);
+      let viewAllLink = document.createElement('a');
+      viewAllLink.textContent = `view all ${total}`;
+      viewAllLink.onclick = (e) => {
+        e.preventDefault();
+        this.cleanup();
+      };
+      title.push(viewAllLink);
 
       let prefetchQueue = null;
       if (this.prefetchedThread_)
@@ -191,7 +204,7 @@ class ThreadView extends HTMLElement {
       this.queueSummary_.innerHTML = '';
     }
 
-    this.updateCounter_(text);
+    this.updateCounter_(title);
   }
 
   async dispatchShortcut(key) {

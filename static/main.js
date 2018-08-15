@@ -13,8 +13,10 @@ var USER_ID = 'me';
 
 var authorizeButton = document.getElementById('authorize-button');
 
-async function updateCounter(text) {
-  document.getElementById('counter').innerHTML = text;
+async function updateCounter(contents) {
+  let counter = document.getElementById('counter');
+  counter.textContent = '';
+  counter.append(...contents);
 }
 
 // TODO: Make this private to this file.
@@ -166,16 +168,12 @@ async function viewThreadAtATime(threads) {
     timeout = settings.timeout;
 
   let allowedReplyLength = settings.allowed_reply_length || 150;
-  setView(new ThreadView(threadList, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_));
+  setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_));
 }
 
-async function viewAll(e) {
-  if (currentView_ && currentView_ instanceof Vueue)
-    return;
-
-  let threads = currentView_ ? await currentView_.popAllThreads() : [];
+async function viewAll(threads) {
   setView(new Vueue(threads, transitionBackToThreadAtATime));
-  updateCounter('');
+  updateCounter(['']);
 }
 
 function setView(view) {
@@ -188,10 +186,6 @@ function setView(view) {
 async function updateSigninStatus(isSignedIn) {
   if (isSignedIn) {
     authorizeButton.parentNode.style.display = 'none';
-    document.getElementById('view-all').onclick = (e) => {
-      e.preventDefault();
-      viewAll();
-    };
     await updateThreadList();
   } else {
     authorizeButton.parentNode.style.display = '';
@@ -315,7 +309,7 @@ async function updateThreadList() {
   showLoader(true);
   updateTitle('Fetching threads to triage...');
 
-  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewAll()]);
+  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewAll([])]);
   let vacationQuery;
   if (settings.vacation_subject)
     vacationQuery = `subject:${settings.vacation_subject}`;
