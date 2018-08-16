@@ -1,5 +1,5 @@
 class ThreadView extends HTMLElement {
-  constructor(threadList, cleanupDelegate, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts) {
+  constructor(threadList, cleanupDelegate, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts, showSummary) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
@@ -11,6 +11,7 @@ class ThreadView extends HTMLElement {
     this.timeout_ = timeout;
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
+    this.showSummary_ = showSummary;
 
     this.currentThread_ = null;
 
@@ -471,6 +472,9 @@ Content-Type: text/html; charset="UTF-8"
     this.gmailLink_.textContent = '';
     this.messages_.textContent = '';
     this.timer_.textContent = '';
+
+    if (!this.showSummary_)
+      return;
 
     let labels = await getTheadCountForLabels(await getSettings(), (settings, labelId, labelName) => {
       return labelName != MUTED_LABEL && labelName.startsWith(TRIAGED_LABEL + '/');

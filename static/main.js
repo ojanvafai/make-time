@@ -168,7 +168,7 @@ async function viewThreadAtATime(threads) {
     timeout = settings.timeout;
 
   let allowedReplyLength = settings.allowed_reply_length || 150;
-  setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_));
+  setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_, !settings.vacation_subject));
 }
 
 async function viewAll(threads) {
