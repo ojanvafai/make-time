@@ -114,7 +114,9 @@ class ThreadView extends HTMLElement {
       let name = ThreadView.KEY_TO_BUTTON_NAME[key];
       let button = document.createElement('button');
       button.onclick = () => {
-        this.dispatchShortcut(key);
+        let e = new Event('keydown');
+        e.key = key;
+        this.dispatchShortcut(e);
       };
       button.innerHTML = `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
       this.toolbar_.append(button);
@@ -208,7 +210,7 @@ class ThreadView extends HTMLElement {
     this.updateCounter_(title);
   }
 
-  async dispatchShortcut(key) {
+  async dispatchShortcut(e) {
     // Don't want key presses inside the quick reply to trigger actions, but
     // also don't want to trigger actions if the quick reply is accidentally blurred.
     if (this.quickReplyOpen_)
@@ -222,18 +224,19 @@ class ThreadView extends HTMLElement {
     if (!this.currentThread_)
       return;
 
-    if (key == 'u') {
+    if (e.key == 'u') {
       this.undoLastAction_();
       return;
     }
 
-    if (key == 'q') {
+    if (e.key == 'q') {
+      e.preventDefault();
       this.showQuickReply_();
       return;
     }
 
     // Oof. Gross hack because top-level await is not allowed.
-    var destination = key == 'b' ? this.blockedLabel_ : ThreadView.KEY_TO_DESTINATION[key];
+    var destination = e.key == 'b' ? this.blockedLabel_ : ThreadView.KEY_TO_DESTINATION[e.key];
     if (destination !== undefined) {
       // renderNext_ changes this.currentThread_ so save off the thread to modify first.
       let thread = this.currentThread_;
@@ -351,7 +354,7 @@ class ThreadView extends HTMLElement {
       if (!compose.value.length)
         return;
 
-      if (compose.value.length >= this.allowedReplyLength_) {
+      if (compose.value.length > this.allowedReplyLength_) {
         alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
         return;
       }

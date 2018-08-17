@@ -11,7 +11,7 @@ class Vueue extends HTMLElement {
     this.handleDone_ = this.handleDone_.bind(this);
   }
 
-  async dispatchShortcut(key) {
+  async dispatchShortcut(e) {
   }
 
   onHide() {

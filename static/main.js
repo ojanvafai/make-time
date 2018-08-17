@@ -190,7 +190,7 @@ async function viewThreadAtATime(threads) {
   if (settings.timeout > 0)
     timeout = settings.timeout;
 
-  let allowedReplyLength = settings.allowed_reply_length || 150;
+  let allowedReplyLength = settings.allowed_reply_length || 280;
   setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_, !settings.vacation_subject));
 }
 
@@ -232,7 +232,7 @@ document.body.addEventListener('keydown', async (e) => {
   if (e.repeat)
     return false;
   if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
-    await currentView_.dispatchShortcut(e.key);
+    await currentView_.dispatchShortcut(e);
 });
 
 // TODO: make it so that labels created can have visibility of "hide" once we have a need for that.

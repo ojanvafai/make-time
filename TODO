@@ -5,11 +5,8 @@ Before pointing others at it:
 P1: Will try to do soonish.
 - elide quotes based off the "In-Reply-To" instead of whatever happens to be the previous message
 - Make the title a stack instead of last one wins so that things in parallel don't override each other.
-- Seem to have an off-by-one again in quick reply.
 - updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there.
 - Github issue emails are all from notifications@github.com instead of the person commenting
-- Make quick reply default be 280.
-- Typing q for quick reply puts a "q" in the quick reply field.
 - Race condition with having a prerenderedThread, but not currentlyRendered. This probably happens when the current thread takes a long time to render but the next thread is fast. Instead, rework all the prerendering logic to have an atomic unit of a RenderableThread instead of separately tracking the currentThread/currentlyRendred, and prefetchedThread/prerendered. So currentThread poitns to a RenderableThread that has a render method that we can await...and actually it might make it easier ot render the thread in per message chunks.
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
 - Show attachments
