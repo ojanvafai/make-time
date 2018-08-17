@@ -94,9 +94,6 @@
         font-weight: bold;
         text-decoration: underline;
       }
-      .elide {
-        display: none;
-      }
       .toggler {
         display: inline-block;
         background-color: #ddd;
@@ -175,6 +172,11 @@
         right: 0;
         display: flex;
         justify-content: center;
+        /* Don't eat clicks in the transparent background of the footer. */
+        pointer-events: none;
+      }
+      .footer > * {
+        pointer-events: all;
       }
     </style>
   </head>
@@ -204,12 +206,12 @@
     <script src="static/base64.js"></script>
     <script src="static/Compose.js"></script>
     <script src="static/LabelUtils.js"></script>
+    <script src="static/MailProcessor.js"></script>
     <script src="static/Message.js"></script>
     <script src="static/Net.js"></script>
+    <script src="static/QuoteElidedMessage.js"></script>
     <script src="static/Thread.js"></script>
     <script src="static/ThreadList.js"></script>
-    <script src="static/differ.js"></script>
-    <script src="static/MailProcessor.js"></script>
     <script src="static/views/ThreadView.js"></script>
     <script src="static/views/Vueue.js"></script>
     <script src="static/main.js"></script>

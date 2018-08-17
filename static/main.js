@@ -71,7 +71,7 @@ window.addEventListener('error', (e) => {
     emailBody += '\n\n' + e.stack;
 
   // TODO: figure out how to send emails once this is back on a cron.
-  alert(JSON.stringify(e));
+  alert('Error: ' + JSON.stringify(e));
 });
 
 window.addEventListener('unhandledrejection', (e) => {
@@ -79,7 +79,7 @@ window.addEventListener('unhandledrejection', (e) => {
   if (e.reason && e.reason.status == 401)
     window.location.reload();
   else
-    alert(JSON.stringify(e.reason));
+    alert(e.reason);
 });
 
 function getSettingsSpreadsheetId() {

@@ -647,7 +647,7 @@ Content-Type: text/html; charset="UTF-8"
     var bodyContainer = document.createElement('div');
     bodyContainer.classList.add('message-body');
     bodyContainer.style.overflow = 'auto';
-    bodyContainer.innerHTML = processedMessage.getProcessedHtml();
+    bodyContainer.append(processedMessage.getQuoteElidedMessage().getDom());
 
     messageDiv.append(headerDiv, bodyContainer);
     return messageDiv;

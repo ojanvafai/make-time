@@ -41,8 +41,8 @@ class Thread {
     // Only process new messages.
     for (let i = this.processedMessages_.length; i < messages.length; i++) {
       let message = messages[i];
-      let previousMessageText = this.processedMessages_.length && this.processedMessages_[this.processedMessages_.length - 1].getHtmlOrPlain();
-      this.processedMessages_.push(new Message(message, previousMessageText));
+      let previousMessage = this.processedMessages_.length && this.processedMessages_[this.processedMessages_.length - 1];
+      this.processedMessages_.push(new Message(message, previousMessage));
     }
     return hasNewMessages;
   }

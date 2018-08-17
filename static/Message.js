@@ -1,9 +1,9 @@
 class Message {
-  constructor(message, previousMessageText) {
+  constructor(message, previousMessage) {
     this.base64_ = new Base64();
 
     this.rawMessage_ = message;
-    this.previousMessageText_ = previousMessageText;
+    this.previousMessage_ = previousMessage;
 
     this.id = message.id;
 
@@ -60,6 +60,24 @@ class Message {
     return this.html_ || this.plain_;
   }
 
+  getHtmlOrHtmlWrappedPlain() {
+    this.parseMessageBody_();
+    if (this.html_)
+      return this.html_;
+
+    // Convert plain text to be wrapped in divs instead of using newlines.
+    // That way the eliding logic that operates on elements doesn't need any
+    // special handling for plain text emails.
+    //
+    // Also, wrap the plain text in white-space:pre-wrap to make it render nicely.
+    let escaped = this.htmlEscape_(this.plain_);
+    // Normalize newlines to simplify the logic.
+    let paragraphs = escaped.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    let html = `<div style="white-space:pre-wrap"><div>${paragraphs.join('</div><div>')}</div></div>`;
+    // For multiple newlines in a row, put <br>s since empty divs don't render.
+    return html.replace(/<div><\/div>/g, '<br>');
+  }
+
   parseMessageBody_() {
     if (this.plain_ || this.html_)
       return;
@@ -77,22 +95,13 @@ class Message {
     }
   }
 
-  getProcessedHtml() {
-    if (!this.processedHtml_) {
-      let html;
-      if (this.getHtml())
-        html = this.disableStyleSheets_(this.getHtml());
-      else
-        html = `<div style="white-space:pre-wrap">${this.htmlEscape_(this.getPlain())}</div>`;
-
-      // TODO: Test eliding works if current message is html but previous is plain or vice versa.
-      if (this.previousMessageText_)
-        html = this.elideReply_(html, this.previousMessageText_);
-
-      this.processedHtml_ = html;
+  getQuoteElidedMessage() {
+    if (!this.quoteElidedMessage_) {
+      let html = this.getHtmlOrHtmlWrappedPlain();
+      this.quoteElidedMessage_ = new QuoteElidedMessage(html, this.previousMessage_);
+      this.disableStyleSheets_(this.quoteElidedMessage_.getDom());
     }
-
-    return this.processedHtml_;
+    return this.quoteElidedMessage_;
   }
 
   // TODO: Restructure so people can search over the plain text of the emails as well.
@@ -157,36 +166,10 @@ class Message {
   };
 
   // Don't want stylesheets in emails to style the whole page.
-  disableStyleSheets_(messageText) {
-    return messageText.replace(/<style/g, '<style type="not-css"');
+  disableStyleSheets_(messageDom) {
+    let styles = messageDom.querySelectorAll('style');
+    for (let style of styles) {
+      style.setAttribute('type', 'not-css');
+    }
   }
-
-  // TODO: Move this and associated code into Thread.js.
-  elideReply_(messageText, previousMessageText) {
-    let windowSize = 100;
-    let minimumLength = 100;
-    // Lazy hacks to get the element whose display to toggle
-    // and to get this to render centered-ish elipsis without using an image.
-    let prefix = `<div style="overflow:hidden">
-      <div style="margin-top:-7px">
-        <div class="toggler" onclick="Message.toggleElided(event, this)">...</div>
-      </div>
-    </div><div class="elide">`;
-    let postfix = `</div>`;
-
-    let differ = new Differ(prefix, postfix, windowSize, minimumLength);
-    return differ.diff(messageText, previousMessageText);
-  }
-}
-
-Message.toggleElided = (e, element) => {
-  // TODO: Remove this once we properly avoid eliding halfway through a link.
-  e.preventDefault();
-
-  while (!element.nextElementSibling || element.nextElementSibling.className != 'elide') {
-    element = element.parentNode;
-  }
-  let elided = element.nextElementSibling;
-  var current = getComputedStyle(elided).display;
-  elided.style.display = current == 'none' ? 'inline' : 'none';
 }
