@@ -11,7 +11,6 @@ P1: Will try to do soonish.
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
 - Show attachments
 - Add "send+blocked" button for things where you want to make sure there is followup.
-- Auto transition from Vueue to ThreadView if we are doing fetching and the Vueue is empty.
 - "Re: Ping on get-originals?" thread is a good one for performance overhead of message processing. Half the time is base64 decoding and half is eliding quotes. Takes 1 second doing message processing, but rendering is very fast. Could render messages incrementally starting with the one right before the earliest unread one, then render all the remaining unread ones, then render the read ones. Mostly this is hidden by prefetching.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - Include "XXX wrote" prefixes in quote eliding

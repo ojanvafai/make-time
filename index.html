@@ -178,6 +178,9 @@
       .footer > * {
         pointer-events: all;
       }
+      div[contenteditable]::before {
+        content: attr(placeholder);
+      }
     </style>
   </head>
   <body>

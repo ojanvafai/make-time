@@ -70,7 +70,13 @@ class Compose extends HTMLElement {
   }
 
   updatePlaceholder_() {
-    this.placeholder_.style.display = this.content_.textContent.length ? 'none' : 'flex';
+    if (this.content_.textContent.length) {
+      this.content_.removeAttribute('placeholder');
+      this.content_.style.color = '';
+    } else {
+      this.content_.setAttribute('placeholder', this.placeholder_);
+      this.content_.style.color = 'grey';
+    }
   }
 
   updateIsAutocompleting_() {
@@ -241,26 +247,11 @@ class Compose extends HTMLElement {
   }
 
   get placeholder() {
-    return this.placeholder_.textContent;
+    return this.placeholder_;
   }
 
   set placeholder(text) {
-    if (!this.placeholder_) {
-      this.placeholder_ = document.createElement('div');
-      this.placeholder_.style.cssText = `
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        color: grey;
-        display: flex;
-        align-items: center;
-        margin-left: 12px;
-      `;
-      this.append(this.placeholder_);
-    }
-    this.placeholder_.append(text);
+    this.placeholder_ = text;
     this.updatePlaceholder_();
   }
 
