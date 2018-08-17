@@ -82,18 +82,41 @@ window.addEventListener('unhandledrejection', (e) => {
     alert(e.reason);
 });
 
-function getSettingsSpreadsheetId() {
+async function getSettingsSpreadsheetId() {
   if (localStorage.spreadsheetId)
     return localStorage.spreadsheetId;
-  let url = prompt("Insert the URL of your settings spreadsheet. If you don't have one, go to go/make-time-settings, create a copy of it, and then use the URL of the new spreadsheet.");
-  if (!url)
-    throw "Prompt got dismissed. Please reload to be reprompted.";
 
-  // Spreadsheets URLS are of the form
-  // https://docs.google.com/spreadsheets[POSSIBLE_STUFF_HERE]/d/[ID_HERE]/[POSSIBLE_STUFF_HERE]
-  let id = url.split('/d/')[1].split('/')[0];
-  localStorage.spreadsheetId = id;
-  return id;
+  return new Promise((resolve, reject) => {
+    let setId = () => {
+      let url = document.getElementById('settings-url').value;
+      // Spreadsheets URLS are of the form
+      // https://docs.google.com/spreadsheets[POSSIBLE_STUFF_HERE]/d/[ID_HERE]/[POSSIBLE_STUFF_HERE]
+      let id = url.split('/d/')[1].split('/')[0];
+      localStorage.spreadsheetId = id;
+
+      dialog.close();
+
+      resolve(id);
+    }
+
+    let dialog = document.createElement('dialog');
+    dialog.style.width = '80%';
+    dialog.innerHTML = `Insert the URL of your settings spreadsheet. If you don't have one, go to <a href="//goto.google.com/make-time-settings" target="blank">go/make-time-settings</a>, create a copy of it, and then use the URL of the new spreadsheet.<br>
+<input id="settings-url" style="width: 100%">
+<button style="float:right">Submit</button>`;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    dialog.querySelector('button').onclick = setId;
+
+    dialog.onkeydown = (e) => {
+      switch (e.key) {
+      case "Enter":
+        setId();
+        return;
+      }
+    }
+  });
 }
 
 async function fetchSheet(spreadsheetId, sheetName) {
@@ -119,13 +142,13 @@ async function fetch2ColumnSheet(spreadsheetId, sheetName, opt_startRowIndex) {
 }
 
 async function fetchSettings() {
-  let spreadsheetId = getSettingsSpreadsheetId();
+  let spreadsheetId = await getSettingsSpreadsheetId();
   document.getElementById('settings').href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
   let [settings, queuedLabelMap] = await Promise.all([
     fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1),
     fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1),
   ]);
-  settings.spreadsheetId = getSettingsSpreadsheetId();
+  settings.spreadsheetId = await getSettingsSpreadsheetId();
   settings.queuedLabelMap = queuedLabelMap;
   settings_ = settings;
 }
@@ -309,7 +332,7 @@ async function updateThreadList() {
   showLoader(true);
   updateTitle('Fetching threads to triage...');
 
-  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewAll([])]);
+  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewThreadAtATime([])]);
   let vacationQuery;
   if (settings.vacation_subject)
     vacationQuery = `subject:${settings.vacation_subject}`;

@@ -3,6 +3,7 @@ Before pointing others at it:
 - Move the instruction text to make-time out of the spreadsheet.
 
 P1: Will try to do soonish.
+- elide quotes based off the "In-Reply-To" instead of whatever happens to be the previous message
 - Make the title a stack instead of last one wins so that things in parallel don't override each other.
 - Seem to have an off-by-one again in quick reply.
 - updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there.
@@ -17,6 +18,7 @@ P1: Will try to do soonish.
 - "Re: Ping on get-originals?" thread is a good one for performance overhead of message processing. Half the time is base64 decoding and half is eliding quotes. Takes 1 second doing message processing, but rendering is very fast. Could render messages incrementally starting with the one right before the earliest unread one, then render all the remaining unread ones, then render the read ones. Mostly this is hidden by prefetching.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - Include "XXX wrote" prefixes in quote eliding
+- Give a way to show the email headers so that people can easily write filters based off the headers.
 
 P2: Will only do if something makes these seem worth doing.
 - Fix stats to show count of archived threads
@@ -35,7 +37,6 @@ P2: Will only do if something makes these seem worth doing.
 - add an urgent action item? what about important?
 - Google Assistant integration
 - Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.
-- Don't use "prompt" for getting the spreadsheet URL.
 - Send replys from the recieving address for multiple email users. Using "From: ". Not quite sure how to figure out which email address to use. For mailing lists, could use Delivered-To, that might be good enough.
 - add a way of switching to a different queue in the thread at a time view
 - add the ability to filter messages with no list-id as those are probably more urgent.

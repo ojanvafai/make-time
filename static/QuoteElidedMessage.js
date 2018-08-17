@@ -4,7 +4,8 @@
 // TODO: Use ES Modules!
 (function() {
 
-let MINIMUM_LENGTH = 100;
+let MINIMUM_HASH_LENGTH = 10;
+let MINIMUM_ELIDE_LENGTH = 100;
 let TOGGLER;
 
 class QuoteElidedMessage {
@@ -17,18 +18,22 @@ class QuoteElidedMessage {
     this.expandToNonTextSiblings_();
     this.undoNestedElides_();
     this.insertToggleButtons_();
+    this.updateAllStyling_();
   }
 
   elideAllMatches_(previousMessage) {
     let previousHashes = previousMessage.getQuoteElidedMessage().getHashes();
-    let matches = new Set();
     for (let entry of this.hashes_) {
       if (previousHashes.has(entry[0])) {
-        let match = entry[1];
-        matches.add(match);
-        QuoteElidedMessage.setElidedState_(match, 'hidden');
+        for (let match of entry[1]) {
+          QuoteElidedMessage.setElidedState_(match, 'hidden');
+        }
       }
     }
+  }
+
+  hasEmptyTextContent_(node) {
+    return node && node.nodeType == Node.ELEMENT_NODE && !this.quoteStrippedText_(node);
   }
 
   expandToNonTextSiblings_() {
@@ -37,13 +42,13 @@ class QuoteElidedMessage {
       // TODO: Include "XXX wrote" prefixes here as well.
       // TODO: Hash the outerHTML of the element to make sure it has at least
       // a corresponding thing in the previous message. Or maybe just exclude images?
-      while (previous.previousSibling && !this.quoteStrippedText_(previous.previousSibling)) {
+      while (this.hasEmptyTextContent_(previous.previousSibling)) {
         QuoteElidedMessage.setElidedState_(previous.previousSibling, 'hidden');
         previous = previous.previousSibling;
       }
 
       let next = match;
-      while (next.nextSibling && !this.quoteStrippedText_(next.nextSibling)) {
+      while (this.hasEmptyTextContent_(next.nextSibling)) {
         QuoteElidedMessage.setElidedState_(next.nextSibling, 'hidden');
         next = next.nextSibling;
       }
@@ -63,11 +68,40 @@ class QuoteElidedMessage {
     }
   }
 
+  elidesHaveMinimumLength_(element) {
+    let length = 0;
+    while (length < MINIMUM_ELIDE_LENGTH && element && element.nodeType == Node.ELEMENT_NODE) {
+      if (!element.hasAttribute('mk-elide'))
+        return false;
+      length += element.textContent.length;
+      element = element.nextSibling;
+    }
+    return length >= MINIMUM_ELIDE_LENGTH;
+  }
+
+  removeAdjacentElides_(element) {
+    // TODO: move the attribute name into a constant.
+    while (element && element.nodeType == Node.ELEMENT_NODE && element.hasAttribute('mk-elide')) {
+      element.removeAttribute('mk-elide');
+      element = element.nextSibling;
+    }
+  }
+
   insertToggleButtons_() {
     for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
+      if (!this.isElided_(match.previousSibling)) {
+        if (this.elidesHaveMinimumLength_(match)) {
+          match.before(this.getToggler_());
+        } else {
+          this.removeAdjacentElides_(match);
+        }
+      }
+    }
+  }
+
+  updateAllStyling_() {
+    for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
       QuoteElidedMessage.updateStyling_(match);
-      if (!this.isElided_(match.previousSibling))
-        match.before(this.getToggler_());
     }
   }
 
@@ -102,8 +136,14 @@ class QuoteElidedMessage {
     this.hashes_ = new Map();
     for (let element of elements) {
       let text = this.quoteStrippedText_(element);
-      if (text.length > MINIMUM_LENGTH)
-        this.hashes_.set(text, element);
+      if (text.length > MINIMUM_HASH_LENGTH) {
+        let list = this.hashes_.get(text);
+        if (!list) {
+          list = [];
+          this.hashes_.set(text, list);
+        }
+        list.push(element);
+      }
     }
   }
 
