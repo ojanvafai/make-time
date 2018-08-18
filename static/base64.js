@@ -5,12 +5,7 @@ class Base64 {
     this.b64pad = '=';
   }
 
-  /**
-   * Decode a  base64url string to a JavaScript string.
-   * Input is assumed to be a base64url encoded UTF-8 string.
-   * Returned result is a JavaScript (UCS-2) string.
-   */
-  decode(data) {
+  base64decode(data) {
     var dst = ""
     var i, a, b, c, d, z
 
@@ -26,8 +21,17 @@ class Base64 {
       if (data.charAt(i+3) != this.b64pad)
         dst += String.fromCharCode(((c << 6) & 0xC0) | d)
     }
+    return escape(dst);
+  }
 
-    return decodeURIComponent(escape(dst))
+  /**
+   * Decode a  base64url string to a JavaScript string.
+   * Input is assumed to be a base64url encoded UTF-8 string.
+   * Returned result is a JavaScript (UCS-2) string.
+   */
+  decode(data) {
+    let dst = this.base64decode(data);
+    return decodeURIComponent(dst);
   }
 
   encode(str) {
