@@ -100,8 +100,10 @@ class Message {
     if (!this.quoteElidedMessage_) {
       let html = this.getHtmlOrHtmlWrappedPlain();
       this.quoteElidedMessage_ = new QuoteElidedMessage(html, this.previousMessage_);
-      this.disableStyleSheets_(this.quoteElidedMessage_.getDom());
-      this.fetchInlineImages_(this.quoteElidedMessage_.getDom());
+      let dom = this.quoteElidedMessage_.getDom();
+      this.disableStyleSheets_(dom);
+      this.fetchInlineImages_(dom);
+      this.appendAttachments_(dom);
     }
     return this.quoteElidedMessage_;
   }
@@ -110,6 +112,22 @@ class Message {
     for (let attachment of this.attachments_) {
       if (attachment.contentId == contentId)
         return attachment;
+    }
+  }
+
+  appendAttachments_(dom) {
+    if (!this.attachments_.length)
+      return;
+
+    let title = document.createElement('b');
+    title.textContent = 'Attachments (view in gmail to download)';
+    dom.append(document.createElement('hr'), title);
+    for (let attachment of this.attachments_) {
+      let container = document.createElement('li');
+      let link = document.createElement('a');
+      link.textContent = attachment.name;
+      container.append(link);
+      dom.append(container);
     }
   }
 
@@ -154,13 +172,12 @@ class Message {
   parseAttachment_(attachment) {
     let result = {
       id: attachment.body.attachmentId,
+      name: attachment.filename,
     };
     for (let header of attachment.headers) {
       switch (header.name) {
       case 'Content-Type':
-        let parts = header.value.split('; name=');
-        result.contentType = parts[0];
-        result.name = parts[1];
+        result.contentType = header.value.split(';')[0];
         break;
 
       case 'Content-ID':
@@ -177,7 +194,8 @@ class Message {
       if (part.parts)
         this.getMessageBody_(part.parts);
 
-      if (part.body.attachmentId) {
+      let attachmentId = part.body.attachmentId;
+      if (attachmentId) {
         this.attachments_.push(this.parseAttachment_(part));
         continue;
       }
