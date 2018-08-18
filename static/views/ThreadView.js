@@ -1,3 +1,5 @@
+let DONE_DESTINATION = null;
+
 class ThreadView extends HTMLElement {
   constructor(threadList, cleanupDelegate, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts, showSummary) {
     super();
@@ -237,13 +239,16 @@ class ThreadView extends HTMLElement {
 
     // Oof. Gross hack because top-level await is not allowed.
     var destination = e.key == 'b' ? this.blockedLabel_ : ThreadView.KEY_TO_DESTINATION[e.key];
-    if (destination !== undefined) {
-      // renderNext_ changes this.currentThread_ so save off the thread to modify first.
-      let thread = this.currentThread_;
-      this.renderNext_();
-      this.lastAction_ = await thread.markTriaged(destination);
-    }
+    if (destination !== undefined)
+      this.markTriaged_(destination);
   };
+
+  async markTriaged_(destination) {
+    // renderNext_ changes this.currentThread_ so save off the thread to modify first.
+    let thread = this.currentThread_;
+    this.renderNext_();
+    this.lastAction_ = await thread.markTriaged(destination);
+  }
 
   async undoLastAction_() {
     if (!this.lastAction_)
@@ -365,8 +370,7 @@ class ThreadView extends HTMLElement {
 
       await this.sendReply_(compose.value, compose.getEmails(), replyAll.checked);
       this.clearQuickReply_();
-      // TODO: Don't depend on 'd' being the shortcut for Done.
-      this.dispatchShortcut('d');
+      this.markTriaged_(ThreadView.DONE_DESTINATION);
 
       this.isSending_ = false;
     })
@@ -657,8 +661,11 @@ Content-Type: text/html; charset="UTF-8"
   }
 }
 
+// No destination label for DONE
+ThreadView.DONE_DESTINATION = null;
+
 ThreadView.KEY_TO_DESTINATION = {
-  d: null, // No destination label for DONE
+  d: ThreadView.DONE_DESTINATION,
   t: READ_LATER_LABEL,
   r: NEEDS_REPLY_LABEL,
   m: MUTED_LABEL,
