@@ -17,23 +17,24 @@ class Message {
         this.date = new Date(header.value);
         break;
       case 'From':
-        this.from = this.extractEmails_(header.value);
-        this.fromName = this.extractName_(header.value);
-        this.rawFrom = header.value;
+        this.from = this.cleanseAddresses_(header.value);
+        this.fromEmails = this.extractEmails_(this.from);
+        this.fromName = this.extractName_(this.from);
         break;
       case 'Sender':
         this.sender = this.extractEmails_(header.value);
         break;
       case 'To':
-        this.to = this.extractEmails_(header.value);
-        this.rawTo = header.value;
+        this.to = this.cleanseAddresses_(header.value);
+        this.toEmails = this.extractEmails_(this.to);
         break;
       case 'Cc':
-        this.cc = this.extractEmails_(header.value);
-        this.rawCc = header.value;
+        this.cc = this.cleanseAddresses_(header.value);
+        this.ccEmails = this.extractEmails_(this.cc);
         break;
       case 'Bcc':
-        this.bcc = this.extractEmails_(header.value);
+        this.bcc = this.cleanseAddresses_(header.value);
+        this.bccEmails = this.extractEmails_(this.bcc);
         break;
       case 'Message-ID':
         this.messageId = header.value;
@@ -44,6 +45,10 @@ class Message {
     }
     }
     this.isUnread = message.labelIds.includes('UNREAD');
+  }
+
+  cleanseAddresses_(str) {
+    return str.replace(/"/g, '');
   }
 
   getPlain() {

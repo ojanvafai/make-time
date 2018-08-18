@@ -154,19 +154,36 @@ class VueueRow_ extends HTMLElement {
         `;
         this.checkBox_.onchange = this.updateHighlight_.bind(this);
 
-        let from = document.createElement('span');
-        from.style.cssText = `
+        let fromContainer = document.createElement('div');
+        fromContainer.style.cssText = `
           width: 150px;
-          overflow: hidden;
           margin-right: 25px;
+          display: flex;
+          align-items: baseline;
+        `;
+
+        let from = document.createElement('div');
+        from.style.cssText = `
+          overflow: hidden;
         `;
         from.textContent = lastMessage.fromName;
+
+        let count = document.createElement('div');
+        count.style.cssText = `
+          font-size: 80%;
+          margin-left: 4px;
+          color: grey;
+        `;
+        if (messages.length > 1)
+          count.textContent = messages.length;
+
+        fromContainer.append(from, count);
 
         let snippet = document.createElement('span');
         snippet.style.color = '#666';
         snippet.textContent = ` - ${this.thread_.snippet}`;
 
-        let title = document.createElement('span');
+        let title = document.createElement('div');
         title.append(subject, snippet);
         title.style.cssText = `
           overflow: hidden;
@@ -177,7 +194,7 @@ class VueueRow_ extends HTMLElement {
         let date = document.createElement('div');
         date.textContent = this.dateString_(lastMessage.date);
 
-        label.append(this.checkBox_, from, title, date);
+        label.append(this.checkBox_, fromContainer, title, date);
 
         this.append(label);
       });

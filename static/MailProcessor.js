@@ -370,14 +370,14 @@ class MailProcessor {
   matchesRule(rule, message) {
     var matches = false;
     if (rule.to) {
-      if (!this.containsAddress(message.to, rule.to) &&
-          !this.containsAddress(message.cc, rule.to) &&
-        !this.containsAddress(message.bcc, rule.to))
+      if (!this.containsAddress(message.toEmails, rule.to) &&
+          !this.containsAddress(message.ccEmails, rule.to) &&
+        !this.containsAddress(message.bccEmails, rule.to))
         return false;
       matches = true;
     }
-    if (rule.from) {
-      if (!this.containsAddress(message.from, rule.from))
+    if (rule.fromEmails) {
+      if (!this.containsAddress(message.fromEmails, rule.from))
         return false;
       matches = true;
     }

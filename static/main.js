@@ -332,7 +332,7 @@ async function updateThreadList() {
   showLoader(true);
   updateTitle('Fetching threads to triage...');
 
-  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewThreadAtATime([])]);
+  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewAll([])]);
   let vacationQuery;
   if (settings.vacation_subject)
     vacationQuery = `subject:${settings.vacation_subject}`;

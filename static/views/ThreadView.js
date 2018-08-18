@@ -390,9 +390,9 @@ class ThreadView extends HTMLElement {
     let lastMessage = messages[messages.length - 1];
 
     // Gmail will remove dupes for us.
-    let to = lastMessage.rawFrom
+    let to = lastMessage.from
     if (shouldReplyAll)
-      to += ',' + lastMessage.rawTo;
+      to += ',' + lastMessage.to;
 
     if (extraEmails.length)
       to += ',' + extraEmails.join(',');
@@ -408,11 +408,11 @@ To: ${to}
 Content-Type: text/html; charset="UTF-8"
 `;
 
-    if (shouldReplyAll && lastMessage.rawCc)
-      email += `Cc: ${lastMessage.rawCc}\n`;
+    if (shouldReplyAll && lastMessage.cc)
+      email += `Cc: ${lastMessage.cc}\n`;
 
     email += `
-  ${replyText}<br><br>${lastMessage.rawFrom} wrote:<br>
+  ${replyText}<br><br>${lastMessage.from} wrote:<br>
   <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
     ${lastMessage.getHtmlOrPlain()}
   </blockquote>`;
@@ -632,24 +632,67 @@ Content-Type: text/html; charset="UTF-8"
     messageDiv.className = 'message';
     messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
 
-    let dateDiv = document.createElement('div');
-    dateDiv.classList.add('date');
-    dateDiv.textContent = this.dateString_(processedMessage.date);
+    let rightItems = document.createElement('div');
+    rightItems.classList.add('date');
+    let date = document.createElement('div');
+    date.append(this.dateString_(processedMessage.date));
+    rightItems.append(date);
 
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
+    headerDiv.style.cssText = `
+      background-color: #ddd;
+      padding: 8px;
+      margin: 0 -8px;
+      border-top: 1px solid;
+      white-space: pre-wrap;
+      font-size: 90%;
+      color: grey;
+    `;
 
-    let addresses = `from: ${processedMessage.from}`;
+    let from = document.createElement('div');
+    from.style.cssText = `color: black`;
+
+    if (processedMessage.from.includes('<')) {
+      let b = document.createElement('b');
+      b.append(processedMessage.fromName);
+      from.append(b, ' <', processedMessage.fromEmails[0], '>');
+    } else {
+      from.append(processedMessage.from);
+    }
+
+    let to = document.createElement('div');
+    to.style.cssText = `
+      font-size: 90%;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+    `;
+
+    let expander = document.createElement('span');
+    expander.classList.add('expander');
+    expander.style.cssText = `
+      padding: 1px 3px;
+      user-select: none;
+      float: right;
+    `;
+    expander.onclick = () => {
+      let existing = window.getComputedStyle(to)['-webkit-line-clamp'];
+      // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
+      // returns 'none' from computed style.
+      to.style['-webkit-line-clamp'] = existing == 'none' ? '1' : 'unset';
+    };
+    expander.append('▾');
+    rightItems.append(expander);
+
     if (processedMessage.to)
-      addresses += `\nto: ${processedMessage.to}`;
+      this.appendAddresses_(to, 'to', processedMessage.to);
     if (processedMessage.cc)
-      addresses += `\ncc: ${processedMessage.cc}`;
+      this.appendAddresses_(to, 'cc', processedMessage.cc);
     if (processedMessage.bcc)
-      addresses += `\nbcc: ${processedMessage.bcc}`;
-    let addressDiv = document.createElement('div');
-    addressDiv.textContent = addresses;
+      this.appendAddresses_(to, 'bcc', processedMessage.bcc);
 
-    headerDiv.append(dateDiv, addressDiv)
+    headerDiv.append(rightItems, from, to)
 
     var bodyContainer = document.createElement('div');
     bodyContainer.classList.add('message-body');
@@ -658,6 +701,15 @@ Content-Type: text/html; charset="UTF-8"
 
     messageDiv.append(headerDiv, bodyContainer);
     return messageDiv;
+  }
+
+  appendAddresses_(container, name, value) {
+    let div = document.createElement('div');
+    div.style.cssText = `overflow: hidden;`;
+    let b = document.createElement('b');
+    b.append(`${name}: `);
+    div.append(b, value);
+    container.append(div);
   }
 }
 
