@@ -206,9 +206,20 @@ class VueueRow_ extends HTMLElement {
   }
 
   dateString_(date) {
-    if (date.toDateString() == new Date().toDateString())
-      return date.toLocaleTimeString();
-    return date.toLocaleDateString();
+    let options = {};
+    let today = new Date();
+    if (today.getYear() != date.getYear())
+      options.year = 'numeric';
+
+    if (today.getMonth() != date.getMonth() || today.getDate() != date.getDate()) {
+      options.month = 'short';
+      options.day = 'numeric';
+    } else {
+      options.hour = 'numeric';
+      options.minute = 'numeric';
+    }
+
+    return date.toLocaleString(undefined, options);
   }
 
   get checked() {
