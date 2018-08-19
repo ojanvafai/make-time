@@ -83,10 +83,7 @@ class ThreadView extends HTMLElement {
   addButtons_() {
     this.timer_ = document.createElement('span');
     this.timer_.style.cssText = `
-      width: 1em;
-      height: 1em;
-      color: red;
-      fill: blue;
+      border-radius: 5px;
     `;
 
     let timerContainer = document.createElement('div');
@@ -97,7 +94,7 @@ class ThreadView extends HTMLElement {
       padding: 5px;
     `;
     let timerButton = document.createElement('span');
-    timerContainer.append(this.timer_, timerButton);
+    timerContainer.append(this.timer_, '\xa0', timerButton);
 
     this.timerPaused_ = true;
     let updatePlayButton = () => {
@@ -122,14 +119,6 @@ class ThreadView extends HTMLElement {
       };
       button.innerHTML = `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
       this.toolbar_.append(button);
-    }
-  }
-
-  setTimerBackground_() {
-    if (this.timerPaused_) {
-      this.timer_.style.backgroundImage = '';
-    } else {
-      this.timer_.style.backgroundImage = '';
     }
   }
 
@@ -474,7 +463,15 @@ Content-Type: text/html; charset="UTF-8"
       return;
     }
 
-    this.timer_.textContent = this.timeLeft_ + '\xa0';
+    if (this.timeLeft_ > 5) {
+      this.timer_.style.color = 'black';
+      this.timer_.style.backgroundColor =  'white';
+    } else {
+      this.timer_.style.color = 'white';
+      this.timer_.style.backgroundColor =  'red';
+    }
+
+    this.timer_.textContent = this.timeLeft_;
     this.timerKey_ = setTimeout(this.nextTick_.bind(this), 1000);
     this.timeLeft_--;
   }

@@ -1,15 +1,14 @@
 Before pointing others at it:
-- Generate the setting spreadsheet instead of having people manually create it.
-- Move the instruction text to make-time out of the spreadsheet.
+- Make the spreadsheet optional and grey ou the blocked/muted buttons if there is no sheet.
 - add tooltips for the buttons
+- Get rid of the spreadsheet entirely?
 
 P1: Will try to do soonish.
-- elide quotes based off the "In-Reply-To" instead of whatever happens to be the previous message
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
 - Add "send+blocked" button for things where you want to make sure there is followup.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
+- elide quotes based off the "In-Reply-To" instead of whatever happens to be the previous message
 - Include "XXX wrote" prefixes in quote eliding
-- Give a way to show the email headers so that people can easily write filters based off the headers.
 
 P2: Will only do if something makes these seem worth doing.
 - updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there. Hard to reproduce. :(
@@ -20,7 +19,7 @@ P2: Will only do if something makes these seem worth doing.
 - Once the triage is done, allow picking which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
 - When updating messages, update the unread state even for old messages since that might have changed.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
-- Add the ability to filter over arbitrary email headers (e.g. instead of allowing filtering over the sender header, allow sender:foo to filter over sender header, list-id:bar to filter over the list-id header, etc.
+- Add the ability to filter over arbitrary email headers (e.g. instead of allowing filtering over the sender header, allow sender:foo to filter over sender header, list-id:bar to filter over the list-id header, etc. Also, give a way to show the email headers so that people can easily write filters based off the headers.
 - sort by date withing a given queue, with a setting for sort order
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Add keyboard shortcuts for Vueue mode. j/k/x next/previous/toggle
