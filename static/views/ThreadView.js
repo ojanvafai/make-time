@@ -15,8 +15,6 @@ class ThreadView extends HTMLElement {
     this.contacts_ = contacts;
     this.showSummary_ = showSummary;
 
-    this.currentThread_ = null;
-
     this.subject_ = document.createElement('div');
     this.gmailLink_ = document.createElement('a');
     this.gmailLink_.style.cssText = `
@@ -477,7 +475,6 @@ Content-Type: text/html; charset="UTF-8"
   }
 
   async renderAllDone_() {
-    this.currentThread_ = null;
     this.subjectText_.textContent = 'All Done! Nothing left to triage for now.';
     this.gmailLink_.textContent = '';
     this.messages_.textContent = '';
@@ -527,7 +524,8 @@ Content-Type: text/html; charset="UTF-8"
       this.prefetchedThread_ = null;
     } else {
       let nextThread = this.threadList_.pop();
-      this.currentThread_ = new RenderedThread(nextThread);
+      if (nextThread)
+        this.currentThread_ = new RenderedThread(nextThread);
     }
 
     this.updateTitle_();
