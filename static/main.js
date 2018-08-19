@@ -169,12 +169,11 @@ async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
   await viewThreadAtATime(threadsToTriage);
 
   for (let i = 0; i < threadsToDone.length; i++) {
-    showLoader(true);
-    updateTitle(`Archiving ${i + 1}/${threadsToDone.length} threads...`);
+    updateTitle('archiving', `Archiving ${i + 1}/${threadsToDone.length} threads...`);
     let thread = threadsToDone[i];
     await thread.markTriaged();
   }
-  showLoader(false);
+  updateTitle('archiving');
 }
 
 async function viewThreadAtATime(threads) {
@@ -215,11 +214,28 @@ async function updateSigninStatus(isSignedIn) {
   }
 }
 
-async function updateTitle(title) {
-  let settings = await getSettings();
-  if (settings.vacation_subject)
-    title = `Only showing threads with subject:${settings.vacation_subject} ${title}`;
+let titleStack_ = [];
+
+async function updateTitle(key, opt_title, opt_needsLoader) {
+  let index = titleStack_.findIndex((item) => item.key == key);
+  if (!opt_title) {
+    if (index != -1)
+      titleStack_.splice(index, 1);
+  } else if (index == -1) {
+    titleStack_.push({
+      key: key,
+      title: opt_title,
+      needsLoader: !!opt_needsLoader,
+    });
+  } else {
+    titleStack_[index] = opt_title;
+  }
+
+  let title = titleStack_.length ? titleStack_[titleStack_.length - 1].title : '';
   document.getElementById('title').textContent = title;
+
+  let needsLoader = titleStack_.findIndex((item) => item.needsLoader) != -1;
+  document.getElementById('loader').style.display = needsLoader ? 'inline-block' : 'none';
 }
 
 document.body.addEventListener('keydown', async (e) => {
@@ -312,12 +328,6 @@ async function fetchThreads(label, forEachThread, options) {
   await getPageOfThreads();
 }
 
-function showLoader(show) {
-  document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
-  if (!show);
-    updateTitle('');
-}
-
 async function addThread(thread) {
   let settings = await getSettings();
   if (settings.vacation_subject) {
@@ -329,13 +339,14 @@ async function addThread(thread) {
 }
 
 async function updateThreadList() {
-  showLoader(true);
-  updateTitle('Fetching threads to triage...');
-
   let [settings] = await Promise.all([getSettings(), updateLabelList(), viewAll([])]);
   let vacationQuery;
-  if (settings.vacation_subject)
+  if (settings.vacation_subject) {
     vacationQuery = `subject:${settings.vacation_subject}`;
+    updateTitle('vacation', `Only showing threads with ${vacationQuery}`);
+  }
+
+  updateTitle('updateThreadList', 'Fetching threads to triage...', true);
 
   let labels = await getTheadCountForLabels(settings, isLabelToTriage);
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
@@ -348,9 +359,10 @@ async function updateThreadList() {
     });
   }
 
+  updateTitle('updateThreadList');
+
   await fetchContacts(gapi.auth.getToken());
   await processMail();
-  showLoader(false);
 }
 
 let contacts_ = [];
@@ -382,15 +394,14 @@ async function processMail() {
     return;
 
   isProcessingMail = true;
-  showLoader(true);
+  updateTitle('processMail', 'Processing mail backlog...', true);
 
-  updateTitle('Processing mail backlog...');
   let mailProcessor = new MailProcessor(await getSettings(), addThread);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
 
-  showLoader(false);
+  updateTitle('processMail');
   isProcessingMail = false;
 }
 
@@ -402,11 +413,11 @@ function update() {
 setInterval(update, 1000 * 60);
 
 window.addEventListener('offline', (e) => {
-  updateTitle('No network connection...');
+  updateTitle('offline', 'No network connection...');
 });
 
 window.addEventListener('online', (e) => {
-  updateTitle('');
+  updateTitle('offline');
   update();
 });
 

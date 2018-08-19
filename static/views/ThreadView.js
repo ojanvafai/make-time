@@ -254,12 +254,11 @@ class ThreadView extends HTMLElement {
     if (!this.lastAction_)
       return;
 
-    showLoader(true);
-    updateTitle('Undoing last action...');
+    updateTitle('undoLastAction_', 'Undoing last action...', true);
     await this.threadList_.push(this.currentThread_);
     await this.renderNext_(this.lastAction_.thread);
     await this.lastAction_.thread.modify(this.lastAction_.removed, this.lastAction_.added);
-    showLoader(false);
+    updateTitle('undoLastAction_');
   }
 
   onHide() {
@@ -367,11 +366,13 @@ class ThreadView extends HTMLElement {
       if (this.isSending_)
         return;
       this.isSending_ = true;
+      updateTitle('sendReply', 'Sending reply...', true);
 
       await this.sendReply_(compose.value, compose.getEmails(), replyAll.checked);
       this.clearQuickReply_();
       this.markTriaged_(ThreadView.DONE_DESTINATION);
 
+      updateTitle('sendReply');
       this.isSending_ = false;
     })
 

@@ -283,7 +283,7 @@ class MailProcessor {
   }
 
   async collapseStats() {
-    updateTitle('Writing stats...');
+    updateTitle('collapseStats', 'Writing stats...', true);
 
     let stats;
     var rows = await fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
@@ -365,6 +365,8 @@ class MailProcessor {
 
     if (lastRowProcessed)
       await this.deleteRows(STATISTICS_SHEET_NAME, 1, lastRowProcessed + 1);
+
+    updateTitle('collapseStats');
   }
 
   matchesRule(rule, message) {
@@ -470,7 +472,7 @@ class MailProcessor {
 
     for (var i = 0; i < threads.length; i++) {
       try {
-        updateTitle(`Processing ${i + 1}/${threads.length} unprocessed threads...`);
+        updateTitle('processMail', `Processing ${i + 1}/${threads.length} unprocessed threads...`, true);
 
         let thread = threads[i];
         let labelName;
@@ -553,6 +555,7 @@ class MailProcessor {
     }
 
     this.logTiming(`Finished processing ${threads.length} threads`, startTime);
+    updateTitle('processMail');
     return threads.length;
   }
 
@@ -568,7 +571,7 @@ class MailProcessor {
       return;
 
     for (var i = 0; i < threads.length; i++) {
-      updateTitle(`Dequeuing ${i + 1}/${threads.length} from ${labelName}...`);
+      updateTitle('dequeue', `Dequeuing ${i + 1}/${threads.length} from ${labelName}...`, true);
 
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
@@ -576,6 +579,7 @@ class MailProcessor {
       await thread.modify(addLabelIds, removeLabelIds);
       this.pushThread_(thread);
     }
+    updateTitle('dequeue');
   }
 
   async processSingleQueue(queue) {
