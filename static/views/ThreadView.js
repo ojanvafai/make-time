@@ -1,5 +1,3 @@
-let DONE_DESTINATION = null;
-
 class ThreadView extends HTMLElement {
   constructor(threadList, cleanupDelegate, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts, showSummary) {
     super();
@@ -15,9 +13,8 @@ class ThreadView extends HTMLElement {
     this.showSummary_ = showSummary;
 
     if (blockedLabel) {
-      let blockedAction = ThreadView.ACTIONS['b'];
-      blockedAction.destination = blockedLabel;
-      blockedAction.disabled = false;
+      ThreadView.BLOCKED_ACTION.destination = blockedLabel;
+      ThreadView.BLOCKED_ACTION.disabled = false;
     }
 
     this.subject_ = document.createElement('div');
@@ -116,16 +113,11 @@ class ThreadView extends HTMLElement {
       let action = ThreadView.ACTIONS[key];
       let button = document.createElement('button');
       button.tooltip = action.description;
-      button.onclick = () => {
-        if (action.disabled) {
-          alert('This action only works with settings setup. Click "Setup settings" in the top-right to enable.');
-          return;
-        }
 
-        let e = new Event('keydown');
-        e.key = key;
-        this.dispatchShortcut(e);
-      };
+      if (action.disabled)
+        button.style.color = 'grey';
+
+      button.onclick = () => this.takeAction_(action);
       button.onmouseenter = () => {
         button.tooltipElement = document.createElement('div');
         button.tooltipElement.style.cssText = `
@@ -148,7 +140,7 @@ class ThreadView extends HTMLElement {
 
         text.append(button.tooltip);
         button.tooltipElement.append(text);
-        document.body.append(button.tooltipElement);
+        this.toolbar_.append(button.tooltipElement);
       }
       button.onmouseleave = () => {
         button.tooltipElement.remove();
@@ -243,9 +235,25 @@ class ThreadView extends HTMLElement {
   }
 
   async dispatchShortcut(e) {
+    var action = ThreadView.ACTIONS[e.key];
+    if (action) {
+      e.preventDefault();
+      this.takeAction_(action);
+    }
+  };
+
+  async takeAction_(action) {
+    if (action.disabled) {
+      alert('This action only works if you have setup settings. Click "Setup settings" in the top-right to enable.');
+      return;
+    }
+
     // Don't want key presses inside the quick reply to trigger actions, but
     // also don't want to trigger actions if the quick reply is accidentally blurred.
     if (this.quickReplyOpen_)
+      return;
+
+    if (!this.currentThread_)
       return;
 
     if (!navigator.onLine) {
@@ -253,30 +261,23 @@ class ThreadView extends HTMLElement {
       return;
     }
 
-    if (!this.currentThread_)
-      return;
-
-    if (e.key == 'u') {
+    if (action == ThreadView.UNDO_ACTION) {
       this.undoLastAction_();
       return;
     }
 
-    if (e.key == 'q') {
-      e.preventDefault();
+    if (action == ThreadView.QUICK_REPLY_ACTION) {
       this.showQuickReply_();
       return;
     }
 
-    var action = ThreadView.ACTIONS[e.key];
-    if (action.destination !== undefined)
-      this.markTriaged_(action.destination);
-  };
+    if (action.destination === undefined)
+      throw `Invalid triage action attempted: ${JSON.stringify(action)}`;
 
-  async markTriaged_(destination) {
     // renderNext_ changes this.currentThread_ so save off the thread to modify first.
     let thread = this.currentThread_.thread;
     this.renderNext_();
-    this.lastAction_ = await thread.markTriaged(destination);
+    this.lastAction_ = await thread.markTriaged(action.destination);
   }
 
   async undoLastAction_() {
@@ -400,7 +401,7 @@ class ThreadView extends HTMLElement {
 
       await this.sendReply_(compose.value, compose.getEmails(), replyAll.checked);
       this.clearQuickReply_();
-      this.markTriaged_(ThreadView.DONE_DESTINATION);
+      this.takeAction_(ThreadView.DONE_ACTION);
 
       updateTitle('sendReply');
       this.isSending_ = false;
@@ -631,48 +632,62 @@ Content-Type: text/html; charset="UTF-8"
   }
 }
 
-// Done is removing all labels. Use null as a sentinel for that.
-ThreadView.DONE_DESTINATION = null;
+ThreadView.DONE_ACTION = {
+  name: 'Done',
+  description: `Archive and remove from the current queue.`,
+  // Done is removing all labels. Use null as a sentinel for that.
+  destination: null,
+};
+
+ThreadView.TLDR_ACTION = {
+  name: 'TL;DR',
+  description: `Too long, will read later. Goes in triaged/tldr label.`,
+  destination: READ_LATER_LABEL,
+};
+
+ThreadView.REPLY_NEEDED_ACTION = {
+  name: 'Reply Needed',
+  description: `Needs a reply. Goes in triaged/replyneeded label.`,
+  destination: NEEDS_REPLY_LABEL,
+};
+
+ThreadView.QUICK_REPLY_ACTION = {
+  name: 'Quick Reply',
+  description: `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
+};
+
+ThreadView.BLOCKED_ACTION = {
+  name: 'Blocked',
+  description: `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
+  disabled: true,
+};
+
+ThreadView.MUTE_ACTION = {
+  name: 'Mute',
+  description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
+  destination: MUTED_LABEL,
+};
+
+ThreadView.ACTION_ITEM_ACTION = {
+  name: 'Action Item',
+  description: `Needs some action taken other than an email reply. Goes in triaged/actionitem label.`,
+  destination: ACTION_ITEM_LABEL,
+};
+
+ThreadView.UNDO_ACTION = {
+  name: 'Undo',
+  description: `Undoes the last action taken.`,
+};
 
 ThreadView.ACTIONS = {
-  d: {
-    name: 'Done',
-    description: `Archive and remove from the current queue.`,
-    destination: ThreadView.DONE_DESTINATION,
-  },
-  t: {
-    name: 'TL;DR',
-    description: `Too long, will read later. Goes in triaged/tldr label.`,
-    destination: READ_LATER_LABEL,
-  },
-  r: {
-    name: 'Reply Needed',
-    description: `Needs a reply. Goes in triaged/replyneeded label.`,
-    destination: NEEDS_REPLY_LABEL,
-  },
-  q: {
-    name: 'Quick Reply',
-    description: `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
-  },
-  b: {
-    name: 'Blocked',
-    description: `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
-    disabled: true,
-  },
-  m: {
-    name: 'Mute',
-    description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
-    destination: MUTED_LABEL,
-  },
-  a: {
-    name: 'Action Item',
-    description: `Needs some action taken other than an email reply. Goes in triaged/actionitem label.`,
-    destination: ACTION_ITEM_LABEL,
-  },
-  u: {
-    name: 'Undo',
-    description: `Undoes the last action taken.`,
-  },
-}
+  d: ThreadView.DONE_ACTION,
+  t: ThreadView.TLDR_ACTION,
+  r: ThreadView.REPLY_NEEDED_ACTION,
+  q: ThreadView.QUICK_REPLY_ACTION,
+  b: ThreadView.BLOCKED_ACTION,
+  m: ThreadView.MUTE_ACTION,
+  a: ThreadView.ACTION_ITEM_ACTION,
+  u: ThreadView.UNDO_ACTION,
+};
 
 window.customElements.define('mt-thread-view', ThreadView);

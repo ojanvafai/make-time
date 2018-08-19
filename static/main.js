@@ -149,12 +149,13 @@ async function fetchSettings() {
 
   settingsLink.textContent = 'Settings';
   settingsLink.href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
-  let [settings_, queuedLabelMap] = await Promise.all([
+  let [settings, queuedLabelMap] = await Promise.all([
     fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1),
     fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1),
   ]);
-  settings_.spreadsheetId = spreadsheetId;
-  settings_.queuedLabelMap = queuedLabelMap;
+  settings.spreadsheetId = spreadsheetId;
+  settings.queuedLabelMap = queuedLabelMap;
+  settings_ = settings;
 }
 
 async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
