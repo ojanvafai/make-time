@@ -137,10 +137,10 @@ class ThreadView extends HTMLElement {
     let threads = [];
 
     if (this.prefetchedThread_)
-      await this.threadList_.push(this.prefetchedThread_);
+      await this.threadList_.push(this.prefetchedThread_.thread);
 
     if (this.currentThread_)
-      await this.threadList_.push(this.currentThread_);
+      await this.threadList_.push(this.currentThread_.thread);
 
     while (this.threadList_.length) {
       threads.push(this.threadList_.pop());
@@ -153,10 +153,14 @@ class ThreadView extends HTMLElement {
     await this.threadList_.push(thread);
     await this.updateTitle_();
 
-    if (!this.currentThread_)
+    if (!this.currentThread_) {
+      // When transitioning from all done to having messages again, clear the all
+      // done links.
+      this.messages_.textContent = '';
       await this.renderNext_();
-    else
+    } else {
       this.prerenderNext_();
+    }
   }
 
   async cleanup() {
@@ -168,13 +172,13 @@ class ThreadView extends HTMLElement {
     let title = [];
 
     if (this.currentThread_) {
-      let displayableQueue = await this.currentThread_.getDisplayableQueue();
-      let currentThreadQueue = await this.currentThread_.getQueue();
+      let displayableQueue = await this.currentThread_.thread.getDisplayableQueue();
+      let currentThreadQueue = await this.currentThread_.thread.getQueue();
       let leftInQueue = this.threadList_.threadCountForQueue(currentThreadQueue);
       let total = this.threadList_.length;
       if (this.prefetchedThread_) {
-        let preftechQueue = await this.prefetchedThread_.getQueue();
-        if (preftechQueue == currentThreadQueue)
+        let prefetchQueue = await this.prefetchedThread_.thread.getQueue();
+        if (prefetchQueue == currentThreadQueue)
           leftInQueue += 1;
         total += 1;
       }
@@ -190,7 +194,7 @@ class ThreadView extends HTMLElement {
 
       let prefetchQueue = null;
       if (this.prefetchedThread_)
-        prefetchQueue = await this.prefetchedThread_.getQueue();
+        prefetchQueue = await this.prefetchedThread_.thread.getQueue();
 
       let queueData = '';
       let queues = this.threadList_.queues();
@@ -245,7 +249,7 @@ class ThreadView extends HTMLElement {
 
   async markTriaged_(destination) {
     // renderNext_ changes this.currentThread_ so save off the thread to modify first.
-    let thread = this.currentThread_;
+    let thread = this.currentThread_.thread;
     this.renderNext_();
     this.lastAction_ = await thread.markTriaged(destination);
   }
@@ -255,7 +259,8 @@ class ThreadView extends HTMLElement {
       return;
 
     updateTitle('undoLastAction_', 'Undoing last action...', true);
-    await this.threadList_.push(this.currentThread_);
+    await this.requeuePrefetchedThread_();
+    await this.threadList_.push(this.currentThread_.thread);
     await this.renderNext_(this.lastAction_.thread);
     await this.lastAction_.thread.modify(this.lastAction_.removed, this.lastAction_.added);
     updateTitle('undoLastAction_');
@@ -387,7 +392,7 @@ class ThreadView extends HTMLElement {
   }
 
   async sendReply_(replyText, extraEmails, shouldReplyAll) {
-    let messages = await this.currentThread_.getMessages();
+    let messages = await this.currentThread_.thread.getMessages();
     let lastMessage = messages[messages.length - 1];
 
     // Gmail will remove dupes for us.
@@ -423,7 +428,7 @@ Content-Type: text/html; charset="UTF-8"
       'userId': USER_ID,
       'resource': {
         'raw': base64.encode(email),
-        'threadId': this.currentThread_.id,
+        'threadId': this.currentThread_.thread.id,
       }
     });
   }
@@ -497,25 +502,36 @@ Content-Type: text/html; charset="UTF-8"
     }
   }
 
+  async requeuePrefetchedThread_() {
+    if (!this.prefetchedThread_)
+      return;
+
+    if (this.prefetchedThread_.rendered)
+      this.prefetchedThread_.rendered.remove();
+    await this.threadList_.push(this.prefetchedThread_.thread);
+    this.prefetchedThread_ = null;
+  }
+
   async renderNext_(threadToRender) {
     this.clearQuickReply_();
 
+    if (threadToRender)
+      await this.requeuePrefetchedThread_();
+
+    if (this.currentThread_ && this.currentThread_.rendered)
+      this.currentThread_.rendered.remove();
+
+    this.currentThread_ = null;
+
     if (threadToRender) {
-      if (this.prerenderedThread_)
-        this.prerenderedThread_.remove();
-      // Requeue the prefetched thread.
-      if (this.prefetchedThread_) {
-        this.threadList_.push(this.prefetchedThread_);
-        this.clearPrefetchedThread();
-      }
+      this.currentThread_ = new RenderedThread(threadToRender);
+    } else if (this.prefetchedThread_) {
+      this.currentThread_ = this.prefetchedThread_;
+      this.prefetchedThread_ = null;
+    } else {
+      let nextThread = this.threadList_.pop();
+      this.currentThread_ = new RenderedThread(nextThread);
     }
-
-    // When transitioning from all done to having messages again, clear the all
-    // done links.
-    if (!this.currentThread_)
-      this.messages_.textContent = '';
-
-    this.currentThread_ = threadToRender || this.prefetchedThread_ || this.threadList_.pop();
 
     this.updateTitle_();
     this.subject_.style.top = this.offsetTop + 'px';
@@ -525,7 +541,7 @@ Content-Type: text/html; charset="UTF-8"
       return;
     }
 
-    let messages = await this.currentThread_.getMessages();
+    let messages = await this.currentThread_.thread.getMessages();
 
     // In theory, linking to the threadId should work, but it doesn't for some threads.
     // Linking to the messageId seems to work reliably. The message ID listed will be expanded
@@ -533,18 +549,18 @@ Content-Type: text/html; charset="UTF-8"
     this.gmailLink_.textContent = 'view in gmail';
     this.gmailLink_.href = `https://mail.google.com/mail/#all/${messages[messages.length - 1].id}`;
 
-    this.subjectText_.textContent = await this.currentThread_.getSubject() || '(no subject)';
+    this.subjectText_.textContent = await this.currentThread_.thread.getSubject() || '(no subject)';
 
-    if (this.prerenderedThread_) {
-      this.currentlyRendered_.remove();
-      this.prerenderedThread_.style.bottom = '';
-      this.prerenderedThread_.style.visibility = 'visible';
+    let rendered = await this.currentThread_.render();
+    if (rendered.parentNode) {
+      // Adjust visibility if this was previously prerendered offscreen.
+      this.currentThread_.rendered.style.bottom = '';
+      this.currentThread_.rendered.style.visibility = 'visible';
+    } else {
+      this.messages_.append(rendered);
     }
 
-    this.currentlyRendered_ = this.prerenderedThread_ || await this.renderCurrent_();
-    this.clearPrefetchedThread();
-
-    var elementToScrollTo = document.querySelector('.unread') || this.currentlyRendered_.lastChild;
+    var elementToScrollTo = document.querySelector('.unread') || this.currentThread_.rendered.lastChild;
     elementToScrollTo.scrollIntoView();
     // Make sure that there's at least 50px of space above for showing that there's a
     // previous message.
@@ -561,172 +577,28 @@ Content-Type: text/html; charset="UTF-8"
       return;
 
     let thread = await this.threadList_.pop();
-    this.prefetchedThread_ = thread;
-
     if (thread) {
-      this.prerenderedThread_ = null;
-
-      // Force update the list of messages in case any new messages have come in
-      // since we first processed this thread.
-      await thread.updateMessageDetails();
-
-      // The await above can call this.prefetchedThread_ to actually be a later thread
-      // if threads are being archived very quickly.
-      if (thread != this.prefetchedThread_)
-        return;
-
-      this.prerenderedThread_ = await this.render_(thread);
-      this.prerenderedThread_.style.bottom = '0';
-      this.prerenderedThread_.style.visibility = 'hidden';
-      this.messages_.append(this.prerenderedThread_);
+      this.prefetchedThread_ = new RenderedThread(thread);
+      let dom = await this.prefetchedThread_.render();
+      dom.style.bottom = '0';
+      dom.style.visibility = 'hidden';
+      this.messages_.append(dom);
     }
-  }
-
-  clearPrefetchedThread() {
-    if (this.prerenderedThread_)
-      this.prerenderedThread_ = null;
-    this.prefetchedThread_ = null;
   }
 
   async updateCurrentThread() {
     if (!this.currentThread_)
       return;
 
-    let hasNewMessages = await this.currentThread_.updateMessageDetails();
-    if (hasNewMessages)
-      await this.renderCurrent_();
-  }
-
-  async renderCurrent_() {
-    let renderedThread = await this.render_(this.currentThread_);
-    if (this.currentlyRendered_)
-      this.currentlyRendered_.remove();
-    this.currentlyRendered_ = renderedThread;
-    this.messages_.append(renderedThread);
-    return renderedThread;
-  }
-
-  async render_(thread) {
-    let messages = await thread.getMessages();
-    let container = document.createElement('div');
-    container.style.cssText = `
-      background-color: white;
-      position: absolute;
-      left: 0;
-      right: 0;
-      max-width: 1000px;
-    `;
-    for (var message of messages) {
-      container.append(this.renderMessage_(message));
+    let hasNewMessages = await this.currentThread_.thread.updateMessageDetails();
+    if (hasNewMessages) {
+      let renderedThread = await this.currentThread_.render(true);
+      this.messages_.append(renderedThread);
     }
-    return container;
-  }
-
-  dateString_(date) {
-    let options = {
-      hour: 'numeric',
-      minute: 'numeric',
-    };
-
-    let today = new Date();
-    if (today.getYear() != date.getYear())
-      options.year = 'numeric';
-
-    if (today.getMonth() != date.getMonth() || today.getDate() != date.getDate()) {
-      options.month = 'short';
-      options.day = 'numeric';
-    }
-
-    return date.toLocaleString(undefined, options);
-  }
-
-  renderMessage_(processedMessage) {
-    var messageDiv = document.createElement('div');
-    messageDiv.className = 'message';
-    messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
-
-    let rightItems = document.createElement('div');
-    rightItems.classList.add('date');
-    let date = document.createElement('div');
-    date.append(this.dateString_(processedMessage.date));
-    rightItems.append(date);
-
-    var headerDiv = document.createElement('div');
-    headerDiv.classList.add('headers');
-    headerDiv.style.cssText = `
-      background-color: #ddd;
-      padding: 8px;
-      margin: 0 -8px;
-      border-top: 1px solid;
-      white-space: pre-wrap;
-      font-size: 90%;
-      color: grey;
-    `;
-
-    let from = document.createElement('div');
-    from.style.cssText = `color: black`;
-
-    if (processedMessage.from.includes('<')) {
-      let b = document.createElement('b');
-      b.append(processedMessage.fromName);
-      from.append(b, ' <', processedMessage.fromEmails[0], '>');
-    } else {
-      from.append(processedMessage.from);
-    }
-
-    let to = document.createElement('div');
-    to.style.cssText = `
-      font-size: 90%;
-      display: -webkit-box;
-      -webkit-line-clamp: 1;
-      -webkit-box-orient: vertical;
-    `;
-
-    let expander = document.createElement('span');
-    expander.classList.add('expander');
-    expander.style.cssText = `
-      padding: 1px 3px;
-      user-select: none;
-      float: right;
-    `;
-    expander.onclick = () => {
-      let existing = window.getComputedStyle(to)['-webkit-line-clamp'];
-      // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
-      // returns 'none' from computed style.
-      to.style['-webkit-line-clamp'] = existing == 'none' ? '1' : 'unset';
-    };
-    expander.append('▾');
-    rightItems.append(expander);
-
-    if (processedMessage.to)
-      this.appendAddresses_(to, 'to', processedMessage.to);
-    if (processedMessage.cc)
-      this.appendAddresses_(to, 'cc', processedMessage.cc);
-    if (processedMessage.bcc)
-      this.appendAddresses_(to, 'bcc', processedMessage.bcc);
-
-    headerDiv.append(rightItems, from, to)
-
-    var bodyContainer = document.createElement('div');
-    bodyContainer.classList.add('message-body');
-    bodyContainer.style.overflow = 'auto';
-    bodyContainer.append(processedMessage.getQuoteElidedMessage().getDom());
-
-    messageDiv.append(headerDiv, bodyContainer);
-    return messageDiv;
-  }
-
-  appendAddresses_(container, name, value) {
-    let div = document.createElement('div');
-    div.style.cssText = `overflow: hidden;`;
-    let b = document.createElement('b');
-    b.append(`${name}: `);
-    div.append(b, value);
-    container.append(div);
   }
 }
 
-// No destination label for DONE
+// Done is removing all labels. Use null as a sentinal for that.
 ThreadView.DONE_DESTINATION = null;
 
 ThreadView.KEY_TO_DESTINATION = {

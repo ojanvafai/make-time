@@ -5,16 +5,15 @@ Before pointing others at it:
 
 P1: Will try to do soonish.
 - elide quotes based off the "In-Reply-To" instead of whatever happens to be the previous message
-- updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there.
-- Race condition with having a prerenderedThread, but not currentlyRendered. This probably happens when the current thread takes a long time to render but the next thread is fast. Instead, rework all the prerendering logic to have an atomic unit of a RenderableThread instead of separately tracking the currentThread/currentlyRendred, and prefetchedThread/prerendered. So currentThread poitns to a RenderableThread that has a render method that we can await...and actually it might make it easier ot render the thread in per message chunks.
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
 - Add "send+blocked" button for things where you want to make sure there is followup.
-- "Re: Ping on get-originals?" thread is a good one for performance overhead of message processing. Half the time is base64 decoding and half is eliding quotes. Takes 1 second doing message processing, but rendering is very fast. Could render messages incrementally starting with the one right before the earliest unread one, then render all the remaining unread ones, then render the read ones. Mostly this is hidden by prefetching.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - Include "XXX wrote" prefixes in quote eliding
 - Give a way to show the email headers so that people can easily write filters based off the headers.
 
 P2: Will only do if something makes these seem worth doing.
+- updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there. Hard to reproduce. :(
+- "Re: Ping on get-originals?" thread is a good one for performance overhead of message processing. Half the time is base64 decoding and half is eliding quotes. Takes 1 second doing message processing, but rendering is very fast. Could render messages incrementally starting with the one right before the earliest unread one, then render all the remaining unread ones, then render the read ones. Mostly this is hidden by prefetching.
 - Put links for downloading attachments.
 - Show attachment blobs for gsuite docs like gmail does.
 - Fix stats to show count of archived threads
