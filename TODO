@@ -1,6 +1,3 @@
-Before pointing others at it:
-- Get rid of the spreadsheet entirely?
-
 P1: Will try to do soonish.
 - Render messages in reverse order and return from render() when all the unread messages + 1 read message have been rendered (min 2 messages if all are unread). Then render the rest of the read messages async.
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.

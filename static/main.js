@@ -83,6 +83,20 @@ window.addEventListener('unhandledrejection', (e) => {
     alert(JSON.stringify(e));
 });
 
+function showDialog(contents) {
+  let dialog = document.createElement('dialog');
+  dialog.style.cssText = `
+    max-width: 85%;
+    max-height: 85%;
+    position: fixed;
+    overflow: auto;
+  `;
+  dialog.append(contents);
+  document.body.append(dialog);
+  dialog.showModal();
+  return dialog;
+}
+
 function showSetupDialog() {
   let setId = () => {
     let url = document.getElementById('settings-url').value;
@@ -93,16 +107,13 @@ function showSetupDialog() {
     window.location.reload();
   }
 
-  let dialog = document.createElement('dialog');
-  dialog.style.width = '80%';
-  dialog.innerHTML = `Insert the URL of your settings spreadsheet. If you don't have one, go to <a href="//goto.google.com/make-time-settings" target="blank">go/make-time-settings</a>, create a copy of it, and then use the URL of the new spreadsheet.<br>
+  let contents = document.createElement('div');
+  contents.innerHTML = `Insert the URL of your settings spreadsheet. If you don't have one, go to <a href="//goto.google.com/make-time-settings" target="blank">go/make-time-settings</a>, create a copy of it, and then use the URL of the new spreadsheet.<br>
 <input id="settings-url" style="width: 100%">
 <button style="float:right">Submit and reload</button>`;
-  document.body.appendChild(dialog);
-  dialog.showModal();
 
+  let dialog = showDialog(contents);
   dialog.querySelector('button').onclick = setId;
-
   dialog.onkeydown = (e) => {
     switch (e.key) {
     case "Enter":
@@ -140,10 +151,7 @@ async function fetchSettings() {
   let spreadsheetId = localStorage.spreadsheetId;
   if (!spreadsheetId) {
     settingsLink.textContent = 'Setup settings';
-    settingsLink.onclick = (e) => {
-      e.preventDefault();
-      this.showSetupDialog();
-    };
+    settingsLink.onclick = this.showSetupDialog.bind(this);
     return;
   }
 
@@ -244,6 +252,12 @@ document.body.addEventListener('keydown', async (e) => {
   // when your stupid keyboard gets stuck holding the archive key down. #sigh
   if (e.repeat)
     return false;
+
+  if (e.key == '?') {
+    showHelp();
+    return;
+  }
+
   if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
     await currentView_.dispatchShortcut(e);
 });
