@@ -9,11 +9,12 @@ class ThreadView extends HTMLElement {
     this.threadList_ = threadList;
     this.cleanupDelegate_ = cleanupDelegate;
     this.updateCounter_ = updateCounter;
-    this.blockedLabel_ = blockedLabel;
     this.timeout_ = timeout;
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
     this.showSummary_ = showSummary;
+
+    ThreadView.ACTIONS['b'].destination = blockedLabel;
 
     this.subject_ = document.createElement('div');
     this.gmailLink_ = document.createElement('a');
@@ -107,14 +108,43 @@ class ThreadView extends HTMLElement {
 
     this.toolbar_.append(timerContainer);
 
-    for (let key in ThreadView.KEY_TO_BUTTON_NAME) {
-      let name = ThreadView.KEY_TO_BUTTON_NAME[key];
+    for (let key in ThreadView.ACTIONS) {
+      let action = ThreadView.ACTIONS[key];
       let button = document.createElement('button');
+      button.tooltip = action.description;
       button.onclick = () => {
         let e = new Event('keydown');
         e.key = key;
         this.dispatchShortcut(e);
       };
+      button.onmouseenter = () => {
+        button.tooltipElement = document.createElement('div');
+        button.tooltipElement.style.cssText = `
+          position: fixed;
+          bottom: ${this.toolbar_.offsetHeight}px;
+          left: 0;
+          right: 0;
+          display: flex;
+          justify-content: center;
+        `;
+
+        let text = document.createElement('div');
+        text.style.cssText = `
+          background-color: white;
+          border: 1px solid;
+          padding: 4px;
+          opacity: 0.8;
+          width: 300px;
+        `;
+
+        text.append(button.tooltip);
+        button.tooltipElement.append(text);
+        document.body.append(button.tooltipElement);
+      }
+      button.onmouseleave = () => {
+        button.tooltipElement.remove();
+      }
+      let name = action.name;
       button.innerHTML = `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
       this.toolbar_.append(button);
     }
@@ -228,10 +258,9 @@ class ThreadView extends HTMLElement {
       return;
     }
 
-    // Oof. Gross hack because top-level await is not allowed.
-    var destination = e.key == 'b' ? this.blockedLabel_ : ThreadView.KEY_TO_DESTINATION[e.key];
-    if (destination !== undefined)
-      this.markTriaged_(destination);
+    var action = ThreadView.ACTIONS[e.key];
+    if (action.destination !== undefined)
+      this.markTriaged_(action.destination);
   };
 
   async markTriaged_(destination) {
@@ -593,26 +622,47 @@ Content-Type: text/html; charset="UTF-8"
   }
 }
 
-// Done is removing all labels. Use null as a sentinal for that.
+// Done is removing all labels. Use null as a sentinel for that.
 ThreadView.DONE_DESTINATION = null;
 
-ThreadView.KEY_TO_DESTINATION = {
-  d: ThreadView.DONE_DESTINATION,
-  t: READ_LATER_LABEL,
-  r: NEEDS_REPLY_LABEL,
-  m: MUTED_LABEL,
-  a: ACTION_ITEM_LABEL,
-};
-
-ThreadView.KEY_TO_BUTTON_NAME = {
-  d: 'Done',
-  t: 'TL;DR',
-  r: 'Reply Needed',
-  q: 'Quick Reply',
-  b: 'Blocked',
-  m: 'Mute',
-  a: 'Action Item',
-  u: 'Undo',
-};
+ThreadView.ACTIONS = {
+  d: {
+    name: 'Done',
+    description: `Archive and remove from the current queue.`,
+    destination: ThreadView.DONE_DESTINATION,
+  },
+  t: {
+    name: 'TL;DR',
+    description: `Too long, will read later. Goes in triaged/tldr label.`,
+    destination: READ_LATER_LABEL,
+  },
+  r: {
+    name: 'Reply Needed',
+    description: `Needs a reply. Goes in triaged/replyneeded label.`,
+    destination: NEEDS_REPLY_LABEL,
+  },
+  q: {
+    name: 'Quick Reply',
+    description: `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
+  },
+  b: {
+    name: 'Blocked',
+    description: `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
+  },
+  m: {
+    name: 'Mute',
+    description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
+    destination: MUTED_LABEL,
+  },
+  a: {
+    name: 'Action Item',
+    description: `Needs some action taken other than an email reply. Goes in triaged/actionitem label.`,
+    destination: ACTION_ITEM_LABEL,
+  },
+  u: {
+    name: 'Undo',
+    description: `Undoes the last action taken.`,
+  },
+}
 
 window.customElements.define('mt-thread-view', ThreadView);
