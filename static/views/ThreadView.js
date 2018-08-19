@@ -14,7 +14,11 @@ class ThreadView extends HTMLElement {
     this.contacts_ = contacts;
     this.showSummary_ = showSummary;
 
-    ThreadView.ACTIONS['b'].destination = blockedLabel;
+    if (blockedLabel) {
+      let blockedAction = ThreadView.ACTIONS['b'];
+      blockedAction.destination = blockedLabel;
+      blockedAction.disabled = false;
+    }
 
     this.subject_ = document.createElement('div');
     this.gmailLink_ = document.createElement('a');
@@ -113,6 +117,11 @@ class ThreadView extends HTMLElement {
       let button = document.createElement('button');
       button.tooltip = action.description;
       button.onclick = () => {
+        if (action.disabled) {
+          alert('This action only works with settings setup. Click "Setup settings" in the top-right to enable.');
+          return;
+        }
+
         let e = new Event('keydown');
         e.key = key;
         this.dispatchShortcut(e);
@@ -512,7 +521,7 @@ Content-Type: text/html; charset="UTF-8"
     if (!this.showSummary_)
       return;
 
-    let labels = await getTheadCountForLabels(await getSettings(), (settings, labelId, labelName) => {
+    let labels = await getTheadCountForLabels((labelId, labelName) => {
       return labelName != MUTED_LABEL && labelName.startsWith(TRIAGED_LABEL + '/');
     });
 
@@ -648,6 +657,7 @@ ThreadView.ACTIONS = {
   b: {
     name: 'Blocked',
     description: `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
+    disabled: true,
   },
   m: {
     name: 'Mute',

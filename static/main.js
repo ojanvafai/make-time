@@ -23,7 +23,6 @@ async function updateCounter(contents) {
 var g_labels = {};
 let currentView_;
 let settings_;
-let settingsPromise_;
 
 // Make sure links open in new tabs.
 document.body.addEventListener('click', (e) => {
@@ -78,45 +77,39 @@ window.addEventListener('unhandledrejection', (e) => {
   // 401 means the credentials are invalid and you probably need to 2 factor.
   if (e.reason && e.reason.status == 401)
     window.location.reload();
+  else if (e.reason)
+    alert(JSON.stringify(e.reason));
   else
-    alert(e.reason);
+    alert(JSON.stringify(e));
 });
 
-async function getSettingsSpreadsheetId() {
-  if (localStorage.spreadsheetId)
-    return localStorage.spreadsheetId;
+function showSetupDialog() {
+  let setId = () => {
+    let url = document.getElementById('settings-url').value;
+    // Spreadsheets URLS are of the form
+    // https://docs.google.com/spreadsheets[POSSIBLE_STUFF_HERE]/d/[ID_HERE]/[POSSIBLE_STUFF_HERE]
+    let id = url.split('/d/')[1].split('/')[0];
+    localStorage.spreadsheetId = id;
+    window.location.reload();
+  }
 
-  return new Promise((resolve, reject) => {
-    let setId = () => {
-      let url = document.getElementById('settings-url').value;
-      // Spreadsheets URLS are of the form
-      // https://docs.google.com/spreadsheets[POSSIBLE_STUFF_HERE]/d/[ID_HERE]/[POSSIBLE_STUFF_HERE]
-      let id = url.split('/d/')[1].split('/')[0];
-      localStorage.spreadsheetId = id;
-
-      dialog.close();
-
-      resolve(id);
-    }
-
-    let dialog = document.createElement('dialog');
-    dialog.style.width = '80%';
-    dialog.innerHTML = `Insert the URL of your settings spreadsheet. If you don't have one, go to <a href="//goto.google.com/make-time-settings" target="blank">go/make-time-settings</a>, create a copy of it, and then use the URL of the new spreadsheet.<br>
+  let dialog = document.createElement('dialog');
+  dialog.style.width = '80%';
+  dialog.innerHTML = `Insert the URL of your settings spreadsheet. If you don't have one, go to <a href="//goto.google.com/make-time-settings" target="blank">go/make-time-settings</a>, create a copy of it, and then use the URL of the new spreadsheet.<br>
 <input id="settings-url" style="width: 100%">
-<button style="float:right">Submit</button>`;
-    document.body.appendChild(dialog);
-    dialog.showModal();
+<button style="float:right">Submit and reload</button>`;
+  document.body.appendChild(dialog);
+  dialog.showModal();
 
-    dialog.querySelector('button').onclick = setId;
+  dialog.querySelector('button').onclick = setId;
 
-    dialog.onkeydown = (e) => {
-      switch (e.key) {
-      case "Enter":
-        setId();
-        return;
-      }
+  dialog.onkeydown = (e) => {
+    switch (e.key) {
+    case "Enter":
+      setId();
+      return;
     }
-  });
+  }
 }
 
 async function fetchSheet(spreadsheetId, sheetName) {
@@ -142,27 +135,26 @@ async function fetch2ColumnSheet(spreadsheetId, sheetName, opt_startRowIndex) {
 }
 
 async function fetchSettings() {
-  let spreadsheetId = await getSettingsSpreadsheetId();
-  document.getElementById('settings').href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
-  let [settings, queuedLabelMap] = await Promise.all([
+  let settingsLink = document.getElementById('settings');
+
+  let spreadsheetId = localStorage.spreadsheetId;
+  if (!spreadsheetId) {
+    settingsLink.textContent = 'Setup settings';
+    settingsLink.onclick = (e) => {
+      e.preventDefault();
+      this.showSetupDialog();
+    };
+    return;
+  }
+
+  settingsLink.textContent = 'Settings';
+  settingsLink.href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
+  let [settings_, queuedLabelMap] = await Promise.all([
     fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1),
     fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1),
   ]);
-  settings.spreadsheetId = await getSettingsSpreadsheetId();
-  settings.queuedLabelMap = queuedLabelMap;
-  settings_ = settings;
-}
-
-async function getSettings() {
-  // Make sure to fetch settings only once in the case that we call getSettings
-  // in multiple places while awaiting the fetchSettings network request.
-  if (settingsPromise_) {
-    await settingsPromise_;
-  } else if (!settings_) {
-    settingsPromise_ = fetchSettings();
-    await settingsPromise_;
-  }
-  return settings_;
+  settings_.spreadsheetId = spreadsheetId;
+  settings_.queuedLabelMap = queuedLabelMap;
 }
 
 async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
@@ -177,8 +169,8 @@ async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
 }
 
 async function viewThreadAtATime(threads) {
-  let settings = await getSettings();
-  let blockedLabel = addQueuedPrefix(settings, BLOCKED_LABEL_SUFFIX);
+  let blockedLabel = settings_ && addQueuedPrefix(settings_, BLOCKED_LABEL_SUFFIX);
+  let vacationSubject = settings_ && settings_.vacation_subject;
 
   let threadList = new ThreadList();
   for (let thread of threads) {
@@ -186,11 +178,11 @@ async function viewThreadAtATime(threads) {
   }
 
   let timeout = 20;
-  if (settings.timeout > 0)
-    timeout = settings.timeout;
+  if (settings_ && settings_.timeout > 0)
+    timeout = settings_.timeout;
 
-  let allowedReplyLength = settings.allowed_reply_length || 280;
-  setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_, !settings.vacation_subject));
+  let allowedReplyLength = (settings_ && settings_.allowed_reply_length) || 280;
+  setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_, !vacationSubject));
 }
 
 async function viewAll(threads) {
@@ -235,7 +227,11 @@ async function updateTitle(key, opt_title, opt_needsLoader) {
   document.getElementById('title').textContent = title;
 
   let needsLoader = titleStack_.findIndex((item) => item.needsLoader) != -1;
-  document.getElementById('loader').style.display = needsLoader ? 'inline-block' : 'none';
+  showLoader(needsLoader);
+}
+
+function showLoader(show) {
+  document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
 }
 
 document.body.addEventListener('keydown', async (e) => {
@@ -329,26 +325,27 @@ async function fetchThreads(label, forEachThread, options) {
 }
 
 async function addThread(thread) {
-  let settings = await getSettings();
-  if (settings.vacation_subject) {
+  if (settings_ && settings_.vacation_subject) {
     let subject = await thread.getSubject();
-    if (!subject.toLowerCase().includes(settings.vacation_subject.toLowerCase()))
+    if (!subject.toLowerCase().includes(settings_.vacation_subject.toLowerCase()))
       return;
   }
   await currentView_.push(thread);
 }
 
 async function updateThreadList() {
-  let [settings] = await Promise.all([getSettings(), updateLabelList(), viewAll([])]);
+  showLoader(true);
+
+  await Promise.all([fetchSettings(), updateLabelList(), viewAll([])]);
   let vacationQuery;
-  if (settings.vacation_subject) {
-    vacationQuery = `subject:${settings.vacation_subject}`;
+  if (settings_ && settings_.vacation_subject) {
+    vacationQuery = `subject:${settings_.vacation_subject}`;
     updateTitle('vacation', `Only showing threads with ${vacationQuery}`);
   }
 
   updateTitle('updateThreadList', 'Fetching threads to triage...', true);
 
-  let labels = await getTheadCountForLabels(settings, isLabelToTriage);
+  let labels = await getTheadCountForLabels(isLabelToTriage);
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
   labelsToFetch.sort(LabelUtils.compareLabels);
 
@@ -396,7 +393,10 @@ async function processMail() {
   isProcessingMail = true;
   updateTitle('processMail', 'Processing mail backlog...', true);
 
-  let mailProcessor = new MailProcessor(await getSettings(), addThread);
+  if (!settings_)
+    return;
+
+  let mailProcessor = new MailProcessor(settings_, addThread);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
@@ -438,23 +438,30 @@ async function updateLabelList() {
   }
 }
 
-function isLabelToTriage(settings, labelId, labelName) {
-  let metaLabels = [TRIAGED_LABEL, settings.labeler_implementation_label, settings.unprocessed_label];
-  if (metaLabels.includes(labelName) ||
-      labelName.startsWith(TRIAGED_LABEL + '/') ||
-      labelName.startsWith(settings.labeler_implementation_label + '/')) {
+function isLabelToTriage(labelId, labelName) {
+  let metaLabels = [TRIAGED_LABEL];
+
+  if (settings_) {
+    metaLabels.push(settings_.labeler_implementation_label)
+    metaLabels.push(settings_.unprocessed_label);
+  }
+
+  if (metaLabels.includes(labelName) || labelName.startsWith(TRIAGED_LABEL + '/')) {
     return false;
   }
+
+  if (settings_ && labelName.startsWith(settings_.labeler_implementation_label + '/'))
+    return false;
 
   let isUserLabel = labelId.startsWith('Label_');
   return isUserLabel;
 }
 
-async function getTheadCountForLabels(settings, labelFilter) {
+async function getTheadCountForLabels(labelFilter) {
   let batch = gapi.client.newBatch();
 
   for (let id in g_labels.idToLabel) {
-    if (labelFilter(settings, id, g_labels.idToLabel[id])) {
+    if (labelFilter(id, g_labels.idToLabel[id])) {
       batch.add(gapi.client.gmail.users.labels.get({
         userId: USER_ID,
         id: id,
