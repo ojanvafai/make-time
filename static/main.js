@@ -230,7 +230,9 @@ async function updateTitle(key, opt_title, opt_needsLoader) {
       needsLoader: !!opt_needsLoader,
     });
   } else {
-    titleStack_[index] = opt_title;
+    let entry = titleStack_[index];
+    entry.title = opt_title;
+    entry.needsLoader = !!opt_needsLoader;
   }
 
   let title = titleStack_.length ? titleStack_[titleStack_.length - 1].title : '';
@@ -373,6 +375,10 @@ async function updateThreadList() {
   }
 
   updateTitle('updateThreadList');
+  // Don't want to show the earlier title, but still want to indicate loading is happening.
+  // since we're going to processMail still. It's a less jarring experience if the loading
+  // spinner doesn't go away and then come back when conteacts are done being fetched.
+  showLoader(true);
 
   await fetchContacts(gapi.auth.getToken());
   await processMail();

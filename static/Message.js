@@ -56,7 +56,20 @@ class Message {
 
   getPlain() {
     this.parseMessageBody_();
-    return this.plain_;
+    if (this.plain_)
+      return this.plain_;
+
+    if (!this.plainedHtml_) {
+      if (!this.html_)
+        throw `Message is missing both plain text and html email bodies. Message id: ${this.id}`;
+
+      // Extract the text out of the HTML content.
+      let div = document.createElement('div');
+      div.innerHTML = this.html_;
+      this.plainedHtml_ = div.textContent;
+    }
+
+    return this.plainedHtml_;
   }
 
   getHtml() {
