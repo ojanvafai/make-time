@@ -178,7 +178,8 @@ async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
 }
 
 async function viewThreadAtATime(threads) {
-  let blockedLabel = settings_ && addQueuedPrefix(settings_, BLOCKED_LABEL_SUFFIX);
+  // Blocking only works if a settings spreadsheet has been created.
+  let blockedLabel = settings_ && addQueuedPrefix(BLOCKED_LABEL_SUFFIX);
   let vacationSubject = settings_ && settings_.vacation_subject;
 
   let threadList = new ThreadList();
@@ -454,18 +455,11 @@ async function updateLabelList() {
 }
 
 function isLabelToTriage(labelId, labelName) {
-  let metaLabels = [TRIAGED_LABEL];
+  let metaLabels = [TRIAGED_LABEL, LABELER_PREFIX, UNPROCESSED_LABEL];
 
-  if (settings_) {
-    metaLabels.push(settings_.labeler_implementation_label)
-    metaLabels.push(settings_.unprocessed_label);
-  }
-
-  if (metaLabels.includes(labelName) || labelName.startsWith(TRIAGED_LABEL + '/')) {
-    return false;
-  }
-
-  if (settings_ && labelName.startsWith(settings_.labeler_implementation_label + '/'))
+  if (metaLabels.includes(labelName) ||
+      labelName.startsWith(TRIAGED_LABEL + '/') ||
+      labelName.startsWith(LABELER_PREFIX + '/'))
     return false;
 
   let isUserLabel = labelId.startsWith('Label_');

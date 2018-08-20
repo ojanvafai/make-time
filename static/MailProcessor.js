@@ -14,6 +14,8 @@ const MONTHLY = 'Monthly';
 const DAILY = 'Daily';
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+let ARCHIVE_KEYWORD = 'archive';
+
 // TODO: Move these to the config spreadsheet.
 TRIAGER_LABELS = {
   triaged: 'triaged',
@@ -91,7 +93,7 @@ class MailProcessor {
 
   addLabelPrefix(labelName) {
     if (this.settings.queuedLabelMap[labelName])
-      return addQueuedPrefix(this.settings, labelName);
+      return addQueuedPrefix(labelName);
     return this.addAutoPrefix(labelName);
   }
 
@@ -123,8 +125,8 @@ class MailProcessor {
         case TRIAGER_LABELS.needsTriage:
           labels.push(label.id);
           break;
-        case this.settings.labeler_implementation_label:
-          if (parts.length > 2 && parts[1] == this.settings.queued_label)
+        case LABELER_PREFIX:
+          if (parts.length > 2 && parts[1] == QUEUED_PREFIX)
             labels.push(label.id);
           break;
         case TRIAGER_LABELS.triaged:
@@ -332,7 +334,7 @@ class MailProcessor {
       var labelCounts = JSON.parse(rows[i][3]);
       for (var label in labelCounts) {
         var count = labelCounts[label];
-        if (label == this.settings.archive_label) {
+        if (label == ARCHIVE_KEYWORD) {
           stats.ignoredThreads += count;
         } else {
           stats.nonIgnoredThreads += count;
@@ -423,7 +425,7 @@ class MailProcessor {
     }
 
     // Ensure there's always some label to make sure bugs don't cause emails to get lost silently.
-    return this.settings.fallback_label;
+    return FALLBACK_LABEL;
   }
 
   async currentTriagedLabel(thread) {
@@ -437,7 +439,7 @@ class MailProcessor {
 
   async processMail() {
     let threads = [];
-    await fetchThreads(this.settings.unprocessed_label, thread => threads.push(thread));
+    await fetchThreads(UNPROCESSED_LABEL, thread => threads.push(thread));
 
     if (!threads.length)
       return;
@@ -451,15 +453,7 @@ class MailProcessor {
 
     let newlyLabeledThreadsCount = 0;
     let perLabelCounts = {};
-
-    let processedLabelId;
-    if (this.settings.processed_label) {
-      this.debugLog(
-        'Adding processed_label ' + this.settings.processed_label + ' to all threads.');
-      processedLabelId = await getLabelId(this.settings.processed_label);
-    }
-
-    let unprocessedLabelId = await getLabelId(this.settings.unprocessed_label);
+    let unprocessedLabelId = await getLabelId(UNPROCESSED_LABEL);
 
     for (var i = 0; i < threads.length; i++) {
       try {
@@ -470,8 +464,6 @@ class MailProcessor {
 
         let removeLabelIds = [unprocessedLabelId];
         let addLabelIds = [];
-        if (processedLabelId)
-          addLabelIds.push(processedLabelId);
 
         // Triaged items when reprocessed go in the rtriage queue regardless of what label they
         // might otherwise go in.
@@ -490,7 +482,7 @@ class MailProcessor {
         let alreadyHadLabel = false;
         let isAlreadyInInbox = thread.isInInbox();
 
-        if (labelName == this.settings.archive_label) {
+        if (labelName == ARCHIVE_KEYWORD) {
           if (thread.isInInbox())
             removeLabelIds.push('INBOX');
           else
@@ -518,7 +510,7 @@ class MailProcessor {
           addLabelIds.push(prefixedLabelId);
           removeLabelIds = removeLabelIds.concat(labelIdsToRemove.filter(id => id != prefixedLabelId));
 
-          if (prefixedLabelName != addQueuedPrefix(this.settings, labelName))
+          if (prefixedLabelName != addQueuedPrefix(labelName))
             addLabelIds.push('INBOX');
         }
 
@@ -551,7 +543,7 @@ class MailProcessor {
   }
 
   async dequeue(labelName, queue) {
-    var queuedLabelName = addQueuedPrefix(this.settings, labelName);
+    var queuedLabelName = addQueuedPrefix(labelName);
     var queuedLabel = await getLabelId(queuedLabelName);
     var autoLabel = await getLabelId(this.dequeuedLabelName(queue, labelName));
 

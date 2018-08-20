@@ -2,8 +2,11 @@
 let LabelUtils = {};
 
 // TODO: Move these into LabelUtils properly.
-var TRIAGED_LABEL = 'triaged';
-var TO_TRIAGE_LABEL = 'needstriage';
+let TRIAGED_LABEL = 'triaged';
+let TO_TRIAGE_LABEL = 'needstriage';
+
+let LABELER_PREFIX = 'labeler';
+let QUEUED_PREFIX = 'queued';
 
 function triagerLabel(labelName) {
   return `${TRIAGED_LABEL}/${labelName}`;
@@ -19,19 +22,21 @@ function needsTriageLabel(labelName) {
   return `${TO_TRIAGE_LABEL}/${labelName}`;
 }
 
-function addLabelerPrefix(settings, labelName) {
-  return settings.labeler_implementation_label + '/' + labelName;
+function addLabelerPrefix(labelName) {
+  return LABELER_PREFIX + '/' + labelName;
 }
 
-function addQueuedPrefix(settings, labelName) {
-  return this.addLabelerPrefix(settings, settings.queued_label + "/" + labelName);
+function addQueuedPrefix(labelName) {
+  return this.addLabelerPrefix(QUEUED_PREFIX + "/" + labelName);
 }
 
-var READ_LATER_LABEL = triagerLabel('tldr');
-var NEEDS_REPLY_LABEL = triagerLabel('needsreply');
-var BLOCKED_LABEL_SUFFIX = 'blocked';
-var MUTED_LABEL = triagerLabel('supermuted');
-var ACTION_ITEM_LABEL = triagerLabel('actionitem');
+let UNPROCESSED_LABEL = 'unprocessed';
+let FALLBACK_LABEL = 'needsfilter';
+let READ_LATER_LABEL = triagerLabel('tldr');
+let NEEDS_REPLY_LABEL = triagerLabel('needsreply');
+let BLOCKED_LABEL_SUFFIX = 'blocked';
+let MUTED_LABEL = triagerLabel('supermuted');
+let ACTION_ITEM_LABEL = triagerLabel('actionitem');
 
 (function() {
 
