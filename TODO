@@ -9,6 +9,7 @@ P1: Will try to do soonish.
 - Include "XXX wrote" prefixes in quote eliding
 
 P2: Will only do if something makes these seem worth doing.
+- Give a way to show the email headers so that people can easily write filters based off the headers.
 - updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there. Hard to reproduce. :(
 - "Re: Ping on get-originals?" thread is a good one for performance overhead of message processing. Half the time is base64 decoding and half is eliding quotes. Takes 1 second doing message processing, but rendering is very fast. Could render messages incrementally starting with the one right before the earliest unread one, then render all the remaining unread ones, then render the read ones. Mostly this is hidden by prefetching.
 - Put links for downloading attachments.
@@ -17,7 +18,6 @@ P2: Will only do if something makes these seem worth doing.
 - Once the triage is done, allow picking which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
 - When updating messages, update the unread state even for old messages since that might have changed.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
-- Add the ability to filter over arbitrary email headers (e.g. instead of allowing filtering over the sender header, allow sender:foo to filter over sender header, list-id:bar to filter over the list-id header, etc. Also, give a way to show the email headers so that people can easily write filters based off the headers.
 - sort by date withing a given queue, with a setting for sort order
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Add keyboard shortcuts for Vueue mode. j/k/x next/previous/toggle

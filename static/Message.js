@@ -21,9 +21,6 @@ class Message {
         this.fromEmails = this.extractEmails_(this.from);
         this.fromName = this.extractName_(this.from);
         break;
-      case 'Sender':
-        this.sender = this.extractEmails_(header.value);
-        break;
       case 'To':
         this.to = this.cleanseAddresses_(header.value);
         this.toEmails = this.extractEmails_(this.to);
@@ -45,6 +42,15 @@ class Message {
     }
     }
     this.isUnread = message.labelIds.includes('UNREAD');
+  }
+
+  getHeaderValue(name) {
+    name = name.toLowerCase();
+    for (var header of this.rawMessage_.payload.headers) {
+      if (header.name.toLowerCase().includes(name))
+        return header.value;
+    }
+    return null;
   }
 
   cleanseAddresses_(str) {

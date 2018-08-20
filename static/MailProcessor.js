@@ -362,6 +362,18 @@ class MailProcessor {
     updateTitle('collapseStats');
   }
 
+  matchesHeader_(message, header) {
+    let colonIndex = header.indexOf(':');
+    if (colonIndex == -1) {
+      alert(`Invalid header filter. Header filters must be of the form headername:filtervalue.`);
+      return false;
+    }
+    let name = header.substring(0, colonIndex);
+    let value = header.substring(colonIndex + 1).toLowerCase();
+    let headerValue = message.getHeaderValue(name);
+    return headerValue && headerValue.toLowerCase().includes(value);
+  }
+
   matchesRule(rule, message) {
     var matches = false;
     if (rule.to) {
@@ -376,8 +388,8 @@ class MailProcessor {
         return false;
       matches = true;
     }
-    if (rule.sender) {
-      if (!this.containsAddress(message.sender, rule.sender))
+    if (rule.header) {
+      if (!this.matchesHeader_(message, rule.header))
         return false;
       matches = true;
     }
