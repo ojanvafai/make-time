@@ -39,10 +39,6 @@ class MailProcessor {
     this.pushThread_ = pushThread;
   }
 
-  hasWhiteSpace(str) {
-    return /\s/g.test(str);
-  }
-
   endsWithAddress(addresses, filterAddress) {
     for (var j = 0; j < addresses.length; j++) {
       if (addresses[j].endsWith(filterAddress))
@@ -151,8 +147,6 @@ class MailProcessor {
     var ruleNames = rawRules[0];
     var labelColumn = ruleNames.indexOf('label');
 
-    var noWhiteSpaceValues = this.settings.no_white_space_fields.split(',');
-
     for (var i = 1, l = rawRules.length; i < l; i++) {
       var ruleObj = {};
       for (var j = 0; j < ruleNames.length; j++) {
@@ -160,12 +154,9 @@ class MailProcessor {
         var value = rawRules[i][j];
         if (j == labelColumn)
           labels[value] = true;
-
-        if (noWhiteSpaceValues.includes(name)) {
-          if (this.hasWhiteSpace(value))
-            throw "Rule in row" + (i + 1) + " has disallowed whitespace for field '" + name + "' with value '" + value + "'";
-        }
-        ruleObj[name] = value;
+        if (!value)
+          continue;
+        ruleObj[name] = value.trim();
       }
       rules.push(ruleObj);
     }
@@ -378,7 +369,7 @@ class MailProcessor {
         return false;
       matches = true;
     }
-    if (rule.fromEmails) {
+    if (rule.from) {
       if (!this.containsAddress(message.fromEmails, rule.from))
         return false;
       matches = true;
