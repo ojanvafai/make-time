@@ -36,9 +36,6 @@ class Message {
       case 'Message-ID':
         this.messageId = header.value;
         break;
-      case 'X-Autoreply':
-        this.xAutoreply = header.value;
-        break;
     }
     }
     this.isUnread = message.labelIds.includes('UNREAD');

@@ -415,9 +415,6 @@ class MailProcessor {
   async processThread(thread, rules) {
     var messages = await thread.getMessages();
 
-    if (this.settings.auto_responder_label && messages.length == 1 && messages[0].xAutoreply)
-      return this.settings.auto_responder_label;
-
     for (let rule of rules) {
       if (rule.matchallmessages == 'yes') {
         let matches = false;
