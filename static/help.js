@@ -27,6 +27,8 @@ function helpText() {
 
   helpHtml_ = `make-time is an opinionated way of handling the unreasonable amounts of email. Patches welcome, but otherwise, I built it for me and it does what I want. :) That said, feature requests are also welcome because maybe you'll think of something I want that I don't have, e.g. that's how we got quick reply.
 
+<span style="color: red">This is a side project. While I rely on it for my day to day email, you might not want to. It has bugs. They may be hard to deal with if you're not willing to dig into the code when they happen. Did I mention patches welcome? :)</span>
+
 There are two aspects to make-time: <b>triage</b> and <b>filtering</b>. Filtering is optional and requires more setup (e.g. moving your gmail filters into a spreadsheet), but some features only work with filtering setup (e.g. Blocked) and the triage generally assumes the filtering. Namely, all the triage actions will mark a thread as read, remove it from the inbox, and remove the current label. If there are multiple labels, it will only remove one of them. The filtering is built in such a way that every thread gets exactly one label.
 
 <b style="font-size:120%">Triage</b>
