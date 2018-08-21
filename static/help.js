@@ -10,8 +10,10 @@ function showHelp() {
   closeButton.classList.add('close-button');
   closeButton.style.cssText = `
     float: right;
+    margin-top: -14px;
+    margin-right: -10px;
   `;
-  closeButton.onclick = () => dialog.remove();
+  closeButton.onclick = () => dialog.close();
   contents.prepend(closeButton);
 }
 

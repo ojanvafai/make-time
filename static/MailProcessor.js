@@ -5,10 +5,6 @@ const FILTERS_SHEET_NAME = 'filters';
 const QUEUED_LABELS_SHEET_NAME = 'queued_labels';
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
-const BACKEND_SHEET_NAME = 'backend-do-not-modify';
-const LAST_DEQUEUE_TIME_KEY = 'Last dequeue time';
-// List of keys stored in the backend sheet.
-const BACKEND_KEYS = [LAST_DEQUEUE_TIME_KEY];
 
 const MONTHLY = 'Monthly';
 const DAILY = 'Daily';
@@ -194,20 +190,6 @@ class MailProcessor {
       values: rows,
     };
     let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.append, requestParams, requestBody);
-    // TODO: Handle if response.status != 200.
-  }
-
-  async write2ColumnSheet(sheetName, rows) {
-    let rowCount = Object.keys(rows).length;
-    let requestParams = {
-      spreadsheetId: this.settings.spreadsheetId,
-      range: sheetName + '!A1:B' + rowCount,
-      valueInputOption: 'RAW',
-    };
-    let requestBody = {
-      values: rows,
-    };
-    let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.update, requestParams, requestBody);
     // TODO: Handle if response.status != 200.
   }
 
@@ -492,11 +474,8 @@ class MailProcessor {
         let isAlreadyInInbox = thread.isInInbox();
 
         if (labelName == ARCHIVE_KEYWORD) {
-          if (thread.isInInbox())
-            removeLabelIds.push('INBOX');
-          else
-            alreadyHadLabel = true;
           removeLabelIds = removeLabelIds.concat(labelIdsToRemove);
+          removeLabelIds.push('INBOX');
         } else {
           let prefixedLabelName;
 
@@ -630,14 +609,9 @@ class MailProcessor {
 
   async processQueues() {
     this.debugLog('Fetching backend sheet to process queues.');
-    const rawBackendValues = await fetch2ColumnSheet(this.settings.spreadsheetId, BACKEND_SHEET_NAME);
-    const backendValues = {};
-    // Strip no longer supported backend keys.
-    for (let i = 0; i < BACKEND_KEYS.length; i++) {
-      const key = BACKEND_KEYS[i];
-      backendValues[key] = rawBackendValues[key];
-    }
-    const lastDequeueTime = backendValues[LAST_DEQUEUE_TIME_KEY];
+    let storage = new ServerStorage(this.settings.spreadsheetId);
+    await storage.fetch();
+    let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
     const categories = this.categoriesToDequeue(lastDequeueTime);
 
     if (!categories.length)
@@ -650,9 +624,7 @@ class MailProcessor {
       await this.processSingleQueue(category);
     }
 
-    backendValues[LAST_DEQUEUE_TIME_KEY] = Date.now();
-    this.write2ColumnSheet(BACKEND_SHEET_NAME, Object.entries(backendValues))
-
+    await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_DEQUEUE_TIME, value: Date.now()}]);
     this.logTiming(`Finished dequeueing ${categories}`, startTime);
   }
 

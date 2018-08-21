@@ -90,37 +90,19 @@ function showDialog(contents) {
     max-height: 85%;
     position: fixed;
     overflow: auto;
+    top: 15%;
   `;
+  dialog.addEventListener('close', () => dialog.remove());
+
   dialog.append(contents);
   document.body.append(dialog);
+
   dialog.showModal();
   return dialog;
 }
 
-function showSetupDialog() {
-  let setId = () => {
-    let url = document.getElementById('settings-url').value;
-    // Spreadsheets URLS are of the form
-    // https://docs.google.com/spreadsheets[POSSIBLE_STUFF_HERE]/d/[ID_HERE]/[POSSIBLE_STUFF_HERE]
-    let id = url.split('/d/')[1].split('/')[0];
-    localStorage.spreadsheetId = id;
-    window.location.reload();
-  }
-
-  let contents = document.createElement('div');
-  contents.innerHTML = `Insert the URL of your settings spreadsheet. If you don't have one, go to <a href="//goto.google.com/make-time-settings" target="blank">go/make-time-settings</a>, create a copy of it, and then use the URL of the new spreadsheet.<br>
-<input id="settings-url" style="width: 100%">
-<button style="float:right">Submit and reload</button>`;
-
-  let dialog = showDialog(contents);
-  dialog.querySelector('button').onclick = setId;
-  dialog.onkeydown = (e) => {
-    switch (e.key) {
-    case "Enter":
-      setId();
-      return;
-    }
-  }
+function showSettings() {
+  let view = new SettingsView(settings_);
 }
 
 async function fetchSheet(spreadsheetId, sheetName) {
@@ -145,27 +127,6 @@ async function fetch2ColumnSheet(spreadsheetId, sheetName, opt_startRowIndex) {
   return result;
 }
 
-async function fetchSettings() {
-  let settingsLink = document.getElementById('settings');
-
-  let spreadsheetId = localStorage.spreadsheetId;
-  if (!spreadsheetId) {
-    settingsLink.textContent = 'Setup settings';
-    settingsLink.onclick = this.showSetupDialog.bind(this);
-    return;
-  }
-
-  settingsLink.textContent = 'Settings';
-  settingsLink.href = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`;
-  let [settings, queuedLabelMap] = await Promise.all([
-    fetch2ColumnSheet(spreadsheetId, CONFIG_SHEET_NAME, 1),
-    fetch2ColumnSheet(spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1),
-  ]);
-  settings.spreadsheetId = spreadsheetId;
-  settings.queuedLabelMap = queuedLabelMap;
-  settings_ = settings;
-}
-
 async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
   await viewThreadAtATime(threadsToTriage);
 
@@ -178,21 +139,16 @@ async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
 }
 
 async function viewThreadAtATime(threads) {
-  // Blocking only works if a settings spreadsheet has been created.
-  let blockedLabel = settings_ && addQueuedPrefix(BLOCKED_LABEL_SUFFIX);
-  let vacationSubject = settings_ && settings_.vacation_subject;
-
   let threadList = new ThreadList();
   for (let thread of threads) {
     await threadList.push(thread);
   }
 
-  let timeout = 20;
-  if (settings_ && settings_.timeout > 0)
-    timeout = settings_.timeout;
-
-  let allowedReplyLength = (settings_ && settings_.allowed_reply_length) || 280;
-  setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_, !vacationSubject));
+  let blockedLabel = addQueuedPrefix(BLOCKED_LABEL_SUFFIX);
+  let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
+  let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+  let showSummary = !settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
+  setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_, !showSummary));
 }
 
 async function viewAll(threads) {
@@ -343,9 +299,10 @@ async function fetchThreads(label, forEachThread, options) {
 }
 
 async function addThread(thread) {
-  if (settings_ && settings_.vacation_subject) {
+  let vacationSubject = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
+  if (vacationSubject) {
     let subject = await thread.getSubject();
-    if (!subject.toLowerCase().includes(settings_.vacation_subject.toLowerCase()))
+    if (!subject.toLowerCase().includes(vacationSubject.toLowerCase()))
       return;
   }
   await currentView_.push(thread);
@@ -354,10 +311,16 @@ async function addThread(thread) {
 async function updateThreadList() {
   showLoader(true);
 
-  await Promise.all([fetchSettings(), updateLabelList(), viewAll([])]);
+  settings_ = new Settings();
+  await Promise.all([settings_.fetch(), updateLabelList(), viewAll([])]);
+
+  let settingsLink = document.getElementById('settings');
+  settingsLink.textContent = 'Settings';
+  settingsLink.onclick = showSettings;
+
   let vacationQuery;
-  if (settings_ && settings_.vacation_subject) {
-    vacationQuery = `subject:${settings_.vacation_subject}`;
+  if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)) {
+    vacationQuery = `subject:${settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)}`;
     updateTitle('vacation', `Only showing threads with ${vacationQuery}`);
   }
 
@@ -414,9 +377,6 @@ async function processMail() {
 
   isProcessingMail = true;
   updateTitle('processMail', 'Processing mail backlog...', true);
-
-  if (!settings_)
-    return;
 
   let mailProcessor = new MailProcessor(settings_, addThread);
   await mailProcessor.processMail();

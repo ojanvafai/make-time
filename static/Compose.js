@@ -12,6 +12,7 @@ class Compose extends HTMLElement {
       overflow: hidden;
       border: 1px solid;
       padding: 8px;
+      word-break: break-word;
     `;
     this.content_.contentEditable = 'plaintext-only';
     this.content_.addEventListener('blur', this.cancelAutocomplete_.bind(this));

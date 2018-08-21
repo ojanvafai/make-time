@@ -12,10 +12,7 @@ class ThreadView extends HTMLElement {
     this.contacts_ = contacts;
     this.showSummary_ = showSummary;
 
-    if (blockedLabel) {
-      ThreadView.BLOCKED_ACTION.destination = blockedLabel;
-      ThreadView.BLOCKED_ACTION.disabled = false;
-    }
+    ThreadView.BLOCKED_ACTION.destination = blockedLabel;
 
     this.subject_ = document.createElement('div');
     this.gmailLink_ = document.createElement('a');
@@ -113,9 +110,6 @@ class ThreadView extends HTMLElement {
       let action = ThreadView.ACTIONS[key];
       let button = document.createElement('button');
       button.tooltip = action.description;
-
-      if (action.disabled)
-        button.style.color = 'grey';
 
       button.onclick = () => this.takeAction_(action);
       button.onmouseenter = () => {
@@ -243,11 +237,6 @@ class ThreadView extends HTMLElement {
   };
 
   async takeAction_(action) {
-    if (action.disabled) {
-      alert('This action only works if you have setup settings. Click "Setup settings" in the top-right to enable.');
-      return;
-    }
-
     // Don't want key presses inside the quick reply to trigger actions, but
     // also don't want to trigger actions if the quick reply is accidentally blurred.
     if (this.quickReplyOpen_)
@@ -659,7 +648,6 @@ ThreadView.QUICK_REPLY_ACTION = {
 ThreadView.BLOCKED_ACTION = {
   name: 'Blocked',
   description: `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
-  disabled: true,
 };
 
 ThreadView.MUTE_ACTION = {
