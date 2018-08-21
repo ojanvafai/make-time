@@ -368,9 +368,9 @@ class MailProcessor {
       alert(`Invalid header filter. Header filters must be of the form headername:filtervalue.`);
       return false;
     }
-    let name = header.substring(0, colonIndex);
-    let value = header.substring(colonIndex + 1).toLowerCase();
-    let headerValue = message.getHeaderValue(name);
+    let name = header.substring(0, colonIndex).trim();
+    let value = header.substring(colonIndex + 1).toLowerCase().trim();
+    let headerValue = message.getHeaderValue(name).trim();
     return headerValue && headerValue.toLowerCase().includes(value);
   }
 
