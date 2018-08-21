@@ -370,8 +370,8 @@ class MailProcessor {
     }
     let name = header.substring(0, colonIndex).trim();
     let value = header.substring(colonIndex + 1).toLowerCase().trim();
-    let headerValue = message.getHeaderValue(name).trim();
-    return headerValue && headerValue.toLowerCase().includes(value);
+    let headerValue = message.getHeaderValue(name);
+    return headerValue && headerValue.toLowerCase().trim().includes(value);
   }
 
   matchesRule(rule, message) {
