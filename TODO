@@ -1,4 +1,6 @@
 P1: Will try to do soonish.
+- Make filter settings UI as a precursor to having task tracking.
+- Show the triage queues in the Vueue when there is nothing to triage.
 - Consider changing all the labels to be make-time prefixed? Then can be sure that only make-time labels are touched aside from archiving things.
 - Create a Spreadsheet class or a spreadsheet utils container to put the spreadsheet methods into.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.

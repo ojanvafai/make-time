@@ -1,47 +1,396 @@
 class Settings {
   async fetch() {
-    if (!localStorage.spreadsheetId)
-      await this.showSetupDialog_();
-
-    this.spreadsheetId = localStorage.spreadsheetId;
+    this.spreadsheetId = await this.getSpreadsheetId_();
     this.storage_ = new ServerStorage(this.spreadsheetId);
     await this.storage_.fetch();
+  }
 
-    this.queuedLabelMap = await fetch2ColumnSheet(this.spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
+  async getSpreadsheetId_() {
+    if (localStorage.spreadsheetId)
+      return localStorage.spreadsheetId;
+
+    let response = await gapi.client.drive.files.list({
+      q: "trashed=false and name='make-time backend (do not rename!)'",
+      spaces: 'drive',
+    });
+
+    if (!response.result.files.length)
+      await this.showSetupDialog_();
+
+    return response.result.files[0].id;
   }
 
   async showSetupDialog_() {
     return new Promise((resolve, reject) => {
-      let setId = () => {
-        let url = document.getElementById('settings-url').value;
-        // Spreadsheets URLS are of the form
-        // https://docs.google.com/spreadsheets[POSSIBLE_STUFF_HERE]/d/[ID_HERE]/[POSSIBLE_STUFF_HERE]
-        let id = url.split('/d/')[1].split('/')[0];
-        localStorage.spreadsheetId = id;
-        resolve();
+      let generateBackendLink = document.createElement('a');
+      generateBackendLink.append('Click here to generate a backend spreadsheet');
+      generateBackendLink.onclick = async () => {
+        let spreadsheetId = await this.generateSpreadsheet();
+        localStorage.spreadsheetId = spreadsheetId;
         dialog.close();
-      }
+        window.location.reload();
+      };
 
       let contents = document.createElement('div');
-      contents.innerHTML = `make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage.
-
-  To create a settings spreadsheet:
-    1. Go to <a href="//goto.google.com/make-time-settings" target="blank">go/make-time-settings</a>
-    2. Create a copy of it
-    3. Paste in the URL of the new spreadsheet (the copy!) below.
-
-  You'll need to do step 3 anytime you're using make-time on a new computer since the spreadsheet URL is stored locally in your browser.
-
-  <div style="display: flex"><b>Spreadsheet URL: </b> <input id="settings-url" style="flex: 1"></div>
-  <button style="float:right">Submit</button>`;
+      contents.append(`make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage. `, generateBackendLink);
 
       let dialog = showDialog(contents);
       dialog.style.whiteSpace = 'pre-wrap';
-      dialog.querySelector('button').onclick = setId;
       dialog.oncancel = () => {
         alert(`Make-time requires a settings spreadsheet to function.`);
         window.location.reload();
       };
+    });
+  }
+
+  disconnectSettingsBackend() {
+    delete localStorage.spreadsheetId;
+    window.location.reload();
+  }
+
+  async generateSpreadsheet() {
+    let response = await gapi.client.sheets.spreadsheets.create({},
+      {"properties": {"title": 'make-time backend (do not rename!)'}
+    });
+    let spreadsheetId = response.result.spreadsheetId;
+    let spreadheetUrl = response.result.spreadsheetUrl;
+
+    let addSheetRequests = [];
+    for (let i = 0; i < Settings.sheetData_.length; i++) {
+      let data = Settings.sheetData_[i];
+      addSheetRequests.push({addSheet: {properties: {title: data.name}}});
+    }
+    addSheetRequests.push({deleteSheet: {sheetId: 0}});
+
+    let addSheetsResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: spreadsheetId,
+      resource: {requests: addSheetRequests},
+    });
+
+    let sheetNameToId = {};
+
+    for (let reply of addSheetsResponse.result.replies) {
+      if (!reply.addSheet)
+        continue;
+      let properties = reply.addSheet.properties;
+      sheetNameToId[properties.title] = properties.sheetId;
+    }
+
+    let formatSheetRequests = [];
+
+    for (let i = 0; i < Settings.sheetData_.length; i++) {
+      let data = Settings.sheetData_[i];
+
+      if (!data.initialData)
+        continue;
+
+      let values = data.initialData;
+
+      var aCharCode = "A".charCodeAt(0);
+      let lastRow = values.length;
+      let lastColumn = String.fromCharCode(aCharCode + values[0].length - 1);
+      let range = `${data.name}!A1:${lastColumn}${lastRow}`;
+
+      let addDataResponse = await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: spreadsheetId,
+        range: range,
+        valueInputOption: 'USER_ENTERED',
+      }, {
+        majorDimension: 'ROWS',
+        values: values,
+      });
+
+      let sheetId = sheetNameToId[data.name];
+
+      // Bold first row
+      formatSheetRequests.push({
+        "repeatCell": {
+          "range": {
+            "sheetId": sheetId,
+            "startRowIndex": 0,
+            "endRowIndex": 1
+          },
+          "cell": {
+            "userEnteredFormat": {
+              "textFormat": {
+                "bold": true
+              }
+            }
+          },
+          "fields": "userEnteredFormat(textFormat)",
+        }
+      });
+
+      // Freeze first row
+      formatSheetRequests.push({
+        "updateSheetProperties": {
+          "properties": {
+            "sheetId": sheetId,
+            "gridProperties": {
+              "frozenRowCount": 1,
+            }
+          },
+          "fields": "gridProperties.frozenRowCount"
+        }
+      });
+
+      switch (data.name) {
+      case 'filters':
+        this.addFiltersRules_(sheetId, formatSheetRequests);
+        break;
+      case 'queued_labels':
+        this.addQueuedLabelsRules_(sheetId, formatSheetRequests);
+        break;
+      case 'daily_stats':
+        this.addDailyStatsCharts_(sheetId, formatSheetRequests);
+        break;
+      }
+    }
+
+    let formatSheetsResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: spreadsheetId,
+      resource: {requests: formatSheetRequests},
+    });
+
+    return spreadsheetId;
+  }
+
+  addFiltersRules_(sheetId, requests) {
+    // Add data validation for matchallmessages column.
+    requests.push({
+      setDataValidation: {
+        "range": {
+          "sheetId": sheetId,
+          "startRowIndex": 1,
+          "startColumnIndex": 7,
+          "endColumnIndex": 8,
+        },
+        "rule": {
+          "condition": {
+            "type": 'ONE_OF_LIST',
+            "values": [
+              {userEnteredValue: 'yes'},
+              {userEnteredValue: 'no'},
+            ],
+          },
+          "strict": true,
+          "showCustomUi": true
+        }
+      }
+    });
+  }
+
+  addQueuedLabelsRules_(sheetId, requests) {
+    // Add data validation for queue delivery time.
+    requests.push({
+      setDataValidation: {
+        "range": {
+          "sheetId": sheetId,
+          "startRowIndex": 1,
+          "startColumnIndex": 1,
+          "endColumnIndex": 2,
+        },
+        "rule": {
+          "condition": {
+            "type": 'ONE_OF_LIST',
+            "values": [
+              {userEnteredValue: 'Daily'},
+              {userEnteredValue: 'Monthly'},
+              {userEnteredValue: 'Monday'},
+              {userEnteredValue: 'Tuesday'},
+              {userEnteredValue: 'Wednesday'},
+              {userEnteredValue: 'Thursday'},
+              {userEnteredValue: 'Friday'},
+              {userEnteredValue: 'Saturday'},
+              {userEnteredValue: 'Sunday'},
+            ],
+          },
+          "strict": true,
+          "showCustomUi": true
+        }
+      }
+    });
+
+    // Add data validation for queue label names.
+    requests.push({
+      setDataValidation: {
+        "range": {
+          "sheetId": sheetId,
+          "startRowIndex": 1,
+          "startColumnIndex": 0,
+          "endColumnIndex": 1,
+        },
+        "rule": {
+          "condition": {
+            "type": 'ONE_OF_RANGE',
+            "values": [
+              {userEnteredValue: '=queued_labels!D2:D900'},
+            ],
+          },
+          "strict": false,
+          "showCustomUi": true
+        }
+      }
+    });
+  }
+
+  addDailyStatsCharts_(sheetId, requests) {
+    requests.push({
+      "addChart": {
+        "chart": {
+          "position": { "newSheet": true },
+          "spec": {
+            "basicChart": {
+              "chartType": "AREA",
+              "stackedType": "STACKED",
+              "legendPosition": "TOP_LEGEND",
+              "headerCount": 1,
+              "domains": [
+                {
+                  "domain": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 0,
+                          "endColumnIndex": 1
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "series": [
+                {
+                  "series": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 3,
+                          "endColumnIndex": 4
+                        }
+                      ]
+                    }
+                  },
+                  "targetAxis": "LEFT_AXIS"
+                },
+                {
+                  "series": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 4,
+                          "endColumnIndex": 5
+                        }
+                      ]
+                    }
+                  },
+                  "targetAxis": "LEFT_AXIS"
+                },
+                {
+                  "series": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 5,
+                          "endColumnIndex": 6
+                        }
+                      ]
+                    }
+                  },
+                  "targetAxis": "LEFT_AXIS"
+                },
+                {
+                  "series": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 6,
+                          "endColumnIndex": 7
+                        }
+                      ]
+                    }
+                  },
+                  "targetAxis": "LEFT_AXIS"
+                },
+              ],
+            }
+          },
+        }
+      }
+    });
+
+    requests.push({
+      "addChart": {
+        "chart": {
+          "position": { "newSheet": true },
+          "spec": {
+            "basicChart": {
+              "chartType": "AREA",
+              "stackedType": "STACKED",
+              "legendPosition": "TOP_LEGEND",
+              "headerCount": 1,
+              "domains": [
+                {
+                  "domain": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 0,
+                          "endColumnIndex": 1
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "series": [
+                {
+                  "series": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 2,
+                          "endColumnIndex": 3
+                        }
+                      ]
+                    }
+                  },
+                  "targetAxis": "LEFT_AXIS"
+                },
+                {
+                  "series": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 3,
+                          "endColumnIndex": 4
+                        }
+                      ]
+                    }
+                  },
+                  "targetAxis": "LEFT_AXIS"
+                },
+              ],
+            }
+          },
+        }
+      }
     });
   }
 
@@ -69,6 +418,32 @@ class Settings {
     throw `No such setting: ${setting}`;
   }
 }
+
+Settings.sheetData_ = [
+  {
+    name: 'filters',
+    initialData: [['label', 'to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header', 'matchallmessages']],
+  },
+  {
+    name: 'queued_labels',
+    initialData: [
+      ['label', 'day', '', 'Known Label Names'],
+      ['', '', '', 'blocked'],
+      ['', '', '', '=UNIQUE(filters!A2:A)'],
+    ],
+  },
+  {
+    name: 'statistics',
+    initialData: [['timestamp', 'num_threads_labelled', 'total_time', 'per_label_counts']],
+  },
+  {
+    name: 'daily_stats',
+    initialData: [['date total_threads', 'archived_threads_count', 'non_archived_threads_count', 'immediate_count', 'daily_count', 'weekly_count', 'monthly_count', 'num_invocations', 'total_running_time', 'min_running_time', 'max_running_time']],
+  },
+  {
+    name: 'backend-do-not-modify',
+  },
+];
 
 Settings.fields = [
   {

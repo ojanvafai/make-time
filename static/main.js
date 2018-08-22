@@ -1,17 +1,20 @@
 // Client ID and API key from the Developer Console
-var CLIENT_ID = '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
+let CLIENT_ID = '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
-var DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
-    "https://sheets.googleapis.com/$discovery/rest?version=v4"];
+let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
+    "https://sheets.googleapis.com/$discovery/rest?version=v4",
+    "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-var SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds';
+let SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly';
 
-var USER_ID = 'me';
+let USER_ID = 'me';
 
-var authorizeButton = document.getElementById('authorize-button');
+let QUEUED_LABELS_SHEET_NAME = 'queued_labels';
+
+let authorizeButton = document.getElementById('authorize-button');
 
 async function updateCounter(contents) {
   let counter = document.getElementById('counter');
@@ -20,7 +23,7 @@ async function updateCounter(contents) {
 }
 
 // TODO: Make this private to this file.
-var g_labels = {};
+let g_labels = {};
 let currentView_;
 let settings_;
 
@@ -378,7 +381,9 @@ async function processMail() {
   isProcessingMail = true;
   updateTitle('processMail', 'Processing mail backlog...', true);
 
-  let mailProcessor = new MailProcessor(settings_, addThread);
+  let queuedLabelMap = await fetch2ColumnSheet(settings_.spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
+
+  let mailProcessor = new MailProcessor(settings_, addThread, queuedLabelMap);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();

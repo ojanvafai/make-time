@@ -2,7 +2,6 @@ const DEBUG_LOGGING = false;
 
 const CONFIG_SHEET_NAME = 'config';
 const FILTERS_SHEET_NAME = 'filters';
-const QUEUED_LABELS_SHEET_NAME = 'queued_labels';
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
@@ -32,9 +31,10 @@ var queuePrefixMap = {
 }
 
 class MailProcessor {
-  constructor(settings, pushThread) {
+  constructor(settings, pushThread, queuedLabelMap) {
     this.settings = settings;
     this.pushThread_ = pushThread;
+    this.queuedLabelMap_ = queuedLabelMap;
   }
 
   endsWithAddress(addresses, filterAddress) {
@@ -88,7 +88,7 @@ class MailProcessor {
   }
 
   addLabelPrefix(labelName) {
-    if (this.settings.queuedLabelMap[labelName])
+    if (this.queuedLabelMap_[labelName])
       return addQueuedPrefix(labelName);
     return this.addAutoPrefix(labelName);
   }
@@ -321,7 +321,7 @@ class MailProcessor {
         } else {
           stats.nonIgnoredThreads += count;
 
-          var queuedPrefix = this.settings.queuedLabelMap[label];
+          var queuedPrefix = this.queuedLabelMap_[label];
           if (!queuedPrefix) {
             stats.immediateCount += count;
           } else if (queuedPrefix == "Daily") {
@@ -440,6 +440,11 @@ class MailProcessor {
 
     let rulesSheet = await this.readRulesRows();
 
+    // Don't do any processing if there are no rules. This happens when someone
+    // creates a new backend spreadsheet for example.
+    if (!rulesSheet.rules.length)
+      return;
+
     let labelIdsToRemove = await this.getLabelNames();
 
     let newlyLabeledThreadsCount = 0;
@@ -481,7 +486,7 @@ class MailProcessor {
 
           // Make sure not to put things into the inbox into queued labels.
           if (isAlreadyInInbox) {
-            let queue = this.settings.queuedLabelMap[labelName];
+            let queue = this.queuedLabelMap_[labelName];
             if (queue)
               prefixedLabelName = this.dequeuedLabelName(queue, labelName);
             else
@@ -555,11 +560,11 @@ class MailProcessor {
 
   async processSingleQueue(queue) {
     let threadsProcessedCount = 0;
-    let labelNames = Object.keys(this.settings.queuedLabelMap);
+    let labelNames = Object.keys(this.queuedLabelMap_);
     let start = Date.now();
     for (var i = 0; i < labelNames.length; i++) {
       let labelName = labelNames[i];
-      if (this.settings.queuedLabelMap[labelName] == queue)
+      if (this.queuedLabelMap_[labelName] == queue)
         await this.dequeue(labelName, queue);
     }
   }

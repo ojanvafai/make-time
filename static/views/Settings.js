@@ -10,6 +10,27 @@ class SettingsView extends HTMLElement {
       margin-bottom: 16px;
     `;
     title.append('Settings');
+    this.append(title);
+
+    this.addSettings_();
+
+    let save = document.createElement('button');
+    save.style.cssText = `float: right;`;
+    save.append('save');
+    save.onclick = () => this.save_();
+    this.append(save);
+
+    let cancel = document.createElement('button');
+    cancel.style.cssText = `float: right;`;
+    cancel.append('cancel');
+    cancel.onclick = () => this.cancel_();
+    this.append(cancel);
+
+    this.dialog_ = showDialog(this);
+  }
+
+  addSettings_() {
+    let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.settings_.spreadsheetId}/edit`;
 
     let filtersLinkContainer = document.createElement('div');
     filtersLinkContainer.style.cssText = `
@@ -17,10 +38,9 @@ class SettingsView extends HTMLElement {
     `;
     let filtersLink = document.createElement('a');
     filtersLink.append('Modify email filters');
-    filtersLink.href = `https://docs.google.com/spreadsheets/d/${this.settings_.spreadsheetId}/edit`;
+    filtersLink.href = spreadsheetUrl;
     filtersLinkContainer.append(filtersLink);
-
-    this.append(title, filtersLinkContainer);
+    this.append(filtersLinkContainer);
 
     for (let field of Settings.fields) {
       let label = document.createElement('label');
@@ -47,19 +67,15 @@ class SettingsView extends HTMLElement {
       this.append(label);
     }
 
-    let save = document.createElement('button');
-    save.style.cssText = `float: right;`;
-    save.append('save');
-    save.onclick = () => this.save_();
-
-    let cancel = document.createElement('button');
-    cancel.style.cssText = `float: right;`;
-    cancel.append('cancel');
-    cancel.onclick = () => this.cancel_();
-
-    this.append(save, cancel);
-
-    this.dialog_ = showDialog(this);
+    let clearBackendContainer = document.createElement('div');
+    clearBackendContainer.style.cssText = `
+      margin-bottom: 16px;
+    `;
+    let clearBackendLink = document.createElement('a');
+    clearBackendLink.append('Disconnect backend spreadsheet');
+    clearBackendLink.onclick = () => { this.settings_.disconnectSettingsBackend(); };
+    clearBackendContainer.append(clearBackendLink);
+    this.append(clearBackendContainer);
   }
 
   async save_() {

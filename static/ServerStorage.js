@@ -24,10 +24,9 @@ class ServerStorage {
   }
 
   async write2ColumnSheet_(sheetName, rows) {
-    let rowCount = Object.keys(rows).length;
     let requestParams = {
       spreadsheetId: this.spreadsheetId_,
-      range: sheetName + '!A1:B' + rowCount,
+      range: sheetName + '!A1:B' + rows.length,
       valueInputOption: 'RAW',
     };
     let requestBody = {
