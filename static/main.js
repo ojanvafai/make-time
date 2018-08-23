@@ -93,7 +93,7 @@ function showDialog(contents) {
     max-height: 85%;
     position: fixed;
     overflow: auto;
-    top: 15%;
+    top: 15px;
   `;
   dialog.addEventListener('close', () => dialog.remove());
 
@@ -219,7 +219,7 @@ document.body.addEventListener('keydown', async (e) => {
     return;
 
   if (e.key == '?') {
-    showHelp();
+    showHelp(settings_);
     return;
   }
 
@@ -320,9 +320,19 @@ async function updateThreadList() {
   settings_ = new Settings();
   await Promise.all([settings_.fetch(), updateLabelList(), viewAll([])]);
 
+  let storage = new ServerStorage(settings_.spreadsheetId);
+  if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
+    await showHelp(settings_);
+    storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
+  }
+
   let settingsLink = document.getElementById('settings');
   settingsLink.textContent = 'Settings';
   settingsLink.onclick = showSettings;
+
+  let helpLink = document.getElementById('help');
+  helpLink.textContent = 'Help';
+  helpLink.onclick = () => showHelp(settings_);
 
   let vacationQuery;
   if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)) {
@@ -348,6 +358,9 @@ async function updateThreadList() {
   // since we're going to processMail still. It's a less jarring experience if the loading
   // spinner doesn't go away and then come back when conteacts are done being fetched.
   showLoader(true);
+
+  // Wait until we've fetched all the threads before trying to process updates regularly.
+  setInterval(update, 1000 * 60);
 
   await fetchContacts(gapi.auth.getToken());
   await processMail();
@@ -400,8 +413,6 @@ function update() {
   processMail();
 }
 
-setInterval(update, 1000 * 60);
-
 window.addEventListener('offline', (e) => {
   updateTitle('offline', 'No network connection...');
 });
@@ -410,7 +421,6 @@ window.addEventListener('online', (e) => {
   updateTitle('offline');
   update();
 });
-
 
 async function updateLabelList() {
   var response = await gapiFetch(gapi.client.gmail.users.labels.list, {

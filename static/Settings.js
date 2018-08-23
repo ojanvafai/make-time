@@ -25,14 +25,14 @@ class Settings {
       let generateBackendLink = document.createElement('a');
       generateBackendLink.append('Click here to generate a backend spreadsheet');
       generateBackendLink.onclick = async () => {
-        let spreadsheetId = await this.generateSpreadsheet();
-        localStorage.spreadsheetId = spreadsheetId;
-        dialog.close();
+        generateBackendLink.textContent = 'generating...';
+        setTimeout(() => alert('Hmmm...this is taking a while, something might have gone wrong. Keep waiting a bit or reload to try again.'), 30000);
+        await this.generateSpreadsheet();
         window.location.reload();
       };
 
       let contents = document.createElement('div');
-      contents.append(`make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage. `, generateBackendLink);
+      contents.append(`make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage.\n\n`, generateBackendLink);
 
       let dialog = showDialog(contents);
       dialog.style.whiteSpace = 'pre-wrap';
@@ -41,11 +41,6 @@ class Settings {
         window.location.reload();
       };
     });
-  }
-
-  disconnectSettingsBackend() {
-    delete localStorage.spreadsheetId;
-    window.location.reload();
   }
 
   async generateSpreadsheet() {

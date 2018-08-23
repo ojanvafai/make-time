@@ -67,15 +67,10 @@ class SettingsView extends HTMLElement {
       this.append(label);
     }
 
-    let clearBackendContainer = document.createElement('div');
-    clearBackendContainer.style.cssText = `
-      margin-bottom: 16px;
-    `;
-    let clearBackendLink = document.createElement('a');
-    clearBackendLink.append('Disconnect backend spreadsheet');
-    clearBackendLink.onclick = () => { this.settings_.disconnectSettingsBackend(); };
-    clearBackendContainer.append(clearBackendLink);
-    this.append(clearBackendContainer);
+    let clearBackendInstructions = document.createElement('div');
+    clearBackendInstructions.style.cssText = `margin: 16px 0;`;
+    clearBackendInstructions.innerHTML = `To disconnect backend spreadsheet completely, delete or rename <a href=${spreadsheetUrl}>the spreadsheet itself</a>.`;
+    this.append(clearBackendInstructions);
   }
 
   async save_() {

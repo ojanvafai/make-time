@@ -1,4 +1,5 @@
 P1: Will try to do soonish.
+- Have key handling code early return if a dialog is open.
 - Make filter settings UI as a precursor to having task tracking.
 - Show the triage queues in the Vueue when there is nothing to triage.
 - Consider changing all the labels to be make-time prefixed? Then can be sure that only make-time labels are touched aside from archiving things.
