@@ -511,7 +511,7 @@ Content-Type: text/html; charset="UTF-8"
     if (!this.showSummary_)
       return;
 
-    let labels = await getTheadCountForLabels((labelId, labelName) => {
+    let labels = await getTheadCountForLabels((labelName) => {
       return labelName != MUTED_LABEL && labelName.startsWith(TRIAGED_LABEL + '/');
     });
 

@@ -430,7 +430,9 @@ class MailProcessor {
 
   async processMail() {
     let threads = [];
-    await fetchThreads(UNPROCESSED_LABEL, thread => threads.push(thread));
+    await fetchThreads(thread => threads.push(thread), {
+      query: `in:${UNPROCESSED_LABEL}`,
+    });
 
     if (!threads.length)
       return;
@@ -541,7 +543,9 @@ class MailProcessor {
     var autoLabel = await getLabelId(this.dequeuedLabelName(queue, labelName));
 
     let threads = [];
-    await fetchThreads(queuedLabelName, thread => threads.push(thread));
+    await fetchThreads(thread => threads.push(thread), {
+      query: `in:${queuedLabelName}`,
+    });
 
     if (!threads.length)
       return;

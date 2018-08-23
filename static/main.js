@@ -265,14 +265,13 @@ async function getLabelId(labelName) {
   return g_labels.labelToId[labelName];
 }
 
-async function fetchThreads(label, forEachThread, options) {
-  let query = 'in:' + label;
+async function fetchThreads(forEachThread, options) {
+  let query = '';
 
-  if (options && options.query)
+  if (options.query)
     query += ' ' + options.query;
 
-  let queue = options && options.queue;
-  if (queue)
+  if (options.queue)
     query += ' in:' + options.queue;
 
   // We only have triaged labels once they've actually been created.
@@ -292,7 +291,8 @@ async function fetchThreads(label, forEachThread, options) {
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
       let thread = new Thread(rawThread);
-      thread.setQueue(queue);
+      if (options.queue)
+        thread.setQueue(options.queue);
       await forEachThread(thread);
     }
 
@@ -334,7 +334,7 @@ async function updateThreadList() {
   helpLink.textContent = 'Help';
   helpLink.onclick = () => showHelp(settings_);
 
-  let vacationQuery;
+  let vacationQuery = '';
   if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)) {
     vacationQuery = `subject:${settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)}`;
     updateTitle('vacation', `Only showing threads with ${vacationQuery}`);
@@ -342,16 +342,21 @@ async function updateThreadList() {
 
   updateTitle('updateThreadList', 'Fetching threads to triage...', true);
 
-  let labels = await getTheadCountForLabels(isLabelToTriage);
+  let labels = await getTheadCountForLabels((labelName) => labelName.startsWith(TO_TRIAGE_LABEL + '/'));
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
   labelsToFetch.sort(LabelUtils.compareLabels);
 
   for (let label of labelsToFetch) {
-    await fetchThreads('inbox', addThread, {
+    await fetchThreads(addThread, {
       query: vacationQuery,
       queue: label,
     });
   }
+
+  await fetchThreads(addThread, {
+    query: `-has:userlabels ${vacationQuery}`,
+    queue: 'inbox',
+  });
 
   updateTitle('updateThreadList');
   // Don't want to show the earlier title, but still want to indicate loading is happening.
@@ -438,23 +443,13 @@ async function updateLabelList() {
   }
 }
 
-function isLabelToTriage(labelId, labelName) {
-  let metaLabels = [TRIAGED_LABEL, LABELER_PREFIX, UNPROCESSED_LABEL];
-
-  if (metaLabels.includes(labelName) ||
-      labelName.startsWith(TRIAGED_LABEL + '/') ||
-      labelName.startsWith(LABELER_PREFIX + '/'))
-    return false;
-
-  let isUserLabel = labelId.startsWith('Label_');
-  return isUserLabel;
-}
-
 async function getTheadCountForLabels(labelFilter) {
   let batch = gapi.client.newBatch();
 
+  let addedAny = false;
   for (let id in g_labels.idToLabel) {
-    if (labelFilter(id, g_labels.idToLabel[id])) {
+    if (labelFilter(g_labels.idToLabel[id])) {
+      addedAny = true;
       batch.add(gapi.client.gmail.users.labels.get({
         userId: USER_ID,
         id: id,
@@ -463,13 +458,18 @@ async function getTheadCountForLabels(labelFilter) {
   }
 
   let labelsWithThreads = [];
-  let labelDetails = await batch;
-  for (let key in labelDetails.result) {
-    let details = labelDetails.result[key].result;
-    labelsWithThreads.push({
-      name: details.name,
-      count: details.threadsTotal,
-    });
+
+  // If this is a first run, there may be no labels that match the filter rule
+  // and gapi batching throws when you try to await a batch that has no entries.
+  if (addedAny) {
+    let labelDetails = await batch;
+    for (let key in labelDetails.result) {
+      let details = labelDetails.result[key].result;
+      labelsWithThreads.push({
+        name: details.name,
+        count: details.threadsTotal,
+      });
+    }
   }
   return labelsWithThreads;
 }
