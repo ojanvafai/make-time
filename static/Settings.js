@@ -264,21 +264,6 @@ class Settings {
                         {
                           "sheetId": sheetId,
                           "startRowIndex": 0,
-                          "startColumnIndex": 3,
-                          "endColumnIndex": 4
-                        }
-                      ]
-                    }
-                  },
-                  "targetAxis": "LEFT_AXIS"
-                },
-                {
-                  "series": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
                           "startColumnIndex": 4,
                           "endColumnIndex": 5
                         }
@@ -311,6 +296,21 @@ class Settings {
                           "startRowIndex": 0,
                           "startColumnIndex": 6,
                           "endColumnIndex": 7
+                        }
+                      ]
+                    }
+                  },
+                  "targetAxis": "LEFT_AXIS"
+                },
+                {
+                  "series": {
+                    "sourceRange": {
+                      "sources": [
+                        {
+                          "sheetId": sheetId,
+                          "startRowIndex": 0,
+                          "startColumnIndex": 7,
+                          "endColumnIndex": 8
                         }
                       ]
                     }
