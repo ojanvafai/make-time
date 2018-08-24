@@ -328,6 +328,7 @@ class MailProcessor {
     if (!threads.length)
       return;
 
+    let startTime = new Date();
     let rulesSheet = await this.readRulesRows();
 
     // Don't do any processing if there are no rules. This happens when someone
