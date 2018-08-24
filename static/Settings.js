@@ -433,7 +433,7 @@ Settings.sheetData_ = [
   },
   {
     name: 'daily_stats',
-    initialData: [['date total_threads', 'archived_threads_count', 'non_archived_threads_count', 'immediate_count', 'daily_count', 'weekly_count', 'monthly_count', 'num_invocations', 'total_running_time', 'min_running_time', 'max_running_time']],
+    initialData: [['date', 'total_threads', 'archived_threads_count', 'non_archived_threads_count', 'immediate_count', 'daily_count', 'weekly_count', 'monthly_count', 'num_invocations', 'total_running_time', 'min_running_time', 'max_running_time']],
   },
   {
     name: 'backend-do-not-modify',
