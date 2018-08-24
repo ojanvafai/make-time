@@ -334,7 +334,6 @@ window.addEventListener('error', (e) => {
     emailBody += '\n' + e.body;
   if (e.stack)
     emailBody += '\n\n' + e.stack;
-  // TODO: figure out how to send emails once this is back on a cron.
   alert('Error: ' + JSON.stringify(e));
 });
 

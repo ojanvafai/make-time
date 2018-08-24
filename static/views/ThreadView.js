@@ -42,7 +42,6 @@ class ThreadView extends HTMLElement {
     let subjectPlaceholder = document.createElement('div');
     subjectPlaceholder.textContent = '\xa0';
 
-    // TODO: Move this to a stylesheet.
     subjectPlaceholder.style.cssText = this.subject_.style.cssText = `
       position: fixed;
       left: 0;
@@ -271,14 +270,21 @@ class ThreadView extends HTMLElement {
   }
 
   async undoLastAction_() {
-    if (!this.lastAction_)
+    if (!this.lastAction_) {
+      alert('Nothing left to undo.');
       return;
+    }
 
     updateTitle('undoLastAction_', 'Undoing last action...', true);
+
+    let lastAction = this.lastAction_;
+    this.lastAction_ = null;
+
     await this.requeuePrefetchedThread_();
     await this.threadList_.push(this.currentThread_.thread);
-    await this.renderNext_(this.lastAction_.thread);
-    await this.lastAction_.thread.modify(this.lastAction_.removed, this.lastAction_.added);
+    await this.renderNext_(lastAction.thread);
+    await lastAction.thread.modify(lastAction.removed, lastAction.added);
+
     updateTitle('undoLastAction_');
   }
 

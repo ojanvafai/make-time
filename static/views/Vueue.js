@@ -76,8 +76,6 @@ class VueueRowGroup_ extends HTMLElement {
 
     this.queue_ = queue;
 
-    // TODO: Make custom elements for queue container and row container so they
-    // can be independently styled instead of using inline styling.
     let queueSpan = document.createElement('b')
     queueSpan.append(queue);
 
