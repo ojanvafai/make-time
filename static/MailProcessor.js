@@ -1,6 +1,3 @@
-const DEBUG_LOGGING = false;
-
-const CONFIG_SHEET_NAME = 'config';
 const FILTERS_SHEET_NAME = 'filters';
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
@@ -100,8 +97,6 @@ class MailProcessor {
   }
 
   async readRulesRows() {
-    var startTime = new Date();
-
     var rawRules = await SpreadsheetUtils.fetchSheet(this.settings.spreadsheetId, FILTERS_SHEET_NAME);
     var rules = [];
     var labels = {};
@@ -124,32 +119,14 @@ class MailProcessor {
       }
       rules.push(ruleObj);
     }
-    this.debugLogTiming('Found ' + output.rules.length + ' input rules', startTime);
 
     output.labels = Object.keys(labels);
     return output;
   }
 
-  debugLog(message) {
-    if (DEBUG_LOGGING)
-      console.log(message);
-  }
-
-  logTiming(thingDone, startTime) {
-    console.log(thingDone + ' in ' + (Date.now() - startTime.getTime()) + ' milliseconds.');
-  }
-
-  debugLogTiming(thingDone, startTime) {
-    if (DEBUG_LOGGING)
-      this.logTiming(thingDone, startTime);
-  }
-
   async writeToStatsPage(timestamp, num_threads_processed, per_label_counts, time_taken) {
-    var startTime = new Date();
     var data = [timestamp, num_threads_processed, time_taken, JSON.stringify(per_label_counts)];
-    this.debugLog('Writing [timestamp, num_threads_processed, time_taken] to stats page: ' + JSON.stringify(data));
     await SpreadsheetUtils.appendToSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
-    this.debugLogTiming('Finished writing to stats page', startTime, new Date());
   }
 
   getYearMonthDay(timestamp) {
@@ -351,9 +328,6 @@ class MailProcessor {
     if (!threads.length)
       return;
 
-    console.log('Processing mail');
-    let startTime = new Date();
-
     let rulesSheet = await this.readRulesRows();
 
     // Don't do any processing if there are no rules. This happens when someone
@@ -387,7 +361,6 @@ class MailProcessor {
           labelName = await this.processThread(thread, rulesSheet.rules);
         }
 
-        this.debugLog("Applying label: " + labelName);
         let alreadyHadLabel = false;
         let isAlreadyInInbox = thread.isInInbox();
 
@@ -442,7 +415,6 @@ class MailProcessor {
         startTime.getTime(), newlyLabeledThreadsCount, perLabelCounts, Date.now() - startTime.getTime());
     }
 
-    this.logTiming(`Finished processing ${threads.length} threads`, startTime);
     updateTitle('processMail');
     return threads.length;
   }
@@ -527,7 +499,6 @@ class MailProcessor {
   }
 
   async processQueues() {
-    this.debugLog('Fetching backend sheet to process queues.');
     let storage = new ServerStorage(this.settings.spreadsheetId);
     await storage.fetch();
     let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
@@ -536,15 +507,11 @@ class MailProcessor {
     if (!categories.length)
       return;
 
-    var startTime = new Date();
-
     for (const category of categories) {
-      this.debugLog(`Dequeueing ${category}`);
       await this.processSingleQueue(category);
     }
 
     await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_DEQUEUE_TIME, value: Date.now()}]);
-    this.logTiming(`Finished dequeueing ${categories}`, startTime);
   }
 
 }
