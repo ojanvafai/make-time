@@ -10,7 +10,7 @@ class ThreadList {
       return;
     this.threads_[queue] = [];
     this.queueNames_.push(queue);
-    this.queueNames_.sort(LabelUtils.compareLabels);
+    this.queueNames_.sort(Labels.compare);
   }
 
   async push(thread) {

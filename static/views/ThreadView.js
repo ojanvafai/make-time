@@ -1,5 +1,5 @@
 class ThreadView extends HTMLElement {
-  constructor(threadList, cleanupDelegate, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts, showSummary) {
+  constructor(threadList, cleanupDelegate, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts, showSummary, allLabels) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
@@ -11,6 +11,7 @@ class ThreadView extends HTMLElement {
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
     this.showSummary_ = showSummary;
+    this.allLabels_ = allLabels;
 
     ThreadView.BLOCKED_ACTION.destination = blockedLabel;
 
@@ -212,13 +213,13 @@ class ThreadView extends HTMLElement {
       let queues = this.threadList_.queues();
 
       if (!queues.includes(prefetchQueue))
-        queueData += `<div>${removeTriagedPrefix(prefetchQueue)}:&nbsp;1</div>`;
+        queueData += `<div>${Labels.removeTriagedPrefix(prefetchQueue)}:&nbsp;1</div>`;
 
       for (let queue of queues) {
         let count = this.threadList_.threadCountForQueue(queue);
         if (queue == prefetchQueue)
           count++;
-        queueData += `<div>${removeTriagedPrefix(queue)}:&nbsp;${count}</div>`;
+        queueData += `<div>${Labels.removeTriagedPrefix(queue)}:&nbsp;${count}</div>`;
       }
       this.queueSummary_.innerHTML = queueData;
     } else {
@@ -511,8 +512,8 @@ Content-Type: text/html; charset="UTF-8"
     if (!this.showSummary_)
       return;
 
-    let labels = await getTheadCountForLabels((labelName) => {
-      return labelName != MUTED_LABEL && labelName.startsWith(TRIAGED_LABEL + '/');
+    let labels = await this.allLabels_.getTheadCountForLabels((labelName) => {
+      return labelName != Labels.MUTED_LABEL && labelName.startsWith(Labels.TRIAGED_LABEL + '/');
     });
 
     for (let label of labels) {
@@ -631,13 +632,13 @@ ThreadView.DONE_ACTION = {
 ThreadView.TLDR_ACTION = {
   name: 'TL;DR',
   description: `Too long, will read later. Goes in triaged/tldr label.`,
-  destination: READ_LATER_LABEL,
+  destination: Labels.READ_LATER_LABEL,
 };
 
 ThreadView.REPLY_NEEDED_ACTION = {
   name: 'Reply Needed',
   description: `Needs a reply. Goes in triaged/replyneeded label.`,
-  destination: NEEDS_REPLY_LABEL,
+  destination: Labels.NEEDS_REPLY_LABEL,
 };
 
 ThreadView.QUICK_REPLY_ACTION = {
@@ -653,13 +654,13 @@ ThreadView.BLOCKED_ACTION = {
 ThreadView.MUTE_ACTION = {
   name: 'Mute',
   description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
-  destination: MUTED_LABEL,
+  destination: Labels.MUTED_LABEL,
 };
 
 ThreadView.ACTION_ITEM_ACTION = {
   name: 'Action Item',
   description: `Needs some action taken other than an email reply. Goes in triaged/actionitem label.`,
-  destination: ACTION_ITEM_LABEL,
+  destination: Labels.ACTION_ITEM_LABEL,
 };
 
 ThreadView.UNDO_ACTION = {

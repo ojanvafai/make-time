@@ -1,7 +1,8 @@
 class Thread {
-  constructor(thread) {
+  constructor(thread, allLabels) {
     this.id = thread.id;
     this.snippet = thread.snippet;
+    this.allLabels_ = allLabels;
   }
 
   clearDetails_() {
@@ -21,13 +22,12 @@ class Thread {
 
     this.labelNames_ = [];
     for (let id of this.labelIds_) {
-      // TODO: Don't use global state!
-      let name = g_labels.idToLabel[id];
+      let name = this.allLabels_.getName(id);
       if (!name) {
         console.log(`Label id does not exist. WTF. ${id}`);
         continue;
       }
-      if (name.startsWith(TO_TRIAGE_LABEL + '/'))
+      if (name.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'))
         this.setQueue(name);
       this.labelNames_.push(name);
     }
@@ -65,12 +65,12 @@ class Thread {
   async markTriaged(destination) {
     var addLabelIds = [];
     if (destination)
-      addLabelIds.push(await getLabelId(destination));
+      addLabelIds.push(await this.allLabels_.getId(destination));
 
     var removeLabelIds = ['UNREAD', 'INBOX'];
     var queue = await this.getQueue();
     if (queue)
-      removeLabelIds.push(await getLabelId(queue));
+      removeLabelIds.push(await this.allLabels_.getId(queue));
     await this.modify(addLabelIds, removeLabelIds);
     return {
       added: addLabelIds,
@@ -111,7 +111,7 @@ class Thread {
     let queue = await this.getQueue();
     if (!queue)
       return 'inbox';
-    return removeTriagedPrefix(queue);
+    return Labels.removeTriagedPrefix(queue);
   }
 
   async getQueue() {

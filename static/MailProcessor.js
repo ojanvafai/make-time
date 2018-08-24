@@ -26,10 +26,11 @@ var queuePrefixMap = {
 }
 
 class MailProcessor {
-  constructor(settings, pushThread, queuedLabelMap) {
+  constructor(settings, pushThread, queuedLabelMap, allLabels) {
     this.settings = settings;
     this.pushThread_ = pushThread;
     this.queuedLabelMap_ = queuedLabelMap;
+    this.allLabels_ = allLabels;
   }
 
   endsWithAddress(addresses, filterAddress) {
@@ -84,12 +85,12 @@ class MailProcessor {
 
   addLabelPrefix(labelName) {
     if (this.queuedLabelMap_[labelName])
-      return addQueuedPrefix(labelName);
+      return Labels.addQueuedPrefix(labelName);
     return this.addAutoPrefix(labelName);
   }
 
   addAutoPrefix(labelName) {
-    return TO_TRIAGE_LABEL + "/" + labelName;
+    return Labels.NEEDS_TRIAGE_LABEL + "/" + labelName;
   }
 
   dequeuedLabelName(queue, labelName) {
@@ -329,13 +330,13 @@ class MailProcessor {
     }
 
     // Ensure there's always some label to make sure bugs don't cause emails to get lost silently.
-    return FALLBACK_LABEL;
+    return Labels.FALLBACK_LABEL;
   }
 
   async currentTriagedLabel(thread) {
     var labels = await thread.getLabelNames();
     for (var i = 0; i < labels.length; i++) {
-      if (labels[i].startsWith(TRIAGED_LABEL + '/'))
+      if (labels[i].startsWith(Labels.TRIAGED_LABEL + '/'))
         return labels[i];
     }
     return null;
@@ -344,7 +345,7 @@ class MailProcessor {
   async processMail() {
     let threads = [];
     await fetchThreads(thread => threads.push(thread), {
-      query: `in:${UNPROCESSED_LABEL}`,
+      query: `in:${Labels.UNPROCESSED_LABEL}`,
     });
 
     if (!threads.length)
@@ -370,14 +371,14 @@ class MailProcessor {
         let thread = threads[i];
         let labelName;
 
-        let removeLabelIds = g_labels.makeTimeLabelIds.concat();
+        let removeLabelIds = this.allLabels_.getMakeTimeLabelIds().concat();
         let addLabelIds = [];
 
         // Triaged items when reprocessed go in the rtriage queue regardless of what label they
         // might otherwise go in.
         let currentTriagedLabel = await this.currentTriagedLabel(thread);
         if (currentTriagedLabel) {
-          if (currentTriagedLabel == MUTED_LABEL) {
+          if (currentTriagedLabel == Labels.MUTED_LABEL) {
             await thread.modify(addLabelIds, removeLabelIds);
             continue;
           }
@@ -406,7 +407,7 @@ class MailProcessor {
             prefixedLabelName = this.addLabelPrefix(labelName);
           }
 
-          let prefixedLabelId = await getLabelId(prefixedLabelName);
+          let prefixedLabelId = await this.allLabels_.getId(prefixedLabelName);
 
           let labelIds = await thread.getLabelIds();
           alreadyHadLabel = labelIds.has(prefixedLabelId);
@@ -414,7 +415,7 @@ class MailProcessor {
           addLabelIds.push(prefixedLabelId);
           removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);
 
-          if (prefixedLabelName != addQueuedPrefix(labelName))
+          if (prefixedLabelName != Labels.addQueuedPrefix(labelName))
             addLabelIds.push('INBOX');
         }
 
@@ -447,9 +448,9 @@ class MailProcessor {
   }
 
   async dequeue(labelName, queue) {
-    var queuedLabelName = addQueuedPrefix(labelName);
-    var queuedLabel = await getLabelId(queuedLabelName);
-    var autoLabel = await getLabelId(this.dequeuedLabelName(queue, labelName));
+    var queuedLabelName = Labels.addQueuedPrefix(labelName);
+    var queuedLabel = await this.allLabels_.getId(queuedLabelName);
+    var autoLabel = await this.allLabels_.getId(this.dequeuedLabelName(queue, labelName));
 
     let threads = [];
     await fetchThreads(thread => threads.push(thread), {

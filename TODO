@@ -5,7 +5,6 @@ P1: Will try to do soonish.
 - Don't have undo do anything if there's nothing to undo.
 - add the ability to filter messages with no list-id as those are probably more urgent.
 - Document the filter columns
-- Move all LabelUtils methods into the LabelUtils namespace and move the label manipulation methods in main.js there as well.
 
 P2: Will only do if something makes these seem worth doing.
 - Include "XXX wrote" prefixes in quote eliding
