@@ -108,28 +108,6 @@ function showSettings() {
   let view = new SettingsView(settings_);
 }
 
-async function fetchSheet(spreadsheetId, sheetName) {
-  let response =  await gapiFetch(gapi.client.sheets.spreadsheets.values.get, {
-    spreadsheetId: spreadsheetId,
-    range: sheetName,
-  });
-  return response.result.values;
-};
-
-async function fetch2ColumnSheet(spreadsheetId, sheetName, opt_startRowIndex) {
-  let result = {};
-  let values = await fetchSheet(spreadsheetId, sheetName);
-  if (!values)
-    return result;
-
-  let startRowIndex = opt_startRowIndex || 0;
-  for (var i = startRowIndex; i < values.length; i++) {
-    let value = values[i];
-    result[value[0]] = value[1];
-  }
-  return result;
-}
-
 async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
   await viewThreadAtATime(threadsToTriage);
 
@@ -458,7 +436,7 @@ async function processMail() {
   isProcessingMail = true;
   updateTitle('processMail', 'Processing mail backlog...', true);
 
-  let queuedLabelMap = await fetch2ColumnSheet(settings_.spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
+  let queuedLabelMap = await SpreadsheetUtils.fetch2ColumnSheet(settings_.spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
 
   let mailProcessor = new MailProcessor(settings_, addThread, queuedLabelMap);
   await mailProcessor.processMail();

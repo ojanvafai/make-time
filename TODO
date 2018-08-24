@@ -1,11 +1,11 @@
 P1: Will try to do soonish.
 - Make filter settings UI as a precursor to having task tracking.
 - Show the triage queues in the Vueue when there is nothing to triage.
-- Create a Spreadsheet class or a spreadsheet utils container to put the spreadsheet methods into.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - Don't have undo do anything if there's nothing to undo.
 - add the ability to filter messages with no list-id as those are probably more urgent.
 - Document the filter columns
+- Move all LabelUtils methods into the LabelUtils namespace and move the label manipulation methods in main.js there as well.
 
 P2: Will only do if something makes these seem worth doing.
 - Include "XXX wrote" prefixes in quote eliding
@@ -28,7 +28,6 @@ P2: Will only do if something makes these seem worth doing.
 - Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
 - Add keyboard shortcuts for Vueue mode. j/k/x next/previous/toggle
 - disable title tags in emails. They currently update the title of make-time.
-- Provide a way to modify which spreadsheet is used as the settings sheet.
 - add stats of how much time you spend in each phase and what aggregations of actions taken with threads
 - Maybe have a generic list of filter buttons that can be configurable for quick experimentation with different labeling schemes. Keeps the principle of each thread gets a single keyborad shortcut action, but doesn't require the existing constrained set of labels. e.g. i find myself wanting to experiment with urgent/important options for action items and replies. Maybe this would all feel different if the action items actually went into the TODO list instead of the inbox though.
 - add a needs filter option?

@@ -7,7 +7,7 @@ class ServerStorage {
     if (ServerStorage.backendValues_)
       return;
 
-    const rawBackendValues = await fetch2ColumnSheet(this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_);
+    const rawBackendValues = await SpreadsheetUtils.fetch2ColumnSheet(this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_);
     ServerStorage.backendValues_ = {};
     // Strip no longer supported backend keys.
     for (let key of Object.values(ServerStorage.KEYS)) {
@@ -23,24 +23,11 @@ class ServerStorage {
     return ServerStorage.backendValues_[key];
   }
 
-  async write2ColumnSheet_(sheetName, rows) {
-    let requestParams = {
-      spreadsheetId: this.spreadsheetId_,
-      range: sheetName + '!A1:B' + rows.length,
-      valueInputOption: 'RAW',
-    };
-    let requestBody = {
-      values: rows,
-    };
-    let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.update, requestParams, requestBody);
-    // TODO: Handle if response.status != 200.
-  }
-
   async writeUpdates(updates) {
     for (let update of updates) {
       ServerStorage.backendValues_[update.key] = update.value;
     }
-    await this.write2ColumnSheet_(ServerStorage.BACKEND_SHEET_NAME_, Object.entries(ServerStorage.backendValues_));
+    await SpreadsheetUtils.write2ColumnSheet(this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_, Object.entries(ServerStorage.backendValues_));
   }
 }
 

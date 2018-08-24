@@ -101,7 +101,7 @@ class MailProcessor {
   async readRulesRows() {
     var startTime = new Date();
 
-    var rawRules = await fetchSheet(this.settings.spreadsheetId, FILTERS_SHEET_NAME);
+    var rawRules = await SpreadsheetUtils.fetchSheet(this.settings.spreadsheetId, FILTERS_SHEET_NAME);
     var rules = [];
     var labels = {};
     var output = {
@@ -143,26 +143,11 @@ class MailProcessor {
       this.logTiming(thingDone, startTime);
   }
 
-  async appendToSheet(sheetName, rows) {
-    let rowCount = Object.keys(rows).length;
-    let requestParams = {
-      spreadsheetId: this.settings.spreadsheetId,
-      range: sheetName,
-      valueInputOption: 'RAW',
-      insertDataOption: 'INSERT_ROWS',
-    };
-    let requestBody = {
-      values: rows,
-    };
-    let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.append, requestParams, requestBody);
-    // TODO: Handle if response.status != 200.
-  }
-
   async writeToStatsPage(timestamp, num_threads_processed, per_label_counts, time_taken) {
     var startTime = new Date();
     var data = [timestamp, num_threads_processed, time_taken, JSON.stringify(per_label_counts)];
     this.debugLog('Writing [timestamp, num_threads_processed, time_taken] to stats page: ' + JSON.stringify(data));
-    await this.appendToSheet(STATISTICS_SHEET_NAME, [data]);
+    await SpreadsheetUtils.appendToSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
     this.debugLogTiming('Finished writing to stats page', startTime, new Date());
   }
 
@@ -180,53 +165,16 @@ class MailProcessor {
     return date.getFullYear() + '/' + month + '/' + day;
   }
 
-  async getSheetId(sheetName) {
-    let response = await gapiFetch(gapi.client.sheets.spreadsheets.get, {
-      spreadsheetId: this.settings.spreadsheetId,
-      ranges: [sheetName],
-    });
-    // TODO: Handle response.status != 200.
-    return response.result.sheets[0].properties.sheetId;
-  }
-
-  async deleteRows(sheetName, startIndex, endIndex) {
-    var params = {
-      spreadsheetId: this.settings.spreadsheetId,
-    };
-
-    var sheetId = await this.getSheetId(sheetName);
-    if (sheetId === undefined)
-      throw `Could not get sheetId for sheet ${sheetName}`;
-
-    var batchUpdateSpreadsheetRequestBody = {
-      requests: [
-        {
-          "deleteDimension": {
-            "range": {
-              "sheetId": sheetId,
-              "dimension": "ROWS",
-              "startIndex": startIndex,
-              "endIndex": endIndex,
-            }
-          }
-        },
-      ],
-    };
-
-    let response = await gapiFetch(gapi.client.sheets.spreadsheets.batchUpdate, params, batchUpdateSpreadsheetRequestBody);
-    // TODO: Handle response.status != 200.
-  }
-
   async writeCollapsedStats(stats) {
     if (stats && stats.numInvocations)
-      await this.appendToSheet(DAILY_STATS_SHEET_NAME, [Object.values(stats)]);
+      await SpreadsheetUtils.appendToSheet(this.settings.spreadsheetId, DAILY_STATS_SHEET_NAME, [Object.values(stats)]);
   }
 
   async collapseStats() {
     updateTitle('collapseStats', 'Writing stats...', true);
 
     let stats;
-    var rows = await fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
+    var rows = await SpreadsheetUtils.fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
     let todayYearMonthDay = this.getYearMonthDay(Date.now());
     let currentYearMonthDay;
 
@@ -304,7 +252,7 @@ class MailProcessor {
     await this.writeCollapsedStats(stats);
 
     if (lastRowProcessed)
-      await this.deleteRows(STATISTICS_SHEET_NAME, 1, lastRowProcessed + 1);
+      await SpreadsheetUtils.deleteRows(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, 1, lastRowProcessed + 1);
 
     updateTitle('collapseStats');
   }
