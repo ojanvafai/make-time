@@ -242,6 +242,11 @@ async function getLabelId(labelName) {
   if (g_labels.labelToId[labelName])
     return g_labels.labelToId[labelName];
 
+  // For built-in labels, both the ID and the name are uppercased.
+  let uppercase = labelName.toUpperCase();
+  if (g_labels.labelToId[uppercase])
+    return g_labels.labelToId[uppercase];
+
   await updateLabelList();
   var parts = labelName.split('/');
 
