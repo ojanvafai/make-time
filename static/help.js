@@ -41,7 +41,9 @@ function helpText(settings) {
 
 There are two aspects to make-time: <b>triage</b> and <b>filtering</b>. Filtering is technically optional and requires more setup (e.g. moving your gmail filters into a spreadsheet), but the triage generally assumes the filtering. For example, it will only show threads in your inbox that either have no labels or that have run through make-time's filtering. So, if you don't setup filtering, make-time will only show threads in the inbox with no labels.
 
-All the triage actions will mark a thread as read, remove it from the inbox, and remove the current label. If there are multiple labels, it will only remove one of them. The filtering is built in such a way that every thread gets exactly one label, so the two play nicely together. Once it's triaged, it's completely out of your face.
+All the triage actions will mark a thread as read, remove it from the inbox, and remove the current maketime label. If there are multiple labels, it will only remove one of them. The filtering is built in such a way that every thread gets exactly one label, so the two play nicely together. Once it's triaged, it's completely out of your face.
+
+<b>Aside from archiving messages (and bugs), maketime will only ever modify labels under the "maketime" parent label.</b> So you can do whatever you want with other labels.
 
 <b style="font-size:120%">Triage</b>
 The goal of triage is to do get in the flow of doing all the triage quickly and then followup and do the real work of replying, action items, etc. instead of flip-flopping back and forth between quick triage and deep thinking.
@@ -66,7 +68,7 @@ Philosopy: Labels are a triage tool, not a search/organization tool. The goal is
 <li>Populate the filters in your <a href=${spreadsheetUrl}>backend spreadsheet</a>.
 <li>Setup exactly one gmail filter:
     Matches: -in:chats -label:mute -from:me
-    Do this: Skip Inbox, Apply label "unprocessed"
+    Do this: Skip Inbox, Apply label "maketime/unprocessed"
 
 If there are emails you don't want make-time to do anything with, modify your gmail filter with appropriate things like "to:(-YOURNAME+pager@google.com)"
 </ol>
@@ -80,9 +82,7 @@ If there are emails you don't want make-time to do anything with, modify your gm
 
 There's a nice synergy between queues and triaging. The more urgent queues will always get triaged first (e.g. daily before weekly). If you care about more granular control of triage order within one of those groups (e.g. the different daily queues), you can also name your labels appropriately as they're triaged in alphabetical order.
 
-<b>Assorted filtering notes:</b>
- - If there's a bug, by default emails will either stay in the "unprocessed" folder or be moved to your inbox (depends on the failure mode).
- - Hide the labels you never want to see with the gmail label UI, for example "labeler", "unprocessed"
+If there's a bug in the filtering code, by emails should stay in the unprocessed label.
 `;
 
   return helpHtml_;

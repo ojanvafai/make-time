@@ -11,12 +11,7 @@ const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 
 let ARCHIVE_KEYWORD = 'archive';
 
-// TODO: Move these to the config spreadsheet.
-TRIAGER_LABELS = {
-  triaged: 'triaged',
-  needsTriage: 'needstriage',
-  retriage: 'retriage',
-}
+let RETRIAGE_LABEL = 'retriage';
 
 var queuePrefixMap = {
   Daily: 'daily',
@@ -94,43 +89,13 @@ class MailProcessor {
   }
 
   addAutoPrefix(labelName) {
-    return TRIAGER_LABELS.needsTriage + "/" + labelName;
+    return TO_TRIAGE_LABEL + "/" + labelName;
   }
 
   dequeuedLabelName(queue, labelName) {
     if (!queuePrefixMap[queue])
       throw `Attempting to put label in a non-existant queue. queue: ${queue}, label: ${labelName}`;
     return this.addAutoPrefix(queuePrefixMap[queue] + '/' + labelName);
-  }
-
-  // TODO: Merge this with the other label code.
-  async getLabelNames() {
-    var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
-      'userId': USER_ID
-    });
-
-    var labels = [];
-
-    for (var label of response.result.labels) {
-      let name = label.name;
-      var parts = name.split('/');
-      if (parts.length == 1)
-        continue;
-
-      switch (parts[0]) {
-        case TRIAGER_LABELS.needsTriage:
-          labels.push(label.id);
-          break;
-        case LABELER_PREFIX:
-          if (parts.length > 2 && parts[1] == QUEUED_PREFIX)
-            labels.push(label.id);
-          break;
-        case TRIAGER_LABELS.triaged:
-          labels.push(label.id);
-          break;
-      }
-    }
-    return labels;
   }
 
   async readRulesRows() {
@@ -422,7 +387,7 @@ class MailProcessor {
   async currentTriagedLabel(thread) {
     var labels = await thread.getLabelNames();
     for (var i = 0; i < labels.length; i++) {
-      if (labels[i].startsWith(TRIAGER_LABELS.triaged + '/'))
+      if (labels[i].startsWith(TRIAGED_LABEL + '/'))
         return labels[i];
     }
     return null;
@@ -447,11 +412,8 @@ class MailProcessor {
     if (!rulesSheet.rules.length)
       return;
 
-    let labelIdsToRemove = await this.getLabelNames();
-
     let newlyLabeledThreadsCount = 0;
     let perLabelCounts = {};
-    let unprocessedLabelId = await getLabelId(UNPROCESSED_LABEL);
 
     for (var i = 0; i < threads.length; i++) {
       try {
@@ -460,7 +422,7 @@ class MailProcessor {
         let thread = threads[i];
         let labelName;
 
-        let removeLabelIds = [unprocessedLabelId];
+        let removeLabelIds = g_labels.makeTimeLabelIds.concat();
         let addLabelIds = [];
 
         // Triaged items when reprocessed go in the rtriage queue regardless of what label they
@@ -471,7 +433,7 @@ class MailProcessor {
             await thread.modify(addLabelIds, removeLabelIds);
             continue;
           }
-          labelName = TRIAGER_LABELS.retriage;
+          labelName = RETRIAGE_LABEL;
         } else {
           labelName = await this.processThread(thread, rulesSheet.rules);
         }
@@ -481,7 +443,6 @@ class MailProcessor {
         let isAlreadyInInbox = thread.isInInbox();
 
         if (labelName == ARCHIVE_KEYWORD) {
-          removeLabelIds = removeLabelIds.concat(labelIdsToRemove);
           removeLabelIds.push('INBOX');
         } else {
           let prefixedLabelName;
@@ -503,7 +464,7 @@ class MailProcessor {
           alreadyHadLabel = labelIds.has(prefixedLabelId);
 
           addLabelIds.push(prefixedLabelId);
-          removeLabelIds = removeLabelIds.concat(labelIdsToRemove.filter(id => id != prefixedLabelId));
+          removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);
 
           if (prefixedLabelName != addQueuedPrefix(labelName))
             addLabelIds.push('INBOX');

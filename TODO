@@ -1,8 +1,6 @@
 P1: Will try to do soonish.
-- Have key handling code early return if a dialog is open.
 - Make filter settings UI as a precursor to having task tracking.
 - Show the triage queues in the Vueue when there is nothing to triage.
-- Consider changing all the labels to be make-time prefixed? Then can be sure that only make-time labels are touched aside from archiving things.
 - Create a Spreadsheet class or a spreadsheet utils container to put the spreadsheet methods into.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - Don't have undo do anything if there's nothing to undo.
@@ -15,6 +13,7 @@ P2: Will only do if something makes these seem worth doing.
 - Render messages in reverse order and return from render() when all the unread messages + 1 read message have been rendered (min 2 messages if all are unread). Then render the rest of the read messages async.
 - Move queued labels to the settings dialog and make it so you can pick which day monthly queues are dequeued.
 - Give a way to show the email headers so that people can easily write filters based off the headers.
+- Have key handling code early return if a dialog is open.
 - updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there. Hard to reproduce. :(
 - "Re: Ping on get-originals?" thread is a good one for performance overhead of message processing. Half the time is base64 decoding and half is eliding quotes. Takes 1 second doing message processing, but rendering is very fast. Could render messages incrementally starting with the one right before the earliest unread one, then render all the remaining unread ones, then render the read ones. Mostly this is hidden by prefetching.
 - Put links for downloading attachments.

@@ -314,11 +314,62 @@ async function addThread(thread) {
   await currentView_.push(thread);
 }
 
+async function deleteLabel(labelName) {
+  let labelerPrefixId = g_labels.labelToId[labelName];
+  if (labelerPrefixId) {
+    await gapiFetch(gapi.client.gmail.users.labels.delete, {
+      'userId': USER_ID,
+      'id': labelerPrefixId,
+    });
+  }
+}
+
+async function migrateLabels() {
+  for (let name in g_labels.labelToId) {
+    let newName;
+    if (name == BASE_TRIAGED_LABEL ||
+        name.startsWith(BASE_TRIAGED_LABEL + '/') ||
+        name.startsWith(BASE_TO_TRIAGE_LABEL + '/')) {
+      await migrateLabel(name, addMakeTimePrefix(name));
+    } else if (name.startsWith(LABELER_PREFIX + '/')) {
+      await migrateLabel(name, addMakeTimePrefix(removeLabelerPrefix(name)));
+    }
+  }
+
+  deleteLabel(LABELER_PREFIX);
+  deleteLabel(BASE_TRIAGED_LABEL);
+  deleteLabel(BASE_TO_TRIAGE_LABEL);
+
+  // Ensure all the parent labels get created.
+  await getLabelId(TO_TRIAGE_LABEL);
+  await getLabelId(TRIAGED_LABEL);
+
+  if (!g_labels.labelToId[UNPROCESSED_LABEL])
+    await migrateLabel(BASE_UNPROCESSED_LABEL, UNPROCESSED_LABEL);
+}
+
+async function migrateLabel(oldLabelName, newLabelName) {
+  let oldId = g_labels.labelToId[oldLabelName];
+  let body = {
+    'userId': USER_ID,
+    'id': oldId,
+    'resource': {
+      'id': oldId,
+      'name': newLabelName,
+    }
+  }
+  var request = await gapiFetch(gapi.client.gmail.users.labels.update, body);
+}
+
 async function updateThreadList() {
   showLoader(true);
 
   settings_ = new Settings();
   await Promise.all([settings_.fetch(), updateLabelList(), viewAll([])]);
+
+  // TODO: Remove this once everyone has migrated.
+  await migrateLabels();
+  await updateLabelList();
 
   let storage = new ServerStorage(settings_.spreadsheetId);
   if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
@@ -434,12 +485,17 @@ async function updateLabelList() {
 
   g_labels.labelToId = {};
   g_labels.idToLabel = {};
+  g_labels.makeTimeLabelIds = [];
   g_labels.triagedLabels = [];
+
   for (let label of response.result.labels) {
     g_labels.labelToId[label.name] = label.id;
     g_labels.idToLabel[label.id] = label.name;
-    if (label.name.startsWith(TRIAGED_LABEL + '/'))
-      g_labels.triagedLabels.push(label.name);
+    if (isMakeTimeLabel(label.name)) {
+      g_labels.makeTimeLabelIds.push(label.id);
+      if (label.name.startsWith(TRIAGED_LABEL + '/'))
+        g_labels.triagedLabels.push(label.name);
+    }
   }
 }
 

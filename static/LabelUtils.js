@@ -2,11 +2,23 @@
 let LabelUtils = {};
 
 // TODO: Move these into LabelUtils properly.
-let TRIAGED_LABEL = 'triaged';
-let TO_TRIAGE_LABEL = 'needstriage';
+let BASE_TRIAGED_LABEL = 'triaged';
+let BASE_TO_TRIAGE_LABEL = 'needstriage';
+let MAKE_TIME_PREFIX = 'maketime';
+let QUEUED_PREFIX = 'queued';
+
+function addMakeTimePrefix(labelName) {
+  return MAKE_TIME_PREFIX + '/' + labelName;
+}
+
+let TRIAGED_LABEL = addMakeTimePrefix(BASE_TRIAGED_LABEL);
+let TO_TRIAGE_LABEL = addMakeTimePrefix(BASE_TO_TRIAGE_LABEL);
 
 let LABELER_PREFIX = 'labeler';
-let QUEUED_PREFIX = 'queued';
+
+function isMakeTimeLabel(labelName) {
+  return labelName.startsWith(MAKE_TIME_PREFIX + '/');
+}
 
 function triagerLabel(labelName) {
   return `${TRIAGED_LABEL}/${labelName}`;
@@ -22,15 +34,16 @@ function needsTriageLabel(labelName) {
   return `${TO_TRIAGE_LABEL}/${labelName}`;
 }
 
-function addLabelerPrefix(labelName) {
-  return LABELER_PREFIX + '/' + labelName;
+function removeLabelerPrefix(labelName) {
+  return labelName.replace(new RegExp('^' + LABELER_PREFIX + '/'), '');
 }
 
 function addQueuedPrefix(labelName) {
-  return this.addLabelerPrefix(QUEUED_PREFIX + "/" + labelName);
+  return addMakeTimePrefix(QUEUED_PREFIX + "/" + labelName);
 }
 
-let UNPROCESSED_LABEL = 'unprocessed';
+let BASE_UNPROCESSED_LABEL = 'unprocessed';
+let UNPROCESSED_LABEL = addMakeTimePrefix(BASE_UNPROCESSED_LABEL);
 let FALLBACK_LABEL = 'needsfilter';
 let READ_LATER_LABEL = triagerLabel('tldr');
 let NEEDS_REPLY_LABEL = triagerLabel('needsreply');
