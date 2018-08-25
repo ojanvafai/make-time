@@ -1,9 +1,20 @@
 class SettingsView extends HTMLElement {
   constructor(settingsData, queuedLabelData) {
     super();
+    this.style.cssText = `
+      display: flex;
+      flex-direction: column;
+    `;
 
     this.settings_ = settingsData;
     this.queuedLabelData_ = queuedLabelData;
+
+    this.scrollable_ = document.createElement('div');
+    this.scrollable_.style.cssText = `
+      overflow: auto;
+      padding: 4px;
+    `;
+    this.append(this.scrollable_);
 
     let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.settings_.spreadsheetId}/edit`;
 
@@ -13,7 +24,7 @@ class SettingsView extends HTMLElement {
       margin-bottom: 16px;
     `;
     title.append('Settings');
-    this.append(title);
+    this.scrollable_.append(title);
 
     let filtersLinkContainer = document.createElement('div');
     filtersLinkContainer.style.cssText = `
@@ -23,7 +34,7 @@ class SettingsView extends HTMLElement {
     filtersLink.append('Modify email filters');
     filtersLink.href = spreadsheetUrl;
     filtersLinkContainer.append(filtersLink);
-    this.append(filtersLinkContainer);
+    this.scrollable_.append(filtersLinkContainer);
 
     this.addBasicSettings_(spreadsheetUrl);
     this.addQueues_();
@@ -31,19 +42,21 @@ class SettingsView extends HTMLElement {
     let clearBackendInstructions = document.createElement('div');
     clearBackendInstructions.style.cssText = `margin: 16px 0;`;
     clearBackendInstructions.innerHTML = `To disconnect backend spreadsheet completely, delete or rename <a href=${spreadsheetUrl}>the spreadsheet itself</a>.`;
-    this.append(clearBackendInstructions);
+    this.scrollable_.append(clearBackendInstructions);
 
     let save = document.createElement('button');
     save.style.cssText = `float: right;`;
     save.append('save');
     save.onclick = () => this.save_();
-    this.append(save);
 
     let cancel = document.createElement('button');
     cancel.style.cssText = `float: right;`;
     cancel.append('cancel');
     cancel.onclick = () => this.cancel_();
-    this.append(cancel);
+
+    let buttonContainer = document.createElement('div');
+    buttonContainer.append(save, cancel);
+    this.append(buttonContainer);
 
     this.dialog_ = showDialog(this);
   }
@@ -75,7 +88,7 @@ class SettingsView extends HTMLElement {
       this.basicSettings_.append(label);
     }
 
-    this.append(this.basicSettings_);
+    this.scrollable_.append(this.basicSettings_);
   }
 
   addQueues_() {
@@ -94,7 +107,7 @@ class SettingsView extends HTMLElement {
     addRow.onclick = () => this.appendEmptyQueueSelector_();
     this.queues_.append(addRow);
 
-    this.append(this.queues_);
+    this.scrollable_.append(this.queues_);
   }
 
   appendEmptyQueueSelector_() {

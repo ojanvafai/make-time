@@ -23,12 +23,16 @@ var isProcessingMail_ = false;
 
 function showDialog(contents) {
   let dialog = document.createElement('dialog');
+  // Subtract out the top/bottom, padding and border from the max-height.
   dialog.style.cssText = `
-    max-width: 85%;
-    max-height: 85%;
-    position: fixed;
-    overflow: auto;
     top: 15px;
+    padding: 8px;
+    border: 3px solid grey;
+    max-height: calc(100vh - 30px - 16px - 6px);
+    max-width: 800px;
+    position: fixed;
+    display: flex;
+    overscroll-behavior: none;
   `;
   dialog.addEventListener('close', () => dialog.remove());
 

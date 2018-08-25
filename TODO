@@ -3,6 +3,7 @@ P1: Will try to do soonish.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - add the ability to filter messages with no list-id as those are probably more urgent.
 - Document the filter columns
+- Fix eliding to group better
 
 P2: Will only do if something makes these seem worth doing.
 - Include "XXX wrote" prefixes in quote eliding
@@ -10,7 +11,7 @@ P2: Will only do if something makes these seem worth doing.
 - Add "send+blocked" button for things where you want to make sure there is followup.
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
 - Render messages in reverse order and return from render() when all the unread messages + 1 read message have been rendered (min 2 messages if all are unread). Then render the rest of the read messages async.
-- Move queued labels to the settings dialog and make it so you can pick which day monthly queues are dequeued.
+- Make monthly queues easier. Maybe allow picking which day monthly queues are dequeued, or maybe better, allow skipping dequeueing them for N days at a time and have the "month" be a month after the last time you dequeued. That way, you can dequeue on a day when you know you have the time for it.
 - Give a way to show the email headers so that people can easily write filters based off the headers.
 - Have key handling code early return if a dialog is open.
 - updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there. Hard to reproduce. :(

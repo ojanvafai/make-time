@@ -2,6 +2,7 @@ let helpHtml_;
 
 function showHelp(settings) {
   let contents = document.createElement('div');
+  contents.style.overflow = 'auto';
   contents.innerHTML = helpText(settings);
   let dialog = showDialog(contents);
   dialog.style.whiteSpace = 'pre-wrap';
