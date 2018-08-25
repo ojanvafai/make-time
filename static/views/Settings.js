@@ -16,8 +16,6 @@ class SettingsView extends HTMLElement {
     `;
     this.append(this.scrollable_);
 
-    let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.settings_.spreadsheetId}/edit`;
-
     let title = document.createElement('div');
     title.style.cssText = `
       font-weight: bold;
@@ -32,13 +30,14 @@ class SettingsView extends HTMLElement {
     `;
     let filtersLink = document.createElement('a');
     filtersLink.append('Modify email filters');
-    filtersLink.href = spreadsheetUrl;
+    filtersLink.onclick = () => this.showFilterDialog_();
     filtersLinkContainer.append(filtersLink);
     this.scrollable_.append(filtersLinkContainer);
 
-    this.addBasicSettings_(spreadsheetUrl);
+    this.addBasicSettings_();
     this.addQueues_();
 
+    let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.settings_.spreadsheetId}/edit`;
     let clearBackendInstructions = document.createElement('div');
     clearBackendInstructions.style.cssText = `margin: 16px 0;`;
     clearBackendInstructions.innerHTML = `To disconnect backend spreadsheet completely, delete or rename <a href=${spreadsheetUrl}>the spreadsheet itself</a>.`;
@@ -61,7 +60,11 @@ class SettingsView extends HTMLElement {
     this.dialog_ = showDialog(this);
   }
 
-  addBasicSettings_(spreadsheetUrl) {
+  showFilterDialog_() {
+    new FiltersView(this.settings_);
+  }
+
+  addBasicSettings_() {
     this.basicSettings_ = document.createElement('div');
     for (let field of Settings.fields) {
       let label = document.createElement('label');

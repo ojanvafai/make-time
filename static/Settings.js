@@ -82,7 +82,7 @@ class Settings {
 
       let values = data.initialData;
 
-      var aCharCode = "A".charCodeAt(0);
+      let aCharCode = "A".charCodeAt(0);
       let lastRow = values.length;
       let lastColumn = String.fromCharCode(aCharCode + values[0].length - 1);
       let range = `${data.name}!A1:${lastColumn}${lastRow}`;
@@ -130,14 +130,8 @@ class Settings {
         }
       });
 
-      switch (data.name) {
-      case 'filters':
-        this.addFiltersRules_(sheetId, formatSheetRequests);
-        break;
-      case 'daily_stats':
+      if (data.name == 'daily_stats')
         this.addDailyStatsCharts_(sheetId, formatSheetRequests);
-        break;
-      }
     }
 
     let formatSheetsResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
@@ -146,31 +140,6 @@ class Settings {
     });
 
     return spreadsheetId;
-  }
-
-  addFiltersRules_(sheetId, requests) {
-    // Add data validation for matchallmessages column.
-    requests.push({
-      setDataValidation: {
-        "range": {
-          "sheetId": sheetId,
-          "startRowIndex": 1,
-          "startColumnIndex": 7,
-          "endColumnIndex": 8,
-        },
-        "rule": {
-          "condition": {
-            "type": 'ONE_OF_LIST',
-            "values": [
-              {userEnteredValue: 'yes'},
-              {userEnteredValue: 'no'},
-            ],
-          },
-          "strict": true,
-          "showCustomUi": true
-        }
-      }
-    });
   }
 
   addDailyStatsCharts_(sheetId, requests) {
@@ -356,14 +325,70 @@ class Settings {
     }
     throw `No such setting: ${setting}`;
   }
+
+  async getFilters() {
+    if (this.filter_)
+      return this.filters_;
+
+    let rawRules = await SpreadsheetUtils.fetchSheet(this.spreadsheetId, Settings.FILTERS_SHEET_NAME_);
+    let rules = [];
+    let labels = {};
+    this.filters_ = {
+      rules: rules,
+    }
+    let ruleNames = rawRules[0];
+    let labelColumn = ruleNames.indexOf('label');
+
+    for (let i = 1, l = rawRules.length; i < l; i++) {
+      let ruleObj = {};
+      for (let j = 0; j < ruleNames.length; j++) {
+        let name = ruleNames[j];
+        let value = rawRules[i][j];
+        if (j == labelColumn)
+          labels[value] = true;
+        if (!value)
+          continue;
+        ruleObj[name] = value.trim();
+      }
+      rules.push(ruleObj);
+    }
+
+    this.filters_.labels = Object.keys(labels);
+    return this.filters_;
+  }
+
+  async writeFilters(rules) {
+    let rows = [Settings.FILTERS_SHEET_COLUMNS_];
+    for (let rule of rules) {
+      let newRule = [];
+
+      for (let field in rule) {
+        if (!Settings.FILTERS_SHEET_COLUMNS_.includes(field))
+          throw `Invalid filter rule field: ${field}. Not saving filters.`;
+      }
+
+      for (let column of Settings.FILTERS_SHEET_COLUMNS_) {
+        let value = rule[column];
+        newRule.push(value || '');
+      }
+      rows.push(newRule);
+    }
+
+    let originalFilterSheetRowCount = this.filters_.rules.length + 1;
+    await SpreadsheetUtils.writeSheet(this.spreadsheetId, Settings.FILTERS_SHEET_NAME_, rows, originalFilterSheetRowCount);
+
+    window.location.reload();
+  }
 }
 
 Settings.QUEUED_LABELS_SHEET_NAME = 'queued_labels';
+Settings.FILTERS_SHEET_NAME_ = 'filters';
+Settings.FILTERS_SHEET_COLUMNS_ = ['label', 'to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header', 'matchallmessages'];
 
 Settings.sheetData_ = [
   {
-    name: 'filters',
-    initialData: [['label', 'to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header', 'matchallmessages']],
+    name: Settings.FILTERS_SHEET_NAME_,
+    initialData: [Settings.FILTERS_SHEET_COLUMNS_],
   },
   {
     name: Settings.QUEUED_LABELS_SHEET_NAME,

@@ -52,12 +52,25 @@
         margin: 4px;
         padding: 8px;
         font-size: 16px;
-        border: 1px solid;
+        border: 1px solid black;
         display: block;
         text-align: center;
       }
       .label-button:hover, button:hover {
         background-color: #ccc;
+      }
+      .row-button {
+        width: 16px;
+        height: 16px;
+        border: 1px solid black;
+        margin-right: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .row-button:hover {
+        color: white;
+        background-color: black;
       }
       #content {
         background-color: white;
@@ -223,6 +236,7 @@
     <script src="static/SpreadsheetUtils.js"></script>
     <script src="static/Thread.js"></script>
     <script src="static/ThreadList.js"></script>
+    <script src="static/views/Filters.js"></script>
     <script src="static/views/Settings.js"></script>
     <script src="static/views/ThreadView.js"></script>
     <script src="static/views/TriagedQueues.js"></script>

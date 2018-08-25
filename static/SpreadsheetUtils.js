@@ -10,6 +10,31 @@ SpreadsheetUtils.fetchSheet = async (spreadsheetId, range) => {
   return response.result.values;
 };
 
+SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToOverwrite) => {
+  let requestParams = {
+    spreadsheetId: spreadsheetId,
+    range: sheetName,
+    valueInputOption: 'RAW',
+  };
+  let requestBody = {
+    values: rows,
+  };
+  let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.update, requestParams, requestBody);
+  // TODO: Handle if response.status != 200.
+
+  // Ensure at least opt_rowsToOverwrite get overridden so that old values get cleared.
+  if (response.status == 200 && opt_rowsToOverwrite > rows.length) {
+    let startRow = rows.length + 1;
+    let finalRow = opt_rowsToOverwrite;
+    // TODO: Handle sheets with more than ZZ columns.
+    let requestParams = {
+      spreadsheetId: spreadsheetId,
+      range: `${sheetName}!A${startRow}:ZZ${finalRow}`,
+    }
+    await gapiFetch(gapi.client.sheets.spreadsheets.values.clear, requestParams, {});
+  }
+}
+
 SpreadsheetUtils.fetch2ColumnSheet = async (spreadsheetId, sheetName, opt_startRowIndex) => {
   let startRowIndex = opt_startRowIndex || 0;
   let range = `${sheetName}!A${startRowIndex + 1}:B`;

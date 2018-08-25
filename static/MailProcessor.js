@@ -1,4 +1,3 @@
-const FILTERS_SHEET_NAME = 'filters';
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
@@ -94,34 +93,6 @@ class MailProcessor {
     if (!queuePrefixMap[queue])
       throw `Attempting to put label in a non-existant queue. queue: ${queue}, label: ${labelName}`;
     return this.addAutoPrefix(queuePrefixMap[queue] + '/' + labelName);
-  }
-
-  async readRulesRows() {
-    var rawRules = await SpreadsheetUtils.fetchSheet(this.settings.spreadsheetId, FILTERS_SHEET_NAME);
-    var rules = [];
-    var labels = {};
-    var output = {
-      rules: rules,
-    }
-    var ruleNames = rawRules[0];
-    var labelColumn = ruleNames.indexOf('label');
-
-    for (var i = 1, l = rawRules.length; i < l; i++) {
-      var ruleObj = {};
-      for (var j = 0; j < ruleNames.length; j++) {
-        var name = ruleNames[j];
-        var value = rawRules[i][j];
-        if (j == labelColumn)
-          labels[value] = true;
-        if (!value)
-          continue;
-        ruleObj[name] = value.trim();
-      }
-      rules.push(ruleObj);
-    }
-
-    output.labels = Object.keys(labels);
-    return output;
   }
 
   async writeToStatsPage(timestamp, num_threads_processed, per_label_counts, time_taken) {
@@ -329,7 +300,7 @@ class MailProcessor {
       return;
 
     let startTime = new Date();
-    let rulesSheet = await this.readRulesRows();
+    let rulesSheet = await this.settings.getFilters();
 
     // Don't do any processing if there are no rules. This happens when someone
     // creates a new backend spreadsheet for example.
