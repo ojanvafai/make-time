@@ -208,34 +208,40 @@ Labels.compare = (a, b) => {
   return 0;
 }
 
+function removeLabelPrefix(labelName, prefix) {
+  return labelName.replace(new RegExp(`^${prefix}/`), '');
+}
+
 Labels.addMakeTimePrefix = (labelName) => {
   return Labels.MAKE_TIME_PREFIX + '/' + labelName;
 }
 
 Labels.removeMakeTimePrefix = (labelName) => {
-  return labelName.replace(new RegExp('^' + Labels.MAKE_TIME_PREFIX + '/'), '');
+  return removeLabelPrefix(labelName, Labels.MAKE_TIME_PREFIX);
 }
 
 Labels.isMakeTimeLabel = (labelName) => {
   return labelName.startsWith(Labels.MAKE_TIME_PREFIX + '/');
 }
 
-Labels.triagerLabel = (labelName) => {
+Labels.triagedLabel = (labelName) => {
   return `${Labels.TRIAGED_LABEL}/${labelName}`;
 }
 
-Labels.removeTriagedPrefix = (label) => {
-  if (!label)
-    return 'inbox';
-  return label.replace(new RegExp('^' + Labels.NEEDS_TRIAGE_LABEL + '/'), '');
+Labels.removeTriagedPrefix = (labelName) => {
+  return removeLabelPrefix(labelName, Labels.TRIAGED_LABEL);
 }
 
 Labels.needsTriageLabel = (labelName) => {
   return `${Labels.NEEDS_TRIAGE_LABEL}/${labelName}`;
 }
 
+Labels.removeNeedsTriagePrefix = (labelName) => {
+  return removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
+}
+
 Labels.removeLabelerPrefix = (labelName) => {
-  return labelName.replace(new RegExp('^' + Labels.LABELER_PREFIX + '/'), '');
+  return removeLabelPrefix(labelName, Labels.LABELER_PREFIX);
 }
 
 Labels.addQueuedPrefix = (labelName) => {
@@ -250,11 +256,11 @@ Labels.BASE_UNPROCESSED_LABEL = 'unprocessed';
 Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix(Labels.BASE_UNPROCESSED_LABEL);
 Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix(Labels.BASE_TRIAGED_LABEL);
 Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix(Labels.BASE_NEEDS_TRIAGE_LABEL);
-Labels.READ_LATER_LABEL = Labels.triagerLabel('tldr');
-Labels.NEEDS_REPLY_LABEL = Labels.triagerLabel('needsreply');
+Labels.READ_LATER_LABEL = Labels.triagedLabel('tldr');
+Labels.NEEDS_REPLY_LABEL = Labels.triagedLabel('needsreply');
 Labels.BLOCKED_LABEL_SUFFIX = 'blocked';
-Labels.MUTED_LABEL = Labels.triagerLabel('supermuted');
-Labels.ACTION_ITEM_LABEL = Labels.triagerLabel('actionitem');
+Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
+Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
 Labels.LABELER_PREFIX = 'labeler';
 Labels.FALLBACK_LABEL = 'needsfilter';
 

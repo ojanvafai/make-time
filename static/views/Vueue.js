@@ -1,10 +1,11 @@
 class Vueue extends HTMLElement {
-  constructor(threads, cleanupDelegate) {
+  constructor(threads, cleanupDelegate, allLabels) {
     super();
     this.style.display = 'block';
 
     this.threads_ = threads;
     this.cleanupDelegate_ = cleanupDelegate;
+    this.allLabels_ = allLabels;
     this.groupByQueue_ = {};
 
     // I will never truly love javascript
@@ -21,6 +22,13 @@ class Vueue extends HTMLElement {
   }
 
   updateCurrentThread() {
+  }
+
+  finishedInitialLoad() {
+    if (!this.initialThreadsView_.children.length) {
+      this.triagedQueues_ = new TriagedQueues(this.allLabels_);
+      this.append(this.triagedQueues_);
+    }
   }
 
   async connectedCallback() {
@@ -57,6 +65,11 @@ class Vueue extends HTMLElement {
   }
 
   async push(thread) {
+    if (this.triagedQueues_) {
+      this.triagedQueues_.remove();
+      this.triagedQueues_ = null;
+    }
+
     let queue = await thread.getDisplayableQueue();
     let rowGroup = this.groupByQueue_[queue];
     if (!rowGroup) {

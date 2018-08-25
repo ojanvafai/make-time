@@ -63,7 +63,7 @@ async function viewThreadAtATime(threads) {
 }
 
 async function viewAll(threads) {
-  setView(new Vueue(threads, transitionBackToThreadAtATime));
+  setView(new Vueue(threads, transitionBackToThreadAtATime, labels_));
   updateCounter(['']);
 }
 
@@ -172,7 +172,7 @@ async function onLoad() {
   settings_ = new Settings();
   labels_ = new Labels();
 
-  await Promise.all([settings_.fetch(), labels_.fetch(), viewAll([])]);
+  await Promise.all([settings_.fetch(), labels_.fetch()]);
 
   // TODO: Remove this once everyone has migrated.
   await labels_.migrateLabels();
@@ -203,6 +203,8 @@ async function onLoad() {
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
   labelsToFetch.sort(Labels.compare);
 
+  await viewAll([]);
+
   for (let label of labelsToFetch) {
     await fetchThreads(addThread, {
       query: vacationQuery,
@@ -214,6 +216,8 @@ async function onLoad() {
     query: `-has:userlabels ${vacationQuery}`,
     queue: 'inbox',
   });
+
+  currentView_.finishedInitialLoad();
 
   updateTitle('onLoad');
   // Don't want to show the earlier title, but still want to indicate loading is happening.

@@ -212,13 +212,13 @@ class ThreadView extends HTMLElement {
       let queues = this.threadList_.queues();
 
       if (!queues.includes(prefetchQueue))
-        queueData += `<div>${Labels.removeTriagedPrefix(prefetchQueue)}:&nbsp;1</div>`;
+        queueData += `<div>${Labels.removeNeedsTriagePrefix(prefetchQueue)}:&nbsp;1</div>`;
 
       for (let queue of queues) {
         let count = this.threadList_.threadCountForQueue(queue);
         if (queue == prefetchQueue)
           count++;
-        queueData += `<div>${Labels.removeTriagedPrefix(queue)}:&nbsp;${count}</div>`;
+        queueData += `<div>${Labels.removeNeedsTriagePrefix(queue)}:&nbsp;${count}</div>`;
       }
       this.queueSummary_.innerHTML = queueData;
     } else {
@@ -515,20 +515,8 @@ Content-Type: text/html; charset="UTF-8"
     this.messages_.textContent = '';
     this.timer_.textContent = '';
 
-    if (!this.showSummary_)
-      return;
-
-    let labels = await this.allLabels_.getTheadCountForLabels((labelName) => {
-      return labelName != Labels.MUTED_LABEL && labelName.startsWith(Labels.TRIAGED_LABEL + '/');
-    });
-
-    for (let label of labels) {
-      let link = document.createElement('a');
-      link.className = 'label-button';
-      link.href = `https://mail.google.com/mail/#label/${label.name}`;
-      link.textContent = `${label.name}(${label.count})`;
-      this.messages_.append(link);
-    }
+    if (this.showSummary_)
+      this.messages_.append(new TriagedQueues(this.allLabels_));
   }
 
   async requeuePrefetchedThread_() {

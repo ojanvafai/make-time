@@ -31,6 +31,9 @@ class Thread {
         this.setQueue(name);
       this.labelNames_.push(name);
     }
+
+    if (!this.queue_)
+      this.setQueue('inbox');
   }
 
   processMessages_(messages) {
@@ -109,9 +112,7 @@ class Thread {
 
   async getDisplayableQueue() {
     let queue = await this.getQueue();
-    if (!queue)
-      return 'inbox';
-    return Labels.removeTriagedPrefix(queue);
+    return Labels.removeNeedsTriagePrefix(queue);
   }
 
   async getQueue() {
