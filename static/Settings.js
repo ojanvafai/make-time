@@ -133,9 +133,6 @@ class Settings {
       case 'filters':
         this.addFiltersRules_(sheetId, formatSheetRequests);
         break;
-      case 'queued_labels':
-        this.addQueuedLabelsRules_(sheetId, formatSheetRequests);
-        break;
       case 'daily_stats':
         this.addDailyStatsCharts_(sheetId, formatSheetRequests);
         break;
@@ -169,60 +166,6 @@ class Settings {
             ],
           },
           "strict": true,
-          "showCustomUi": true
-        }
-      }
-    });
-  }
-
-  addQueuedLabelsRules_(sheetId, requests) {
-    // Add data validation for queue delivery time.
-    requests.push({
-      setDataValidation: {
-        "range": {
-          "sheetId": sheetId,
-          "startRowIndex": 1,
-          "startColumnIndex": 1,
-          "endColumnIndex": 2,
-        },
-        "rule": {
-          "condition": {
-            "type": 'ONE_OF_LIST',
-            "values": [
-              {userEnteredValue: 'Daily'},
-              {userEnteredValue: 'Monthly'},
-              {userEnteredValue: 'Monday'},
-              {userEnteredValue: 'Tuesday'},
-              {userEnteredValue: 'Wednesday'},
-              {userEnteredValue: 'Thursday'},
-              {userEnteredValue: 'Friday'},
-              {userEnteredValue: 'Saturday'},
-              {userEnteredValue: 'Sunday'},
-            ],
-          },
-          "strict": true,
-          "showCustomUi": true
-        }
-      }
-    });
-
-    // Add data validation for queue label names.
-    requests.push({
-      setDataValidation: {
-        "range": {
-          "sheetId": sheetId,
-          "startRowIndex": 1,
-          "startColumnIndex": 0,
-          "endColumnIndex": 1,
-        },
-        "rule": {
-          "condition": {
-            "type": 'ONE_OF_RANGE',
-            "values": [
-              {userEnteredValue: '=queued_labels!D2:D900'},
-            ],
-          },
-          "strict": false,
           "showCustomUi": true
         }
       }
@@ -414,18 +357,16 @@ class Settings {
   }
 }
 
+Settings.QUEUED_LABELS_SHEET_NAME = 'queued_labels';
+
 Settings.sheetData_ = [
   {
     name: 'filters',
     initialData: [['label', 'to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header', 'matchallmessages']],
   },
   {
-    name: 'queued_labels',
-    initialData: [
-      ['label', 'day', '', 'Known Label Names'],
-      ['', '', '', 'blocked'],
-      ['', '', '', '=UNIQUE(filters!A2:A)'],
-    ],
+    name: Settings.QUEUED_LABELS_SHEET_NAME,
+    initialData: [['label', 'day', '', 'Known Label Names']],
   },
   {
     name: 'statistics',

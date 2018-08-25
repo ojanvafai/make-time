@@ -11,12 +11,12 @@ let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/res
 let SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly';
 
 let USER_ID = 'me';
-let QUEUED_LABELS_SHEET_NAME = 'queued_labels';
 let authorizeButton = document.getElementById('authorize-button');
 
 let currentView_;
 let settings_;
 let labels_;
+let queuedLabelMap_;
 let contacts_ = [];
 let titleStack_ = [];
 var isProcessingMail_ = false;
@@ -185,7 +185,7 @@ async function onLoad() {
 
   let settingsLink = document.getElementById('settings');
   settingsLink.textContent = 'Settings';
-  settingsLink.onclick = () => new SettingsView(settings_);
+  settingsLink.onclick = async () => new SettingsView(settings_, await getQueuedLabelMap());
 
   let helpLink = document.getElementById('help');
   helpLink.textContent = 'Help';
@@ -251,6 +251,13 @@ async function fetchContacts(token) {
   }
 }
 
+async function getQueuedLabelMap() {
+  if (!queuedLabelMap_) {
+    queuedLabelMap_ = await SpreadsheetUtils.fetch2ColumnSheet(settings_.spreadsheetId, Settings.QUEUED_LABELS_SHEET_NAME, 1);
+  }
+  return queuedLabelMap_;
+}
+
 // TODO: Move this to a cron
 async function processMail() {
   if (isProcessingMail_)
@@ -259,9 +266,7 @@ async function processMail() {
   isProcessingMail_ = true;
   updateTitle('processMail', 'Processing mail backlog...', true);
 
-  let queuedLabelMap = await SpreadsheetUtils.fetch2ColumnSheet(settings_.spreadsheetId, QUEUED_LABELS_SHEET_NAME, 1);
-
-  let mailProcessor = new MailProcessor(settings_, addThread, queuedLabelMap, labels_);
+  let mailProcessor = new MailProcessor(settings_, addThread, await getQueuedLabelMap(), labels_);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();

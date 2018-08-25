@@ -8,6 +8,7 @@ class ServerStorage {
       return;
 
     const rawBackendValues = await SpreadsheetUtils.fetch2ColumnSheet(this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_);
+
     ServerStorage.backendValues_ = {};
     // Strip no longer supported backend keys.
     for (let key of Object.values(ServerStorage.KEYS)) {

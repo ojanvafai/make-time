@@ -2,32 +2,36 @@ let SpreadsheetUtils = {};
 
 (() => {
 
-SpreadsheetUtils.fetchSheet = async (spreadsheetId, sheetName) => {
+SpreadsheetUtils.fetchSheet = async (spreadsheetId, range) => {
   let response =  await gapiFetch(gapi.client.sheets.spreadsheets.values.get, {
     spreadsheetId: spreadsheetId,
-    range: sheetName,
+    range: range,
   });
   return response.result.values;
 };
 
 SpreadsheetUtils.fetch2ColumnSheet = async (spreadsheetId, sheetName, opt_startRowIndex) => {
+  let startRowIndex = opt_startRowIndex || 0;
+  let range = `${sheetName}!A${startRowIndex + 1}:B`;
+
   let result = {};
-  let values = await SpreadsheetUtils.fetchSheet(spreadsheetId, sheetName);
+  let values = await SpreadsheetUtils.fetchSheet(spreadsheetId, range);
   if (!values)
     return result;
 
-  let startRowIndex = opt_startRowIndex || 0;
-  for (var i = startRowIndex; i < values.length; i++) {
+  for (var i = 0; i < values.length; i++) {
     let value = values[i];
-    result[value[0]] = value[1];
+    if (value[0] || value[1])
+      result[value[0]] = value[1];
   }
   return result;
 }
 
-SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows) => {
+SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows, opt_rowsToOverwrite, opt_startRowIndex) => {
+  let startRowIndex = opt_startRowIndex || 0;
   let requestParams = {
     spreadsheetId: spreadsheetId,
-    range: sheetName + '!A1:B' + rows.length,
+    range: `${sheetName}!A${startRowIndex + 1}:B`,
     valueInputOption: 'RAW',
   };
   let requestBody = {
@@ -35,6 +39,17 @@ SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows) => {
   };
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.update, requestParams, requestBody);
   // TODO: Handle if response.status != 200.
+
+  // Ensure at least opt_rowsToOverwrite get overridden so that old values get cleared.
+  if (response.status == 200 && opt_rowsToOverwrite > rows.length) {
+    let startRow = startRowIndex + rows.length + 1;
+    let finalRow = startRowIndex + opt_rowsToOverwrite;
+    let requestParams = {
+      spreadsheetId: spreadsheetId,
+      range: `${sheetName}!A${startRow}:B${finalRow}`,
+    }
+    await gapiFetch(gapi.client.sheets.spreadsheets.values.clear, requestParams, {});
+  }
 }
 
 SpreadsheetUtils.appendToSheet = async (spreadsheetId, sheetName, rows) => {
