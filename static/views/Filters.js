@@ -169,7 +169,7 @@ class FiltersView extends HTMLElement {
     addButton.classList.add('row-button');
     addButton.onclick = () => {
       let emptyRule = this.createRule_({});
-      container.after(emptyRule);
+      container.before(emptyRule);
     };
     buttons.append(addButton);
 
