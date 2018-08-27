@@ -1,20 +1,15 @@
-Filters vNext
--put descriptions of the allowed fields at the bottom
--add help descriptin for the keyboard shortcuts.
--autocomplete the allowed fields
--highlight invalid fields in red
--group items with the same label like headers in asana. For a given grouping of rules, sort the rules alphabetically
--ctrl+shift+up/down to move by 10 rows at a time
--save back in the current format, but upgrade to the new format using the number of columns as the effective version number
-
 P1: Will try to do soonish.
+-highlight invalid fields in red
+-ctrl+shift+up/down to move by 10 rows at a time
+- Add autocomplete for label names in the queues and filters views.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - add the ability to filter messages with no list-id as those are probably more urgent.
-- Document the filter columns
 - Fix eliding to group better
-- Add autocomplete for label names in the queues and filters views.
 
 P2: Will only do if something makes these seem worth doing.
+-save back in the current format, but upgrade to the new format using the number of columns as the effective version number
+- group filter rules with the same label like headers in asana. For a given grouping of rules, sort the rules alphabetically
+- autocomplete the allowed filter fields in the rule editor
 - add drag and drop reordering of filters
 - Include "XXX wrote" prefixes in quote eliding
 - elide quotes based off the "In-Reply-To" instead of whatever happens to be the previous message

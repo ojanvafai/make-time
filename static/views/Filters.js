@@ -89,8 +89,27 @@ class FiltersView extends HTMLElement {
     this.append(scrollable);
 
     let help = document.createElement('div');
-    help.style.cssText = `flex: 1;`;
-    help.append(FiltersView.HELP_TEXT_);
+    help.style.cssText = `
+      flex: 1;
+      white-space: pre-wrap;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-top: 4px;
+      font-size: 13px;
+    `;
+    help.innerHTML = FiltersView.HELP_TEXT_;
+
+    let expander = help.querySelector('a');
+    expander.onclick = () => {
+      let existing = window.getComputedStyle(help)['-webkit-line-clamp'];
+      // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
+      // returns 'none' from computed style.
+      let wasUnclamped = existing == 'none';
+      help.style['-webkit-line-clamp'] = wasUnclamped ? '2' : 'unset';
+      expander.textContent = wasUnclamped ? 'show more' : 'show less';
+    };
 
     let cancel = document.createElement('button');
     cancel.append('cancel');
@@ -363,6 +382,20 @@ class FiltersView extends HTMLElement {
 
 FiltersView.DIRECTIVE_SEPARATOR_ = ':';
 FiltersView.QUERY_SEPARATOR_ = '&&';
-FiltersView.HELP_TEXT_ = `Use ctrl+up/down or cmd+up/down to reorder the focused row.`;
+FiltersView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>
+ - Use ctrl+up/down or cmd+up/down to reorder the focused row.
+ - The first rule that matches is the one that applies, so order matters.
+ - Label is the label that will apply qhen the rule matches.
+ - Rule is the rule to match.
+ - Match All Messages will required the rule to match all the messages in the thread to be considered a match. Otherwise, any message in the thread matching will mean the whole thread matches.
+
+<b>Rule directives</b>
+ - <b>to:</b> Matches the to/cc/bcc fields of the email. "foo" will match foo+anything@anything.com, "foo@gmail.com" will match foo@gmail.com and foo+anything@gmail.com, "gmail.com" will match anything@gmail.com.
+ - <b>from:</b> Matches the from field of the email. Same matching rules as the "to" directive.
+ - <b>subject:</b> Matches if the subject of the email includes this text.
+ - <b>plaintext:</b> Matches if the plain text of the email includes this text.
+ - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
+ - <b>header:</b> Matches arbitrary email headers. You can see the email headers by going to gmail and clicking "Show original" for a given a message. The format is "header:value" where "header" is the name of the mail header and "value" is the value to search for in that mail header. For example, "X-Autoreply:yes" is a filter gmail (and probably other) vacation autoresponders as they put an X-Autoreply header on autoresponse messages.
+`;
 
 window.customElements.define('mt-filters', FiltersView);
