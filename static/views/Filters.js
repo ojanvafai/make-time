@@ -257,6 +257,10 @@ class FiltersView extends HTMLElement {
         margin-right: 2px;
         border-radius: 3px;
       `;
+
+      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(fieldText.trim()))
+        fieldElement.classList.add('invalid-directive');
+
       this.appendWithSentinel_(fieldElement, fieldText);
       container.append(fieldElement);
 
@@ -266,6 +270,11 @@ class FiltersView extends HTMLElement {
         fieldElement.append(FiltersView.DIRECTIVE_SEPARATOR_);
 
         let valueElement = document.createElement('span');
+        valueElement.style.cssText = `
+          background-color: lightgrey;
+          padding: 1px 2px;
+          border-radius: 3px;
+        `;
         this.appendWithSentinel_(valueElement, value);
         container.append(valueElement);
       }
@@ -383,6 +392,7 @@ class FiltersView extends HTMLElement {
 FiltersView.DIRECTIVE_SEPARATOR_ = ':';
 FiltersView.QUERY_SEPARATOR_ = '&&';
 FiltersView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>
+ - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
  - Use ctrl+up/down or cmd+up/down to reorder the focused row.
  - The first rule that matches is the one that applies, so order matters.
  - Label is the label that will apply qhen the rule matches.

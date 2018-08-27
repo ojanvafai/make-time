@@ -72,6 +72,13 @@
         color: white;
         background-color: black;
       }
+      .invalid-directive::before {
+        color: red;
+        content: '⚠ ';
+      }
+      .invalid-directive:hover::before {
+        content: 'INVALID DIRECTIVE: '
+      }
       #content {
         background-color: white;
         flex: 1;

@@ -383,7 +383,8 @@ class Settings {
 
 Settings.QUEUED_LABELS_SHEET_NAME = 'queued_labels';
 Settings.FILTERS_SHEET_NAME_ = 'filters';
-Settings.FILTERS_SHEET_COLUMNS_ = ['label', 'to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header', 'matchallmessages'];
+Settings.FILTERS_RULE_DIRECTIVES = ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
+Settings.FILTERS_SHEET_COLUMNS_ = [].concat('label', Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages');
 
 Settings.sheetData_ = [
   {
