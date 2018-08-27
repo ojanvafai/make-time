@@ -21,16 +21,16 @@ class FiltersView extends HTMLElement {
 
     switch (e.key) {
     case 'ArrowUp':
-      this.moveRow_(e.key);
+      this.moveRow_(e.key, e.shiftKey);
       break;
 
     case 'ArrowDown':
-      this.moveRow_(e.key);
+      this.moveRow_(e.key, e.shiftKey);
       break;
     }
   }
 
-  moveRow_(direction) {
+  moveRow_(direction, move10) {
     let focused = document.activeElement;
 
     let row = focused.parentNode;
@@ -47,19 +47,21 @@ class FiltersView extends HTMLElement {
     if (!parent)
       return;
 
+    let count = move10 ? 10 : 1;
+
     if (direction == 'ArrowUp') {
-      if (row.previousSibling) {
+      while (count-- && row.previousSibling) {
         row.previousSibling.before(row);
-        focused.focus();
       }
     } else if (direction == 'ArrowDown') {
-      if (row.nextSibling) {
+      while (count-- && row.nextSibling) {
         row.nextSibling.after(row);
-        focused.focus();
       }
     } else {
       throw `Tried to move row in invalid direction: ${direction}`;
     }
+
+    focused.focus();
   }
 
   async render_() {
@@ -393,7 +395,7 @@ FiltersView.DIRECTIVE_SEPARATOR_ = ':';
 FiltersView.QUERY_SEPARATOR_ = '&&';
 FiltersView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>
  - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
- - Use ctrl+up/down or cmd+up/down to reorder the focused row.
+ - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
  - The first rule that matches is the one that applies, so order matters.
  - Label is the label that will apply qhen the rule matches.
  - Rule is the rule to match.

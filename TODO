@@ -1,5 +1,4 @@
 P1: Will try to do soonish.
-- ctrl+shift+up/down to move by 10 rows at a time
 - Add autocomplete for label names in the queues and filters views.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - add the ability to filter messages with no list-id as those are probably more urgent.
