@@ -77,6 +77,8 @@ class ThreadView extends HTMLElement {
     setTimeout(this.renderNext_.bind(this));
   }
 
+  finishedInitialLoad() {}
+
   addButtons_() {
     this.timer_ = document.createElement('span');
     this.timer_.style.cssText = `
@@ -188,8 +190,14 @@ class ThreadView extends HTMLElement {
       let currentThreadQueue = await this.currentThread_.thread.getQueue();
       let leftInQueue = this.threadList_.threadCountForQueue(currentThreadQueue);
       let total = this.threadList_.length;
+
+      let queueData = '';
+      let queues = this.threadList_.queues();
+      let prefetchQueue = null;
       if (this.prefetchedThread_) {
-        let prefetchQueue = await this.prefetchedThread_.thread.getQueue();
+        prefetchQueue = await this.prefetchedThread_.thread.getQueue();
+        if (!queues.includes(prefetchQueue))
+          queueData += `<div>${Labels.removeNeedsTriagePrefix(prefetchQueue)}:&nbsp;1</div>`;
         if (prefetchQueue == currentThreadQueue)
           leftInQueue += 1;
         total += 1;
@@ -203,16 +211,6 @@ class ThreadView extends HTMLElement {
         this.cleanup();
       };
       title.push(viewAllLink);
-
-      let prefetchQueue = null;
-      if (this.prefetchedThread_)
-        prefetchQueue = await this.prefetchedThread_.thread.getQueue();
-
-      let queueData = '';
-      let queues = this.threadList_.queues();
-
-      if (!queues.includes(prefetchQueue))
-        queueData += `<div>${Labels.removeNeedsTriagePrefix(prefetchQueue)}:&nbsp;1</div>`;
 
       for (let queue of queues) {
         let count = this.threadList_.threadCountForQueue(queue);
