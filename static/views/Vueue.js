@@ -37,11 +37,10 @@ class Vueue extends HTMLElement {
     let footer = document.createElement('div');
     footer.className = 'footer';
 
-    // TODO: make handle archive remove the item from the Vueue then enable this.
-    // let doneButton = document.createElement('button');
-    // doneButton.innerHTML = "Archive selected";
-    // doneButton.onclick = () => this.handleArchive_();
-    // footer.append(doneButton)
+    let doneButton = document.createElement('button');
+    doneButton.innerHTML = "Archive selected";
+    doneButton.onclick = () => this.handleArchive_();
+    footer.append(doneButton)
 
     let beginTriageButton = document.createElement('button');
     beginTriageButton.innerHTML = "Archive selected and begin triage";
@@ -53,16 +52,18 @@ class Vueue extends HTMLElement {
   }
 
   getThreads_() {
-    let selectedThreads = [];
-    let unselectedThreads = [];
+    let selected = [];
+    let unselected = [];
     for (let child of this.initialThreadsView_.querySelectorAll('mt-vueue-row')) {
-      let destination = child.checked ? selectedThreads : unselectedThreads;
-      let thread = child.thread;
-      destination.push(thread);
+      if (child.checked) {
+        selected.push(child);
+      } else {
+        unselected.push(child.thread);
+      }
     }
     return {
-      selected: selectedThreads,
-      unselected: unselectedThreads,
+      selectedRows: selected,
+      unselectedThreads: unselected,
     }
   }
 
@@ -73,8 +74,8 @@ class Vueue extends HTMLElement {
     }
 
     let threads = this.getThreads_();
-    this.cleanupDelegate_(threads.unselected);
-    await this.archiveThreads_(threads.selected);
+    this.cleanupDelegate_(threads.unselectedThreads);
+    await this.archiveThreads_(threads.selectedRows);
   }
 
   async handleArchive_() {
@@ -84,13 +85,29 @@ class Vueue extends HTMLElement {
     }
 
     let threads = this.getThreads_();
-    await this.archiveThreads_(threads.selected);
+    await this.archiveThreads_(threads.selectedRows);
   }
 
-  async archiveThreads_(threads) {
-    for (let i = 0; i < threads.length; i++) {
-      this.updateTitle_('archiving', `Archiving ${i + 1}/${threads.length} threads...`);
-      await threads[i].markTriaged();
+  async removeRow_(row) {
+    row.remove();
+    let queue = await row.thread.getDisplayableQueue();
+    let rowGroup = this.groupByQueue_[queue];
+    if (!rowGroup.hasRows()) {
+      rowGroup.remove();
+      delete this.groupByQueue_[queue];
+    }
+  }
+
+  async archiveThreads_(rows) {
+    this.updateTitle_('archiving', `Archiving ${rows.length} threads...`);
+
+    // Update the UI first and then archive one at a time.
+    for (let i = 0; i < rows.length; i++) {
+      await this.removeRow_(rows[i]);
+    }
+    for (let i = 0; i < rows.length; i++) {
+      this.updateTitle_('archiving', `Archiving ${i + 1}/${rows.length} threads...`);
+      await rows[i].thread.markTriaged();
     }
     this.updateTitle_('archiving');
   }
@@ -135,6 +152,10 @@ class VueueRowGroup_ extends HTMLElement {
 
     this.rowContainer_ = document.createElement('div');
     this.append(queueContainer, this.rowContainer_);
+  }
+
+  hasRows() {
+    return !!this.rowContainer_.children.length;
   }
 
   push(thread) {

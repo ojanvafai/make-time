@@ -9,31 +9,32 @@ class Message {
     this.attachments_ = [];
 
     for (var header of message.payload.headers) {
-    switch (header.name) {
-      case 'Subject':
+    // Some mail users lower case header names (probably just spam).
+    switch (header.name.toLowerCase()) {
+      case 'subject':
         this.subject = header.value;
         break;
-      case 'Date':
+      case 'date':
         this.date = new Date(header.value);
         break;
-      case 'From':
+      case 'from':
         this.from = this.cleanseAddresses_(header.value);
         this.fromEmails = this.extractEmails_(this.from);
         this.fromName = this.extractName_(this.from);
         break;
-      case 'To':
+      case 'to':
         this.to = this.cleanseAddresses_(header.value);
         this.toEmails = this.extractEmails_(this.to);
         break;
-      case 'Cc':
+      case 'cc':
         this.cc = this.cleanseAddresses_(header.value);
         this.ccEmails = this.extractEmails_(this.cc);
         break;
-      case 'Bcc':
+      case 'ccc':
         this.bcc = this.cleanseAddresses_(header.value);
         this.bccEmails = this.extractEmails_(this.bcc);
         break;
-      case 'Message-ID':
+      case 'message-id':
         this.messageId = header.value;
         break;
     }
