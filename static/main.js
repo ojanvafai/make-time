@@ -290,11 +290,24 @@ document.addEventListener('visibilitychange', (e) => {
     currentView_.onShow();
 });
 
+function isEditable(target) {
+  if (target.tagName == 'INPUT' || target.tagName == 'TEXTAREA')
+    return true;
+
+  while (target) {
+    if (getComputedStyle(target).webkitUserModify.startsWith('read-write'))
+      return true;
+    target = target.parentElement;
+  }
+
+  return false;
+}
+
 document.body.addEventListener('keydown', async (e) => {
   if (!currentView_)
     return;
 
-  if (e.target.tagName == 'INPUT')
+  if (isEditable(e.target))
     return;
 
   // Don't allow actions to apply in rapid succession for each thread.

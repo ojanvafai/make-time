@@ -228,13 +228,11 @@ class ThreadView extends HTMLElement {
 
   async dispatchShortcut(e) {
     var action = ThreadView.ACTIONS[e.key];
-    if (action) {
-      e.preventDefault();
-      this.takeAction_(action);
-    }
+    if (action)
+      this.takeAction_(action, e);
   };
 
-  async takeAction_(action) {
+  async takeAction_(action, opt_e) {
     // Don't want key presses inside the quick reply to trigger actions, but
     // also don't want to trigger actions if the quick reply is accidentally blurred.
     if (this.quickReplyOpen_)
@@ -247,6 +245,9 @@ class ThreadView extends HTMLElement {
       alert(`This action requires a network connection.`);
       return;
     }
+
+    if (opt_e)
+      opt_e.preventDefault();
 
     if (action == ThreadView.UNDO_ACTION) {
       this.undoLastAction_();
