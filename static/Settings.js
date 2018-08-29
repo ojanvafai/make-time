@@ -393,7 +393,7 @@ Settings.sheetData_ = [
   },
   {
     name: Settings.QUEUED_LABELS_SHEET_NAME,
-    initialData: [['label', 'day', '', 'Known Label Names']],
+    initialData: [['label', 'day']],
   },
   {
     name: 'statistics',

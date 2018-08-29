@@ -43,16 +43,6 @@ function showDialog(contents) {
   return dialog;
 }
 
-async function transitionBackToThreadAtATime(threadsToTriage, threadsToDone) {
-  await viewThreadAtATime(threadsToTriage);
-  for (let i = 0; i < threadsToDone.length; i++) {
-    updateTitle('archiving', `Archiving ${i + 1}/${threadsToDone.length} threads...`);
-    let thread = threadsToDone[i];
-    await thread.markTriaged();
-  }
-  updateTitle('archiving');
-}
-
 async function viewThreadAtATime(threads) {
   let threadList = new ThreadList();
   for (let thread of threads) {
@@ -67,7 +57,7 @@ async function viewThreadAtATime(threads) {
 }
 
 async function viewAll(threads) {
-  setView(new Vueue(threads, transitionBackToThreadAtATime, labels_));
+  setView(new Vueue(threads, viewThreadAtATime, updateTitle, labels_));
   updateCounter(['']);
 }
 
@@ -177,9 +167,6 @@ async function onLoad() {
   labels_ = new Labels();
 
   await Promise.all([settings_.fetch(), labels_.fetch()]);
-
-  // TODO: Remove this once everyone has migrated.
-  await labels_.migrateLabels();
 
   let storage = new ServerStorage(settings_.spreadsheetId);
   if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {

@@ -2,7 +2,7 @@ class Labels {
   async fetch() {
     var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
       'userId': USER_ID
-    })
+    });
 
     this.labelToId_ = {};
     this.idToLabel_ = {};
@@ -103,55 +103,6 @@ class Labels {
       }
     }
     return labelsWithThreads;
-  }
-
-  async deleteLabel(labelName) {
-    let labelerPrefixId = this.labelToId_[labelName];
-    if (labelerPrefixId) {
-      await gapiFetch(gapi.client.gmail.users.labels.delete, {
-        'userId': USER_ID,
-        'id': labelerPrefixId,
-      });
-    }
-  }
-
-  async migrateLabels() {
-    for (let name in this.labelToId_) {
-      let newName;
-      if (name == Labels.BASE_TRIAGED_LABEL ||
-          name.startsWith(Labels.BASE_TRIAGED_LABEL + '/') ||
-          name.startsWith(Labels.BASE_NEEDS_TRIAGE_LABEL + '/')) {
-        await this.migrateLabel(name, Labels.addMakeTimePrefix(name));
-      } else if (name.startsWith(Labels.LABELER_PREFIX + '/')) {
-        await this.migrateLabel(name, Labels.addMakeTimePrefix(Labels.removeLabelerPrefix(name)));
-      }
-    }
-
-    this.deleteLabel(Labels.LABELER_PREFIX);
-    this.deleteLabel(Labels.BASE_TRIAGED_LABEL);
-    this.deleteLabel(Labels.BASE_NEEDS_TRIAGE_LABEL);
-
-    // Ensure all the parent labels get created.
-    await this.getId(Labels.NEEDS_TRIAGE_LABEL);
-    await this.getId(Labels.TRIAGED_LABEL);
-
-    if (!this.labelToId_[Labels.UNPROCESSED_LABEL])
-      await this.migrateLabel(Labels.BASE_UNPROCESSED_LABEL, Labels.UNPROCESSED_LABEL);
-
-    await this.fetch();
-  }
-
-  async migrateLabel(oldLabelName, newLabelName) {
-    let oldId = this.labelToId_[oldLabelName];
-    let body = {
-      'userId': USER_ID,
-      'id': oldId,
-      'resource': {
-        'id': oldId,
-        'name': newLabelName,
-      }
-    }
-    var request = await gapiFetch(gapi.client.gmail.users.labels.update, body);
   }
 }
 

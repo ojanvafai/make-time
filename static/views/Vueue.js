@@ -1,10 +1,11 @@
 class Vueue extends HTMLElement {
-  constructor(threads, cleanupDelegate, allLabels) {
+  constructor(threads, cleanupDelegate, updateTitleDelegate, allLabels) {
     super();
     this.style.display = 'block';
 
     this.threads_ = threads;
     this.cleanupDelegate_ = cleanupDelegate;
+    this.updateTitle_ = updateTitleDelegate;
     this.allLabels_ = allLabels;
     this.groupByQueue_ = {};
 
@@ -12,17 +13,12 @@ class Vueue extends HTMLElement {
     this.handleDone_ = this.handleDone_.bind(this);
   }
 
-  async dispatchShortcut(e) {
-  }
-
-  onHide() {
-  }
-
-  onShow() {
-  }
-
-  updateCurrentThread() {
-  }
+  // TODO: Really want an abstract base class for Vueue and ThreadView instead of
+  // manually duplicating API surface.
+  async dispatchShortcut(e) {}
+  onHide() {}
+  onShow() {}
+  updateCurrentThread() {}
 
   finishedInitialLoad() {
     if (!this.initialThreadsView_.children.length) {
@@ -40,20 +36,23 @@ class Vueue extends HTMLElement {
 
     let footer = document.createElement('div');
     footer.className = 'footer';
-    this.doneBtn_ = document.createElement('button');
-    this.doneBtn_.innerHTML = "Archive selected and begin triage";
-    this.doneBtn_.addEventListener('click', this.handleDone_);
-    footer.append(this.doneBtn_);
+
+    // TODO: make handle archive remove the item from the Vueue then enable this.
+    // let doneButton = document.createElement('button');
+    // doneButton.innerHTML = "Archive selected";
+    // doneButton.onclick = () => this.handleArchive_();
+    // footer.append(doneButton)
+
+    let beginTriageButton = document.createElement('button');
+    beginTriageButton.innerHTML = "Archive selected and begin triage";
+    beginTriageButton.onclick = () => this.handleDone_();
+
+    footer.append(beginTriageButton);
 
     this.append(footer);
   }
 
-  handleDone_ () {
-    if (!navigator.onLine) {
-      alert(`This action requires a network connection.`);
-      return;
-    }
-
+  getThreads_() {
     let selectedThreads = [];
     let unselectedThreads = [];
     for (let child of this.initialThreadsView_.querySelectorAll('mt-vueue-row')) {
@@ -61,7 +60,39 @@ class Vueue extends HTMLElement {
       let thread = child.thread;
       destination.push(thread);
     }
-    this.cleanupDelegate_(unselectedThreads, selectedThreads);
+    return {
+      selected: selectedThreads,
+      unselected: unselectedThreads,
+    }
+  }
+
+  async handleDone_() {
+    if (!navigator.onLine) {
+      alert(`This action requires a network connection.`);
+      return;
+    }
+
+    let threads = this.getThreads_();
+    this.cleanupDelegate_(threads.unselected);
+    await this.archiveThreads_(threads.selected);
+  }
+
+  async handleArchive_() {
+    if (!navigator.onLine) {
+      alert(`This action requires a network connection.`);
+      return;
+    }
+
+    let threads = this.getThreads_();
+    await this.archiveThreads_(threads.selected);
+  }
+
+  async archiveThreads_(threads) {
+    for (let i = 0; i < threads.length; i++) {
+      this.updateTitle_('archiving', `Archiving ${i + 1}/${threads.length} threads...`);
+      await threads[i].markTriaged();
+    }
+    this.updateTitle_('archiving');
   }
 
   async push(thread) {
