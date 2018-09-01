@@ -342,22 +342,21 @@ window.addEventListener('load', () => {
 });
 
 window.addEventListener('error', (e) => {
-  var emailBody = 'Captured an error: ' + JSON.stringify(e);
+  var emailBody = 'Something went wrong...';
   if (e.body)
     emailBody += '\n' + e.body;
+  if (e.error)
+    emailBody += '\n' + e.error;
   if (e.stack)
     emailBody += '\n\n' + e.stack;
-  alert('Error: ' + JSON.stringify(e));
+  alert(emailBody);
 });
 
 window.addEventListener('unhandledrejection', (e) => {
   // 401 means the credentials are invalid and you probably need to 2 factor.
   if (e.reason && e.reason.status == 401)
     window.location.reload();
-  else if (e.reason)
-    alert(JSON.stringify(e.reason));
-  else
-    alert(JSON.stringify(e));
+  alert(e.reason);
 });
 
 window.addEventListener('offline', (e) => {
