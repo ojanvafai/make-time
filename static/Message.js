@@ -197,12 +197,12 @@ class Message {
       name: attachment.filename,
     };
     for (let header of attachment.headers) {
-      switch (header.name) {
-      case 'Content-Type':
+      switch (header.name.toLowerCase()) {
+      case 'content-type':
         result.contentType = header.value.split(';')[0];
         break;
 
-      case 'Content-ID':
+      case 'content-id':
         result.contentId = header.value;
         break;
       }
