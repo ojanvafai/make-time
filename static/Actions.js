@@ -29,7 +29,6 @@ class Actions extends HTMLElement {
           background-color: white;
           border: 1px solid;
           padding: 4px;
-          opacity: 0.8;
           width: 300px;
         `;
 
