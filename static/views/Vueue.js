@@ -291,6 +291,7 @@ class VueueRow_ extends HTMLElement {
 
 Vueue.ACTIONS_ = [
   Actions.DONE_ACTION,
+  Actions.MUTE_ACTION,
   Actions.SPAM_ACTION,
   Actions.BEGIN_TRIAGE_ACTION,
 ];
