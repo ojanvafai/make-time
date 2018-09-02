@@ -11,6 +11,7 @@ P1: Will try to do soonish.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 
 P2: Will only do if something makes these seem worth doing.
+- Support renaming labels (updates the label name in all the filters and queues).
 - Add "||" to rule query language.
 - Add "-" or "!" for -foo@bar.com
 - Allow regexps with special regexp syntax, e.g. r'regexphere'.

@@ -246,7 +246,11 @@ class VueueRow_ extends HTMLElement {
         let date = document.createElement('div');
         date.textContent = this.dateString_(lastMessage.date);
 
-        label.append(this.checkBox_, fromContainer, title, date);
+        let popoutButton = new ViewInGmailButton();
+        popoutButton.setMessageId(messages[messages.length - 1].id);
+        popoutButton.style.marginLeft = '4px';
+
+        label.append(this.checkBox_, fromContainer, title, date, popoutButton);
 
         this.append(label);
       });

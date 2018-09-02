@@ -13,12 +13,11 @@ class ThreadView extends HTMLElement {
     this.showSummary_ = showSummary;
     this.allLabels_ = allLabels;
 
+    this.gmailLink_ = new ViewInGmailButton();
+    this.gmailLink_.style.position = 'absolute';
+    this.gmailLink_.style.right = '4px';
+
     this.subject_ = document.createElement('div');
-    this.gmailLink_ = document.createElement('a');
-    this.gmailLink_.style.cssText = `
-      position: absolute;
-      right: 4px;
-    `;
     this.subjectText_ = document.createElement('div');
     this.subjectText_.style.cssText = `
       flex: 1;
@@ -461,7 +460,7 @@ Content-Type: text/html; charset="UTF-8"
 
   async renderAllDone_() {
     this.subjectText_.textContent = 'All Done! Nothing left to triage for now.';
-    this.gmailLink_.textContent = '';
+    this.gmailLink_.style.display = 'none';
     this.messages_.textContent = '';
     this.timer_.textContent = '';
 
@@ -511,11 +510,8 @@ Content-Type: text/html; charset="UTF-8"
 
     let messages = await this.currentThread_.thread.getMessages();
 
-    // In theory, linking to the threadId should work, but it doesn't for some threads.
-    // Linking to the messageId seems to work reliably. The message ID listed will be expanded
-    // in the gmail UI, so link to the last one since that one is definitionally always expanded.
-    this.gmailLink_.textContent = 'view in gmail';
-    this.gmailLink_.href = `https://mail.google.com/mail/#all/${messages[messages.length - 1].id}`;
+    this.gmailLink_.display = 'flex';
+    this.gmailLink_.setMessageId(messages[messages.length - 1].id);
 
     this.subjectText_.textContent = await this.currentThread_.thread.getSubject() || '(no subject)';
 
