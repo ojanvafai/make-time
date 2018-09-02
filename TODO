@@ -10,7 +10,6 @@ P1: Will try to do soonish.
 - Have make-time question what queues you want to process today and requeue everything else.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 
-
 P2: Will only do if something makes these seem worth doing.
 - Add "||" to rule query language.
 - Add "-" or "!" for -foo@bar.com

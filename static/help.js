@@ -28,10 +28,12 @@ function helpText(settings) {
   if (helpHtml_)
     return helpHtml_;
 
-  let buttons = ``;
-  for (let key in ThreadView.ACTIONS) {
-    let button = ThreadView.ACTIONS[key];
-    buttons += ` - <b>${button.name}:</b> ${button.description}\n`;
+  let actions = ``;
+  for (let actionName in Actions) {
+    if (!actionName.endsWidth('_ACTION'))
+      continue;
+    let action = Actions[key];
+    actions += ` - <b>${action.name}:</b> ${action.description}\n`;
   }
 
   let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${settings.spreadsheetId}/edit`;
@@ -59,7 +61,7 @@ The goal of triage is to do get in the flow of doing all the triage quickly and 
  - ActionItem For threads that need some action from you other than a reply.
 
 Actions:
-${buttons}
+${actions}
 <b style="font-size:120%">Filtering</b>
 
 Philosopy: Labels are a triage tool, not a search/organization tool. The goal is to have all your labels and inbox be empty when you're done with triage.

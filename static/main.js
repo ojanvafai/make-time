@@ -49,11 +49,10 @@ async function viewThreadAtATime(threads) {
     await threadList.push(thread);
   }
 
-  let blockedLabel = Labels.addQueuedPrefix(Labels.BLOCKED_LABEL_SUFFIX);
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
   let showSummary = !settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new ThreadView(threadList, viewAll, updateCounter, blockedLabel, timeout, allowedReplyLength, contacts_, !showSummary, labels_));
+  setView(new ThreadView(threadList, viewAll, updateCounter, timeout, allowedReplyLength, contacts_, !showSummary, labels_));
 }
 
 async function viewAll(threads) {
@@ -290,8 +289,21 @@ document.addEventListener('visibilitychange', (e) => {
     currentView_.onShow();
 });
 
+// This list is probably not comprehensive.
+let NON_TEXT_INPUT_TYPES = [
+  'button',
+  'checkbox',
+  'file',
+  'image',
+  'radio',
+  'submit',
+];
+
 function isEditable(target) {
-  if (target.tagName == 'INPUT' || target.tagName == 'TEXTAREA')
+  if (target.tagName == 'INPUT' && !NON_TEXT_INPUT_TYPES.includes(target.type))
+    return true;
+
+  if (target.tagName == 'TEXTAREA')
     return true;
 
   while (target) {

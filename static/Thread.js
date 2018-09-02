@@ -66,6 +66,9 @@ class Thread {
   }
 
   async markTriaged(destination) {
+    if (destination === undefined)
+      throw `Invalid triage action attempted.`;
+
     var addLabelIds = [];
     if (destination)
       addLabelIds.push(await this.allLabels_.getId(destination));

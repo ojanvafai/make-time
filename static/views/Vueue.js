@@ -8,17 +8,20 @@ class Vueue extends HTMLElement {
     this.updateTitle_ = updateTitleDelegate;
     this.allLabels_ = allLabels;
     this.groupByQueue_ = {};
-
-    // I will never truly love javascript
-    this.handleDone_ = this.handleDone_.bind(this);
+    this.queuedTriageActions_ = [];
   }
 
   // TODO: Really want an abstract base class for Vueue and ThreadView instead of
   // manually duplicating API surface.
-  async dispatchShortcut(e) {}
+  async dispatchShortcut(e) {
+    this.actions_.dispatchShortcut(e);
+  };
   onHide() {}
   onShow() {}
   updateCurrentThread() {}
+  shouldSuppressActions() {
+    return false;
+  }
 
   finishedInitialLoad() {
     if (!this.initialThreadsView_.children.length) {
@@ -36,19 +39,17 @@ class Vueue extends HTMLElement {
 
     let footer = document.createElement('div');
     footer.className = 'footer';
-
-    let doneButton = document.createElement('button');
-    doneButton.innerHTML = "Archive selected";
-    doneButton.onclick = () => this.handleArchive_();
-    footer.append(doneButton)
-
-    let beginTriageButton = document.createElement('button');
-    beginTriageButton.innerHTML = "Archive selected and begin triage";
-    beginTriageButton.onclick = () => this.handleDone_();
-
-    footer.append(beginTriageButton);
-
+    this.actions_ = new Actions(this, Vueue.ACTIONS_);
+    footer.append(this.actions_);
     this.append(footer);
+  }
+
+  async takeAction(action) {
+    // BEGIN_TRIAGE_ACTION transitions to the ThreadView and then intentionally
+    // falls through to the markTriaged code below to archive the threads.
+    if (action == Actions.BEGIN_TRIAGE_ACTION)
+      this.cleanupDelegate_(this.getThreads_().unselectedThreads);
+    await this.markTriaged_(action.destination);
   }
 
   getThreads_() {
@@ -67,25 +68,19 @@ class Vueue extends HTMLElement {
     }
   }
 
-  async handleDone_() {
-    if (!navigator.onLine) {
-      alert(`This action requires a network connection.`);
-      return;
-    }
-
+  async markTriaged_(destination) {
     let threads = this.getThreads_();
-    this.cleanupDelegate_(threads.unselectedThreads);
-    await this.archiveThreads_(threads.selectedRows);
-  }
-
-  async handleArchive_() {
-    if (!navigator.onLine) {
-      alert(`This action requires a network connection.`);
-      return;
+    // Update the UI first and then archive one at a time.
+    for (let row of threads.selectedRows) {
+      await this.removeRow_(row);
+      this.queuedTriageActions_.push({
+        destination: destination,
+        thread: row.thread,
+      })
     }
-
-    let threads = this.getThreads_();
-    await this.archiveThreads_(threads.selectedRows);
+    this.updateTitle_('archiving', `Archiving ${threads.selectedRows.length} threads...`);
+    await this.processQueuedActions_();
+    this.updateTitle_('archiving');
   }
 
   async removeRow_(row) {
@@ -98,18 +93,12 @@ class Vueue extends HTMLElement {
     }
   }
 
-  async archiveThreads_(rows) {
-    this.updateTitle_('archiving', `Archiving ${rows.length} threads...`);
-
-    // Update the UI first and then archive one at a time.
-    for (let i = 0; i < rows.length; i++) {
-      await this.removeRow_(rows[i]);
+  async processQueuedActions_() {
+    let item;
+    while (item = this.queuedTriageActions_.pop()) {
+      this.updateTitle_('archiving', `Archiving ${this.queuedTriageActions_.length + 1} threads...`);
+      await item.thread.markTriaged(item.destination);
     }
-    for (let i = 0; i < rows.length; i++) {
-      this.updateTitle_('archiving', `Archiving ${i + 1}/${rows.length} threads...`);
-      await rows[i].thread.markTriaged();
-    }
-    this.updateTitle_('archiving');
   }
 
   async push(thread) {
@@ -299,4 +288,11 @@ class VueueRow_ extends HTMLElement {
     return this.thread_;
   }
 }
+
+Vueue.ACTIONS_ = [
+  Actions.DONE_ACTION,
+  Actions.SPAM_ACTION,
+  Actions.BEGIN_TRIAGE_ACTION,
+];
+
 window.customElements.define('mt-vueue-row', VueueRow_);
