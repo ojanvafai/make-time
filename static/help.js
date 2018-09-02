@@ -30,7 +30,7 @@ function helpText(settings) {
 
   let actions = ``;
   for (let actionName in Actions) {
-    if (!actionName.endsWidth('_ACTION'))
+    if (!actionName.endsWith('_ACTION'))
       continue;
     let action = Actions[key];
     actions += ` - <b>${action.name}:</b> ${action.description}\n`;

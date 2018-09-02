@@ -1,5 +1,5 @@
 // Client ID and API key from the Developer Console
-let CLIENT_ID = '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
+let CLIENT_ID = location.host == 'make-time.appspot.com' ? '410602498749-pe1lolovqrgun0ia1jipke33ojpcmbpq.apps.googleusercontent.com' : '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
