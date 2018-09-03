@@ -1,6 +1,11 @@
 P1: Will try to do soonish.
+- Best effort gets 1 week for daily, 2 week for weekly, 5 week for monthly to give each thing at least a week and then it goes into triaged/autodone.
+- Get rid of retriage, instead just skip queueing
+- Removing a queue means the currently queued messages never get dequeued
 - Don't have updating fitler rules reload the page.
 - Document needsfilter queue
+- make UI mobile friendly
+- Add to home screen support
 - Add autocomplete for label names in the queues and filters views.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - add the ability to filter messages with no list-id as those are probably more urgent.
@@ -9,6 +14,8 @@ P1: Will try to do soonish.
 - Disable some actions in settings? Maybe it's time to add custom actions.
 - Have make-time question what queues you want to process today and requeue everything else.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
+- add undo to Vueue
+- Grey out undo button when there's nothing to undo
 
 P2: Will only do if something makes these seem worth doing.
 - Support renaming labels (updates the label name in all the filters and queues).

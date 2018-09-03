@@ -2,18 +2,27 @@ let SpreadsheetUtils = {};
 
 (() => {
 
+SpreadsheetUtils.a1Notation = (sheetName, startRowIndex, numColumns) => {
+  let aCharCode = "A".charCodeAt(0);
+  let lastColumn = String.fromCharCode(aCharCode + numColumns - 1);
+  console.log(`${sheetName}!A${startRowIndex + 1}:${lastColumn}`);
+  return `${sheetName}!A${startRowIndex + 1}:${lastColumn}`;
+}
+
 SpreadsheetUtils.fetchSheet = async (spreadsheetId, range) => {
   let response =  await gapiFetch(gapi.client.sheets.spreadsheets.values.get, {
     spreadsheetId: spreadsheetId,
     range: range,
   });
-  return response.result.values;
+  return response.result.values || [];
 };
 
-SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToOverwrite) => {
+// Assumes rows are all the same length.
+SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToOverwrite, opt_startRowIndex) => {
+  let startRowIndex = opt_startRowIndex || 0;
   let requestParams = {
     spreadsheetId: spreadsheetId,
-    range: sheetName,
+    range: SpreadsheetUtils.a1Notation(sheetName, startRowIndex, rows[0].length),
     valueInputOption: 'RAW',
   };
   let requestBody = {
@@ -24,8 +33,8 @@ SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToO
 
   // Ensure at least opt_rowsToOverwrite get overridden so that old values get cleared.
   if (response.status == 200 && opt_rowsToOverwrite > rows.length) {
-    let startRow = rows.length + 1;
-    let finalRow = opt_rowsToOverwrite;
+    let startRow = startRowIndex + rows.length + 1;
+    let finalRow = startRowIndex + opt_rowsToOverwrite;
     // TODO: Handle sheets with more than ZZ columns.
     let requestParams = {
       spreadsheetId: spreadsheetId,

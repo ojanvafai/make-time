@@ -84,15 +84,9 @@ class Settings {
         continue;
 
       let values = data.initialData;
-
-      let aCharCode = "A".charCodeAt(0);
-      let lastRow = values.length;
-      let lastColumn = String.fromCharCode(aCharCode + values[0].length - 1);
-      let range = `${data.name}!A1:${lastColumn}${lastRow}`;
-
       let addDataResponse = await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: spreadsheetId,
-        range: range,
+        range: SpreadsheetUtils.a1Notation(data.name, 0, values[0].length),
         valueInputOption: 'USER_ENTERED',
       }, {
         majorDimension: 'ROWS',
@@ -396,7 +390,7 @@ Settings.sheetData_ = [
   },
   {
     name: Settings.QUEUED_LABELS_SHEET_NAME,
-    initialData: [['label', 'day']],
+    initialData: [['label', 'day', 'goal']],
   },
   {
     name: 'statistics',

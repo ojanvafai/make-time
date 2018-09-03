@@ -74,6 +74,14 @@ class Labels {
     return this.triagedLabels_;
   }
 
+  labelResultComparator_(a, b) {
+    if (a.name < b.name)
+      return -1;
+    if (a.name > b.name)
+      return 1;
+    return 0;
+  }
+
   async getTheadCountForLabels(labelFilter) {
     let batch = gapi.client.newBatch();
 
@@ -102,7 +110,7 @@ class Labels {
         });
       }
     }
-    return labelsWithThreads;
+    return labelsWithThreads.sort(this.labelResultComparator_);
   }
 }
 

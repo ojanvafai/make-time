@@ -17,9 +17,11 @@ let currentView_;
 let settings_;
 let labels_;
 let queuedLabelMap_;
+let triagedQueuesView_;
+let bestEffortThreads_ = [];
 let contacts_ = [];
 let titleStack_ = [];
-var isProcessingMail_ = false;
+let isProcessingMail_ = false;
 
 function showDialog(contents) {
   let dialog = document.createElement('dialog');
@@ -51,13 +53,34 @@ async function viewThreadAtATime(threads) {
 
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  let showSummary = !settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new ThreadView(threadList, viewAll, updateCounter, timeout, allowedReplyLength, contacts_, !showSummary, labels_));
+  setView(new ThreadView(threadList, viewAll, updateCounter, timeout, allowedReplyLength, contacts_, triagedQueuesView()));
 }
 
 async function viewAll(threads) {
-  setView(new Vueue(threads, viewThreadAtATime, updateTitle, labels_));
+  setView(new Vueue(threads, viewThreadAtATime, updateTitle, triagedQueuesView()));
   updateCounter(['']);
+}
+
+function triagedQueuesView() {
+  // Don't show triaged queues view when in vacation mode as that's non-vacation work.
+  if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT))
+    return null;
+
+  if (!triagedQueuesView_)
+    triagedQueuesView_ = new TriagedQueues(labels_, bestEffortThreads_, triageBestEffortThreads);
+  return triagedQueuesView_;
+}
+
+async function triageBestEffortThreads() {
+  let temp = bestEffortThreads_;
+
+  // Null this out before any awaits to avoid adding more threads to bestEffortThreads_
+  // via addThreads once we've started triaging best effort threads.
+  bestEffortThreads_ = null;
+
+  for (let thread of temp) {
+    await currentView_.push(thread);
+  }
 }
 
 function setView(view) {
@@ -149,6 +172,14 @@ async function fetchThreads(forEachThread, options) {
   await getPageOfThreads();
 }
 
+async function isBestEffortQueue(thread) {
+  let queue = await thread.getQueue();
+  let parts = queue.split('/');
+  let lastPart = parts[parts.length - 1];
+  let data = getQueuedLabelMap()[lastPart];
+  return data && data.goal == 'Best Effort';
+}
+
 async function addThread(thread) {
   let vacationSubject = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
   if (vacationSubject) {
@@ -156,7 +187,13 @@ async function addThread(thread) {
     if (!subject.toLowerCase().includes(vacationSubject.toLowerCase()))
       return;
   }
-  await currentView_.push(thread);
+
+  if (bestEffortThreads_ && await isBestEffortQueue(thread)) {
+    bestEffortThreads_.push(thread);
+    triagedQueuesView().update();
+  } else {
+    await currentView_.push(thread);
+  }
 }
 
 async function onLoad() {
@@ -166,6 +203,7 @@ async function onLoad() {
   labels_ = new Labels();
 
   await Promise.all([settings_.fetch(), labels_.fetch()]);
+  await fetchQueuedLabelMap(settings_.spreadsheetId);
 
   let storage = new ServerStorage(settings_.spreadsheetId);
   if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
@@ -175,7 +213,7 @@ async function onLoad() {
 
   let settingsLink = document.getElementById('settings');
   settingsLink.textContent = 'Settings';
-  settingsLink.onclick = async () => new SettingsView(settings_, await getQueuedLabelMap());
+  settingsLink.onclick = async () => new SettingsView(settings_, getQueuedLabelMap());
 
   let helpLink = document.getElementById('help');
   helpLink.textContent = 'Help';
@@ -241,11 +279,25 @@ async function fetchContacts(token) {
   }
 }
 
-async function getQueuedLabelMap() {
-  if (!queuedLabelMap_) {
-    queuedLabelMap_ = await SpreadsheetUtils.fetch2ColumnSheet(settings_.spreadsheetId, Settings.QUEUED_LABELS_SHEET_NAME, 1);
-  }
+function getQueuedLabelMap() {
+  if (!queuedLabelMap_)
+    throw 'Attempted to use queuedLabelMap_ before it was fetched';
   return queuedLabelMap_;
+}
+
+async function fetchQueuedLabelMap(spreadsheetId) {
+  if (queuedLabelMap_)
+    throw 'Attempted to fetch queuedLabelMap_ multiple times';
+
+  let values = await SpreadsheetUtils.fetchSheet(spreadsheetId, `${Settings.QUEUED_LABELS_SHEET_NAME}!A2:C`);
+
+  queuedLabelMap_ = {};
+  for (let value of values) {
+    queuedLabelMap_[value[0]] = {
+      queue: value[1],
+      goal: value[2],
+    }
+  }
 }
 
 // TODO: Move this to a cron
@@ -256,7 +308,7 @@ async function processMail() {
   isProcessingMail_ = true;
   updateTitle('processMail', 'Processing mail backlog...', true);
 
-  let mailProcessor = new MailProcessor(settings_, addThread, await getQueuedLabelMap(), labels_);
+  let mailProcessor = new MailProcessor(settings_, addThread, getQueuedLabelMap(), labels_);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();

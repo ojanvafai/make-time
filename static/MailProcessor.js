@@ -183,7 +183,7 @@ class MailProcessor {
         } else {
           stats.nonIgnoredThreads += count;
 
-          var queuedPrefix = this.queuedLabelMap_[label];
+          var queuedPrefix = this.queuedLabelMap_[label] && this.queuedLabelMap_[label].queue;
           if (!queuedPrefix) {
             stats.immediateCount += count;
           } else if (queuedPrefix == "Daily") {
@@ -343,9 +343,9 @@ class MailProcessor {
 
           // Make sure not to put things into the inbox into queued labels.
           if (isAlreadyInInbox) {
-            let queue = this.queuedLabelMap_[labelName];
-            if (queue)
-              prefixedLabelName = this.dequeuedLabelName(queue, labelName);
+            let queueData = this.queuedLabelMap_[labelName];
+            if (queueData)
+              prefixedLabelName = this.dequeuedLabelName(queueData.queue, labelName);
             else
               prefixedLabelName = this.addAutoPrefix(labelName);
           } else {
@@ -422,7 +422,7 @@ class MailProcessor {
     let start = Date.now();
     for (var i = 0; i < labelNames.length; i++) {
       let labelName = labelNames[i];
-      if (this.queuedLabelMap_[labelName] == queue)
+      if (this.queuedLabelMap_[labelName].queue == queue)
         await this.dequeue(labelName, queue);
     }
   }

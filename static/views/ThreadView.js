@@ -1,5 +1,5 @@
 class ThreadView extends HTMLElement {
-  constructor(threadList, cleanupDelegate, updateCounter, timeout, allowedReplyLength, contacts, showSummary, allLabels) {
+  constructor(threadList, cleanupDelegate, updateCounter, timeout, allowedReplyLength, contacts, opt_triagedQueuesView) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
@@ -10,8 +10,7 @@ class ThreadView extends HTMLElement {
     this.timeout_ = timeout;
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
-    this.showSummary_ = showSummary;
-    this.allLabels_ = allLabels;
+    this.triagedQueuesView_ = opt_triagedQueuesView;
 
     this.gmailLink_ = new ViewInGmailButton();
     this.gmailLink_.style.position = 'absolute';
@@ -464,8 +463,8 @@ Content-Type: text/html; charset="UTF-8"
     this.messages_.textContent = '';
     this.timer_.textContent = '';
 
-    if (this.showSummary_)
-      this.messages_.append(new TriagedQueues(this.allLabels_));
+    if (this.triagedQueuesView_)
+      this.messages_.append(this.triagedQueuesView_);
   }
 
   async requeuePrefetchedThread_() {

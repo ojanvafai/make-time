@@ -83,6 +83,8 @@ If there are emails you don't want make-time to do anything with, modify your gm
 
 <b>Queues:</b> You can then setup individual labels so they only show once a day, week, or month on a day of your choosing. For example, I have emails to me from my reports, management chain, or select TLs/PMs I work with show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
 
+Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. A future update will also make Best Effort threads move into an autotriaged label when they've been sitting in the inbox for more than a week. This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done.
+
 There's a nice synergy between queues and triaging. The more urgent queues will always get triaged first (e.g. daily before weekly). If you care about more granular control of triage order within one of those groups (e.g. the different daily queues), you can also name your labels appropriately as they're triaged in alphabetical order.
 
 If there's a bug in the filtering code, by emails should stay in the unprocessed label.

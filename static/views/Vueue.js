@@ -1,12 +1,12 @@
 class Vueue extends HTMLElement {
-  constructor(threads, cleanupDelegate, updateTitleDelegate, allLabels) {
+  constructor(threads, cleanupDelegate, updateTitleDelegate, triagedQueuesView) {
     super();
     this.style.display = 'block';
 
     this.threads_ = threads;
     this.cleanupDelegate_ = cleanupDelegate;
     this.updateTitle_ = updateTitleDelegate;
-    this.allLabels_ = allLabels;
+    this.triagedQueuesView_ = triagedQueuesView;
     this.groupByQueue_ = {};
     this.queuedTriageActions_ = [];
   }
@@ -24,10 +24,8 @@ class Vueue extends HTMLElement {
   }
 
   finishedInitialLoad() {
-    if (!this.initialThreadsView_.children.length) {
-      this.triagedQueues_ = new TriagedQueues(this.allLabels_);
-      this.append(this.triagedQueues_);
-    }
+    if (this.triagedQueuesView_ && !this.initialThreadsView_.children.length)
+      this.append(this.triagedQueuesView_);
   }
 
   async connectedCallback() {
@@ -102,10 +100,8 @@ class Vueue extends HTMLElement {
   }
 
   async push(thread) {
-    if (this.triagedQueues_) {
-      this.triagedQueues_.remove();
-      this.triagedQueues_ = null;
-    }
+    if (this.triagedQueuesView_.parentNode)
+      this.triagedQueuesView_.remove();
 
     let queue = await thread.getDisplayableQueue();
     let rowGroup = this.groupByQueue_[queue];
