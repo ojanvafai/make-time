@@ -6,9 +6,6 @@ class Settings {
   }
 
   async getSpreadsheetId_() {
-    if (localStorage.spreadsheetId)
-      return localStorage.spreadsheetId;
-
     let response = await gapi.client.drive.files.list({
       q: "trashed=false and name='make-time backend (do not rename!)'",
       spaces: 'drive',
@@ -17,7 +14,13 @@ class Settings {
     if (!response.result.files.length)
       await this.showSetupDialog_();
 
-    return response.result.files[0].id;
+    let id = response.result.files[0].id;
+    if (id)
+      return id;
+
+    // TODO: remove this one all users have transitioned.
+    if (localStorage.spreadsheetId)
+      return localStorage.spreadsheetId;
   }
 
   async showSetupDialog_() {
