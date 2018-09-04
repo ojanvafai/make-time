@@ -4,8 +4,6 @@ P1: Will try to do soonish.
 - Removing a queue means the currently queued messages never get dequeued
 - Don't have updating fitler rules reload the page.
 - Document needsfilter queue
-- make UI mobile friendly
-- Add to home screen support
 - Add autocomplete for label names in the queues and filters views.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - add the ability to filter messages with no list-id as those are probably more urgent.
@@ -18,6 +16,7 @@ P1: Will try to do soonish.
 - Grey out undo button when there's nothing to undo
 
 P2: Will only do if something makes these seem worth doing.
+- Add to home screen support
 - Support renaming labels (updates the label name in all the filters and queues).
 - Add "||" to rule query language.
 - Add "-" or "!" for -foo@bar.com

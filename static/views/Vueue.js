@@ -229,7 +229,8 @@ class VueueRow_ extends HTMLElement {
 
         let snippet = document.createElement('span');
         snippet.style.color = '#666';
-        snippet.textContent = ` - ${this.thread_.snippet}`;
+        // Snippet as returned by the gmail API is html escaped.
+        snippet.innerHTML = ` - ${this.thread_.snippet}`;
 
         let title = document.createElement('div');
         title.append(subject, snippet);
@@ -246,7 +247,19 @@ class VueueRow_ extends HTMLElement {
         popoutButton.setMessageId(messages[messages.length - 1].id);
         popoutButton.style.marginLeft = '4px';
 
-        label.append(this.checkBox_, fromContainer, title, date, popoutButton);
+        if (window.innerWidth < 600) {
+          let topRow = document.createElement('div');
+          topRow.style.display = 'flex';
+          topRow.append(this.checkBox_, fromContainer, date, popoutButton);
+          label.append(topRow, title);
+
+          label.style.flexDirection = 'column';
+          fromContainer.style.flex = '1';
+          title.style.fontSize = '12px';
+          title.style.margin = '5px 5px 0 5px';
+        } else {
+          label.append(this.checkBox_, fromContainer, title, date, popoutButton);
+        }
 
         this.append(label);
       });

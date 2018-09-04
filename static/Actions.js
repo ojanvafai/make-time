@@ -2,6 +2,7 @@ class Actions extends HTMLElement {
   constructor(view, actions) {
     super();
     this.style.display = 'flex';
+    this.style.flexWrap = 'wrap';
 
     this.view_ = view;
     this.actions_ = actions;
