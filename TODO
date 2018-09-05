@@ -15,6 +15,7 @@ P1: Will try to do soonish.
 - add undo to Vueue
 - Grey out undo button when there's nothing to undo
 - quick reply doesn't work on mobile
+- race condition: if the user hits undo before the triage action is done, it will undo the previous triage action
 
 P2: Will only do if something makes these seem worth doing.
 - Have timer dialog have options to cancel timer and turnoff autostart.

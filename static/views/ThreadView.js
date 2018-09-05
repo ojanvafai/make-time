@@ -57,7 +57,7 @@ class ThreadView extends HTMLElement {
       flex-direction: column;
       align-items: flex-end;
     `;
-    this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_, this.queueSummary_);
+    this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_);
     this.addButtons_();
 
     // Hack: Do this on a timer so that the ThreadView is in the DOM before renderNext_
@@ -224,7 +224,7 @@ class ThreadView extends HTMLElement {
     let thread = this.currentThread_.thread;
     this.renderNext_();
 
-    if (this.autoStartTimer_ && this.timerPaused_)
+    if (this.autoStartTimer_ && this.timerPaused_ && this.currentThread_)
       this.toggleTimer_();
 
     this.lastAction_ = await thread.markTriaged(action.destination);
@@ -474,7 +474,9 @@ Content-Type: text/html; charset="UTF-8"
     this.subjectText_.textContent = 'All Done! Nothing left to triage for now.';
     this.gmailLink_.style.display = 'none';
     this.messages_.textContent = '';
-    this.timer_.textContent = '';
+
+    if (!this.timerPaused_)
+      this.toggleTimer_();
 
     if (this.triagedQueuesView_)
       this.messages_.append(this.triagedQueuesView_);
