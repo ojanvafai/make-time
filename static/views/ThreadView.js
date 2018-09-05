@@ -1,5 +1,5 @@
 class ThreadView extends HTMLElement {
-  constructor(threadList, cleanupDelegate, updateCounter, timeout, allowedReplyLength, contacts, opt_triagedQueuesView) {
+  constructor(threadList, cleanupDelegate, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts, opt_triagedQueuesView) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
@@ -7,6 +7,7 @@ class ThreadView extends HTMLElement {
     this.threadList_ = threadList;
     this.cleanupDelegate_ = cleanupDelegate;
     this.updateCounter_ = updateCounter;
+    this.autoStartTimer_ = autoStartTimer;
     this.timeout_ = timeout;
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
@@ -51,20 +52,12 @@ class ThreadView extends HTMLElement {
     subjectPlaceholder.style.position = 'static';
 
     this.toolbar_.className = 'footer';
-
-    this.queueSummary_ = document.createElement('div');
-    this.queueSummary_.style.cssText = `
-      background-color: white;
-      position: fixed;
-      bottom: 50px;
-      font-size: 10px;
-      right: 4px;
-      text-align: right;
-      opacity: 0.5;
+    this.toolbar_.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
     `;
-
     this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_, this.queueSummary_);
-
     this.addButtons_();
 
     // Hack: Do this on a timer so that the ThreadView is in the DOM before renderNext_
@@ -75,36 +68,52 @@ class ThreadView extends HTMLElement {
 
   finishedInitialLoad() {}
 
+  toggleTimer_() {
+    this.timerPaused_ = !this.timerPaused_;
+    if (this.timerPaused_)
+      this.autoStartTimer_ = false;
+    this.updatePlayButton_();
+    this.restartTimer_();
+  }
+
+  updatePlayButton_() {
+    this.timerButton_.textContent = this.timerPaused_ ? '▶️' : '⏸️';
+  }
+
   addButtons_() {
+    this.queueSummary_ = document.createElement('div');
+    this.queueSummary_.style.cssText = `
+      background-color: white;
+      font-size: 10px;
+      margin-right: 4px;
+      text-align: right;
+      opacity: 0.5;
+    `;
+    this.toolbar_.append(this.queueSummary_);
+
     this.timer_ = document.createElement('span');
     this.timer_.style.cssText = `
       border-radius: 5px;
     `;
 
+    this.actions_ = new Actions(this, ThreadView.ACTIONS_);
+
     let timerContainer = document.createElement('div');
     timerContainer.style.cssText = `
-      position: absolute;
-      right: 4px;
       font-size: 32px;
-      padding: 5px;
+      padding: 4px;
     `;
-    let timerButton = document.createElement('span');
-    timerContainer.append(this.timer_, '\xa0', timerButton);
+    this.timerButton_ = document.createElement('span');
+    timerContainer.append(this.timer_, '\xa0', this.timerButton_);
 
     this.timerPaused_ = true;
-    let updatePlayButton = () => {
-      timerButton.textContent = this.timerPaused_ ? '▶️' : '⏸️';
-    }
-    updatePlayButton();
-    timerContainer.onclick = () => {
-      this.timerPaused_ = !this.timerPaused_;
-      updatePlayButton();
-      this.restartTimer_();
-    }
+    this.updatePlayButton_();
+    timerContainer.onclick = () => this.toggleTimer_();
 
-    this.toolbar_.append(timerContainer);
-    this.actions_ = new Actions(this, ThreadView.ACTIONS_);
-    this.toolbar_.append(this.actions_);
+    let buttonContainer = document.createElement('div');
+    buttonContainer.style.display = 'flex';
+    buttonContainer.append(this.actions_, timerContainer);
+    this.toolbar_.append(buttonContainer);
   }
 
   async popAllThreads() {
@@ -214,6 +223,10 @@ class ThreadView extends HTMLElement {
     // renderNext_ changes this.currentThread_ so save off the thread to modify first.
     let thread = this.currentThread_.thread;
     this.renderNext_();
+
+    if (this.autoStartTimer_ && this.timerPaused_)
+      this.toggleTimer_();
+
     this.lastAction_ = await thread.markTriaged(action.destination);
   }
 
@@ -433,7 +446,7 @@ Content-Type: text/html; charset="UTF-8"
         opacity: 0.5;
       `;
       let text = document.createElement('div');
-      text.innerHTML = 'Out of time. Take an action!<br><br>Use the "timeout" setting in the config sheet to configure this. Use -1 to disable.';
+      text.innerHTML = 'Out of time. Take an action!<br><br>The timer duration and whether it autostarts can be configured in the settings dialogs.';
       text.style.cssText = `
         position: absolute;
         padding: 5px;

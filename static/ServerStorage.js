@@ -38,6 +38,7 @@ ServerStorage.KEYS = {
   LAST_DEQUEUE_TIME: 'Last dequeue time',
   VACATION_SUBJECT: 'vacation_subject',
   TIMER_DURATION: 'timeout',
+  AUTO_START_TIMER: 'auto_start_timer',
   ALLOWED_REPLY_LENGTH: 'allowed_reply_length',
 };
 

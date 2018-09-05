@@ -83,8 +83,12 @@ class SettingsView extends HTMLElement {
         input.placeholder = `default: ${field.default}`;
       if (field.type)
         input.type = field.type;
-      if (this.settings_.has(field.key))
+
+      if (field.type == 'checkbox')
+        input.checked = this.settings_.get(field.key);
+      else if (this.settings_.has(field.key))
         input.value = this.settings_.get(field.key);
+
       input.key = field.key;
 
       label.append(`${field.name}:`, input);
@@ -161,7 +165,8 @@ class SettingsView extends HTMLElement {
     let updates = [];
     let inputs = this.basicSettings_.querySelectorAll('input');
     for (let input of inputs) {
-      updates.push({key: input.key, value: input.value});
+      let value = input.type == 'checkbox' ? input.checked : input.value;
+      updates.push({key: input.key, value: value});
     }
     await this.settings_.writeUpdates(updates);
 

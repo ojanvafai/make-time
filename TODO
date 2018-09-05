@@ -14,10 +14,10 @@ P1: Will try to do soonish.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 - add undo to Vueue
 - Grey out undo button when there's nothing to undo
-- Auto start timer after triaging the first thread. Have timer dialog have options to cancel timer and turnoff autostart. Add an autostart setting.
 - quick reply doesn't work on mobile
 
 P2: Will only do if something makes these seem worth doing.
+- Have timer dialog have options to cancel timer and turnoff autostart.
 - Have filter UI do gmail search to show which things match?
 - Add to home screen support
 - Support renaming labels (updates the label name in all the filters and queues).

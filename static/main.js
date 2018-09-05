@@ -51,9 +51,10 @@ async function viewThreadAtATime(threads) {
     await threadList.push(thread);
   }
 
+  let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ThreadView(threadList, viewAll, updateCounter, timeout, allowedReplyLength, contacts_, triagedQueuesView()));
+  setView(new ThreadView(threadList, viewAll, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts_, triagedQueuesView()));
 }
 
 async function viewAll(threads) {

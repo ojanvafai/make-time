@@ -308,6 +308,9 @@ class Settings {
     let value = this.storage_.get(setting);
     if (value === undefined)
       return this.defaultValue_(setting);
+    let settingData = Settings.fields.find((item) => item.key == setting);
+    if (settingData && settingData.type == 'checkbox')
+      return value === 'TRUE';
     return value;
   }
 
@@ -417,6 +420,13 @@ Settings.fields = [
     description: `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
     default: 20,
     type: 'number',
+  },
+  {
+    key: ServerStorage.KEYS.AUTO_START_TIMER,
+    name: 'Auto start timer',
+    description: `Timer automatically starts after triaging the first thread.`,
+    default: true,
+    type: 'checkbox',
   },
   {
     key: ServerStorage.KEYS.ALLOWED_REPLY_LENGTH,
