@@ -80,6 +80,11 @@ class FiltersView extends HTMLElement {
     for (let rule of rules) {
       body.append(this.createRule_(rule));
     }
+
+    // Ensure there's at least one row since there's no other way to add the first row.
+    if (!rules.length)
+      body.append(this.createRule_({}));
+
     container.append(body);
 
     let scrollable = document.createElement('div');
@@ -260,8 +265,11 @@ class FiltersView extends HTMLElement {
         border-radius: 3px;
       `;
 
-      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(fieldText.trim()))
+      let fieldTextWithoutSentinel = fieldText.replace(this.cursorSentinel_, '').trim();
+      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel)) {
+        console.log(`|${fieldTextWithoutSentinel}|`);
         fieldElement.classList.add('invalid-directive');
+      }
 
       this.appendWithSentinel_(fieldElement, fieldText);
       container.append(fieldElement);
