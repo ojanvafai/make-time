@@ -55,6 +55,9 @@ async function viewThreadAtATime(threads) {
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
   setView(new ThreadView(threadList, viewAll, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts_, triagedQueuesView()));
+
+  // Ensure contacts are fetched.
+  await fetchContacts(gapi.auth.getToken());
 }
 
 async function viewAll(threads) {
@@ -286,9 +289,13 @@ async function onLoad() {
 }
 
 async function fetchContacts(token) {
+  if (contacts_.length)
+    return;
+
   // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send me all
   // the data I don't want.
-  let resp = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0")
+  let resp = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0&callback=ojan");
+
   let json = await resp.json();
   for (let entry of json.feed.entry) {
     if (!entry.gd$email)
