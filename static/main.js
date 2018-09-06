@@ -294,7 +294,7 @@ async function fetchContacts(token) {
 
   // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send me all
   // the data I don't want.
-  let resp = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0&callback=ojan");
+  let resp = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
 
   let json = await resp.json();
   for (let entry of json.feed.entry) {
