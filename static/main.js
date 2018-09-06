@@ -181,6 +181,26 @@ async function isBestEffortQueue(thread) {
   return data && data.goal == 'Best Effort';
 }
 
+// This function is all gross and hardcoded. Also, the constants themselves
+// aren't great. Would be best to know how long the email was actually in the
+// inbox rather than when the last email was sent, e.g. if someone was on vacation.
+// Could track when the last dequeue date was for each queue maybe?
+async function isBankrupt(thread) {
+  let messages = await thread.getMessages();
+  let date = messages[messages.length - 1].date;
+  let queue = await thread.getQueue();
+
+  let numDays = 7;
+  if (queue.includes('/' + Labels.WEEKLY_QUEUE_PREFIX + '/'))
+    numDays = 14;
+  else if (queue.includes('/' + Labels.MONTHLY_QUEUE_PREFIX + '/'))
+    numDays = 42;
+
+  let oneDay = 24 * 60 * 60 * 1000;
+  let diffDays = (Date.now() - date.getTime()) / (oneDay);
+  return diffDays > numDays;
+}
+
 async function addThread(thread) {
   let vacationSubject = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
   if (vacationSubject) {
@@ -190,8 +210,12 @@ async function addThread(thread) {
   }
 
   if (bestEffortThreads_ && await isBestEffortQueue(thread)) {
-    bestEffortThreads_.push(thread);
-    triagedQueuesView().update();
+    if (await isBankrupt(thread)) {
+      await thread.markTriaged(Labels.BANKRUPT_LABEL);
+    } else {
+      bestEffortThreads_.push(thread);
+      triagedQueuesView().update();
+    }
   } else {
     await currentView_.push(thread);
   }

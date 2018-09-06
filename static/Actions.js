@@ -53,7 +53,7 @@ class Actions extends HTMLElement {
     Actions.BEGIN_TRIAGE_ACTION.destination = null;
     Actions.TLDR_ACTION.destination = Labels.READ_LATER_LABEL;
     Actions.REPLY_NEEDED_ACTION.destination = Labels.NEEDS_REPLY_LABEL;
-    Actions.BLOCKED_ACTION.destination = Labels.addQueuedPrefix(Labels.BLOCKED_LABEL_SUFFIX);
+    Actions.BLOCKED_ACTION.destination = Labels.BLOCKED_LABEL;
     Actions.SPAM_ACTION.destination = 'SPAM';
     Actions.MUTE_ACTION.destination = Labels.MUTED_LABEL;
     Actions.ACTION_ITEM_ACTION.destination = Labels.ACTION_ITEM_LABEL;

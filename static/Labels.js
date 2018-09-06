@@ -124,12 +124,6 @@ function compareSubLabels(a, b) {
   return 0;
 }
 
-let queueOrder = {
-  daily: 1,
-  weekly: 2,
-  monthly: 3,
-}
-
 Labels.compare = (a, b) => {
   if (a == b)
     return 0;
@@ -150,8 +144,8 @@ Labels.compare = (a, b) => {
     let bSubLabel = bParts[2];
     if (aQueue == bQueue)
       return compareSubLabels(aSubLabel, bSubLabel);
-    let aOrder = queueOrder[aQueue] || 0;
-    let bOrder = queueOrder[bQueue] || 0;
+    let aOrder = QUEUE_ORDER[aQueue] || 0;
+    let bOrder = QUEUE_ORDER[bQueue] || 0;
     return aOrder - bOrder;
   }
 
@@ -199,28 +193,33 @@ Labels.removeNeedsTriagePrefix = (labelName) => {
   return removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
 }
 
-Labels.removeLabelerPrefix = (labelName) => {
-  return removeLabelPrefix(labelName, Labels.LABELER_PREFIX);
-}
-
 Labels.addQueuedPrefix = (labelName) => {
   return Labels.addMakeTimePrefix(Labels.QUEUED_PREFIX + "/" + labelName);
 }
 
-Labels.BASE_TRIAGED_LABEL = 'triaged';
-Labels.BASE_NEEDS_TRIAGE_LABEL = 'needstriage';
 Labels.MAKE_TIME_PREFIX = 'maketime';
 Labels.QUEUED_PREFIX = 'queued';
-Labels.BASE_UNPROCESSED_LABEL = 'unprocessed';
-Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix(Labels.BASE_UNPROCESSED_LABEL);
-Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix(Labels.BASE_TRIAGED_LABEL);
-Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix(Labels.BASE_NEEDS_TRIAGE_LABEL);
+Labels.FALLBACK_LABEL = 'needsfilter';
+
+Labels.DAILY_QUEUE_PREFIX = 'daily';
+Labels.WEEKLY_QUEUE_PREFIX = 'weekly';
+Labels.MONTHLY_QUEUE_PREFIX = 'monthly';
+
+let QUEUE_ORDER = {};
+QUEUE_ORDER[Labels.DAILY_QUEUE_PREFIX] = 1;
+QUEUE_ORDER[Labels.WEEKLY_QUEUE_PREFIX] = 2;
+QUEUE_ORDER[Labels.MONTHLY_QUEUE_PREFIX] = 3;
+
+Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
+Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
+Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
+
 Labels.READ_LATER_LABEL = Labels.triagedLabel('tldr');
 Labels.NEEDS_REPLY_LABEL = Labels.triagedLabel('needsreply');
-Labels.BLOCKED_LABEL_SUFFIX = 'blocked';
+Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
 Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
 Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
-Labels.LABELER_PREFIX = 'labeler';
-Labels.FALLBACK_LABEL = 'needsfilter';
+
+Labels.BLOCKED_LABEL = Labels.addQueuedPrefix('blocked');
 
 })();

@@ -9,24 +9,24 @@ let ARCHIVE_KEYWORD = 'archive';
 
 let RETRIAGE_LABEL = 'retriage';
 
-var queuePrefixMap = {
-  Daily: 'daily',
-  Monthly: 'monthly',
-  Monday: 'weekly',
-  Tuesday: 'weekly',
-  Wednesday: 'weekly',
-  Thursday: 'weekly',
-  Friday: 'weekly',
-  Saturday: 'weekly',
-  Sunday: 'weekly'
-}
-
 class MailProcessor {
   constructor(settings, pushThread, queuedLabelMap, allLabels) {
     this.settings = settings;
     this.pushThread_ = pushThread;
     this.queuedLabelMap_ = queuedLabelMap;
     this.allLabels_ = allLabels;
+
+    this.queuePrefixMap_ = {
+      Daily: Labels.DAILY_QUEUE_PREFIX,
+      Monthly: Labels.MONTHLY_QUEUE_PREFIX,
+      Monday: Labels.WEEKLY_QUEUE_PREFIX,
+      Tuesday: Labels.WEEKLY_QUEUE_PREFIX,
+      Wednesday: Labels.WEEKLY_QUEUE_PREFIX,
+      Thursday: Labels.WEEKLY_QUEUE_PREFIX,
+      Friday: Labels.WEEKLY_QUEUE_PREFIX,
+      Saturday: Labels.WEEKLY_QUEUE_PREFIX,
+      Sunday: Labels.WEEKLY_QUEUE_PREFIX,
+    };
   }
 
   endsWithAddress(addresses, filterAddress) {
@@ -90,9 +90,9 @@ class MailProcessor {
   }
 
   dequeuedLabelName(queue, labelName) {
-    if (!queuePrefixMap[queue])
+    if (!this.queuePrefixMap_[queue])
       throw `Attempting to put label in a non-existant queue. queue: ${queue}, label: ${labelName}`;
-    return this.addAutoPrefix(queuePrefixMap[queue] + '/' + labelName);
+    return this.addAutoPrefix(this.queuePrefixMap_[queue] + '/' + labelName);
   }
 
   async writeToStatsPage(timestamp, num_threads_processed, per_label_counts, time_taken) {
