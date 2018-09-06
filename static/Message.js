@@ -30,7 +30,7 @@ class Message {
         this.cc = this.cleanseAddresses_(header.value);
         this.ccEmails = this.extractEmails_(this.cc);
         break;
-      case 'ccc':
+      case 'bcc':
         this.bcc = this.cleanseAddresses_(header.value);
         this.bccEmails = this.extractEmails_(this.bcc);
         break;
