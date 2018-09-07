@@ -7,8 +7,6 @@ const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 
 let ARCHIVE_KEYWORD = 'archive';
 
-let RETRIAGE_LABEL = 'retriage';
-
 class MailProcessor {
   constructor(settings, pushThread, queuedLabelMap, allLabels) {
     this.settings = settings;
@@ -320,15 +318,10 @@ class MailProcessor {
         let removeLabelIds = this.allLabels_.getMakeTimeLabelIds().concat();
         let addLabelIds = [];
 
-        // Triaged items when reprocessed go in the rtriage queue regardless of what label they
-        // might otherwise go in.
         let currentTriagedLabel = await this.currentTriagedLabel(thread);
-        if (currentTriagedLabel) {
-          if (currentTriagedLabel == Labels.MUTED_LABEL) {
-            await thread.modify(addLabelIds, removeLabelIds);
-            continue;
-          }
-          labelName = RETRIAGE_LABEL;
+        if (currentTriagedLabel == Labels.MUTED_LABEL) {
+          await thread.modify(addLabelIds, removeLabelIds);
+          continue;
         } else {
           labelName = await this.processThread(thread, rulesSheet.rules);
         }
@@ -341,8 +334,8 @@ class MailProcessor {
         } else {
           let prefixedLabelName;
 
-          // Make sure not to put things into the inbox into queued labels.
-          if (isAlreadyInInbox) {
+          // Don't queue if already in the inbox or triaged.
+          if (isAlreadyInInbox || currentTriagedLabel) {
             let queueData = this.queuedLabelMap_[labelName];
             if (queueData)
               prefixedLabelName = this.dequeuedLabelName(queueData.queue, labelName);
