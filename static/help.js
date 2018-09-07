@@ -75,11 +75,14 @@ Philosopy: Labels are a triage tool, not a search/organization tool. The goal is
 
 If there are emails you don't want make-time to do anything with, modify your gmail filter with appropriate things like "to:(-YOURNAME+pager@google.com)"
 </ol>
+
 <span style="color: red">The big gotcha with filtering and queue bundles, is that emails are only processed when make-time is open in a browser tab. Otherwise, your mail will stay in the unprocessed label. Would love to move this to a server cron, but this is a side project and I can't be bothered to figure out how to manage server-side gmail API oauth. <b>Patches *very* welcome for this.</b></span>
 
 <b>First one wins:</b> To facilitate this, every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "archive" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
 
 <b>Checks all messages:</b> Gmail filters match only the newly incoming message. make-time matches all messages in the thread each time the thread is processed.
+
+<b>needsfilter label:</b> Every thread in the unprocessed queue gets exactly one needstriage label applied. If none of your filters apply to a thread, then make-time will apply a "needsfilter" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
 
 <b>Queues:</b> You can then setup individual labels so they only show once a day, week, or month on a day of your choosing. For example, I have emails to me from my reports, management chain, or select TLs/PMs I work with show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
 

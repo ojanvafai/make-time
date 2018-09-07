@@ -353,7 +353,6 @@ class Settings {
       rules.push(ruleObj);
     }
 
-    this.filters_.labels = Object.keys(labels);
     return this.filters_;
   }
 
@@ -377,7 +376,10 @@ class Settings {
     let originalFilterSheetRowCount = this.filters_.rules.length + 1;
     await SpreadsheetUtils.writeSheet(this.spreadsheetId, Settings.FILTERS_SHEET_NAME_, rows, originalFilterSheetRowCount);
 
-    window.location.reload();
+    // Null out the filters so they get refetched. In theory could avoid the network request
+    // and populate the filters from the rules argument to writeFilters, but doesn't seem
+    // worth the potential extra code that needs to have the rules be in the right format.
+    this.filters_ = null;
   }
 }
 

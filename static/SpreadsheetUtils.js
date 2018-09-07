@@ -5,7 +5,6 @@ let SpreadsheetUtils = {};
 SpreadsheetUtils.a1Notation = (sheetName, startRowIndex, numColumns) => {
   let aCharCode = "A".charCodeAt(0);
   let lastColumn = String.fromCharCode(aCharCode + numColumns - 1);
-  console.log(`${sheetName}!A${startRowIndex + 1}:${lastColumn}`);
   return `${sheetName}!A${startRowIndex + 1}:${lastColumn}`;
 }
 

@@ -67,7 +67,6 @@ class FiltersView extends HTMLElement {
   async render_() {
     let filters = await this.settings_.getFilters();
     let rules = filters.rules;
-    let labels = filters.labels;
 
     let container = document.createElement('table');
     container.style.cssText = `font-size: 11px;`;
@@ -149,6 +148,7 @@ class FiltersView extends HTMLElement {
       rules.push(rule);
     }
     await this.settings_.writeFilters(rules);
+    this.dialog_.close();
   }
 
   cancel_() {

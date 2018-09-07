@@ -57,11 +57,19 @@ class SettingsView extends HTMLElement {
     buttonContainer.append(save, cancel);
     this.append(buttonContainer);
 
+    this.hadChanges_ = false;
+    this.addEventListener('change', () => this.hadChanges_ = true, true);
+
     this.dialog_ = showDialog(this);
   }
 
   showFilterDialog_() {
+    if (this.hadChanges_) {
+      alert("You have changed some settings in this dialog. Please save or cancel first.");
+      return;
+    }
     new FiltersView(this.settings_);
+    this.cancel_();
   }
 
   addBasicSettings_() {
@@ -155,13 +163,22 @@ class SettingsView extends HTMLElement {
     let closeButton = document.createElement('span');
     closeButton.classList.add('close-button');
     closeButton.style.cssText = `padding: 5px;`;
-    closeButton.onclick = () => { container.remove(); };
+    closeButton.onclick = () => {
+      this.hadChanges_ = true;
+      container.remove();
+    };
     container.append(closeButton);
 
     return container;
   }
 
   async save_() {
+    // No need to reload the page if nothing's changed.
+    if (!this.hadChanges_) {
+      this.dialog_.close();
+      return;
+    }
+
     let updates = [];
     let inputs = this.basicSettings_.querySelectorAll('input');
     for (let input of inputs) {
