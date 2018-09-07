@@ -72,7 +72,7 @@ class FiltersView extends HTMLElement {
     container.style.cssText = `font-size: 11px;`;
 
     let header = document.createElement('thead');
-    header.innerHTML = `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th>`;
+    header.innerHTML = `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th><th>No List-ID</th>`;
     container.append(header);
 
     let body = document.createElement('tbody');
@@ -145,6 +145,8 @@ class FiltersView extends HTMLElement {
       rule.label = row.querySelector('.label').value;
       if (row.querySelector('.matchallmessages').checked)
         rule.matchallmessages = 'yes';
+      if (row.querySelector('.nolistid').checked)
+        rule.nolistid = true;
       rules.push(rule);
     }
     await this.settings_.writeFilters(rules);
@@ -193,7 +195,7 @@ class FiltersView extends HTMLElement {
 
     let queryParts = {};
     for (let field in rule) {
-      if (field == 'label' || field == 'matchallmessages')
+      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(field))
         continue;
       queryParts[field] = rule[field];
     }
@@ -202,15 +204,19 @@ class FiltersView extends HTMLElement {
     editor.classList.add('query');
     this.appendCell_(container, editor);
 
-    let matchAllMessages = document.createElement('input');
-    matchAllMessages.classList.add('matchallmessages');
-    matchAllMessages.type = 'checkbox';
-    if (rule.matchallmessages == 'yes')
-      matchAllMessages.checked = true;
-    let cell = this.appendCell_(container, matchAllMessages);
-    cell.style.textAlign = 'center';
+    this.appendCheckbox_(container, 'matchallmessages', rule.matchallmessages);
+    this.appendCheckbox_(container, 'nolistid', rule.nolistid);
 
     return container;
+  }
+
+  appendCheckbox_(container, className, value) {
+    let checkbox = document.createElement('input');
+    checkbox.classList.add(className);
+    checkbox.type = 'checkbox';
+    checkbox.checked = value == 'yes' || value == 'TRUE';
+    let cell = this.appendCell_(container, checkbox);
+    cell.style.textAlign = 'center';
   }
 
   appendWithSentinel_(container, text) {
@@ -296,6 +302,9 @@ class FiltersView extends HTMLElement {
     query = query.replace(/[\n\r]/g, '');
     let directives = query.split(FiltersView.QUERY_SEPARATOR_);
     for (let directive of directives) {
+      if (!directive)
+        continue;
+
       let colonIndex = directive.indexOf(FiltersView.DIRECTIVE_SEPARATOR_);
       let hasColon = colonIndex != -1;
       let field = hasColon ? directive.substring(0, colonIndex) : directive;
@@ -408,6 +417,7 @@ FiltersView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>
  - Label is the label that will apply qhen the rule matches. This is *not* the full label name. The full label name gets prefixed as maketime/.../labelname. Put just the last bit here.
  - Rule is the rule to match.
  - Match All Messages will required the rule to match all the messages in the thread to be considered a match. Otherwise, any message in the thread matching will mean the whole thread matches.
+ - No List-ID matches messages that are not sent to an email list.
 
 <b>Rule directives</b>
  - <b>to:</b> Matches the to/cc/bcc fields of the email. "foo" will match foo+anything@anything.com, "foo@gmail.com" will match foo@gmail.com and foo+anything@gmail.com, "gmail.com" will match anything@gmail.com.

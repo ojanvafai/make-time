@@ -37,6 +37,9 @@ class Message {
       case 'message-id':
         this.messageId = header.value;
         break;
+      case 'list-id':
+        this.listId = header.value;
+        break;
     }
     }
     this.isUnread = message.labelIds.includes('UNREAD');

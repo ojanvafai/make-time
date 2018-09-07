@@ -218,6 +218,11 @@ class MailProcessor {
 
   matchesRule(rule, message) {
     var matches = false;
+    if (rule.nolistid) {
+      if (message.listId)
+        return false;
+      matches = true;
+    }
     if (rule.to) {
       if (!this.containsAddress(message.toEmails, rule.to) &&
           !this.containsAddress(message.ccEmails, rule.to) &&

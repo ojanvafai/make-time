@@ -386,7 +386,7 @@ class Settings {
 Settings.QUEUED_LABELS_SHEET_NAME = 'queued_labels';
 Settings.FILTERS_SHEET_NAME_ = 'filters';
 Settings.FILTERS_RULE_DIRECTIVES = ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
-Settings.FILTERS_SHEET_COLUMNS_ = [].concat('label', Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages');
+Settings.FILTERS_SHEET_COLUMNS_ = [].concat('label', Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid');
 
 Settings.sheetData_ = [
   {
