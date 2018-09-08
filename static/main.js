@@ -259,7 +259,10 @@ async function onLoad() {
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
   labelsToFetch.sort(Labels.compare);
 
-  await viewAll([]);
+  if (settings_.get(ServerStorage.KEYS.VUEUE_IS_DEFAULT))
+    await viewAll([]);
+  else
+    await viewThreadAtATime([]);
 
   for (let label of labelsToFetch) {
     await fetchThreads(addThread, {

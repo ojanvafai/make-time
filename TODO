@@ -4,6 +4,7 @@ P1: Will try to do soonish.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 - Grey out undo button when there's nothing to undo
 - race condition: if the user hits undo before the triage action is done, it will undo the previous triage action
+- grey out filter rows and queues when they are deleted instead of immediately removing them and add an undo button in case the delete button was hit by accident.
 
 P2: Will only do if something makes these seem worth doing.
 - add undo to Vueue

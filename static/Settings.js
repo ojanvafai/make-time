@@ -437,4 +437,11 @@ Settings.fields = [
     default: 280,
     type: 'number',
   },
+  {
+    key: ServerStorage.KEYS.VUEUE_IS_DEFAULT,
+    name: 'Start in view all mode.',
+    description: `Whether to start in view all mode or thread at a time mode. `,
+    default: 280,
+    type: 'checkbox',
+  },
 ];
