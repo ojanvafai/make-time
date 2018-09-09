@@ -17,11 +17,24 @@ let currentView_;
 let settings_;
 let labels_;
 let queuedLabelMap_;
-let triagedQueuesView_;
 let bestEffortThreads_ = [];
 let contacts_ = [];
 let titleStack_ = [];
 let isProcessingMail_ = false;
+
+var router = new PathParser();
+router.add('/viewone', async (foo) => {
+  let threads = currentView_ ? await currentView_.tearDown() : [];
+  await viewThreadAtATime(threads);
+});
+router.add('/viewall', async (foo) => {
+  let threads = currentView_ ? await currentView_.tearDown() : [];
+  await viewAll(threads);
+});
+router.add('/triaged', async (foo) => {
+  let threads = currentView_ ? await currentView_.tearDown() : [];
+  await viewTriaged(threads);
+});
 
 function showDialog(contents) {
   let dialog = document.createElement('dialog');
@@ -54,27 +67,25 @@ async function viewThreadAtATime(threads) {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ThreadView(threadList, viewAll, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts_, triagedQueuesView()));
+  setView(new ViewOne(threadList, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts_));
 
   // Ensure contacts are fetched.
   await fetchContacts(gapi.auth.getToken());
 }
 
 async function viewAll(threads) {
-  setView(new Vueue(threads, viewThreadAtATime, updateTitle, triagedQueuesView()));
+  setView(new ViewAll(threads, updateTitle));
   updateCounter(['']);
 }
 
-function triagedQueuesView() {
+async function viewTriaged(threads) {
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
-  if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT))
-    return null;
-
-  if (!triagedQueuesView_)
-    triagedQueuesView_ = new TriagedQueues(labels_, bestEffortThreads_, triageBestEffortThreads);
-  return triagedQueuesView_;
+  let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
+  setView(new Triaged(labels_, vacation, threads, bestEffortThreads_.length, triageBestEffortThreads, updateTitle));
+  updateCounter(['']);
 }
 
+// TODO: Move this to proper routing.
 async function triageBestEffortThreads() {
   let temp = bestEffortThreads_;
 
@@ -147,7 +158,7 @@ async function fetchThreads(forEachThread, options) {
     query += ' in:' + options.queue;
 
   // We only have triaged labels once they've actually been created.
-  if (labels_.getTriagedLabelNames().length)
+  if (!options.includeTriaged && labels_.getTriagedLabelNames().length)
     query += ' -(in:' + labels_.getTriagedLabelNames().join(' OR in:') + ')';
 
   let getPageOfThreads = async (opt_pageToken) => {
@@ -217,7 +228,8 @@ async function addThread(thread) {
       await thread.markTriaged(Labels.BANKRUPT_LABEL);
     } else {
       bestEffortThreads_.push(thread);
-      triagedQueuesView().update();
+      if (currentView_.setBestEffortCount)
+        currentView_.setBestEffortCount(bestEffortThreads_.length);
     }
   } else {
     await currentView_.push(thread);
@@ -260,9 +272,9 @@ async function onLoad() {
   labelsToFetch.sort(Labels.compare);
 
   if (settings_.get(ServerStorage.KEYS.VUEUE_IS_DEFAULT))
-    await viewAll([]);
+    await router.run('/viewall');
   else
-    await viewThreadAtATime([]);
+    await router.run('/viewone');
 
   for (let label of labelsToFetch) {
     await fetchThreads(addThread, {
@@ -276,7 +288,8 @@ async function onLoad() {
     queue: 'inbox',
   });
 
-  currentView_.finishedInitialLoad();
+  if (currentView_.finishedInitialLoad)
+    await currentView_.finishedInitialLoad();
 
   updateTitle('onLoad');
   // Don't want to show the earlier title, but still want to indicate loading is happening.
@@ -353,7 +366,8 @@ async function processMail() {
 }
 
 function update() {
-  currentView_.updateCurrentThread();
+  if (currentView_.updateCurrentThread)
+    currentView_.updateCurrentThread();
   processMail();
 }
 
@@ -361,6 +375,10 @@ function update() {
 document.body.addEventListener('click', (e) => {
   for (let node of e.path) {
     if (node.tagName == 'A') {
+      if (router.run(node)) {
+        e.preventDefault();
+        return;
+      }
       node.target = '_blank';
       node.rel = 'noopener';
     }
@@ -370,10 +388,13 @@ document.body.addEventListener('click', (e) => {
 document.addEventListener('visibilitychange', (e) => {
   if (!currentView_)
     return;
-  if (document.visibilityState == 'hidden')
-    currentView_.onHide();
-  else
-    currentView_.onShow();
+  if (document.visibilityState == 'hidden') {
+    if (currentView_.onHide)
+      currentView_.onHide();
+  } else {
+    if (currentView_.onShow)
+      currentView_.onShow();
+  }
 });
 
 // This list is probably not comprehensive.

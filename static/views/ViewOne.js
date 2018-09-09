@@ -1,17 +1,15 @@
-class ThreadView extends HTMLElement {
-  constructor(threadList, cleanupDelegate, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts, opt_triagedQueuesView) {
+class ViewOne extends HTMLElement {
+  constructor(threadList, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
 
     this.threadList_ = threadList;
-    this.cleanupDelegate_ = cleanupDelegate;
     this.updateCounter_ = updateCounter;
     this.autoStartTimer_ = autoStartTimer;
     this.timeout_ = timeout;
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
-    this.triagedQueuesView_ = opt_triagedQueuesView;
 
     this.gmailLink_ = new ViewInGmailButton();
     this.gmailLink_.style.position = 'absolute';
@@ -60,13 +58,11 @@ class ThreadView extends HTMLElement {
     this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_);
     this.addButtons_();
 
-    // Hack: Do this on a timer so that the ThreadView is in the DOM before renderNext_
-    // is called and tries to get offsetTop. This happens when going from the Vueue back
-    // to the ThreadView.
+    // Hack: Do this on a timer so that the ViewOne is in the DOM before renderNext_
+    // is called and tries to get offsetTop. This happens when going from ViewAll back
+    // to the ViewOne.
     setTimeout(this.renderNext_.bind(this));
   }
-
-  finishedInitialLoad() {}
 
   toggleTimer_() {
     this.timerPaused_ = !this.timerPaused_;
@@ -96,7 +92,7 @@ class ThreadView extends HTMLElement {
       border-radius: 5px;
     `;
 
-    this.actions_ = new Actions(this, ThreadView.ACTIONS_);
+    this.actions_ = new Actions(this, ViewOne.ACTIONS_);
 
     let timerContainer = document.createElement('div');
     timerContainer.style.cssText = `
@@ -116,7 +112,7 @@ class ThreadView extends HTMLElement {
     this.toolbar_.append(buttonContainer);
   }
 
-  async popAllThreads() {
+  async tearDown() {
     let threads = [];
 
     if (this.prefetchedThread_)
@@ -146,11 +142,6 @@ class ThreadView extends HTMLElement {
     }
   }
 
-  async cleanup() {
-    let threads = await currentView_.popAllThreads();
-    this.cleanupDelegate_(threads);
-  }
-
   async updateTitle_() {
     let title = [];
 
@@ -175,10 +166,7 @@ class ThreadView extends HTMLElement {
       title.push(`${leftInQueue} more in ${displayableQueue}, `);
       let viewAllLink = document.createElement('a');
       viewAllLink.textContent = `view all ${total}`;
-      viewAllLink.onclick = (e) => {
-        e.preventDefault();
-        this.cleanup();
-      };
+      viewAllLink.href = '/viewall';
       title.push(viewAllLink);
 
       for (let queue of queues) {
@@ -470,18 +458,6 @@ Content-Type: text/html; charset="UTF-8"
     this.timeLeft_--;
   }
 
-  async renderAllDone_() {
-    this.subjectText_.textContent = 'All Done! Nothing left to triage for now.';
-    this.gmailLink_.style.display = 'none';
-    this.messages_.textContent = '';
-
-    if (!this.timerPaused_)
-      this.toggleTimer_();
-
-    if (this.triagedQueuesView_)
-      this.messages_.append(this.triagedQueuesView_);
-  }
-
   async requeuePrefetchedThread_() {
     if (!this.prefetchedThread_)
       return;
@@ -518,7 +494,7 @@ Content-Type: text/html; charset="UTF-8"
     this.subject_.style.top = this.offsetTop + 'px';
 
     if (!this.currentThread_) {
-      await this.renderAllDone_();
+      await router.run('/triaged');
       return;
     }
 
@@ -576,7 +552,7 @@ Content-Type: text/html; charset="UTF-8"
   }
 }
 
-ThreadView.ACTIONS_ = [
+ViewOne.ACTIONS_ = [
   Actions.DONE_ACTION,
   Actions.TLDR_ACTION,
   Actions.REPLY_NEEDED_ACTION,
@@ -588,4 +564,4 @@ ThreadView.ACTIONS_ = [
   Actions.UNDO_ACTION,
 ];
 
-window.customElements.define('mt-thread-view', ThreadView);
+window.customElements.define('mt-thread-view', ViewOne);

@@ -1,13 +1,17 @@
 P1: Will try to do soonish.
-- Add a sorted TODO list view of each of the triage queues. Maybe as one view for all of them? One for each? Should it be manual sorting or eisenhower or both? Maybe have a view like the Vueue, but have it highlight each item and force you to pick important&urgent, !important&urgent, important&!urgent, done.
+- Add a sorted TODO list view of each of the triage queues. Highlight each item and force you to pick must do (i.e. can't go home until it's done), important&urgent, !important&urgent, important&!urgent, done.
+- Only show toolbar in any of the views when there are actually threads.
+- Find a way to separate out tasks that can be done on a phone so they can be fit into 5 minute breaks
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 - Grey out undo button when there's nothing to undo
 - race condition: if the user hits undo before the triage action is done, it will undo the previous triage action
 - grey out filter rows and queues when they are deleted instead of immediately removing them and add an undo button in case the delete button was hit by accident.
+- Use TypeScript and create an abstract View superclass and an abstract Dialog superclass.
 
 P2: Will only do if something makes these seem worth doing.
-- add undo to Vueue
+- Lazy load things like views/Settings.js and ViewOne.js. I guess this depends on switching to modules.
+- add undo to ViewAll and Triaged
 - Fix eliding to group better
 - Add autocomplete for label names in the queues and filters views.
 - Removing a queue means the currently queued messages never get dequeued

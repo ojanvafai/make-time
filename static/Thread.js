@@ -9,6 +9,7 @@ class Thread {
     this.labelIds_ = null;
     this.labelNames_ = null;
     this.queue_ = null;
+    this.triagedQueue_ = null;
     this.processedMessages_ = null;
   }
 
@@ -27,8 +28,12 @@ class Thread {
         console.log(`Label id does not exist. WTF. ${id}`);
         continue;
       }
+
       if (name.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'))
         this.setQueue(name);
+      else if (name.startsWith(Labels.TRIAGED_LABEL + '/'))
+        this.triagedQueue_ = name;
+
       this.labelNames_.push(name);
     }
 
@@ -65,7 +70,7 @@ class Thread {
     this.clearDetails_();
   }
 
-  async markTriaged(destination) {
+  async markTriaged(destination, opt_queue) {
     if (destination === undefined)
       throw `Invalid triage action attempted.`;
 
@@ -74,7 +79,7 @@ class Thread {
       addLabelIds.push(await this.allLabels_.getId(destination));
 
     var removeLabelIds = ['UNREAD', 'INBOX'];
-    var queue = await this.getQueue();
+    var queue = opt_queue || await this.getQueue();
     if (queue)
       removeLabelIds.push(await this.allLabels_.getId(queue));
     await this.modify(addLabelIds, removeLabelIds);
@@ -122,6 +127,19 @@ class Thread {
     if (!this.queue_)
       await this.fetchMessageDetails();
     return this.queue_;
+  }
+
+  async getDisplayableTriagedQueue() {
+    let queue = await this.getTriagedQueue();
+    return Labels.removeTriagedPrefix(queue);
+  }
+
+  async getTriagedQueue() {
+    if (!this.triagedQueue_)
+      await this.fetchMessageDetails();
+    if (!this.triagedQueue_)
+      throw 'Attempting to get triage queue of untriaged thread.';
+    return this.triagedQueue_;
   }
 
   async updateMessageDetails() {

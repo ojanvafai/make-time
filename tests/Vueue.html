@@ -2,7 +2,7 @@
   <body>
       <script src="../static/LabelUtils.js"></script>
     <script src="../static/ThreadList.js"></script>
-    <script src="../static/views/Vueue.js"></script>
+    <script src="../static/views/ViewAll.js"></script>
 
     <div class="header" style="position: static"><div class="toolbar">&nbsp;</div></div>
 
@@ -41,7 +41,7 @@
           });
           threads.push(thread);
         }
-        let vueue = new Vueue(threads, (selected, unselected) => {
+        let vueue = new ViewAll(threads, (selected, unselected) => {
           console.log(selected);
           console.log(unselected);
         });
