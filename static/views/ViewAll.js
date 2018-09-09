@@ -24,11 +24,11 @@ class ViewAll extends AbstractVueue {
   async tearDown() {
     this.isTearingDown_ = true;
     this.threads_.setNeedsTriage(this.getThreads().unselectedThreads);
-    await this.markTriaged_(Actions.BEGIN_TRIAGE_ACTION.destination);
+    await this.markTriaged_(Actions.VIEW_ALL_DONE_ACTION.destination);
   }
 
   async takeAction(action) {
-    if (action == Actions.BEGIN_TRIAGE_ACTION) {
+    if (action == Actions.VIEW_ALL_DONE_ACTION) {
       await router.run('/viewone');
       return;
     }
@@ -63,5 +63,5 @@ ViewAll.ACTIONS_ = [
   Actions.DONE_ACTION,
   Actions.MUTE_ACTION,
   Actions.SPAM_ACTION,
-  Actions.BEGIN_TRIAGE_ACTION,
+  Actions.VIEW_ALL_DONE_ACTION,
 ];

@@ -33,6 +33,11 @@ class Triaged extends AbstractVueue {
   }
 
   async takeAction(action) {
+    if (action == Actions.DONE_ACTION) {
+      await router.run('/maketime');
+      return;
+    }
+
     let rows = this.getThreads().selectedRows;
     if (!rows.length)
       return;
@@ -43,7 +48,7 @@ class Triaged extends AbstractVueue {
       this.selectRow_(nextRow);
 
     // Update the UI first and then archive one at a time.
-    let isSetPriority = action != Actions.DONE_ACTION;
+    let isSetPriority = action != Actions.ARCHIVE_ACTION;
     await this.queueTriageActions(rows, action.destination, isSetPriority);
     await this.processQueuedActions();
   }
@@ -111,5 +116,6 @@ Triaged.ACTIONS_ = [
   Actions.IMPORTANT_AND_URGENT_ACTION,
   Actions.URGENT_AND_NOT_IMPORTANT_ACTION,
   Actions.IMPORTANT_AND_NOT_URGENT_ACTION,
+  Actions.ARCHIVE_ACTION,
   Actions.DONE_ACTION,
 ];

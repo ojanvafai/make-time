@@ -42,7 +42,7 @@ class MakeTime extends AbstractVueue {
   async takeAction(action) {
     let rows = this.getThreads().selectedRows;
     // Update the UI first and then archive one at a time.
-    let isSetPriority = action != Actions.DONE_ACTION;
+    let isSetPriority = action != Actions.ARCHIVE_ACTION;
     await this.queueTriageActions(rows, action.destination, false);
     await this.processQueuedActions();
   }
@@ -88,5 +88,5 @@ MakeTime.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.IMPORTANT_AND_NO
 MakeTime.PRIORITY_SORT_ORDER[MakeTime.UNPRIORITIZED] = 4;
 
 MakeTime.ACTIONS_ = [
-  Actions.DONE_ACTION,
+  Actions.ARCHIVE_ACTION,
 ];

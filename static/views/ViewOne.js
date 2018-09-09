@@ -200,6 +200,11 @@ class ViewOne extends HTMLElement {
   }
 
   async takeAction(action, opt_e) {
+    if (action == Actions.DONE_ACTION) {
+      await router.run('/triaged');
+      return;
+    }
+
     if (action == Actions.UNDO_ACTION) {
       this.undoLastAction_();
       return;
@@ -350,7 +355,7 @@ class ViewOne extends HTMLElement {
 
       await this.sendReply_(compose.value, compose.getEmails(), replyAll.checked);
       this.clearQuickReply_();
-      this.actions_.takeAction(Actions.DONE_ACTION);
+      this.actions_.takeAction(Actions.ARCHIVE_ACTION);
 
       updateTitle('sendReply');
       this.isSending_ = false;
@@ -557,15 +562,16 @@ Content-Type: text/html; charset="UTF-8"
 }
 
 ViewOne.ACTIONS_ = [
-  Actions.DONE_ACTION,
+  Actions.ARCHIVE_ACTION,
   Actions.TLDR_ACTION,
   Actions.REPLY_NEEDED_ACTION,
   Actions.QUICK_REPLY_ACTION,
   Actions.BLOCKED_ACTION,
   Actions.MUTE_ACTION,
-  Actions.ACTION_ITEM_ACTION,
+  Actions.NEEDS_ACTION_ACTION,
   Actions.SPAM_ACTION,
   Actions.UNDO_ACTION,
+  Actions.DONE_ACTION,
 ];
 
 window.customElements.define('mt-view-one', ViewOne);

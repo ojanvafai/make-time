@@ -49,14 +49,14 @@ class Actions extends HTMLElement {
   // Do this in the constructor since it depends on Labels.js
   setDestinations_() {
     // Done is removing all labels. Use null as a sentinel for that.
-    Actions.DONE_ACTION.destination = null;
-    Actions.BEGIN_TRIAGE_ACTION.destination = null;
+    Actions.ARCHIVE_ACTION.destination = null;
+    Actions.VIEW_ALL_DONE_ACTION.destination = null;
     Actions.TLDR_ACTION.destination = Labels.READ_LATER_LABEL;
     Actions.REPLY_NEEDED_ACTION.destination = Labels.NEEDS_REPLY_LABEL;
     Actions.BLOCKED_ACTION.destination = Labels.BLOCKED_LABEL;
     Actions.SPAM_ACTION.destination = 'SPAM';
     Actions.MUTE_ACTION.destination = Labels.MUTED_LABEL;
-    Actions.ACTION_ITEM_ACTION.destination = Labels.ACTION_ITEM_LABEL;
+    Actions.NEEDS_ACTION_ACTION.destination = Labels.ACTION_ITEM_LABEL;
 
     Actions.MUST_DO_ACTION.destination = Labels.MUST_DO_LABEL;
     Actions.IMPORTANT_AND_URGENT_ACTION.destination = Labels.IMPORTANT_AND_URGENT_LABEL;
@@ -90,8 +90,8 @@ class Actions extends HTMLElement {
   }
 }
 
-Actions.DONE_ACTION = {
-  name: `Done`,
+Actions.ARCHIVE_ACTION = {
+  name: `Archive`,
   description: `Archive and remove from the current queue.`,
 };
 
@@ -125,8 +125,8 @@ Actions.MUTE_ACTION = {
   description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
 };
 
-Actions.ACTION_ITEM_ACTION = {
-  name: `Action Item`,
+Actions.NEEDS_ACTION_ACTION = {
+  name: `Needs Action`,
   description: `Needs some action taken other than an email reply. Goes in triaged/actionitem label.`,
 };
 
@@ -135,9 +135,14 @@ Actions.UNDO_ACTION = {
   description: `Undoes the last action taken.`,
 };
 
-Actions.BEGIN_TRIAGE_ACTION = {
-  name: `Begin triage and done`,
-  description: `Archive the selected threads and one thread at a time triage.`,
+Actions.DONE_ACTION = {
+  name: `Done`,
+  description: `Transition to next triage phase.`,
+}
+
+Actions.VIEW_ALL_DONE_ACTION = {
+  name: `Done and archive selected`,
+  description: `Archive the selected threads and transition to next triage phase.`,
 }
 
 Actions.MUST_DO_ACTION = {

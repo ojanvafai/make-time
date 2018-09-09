@@ -38,7 +38,7 @@ router.add('/triaged', async (foo) => {
     await currentView_.tearDown();
   await viewTriaged();
 });
-router.add('/make-time', async (foo) => {
+router.add('/maketime', async (foo) => {
   if (currentView_)
     await currentView_.tearDown();
   await viewMakeTime();
@@ -259,10 +259,6 @@ async function onLoad() {
     storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
   }
 
-  let makeTimeLink = document.createElement('a');
-  makeTimeLink.textContent = 'Make Time';
-  makeTimeLink.href = '/make-time';
-
   let settingsLink = document.createElement('a');
   settingsLink.textContent = 'Settings';
   settingsLink.onclick = async () => new SettingsView(settings_, getQueuedLabelMap());
@@ -272,7 +268,7 @@ async function onLoad() {
   helpLink.onclick = () => showHelp(settings_);
 
   let topRightLinks = document.getElementById('top-right-links');
-  topRightLinks.append(makeTimeLink, ' ', settingsLink, ' ', helpLink);
+  topRightLinks.append(settingsLink, ' ', helpLink);
 
   let vacationQuery = '';
   if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)) {
