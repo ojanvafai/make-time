@@ -3,6 +3,7 @@ class ViewAll extends AbstractVueue {
     super(ViewAll.ACTIONS_, updateTitleDelegate);
     this.style.display = 'block';
     this.threads_ = threads;
+    this.init_();
   }
 
   async finishedInitialLoad() {
@@ -10,18 +11,20 @@ class ViewAll extends AbstractVueue {
       await router.run('/triaged');
   }
 
-  async connectedCallback() {
-    for (let thread of this.threads_) {
-      await this.push(thread);
+  async init_() {
+    for (let thread of this.threads_.getNeedsTriage()) {
+      await this.addThread(thread);
     }
+  }
+
+  pushNeedsTriage(thread) {
+    this.addThread(thread);
   }
 
   async tearDown() {
     this.isTearingDown_ = true;
-    // Intentionally don't await this so we show the new view without waiting for the
-    // threads to all be triaged.
-    this.markTriaged_(Actions.BEGIN_TRIAGE_ACTION.destination);
-    return this.getThreads().unselectedThreads;
+    this.threads_.setNeedsTriage(this.getThreads().unselectedThreads);
+    await this.markTriaged_(Actions.BEGIN_TRIAGE_ACTION.destination);
   }
 
   async takeAction(action) {

@@ -10,6 +10,7 @@ class Thread {
     this.labelNames_ = null;
     this.queue_ = null;
     this.triagedQueue_ = null;
+    this.priority_ = null;
     this.processedMessages_ = null;
   }
 
@@ -33,6 +34,8 @@ class Thread {
         this.setQueue(name);
       else if (name.startsWith(Labels.TRIAGED_LABEL + '/'))
         this.triagedQueue_ = name;
+      else if (name.startsWith(Labels.PRIORITY_LABEL + '/'))
+        this.priority_ = name;
 
       this.labelNames_.push(name);
     }
@@ -68,6 +71,22 @@ class Thread {
     // Once a modify has happend the stored message details are stale and will need refeteching
     // if this Thread instance continued to be used.
     this.clearDetails_();
+
+    return {
+      added: addLabelIds,
+      removed: removeLabelIds,
+      thread: this,
+    }
+  }
+
+  async setPriority(destination) {
+    if (destination === undefined)
+      throw `Invalid priority attempted.`;
+
+    var addLabelIds = [await this.allLabels_.getId(destination)];
+    var removeLabelNames = this.allLabels_.getPriorityLabelNames().filter(item => item != destination);
+    let removeLabelIds = await this.allLabels_.getIds(removeLabelNames);
+    return await this.modify(addLabelIds, removeLabelIds);
   }
 
   async markTriaged(destination, opt_queue) {
@@ -79,15 +98,16 @@ class Thread {
       addLabelIds.push(await this.allLabels_.getId(destination));
 
     var removeLabelIds = ['UNREAD', 'INBOX'];
-    var queue = opt_queue || await this.getQueue();
-    if (queue)
-      removeLabelIds.push(await this.allLabels_.getId(queue));
-    await this.modify(addLabelIds, removeLabelIds);
-    return {
-      added: addLabelIds,
-      removed: removeLabelIds,
-      thread: this,
+    if (destination) {
+      var queue = opt_queue || await this.getQueue();
+      if (queue)
+        removeLabelIds.push(await this.allLabels_.getId(queue));
+    } else {
+      // If archiving, remove all make-time labels.
+      removeLabelIds = removeLabelIds.concat(this.allLabels_.getMakeTimeLabelIds());
     }
+
+    return await this.modify(addLabelIds, removeLabelIds);
   }
 
   isInInbox() {
@@ -135,11 +155,15 @@ class Thread {
   }
 
   async getTriagedQueue() {
-    if (!this.triagedQueue_)
-      await this.fetchMessageDetails();
+    await this.fetchMessageDetails();
     if (!this.triagedQueue_)
       throw 'Attempting to get triage queue of untriaged thread.';
     return this.triagedQueue_;
+  }
+
+  async getPriority() {
+    await this.fetchMessageDetails();
+    return this.priority_;
   }
 
   async updateMessageDetails() {

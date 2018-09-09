@@ -8,15 +8,27 @@ class Labels {
     this.idToLabel_ = {};
     this.makeTimeLabelIds_ = [];
     this.triagedLabels_ = [];
+    this.priorityLabels_ = [];
 
     for (let label of response.result.labels) {
-      this.labelToId_[label.name] = label.id;
-      this.idToLabel_[label.id] = label.name;
-      if (Labels.isMakeTimeLabel(label.name)) {
-        this.makeTimeLabelIds_.push(label.id);
-        if (label.name.startsWith(Labels.TRIAGED_LABEL + '/'))
-          this.triagedLabels_.push(label.name);
-      }
+      this.addLabel_(label.name, label.id);
+    }
+  }
+
+  addLabel_(name, id) {
+    this.labelToId_[name] = id;
+    this.idToLabel_[id] = name;
+    if (Labels.isMakeTimeLabel(name)) {
+      // Don't include maketime/unprocessed in the list of maketime labels since
+      // it is set by external code when new messages come in and we don't want
+      // archiving a thread to remove this label without actually processing it.
+      if (name != Labels.UNPROCESSED_LABEL)
+        this.makeTimeLabelIds_.push(id);
+
+      if (name.startsWith(Labels.TRIAGED_LABEL + '/'))
+        this.triagedLabels_.push(name);
+      else if (name.startsWith(Labels.PRIORITY_LABEL + '/'))
+        this.priorityLabels_.push(name);
     }
   }
 
@@ -32,6 +44,10 @@ class Labels {
       labelListVisibility: 'labelShow',
     });
     return resp.result;
+  }
+
+  async getIds(names) {
+    return await Promise.all(names.map(async (name) => await this.getId(name)));
   }
 
   async getId(labelName) {
@@ -58,9 +74,7 @@ class Labels {
         continue;
 
       var result = await this.createLabel_(labelSoFar);
-      var id = result.id;
-      this.labelToId_[labelSoFar] = id;
-      this.idToLabel_[id] = labelSoFar;
+      this.addLabel_(labelSoFar, result.id);
     }
 
     return this.labelToId_[labelName];
@@ -72,6 +86,10 @@ class Labels {
 
   getTriagedLabelNames() {
     return this.triagedLabels_;
+  }
+
+  getPriorityLabelNames() {
+    return this.priorityLabels_;
   }
 
   labelResultComparator_(a, b) {
@@ -194,11 +212,18 @@ Labels.removeNeedsTriagePrefix = (labelName) => {
 }
 
 Labels.addQueuedPrefix = (labelName) => {
-  return Labels.addMakeTimePrefix(Labels.QUEUED_PREFIX + "/" + labelName);
+  return Labels.QUEUED_LABEL + "/" + labelName;
+}
+
+Labels.addPriorityPrefix = (labelName) => {
+  return Labels.PRIORITY_LABEL + "/" + labelName;
+}
+
+Labels.removePriorityPrefix = (labelName) => {
+  return removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
 }
 
 Labels.MAKE_TIME_PREFIX = 'maketime';
-Labels.QUEUED_PREFIX = 'queued';
 Labels.FALLBACK_LABEL = 'needsfilter';
 
 Labels.DAILY_QUEUE_PREFIX = 'daily';
@@ -213,6 +238,8 @@ QUEUE_ORDER[Labels.MONTHLY_QUEUE_PREFIX] = 3;
 Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
 Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
 Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
+Labels.QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
+Labels.PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
 
 Labels.READ_LATER_LABEL = Labels.triagedLabel('tldr');
 Labels.NEEDS_REPLY_LABEL = Labels.triagedLabel('needsreply');
@@ -221,5 +248,16 @@ Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
 Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
 
 Labels.BLOCKED_LABEL = Labels.addQueuedPrefix('blocked');
+
+Labels.MUST_DO_LABEL = Labels.addPriorityPrefix('must-do');
+Labels.IMPORTANT_AND_URGENT_LABEL = Labels.addPriorityPrefix('important-and-urgent');
+Labels.URGENT_AND_NOT_IMPORTANT_LABEL = Labels.addPriorityPrefix('urgent-and-not-important');
+Labels.IMPORTANT_AND_NOT_URGENT_LABEL = Labels.addPriorityPrefix('important-and-not-urgent');
+
+Labels.LABEL_TO_COLOR = {};
+Labels.LABEL_TO_COLOR[Labels.MUST_DO_LABEL] = 'red';
+Labels.LABEL_TO_COLOR[Labels.IMPORTANT_AND_URGENT_LABEL] = 'red';
+Labels.LABEL_TO_COLOR[Labels.URGENT_AND_NOT_IMPORTANT_LABEL] = 'darkolivegreen';
+Labels.LABEL_TO_COLOR[Labels.IMPORTANT_AND_NOT_URGENT_LABEL] = 'grey';
 
 })();

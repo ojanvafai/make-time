@@ -57,6 +57,11 @@ class Actions extends HTMLElement {
     Actions.SPAM_ACTION.destination = 'SPAM';
     Actions.MUTE_ACTION.destination = Labels.MUTED_LABEL;
     Actions.ACTION_ITEM_ACTION.destination = Labels.ACTION_ITEM_LABEL;
+
+    Actions.MUST_DO_ACTION.destination = Labels.MUST_DO_LABEL;
+    Actions.IMPORTANT_AND_URGENT_ACTION.destination = Labels.IMPORTANT_AND_URGENT_LABEL;
+    Actions.URGENT_AND_NOT_IMPORTANT_ACTION.destination = Labels.URGENT_AND_NOT_IMPORTANT_LABEL;
+    Actions.IMPORTANT_AND_NOT_URGENT_ACTION.destination = Labels.IMPORTANT_AND_NOT_URGENT_LABEL;
   }
 
   dispatchShortcut(e) {
@@ -86,53 +91,73 @@ class Actions extends HTMLElement {
 }
 
 Actions.DONE_ACTION = {
-  name: 'Done',
+  name: `Done`,
   description: `Archive and remove from the current queue.`,
 };
 
 Actions.TLDR_ACTION = {
-  name: 'TL;DR',
+  name: `TL;DR`,
   description: `Too long, will read later. Goes in triaged/tldr label.`,
 };
 
 Actions.REPLY_NEEDED_ACTION = {
-  name: 'Reply Needed',
+  name: `Reply Needed`,
   description: `Needs a reply. Goes in triaged/replyneeded label.`,
 };
 
 Actions.QUICK_REPLY_ACTION = {
-  name: 'Quick Reply',
+  name: `Quick Reply`,
   description: `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
 };
 
 Actions.BLOCKED_ACTION = {
-  name: 'Blocked',
+  name: `Blocked`,
   description: `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
 };
 
 Actions.SPAM_ACTION = {
-  name: 'Spam',
+  name: `Spam`,
   description: `Report spam. Same beavhior as reporting spam in gmail.`,
 };
 
 Actions.MUTE_ACTION = {
-  name: 'Mute',
+  name: `Mute`,
   description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
 };
 
 Actions.ACTION_ITEM_ACTION = {
-  name: 'Action Item',
+  name: `Action Item`,
   description: `Needs some action taken other than an email reply. Goes in triaged/actionitem label.`,
 };
 
 Actions.UNDO_ACTION = {
-  name: 'Undo',
+  name: `Undo`,
   description: `Undoes the last action taken.`,
 };
 
 Actions.BEGIN_TRIAGE_ACTION = {
-  name: 'Begin triage and done',
-  description: 'Archive the selected threads and one thread at a time triage.',
+  name: `Begin triage and done`,
+  description: `Archive the selected threads and one thread at a time triage.`,
+}
+
+Actions.MUST_DO_ACTION = {
+  name: `1: Must Do`,
+  description: `Must do today. Literally won't go home till it's done.`,
+}
+
+Actions.IMPORTANT_AND_URGENT_ACTION = {
+  name: `2: Important+Urgent`,
+  description: `Important for achieving my mission and will be useless unless accomplished soon.`,
+}
+
+Actions.URGENT_AND_NOT_IMPORTANT_ACTION = {
+  name: `3: Urgent+Not Important`,
+  description: `Not important for achieving my mission, but will be useless unless accomplished soon. Try to find ways to delegate this work to someone for whom it will be important.`,
+}
+
+Actions.IMPORTANT_AND_NOT_URGENT_ACTION = {
+  name: `4: Important+Not Urgent`,
+  description: `Important for achieving my mission and but doesn't need to happen right away. Ideally you spend 60+% of your work day here.`,
 }
 
 window.customElements.define('mt-actions', Actions);

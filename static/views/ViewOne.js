@@ -1,10 +1,10 @@
 class ViewOne extends HTMLElement {
-  constructor(threadList, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts) {
+  constructor(threads, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
 
-    this.threadList_ = threadList;
+    this.threads_ = threads;
     this.updateCounter_ = updateCounter;
     this.autoStartTimer_ = autoStartTimer;
     this.timeout_ = timeout;
@@ -52,16 +52,20 @@ class ViewOne extends HTMLElement {
     this.toolbar_.className = 'footer';
     this.toolbar_.style.cssText = `
       display: flex;
-      flex-direction: column;
-      align-items: flex-end;
+      align-items: center;
     `;
     this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_);
     this.addButtons_();
 
-    // Hack: Do this on a timer so that the ViewOne is in the DOM before renderNext_
-    // is called and tries to get offsetTop. This happens when going from ViewAll back
-    // to the ViewOne.
-    setTimeout(this.renderNext_.bind(this));
+    this.init_();
+  }
+
+  async init_() {
+    this.threadList_ = new ThreadList();
+    for (let thread of this.threads_.getNeedsTriage()) {
+      await this.threadList_.push(thread);
+    }
+    this.renderNext_();
   }
 
   toggleTimer_() {
@@ -113,7 +117,7 @@ class ViewOne extends HTMLElement {
   }
 
   async tearDown() {
-    let threads = [];
+    threads_.setNeedsTriage([]);
 
     if (this.prefetchedThread_)
       await this.threadList_.push(this.prefetchedThread_.thread);
@@ -122,13 +126,11 @@ class ViewOne extends HTMLElement {
       await this.threadList_.push(this.currentThread_.thread);
 
     while (this.threadList_.length) {
-      threads.push(this.threadList_.pop());
+      threads_.pushNeedsTriage(this.threadList_.pop());
     }
-
-    return threads;
   }
 
-  async push(thread) {
+  async pushNeedsTriage(thread) {
     await this.threadList_.push(thread);
     await this.updateTitle_();
 
@@ -270,6 +272,7 @@ class ViewOne extends HTMLElement {
   clearQuickReply_() {
     this.quickReplyOpen_ = false;
     this.toolbar_.textContent = '';
+    this.toolbar_.style.flexDirection = 'column';
     this.toolbar_.style.backgroundColor = '';
     this.addButtons_();
     this.restartTimer_();
@@ -277,6 +280,7 @@ class ViewOne extends HTMLElement {
 
   showQuickReply_() {
     this.quickReplyOpen_ = true;
+    this.toolbar_.style.flexDirection = 'row';
     this.toolbar_.textContent = '';
     this.toolbar_.style.backgroundColor = 'white';
     this.cancelTimer_();
@@ -564,4 +568,4 @@ ViewOne.ACTIONS_ = [
   Actions.UNDO_ACTION,
 ];
 
-window.customElements.define('mt-thread-view', ViewOne);
+window.customElements.define('mt-view-one', ViewOne);

@@ -63,6 +63,9 @@ class PathParser {
   async run(location) {
     let isString = typeof location == 'string';
     let path = isString ? location : location.pathname;
+    if (!path)
+      return false;
+
     let pathParts = this.parsePath_(path);
     // TODO: Allow including query parameters in the string version.
     // Strip the leading '?'.

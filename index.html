@@ -53,13 +53,18 @@
       .right-toolbar > a {
         color: white;
       }
-      .label-button, button {
+      button, .label-button {
         margin: 4px;
         padding: 8px;
         font-size: 16px;
         border: 1px solid black;
         display: block;
         text-align: center;
+      }
+      .label-button {
+        align-self: center;
+        margin-bottom: 50vh;
+        background-color: white;
       }
       .label-button:hover, button:hover {
         background-color: #ccc;
@@ -172,7 +177,7 @@
         justify-content: center;
         align-items: center;
       }
-      mt-thread-view {
+      mt-view-one {
         border: 1px solid #ccc;
         border-width: 0px 1px;
       }
@@ -183,7 +188,6 @@
         padding: 6px 0;
         border: 1px solid #ddd;
         border-bottom: none;
-        background-color: white;
         white-space: nowrap;
       }
       mt-thread-row-group {
@@ -220,10 +224,7 @@
         <span id="title">&nbsp;</span>
       </div>
       <div id="counter">&nbsp;</div>
-      <div class='right-toolbar'>
-        <a id="settings"></a>
-        <a id="help"></a>
-      </div>
+      <div id="top-right-links" class='right-toolbar'></div>
     </div>
     </div>
     <!-- Hacky way to get this to take up space for the position fixed header above. -->
@@ -249,10 +250,12 @@
     <script src="static/Settings.js"></script>
     <script src="static/SpreadsheetUtils.js"></script>
     <script src="static/Thread.js"></script>
+    <script src="static/ThreadGroups.js"></script>
     <script src="static/ThreadList.js"></script>
     <script src="static/ViewInGmailButton.js"></script>
     <script src="static/views/AbstractVueue.js"></script>
     <script src="static/views/Filters.js"></script>
+    <script src="static/views/MakeTime.js"></script>
     <script src="static/views/Settings.js"></script>
     <script src="static/views/ThreadRow.js"></script>
     <script src="static/views/ThreadRowGroup.js"></script>

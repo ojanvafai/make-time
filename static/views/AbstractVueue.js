@@ -6,8 +6,8 @@ class AbstractVueue extends HTMLElement {
     this.groupByQueue_ = {};
     this.queuedTriageActions_ = [];
 
-    this.rowGroupContainer = document.createElement('div');
-    this.append(this.rowGroupContainer);
+    this.rowGroupContainer_ = document.createElement('div');
+    this.append(this.rowGroupContainer_);
 
     let footer = document.createElement('div');
     footer.className = 'footer';
@@ -24,32 +24,36 @@ class AbstractVueue extends HTMLElement {
     return false;
   }
 
-  async push(thread) {
-    let queue = await this.getDisplayableQueue(thread);
-    let rowGroup = this.groupByQueue_[queue];
-    if (!rowGroup) {
-      rowGroup = new ThreadRowGroup(queue);
-      this.groupByQueue_[queue] = rowGroup;
-      this.rowGroupContainer.append(rowGroup);
+  sortGroups(comparator) {
+    let rowGroups = Array.prototype.slice.call(this.rowGroupContainer_.children);
+    rowGroups.sort(comparator);
+
+    for (var i = 0; i < rowGroups.length; i++) {
+      let child = this.rowGroupContainer_.children[i];
+      let rowGroup = rowGroups[i];
+      if (rowGroup != child)
+        child.before(rowGroup);
     }
-    rowGroup.push(thread);
   }
 
-  async addTriagedThread_(thread) {
+  async addThread(thread) {
     let queue = await this.getDisplayableQueue(thread);
     let rowGroup = this.groupByQueue_[queue];
     if (!rowGroup) {
       rowGroup = new ThreadRowGroup(queue);
       this.groupByQueue_[queue] = rowGroup;
-      this.rowGroupContainer.append(rowGroup);
+      this.rowGroupContainer_.append(rowGroup);
     }
-    rowGroup.push(thread);
+
+    let row = new ThreadRow(thread);
+    rowGroup.push(row);
+    return row;
   }
 
   getThreads() {
     let selected = [];
     let unselected = [];
-    for (let child of this.rowGroupContainer.querySelectorAll('mt-thread-row')) {
+    for (let child of this.rowGroupContainer_.querySelectorAll('mt-thread-row')) {
       if (child.checked) {
         selected.push(child);
       } else {
@@ -63,7 +67,26 @@ class AbstractVueue extends HTMLElement {
   }
 
   rowGroupCount() {
-    return this.rowGroupContainer.children.length;
+    return this.rowGroupContainer_.children.length;
+  }
+
+  parentRowGroup(row) {
+    let parent = row.parentNode;
+    while (!(parent instanceof ThreadRowGroup)) {
+      parent = parent.parentNode;
+    }
+    return parent;
+  }
+
+  getNextRow(row) {
+    let nextRow = row.nextSibling;
+    if (!nextRow) {
+      let rowGroup = this.parentRowGroup(row);
+      let nextRowGroup = rowGroup.nextSibling;
+      if (nextRowGroup)
+        nextRow = nextRowGroup.querySelector('mt-thread-row');
+    }
+    return nextRow;
   }
 
   async removeRow_(row) {
@@ -76,12 +99,17 @@ class AbstractVueue extends HTMLElement {
     }
   }
 
-  async queueTriageActions(rows, destination) {
+  async queueTriageActions(rows, destination, opt_isSetPriority) {
     for (let row of rows) {
-      await this.removeRow_(row);
+      if (opt_isSetPriority)
+        row.checked = false;
+      else
+        await this.removeRow_(row);
+
       this.queuedTriageActions_.push({
         destination: destination,
-        thread: row.thread,
+        row: row,
+        isSetPriority: opt_isSetPriority,
       })
     }
   }
@@ -94,8 +122,14 @@ class AbstractVueue extends HTMLElement {
     let item;
     while (item = this.queuedTriageActions_.pop()) {
       this.updateTitle_('archiving', `Archiving ${this.queuedTriageActions_.length + 1} threads...`);
-      let queue = await this.getQueue(item.thread);
-      await item.thread.markTriaged(item.destination, queue);
+      let thread = item.row.thread;
+      if (item.isSetPriority) {
+        await thread.setPriority(item.destination);
+        await item.row.showPriority();
+      } else {
+        let queue = await this.getQueue(thread);
+        await thread.markTriaged(item.destination, queue);
+      }
     }
     this.updateTitle_('archiving');
   }

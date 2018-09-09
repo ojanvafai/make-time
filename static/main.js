@@ -17,24 +17,45 @@ let currentView_;
 let settings_;
 let labels_;
 let queuedLabelMap_;
-let bestEffortThreads_ = [];
 let contacts_ = [];
 let titleStack_ = [];
 let isProcessingMail_ = false;
+let threads_ = new ThreadGroups();
 
 var router = new PathParser();
 router.add('/viewone', async (foo) => {
-  let threads = currentView_ ? await currentView_.tearDown() : [];
-  await viewThreadAtATime(threads);
+  if (currentView_)
+    await currentView_.tearDown();
+  await viewThreadAtATime();
 });
 router.add('/viewall', async (foo) => {
-  let threads = currentView_ ? await currentView_.tearDown() : [];
-  await viewAll(threads);
+  if (currentView_)
+    await currentView_.tearDown();
+  await viewAll();
 });
 router.add('/triaged', async (foo) => {
-  let threads = currentView_ ? await currentView_.tearDown() : [];
-  await viewTriaged(threads);
+  if (currentView_)
+    await currentView_.tearDown();
+  await viewTriaged();
 });
+router.add('/make-time', async (foo) => {
+  if (currentView_)
+    await currentView_.tearDown();
+  await viewMakeTime();
+});
+router.add('/besteffort', async (foo) => {
+  if (currentView_)
+    await currentView_.tearDown();
+
+  threads = threads.concat(threads_.getBestEffort());
+
+  // Null this out before any awaits to avoid adding more threads to threads_.bestEffort_
+  // via addThreads once we've started triaging best effort threads.
+  threads_.setBestEffort(null);
+
+  await viewAll();
+});
+
 
 function showDialog(contents) {
   let dialog = document.createElement('dialog');
@@ -58,48 +79,37 @@ function showDialog(contents) {
   return dialog;
 }
 
-async function viewThreadAtATime(threads) {
-  let threadList = new ThreadList();
-  for (let thread of threads) {
-    await threadList.push(thread);
-  }
-
+async function viewThreadAtATime() {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ViewOne(threadList, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts_));
+  setView(new ViewOne(threads_, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts_));
 
   // Ensure contacts are fetched.
   await fetchContacts(gapi.auth.getToken());
 }
 
-async function viewAll(threads) {
-  setView(new ViewAll(threads, updateTitle));
+async function viewAll() {
+  setView(new ViewAll(threads_, updateTitle));
   updateCounter(['']);
 }
 
-async function viewTriaged(threads) {
+async function viewTriaged() {
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
   let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new Triaged(labels_, vacation, threads, bestEffortThreads_.length, triageBestEffortThreads, updateTitle));
+  setView(new Triaged(threads_, labels_, vacation, updateTitle));
   updateCounter(['']);
 }
 
-// TODO: Move this to proper routing.
-async function triageBestEffortThreads() {
-  let temp = bestEffortThreads_;
-
-  // Null this out before any awaits to avoid adding more threads to bestEffortThreads_
-  // via addThreads once we've started triaging best effort threads.
-  bestEffortThreads_ = null;
-
-  for (let thread of temp) {
-    await currentView_.push(thread);
-  }
+async function viewMakeTime() {
+  setView(new MakeTime(threads_, labels_, updateTitle));
+  updateCounter(['']);
 }
 
 function setView(view) {
+  threads_.setListener(view);
   currentView_ = view;
+
   var content = document.getElementById('content');
   content.textContent = '';
   content.append(view);
@@ -223,16 +233,14 @@ async function addThread(thread) {
       return;
   }
 
-  if (bestEffortThreads_ && await isBestEffortQueue(thread)) {
+  if (threads_.getBestEffort() && await isBestEffortQueue(thread)) {
     if (await isBankrupt(thread)) {
       await thread.markTriaged(Labels.BANKRUPT_LABEL);
     } else {
-      bestEffortThreads_.push(thread);
-      if (currentView_.setBestEffortCount)
-        currentView_.setBestEffortCount(bestEffortThreads_.length);
+      threads_.pushBestEffort(thread);
     }
   } else {
-    await currentView_.push(thread);
+    await threads_.pushNeedsTriage(thread);
   }
 }
 
@@ -251,13 +259,20 @@ async function onLoad() {
     storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
   }
 
-  let settingsLink = document.getElementById('settings');
+  let makeTimeLink = document.createElement('a');
+  makeTimeLink.textContent = 'Make Time';
+  makeTimeLink.href = '/make-time';
+
+  let settingsLink = document.createElement('a');
   settingsLink.textContent = 'Settings';
   settingsLink.onclick = async () => new SettingsView(settings_, getQueuedLabelMap());
 
-  let helpLink = document.getElementById('help');
+  let helpLink = document.createElement('a');
   helpLink.textContent = 'Help';
   helpLink.onclick = () => showHelp(settings_);
+
+  let topRightLinks = document.getElementById('top-right-links');
+  topRightLinks.append(makeTimeLink, ' ', settingsLink, ' ', helpLink);
 
   let vacationQuery = '';
   if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)) {

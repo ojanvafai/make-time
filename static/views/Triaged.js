@@ -1,47 +1,73 @@
 class Triaged extends AbstractVueue {
-  constructor(allLabels, vacation, threads, bestEffortCount, bestEffortCallback, updateTitleDelegate) {
+  constructor(threads, allLabels, vacation, updateTitleDelegate) {
     super(Triaged.ACTIONS_, updateTitleDelegate);
+
+    this.style.display = 'flex';
+    this.style.flexDirection = 'column';
+
+    this.threads_ = threads;
     this.allLabels_ = allLabels;
-    this.bestEffortCount_ = bestEffortCount;
     this.updateTitle_ = updateTitleDelegate;
 
-    // TODO: Handle these two.
+    // TODO: Only show vacation threads when in vacation mode.
     this.vacation_ = vacation;
-    this.needsTriageThreads_ = threads;
-
-    this.groupByQueue_ = {};
-    this.queuedTriageActions_ = [];
 
     this.fetch_();
 
-    // TODO: Move this to a toolbar and make a real button that greys out when there's no best effort threads.
+    // TODO: Move this to a toolbar and make a real button that greys out when
+    // there's no best effort threads.
     this.bestEffortButton_ = document.createElement('a');
     this.bestEffortButton_.className = 'label-button';
-    this.bestEffortButton_.onclick = bestEffortCallback;
+    this.bestEffortButton_.href = '/besteffort';
     this.append(this.bestEffortButton_);
     this.updateBestEffort_();
-
-    let footer = document.createElement('div');
-    footer.className = 'footer';
-    this.actions_ = new Actions(this, Triaged.ACTIONS_);
-    footer.append(this.actions_);
-    this.append(footer);
   }
 
   tearDown() {
-    return this.needsTriageThreads_;
+    this.tearDown_ = true;
+  }
+
+  selectRow_(row) {
+    row.checked = true;
+    row.scrollIntoView({block: "center", behavior: "smooth"});
   }
 
   async takeAction(action) {
-    await this.markTriaged_(action.destination);
+    let rows = this.getThreads().selectedRows;
+    if (!rows.length)
+      return;
+
+    let lastRow = rows[rows.length - 1];
+    let nextRow = this.getNextRow(lastRow);
+    if (nextRow)
+      this.selectRow_(nextRow);
+
+    // Update the UI first and then archive one at a time.
+    let isSetPriority = action != Actions.DONE_ACTION;
+    await this.queueTriageActions(rows, action.destination, isSetPriority);
+    await this.processQueuedActions();
   }
 
-  async push(thread) {
-    this.needsTriageThreads_.push(thread);
-    // TODO: Update the UI.
+  async addTriagedThread_(thread) {
+    this.threads_.pushTriaged(thread);
+
+    // Make sure to add all the threads even after teardown so that all the threads
+    // show up in the MakeTime view.
+    // TODO: Extract out the thread fetching so that both Triaged and MakeTime can fetch
+    // the threads without restarting the process if it's already in progress.
+    if (this.tearDown_)
+      return;
+
+    let row = await this.addThread(thread);
+    await row.showPriority();
+
+    if (this.threads_.getTriaged().length == 1)
+      this.selectRow_(row);
   }
 
   async fetch_() {
+    this.threads_.setTriaged([]);
+
     let labels = await this.allLabels_.getTheadCountForLabels((labelName) => {
       return labelName != Labels.MUTED_LABEL && labelName.startsWith(Labels.TRIAGED_LABEL + '/');
     });
@@ -64,29 +90,26 @@ class Triaged extends AbstractVueue {
     return await thread.getTriagedQueue();
   }
 
-  async markTriaged_(destination) {
-    // Update the UI first and then archive one at a time.
-    await this.queueTriageActions(this.getThreads().selectedRows, destination);
-    await this.processQueuedActions();
+  pushBestEffort(thread) {
+    this.updateBestEffort_();
   }
 
   updateBestEffort_() {
-    if (this.bestEffortCount_) {
-      this.bestEffortButton_.textContent = `Triage ${this.bestEffortCount_} best effort threads`;
+    let bestEffort = this.threads_.getBestEffort();
+    if (bestEffort && bestEffort.length) {
+      this.bestEffortButton_.textContent = `Triage ${bestEffort.length} best effort threads`;
       this.bestEffortButton_.style.display = '';
     } else {
       this.bestEffortButton_.style.display = 'none';
     }
   }
-
-  // TODO: Just pass in the count instead of the array.
-  setBestEffortCount(bestEffortCount) {
-    this.bestEffortCount_ = bestEffortCount;
-    this.updateBestEffort_();
-  }
 }
 window.customElements.define('mt-triaged', Triaged);
 
 Triaged.ACTIONS_ = [
+  Actions.MUST_DO_ACTION,
+  Actions.IMPORTANT_AND_URGENT_ACTION,
+  Actions.URGENT_AND_NOT_IMPORTANT_ACTION,
+  Actions.IMPORTANT_AND_NOT_URGENT_ACTION,
   Actions.DONE_ACTION,
 ];

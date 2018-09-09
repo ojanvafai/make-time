@@ -5,24 +5,28 @@ class ThreadRow extends HTMLElement {
 
     this.thread_ = thread;
 
+    let label = document.createElement('label');
+    label.style.cssText = `
+      display: flex;
+    `;
+
+    this.checkBox_ = document.createElement('input');
+    this.checkBox_.type = 'checkbox';
+    this.checkBox_.style.cssText = `
+      margin-left: 5px;
+      margin-right: 5px;
+    `;
+    this.checkBox_.onchange = this.updateHighlight_.bind(this);
+
+    this.priority_ = document.createElement('div');
+
+    this.updateHighlight_();
+
     this.thread_.getSubject()
     .then(subject => {
       this.thread_.getMessages()
       .then(messages => {
         let lastMessage = messages[messages.length - 1];
-
-        let label = document.createElement('label');
-        label.style.cssText = `
-          display: flex;
-        `;
-
-        this.checkBox_ = document.createElement('input');
-        this.checkBox_.type = 'checkbox';
-        this.checkBox_.style.cssText = `
-          margin-left: 5px;
-          margin-right: 5px;
-        `;
-        this.checkBox_.onchange = this.updateHighlight_.bind(this);
 
         let fromContainer = document.createElement('div');
         fromContainer.style.cssText = `
@@ -72,7 +76,7 @@ class ThreadRow extends HTMLElement {
         if (window.innerWidth < 600) {
           let topRow = document.createElement('div');
           topRow.style.display = 'flex';
-          topRow.append(this.checkBox_, fromContainer, date, popoutButton);
+          topRow.append(this.checkBox_, fromContainer, this.priority_, date, popoutButton);
           label.append(topRow, title);
 
           label.style.flexDirection = 'column';
@@ -80,7 +84,7 @@ class ThreadRow extends HTMLElement {
           title.style.fontSize = '12px';
           title.style.margin = '5px 5px 0 5px';
         } else {
-          label.append(this.checkBox_, fromContainer, title, date, popoutButton);
+          label.append(this.checkBox_, fromContainer, this.priority_, title, date, popoutButton);
         }
 
         this.append(label);
@@ -88,8 +92,23 @@ class ThreadRow extends HTMLElement {
     });
   }
 
+  async showPriority() {
+    let priority = await this.thread_.getPriority();
+    if (!priority)
+      return;
+
+    this.priority_.textContent = Labels.removePriorityPrefix(priority);
+    this.priority_.style.cssText = `
+      color: white;
+      background-color: ${Labels.LABEL_TO_COLOR[priority]};
+      padding: 1px 2px;
+      margin-right: 2px;
+      border-radius: 3px;
+    `;
+  }
+
   updateHighlight_() {
-    this.style.backgroundColor = this.checkBox_.checked ? '#c2dbff' : '';
+    this.style.backgroundColor = this.checkBox_.checked ? '#c2dbff' : 'white';
   }
 
   dateString_(date) {

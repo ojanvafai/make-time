@@ -33,7 +33,7 @@ function helpText(settings) {
     if (!actionName.endsWith('_ACTION'))
       continue;
     let action = Actions[actionName];
-    actions += ` - <b>${action.name}:</b> ${action.description}\n`;
+    actions += `<li><b>${action.name}:</b> ${action.description}`;
   }
 
   let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${settings.spreadsheetId}/edit`;
@@ -51,17 +51,18 @@ All the triage actions will mark a thread as read, remove it from the inbox, and
 <b style="font-size:120%">Triage</b>
 The goal of triage is to do get in the flow of doing all the triage quickly and then followup and do the real work of replying, action items, etc. instead of flip-flopping back and forth between quick triage and deep thinking.
 
-<b>Triage phase 1:</b> Do a quick triage over just subject lines.
-
-<b>Triage phase 2:</b> Go through email by email and take a quick action. Each action is a quick keyboard shortcut or a length-limited reply. After each action, the next thread is immediately shown. There's also an optional, configurable countdown timer (play button) to force you to take action on each thread quickly.
-
-<b>Done with triage:</b> You're now left with clear queues to do actual work.
- - TL;DR for reading longer threads
- - NeedsReply For threads that need a reply from you
- - ActionItem For threads that need some action from you other than a reply.
-
-Actions:
-${actions}
+Triage is done in four phases:
+<ol style="margin: 0">
+<li><b>Bulk triage</b> Do a quick triage over just subject lines.
+<li><b>Thread at a time</b> Go through email by email and take a quick action. Each action is a quick keyboard shortcut or a length-limited reply. After each action, the next thread is immediately shown. There's also an optional, configurable countdown timer (play button) to force you to take action on each thread quickly.
+<li><b>Prioritization</b> prioritize each thread so you can do the time consuming work for each thread in priority order. This should take <5 minutes once you get the hand of it.
+<li><b>Make time</b> Now work through each thread in priority order.
+<ul style="margin:0">
+<li>TL;DR for reading longer threads
+<li>NeedsReply for threads that need a reply from you
+<li>ActionItem for threads that need some action from you other than a reply.
+</ul></ol>
+Actions:<ul style="margin:0">${actions}</ul>
 <b style="font-size:120%">Filtering</b>
 
 Philosopy: Labels are a triage tool, not a search/organization tool. The goal is to have all your labels and inbox be empty when you're done with triage.

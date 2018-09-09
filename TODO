@@ -1,15 +1,29 @@
+In make-time mode:
+- NeedsReply automatically opens a quick reply box, gives it a longer allowed length
+- Starts a stopwatch timer to count how long it take you to accomplish this task.
+- Store task durations for future data analysis
+
 P1: Will try to do soonish.
+- Add ability to transition into any triage mode at any point
+- Archiving should remove priorities, should all triage actions?
+- s/Done/Archive. The difficulty is that the keyboard shortcut now conflicts with Action Item
+- Show which triage phase youre in that the top and structure the help to show the outline/workflow of phases more clearly
+- Add the auto-highlight-next behavior of Triaged to ViewAll as well.
 - Add a sorted TODO list view of each of the triage queues. Highlight each item and force you to pick must do (i.e. can't go home until it's done), important&urgent, !important&urgent, important&!urgent, done.
 - Only show toolbar in any of the views when there are actually threads.
 - Find a way to separate out tasks that can be done on a phone so they can be fit into 5 minute breaks
-- Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work.
+- Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 - Grey out undo button when there's nothing to undo
 - race condition: if the user hits undo before the triage action is done, it will undo the previous triage action
 - grey out filter rows and queues when they are deleted instead of immediately removing them and add an undo button in case the delete button was hit by accident.
 - Use TypeScript and create an abstract View superclass and an abstract Dialog superclass.
+- Add the ability to create new action items that have no existing thread
 
 P2: Will only do if something makes these seem worth doing.
+- Allow sorting the threads within a priority bucket.
+- auto go into make time when having triaged all the items
+- Generalize tha ability to skip any of the modes. Curreently can only skip ViewAll.
 - Lazy load things like views/Settings.js and ViewOne.js. I guess this depends on switching to modules.
 - add undo to ViewAll and Triaged
 - Fix eliding to group better

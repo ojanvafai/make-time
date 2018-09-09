@@ -26,8 +26,8 @@ class ThreadRowGroup extends HTMLElement {
     return !!this.rowContainer_.children.length;
   }
 
-  push(thread) {
-    this.rowContainer_.append(new ThreadRow(thread));
+  push(row) {
+    this.rowContainer_.append(row);
   }
 
   createSelector_(textContent, callback) {
