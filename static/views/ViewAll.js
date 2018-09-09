@@ -41,8 +41,9 @@ class ViewAll extends AbstractVueue {
   }
 
   async markTriaged_(destination) {
+    let threads = this.getThreads();
     // Update the UI first and then archive one at a time.
-    await this.queueTriageActions(this.getThreads().selectedRows, destination);
+    await this.queueTriageActions(threads.selectedRows, destination);
 
     // If nothing left to triage, move to the triaged view and then triage the
     // threads async.
