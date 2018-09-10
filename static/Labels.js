@@ -19,12 +19,7 @@ class Labels {
     this.labelToId_[name] = id;
     this.idToLabel_[id] = name;
     if (Labels.isMakeTimeLabel(name)) {
-      // Don't include maketime/unprocessed in the list of maketime labels since
-      // it is set by external code when new messages come in and we don't want
-      // archiving a thread to remove this label without actually processing it.
-      if (name != Labels.UNPROCESSED_LABEL)
-        this.makeTimeLabelIds_.push(id);
-
+      this.makeTimeLabelIds_.push(id);
       if (name.startsWith(Labels.TRIAGED_LABEL + '/'))
         this.triagedLabels_.push(name);
       else if (name.startsWith(Labels.PRIORITY_LABEL + '/'))

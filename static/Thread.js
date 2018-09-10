@@ -103,8 +103,11 @@ class Thread {
       if (queue)
         removeLabelIds.push(await this.allLabels_.getId(queue));
     } else {
-      // If archiving, remove all make-time labels.
-      removeLabelIds = removeLabelIds.concat(this.allLabels_.getMakeTimeLabelIds());
+      // If archiving, remove all make-time labels execpt unprocessed. Don't want
+      // archiving a thread to remove this label without actually processing it.
+      let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
+      let labelIds = this.allLabels_.getMakeTimeLabelIds().filter((item) => item != unprocessedId);
+      removeLabelIds = removeLabelIds.concat(labelIds);
     }
 
     return await this.modify(addLabelIds, removeLabelIds);
