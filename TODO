@@ -1,3 +1,5 @@
+Empty inbox + unprocessed mail means you get sent to triaged view instead of waiting for mail to process. Really triaged and maketime views need to give you an indication of there being threads that need triaging.
+
 In make-time mode:
 - NeedsReply automatically opens a quick reply box, gives it a longer allowed length
 - Starts a stopwatch timer to count how long it take you to accomplish this task.
