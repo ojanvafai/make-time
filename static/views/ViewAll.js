@@ -60,7 +60,7 @@ class ViewAll extends AbstractVueue {
 window.customElements.define('mt-view-all', ViewAll);
 
 ViewAll.ACTIONS_ = [
-  Actions.DONE_ACTION,
+  Actions.ARCHIVE_ACTION,
   Actions.MUTE_ACTION,
   Actions.SPAM_ACTION,
   Actions.VIEW_ALL_DONE_ACTION,
