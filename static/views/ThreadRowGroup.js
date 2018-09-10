@@ -16,7 +16,10 @@ class ThreadRowGroup extends HTMLElement {
       `in `,
       queueSpan);
 
-    queueContainer.style.marginRight = '6px';
+    queueContainer.style.cssText = `
+      margin-left: 5px;
+      padding-top: 10px;
+    `;
 
     this.rowContainer_ = document.createElement('div');
     this.append(queueContainer, this.rowContainer_);

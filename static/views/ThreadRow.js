@@ -72,6 +72,7 @@ class ThreadRow extends HTMLElement {
         let popoutButton = new ViewInGmailButton();
         popoutButton.setMessageId(messages[messages.length - 1].id);
         popoutButton.style.marginLeft = '4px';
+        popoutButton.style.marginRight = '4px';
 
         if (window.innerWidth < 600) {
           let topRow = document.createElement('div');
