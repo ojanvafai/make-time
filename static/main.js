@@ -56,6 +56,38 @@ router.add('/besteffort', async (foo) => {
   await viewAll();
 });
 
+let DRAWER_OPEN = 'drawer-open';
+
+function openMenu() {
+  let mainContent = document.getElementById('main-content');
+  mainContent.classList.add(DRAWER_OPEN);
+}
+
+function closeMenu() {
+  let mainContent = document.getElementById('main-content');
+  mainContent.classList.remove(DRAWER_OPEN);
+}
+
+function toggleMenu() {
+  let mainContent = document.getElementById('main-content');
+  if (mainContent.classList.contains(DRAWER_OPEN))
+    closeMenu();
+  else
+    openMenu();
+}
+
+document.getElementById('hambuger-menu-toggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleMenu();
+});
+
+document.getElementById('main-content').addEventListener('click', (e) => {
+  let mainContent = document.getElementById('main-content');
+  if (mainContent.classList.contains(DRAWER_OPEN)) {
+    e.preventDefault();
+    closeMenu();
+  }
+})
 
 function showDialog(contents) {
   let dialog = document.createElement('dialog');
@@ -83,7 +115,7 @@ async function viewThreadAtATime() {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ViewOne(threads_, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts_));
+  setView(new ViewOne(threads_, autoStartTimer, timeout, allowedReplyLength, contacts_));
 
   // Ensure contacts are fetched.
   await fetchContacts(gapi.auth.getToken());
@@ -91,19 +123,16 @@ async function viewThreadAtATime() {
 
 async function viewAll() {
   setView(new ViewAll(threads_, updateTitle));
-  updateCounter(['']);
 }
 
 async function viewTriaged() {
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
   let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
   setView(new Triaged(threads_, labels_, vacation, updateTitle));
-  updateCounter(['']);
 }
 
 async function viewMakeTime() {
   setView(new MakeTime(threads_, labels_, updateTitle));
-  updateCounter(['']);
 }
 
 function setView(view) {
@@ -124,12 +153,6 @@ async function updateSigninStatus(isSignedIn) {
   await onLoad();
 }
 
-async function updateCounter(contents) {
-  let counter = document.getElementById('counter');
-  counter.textContent = '';
-  counter.append(...contents);
-}
-
 async function updateTitle(key, opt_title, opt_needsLoader) {
   let index = titleStack_.findIndex((item) => item.key == key);
   if (!opt_title) {
@@ -148,7 +171,8 @@ async function updateTitle(key, opt_title, opt_needsLoader) {
   }
 
   let title = titleStack_.length ? titleStack_[titleStack_.length - 1].title : '';
-  document.getElementById('title').textContent = title;
+  // Keep the non-breaking space so the toolbar has the same height with and without title text.
+  document.getElementById('title').textContent = title || '\xa0';
 
   let needsLoader = titleStack_.findIndex((item) => item.needsLoader) != -1;
   showLoader(needsLoader);
@@ -244,6 +268,25 @@ async function addThread(thread) {
   }
 }
 
+function createMenuItem(name, options) {
+  let a = document.createElement('a');
+  a.append(name);
+  a.className = 'item';
+
+  if (options.nested)
+    a.classList.add('nested');
+
+  if (options.href)
+    a.href = options.href;
+
+  if (options.onclick)
+    a.onclick = options.onclick;
+
+  a.addEventListener('click', closeMenu);
+
+  return a;
+}
+
 async function onLoad() {
   showLoader(true);
 
@@ -259,16 +302,26 @@ async function onLoad() {
     storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
   }
 
-  let settingsLink = document.createElement('a');
-  settingsLink.textContent = 'Settings';
-  settingsLink.onclick = async () => new SettingsView(settings_, getQueuedLabelMap());
 
-  let helpLink = document.createElement('a');
-  helpLink.textContent = 'Help';
-  helpLink.onclick = () => showHelp(settings_);
+  let settingsButton = createMenuItem('Settings', {
+    onclick: () => new SettingsView(settings_, getQueuedLabelMap()),
+  });
 
-  let topRightLinks = document.getElementById('top-right-links');
-  topRightLinks.append(settingsLink, ' ', helpLink);
+  let helpButton = createMenuItem('Help', {
+    onclick: () => showHelp(settings_),
+  });
+
+  let menuTitle = document.createElement('div');
+  menuTitle.append('MakeTime phases');
+
+  document.getElementById('drawer').append(
+    menuTitle,
+    createMenuItem('1: View All', {href: '/viewall', nested: true}),
+    createMenuItem('2: View One', {href: '/viewone', nested: true}),
+    createMenuItem('3: Triaged', {href: '/triaged', nested: true}),
+    createMenuItem('4: MakeTime', {href: '/maketime', nested: true}),
+    settingsButton,
+    helpButton);
 
   let vacationQuery = '';
   if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)) {

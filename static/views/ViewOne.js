@@ -1,11 +1,10 @@
 class ViewOne extends HTMLElement {
-  constructor(threads, updateCounter, autoStartTimer, timeout, allowedReplyLength, contacts) {
+  constructor(threads, autoStartTimer, timeout, allowedReplyLength, contacts) {
     super();
     this.style.display = 'block';
     this.style.position = 'relative';
 
     this.threads_ = threads;
-    this.updateCounter_ = updateCounter;
     this.autoStartTimer_ = autoStartTimer;
     this.timeout_ = timeout;
     this.allowedReplyLength_ = allowedReplyLength;
@@ -31,30 +30,8 @@ class ViewOne extends HTMLElement {
       position: relative;
     `;
 
-    this.toolbar_ = document.createElement('div');
+    this.append(this.subject_, this.messages_);
 
-    // Take up space for the position:fixed subject.
-    let subjectPlaceholder = document.createElement('div');
-    subjectPlaceholder.textContent = '\xa0';
-
-    subjectPlaceholder.style.cssText = this.subject_.style.cssText = `
-      position: fixed;
-      left: 0;
-      right: 0;
-      font-size: 18px;
-      padding: 2px;
-      background-color: #ccc;
-      text-align: center;
-      z-index: 100;
-    `;
-    subjectPlaceholder.style.position = 'static';
-
-    this.toolbar_.className = 'footer';
-    this.toolbar_.style.cssText = `
-      display: flex;
-      align-items: center;
-    `;
-    this.append(this.subject_, subjectPlaceholder, this.messages_, this.toolbar_);
     this.addButtons_();
 
     this.init_();
@@ -81,13 +58,24 @@ class ViewOne extends HTMLElement {
   }
 
   addButtons_() {
+    this.toolbar_ = document.createElement('div');
+    this.toolbar_.style.cssText = `
+      display: flex;
+      align-items: center;
+    `;
+
     this.queueSummary_ = document.createElement('div');
     this.queueSummary_.style.cssText = `
       background-color: white;
       font-size: 10px;
-      margin-right: 4px;
-      text-align: right;
+      text-align: left;
       opacity: 0.5;
+      position: absolute;
+      top: -50vh;
+      right: 0;
+      border: 1px dashed;
+      border-right: 0;
+      padding: 2px;
     `;
     this.toolbar_.append(this.queueSummary_);
 
@@ -114,6 +102,10 @@ class ViewOne extends HTMLElement {
     buttonContainer.style.display = 'flex';
     buttonContainer.append(this.actions_, timerContainer);
     this.toolbar_.append(buttonContainer);
+
+    let footer = document.getElementById('footer');
+    footer.textContent = '';
+    footer.append(this.toolbar_);
   }
 
   async tearDown() {
@@ -145,31 +137,15 @@ class ViewOne extends HTMLElement {
   }
 
   async updateTitle_() {
-    let title = [];
-
     if (this.currentThread_) {
-      let displayableQueue = await this.currentThread_.thread.getDisplayableQueue();
-      let currentThreadQueue = await this.currentThread_.thread.getQueue();
-      let leftInQueue = this.threadList_.threadCountForQueue(currentThreadQueue);
-      let total = this.threadList_.length;
-
-      let queueData = '';
+      let queueData = '<b>Threads left:</b>';
       let queues = this.threadList_.queues();
       let prefetchQueue = null;
       if (this.prefetchedThread_) {
         prefetchQueue = await this.prefetchedThread_.thread.getQueue();
         if (!queues.includes(prefetchQueue))
           queueData += `<div>${Labels.removeNeedsTriagePrefix(prefetchQueue)}:&nbsp;1</div>`;
-        if (prefetchQueue == currentThreadQueue)
-          leftInQueue += 1;
-        total += 1;
       }
-
-      title.push(`${leftInQueue} more in ${displayableQueue}, `);
-      let viewAllLink = document.createElement('a');
-      viewAllLink.textContent = `view all ${total}`;
-      viewAllLink.href = '/viewall';
-      title.push(viewAllLink);
 
       for (let queue of queues) {
         let count = this.threadList_.threadCountForQueue(queue);
@@ -178,11 +154,10 @@ class ViewOne extends HTMLElement {
         queueData += `<div>${Labels.removeNeedsTriagePrefix(queue)}:&nbsp;${count}</div>`;
       }
       this.queueSummary_.innerHTML = queueData;
+      this.queueSummary_.style.display = '';
     } else {
-      this.queueSummary_.innerHTML = '';
+      this.queueSummary_.style.display = 'none';
     }
-
-    this.updateCounter_(title);
   }
 
   async dispatchShortcut(e) {

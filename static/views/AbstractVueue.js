@@ -9,11 +9,10 @@ class AbstractVueue extends HTMLElement {
     this.rowGroupContainer_ = document.createElement('div');
     this.append(this.rowGroupContainer_);
 
-    let footer = document.createElement('div');
-    footer.className = 'footer';
+    let footer = document.getElementById('footer');
+    footer.textContent = '';
     this.actions_ = new Actions(this, actions);
     footer.append(this.actions_);
-    this.append(footer);
   }
 
   async dispatchShortcut(e) {

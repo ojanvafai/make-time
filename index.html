@@ -10,48 +10,25 @@
         max-width: 100% !important;
       }
       html {
-        background-color: #eee;
         font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
         height: 100%;
       }
       body {
         margin: 0px;
-        overflow: auto;
-        padding-bottom: 50vh;
-      }
-      .header {
-        position: fixed;
-        top: 0;
-        right: 0;
-        left: 0;
-        z-index: 100;
       }
       .toolbar {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         background-color: black;
         color: white;
         padding: 3px;
       }
-      .toolbar > * {
-        flex: 1;
-      }
-      #counter {
-        text-align: center;
-      }
-      #counter > a {
+      #title {
         color: white;
-        text-decoration: underline;
-      }
-      .right-toolbar {
-        text-align: right;
       }
       a {
         color: black;
         text-decoration: underline;
-      }
-      .right-toolbar > a {
-        color: white;
       }
       button, .label-button {
         margin: 4px;
@@ -88,9 +65,51 @@
       .invalid-directive:hover::before {
         content: 'INVALID DIRECTIVE: '
       }
+      #main-content {
+        will-change: transform;
+        background-color: #eee;
+        display: flex;
+        flex-direction: column;
+      }
+      #main-content.drawer-open {
+        transform: translateX(250px);
+      }
+      .panel {
+        transition: transform 0.3s ease;
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+      #drawer,
+      #drawer > .item {
+        color: #ddd;
+        background-color: #444;
+        font-weight: bold;
+      }
+      #drawer > .item  {
+        cursor: pointer;
+      }
+      #drawer > .item:hover {
+        color: #444;
+        background-color: #ddd;
+      }
+      #drawer > * {
+        display: block;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 15px;
+      }
+      #drawer > a {
+        text-decoration: none;
+      }
+      #drawer > .nested {
+        text-indent: 20px;
+      }
       #content {
         background-color: white;
         flex: 1;
+        overflow: auto;
         width: 100%;
         max-width: 1000px;
         margin: auto;
@@ -177,9 +196,6 @@
         border: 1px solid #ccc;
         border-width: 0px 1px;
       }
-      mt-view-all {
-        padding-bottom: 50px;
-      }
       mt-thread-row > label {
         padding: 6px 0;
         border: 1px solid #ddd;
@@ -190,8 +206,8 @@
         background-color: #eee;
         border-bottom: 1px solid #ddd;
       }
-      .footer {
-        position: fixed;
+      #footer {
+        position: sticky;
         bottom: 0;
         left: 0;
         right: 0;
@@ -200,11 +216,20 @@
         /* Don't eat clicks in the transparent background of the footer. */
         pointer-events: none;
       }
-      .footer > * {
+      #footer > * {
         pointer-events: all;
       }
       div[contenteditable]::before {
         content: attr(placeholder);
+      }
+      #hambuger-menu-toggle {
+        fill: white;
+        height: 1em;
+      }
+      #hambuger-menu-toggle:hover {
+        fill: black;
+        background-color: white;
+        border-radius: 2px;
       }
     </style>
   </head>
@@ -212,20 +237,18 @@
     <div class="authorize-wrapper" style="display: none;">
       <button id="authorize-button" style="font-size: 40px;">Log In</button>
     </div>
-    <div class="header">
-    <div class="toolbar">
-      <div>
-        <span id="loader"></span>
-        <span id="title">&nbsp;</span>
+    <div id="drawer" class="panel"></div>
+    <div id="main-content" class="panel">
+      <div class="toolbar">
+        <svg id="hambuger-menu-toggle" viewBox="0 0 32 32"><path d="M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2  s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2  S29.104,22,28,22z"></path></svg>
+        <div>
+          <span id="title">&nbsp;</span>
+          <span id="loader"></span>
+        </div>
       </div>
-      <div id="counter">&nbsp;</div>
-      <div id="top-right-links" class='right-toolbar'></div>
+      <div id="content"></div>
+      <div id="footer"></div>
     </div>
-    </div>
-    <!-- Hacky way to get this to take up space for the position fixed header above. -->
-    <div class="header" style="position: static"><div class="toolbar">&nbsp;</div></div>
-
-    <div id="content"></div>
 
     <script src="https://apis.google.com/js/api.js"></script>
 

@@ -1,11 +1,11 @@
-Empty inbox + unprocessed mail means you get sent to triaged view instead of waiting for mail to process. Really triaged and maketime views need to give you an indication of there being threads that need triaging.
-
 In make-time mode:
 - NeedsReply automatically opens a quick reply box, gives it a longer allowed length
 - Starts a stopwatch timer to count how long it take you to accomplish this task.
 - Store task durations for future data analysis
 
 P1: Will try to do soonish.
+- Show mini drawer when it's not open so it can show counts?
+- triaged and maketime views need to give you an indication of there being threads that need triaging.
 - Kinda want all the triage and prioritization actions available in both triaged and make-time. Maybe add a retriage button that pulls back in all the triaging buttons?
 - Add ability to transition into any triage mode at any point
 - Archiving should remove priorities, should all triage actions?
@@ -22,7 +22,7 @@ P1: Will try to do soonish.
 - grey out filter rows and queues when they are deleted instead of immediately removing them and add an undo button in case the delete button was hit by accident.
 - Use TypeScript and create an abstract View superclass and an abstract Dialog superclass.
 - Add the ability to create new action items that have no existing thread
-- Think generally about navigation through phases. Actually update the url for each phase so people can link to the phase they want? But then reload would put them back in that phase.
+- Highlight the current phase in the drawer and actually update the url for each phase so people can link to the phase they want.
 
 P2: Will only do if something makes these seem worth doing.
 - Allow sorting the threads within a priority bucket.

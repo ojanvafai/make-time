@@ -17,7 +17,7 @@ class Actions extends HTMLElement {
       button.onmouseenter = () => {
         button.tooltipElement = document.createElement('div');
         button.tooltipElement.style.cssText = `
-          position: fixed;
+          position: absolute;
           bottom: ${this.offsetHeight}px;
           left: 0;
           right: 0;
