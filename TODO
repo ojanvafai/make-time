@@ -23,6 +23,7 @@ P1: Will try to do soonish.
 - Use TypeScript and create an abstract View superclass and an abstract Dialog superclass.
 - Add the ability to create new action items that have no existing thread
 - Highlight the current phase in the drawer and actually update the url for each phase so people can link to the phase they want.
+- make shift+click select a range of threads in ViewAll
 
 P2: Will only do if something makes these seem worth doing.
 - Allow sorting the threads within a priority bucket.

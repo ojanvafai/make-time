@@ -24,7 +24,9 @@ class ViewAll extends AbstractVueue {
   async tearDown() {
     this.isTearingDown_ = true;
     this.threads_.setNeedsTriage(this.getThreads().unselectedThreads);
-    await this.markTriaged_(Actions.VIEW_ALL_DONE_ACTION.destination);
+    // Intentionaly don't await this since we want to archive threads in parallel
+    // with showing the next triage phase.
+    this.markTriaged_(Actions.VIEW_ALL_DONE_ACTION.destination);
   }
 
   async takeAction(action) {
