@@ -42,7 +42,7 @@ function helpText(settings) {
 
 <span style="color: red">This is a side project. While I completely rely on it for my day to day email management, you might not want to. It has bugs. They may be hard to deal with if you're not willing to dig into the code when they happen. Did I mention patches welcome? :)</span>
 
-There are two aspects to make-time: <b>triage</b> and <b>filtering</b>. Filtering is technically optional and requires more setup (e.g. moving your gmail filters into make-time), but the triage generally assumes the filtering. For example, it will only show threads in your inbox that either have no labels or that have run through make-time's filtering. So, if you don't setup filtering, make-time will only show threads in the inbox with no labels.
+There are two aspects to make-time: <b>triage</b> and <b>filtering</b>. Filtering is technically optional and requires more setup (e.g. moving your gmail filters into make-time), but some of the more interesting features like queues that only show up once a week depend on the filtering.
 
 All the triage actions will mark a thread as read, remove it from the inbox, and remove the current maketime label. If there are multiple labels, it will only remove one of them. The filtering is built in such a way that every thread gets exactly one label, so the two play nicely together. Once it's triaged, it's completely out of your face.
 

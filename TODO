@@ -4,7 +4,6 @@ In make-time mode:
 - Store task durations for future data analysis
 
 P1: Will try to do soonish.
-- Change no labels search:Put them first in the queue so bundles always come after. Do no make time labels instead of no usrrlabels so ppl can still use other labels.
 - Show mini drawer when it's not open so it can show counts?
 - triaged and maketime views need to give you an indication of there being threads that need triaging.
 - Kinda want all the triage and prioritization actions available in both triaged and make-time. Maybe add a retriage button that pulls back in all the triaging buttons?

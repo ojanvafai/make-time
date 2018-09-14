@@ -346,8 +346,10 @@ async function onLoad() {
   else
     await router.run('/viewone');
 
+  // Put first threads that are in the inbox with no make-time labels. That way they always show up before
+  // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
   await fetchThreads(addThread, {
-    query: `-has:userlabels ${vacationQuery}`,
+    query: `-(in:${labels_.getMakeTimeLabelNames().join(' OR in:')}) ${vacationQuery}`,
     queue: 'inbox',
   });
 
