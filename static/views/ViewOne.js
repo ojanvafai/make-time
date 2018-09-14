@@ -1,39 +1,22 @@
 class ViewOne extends HTMLElement {
-  constructor(threads, autoStartTimer, timeout, allowedReplyLength, contacts) {
+  constructor(threads, autoStartTimer, timeout, allowedReplyLength, contacts, setSubject) {
     super();
     this.style.display = 'block';
-    this.style.position = 'relative';
 
     this.threads_ = threads;
     this.autoStartTimer_ = autoStartTimer;
     this.timeout_ = timeout;
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
-
-    this.gmailLink_ = new ViewInGmailButton();
-    this.gmailLink_.style.position = 'absolute';
-    this.gmailLink_.style.right = '4px';
-
-    this.subject_ = document.createElement('div');
-    this.subjectText_ = document.createElement('div');
-    this.subjectText_.style.cssText = `
-      flex: 1;
-      margin-right: 25px;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    `;
-    this.subject_.append(this.gmailLink_, this.subjectText_);
+    this.setSubject_ = setSubject;
 
     this.messages_ = document.createElement('div');
     this.messages_.style.cssText = `
       position: relative;
     `;
 
-    this.append(this.subject_, this.messages_);
-
+    this.append(this.messages_);
     this.addButtons_();
-
     this.init_();
   }
 
@@ -64,20 +47,7 @@ class ViewOne extends HTMLElement {
       align-items: center;
     `;
 
-    this.queueSummary_ = document.createElement('div');
-    this.queueSummary_.style.cssText = `
-      background-color: white;
-      font-size: 10px;
-      text-align: left;
-      opacity: 0.5;
-      position: absolute;
-      top: -50vh;
-      right: 0;
-      border: 1px dashed;
-      border-right: 0;
-      padding: 2px;
-    `;
-    this.toolbar_.append(this.queueSummary_);
+    this.queueSummary_ = document.createElement('details');
 
     this.timer_ = document.createElement('span');
     this.timer_.style.cssText = `
@@ -109,6 +79,8 @@ class ViewOne extends HTMLElement {
   }
 
   async tearDown() {
+    this.setSubject_('');
+
     threads_.setNeedsTriage([]);
 
     if (this.prefetchedThread_)
@@ -127,9 +99,6 @@ class ViewOne extends HTMLElement {
     await this.updateTitle_();
 
     if (!this.currentThread_) {
-      // When transitioning from all done to having messages again, clear the all
-      // done links.
-      this.messages_.textContent = '';
       await this.renderNext_();
     } else {
       this.prerenderNext_();
@@ -138,7 +107,9 @@ class ViewOne extends HTMLElement {
 
   async updateTitle_() {
     if (this.currentThread_) {
-      let queueData = '<b>Threads left:</b>';
+      let currentQueue = await this.currentThread_.thread.getQueue();
+
+      let queueData = '';
       let queues = this.threadList_.queues();
       let prefetchQueue = null;
       if (this.prefetchedThread_) {
@@ -147,13 +118,17 @@ class ViewOne extends HTMLElement {
           queueData += `<div>${Labels.removeNeedsTriagePrefix(prefetchQueue)}:&nbsp;1</div>`;
       }
 
+      let currentCount = 0;
       for (let queue of queues) {
         let count = this.threadList_.threadCountForQueue(queue);
         if (queue == prefetchQueue)
           count++;
+        if (queue == currentQueue)
+          currentCount = count;
         queueData += `<div>${Labels.removeNeedsTriagePrefix(queue)}:&nbsp;${count}</div>`;
       }
-      this.queueSummary_.innerHTML = queueData;
+
+      this.queueSummary_.innerHTML = `<summary>${currentCount} left in ${currentQueue}</summary><div>${queueData}</div>`;
       this.queueSummary_.style.display = '';
     } else {
       this.queueSummary_.style.display = 'none';
@@ -475,7 +450,6 @@ Content-Type: text/html; charset="UTF-8"
     }
 
     this.updateTitle_();
-    this.subject_.style.top = this.offsetTop + 'px';
 
     if (!this.currentThread_) {
       await router.run('/triaged');
@@ -483,11 +457,14 @@ Content-Type: text/html; charset="UTF-8"
     }
 
     let messages = await this.currentThread_.thread.getMessages();
+    let subject = await this.currentThread_.thread.getSubject() || '(no subject)';
 
-    this.gmailLink_.display = 'flex';
-    this.gmailLink_.setMessageId(messages[messages.length - 1].id);
+    let viewInGmailButton = new ViewInGmailButton();
+    viewInGmailButton.setMessageId(messages[messages.length - 1].id);
+    viewInGmailButton.style.display = 'inline-flex';
+    viewInGmailButton.style.marginLeft = '4px';
 
-    this.subjectText_.textContent = await this.currentThread_.thread.getSubject() || '(no subject)';
+    this.setSubject_(this.queueSummary_, subject, viewInGmailButton);
 
     let rendered = await this.currentThread_.render();
     if (rendered.parentNode) {

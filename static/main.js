@@ -115,7 +115,7 @@ async function viewThreadAtATime() {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ViewOne(threads_, autoStartTimer, timeout, allowedReplyLength, contacts_));
+  setView(new ViewOne(threads_, autoStartTimer, timeout, allowedReplyLength, contacts_, setSubject));
 
   // Ensure contacts are fetched.
   await fetchContacts(gapi.auth.getToken());
@@ -151,6 +151,12 @@ async function updateSigninStatus(isSignedIn) {
   }
   authorizeButton.parentNode.style.display = 'none';
   await onLoad();
+}
+
+function setSubject(...items) {
+  let subject = document.getElementById('subject');
+  subject.textContent = '';
+  subject.append(...items);
 }
 
 async function updateTitle(key, opt_title, opt_needsLoader) {
@@ -340,17 +346,17 @@ async function onLoad() {
   else
     await router.run('/viewone');
 
+  await fetchThreads(addThread, {
+    query: `-has:userlabels ${vacationQuery}`,
+    queue: 'inbox',
+  });
+
   for (let label of labelsToFetch) {
     await fetchThreads(addThread, {
       query: vacationQuery,
       queue: label,
     });
   }
-
-  await fetchThreads(addThread, {
-    query: `-has:userlabels ${vacationQuery}`,
-    queue: 'inbox',
-  });
 
   if (currentView_.finishedInitialLoad)
     await currentView_.finishedInitialLoad();

@@ -137,6 +137,8 @@ function compareSubLabels(a, b) {
   return 0;
 }
 
+let inboxLabel = 'inbox';
+
 Labels.compare = (a, b) => {
   if (a == b)
     return 0;
@@ -168,9 +170,9 @@ Labels.compare = (a, b) => {
     return 1;
 
   if (a < b)
-    return -1;
+    return b == inboxLabel ? 1 : -1;
   if (a > b)
-    return 1;
+    return a == inboxLabel ? -1 : 1;
   return 0;
 }
 

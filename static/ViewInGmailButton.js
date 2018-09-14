@@ -11,8 +11,9 @@ class ViewInGmailButton extends HTMLElement {
       height: 0.9em;
       align-items: center;
       justify-content: center;
-      padding: 1px;
+      padding: 3px;
       margin: 1px;
+      font-size: 12px;
     `;
 
     this.onclick = (e) => {

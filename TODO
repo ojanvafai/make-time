@@ -1,5 +1,3 @@
-look into unprocessable label messages in work mail
-
 In make-time mode:
 - NeedsReply automatically opens a quick reply box, gives it a longer allowed length
 - Starts a stopwatch timer to count how long it take you to accomplish this task.
