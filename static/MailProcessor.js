@@ -242,7 +242,7 @@ class MailProcessor {
     }
     // TODO: only need to do this once per thread.
     if (rule.subject) {
-      if (!message.subject.includes(rule.subject))
+      if (message.subject && !message.subject.includes(rule.subject))
         return false;
       matches = true;
     }

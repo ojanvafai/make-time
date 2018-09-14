@@ -1,9 +1,12 @@
+look into unprocessable label messages in work mail
+
 In make-time mode:
 - NeedsReply automatically opens a quick reply box, gives it a longer allowed length
 - Starts a stopwatch timer to count how long it take you to accomplish this task.
 - Store task durations for future data analysis
 
 P1: Will try to do soonish.
+- Change no labels search:Put them first in the queue so bundles always come after. Do no make time labels instead of no usrrlabels so ppl can still use other labels.
 - Show mini drawer when it's not open so it can show counts?
 - triaged and maketime views need to give you an indication of there being threads that need triaging.
 - Kinda want all the triage and prioritization actions available in both triaged and make-time. Maybe add a retriage button that pulls back in all the triaging buttons?
@@ -24,6 +27,9 @@ P1: Will try to do soonish.
 - Add the ability to create new action items that have no existing thread
 - Highlight the current phase in the drawer and actually update the url for each phase so people can link to the phase they want.
 - make shift+click select a range of threads in ViewAll
+- add ability to filter no subject emails
+- add ability to search for a thread and see if a filter matches it...or to see what the matching rule wouild be for that thread given all your filters?
+- alert for failures is hella annoying, e.g. for unprocessable messages...pops up every minute and for fetch contacts
 
 P2: Will only do if something makes these seem worth doing.
 - Allow sorting the threads within a priority bucket.
