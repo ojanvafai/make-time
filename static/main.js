@@ -380,12 +380,12 @@ async function fetchContacts(token) {
   if (contacts_.length)
     return;
 
-  // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send me all
-  // the data I don't want.
+  // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send
+  // the data we don't need.
   try {
     let resp = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
   } catch(e) {
-    alert(`Failed to fetch contacts. Google Contacts API is hella flaky. CC'ing people in quick reply won't work. :)`);
+    console.error(`Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`);
     return;
   }
 

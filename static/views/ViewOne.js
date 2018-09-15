@@ -45,6 +45,8 @@ class ViewOne extends HTMLElement {
     this.toolbar_.style.cssText = `
       display: flex;
       align-items: center;
+      justify-content: center;
+      width: 100%;
     `;
 
     this.queueSummary_ = document.createElement('details');
@@ -227,7 +229,6 @@ class ViewOne extends HTMLElement {
   clearQuickReply_() {
     this.quickReplyOpen_ = false;
     this.toolbar_.textContent = '';
-    this.toolbar_.style.flexDirection = 'column';
     this.toolbar_.style.backgroundColor = '';
     this.addButtons_();
     this.restartTimer_();
@@ -235,7 +236,6 @@ class ViewOne extends HTMLElement {
 
   showQuickReply_() {
     this.quickReplyOpen_ = true;
-    this.toolbar_.style.flexDirection = 'row';
     this.toolbar_.textContent = '';
     this.toolbar_.style.backgroundColor = 'white';
     this.cancelTimer_();

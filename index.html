@@ -60,7 +60,11 @@
         content: '⚠ ';
       }
       .invalid-directive:hover::before {
-        content: 'INVALID DIRECTIVE: '
+        content: 'INVALID DIRECTIVE: ';
+      }
+      .no-contacts::before {
+        content: '⚠ contact list failed to load';
+        padding: 2px;
       }
       #main-content {
         will-change: transform;

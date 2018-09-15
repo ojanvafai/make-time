@@ -115,13 +115,14 @@ class Compose extends HTMLElement {
       this.append(this.autocompleteContainer_);
     }
 
-    let candidates = this.getAutocompleteCandidates_();
-    if (!candidates.length) {
-      this.hideAutocompleteMenu_();
-      return;
-    }
+    if (this.contacts_.length)
+      this.autocompleteContainer_.classList.remove('no-contacts');
+    else
+      this.autocompleteContainer_.classList.add('no-contacts');
 
-    this.autocompleteContainer_.size = candidates.length;
+    let candidates = this.getAutocompleteCandidates_();
+
+    this.autocompleteContainer_.size = 100;
     this.autocompleteContainer_.textContent = '';
     for (let candidate of candidates) {
       let entry = document.createElement('div');
@@ -147,7 +148,7 @@ class Compose extends HTMLElement {
 
     let rect = this.autocompleteRange_.getBoundingClientRect();
     this.autocompleteContainer_.style.left = `${rect.left}px`;
-    this.autocompleteContainer_.style.bottom = `${document.body.offsetHeight - rect.top}px`;
+    this.autocompleteContainer_.style.bottom = `${document.documentElement.offsetHeight - rect.top}px`;
   }
 
   adjustAutocompleteIndex(adjustment) {
@@ -173,6 +174,7 @@ class Compose extends HTMLElement {
 
     search = search.toLowerCase();
 
+    let hasFullSearch = false;
     for (let contact of this.contacts_) {
       if (contact.name && contact.name.toLowerCase().includes(search)) {
         for (let email of contact.emails) {
@@ -180,11 +182,19 @@ class Compose extends HTMLElement {
         }
       } else {
         for (let email of contact.emails) {
-          if (email.split('@')[0].toLowerCase().includes(search))
+          let lowerCaseEmail = email.toLowerCase();
+          if (!hasFullSearch && lowerCaseEmail == search)
+            hasFullSearch = true;
+          if (lowerCaseEmail.split('@')[0].includes(search))
             results.push({name: contact.name, email: email});
         }
       }
     }
+
+    // Include whatever the user is typing in case it's not in their contacts or if
+    // the contacts API is down.
+    if (!hasFullSearch)
+      results.push({name: search.split('@')[0], email: search});
 
     // TODO: Sort the results to put +foo address after the main ones.
     // Prefer things that start with the search text over substring matching.
