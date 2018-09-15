@@ -22,6 +22,12 @@ class ViewAll extends AbstractVueue {
   }
 
   async tearDown() {
+    // This can get called twice during teardown if /viewone redirects to
+    // /triaged since the setView call won't have finished at that point because
+    // promises run at microtask time. Blargh.
+    if (this.isTearingDown_)
+      return;
+
     this.isTearingDown_ = true;
     this.threads_.setNeedsTriage(this.getThreads().unselectedThreads);
     // Intentionaly don't await this since we want to archive threads in parallel
