@@ -99,16 +99,22 @@ class Thread {
 
     var removeLabelIds = ['UNREAD', 'INBOX'];
     if (destination) {
+      // TODO: Should probably remove all make-time/needstriage labels here. Although, in theory
+      // there should never be two make-time/needstriage labels on a given thread.
       var queue = opt_queue || await this.getQueue();
       if (queue)
         removeLabelIds.push(await this.allLabels_.getId(queue));
     } else {
-      // If archiving, remove all make-time labels execpt unprocessed. Don't want
+      // If archiving, remove all make-time labels except unprocessed. Don't want
       // archiving a thread to remove this label without actually processing it.
       let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
-      let labelIds = this.allLabels_.getMakeTimeLabelIds().filter((item) => item != unprocessedId);
-      removeLabelIds = removeLabelIds.concat(labelIds);
+      let makeTimeIds = this.allLabels_.getMakeTimeLabelIds().filter((item) => item != unprocessedId);
+      removeLabelIds = removeLabelIds.concat(makeTimeIds);
     }
+
+    // Only remove labels that are actually on the thread. That way
+    // undo will only reapply labels that were actually there.
+    removeLabelIds = removeLabelIds.filter((item) => this.labelIds_.has(item));
 
     return await this.modify(addLabelIds, removeLabelIds);
   }

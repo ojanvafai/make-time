@@ -4,6 +4,11 @@ In make-time mode:
 - Store task durations for future data analysis
 
 P1: Will try to do soonish.
+- Can't undo the last triage item because it immediately moves to triaged. Really need undo manager to be outside the views so it can be reused across all views.
+- add hover effects to rows
+- make bankruptcy use queries instead of doing one thread at a time. So, first do a query for bankrupt things that need to be archived (and archive them). Then do the query to get the list of threads. make addThread take a parameter to skip the vacation/bankrupt bits since those aren't needed in the query case done on load, so the page can load quickly.
+- sending quick reply doesn't close the timer dialog
+- turning off the timer should close the dialog
 - Show mini drawer when it's not open so it can show counts?
 - triaged and maketime views need to give you an indication of there being threads that need triaging.
 - Kinda want all the triage and prioritization actions available in both triaged and make-time. Maybe add a retriage button that pulls back in all the triaging buttons?
