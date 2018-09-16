@@ -67,8 +67,11 @@ class Triaged extends AbstractVueue {
     let row = await this.addThread(thread);
     await row.showPriority();
 
-    if (this.threads_.getTriaged().length == 1)
+    if (this.threads_.getTriaged().length == 1) {
+      // Can't just call selectRow_ here because the scrollIntoView call closes the drawer
+      // if it's open. crbug.com/884518.
       row.checked = true;
+    }
   }
 
   async fetch_() {
