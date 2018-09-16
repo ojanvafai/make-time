@@ -68,7 +68,7 @@ class Triaged extends AbstractVueue {
     await row.showPriority();
 
     if (this.threads_.getTriaged().length == 1)
-      this.selectRow_(row);
+      row.checked = true;
   }
 
   async fetch_() {
