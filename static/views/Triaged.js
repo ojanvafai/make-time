@@ -24,6 +24,7 @@ class Triaged extends AbstractVueue {
   }
 
   tearDown() {
+    this.threads_.setTriaged(this.getThreads().allThreads);
     this.tearDown_ = true;
   }
 

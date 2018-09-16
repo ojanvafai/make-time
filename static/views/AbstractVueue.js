@@ -52,16 +52,19 @@ class AbstractVueue extends HTMLElement {
   getThreads() {
     let selected = [];
     let unselected = [];
+    let all = [];
     for (let child of this.rowGroupContainer_.querySelectorAll('mt-thread-row')) {
       if (child.checked) {
         selected.push(child);
       } else {
         unselected.push(child.thread);
       }
+      all.push(child.thread);
     }
     return {
       selectedRows: selected,
       unselectedThreads: unselected,
+      allThreads: all,
     }
   }
 
