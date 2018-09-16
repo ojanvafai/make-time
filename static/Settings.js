@@ -420,7 +420,7 @@ Settings.fields = [
     key: ServerStorage.KEYS.TIMER_DURATION,
     name: 'Triage countdown timer',
     description: `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
-    default: 20,
+    default: 60,
     type: 'number',
   },
   {
