@@ -19,6 +19,7 @@ let labels_;
 let queuedLabelMap_;
 let contacts_ = [];
 let titleStack_ = [];
+let loaderTitleStack_ = [];
 let isProcessingMail_ = false;
 let threads_ = new ThreadGroups();
 
@@ -122,17 +123,17 @@ async function viewThreadAtATime() {
 }
 
 async function viewAll() {
-  setView(new ViewAll(threads_, updateTitle));
+  setView(new ViewAll(threads_, updateLoaderTitle));
 }
 
 async function viewTriaged() {
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
   let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new Triaged(threads_, labels_, vacation, updateTitle));
+  setView(new Triaged(threads_, labels_, vacation, updateLoaderTitle));
 }
 
 async function viewMakeTime() {
-  setView(new MakeTime(threads_, labels_, updateTitle));
+  setView(new MakeTime(threads_, labels_, updateLoaderTitle));
 }
 
 function setView(view) {
@@ -159,33 +160,37 @@ function setSubject(...items) {
   subject.append(...items);
 }
 
-async function updateTitle(key, opt_title, opt_needsLoader) {
-  let index = titleStack_.findIndex((item) => item.key == key);
-  if (!opt_title) {
-    if (index != -1)
-      titleStack_.splice(index, 1);
-  } else if (index == -1) {
-    titleStack_.push({
-      key: key,
-      title: opt_title,
-      needsLoader: !!opt_needsLoader,
-    });
-  } else {
-    let entry = titleStack_[index];
-    entry.title = opt_title;
-    entry.needsLoader = !!opt_needsLoader;
-  }
-
-  let title = titleStack_.length ? titleStack_[titleStack_.length - 1].title : '';
-  // Keep the non-breaking space so the toolbar has the same height with and without title text.
-  document.getElementById('title').textContent = title || '\xa0';
-
-  let needsLoader = titleStack_.findIndex((item) => item.needsLoader) != -1;
-  showLoader(needsLoader);
+function updateTitle(key, opt_title) {
+  let node = document.getElementById('title');
+  updateTitleBase(titleStack_, node, key, opt_title);
 }
 
-function showLoader(show) {
-  document.getElementById('loader').style.display = show ? 'inline-block' : 'none';
+function updateLoaderTitle(key, opt_title) {
+  let node = document.getElementById('loader-title');
+  updateTitleBase(loaderTitleStack_, node, key, opt_title);
+
+  let titleContainer = document.getElementById('loader');
+  titleContainer.style.display = loaderTitleStack_.length ? '' : 'none';
+}
+
+function updateTitleBase(stack, node, key, ...opt_title) {
+  let index = stack.findIndex((item) => item.key == key);
+  if (!opt_title[0]) {
+    if (index != -1)
+      stack.splice(index, 1);
+  } else if (index == -1) {
+    stack.push({
+      key: key,
+      title: opt_title,
+    });
+  } else {
+    let entry = stack[index];
+    entry.title = opt_title;
+  }
+
+  node.textContent = '';
+  if (stack.length)
+    node.append(...stack[stack.length - 1].title);
 }
 
 async function fetchThreads(forEachThread, options) {
@@ -294,8 +299,6 @@ function createMenuItem(name, options) {
 }
 
 async function onLoad() {
-  showLoader(true);
-
   settings_ = new Settings();
   labels_ = new Labels();
 
@@ -332,10 +335,10 @@ async function onLoad() {
   let vacationQuery = '';
   if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)) {
     vacationQuery = `subject:${settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)}`;
-    updateTitle('vacation', `Only showing threads with ${vacationQuery}`);
+    updateTitle('vacation', `Vacation ${vacationQuery}`);
   }
 
-  updateTitle('onLoad', 'Fetching threads to triage...', true);
+  updateLoaderTitle('onLoad', 'Fetching threads to triage...');
 
   let labels = await labels_.getTheadCountForLabels((labelName) => labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'));
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
@@ -363,17 +366,18 @@ async function onLoad() {
   if (currentView_.finishedInitialLoad)
     await currentView_.finishedInitialLoad();
 
-  updateTitle('onLoad');
   // Don't want to show the earlier title, but still want to indicate loading is happening.
   // since we're going to processMail still. It's a less jarring experience if the loading
   // spinner doesn't go away and then come back when conteacts are done being fetched.
-  showLoader(true);
+  updateLoaderTitle('onLoad', '\xa0');
 
   // Wait until we've fetched all the threads before trying to process updates regularly.
   setInterval(update, 1000 * 60);
 
   await fetchContacts(gapi.auth.getToken());
   await processMail();
+
+  updateLoaderTitle('onLoad');
 }
 
 async function fetchContacts(token) {
@@ -431,14 +435,14 @@ async function processMail() {
     return;
 
   isProcessingMail_ = true;
-  updateTitle('processMail', 'Processing mail backlog...', true);
+  updateLoaderTitle('processMail', 'Processing mail backlog...');
 
   let mailProcessor = new MailProcessor(settings_, addThread, getQueuedLabelMap(), labels_);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
 
-  updateTitle('processMail');
+  updateLoaderTitle('processMail');
   isProcessingMail_ = false;
 }
 

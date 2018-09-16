@@ -18,10 +18,13 @@
       }
       .toolbar {
         display: flex;
-        justify-content: space-between;
         background-color: black;
         color: white;
         padding: 3px;
+        position: relative;
+      }
+      .toolbar > * {
+        margin-right: 4px;
       }
       a {
         color: black;
@@ -109,6 +112,8 @@
       }
       #subject {
         text-align: center;
+        flex: 1;
+        display: flex;
       }
       #content {
         flex: 1;
@@ -156,16 +161,23 @@
       .toggler:hover {
         background-color: #bbb;
       }
-      /* Spinner */
-      #loader,
-      #loader:after {
+      #loader {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        padding-left: 20px;
+        background-color: black;
+        display: flex;
+        align-items: center;
+      }
+      .spinner,
+      .spinner:after {
         border-radius: 50%;
         width: 8px;
         height: 8px;
-        margin-right: 4px;
       }
-      #loader {
-        display: none;
+      .spinner {
         border-top: 3px solid white;
         border-right: 3px solid white;
         border-bottom: 3px solid white;
@@ -248,10 +260,11 @@
     <div id="main-content" class="panel">
       <div class="toolbar">
         <svg id="hambuger-menu-toggle" viewBox="0 0 32 32"><path d="M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2  s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2  S29.104,22,28,22z"></path></svg>
+        <div id="title"></div>
         <div id="subject"></div>
-        <div>
-          <span id="title">&nbsp;</span>
-          <span id="loader"></span>
+        <div id="loader">
+          <span id="loader-title">&nbsp;</span>
+          <span class="spinner"></span>
         </div>
       </div>
       <div id="content"></div>

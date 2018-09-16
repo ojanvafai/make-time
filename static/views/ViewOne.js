@@ -98,7 +98,7 @@ class ViewOne extends HTMLElement {
 
   async pushNeedsTriage(thread) {
     await this.threadList_.push(thread);
-    await this.updateTitle_();
+    await this.updateQueueSummary_();
 
     if (!this.currentThread_) {
       await this.renderNext_();
@@ -107,7 +107,7 @@ class ViewOne extends HTMLElement {
     }
   }
 
-  async updateTitle_() {
+  async updateQueueSummary_() {
     if (this.currentThread_) {
       let currentQueue = await this.currentThread_.thread.getQueue();
 
@@ -183,7 +183,7 @@ class ViewOne extends HTMLElement {
       return;
     }
 
-    updateTitle('undoLastAction_', 'Undoing last action...', true);
+    this.updateTitle_('undoLastAction_', 'Undoing last action...');
 
     let lastAction = this.lastAction_;
     this.lastAction_ = null;
@@ -193,7 +193,7 @@ class ViewOne extends HTMLElement {
     await this.renderNext_(lastAction.thread);
     await lastAction.thread.modify(lastAction.removed, lastAction.added);
 
-    updateTitle('undoLastAction_');
+    this.updateTitle_('undoLastAction_');
   }
 
   onHide() {
@@ -301,13 +301,13 @@ class ViewOne extends HTMLElement {
       if (this.isSending_)
         return;
       this.isSending_ = true;
-      updateTitle('sendReply', 'Sending reply...', true);
+      this.updateTitle_('sendReply', 'Sending reply...');
 
       await this.sendReply_(compose.value, compose.getEmails(), replyAll.checked);
       this.clearQuickReply_();
       this.actions_.takeAction(Actions.ARCHIVE_ACTION);
 
-      updateTitle('sendReply');
+      this.updateTitle_('sendReply');
       this.isSending_ = false;
     })
 
@@ -449,7 +449,7 @@ Content-Type: text/html; charset="UTF-8"
         this.currentThread_ = new RenderedThread(nextThread);
     }
 
-    this.updateTitle_();
+    this.updateQueueSummary_();
 
     if (!this.currentThread_) {
       await router.run('/triaged');
@@ -462,9 +462,11 @@ Content-Type: text/html; charset="UTF-8"
     let viewInGmailButton = new ViewInGmailButton();
     viewInGmailButton.setMessageId(messages[messages.length - 1].id);
     viewInGmailButton.style.display = 'inline-flex';
-    viewInGmailButton.style.marginLeft = '4px';
 
-    this.setSubject_(this.queueSummary_, subject, viewInGmailButton);
+    let subjectText = document.createElement('div');
+    subjectText.style.flex = 1;
+    subjectText.append(subject, viewInGmailButton);
+    this.setSubject_(subjectText, this.queueSummary_);
 
     let rendered = await this.currentThread_.render();
     if (rendered.parentNode) {
