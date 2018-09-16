@@ -242,17 +242,17 @@ class MailProcessor {
     }
     // TODO: only need to do this once per thread.
     if (rule.subject) {
-      if (message.subject && !message.subject.includes(rule.subject))
+      if (message.subject && !message.subject.toLowerCase().includes(rule.subject))
         return false;
       matches = true;
     }
     if (rule.plaintext) {
-      if (!message.getPlain().includes(rule.plaintext))
+      if (!message.getPlain().toLowerCase().includes(rule.plaintext))
         return false;
       matches = true;
     }
     if (rule.htmlcontent) {
-      if (!message.getHtmlOrPlain().includes(rule.htmlcontent))
+      if (!message.getHtmlOrPlain().toLowerCase().includes(rule.htmlcontent))
         return false;
       matches = true;
     }

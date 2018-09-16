@@ -348,7 +348,7 @@ class Settings {
           labels[value] = true;
         if (!value)
           continue;
-        ruleObj[name] = value.trim();
+        ruleObj[name] = value.toLowerCase().trim();
       }
       rules.push(ruleObj);
     }
