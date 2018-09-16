@@ -207,7 +207,7 @@ class MailProcessor {
   matchesHeader_(message, header) {
     let colonIndex = header.indexOf(':');
     if (colonIndex == -1) {
-      alert(`Invalid header filter. Header filters must be of the form headername:filtervalue.`);
+      new ErrorDialog(`Invalid header filter. Header filters must be of the form headername:filtervalue.`);
       return false;
     }
     let name = header.substring(0, colonIndex).trim();
@@ -376,7 +376,7 @@ class MailProcessor {
         }
       } catch (e) {
         console.log(e);
-        alert(`Failed to process message. Left it in the unprocessed label.\n\n${JSON.stringify(e)}`);
+        new ErrorDialog(`Failed to process message. Left it in the unprocessed label.\n\n${JSON.stringify(e)}`);
       }
     }
 

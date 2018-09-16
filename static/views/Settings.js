@@ -65,7 +65,7 @@ class SettingsView extends HTMLElement {
 
   showFilterDialog_() {
     if (this.hadChanges_) {
-      alert("You have changed some settings in this dialog. Please save or cancel first.");
+      new ErrorDialog("You have changed some settings in this dialog. Please save or cancel first.");
       return;
     }
     new FiltersView(this.settings_);

@@ -29,7 +29,7 @@ class Settings {
       generateBackendLink.append('Click here to generate a backend spreadsheet');
       generateBackendLink.onclick = async () => {
         generateBackendLink.textContent = 'generating...';
-        setTimeout(() => alert('Hmmm...this is taking a while, something might have gone wrong. Keep waiting a bit or reload to try again.'), 30000);
+        setTimeout(() => new ErrorDialog('Hmmm...this is taking a while, something might have gone wrong. Keep waiting a bit or reload to try again.'), 30000);
         await this.generateSpreadsheet();
         window.location.reload();
       };

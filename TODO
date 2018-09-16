@@ -33,7 +33,7 @@ P1: Will try to do soonish.
 - make shift+click select a range of threads in ViewAll
 - add ability to filter no subject emails
 - add ability to search for a thread and see if a filter matches it...or to see what the matching rule wouild be for that thread given all your filters?
-- alert for failures is hella annoying, e.g. for unprocessable messages...pops up every minute
+- modal dialog for unprocessable messages pops up every minute
 
 P2: Will only do if something makes these seem worth doing.
 - Allow sorting the threads within a priority bucket.

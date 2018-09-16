@@ -179,7 +179,7 @@ class ViewOne extends HTMLElement {
 
   async undoLastAction_() {
     if (!this.lastAction_) {
-      alert('Nothing left to undo.');
+      new ErrorDialog('Nothing left to undo.');
       return;
     }
 
@@ -294,7 +294,7 @@ class ViewOne extends HTMLElement {
         return;
 
       if (compose.value.length > this.allowedReplyLength_) {
-        alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
+        new ErrorDialog(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
         return;
       }
 

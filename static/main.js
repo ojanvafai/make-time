@@ -550,14 +550,14 @@ window.addEventListener('error', (e) => {
     emailBody += '\n' + e.error;
   if (e.stack)
     emailBody += '\n\n' + e.stack;
-  alert(emailBody);
+  new ErrorDialog(emailBody);
 });
 
 window.addEventListener('unhandledrejection', (e) => {
   // 401 means the credentials are invalid and you probably need to 2 factor.
   if (e.reason && e.reason.status == 401)
     window.location.reload();
-  alert(e.reason);
+  new ErrorDialog(e.reason);
 });
 
 window.addEventListener('offline', (e) => {

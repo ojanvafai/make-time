@@ -79,7 +79,7 @@ class Actions extends HTMLElement {
       return;
 
     if (!navigator.onLine) {
-      alert(`This action requires a network connection.`);
+      new ErrorDialog(`This action requires a network connection.`);
       return;
     }
 
