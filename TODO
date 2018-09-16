@@ -1,9 +1,11 @@
+
 In make-time mode:
 - NeedsReply automatically opens a quick reply box, gives it a longer allowed length
 - Starts a stopwatch timer to count how long it take you to accomplish this task.
 - Store task durations for future data analysis
 
 P1: Will try to do soonish.
+-invalid directive hover effect in filters dialog is hella annoying
 - Can't undo the last triage item because it immediately moves to triaged. Really need undo manager to be outside the views so it can be reused across all views.
 - add hover effects to rows
 - make bankruptcy use queries instead of doing one thread at a time. So, first do a query for bankrupt things that need to be archived (and archive them). Then do the query to get the list of threads. make addThread take a parameter to skip the vacation/bankrupt bits since those aren't needed in the query case done on load, so the page can load quickly.

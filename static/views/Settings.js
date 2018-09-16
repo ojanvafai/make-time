@@ -152,11 +152,13 @@ class SettingsView extends HTMLElement {
     input.value = label;
     container.append(input);
 
-    let queues = this.createSelect_(SettingsView.queues_, opt_selected.queue);
+    let queue = opt_selected && opt_selected.queue;
+    let queues = this.createSelect_(SettingsView.queues_, queue);
     queues.className = 'queue';
     container.append(queues);
 
-    let goals = this.createSelect_(SettingsView.goals_, opt_selected.goal);
+    let goal = opt_selected && opt_selected.goal;
+    let goals = this.createSelect_(SettingsView.goals_, goal);
     goals.className = 'goal';
     container.append(goals);
 
