@@ -93,6 +93,11 @@ class Thread {
     if (destination === undefined)
       throw `Invalid triage action attempted.`;
 
+    // Need the message details to get the list of current applied labels.
+    // Almost always we will have fetched this since we're showing the message
+    // to the user already.
+    await this.fetchMessageDetails();
+
     var addLabelIds = [];
     if (destination)
       addLabelIds.push(await this.allLabels_.getId(destination));

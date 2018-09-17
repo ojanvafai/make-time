@@ -298,6 +298,17 @@ function createMenuItem(name, options) {
   return a;
 }
 
+async function markTriaged(thread) {
+  await thread.markTriaged(null);
+}
+
+// Archive threads that are needstriage, but not in the inbox or unprocessed.
+async function cleanupNeedsTriageThreads() {
+  await fetchThreads(markTriaged, {
+    query: `-in:inbox -in:${Labels.UNPROCESSED_LABEL} (in:${labels_.getNeedsTriageLabelNames().join(' OR in:')})`,
+  });
+}
+
 async function onLoad() {
   settings_ = new Settings();
   labels_ = new Labels();
@@ -348,6 +359,8 @@ async function onLoad() {
     await router.run('/viewall');
   else
     await router.run('/viewone');
+
+  await cleanupNeedsTriageThreads();
 
   // Put first threads that are in the inbox with no make-time labels. That way they always show up before
   // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
@@ -446,9 +459,10 @@ async function processMail() {
   isProcessingMail_ = false;
 }
 
-function update() {
+async function update() {
+  await cleanupNeedsTriageThreads();
   if (currentView_.updateCurrentThread)
-    currentView_.updateCurrentThread();
+    await currentView_.updateCurrentThread();
   processMail();
 }
 

@@ -8,6 +8,7 @@ class Labels {
     this.idToLabel_ = {};
     this.makeTimeLabelIds_ = [];
     this.makeTimeLabelNames_ = [];
+    this.needsTriageLabelNames_ = [];
     this.triagedLabels_ = [];
     this.priorityLabels_ = [];
 
@@ -26,6 +27,8 @@ class Labels {
         this.triagedLabels_.push(name);
       else if (name.startsWith(Labels.PRIORITY_LABEL + '/'))
         this.priorityLabels_.push(name);
+      else if (name.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'))
+        this.needsTriageLabelNames_.push(name);
     }
   }
 
@@ -83,6 +86,10 @@ class Labels {
 
   getMakeTimeLabelNames() {
     return this.makeTimeLabelNames_;
+  }
+
+  getNeedsTriageLabelNames() {
+    return this.needsTriageLabelNames_;
   }
 
   getTriagedLabelNames() {
