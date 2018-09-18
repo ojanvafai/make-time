@@ -399,14 +399,15 @@ async function fetchContacts(token) {
 
   // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send
   // the data we don't need.
+  let response;
   try {
-    let resp = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
+    response = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
   } catch(e) {
     console.error(`Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`);
     return;
   }
 
-  let json = await resp.json();
+  let json = await response.json();
   for (let entry of json.feed.entry) {
     if (!entry.gd$email)
       continue;
@@ -467,10 +468,10 @@ async function update() {
 }
 
 // Make sure links open in new tabs.
-document.body.addEventListener('click', (e) => {
+document.body.addEventListener('click', async (e) => {
   for (let node of e.path) {
     if (node.tagName == 'A') {
-      if (router.run(node)) {
+      if (await router.run(node)) {
         e.preventDefault();
         return;
       }
