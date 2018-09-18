@@ -393,21 +393,32 @@ async function onLoad() {
   updateLoaderTitle('onLoad');
 }
 
+let CONTACT_STORAGE_KEY_ = 'contacts';
+
 async function fetchContacts(token) {
   if (contacts_.length)
     return;
 
   // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send
   // the data we don't need.
-  let response;
+  let responseText;
   try {
-    response = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
+    let response = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
+    responseText = await response.text();
+    localStorage.setItem(CONTACT_STORAGE_KEY_, responseText);
   } catch(e) {
-    console.error(`Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`);
-    return;
+    let message = `Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`;
+
+    responseText = localStorage.getItem(CONTACT_STORAGE_KEY_);
+    if (!responseText) {
+      console.error(message);
+      return;
+    }
+
+    console.error(`Using locally stored version of contacts. ${message}`);
   }
 
-  let json = await response.json();
+  json = JSON.parse(responseText);
   for (let entry of json.feed.entry) {
     if (!entry.gd$email)
       continue;
