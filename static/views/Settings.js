@@ -79,7 +79,38 @@ class SettingsView extends HTMLElement {
       label.style.cssText = `
         display: flex;
         margin: 5px 0;
+        position: relative;
       `;
+
+      let helpButton = document.createElement('span');
+      helpButton.style.cssText = `
+        margin: 0 4px;
+        text-decoration: underline;
+        color: blue;
+      `;
+      helpButton.textContent = '?';
+      helpButton.tooltip = field.description;
+
+      helpButton.onmouseenter = () => {
+        helpButton.tooltipElement = document.createElement('div');
+
+        let rect = helpButton.getBoundingClientRect();
+        helpButton.tooltipElement.style.cssText = `
+          position: absolute;
+          top: ${helpButton.offsetHeight + 2}px;
+          width: 300px;
+          background-color: white;
+          border: 1px solid;
+          padding: 4px;
+          z-index: 100;
+        `;
+
+        helpButton.tooltipElement.append(helpButton.tooltip);
+        helpButton.after(helpButton.tooltipElement);
+      }
+      helpButton.onmouseleave = () => {
+        helpButton.tooltipElement.remove();
+      }
 
       let input = document.createElement('input');
       input.style.cssText = `
@@ -99,7 +130,7 @@ class SettingsView extends HTMLElement {
 
       input.key = field.key;
 
-      label.append(`${field.name}:`, input);
+      label.append(field.name, helpButton, input);
       this.basicSettings_.append(label);
     }
 

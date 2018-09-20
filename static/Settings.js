@@ -439,9 +439,15 @@ Settings.fields = [
   },
   {
     key: ServerStorage.KEYS.VUEUE_IS_DEFAULT,
-    name: 'Start in view all mode.',
+    name: 'Start in view all mode',
     description: `Whether to start in view all mode or thread at a time mode. `,
     default: 280,
     type: 'checkbox',
+  },
+  {
+    key: ServerStorage.KEYS.DAYS_TO_SHOW,
+    name: 'Wicked witch count',
+    description: `For times when you're melting, only show emails from the past N days.`,
+    type: 'number',
   },
 ];

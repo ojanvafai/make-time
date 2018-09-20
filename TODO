@@ -7,6 +7,7 @@ In make-time mode:
 - Store task durations for future data analysis
 
 P1: Will try to do soonish.
+- Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.
 - invalid directive hover effect in filters dialog is hella annoying
 - Can't undo the last triage item because it immediately moves to triaged. Really need undo manager to be outside the views so it can be reused across all views.
 - add hover effects to rows

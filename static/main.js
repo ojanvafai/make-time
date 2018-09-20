@@ -202,6 +202,12 @@ async function fetchThreads(forEachThread, options) {
   if (options.queue)
     query += ' in:' + options.queue;
 
+
+  let daysToShow = settings_.get(ServerStorage.KEYS.DAYS_TO_SHOW);
+  if (daysToShow)
+    query += ` newer_than:${daysToShow}d`;
+
+
   // We only have triaged labels once they've actually been created.
   if (!options.includeTriaged && labels_.getTriagedLabelNames().length)
     query += ' -(in:' + labels_.getTriagedLabelNames().join(' OR in:') + ')';
@@ -321,7 +327,6 @@ async function onLoad() {
     await showHelp(settings_);
     storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
   }
-
 
   let settingsButton = createMenuItem('Settings', {
     onclick: () => new SettingsView(settings_, getQueuedLabelMap()),
