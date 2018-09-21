@@ -1,6 +1,5 @@
 For best effort and -inbox +maketime label threads, do a query first to archive them, then fetch what's left. make addThread take a parameter to skip the vacation/bankrupt bits since those aren't needed in the query case done on load, so the page can load quickly.
 
-
 In make-time mode:
 - NeedsReply automatically opens a quick reply box, gives it a longer allowed length
 - Starts a stopwatch timer to count how long it take you to accomplish this task.
@@ -11,8 +10,6 @@ P1: Will try to do soonish.
 - invalid directive hover effect in filters dialog is hella annoying
 - Can't undo the last triage item because it immediately moves to triaged. Really need undo manager to be outside the views so it can be reused across all views.
 - add hover effects to rows
-- sending quick reply doesn't close the timer dialog
-- turning off the timer should close the dialog
 - Show mini drawer when it's not open so it can show counts?
 - triaged and maketime views need to give you an indication of there being threads that need triaging.
 - Kinda want all the triage and prioritization actions available in both triaged and make-time. Maybe add a retriage button that pulls back in all the triaging buttons?

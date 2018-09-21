@@ -34,6 +34,7 @@ class ViewOne extends HTMLElement {
     if (this.timerPaused_)
       this.autoStartTimer_ = false;
     this.updatePlayButton_();
+    this.clearTimerOverlay_();
     this.restartTimer_();
   }
 
@@ -215,6 +216,9 @@ class ViewOne extends HTMLElement {
   }
 
   restartTimer_() {
+    if (this.timerOverlay_)
+      return;
+
     if (this.timerPaused_) {
       this.timer_.textContent = '';
       return;
@@ -228,11 +232,19 @@ class ViewOne extends HTMLElement {
     this.nextTick_();
   }
 
+  clearTimerOverlay_() {
+    if (this.timerOverlay_) {
+      this.timerOverlay_.remove();
+      this.timerOverlay_ = null;
+    }
+  }
+
   clearQuickReply_() {
     this.quickReplyOpen_ = false;
     this.toolbar_.textContent = '';
     this.toolbar_.style.backgroundColor = '';
     this.addButtons_();
+    this.clearTimerOverlay_();
     this.restartTimer_();
   }
 
@@ -373,8 +385,8 @@ Content-Type: text/html; charset="UTF-8"
 
     if (this.timeLeft_ == 0) {
       this.timer_.textContent = '';
-      let overlay = document.createElement('div');
-      overlay.style.cssText = `
+      this.timerOverlay_ = document.createElement('div');
+      this.timerOverlay_.style.cssText = `
         position: fixed;
         top: 0;
         right: 0;
@@ -401,17 +413,17 @@ Content-Type: text/html; charset="UTF-8"
         padding: 5px;
         background-color: white;
       `;
-      overlay.append(background, text);
-      this.messages_.append(overlay);
+      this.timerOverlay_.append(background, text);
+      this.messages_.append(this.timerOverlay_);
       return;
     }
 
-    if (this.timeLeft_ > 5) {
-      this.timer_.style.color = 'black';
-      this.timer_.style.backgroundColor =  'white';
-    } else {
+    if (this.timeLeft_ > 20) {
       this.timer_.style.color = 'white';
-      this.timer_.style.backgroundColor =  'red';
+    } else if (this.timeLeft_ > 5) {
+      this.timer_.style.color = 'black';
+    } else {
+      this.timer_.style.color = 'red';
     }
 
     this.timer_.textContent = this.timeLeft_;
