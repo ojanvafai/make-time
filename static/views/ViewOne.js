@@ -1,5 +1,5 @@
 class ViewOne extends HTMLElement {
-  constructor(threads, autoStartTimer, timeout, allowedReplyLength, contacts, setSubject) {
+  constructor(threads, autoStartTimer, timeout, allowedReplyLength, contacts, setSubject, updateTitle) {
     super();
     this.style.display = 'block';
 
@@ -9,6 +9,7 @@ class ViewOne extends HTMLElement {
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
     this.setSubject_ = setSubject;
+    this.updateTitle_ = updateTitle;
 
     this.messages_ = document.createElement('div');
     this.messages_.style.cssText = `
@@ -130,7 +131,8 @@ class ViewOne extends HTMLElement {
         queueData += `<div>${Labels.removeNeedsTriagePrefix(queue)}:&nbsp;${count}</div>`;
       }
 
-      this.queueSummary_.innerHTML = `<summary>${currentCount} left in ${currentQueue}</summary><div>${queueData}</div>`;
+      let shortQueue = Labels.removeNeedsTriagePrefix(currentQueue);
+      this.queueSummary_.innerHTML = `<summary>${currentCount} left in ${shortQueue}</summary><div>${queueData}</div>`;
       this.queueSummary_.style.display = '';
     } else {
       this.queueSummary_.style.display = 'none';

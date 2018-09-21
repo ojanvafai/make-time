@@ -48,12 +48,7 @@ router.add('/besteffort', async (foo) => {
   if (currentView_)
     await currentView_.tearDown();
 
-  threads = threads.concat(threads_.getBestEffort());
-
-  // Null this out before any awaits to avoid adding more threads to threads_.bestEffort_
-  // via addThreads once we've started triaging best effort threads.
-  threads_.setBestEffort(null);
-
+  threads_.processBestEffort();
   await viewAll();
 });
 
@@ -116,7 +111,7 @@ async function viewThreadAtATime() {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ViewOne(threads_, autoStartTimer, timeout, allowedReplyLength, contacts_, setSubject));
+  setView(new ViewOne(threads_, autoStartTimer, timeout, allowedReplyLength, contacts_, setSubject, updateTitle));
 
   // Ensure contacts are fetched.
   await fetchContacts(gapi.auth.getToken());
