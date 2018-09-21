@@ -58,7 +58,7 @@ class ViewOne extends HTMLElement {
       border-radius: 5px;
     `;
 
-    this.actions_ = new Actions(this, ViewOne.ACTIONS_);
+    this.actions_ = new Actions(this, ViewOne.ACTIONS_, ViewOne.OVERFLOW_ACTIONS_);
 
     let timerContainer = document.createElement('div');
     timerContainer.style.cssText = `
@@ -531,15 +531,18 @@ Content-Type: text/html; charset="UTF-8"
 
 ViewOne.ACTIONS_ = [
   Actions.ARCHIVE_ACTION,
-  Actions.TLDR_ACTION,
-  Actions.REPLY_NEEDED_ACTION,
   Actions.QUICK_REPLY_ACTION,
   Actions.BLOCKED_ACTION,
   Actions.MUTE_ACTION,
   Actions.NEEDS_ACTION_ACTION,
-  Actions.SPAM_ACTION,
   Actions.UNDO_ACTION,
   Actions.DONE_ACTION,
+];
+
+ViewOne.OVERFLOW_ACTIONS_ = [
+  Actions.TLDR_ACTION,
+  Actions.REPLY_NEEDED_ACTION,
+  Actions.SPAM_ACTION,
 ];
 
 window.customElements.define('mt-view-one', ViewOne);

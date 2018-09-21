@@ -1,24 +1,21 @@
-For best effort and -inbox +maketime label threads, do a query first to archive them, then fetch what's left. make addThread take a parameter to skip the vacation/bankrupt bits since those aren't needed in the query case done on load, so the page can load quickly.
 
-In make-time mode:
-- NeedsReply automatically opens a quick reply box, gives it a longer allowed length
-- Starts a stopwatch timer to count how long it take you to accomplish this task.
-- Store task durations for future data analysis
+Rethink the whole workflow
+- In make-time mode: NeedsReply automatically opens a quick reply box, gives it a longer allowed length
+- have maketime show one thread at a time...with some ability to jump around?
+- have prioritization flow always group by priority instead of action type. put unpriortized at the top and do the quick cycle through only those. Allow going from prioritization flow into maketime for a given thread and back.
+- make more clear what phase your in and make navigation between phases more natural
+- Kinda want all the triage and prioritization actions available in both triaged and make-time. Maybe add a retriage button that pulls back in all the triaging buttons?
+- triaged and maketime views need to give you an indication of there being threads that need triaging.
+- Make sense of all the toolbar items in the different views...aim for less change between each view
 
 P1: Will try to do soonish.
+- For best effort and -inbox +maketime label threads, do a query first to archive them, then fetch what's left. make addThread take a parameter to skip the vacation/bankrupt bits since those aren't needed in the query case done on load, so the page can load quickly.
+- make-time mode: Starts a stopwatch timer to count how long it take you to accomplish this task and store task durations for future data analysis
 - Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.
 - invalid directive hover effect in filters dialog is hella annoying
 - Can't undo the last triage item because it immediately moves to triaged. Really need undo manager to be outside the views so it can be reused across all views.
 - add hover effects to rows
-- Show mini drawer when it's not open so it can show counts?
-- triaged and maketime views need to give you an indication of there being threads that need triaging.
-- Kinda want all the triage and prioritization actions available in both triaged and make-time. Maybe add a retriage button that pulls back in all the triaging buttons?
-- Add ability to transition into any triage mode at any point
-- Archiving should remove priorities, should all triage actions?
-- s/Done/Archive. The difficulty is that the keyboard shortcut now conflicts with Action Item
-- Show which triage phase youre in that the top and structure the help to show the outline/workflow of phases more clearly
-- Add the auto-highlight-next behavior of Triaged to ViewAll as well.
-- Add a sorted TODO list view of each of the triage queues. Highlight each item and force you to pick must do (i.e. can't go home until it's done), important&urgent, !important&urgent, important&!urgent, done.
+- on desktop: show mini drawer when it's not open so it can show counts and for easier nav?
 - Only show toolbar in any of the views when there are actually threads.
 - Find a way to separate out tasks that can be done on a phone so they can be fit into 5 minute breaks
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
@@ -29,12 +26,12 @@ P1: Will try to do soonish.
 - Use TypeScript and create an abstract View superclass and an abstract Dialog superclass.
 - Add the ability to create new action items that have no existing thread
 - Highlight the current phase in the drawer and actually update the url for each phase so people can link to the phase they want.
-- make shift+click select a range of threads in ViewAll
-- add ability to filter no subject emails
+- make shift+click select a range of threads
 - add ability to search for a thread and see if a filter matches it...or to see what the matching rule wouild be for that thread given all your filters?
-- modal dialog for unprocessable messages pops up every minute
 
 P2: Will only do if something makes these seem worth doing.
+- modal dialog for unprocessable messages pops up every minute
+- add ability to filter no subject emails
 - Allow sorting the threads within a priority bucket.
 - auto go into make time when having triaged all the items
 - Generalize tha ability to skip any of the modes. Curreently can only skip ViewAll.

@@ -1,14 +1,41 @@
 class Actions extends HTMLElement {
-  constructor(view, actions) {
+  constructor(view, actions, opt_overflowActions) {
     super();
     this.style.display = 'flex';
     this.style.flexWrap = 'wrap';
 
     this.view_ = view;
     this.actions_ = actions;
+    this.overflowActions_ = opt_overflowActions;
 
     this.setDestinations_();
+    this.appendActions_(this, actions);
 
+    if (opt_overflowActions) {
+      let container = document.createElement('div');
+      container.style.cssText = `display: flex;`;
+      this.append(container);
+
+      let overflow = document.createElement('div');
+      overflow.style.display = 'none'
+
+      let expander = document.createElement('div');
+      expander.style.cssText = `
+        font-size: 36px;
+      `;
+      expander.textContent = '»';
+      expander.onclick = () => {
+        let wasHidden = overflow.style.display == 'none';
+        overflow.style.display = wasHidden ? 'flex' : 'none';
+        expander.textContent = wasHidden ? '«' : '»';
+      };
+
+      container.append(expander, overflow);
+      this.appendActions_(overflow, opt_overflowActions);
+    }
+  }
+
+  appendActions_(container, actions) {
     for (let action of actions) {
       let button = document.createElement('button');
       button.tooltip = action.description;
@@ -42,7 +69,7 @@ class Actions extends HTMLElement {
       }
       let name = action.name;
       button.innerHTML = `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
-      this.append(button);
+      container.append(button);
     }
   }
 
@@ -64,14 +91,27 @@ class Actions extends HTMLElement {
     Actions.IMPORTANT_AND_NOT_URGENT_ACTION.destination = Labels.IMPORTANT_AND_NOT_URGENT_LABEL;
   }
 
-  dispatchShortcut(e) {
-    for (let action of this.actions_) {
+  findAction_(key, actions) {
+    for (let action of actions) {
       // The first letter of the action name is always the keyboard shortcut.
       if (action.name.charAt(0).toLowerCase() == e.key) {
         this.takeAction(action, e);
         return;
       }
     }
+  }
+
+  dispatchShortcut(e) {
+    let test = (action) => {
+      return action.name.charAt(0).toLowerCase() == e.key;
+    };
+
+    let action = this.actions_.find(test);
+    if (!action)
+      action = this.overflowActions_.find(test);
+
+    if (action)
+      this.takeAction(action, e);
   }
 
   async takeAction(action, opt_e) {

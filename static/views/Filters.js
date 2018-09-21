@@ -272,10 +272,8 @@ class FiltersView extends HTMLElement {
       `;
 
       let fieldTextWithoutSentinel = fieldText.replace(this.cursorSentinel_, '').trim();
-      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel)) {
-        console.log(`|${fieldTextWithoutSentinel}|`);
+      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
         fieldElement.classList.add('invalid-directive');
-      }
 
       this.appendWithSentinel_(fieldElement, fieldText);
       container.append(fieldElement);
