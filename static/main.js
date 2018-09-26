@@ -305,8 +305,12 @@ async function markTriaged(thread) {
 
 // Archive threads that are needstriage, but not in the inbox or unprocessed.
 async function cleanupNeedsTriageThreads() {
+  let needsTriageLabels = labels_.getNeedsTriageLabelNames();
+  // For new users, they won't have any needstriage labels.
+  if (!needsTriageLabels.length)
+    return;
   await fetchThreads(markTriaged, {
-    query: `-in:inbox -in:${Labels.UNPROCESSED_LABEL} (in:${labels_.getNeedsTriageLabelNames().join(' OR in:')})`,
+    query: `-in:inbox -in:${Labels.UNPROCESSED_LABEL} (in:${needsTriageLabels.join(' OR in:')})`,
   });
 }
 
