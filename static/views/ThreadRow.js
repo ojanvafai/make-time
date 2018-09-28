@@ -8,6 +8,7 @@ class ThreadRow extends HTMLElement {
     let label = document.createElement('label');
     label.style.cssText = `
       display: flex;
+      line-height: 1;
     `;
 
     this.checkBox_ = document.createElement('input');
@@ -18,7 +19,7 @@ class ThreadRow extends HTMLElement {
     `;
     this.checkBox_.onchange = this.updateHighlight_.bind(this);
 
-    this.priority_ = document.createElement('div');
+    this.primaryLabel_ = document.createElement('div');
 
     this.updateHighlight_();
 
@@ -77,7 +78,7 @@ class ThreadRow extends HTMLElement {
         if (window.innerWidth < 600) {
           let topRow = document.createElement('div');
           topRow.style.display = 'flex';
-          topRow.append(this.checkBox_, fromContainer, this.priority_, date, popoutButton);
+          topRow.append(this.checkBox_, fromContainer, this.primaryLabel_, date, popoutButton);
           label.append(topRow, title);
 
           label.style.flexDirection = 'column';
@@ -85,7 +86,7 @@ class ThreadRow extends HTMLElement {
           title.style.fontSize = '12px';
           title.style.margin = '5px 5px 0 5px';
         } else {
-          label.append(this.checkBox_, fromContainer, this.priority_, title, date, popoutButton);
+          label.append(this.checkBox_, fromContainer, this.primaryLabel_, title, date, popoutButton);
         }
 
         this.append(label);
@@ -93,15 +94,13 @@ class ThreadRow extends HTMLElement {
     });
   }
 
-  async showPriority() {
-    let priority = await this.thread_.getPriority();
-    if (!priority)
+  async showPrimaryLabel(label) {
+    if (!label)
       return;
-
-    this.priority_.textContent = Labels.removePriorityPrefix(priority);
-    this.priority_.style.cssText = `
+    this.primaryLabel_.textContent = label;
+    this.primaryLabel_.style.cssText = `
       color: white;
-      background-color: ${Labels.LABEL_TO_COLOR[priority]};
+      background-color: grey;
       padding: 1px 2px;
       margin-right: 2px;
       border-radius: 3px;

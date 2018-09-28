@@ -1,15 +1,12 @@
-class MakeTime extends AbstractVueue {
-  constructor(threads, allLabels, updateTitleDelegate) {
-    super(MakeTime.ACTIONS_, updateTitleDelegate);
+class MakeTime extends AbstractSingleThreadView {
+  constructor(threads, allowedReplyLength, contacts, setSubject, updateTitle) {
+    // Since we pop off the end of the thread queue, reverse to get the right order.
+    let sortedThreads = threads.getTriaged().reverse();
+    super(sortedThreads, allowedReplyLength, contacts, setSubject, updateTitle);
 
-    this.style.display = 'flex';
-    this.style.flexDirection = 'column';
+    this.style.display = 'block';
 
     this.threads_ = threads;
-    this.allLabels_ = allLabels;
-    this.updateTitle_ = updateTitleDelegate;
-
-    this.addThreads_(threads);
 
     // TODO: Move this to a toolbar and make a real button that greys out when
     // there's no best effort threads.
@@ -18,48 +15,43 @@ class MakeTime extends AbstractVueue {
     this.bestEffortButton_.href = '/besteffort';
     this.append(this.bestEffortButton_);
     this.updateBestEffort_();
+
+    this.renderNext();
   }
 
-  tearDown() {}
+  onSend_(opt_archive) {
+    // Hackity hack. Check that it's actually true and not truthy because
+    // sometimes opt_archive is a click event and we don't want to archive there.
+    if (opt_archive === true)
+      this.actions_.takeAction(Actions.ARCHIVE_ACTION);
+  }
 
-  async addThreads_() {
-    for (let thread of this.threads_.getTriaged()) {
-      this.addAndSort_(thread);
+  async onRenderNext() {
+    let toolbar = document.createElement('div');
+    toolbar.style.cssText = `
+      background-color: white;
+      display: flex;
+      width: 100%;
+    `;
+    let footer = document.getElementById('footer');
+    footer.textContent = '';
+    footer.append(toolbar);
+
+    this.showQuickReply(toolbar, this.onSend_.bind(this));
+
+    this.actions_ = new Actions(this, MakeTime.ACTIONS_);
+    toolbar.append(this.actions_);
+  }
+
+  async pushTriaged(thread) {
+    // TODO: This needs to respect priority orders.
+    await this.threadList.push(thread);
+
+    if (!this.currentThread) {
+      await this.renderNext();
+    } else {
+      this.prerenderNext();
     }
-  }
-
-  async addAndSort_(thread) {
-    await this.addThread(thread);
-    this.sortGroups(this.comparePriorities_);
-  }
-
-  comparePriorities_(a, b) {
-    let aOrder = MakeTime.PRIORITY_SORT_ORDER[a.queue];
-    let bOrder = MakeTime.PRIORITY_SORT_ORDER[b.queue];
-    return aOrder - bOrder;
-  }
-
-  async takeAction(action) {
-    let rows = this.getThreads().selectedRows;
-    // Update the UI first and then archive one at a time.
-    let isSetPriority = action != Actions.ARCHIVE_ACTION;
-    await this.queueTriageActions(rows, action.destination, false);
-    await this.processQueuedActions();
-  }
-
-  async getDisplayableQueue(thread) {
-    let priority = await thread.getPriority();
-    if (priority)
-      return Labels.removePriorityPrefix(priority);
-    return MakeTime.UNPRIORITIZED;
-  }
-
-  async getQueue(thread) {
-    return await thread.getPriority();
-  }
-
-  pushTriaged(thread) {
-    this.addAndSort_(thread);
   }
 
   pushBestEffort(thread) {
@@ -77,15 +69,6 @@ class MakeTime extends AbstractVueue {
   }
 }
 window.customElements.define('mt-make-time', MakeTime);
-
-MakeTime.UNPRIORITIZED = 'Unpriortized';
-
-MakeTime.PRIORITY_SORT_ORDER = {};
-MakeTime.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.MUST_DO_LABEL)] = 0;
-MakeTime.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.IMPORTANT_AND_URGENT_LABEL)] = 1;
-MakeTime.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.URGENT_AND_NOT_IMPORTANT_LABEL)] = 2;
-MakeTime.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.IMPORTANT_AND_NOT_URGENT_LABEL)] = 3;
-MakeTime.PRIORITY_SORT_ORDER[MakeTime.UNPRIORITIZED] = 4;
 
 MakeTime.ACTIONS_ = [
   Actions.ARCHIVE_ACTION,

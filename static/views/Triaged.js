@@ -45,8 +45,11 @@ class Triaged extends AbstractVueue {
 
     let lastRow = rows[rows.length - 1];
     let nextRow = this.getNextRow(lastRow);
-    if (nextRow)
-      this.selectRow_(nextRow);
+    if (nextRow) {
+      let priority = await nextRow.thread.getPriority();
+      if (!priority)
+        this.selectRow_(nextRow);
+    }
 
     // Update the UI first and then archive one at a time.
     let isSetPriority = action != Actions.ARCHIVE_ACTION;
@@ -54,7 +57,19 @@ class Triaged extends AbstractVueue {
     await this.processQueuedActions();
   }
 
-  async addTriagedThread_(thread) {
+  async addThreads_() {
+    for (let thread of this.threads_.getTriaged()) {
+      this.addAndSort_(thread);
+    }
+  }
+
+  compareRowGroups(a, b) {
+    let aOrder = Triaged.PRIORITY_SORT_ORDER[a.queue];
+    let bOrder = Triaged.PRIORITY_SORT_ORDER[b.queue];
+    return aOrder - bOrder;
+  }
+
+  async addThread(thread) {
     this.threads_.pushTriaged(thread);
 
     // Make sure to add all the threads even after teardown so that all the threads
@@ -64,10 +79,13 @@ class Triaged extends AbstractVueue {
     if (this.tearDown_)
       return;
 
-    let row = await this.addThread(thread);
-    await row.showPriority();
+    let row = await super.addThread(thread, Triaged.UNPRIORITIZED);
+    let queue = await thread.getDisplayableTriagedQueue();
+    await row.showPrimaryLabel(queue);
 
-    if (this.threads_.getTriaged().length == 1) {
+    // TODO: Don't reach into implementation details of the parent class by crawling
+    // through parentNode in the DOM.
+    if (row.parentNode.children.length == 1 && !(await thread.getPriority())) {
       // Can't just call selectRow_ here because the scrollIntoView call closes the drawer
       // if it's open. crbug.com/884518.
       row.checked = true;
@@ -84,7 +102,7 @@ class Triaged extends AbstractVueue {
 
     for (let label of labelsToFetch) {
       this.currentGroup_ = label;
-      await fetchThreads(this.addTriagedThread_.bind(this), {
+      await fetchThreads(this.addThread.bind(this), {
         query: `in:${label}`,
         includeTriaged: true,
       });
@@ -92,11 +110,14 @@ class Triaged extends AbstractVueue {
   }
 
   async getDisplayableQueue(thread) {
-    return await thread.getDisplayableTriagedQueue();
+    let priority = await thread.getPriority();
+    if (priority)
+      return Labels.removePriorityPrefix(priority);
+    return Triaged.UNPRIORITIZED;
   }
 
   async getQueue(thread) {
-    return await thread.getTriagedQueue();
+    return await thread.getPriority();
   }
 
   pushBestEffort(thread) {
@@ -123,3 +144,13 @@ Triaged.ACTIONS_ = [
   Actions.ARCHIVE_ACTION,
   Actions.DONE_ACTION,
 ];
+
+Triaged.UNPRIORITIZED = 'Unpriortized';
+
+Triaged.PRIORITY_SORT_ORDER = {};
+Triaged.PRIORITY_SORT_ORDER[Triaged.UNPRIORITIZED] = 0;
+Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.MUST_DO_LABEL)] = 1;
+Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.IMPORTANT_AND_URGENT_LABEL)] = 2;
+Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.URGENT_AND_NOT_IMPORTANT_LABEL)] = 3;
+Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.IMPORTANT_AND_NOT_URGENT_LABEL)] = 4;
+

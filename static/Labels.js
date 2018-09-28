@@ -264,10 +264,4 @@ Labels.IMPORTANT_AND_URGENT_LABEL = Labels.addPriorityPrefix('important-and-urge
 Labels.URGENT_AND_NOT_IMPORTANT_LABEL = Labels.addPriorityPrefix('urgent-and-not-important');
 Labels.IMPORTANT_AND_NOT_URGENT_LABEL = Labels.addPriorityPrefix('important-and-not-urgent');
 
-Labels.LABEL_TO_COLOR = {};
-Labels.LABEL_TO_COLOR[Labels.MUST_DO_LABEL] = 'red';
-Labels.LABEL_TO_COLOR[Labels.IMPORTANT_AND_URGENT_LABEL] = 'red';
-Labels.LABEL_TO_COLOR[Labels.URGENT_AND_NOT_IMPORTANT_LABEL] = 'darkolivegreen';
-Labels.LABEL_TO_COLOR[Labels.IMPORTANT_AND_NOT_URGENT_LABEL] = 'grey';
-
 })();

@@ -5,24 +5,28 @@ class ThreadRowGroup extends HTMLElement {
 
     this.queue_ = queue;
 
-    let queueSpan = document.createElement('b')
-    queueSpan.append(queue);
-
-    let queueContainer = document.createElement('div');
-    queueContainer.append(
-      'Select ',
-      this.createSelector_('all', this.selectAll_),
-      this.createSelector_('none', this.selectNone_),
-      `in `,
-      queueSpan);
-
+    let queueContainer = document.createElement('span')
     queueContainer.style.cssText = `
+      font-weight: bold;
+      font-size: 18px;
+    `;
+    queueContainer.append(queue);
+
+    let header = document.createElement('div');
+    header.append(
+      queueContainer,
+      ' select ',
+      this.createSelector_('all', this.selectAll_),
+      this.createSelector_('none', this.selectNone_)
+    );
+
+    header.style.cssText = `
       margin-left: 5px;
       padding-top: 10px;
     `;
 
     this.rowContainer_ = document.createElement('div');
-    this.append(queueContainer, this.rowContainer_);
+    this.append(header, this.rowContainer_);
   }
 
   hasRows() {

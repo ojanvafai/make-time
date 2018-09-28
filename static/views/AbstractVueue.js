@@ -7,6 +7,10 @@ class AbstractVueue extends HTMLElement {
     this.queuedTriageActions_ = [];
 
     this.rowGroupContainer_ = document.createElement('div');
+    this.rowGroupContainer_.style.cssText = `
+      display: flex;
+      flex-direction: column;
+    `;
     this.append(this.rowGroupContainer_);
 
     let footer = document.getElementById('footer');
@@ -23,9 +27,9 @@ class AbstractVueue extends HTMLElement {
     return false;
   }
 
-  sortGroups(comparator) {
+  sortGroups_() {
     let rowGroups = Array.prototype.slice.call(this.rowGroupContainer_.children);
-    rowGroups.sort(comparator);
+    rowGroups.sort(this.compareRowGroups);
 
     for (var i = 0; i < rowGroups.length; i++) {
       let child = this.rowGroupContainer_.children[i];
@@ -35,13 +39,18 @@ class AbstractVueue extends HTMLElement {
     }
   }
 
-  async addThread(thread) {
+  async addThread(thread, opt_extraPaddingQueue) {
     let queue = await this.getDisplayableQueue(thread);
     let rowGroup = this.groupByQueue_[queue];
     if (!rowGroup) {
       rowGroup = new ThreadRowGroup(queue);
+
+      if (queue == opt_extraPaddingQueue)
+        rowGroup.style.cssText = `padding-bottom: 50px;`;
+
       this.groupByQueue_[queue] = rowGroup;
       this.rowGroupContainer_.append(rowGroup);
+      this.sortGroups_();
     }
 
     let row = new ThreadRow(thread);
@@ -103,11 +112,7 @@ class AbstractVueue extends HTMLElement {
 
   async queueTriageActions(rows, destination, opt_isSetPriority) {
     for (let row of rows) {
-      if (opt_isSetPriority)
-        row.checked = false;
-      else
-        await this.removeRow_(row);
-
+      await this.removeRow_(row);
       this.queuedTriageActions_.push({
         destination: destination,
         row: row,
@@ -127,7 +132,7 @@ class AbstractVueue extends HTMLElement {
       let thread = item.row.thread;
       if (item.isSetPriority) {
         await thread.setPriority(item.destination);
-        await item.row.showPriority();
+        await this.addThread(thread);
       } else {
         let queue = await this.getQueue(thread);
         await thread.markTriaged(item.destination, queue);
