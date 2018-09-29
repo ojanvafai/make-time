@@ -49,7 +49,7 @@ class ViewOne extends AbstractSingleThreadView {
   addButtons_() {
     this.toolbar_.textContent = '';
 
-    this.queueSummary_ = document.createElement('details');
+    this.queueSummary = document.createElement('details');
 
     this.timer_ = document.createElement('span');
     this.timer_.style.cssText = `
@@ -159,10 +159,10 @@ class ViewOne extends AbstractSingleThreadView {
       }
 
       let shortQueue = Labels.removeNeedsTriagePrefix(currentQueue);
-      this.queueSummary_.innerHTML = `<summary>${currentCount} left in ${shortQueue}</summary><div>${queueData}</div>`;
-      this.queueSummary_.style.display = '';
+      this.queueSummary.innerHTML = `<summary>${currentCount} left in ${shortQueue}</summary><div>${queueData}</div>`;
+      this.queueSummary.style.display = '';
     } else {
-      this.queueSummary_.style.display = 'none';
+      this.queueSummary.style.display = 'none';
     }
   }
 

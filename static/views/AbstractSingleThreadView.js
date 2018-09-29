@@ -8,6 +8,8 @@ class AbstractSingleThreadView extends HTMLElement {
     this.setSubject = setSubject;
     this.updateTitle_ = updateTitle;
 
+    this.queueSummary = '';
+
     this.messages = document.createElement('div');
     this.messages.style.cssText = `
       position: relative;
@@ -244,7 +246,7 @@ Content-Type: text/html; charset="UTF-8"
     let subjectText = document.createElement('div');
     subjectText.style.flex = 1;
     subjectText.append(subject, viewInGmailButton);
-    this.setSubject(subjectText, this.queueSummary_);
+    this.setSubject(subjectText, this.queueSummary);
 
     let rendered = await this.currentThread.render();
     if (rendered.parentNode) {

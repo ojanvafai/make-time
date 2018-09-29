@@ -1,12 +1,13 @@
 class LongTasks extends HTMLElement {
   constructor() {
     super();
+
     var observer = new PerformanceObserver((list) => {
       for (let entry of list.getEntries()) {
         // TODO: Make the flashing threshold configurable.
         if (entry.duration > 200) {
           console.log(entry)
-          this.flash();
+          this.flash_();
           return;
         }
       }
@@ -14,17 +15,34 @@ class LongTasks extends HTMLElement {
     observer.observe({entryTypes: ["longtask"]});
   }
 
-  flash() {
+  connectedCallback() {
     this.style.cssText = `
       background-color: red;
-      opacity: 0.5;
+      opacity: 0;
       position: fixed;
       top: 0;
       right: 0;
       left: 0;
       bottom: 0;
+      pointer-events: none;
+      z-index: 1000000;
     `;
-    setTimeout(() => this.style.display = 'none', 1000);
+  }
+
+  flash_() {
+    var animation = [
+      { opacity: '0.6' },
+      { opacity: '0' },
+    ];
+
+    var timing = {
+      duration: 1000,
+    };
+
+    document.querySelector("mt-long-tasks").animate(
+      animation,
+      timing
+    );
   }
 }
 
