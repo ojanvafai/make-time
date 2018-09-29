@@ -78,17 +78,15 @@ class Actions extends HTMLElement {
     // Done is removing all labels. Use null as a sentinel for that.
     Actions.ARCHIVE_ACTION.destination = null;
     Actions.VIEW_ALL_DONE_ACTION.destination = null;
-    Actions.TLDR_ACTION.destination = Labels.READ_LATER_LABEL;
-    Actions.REPLY_NEEDED_ACTION.destination = Labels.NEEDS_REPLY_LABEL;
     Actions.BLOCKED_ACTION.destination = Labels.BLOCKED_LABEL;
     Actions.SPAM_ACTION.destination = 'SPAM';
     Actions.MUTE_ACTION.destination = Labels.MUTED_LABEL;
     Actions.NEEDS_ACTION_ACTION.destination = Labels.ACTION_ITEM_LABEL;
 
     Actions.MUST_DO_ACTION.destination = Labels.MUST_DO_LABEL;
-    Actions.IMPORTANT_AND_URGENT_ACTION.destination = Labels.IMPORTANT_AND_URGENT_LABEL;
-    Actions.URGENT_AND_NOT_IMPORTANT_ACTION.destination = Labels.URGENT_AND_NOT_IMPORTANT_LABEL;
-    Actions.IMPORTANT_AND_NOT_URGENT_ACTION.destination = Labels.IMPORTANT_AND_NOT_URGENT_LABEL;
+    Actions.URGENT_ACTION.destination = Labels.URGENT_LABEL;
+    Actions.NOT_URGENT_ACTION.destination = Labels.NOT_URGENT_LABEL;
+    Actions.DELEGATE_ACTION.destination = Labels.DELEGATE_LABEL;
   }
 
   findAction_(key, actions) {
@@ -133,16 +131,6 @@ class Actions extends HTMLElement {
 Actions.ARCHIVE_ACTION = {
   name: `Archive`,
   description: `Archive and remove from the current queue.`,
-};
-
-Actions.TLDR_ACTION = {
-  name: `TL;DR`,
-  description: `Too long, will read later. Goes in triaged/tldr label.`,
-};
-
-Actions.REPLY_NEEDED_ACTION = {
-  name: `Reply Needed`,
-  description: `Needs a reply. Goes in triaged/replyneeded label.`,
 };
 
 Actions.QUICK_REPLY_ACTION = {
@@ -190,19 +178,19 @@ Actions.MUST_DO_ACTION = {
   description: `Must do today. Literally won't go home till it's done.`,
 }
 
-Actions.IMPORTANT_AND_URGENT_ACTION = {
-  name: `2: Important+Urgent`,
-  description: `Important for achieving my mission and will be useless unless accomplished soon.`,
+Actions.URGENT_ACTION = {
+  name: `2: Urgent`,
+  description: `Needs to happen ASAP.`,
 }
 
-Actions.URGENT_AND_NOT_IMPORTANT_ACTION = {
-  name: `3: Urgent+Not Important`,
-  description: `Not important for achieving my mission, but will be useless unless accomplished soon. Try to find ways to delegate this work to someone for whom it will be important.`,
+Actions.NOT_URGENT_ACTION = {
+  name: `3: Not Urgent`,
+  description: `Important for achieving my mission, but can be done at leisure. Aim to spend >60% of your time here.`,
 }
 
-Actions.IMPORTANT_AND_NOT_URGENT_ACTION = {
-  name: `4: Important+Not Urgent`,
-  description: `Important for achieving my mission and but doesn't need to happen right away. Ideally you spend 60+% of your work day here.`,
+Actions.DELEGATE_ACTION = {
+  name: `4: Delegate`,
+  description: `Can't just drop this, but not important for my mission. Find someone for whom it is part of their mission.`,
 }
 
 window.customElements.define('mt-actions', Actions);

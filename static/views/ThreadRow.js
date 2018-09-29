@@ -19,8 +19,6 @@ class ThreadRow extends HTMLElement {
     `;
     this.checkBox_.onchange = this.updateHighlight_.bind(this);
 
-    this.primaryLabel_ = document.createElement('div');
-
     this.updateHighlight_();
 
     this.thread_.getSubject()
@@ -78,7 +76,7 @@ class ThreadRow extends HTMLElement {
         if (window.innerWidth < 600) {
           let topRow = document.createElement('div');
           topRow.style.display = 'flex';
-          topRow.append(this.checkBox_, fromContainer, this.primaryLabel_, date, popoutButton);
+          topRow.append(this.checkBox_, fromContainer, date, popoutButton);
           label.append(topRow, title);
 
           label.style.flexDirection = 'column';
@@ -86,25 +84,12 @@ class ThreadRow extends HTMLElement {
           title.style.fontSize = '12px';
           title.style.margin = '5px 5px 0 5px';
         } else {
-          label.append(this.checkBox_, fromContainer, this.primaryLabel_, title, date, popoutButton);
+          label.append(this.checkBox_, fromContainer, title, date, popoutButton);
         }
 
         this.append(label);
       });
     });
-  }
-
-  async showPrimaryLabel(label) {
-    if (!label)
-      return;
-    this.primaryLabel_.textContent = label;
-    this.primaryLabel_.style.cssText = `
-      color: white;
-      background-color: grey;
-      padding: 1px 2px;
-      margin-right: 2px;
-      border-radius: 3px;
-    `;
   }
 
   updateHighlight_() {

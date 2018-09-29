@@ -276,8 +276,6 @@ ViewOne.ACTIONS_ = [
 ];
 
 ViewOne.OVERFLOW_ACTIONS_ = [
-  Actions.TLDR_ACTION,
-  Actions.REPLY_NEEDED_ACTION,
   Actions.SPAM_ACTION,
 ];
 

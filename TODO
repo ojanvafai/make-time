@@ -1,9 +1,11 @@
+Queue feature requests:
+- Every label has a queue.
+- Queues by default show up immediately (which requires adding a "shows up immediately option")
+- Queues are shown in the order they're listed in the setting.
+
 P1: Will try to do soonish.
-- Give make time it's own allowed reply length.
-- Color the progress meter green/orange/red as it get closer to the limit.
+- Give make time view it's own allowed reply length and color the progress meter green/orange/red as it get closer to the limit.
 - Add Undo to all the views.
-- Make priorities be: Must Do, Urgent, Not Urgent, Delegate
-- Drop TL;DR and Reply Needed, and stop showing that label in the Triaged view
 - triaged and maketime views need to give you an indication of there being new threads that need triaging.
 - make more clear what phase your in and make navigation between phases more natural, e.g. allow going from prioritization flow into maketime for a given thread and back.
 - For best effort and -inbox +maketime label threads, do a query first to archive them, then fetch what's left. make addThread take a parameter to skip the vacation/bankrupt bits since those aren't needed in the query case done on load, so the page can load quickly.

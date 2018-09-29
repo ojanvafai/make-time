@@ -251,8 +251,6 @@ Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
 Labels.QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
 Labels.PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
 
-Labels.READ_LATER_LABEL = Labels.triagedLabel('tldr');
-Labels.NEEDS_REPLY_LABEL = Labels.triagedLabel('needsreply');
 Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
 Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
 Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
@@ -260,8 +258,8 @@ Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
 Labels.BLOCKED_LABEL = Labels.addQueuedPrefix('blocked');
 
 Labels.MUST_DO_LABEL = Labels.addPriorityPrefix('must-do');
-Labels.IMPORTANT_AND_URGENT_LABEL = Labels.addPriorityPrefix('important-and-urgent');
-Labels.URGENT_AND_NOT_IMPORTANT_LABEL = Labels.addPriorityPrefix('urgent-and-not-important');
-Labels.IMPORTANT_AND_NOT_URGENT_LABEL = Labels.addPriorityPrefix('important-and-not-urgent');
+Labels.URGENT_LABEL = Labels.addPriorityPrefix('urgent');
+Labels.NOT_URGENT_LABEL = Labels.addPriorityPrefix('not-urgent');
+Labels.DELEGATE_LABEL = Labels.addPriorityPrefix('delegate');
 
 })();

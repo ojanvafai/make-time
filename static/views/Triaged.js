@@ -80,8 +80,6 @@ class Triaged extends AbstractVueue {
       return;
 
     let row = await super.addThread(thread, Triaged.UNPRIORITIZED);
-    let queue = await thread.getDisplayableTriagedQueue();
-    await row.showPrimaryLabel(queue);
 
     // TODO: Don't reach into implementation details of the parent class by crawling
     // through parentNode in the DOM.
@@ -138,9 +136,9 @@ window.customElements.define('mt-triaged', Triaged);
 
 Triaged.ACTIONS_ = [
   Actions.MUST_DO_ACTION,
-  Actions.IMPORTANT_AND_URGENT_ACTION,
-  Actions.URGENT_AND_NOT_IMPORTANT_ACTION,
-  Actions.IMPORTANT_AND_NOT_URGENT_ACTION,
+  Actions.URGENT_ACTION,
+  Actions.NOT_URGENT_ACTION,
+  Actions.DELEGATE_ACTION,
   Actions.ARCHIVE_ACTION,
   Actions.DONE_ACTION,
 ];
@@ -150,7 +148,7 @@ Triaged.UNPRIORITIZED = 'Unpriortized';
 Triaged.PRIORITY_SORT_ORDER = {};
 Triaged.PRIORITY_SORT_ORDER[Triaged.UNPRIORITIZED] = 0;
 Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.MUST_DO_LABEL)] = 1;
-Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.IMPORTANT_AND_URGENT_LABEL)] = 2;
-Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.URGENT_AND_NOT_IMPORTANT_LABEL)] = 3;
-Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.IMPORTANT_AND_NOT_URGENT_LABEL)] = 4;
+Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.URGENT_LABEL)] = 2;
+Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.NOT_URGENT_LABEL)] = 3;
+Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.DELEGATE_LABEL)] = 4;
 
