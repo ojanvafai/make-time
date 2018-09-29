@@ -140,7 +140,7 @@ class Thread {
 
   async getSubject() {
     await this.fetchMessageDetails();
-    return this.processedMessages_[0].subject;
+    return this.processedMessages_[0].subject || '(no subject)';
   }
 
   async getMessages() {

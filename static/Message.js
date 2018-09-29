@@ -42,6 +42,12 @@ class Message {
         break;
     }
     }
+
+    // Things like chats don't have a date header. Use internalDate as per
+    // https://developers.google.com/gmail/api/release-notes#2015-06-18.
+    if (!this.date)
+      this.date = new Date(Number(message.internalDate));
+
     this.isUnread = message.labelIds.includes('UNREAD');
   }
 

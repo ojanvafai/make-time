@@ -170,7 +170,7 @@ class AbstractSingleThreadView extends HTMLElement {
 
     let subject = lastMessage.subject;
     let replyPrefix = 'Re: ';
-    if (!subject.startsWith(replyPrefix))
+    if (subject && !subject.startsWith(replyPrefix))
       subject = replyPrefix + subject;
 
     let email = `Subject: ${subject}
@@ -235,7 +235,7 @@ Content-Type: text/html; charset="UTF-8"
       return;
 
     let messages = await this.currentThread.thread.getMessages();
-    let subject = await this.currentThread.thread.getSubject() || '(no subject)';
+    let subject = await this.currentThread.thread.getSubject();
 
     let viewInGmailButton = new ViewInGmailButton();
     viewInGmailButton.setMessageId(messages[messages.length - 1].id);

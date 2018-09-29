@@ -190,7 +190,8 @@ function updateTitleBase(stack, node, key, ...opt_title) {
 }
 
 async function fetchThreads(forEachThread, options) {
-  let query = '';
+  // Chats don't expose their bodies in the gmail API, so just skip them.
+  let query = '-in:chats ';
 
   if (options.query)
     query += ' ' + options.query;
@@ -266,7 +267,7 @@ async function addThread(thread) {
   let vacationSubject = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
   if (vacationSubject) {
     let subject = await thread.getSubject();
-    if (!subject.toLowerCase().includes(vacationSubject.toLowerCase()))
+    if (!subject || !subject.toLowerCase().includes(vacationSubject.toLowerCase()))
       return;
   }
 
