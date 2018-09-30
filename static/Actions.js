@@ -105,7 +105,7 @@ class Actions extends HTMLElement {
     };
 
     let action = this.actions_.find(test);
-    if (!action)
+    if (!action && this.overflowActions_)
       action = this.overflowActions_.find(test);
 
     if (action)

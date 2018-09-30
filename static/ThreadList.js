@@ -1,8 +1,9 @@
 class ThreadList {
-  constructor() {
+  constructor(queuedLabelData) {
     this.threads_ = {};
     this.length = 0;
     this.queueNames_ = [];
+    this.queuedLabelData_ = queuedLabelData;
   }
 
   createQueue_(queue) {
@@ -10,7 +11,9 @@ class ThreadList {
       return;
     this.threads_[queue] = [];
     this.queueNames_.push(queue);
-    this.queueNames_.sort(Labels.compare);
+
+    let queueDatas = this.queuedLabelData_.getSorted(this.queueNames_);
+    this.queueNames_ = queueDatas.map((item) => item[0]);
   }
 
   async push(thread) {

@@ -154,6 +154,7 @@ class FiltersView extends HTMLElement {
   }
 
   cancel_() {
+    // TODO: prompt if there are changes.
     this.dialog_.close();
   }
 
@@ -409,13 +410,18 @@ class FiltersView extends HTMLElement {
 FiltersView.DIRECTIVE_SEPARATOR_ = ':';
 FiltersView.QUERY_SEPARATOR_ = '&&';
 FiltersView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>
+Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "archive" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
+
  - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
+ - "archive" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
  - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
  - The first rule that matches is the one that applies, so order matters.
  - Label is the label that will apply qhen the rule matches. This is *not* the full label name. The full label name gets prefixed as maketime/.../labelname. Put just the last bit here.
  - Rule is the rule to match.
  - Match All Messages will required the rule to match all the messages in the thread to be considered a match. Otherwise, any message in the thread matching will mean the whole thread matches.
  - No List-ID matches messages that are not sent to an email list.
+ - Gmail filters match only the newly incoming message. make-time matches all messages in the thread each time the thread is processed.
+ - Every thread in the unprocessed queue gets exactly one needstriage label applied. If none of your filters apply to a thread, then make-time will apply a "needsfilter" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
 
 <b>Rule directives</b>
  - <b>to:</b> Matches the to/cc/bcc fields of the email. "foo" will match foo+anything@anything.com, "foo@gmail.com" will match foo@gmail.com and foo+anything@gmail.com, "gmail.com" will match anything@gmail.com.
@@ -424,6 +430,8 @@ FiltersView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>
  - <b>plaintext:</b> Matches if the plain text of the email includes this text.
  - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
  - <b>header:</b> Matches arbitrary email headers. You can see the email headers by going to gmail and clicking "Show original" for a given a message. The format is "header:value" where "header" is the name of the mail header and "value" is the value to search for in that mail header. For example, "X-Autoreply:yes" is a filter gmail (and probably other) vacation autoresponders as they put an X-Autoreply header on autoresponse messages.
+
+If there's a bug in the filtering code, emails should remain in the unprocessed label.
 `;
 
 window.customElements.define('mt-filters', FiltersView);

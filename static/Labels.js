@@ -140,56 +140,7 @@ class Labels {
   }
 }
 
-(function() {
-
-function compareSubLabels(a, b) {
-  if (a < b)
-    return -1;
-  if (a > b)
-    return 1;
-  return 0;
-}
-
-let inboxLabel = 'inbox';
-
-Labels.compare = (a, b) => {
-  if (a == b)
-    return 0;
-  if (!a)
-    return -1;
-  if (!b)
-    return 1;
-
-  let aParts = Labels.removeMakeTimePrefix(a).split('/');
-  let bParts = Labels.removeMakeTimePrefix(b).split('/');
-  let aHasQueue = aParts.length > 2;
-  let bHasQueue = bParts.length > 2;
-
-  if (aHasQueue && bHasQueue) {
-    let aQueue = aParts[1].toLowerCase();
-    let bQueue = bParts[1].toLowerCase();
-    let aSubLabel = aParts[2];
-    let bSubLabel = bParts[2];
-    if (aQueue == bQueue)
-      return compareSubLabels(aSubLabel, bSubLabel);
-    let aOrder = QUEUE_ORDER[aQueue] || 0;
-    let bOrder = QUEUE_ORDER[bQueue] || 0;
-    return aOrder - bOrder;
-  }
-
-  if (!aHasQueue && bHasQueue)
-    return -1;
-  if (aHasQueue && !bHasQueue)
-    return 1;
-
-  if (a < b)
-    return b == inboxLabel ? 1 : -1;
-  if (a > b)
-    return a == inboxLabel ? -1 : 1;
-  return 0;
-}
-
-function removeLabelPrefix(labelName, prefix) {
+Labels.removeLabelPrefix = (labelName, prefix) => {
   return labelName.replace(new RegExp(`^${prefix}/`), '');
 }
 
@@ -198,7 +149,7 @@ Labels.addMakeTimePrefix = (labelName) => {
 }
 
 Labels.removeMakeTimePrefix = (labelName) => {
-  return removeLabelPrefix(labelName, Labels.MAKE_TIME_PREFIX);
+  return Labels.removeLabelPrefix(labelName, Labels.MAKE_TIME_PREFIX);
 }
 
 Labels.isMakeTimeLabel = (labelName) => {
@@ -210,7 +161,7 @@ Labels.triagedLabel = (labelName) => {
 }
 
 Labels.removeTriagedPrefix = (labelName) => {
-  return removeLabelPrefix(labelName, Labels.TRIAGED_LABEL);
+  return Labels.removeLabelPrefix(labelName, Labels.TRIAGED_LABEL);
 }
 
 Labels.needsTriageLabel = (labelName) => {
@@ -218,7 +169,7 @@ Labels.needsTriageLabel = (labelName) => {
 }
 
 Labels.removeNeedsTriagePrefix = (labelName) => {
-  return removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
+  return Labels.removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
 }
 
 Labels.addQueuedPrefix = (labelName) => {
@@ -230,11 +181,15 @@ Labels.addPriorityPrefix = (labelName) => {
 }
 
 Labels.removePriorityPrefix = (labelName) => {
-  return removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
+  return Labels.removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
 }
 
+// TODO: This should be uppercase to match gmail.
+Labels.INBOX_LABEL = 'inbox';
 Labels.MAKE_TIME_PREFIX = 'maketime';
 Labels.FALLBACK_LABEL = 'needsfilter';
+Labels.ARCHIVE_LABEL = 'archive';
+Labels.BLOCKED_SUFFIX = 'blocked';
 
 Labels.DAILY_QUEUE_PREFIX = 'daily';
 Labels.WEEKLY_QUEUE_PREFIX = 'weekly';
@@ -255,11 +210,9 @@ Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
 Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
 Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
 
-Labels.BLOCKED_LABEL = Labels.addQueuedPrefix('blocked');
+Labels.BLOCKED_LABEL = Labels.addQueuedPrefix(Labels.BLOCKED_SUFFIX);
 
 Labels.MUST_DO_LABEL = Labels.addPriorityPrefix('must-do');
 Labels.URGENT_LABEL = Labels.addPriorityPrefix('urgent');
 Labels.NOT_URGENT_LABEL = Labels.addPriorityPrefix('not-urgent');
 Labels.DELEGATE_LABEL = Labels.addPriorityPrefix('delegate');
-
-})();

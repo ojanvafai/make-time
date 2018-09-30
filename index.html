@@ -69,6 +69,15 @@
         content: '⚠ contact list failed to load';
         padding: 2px;
       }
+      .day {
+        visibility: hidden;
+      }
+      .weekly .day {
+        visibility: visible;
+      }
+      .queue-row:hover {
+        background-color: lightgrey !important;
+      }
       #main-content {
         will-change: transform;
         background-color: #eee;
@@ -283,6 +292,7 @@
     <script src="static/MailProcessor.js"></script>
     <script src="static/Message.js"></script>
     <script src="static/Net.js"></script>
+    <script src="static/QueueSettings.js"></script>
     <script src="static/QuoteElidedMessage.js"></script>
     <script src="static/RenderedThread.js"></script>
     <script src="static/Router.js"></script>
@@ -296,6 +306,7 @@
     <script src="static/views/AbstractSingleThreadView.js"></script>
     <script src="static/views/AbstractVueue.js"></script>
     <script src="static/views/Filters.js"></script>
+    <script src="static/views/Queues.js"></script>
     <script src="static/views/MakeTime.js"></script>
     <script src="static/views/Settings.js"></script>
     <script src="static/views/ThreadRow.js"></script>

@@ -34,8 +34,17 @@ class SettingsView extends HTMLElement {
     filtersLinkContainer.append(filtersLink);
     this.scrollable_.append(filtersLinkContainer);
 
-    this.addBasicSettings_();
-    this.addQueues_();
+    let queuesLinkContainer = document.createElement('div');
+    queuesLinkContainer.style.cssText = `
+      margin-bottom: 16px;
+    `;
+    let queuesLink = document.createElement('a');
+    queuesLink.append('Modify queues');
+    queuesLink.onclick = () => this.showQueuesDialog_();
+    queuesLinkContainer.append(queuesLink);
+    this.scrollable_.append(queuesLinkContainer);
+
+    this.addSettings_();
 
     let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.settings_.spreadsheetId}/edit`;
     let clearBackendInstructions = document.createElement('div');
@@ -72,7 +81,27 @@ class SettingsView extends HTMLElement {
     this.cancel_();
   }
 
-  addBasicSettings_() {
+  async showQueuesDialog_() {
+    if (this.hadChanges_) {
+      new ErrorDialog("You have changed some settings in this dialog. Please save or cancel first.");
+      return;
+    }
+
+    let filters = await this.settings_.getFilters();
+    let queues = new Set();
+    for (let rule of filters.rules) {
+      queues.add(rule.label);
+    }
+
+    queues.delete(Labels.ARCHIVE_LABEL);
+    queues.add(Labels.FALLBACK_LABEL);
+    queues.add(Labels.BLOCKED_SUFFIX);
+
+    new QueuesView(queues, this.queuedLabelData_);
+    this.cancel_();
+  }
+
+  addSettings_() {
     this.basicSettings_ = document.createElement('div');
     for (let field of Settings.fields) {
       let label = document.createElement('label');
@@ -137,74 +166,6 @@ class SettingsView extends HTMLElement {
     this.scrollable_.append(this.basicSettings_);
   }
 
-  addQueues_() {
-    this.queues_ = document.createElement('div');
-    this.queues_.style.cssText = `margin: 16px 0;`;
-    this.queues_.append('Queues');
-
-    for (let label of Object.keys(this.queuedLabelData_).sort()) {
-      let selector = this.createQueueSelector_(label, this.queuedLabelData_[label]);
-      this.queues_.append(selector);
-    }
-
-    let addRow = document.createElement('a');
-    addRow.append('Add row');
-    addRow.style.cssText = `font-size: 11px;`;
-    addRow.onclick = () => this.appendEmptyQueueSelector_();
-    this.queues_.append(addRow);
-
-    this.scrollable_.append(this.queues_);
-  }
-
-  appendEmptyQueueSelector_() {
-    let emptySelector = this.createQueueSelector_('');
-    this.queues_.querySelector('a').before(emptySelector);
-  }
-
-  createSelect_(list, opt_selectedItem) {
-    let select = document.createElement('select');
-    for (let item of list) {
-      let option = document.createElement('option');
-      option.value = item;
-
-      if (opt_selectedItem == item)
-        option.selected = true;
-
-      option.append(item);
-      select.append(option);
-    }
-    return select;
-  }
-
-  createQueueSelector_(label, opt_selected) {
-    let container = document.createElement('div');
-    container.classList.add('queue-selector');
-    let input = document.createElement('input');
-    input.value = label;
-    container.append(input);
-
-    let queue = opt_selected && opt_selected.queue;
-    let queues = this.createSelect_(SettingsView.queues_, queue);
-    queues.className = 'queue';
-    container.append(queues);
-
-    let goal = opt_selected && opt_selected.goal;
-    let goals = this.createSelect_(SettingsView.goals_, goal);
-    goals.className = 'goal';
-    container.append(goals);
-
-    let closeButton = document.createElement('span');
-    closeButton.classList.add('close-button');
-    closeButton.style.cssText = `padding: 5px;`;
-    closeButton.onclick = () => {
-      this.hadChanges_ = true;
-      container.remove();
-    };
-    container.append(closeButton);
-
-    return container;
-  }
-
   async save_() {
     // No need to reload the page if nothing's changed.
     if (!this.hadChanges_) {
@@ -220,31 +181,13 @@ class SettingsView extends HTMLElement {
     }
     await this.settings_.writeUpdates(updates);
 
-    let newQueueData = [];
-    let selectors = this.queues_.querySelectorAll('.queue-selector');
-    for (let selector of selectors) {
-      let label = selector.querySelector('input').value;
-      if (!label)
-        continue;
-      let queue = selector.querySelector('.queue').selectedOptions[0].value;
-      let goal = selector.querySelector('.goal').selectedOptions[0].value;
-      newQueueData.push([label, queue, goal]);
-    }
-
-    if (newQueueData.length) {
-      let originalQueueCount = Object.keys(this.queuedLabelData_).length;
-      await SpreadsheetUtils.writeSheet(this.settings_.spreadsheetId, Settings.QUEUED_LABELS_SHEET_NAME, newQueueData, originalQueueCount, 1);
-    }
-
     window.location.reload();
   }
 
   cancel_() {
+    // TODO: prompt if there are changes.
     this.dialog_.close();
   }
 }
-
-SettingsView.queues_ = ['Daily', 'Monthly', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-SettingsView.goals_ = ['Inbox Zero', 'Best Effort']
 
 window.customElements.define('mt-settings', SettingsView);

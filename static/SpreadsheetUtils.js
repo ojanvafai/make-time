@@ -17,11 +17,10 @@ SpreadsheetUtils.fetchSheet = async (spreadsheetId, range) => {
 };
 
 // Assumes rows are all the same length.
-SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToOverwrite, opt_startRowIndex) => {
-  let startRowIndex = opt_startRowIndex || 0;
+SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToOverwrite) => {
   let requestParams = {
     spreadsheetId: spreadsheetId,
-    range: SpreadsheetUtils.a1Notation(sheetName, startRowIndex, rows[0].length),
+    range: SpreadsheetUtils.a1Notation(sheetName, 0, rows[0].length),
     valueInputOption: 'RAW',
   };
   let requestBody = {
@@ -32,8 +31,8 @@ SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToO
 
   // Ensure at least opt_rowsToOverwrite get overridden so that old values get cleared.
   if (response.status == 200 && opt_rowsToOverwrite > rows.length) {
-    let startRow = startRowIndex + rows.length + 1;
-    let finalRow = startRowIndex + opt_rowsToOverwrite;
+    let startRow = rows.length + 1;
+    let finalRow = opt_rowsToOverwrite;
     // TODO: Handle sheets with more than ZZ columns.
     let requestParams = {
       spreadsheetId: spreadsheetId,
@@ -43,10 +42,8 @@ SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToO
   }
 }
 
-SpreadsheetUtils.fetch2ColumnSheet = async (spreadsheetId, sheetName, opt_startRowIndex) => {
-  let startRowIndex = opt_startRowIndex || 0;
-  let range = `${sheetName}!A${startRowIndex + 1}:B`;
-
+SpreadsheetUtils.fetch2ColumnSheet = async (spreadsheetId, sheetName) => {
+  let range = `${sheetName}!A1:B`;
   let result = {};
   let values = await SpreadsheetUtils.fetchSheet(spreadsheetId, range);
   if (!values)
@@ -60,11 +57,10 @@ SpreadsheetUtils.fetch2ColumnSheet = async (spreadsheetId, sheetName, opt_startR
   return result;
 }
 
-SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows, opt_rowsToOverwrite, opt_startRowIndex) => {
-  let startRowIndex = opt_startRowIndex || 0;
+SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows, opt_rowsToOverwrite) => {
   let requestParams = {
     spreadsheetId: spreadsheetId,
-    range: `${sheetName}!A${startRowIndex + 1}:B`,
+    range: `${sheetName}!A1:B`,
     valueInputOption: 'RAW',
   };
   let requestBody = {
@@ -75,8 +71,8 @@ SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows, opt_
 
   // Ensure at least opt_rowsToOverwrite get overridden so that old values get cleared.
   if (response.status == 200 && opt_rowsToOverwrite > rows.length) {
-    let startRow = startRowIndex + rows.length + 1;
-    let finalRow = startRowIndex + opt_rowsToOverwrite;
+    let startRow = rows.length + 1;
+    let finalRow = opt_rowsToOverwrite;
     let requestParams = {
       spreadsheetId: spreadsheetId,
       range: `${sheetName}!A${startRow}:B${finalRow}`,

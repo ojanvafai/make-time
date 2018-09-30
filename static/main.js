@@ -111,7 +111,7 @@ async function viewThreadAtATime() {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ViewOne(threads_, autoStartTimer, timeout, allowedReplyLength, contacts_, setSubject, updateTitle));
+  setView(new ViewOne(threads_, autoStartTimer, timeout, allowedReplyLength, contacts_, setSubject, updateTitle, getQueuedLabelMap()));
 
   // Ensure contacts are fetched.
   await fetchContacts(gapi.auth.getToken());
@@ -239,7 +239,7 @@ async function isBestEffortQueue(thread) {
   let queue = await thread.getQueue();
   let parts = queue.split('/');
   let lastPart = parts[parts.length - 1];
-  let data = getQueuedLabelMap()[lastPart];
+  let data = getQueuedLabelMap().get(lastPart);
   return data && data.goal == 'Best Effort';
 }
 
@@ -359,7 +359,7 @@ async function onLoad() {
 
   let labels = await labels_.getTheadCountForLabels((labelName) => labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'));
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
-  labelsToFetch.sort(Labels.compare);
+  let queuesToFetch = getQueuedLabelMap().getSorted(labelsToFetch);
 
   if (settings_.get(ServerStorage.KEYS.VUEUE_IS_DEFAULT))
     await router.run('/viewall');
@@ -375,10 +375,10 @@ async function onLoad() {
     queue: 'inbox',
   });
 
-  for (let label of labelsToFetch) {
+  for (let queueData of queuesToFetch) {
     await fetchThreads(addThread, {
       query: vacationQuery,
-      queue: label,
+      queue: queueData[0],
     });
   }
 
@@ -407,24 +407,24 @@ async function fetchContacts(token) {
 
   // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send
   // the data we don't need.
-  let responseText;
+  let response;
   try {
-    let response = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
-    responseText = await response.text();
-    localStorage.setItem(CONTACT_STORAGE_KEY_, responseText);
+    response = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
   } catch(e) {
     let message = `Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`;
 
-    responseText = localStorage.getItem(CONTACT_STORAGE_KEY_);
-    if (!responseText) {
+    let contacts = localStorage.getItem(CONTACT_STORAGE_KEY_);
+    if (!contacts) {
       console.error(message);
       return;
     }
 
     console.error(`Using locally stored version of contacts. ${message}`);
+    contacts_ = JSON.parse(contacts);
+    return;
   }
 
-  json = JSON.parse(responseText);
+  let json = await response.json();
   for (let entry of json.feed.entry) {
     if (!entry.gd$email)
       continue;
@@ -437,6 +437,10 @@ async function fetchContacts(token) {
     }
     contacts_.push(contact);
   }
+
+  // Store the final contacts object instead of the data fetched off the network since the latter
+  // can is order of magnitude larger and can exceed the allowed localStorage quota.
+  localStorage.setItem(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
 function getQueuedLabelMap() {
@@ -449,15 +453,8 @@ async function fetchQueuedLabelMap(spreadsheetId) {
   if (queuedLabelMap_)
     throw 'Attempted to fetch queuedLabelMap_ multiple times';
 
-  let values = await SpreadsheetUtils.fetchSheet(spreadsheetId, `${Settings.QUEUED_LABELS_SHEET_NAME}!A2:C`);
-
-  queuedLabelMap_ = {};
-  for (let value of values) {
-    queuedLabelMap_[value[0]] = {
-      queue: value[1],
-      goal: value[2],
-    }
-  }
+  queuedLabelMap_ = new QueueSettings(spreadsheetId);
+  await queuedLabelMap_.fetch();
 }
 
 // TODO: Move this to a cron

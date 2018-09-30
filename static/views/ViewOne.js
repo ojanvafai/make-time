@@ -1,6 +1,6 @@
 class ViewOne extends AbstractSingleThreadView {
-  constructor(threads, autoStartTimer, timeout, allowedReplyLength, contacts, setSubject, updateTitle) {
-    let threadList = new ThreadList();
+  constructor(threads, autoStartTimer, timeout, allowedReplyLength, contacts, setSubject, updateTitle, queuedLabelData) {
+    let threadList = new ThreadList(queuedLabelData);
     super(threadList, allowedReplyLength, contacts, setSubject, updateTitle);
     this.style.display = 'block';
 

@@ -1,12 +1,6 @@
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
-const MONTHLY = 'Monthly';
-const DAILY = 'Daily';
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-let ARCHIVE_KEYWORD = 'archive';
-
 class MailProcessor {
   constructor(settings, pushThread, queuedLabelMap, allLabels) {
     this.settings = settings;
@@ -78,7 +72,7 @@ class MailProcessor {
   }
 
   addLabelPrefix(labelName) {
-    if (this.queuedLabelMap_[labelName])
+    if (this.queuedLabelMap_.get(labelName).queue != MailProcessor.IMMEDIATE)
       return Labels.addQueuedPrefix(labelName);
     return this.addAutoPrefix(labelName);
   }
@@ -176,17 +170,17 @@ class MailProcessor {
       var labelCounts = JSON.parse(rows[i][3]);
       for (var label in labelCounts) {
         var count = labelCounts[label];
-        if (label == ARCHIVE_KEYWORD) {
+        if (label == Labels.ARCHIVE_LABEL) {
           stats.ignoredThreads += count;
         } else {
           stats.nonIgnoredThreads += count;
 
-          var queuedPrefix = this.queuedLabelMap_[label] && this.queuedLabelMap_[label].queue;
-          if (!queuedPrefix) {
+          let queueData = this.queuedLabelMap_.get(label);
+          if (queueData.queue == MailProcessor.IMMEDIATE) {
             stats.immediateCount += count;
-          } else if (queuedPrefix == "Daily") {
+          } else if (queueData.queue == MailProcessor.DAILY) {
             stats.dailyCount += count;
-          } else if (queuedPrefix == "Monthly") {
+          } else if (queueData.queue == MailProcessor.MONTHLY) {
             stats.monthlyCount += count;
           } else {
             // Assume all the other queues are weekly queues.
@@ -242,7 +236,7 @@ class MailProcessor {
     }
     // TODO: only need to do this once per thread.
     if (rule.subject) {
-      if (message.subject && !message.subject.toLowerCase().includes(rule.subject))
+      if (!message.subject || !message.subject.toLowerCase().includes(rule.subject))
         return false;
       matches = true;
     }
@@ -334,18 +328,18 @@ class MailProcessor {
         let alreadyHadLabel = false;
         let isAlreadyInInbox = thread.isInInbox();
 
-        if (labelName == ARCHIVE_KEYWORD) {
+        if (labelName == Labels.ARCHIVE_LABEL) {
           removeLabelIds.push('INBOX');
         } else {
           let prefixedLabelName;
 
           // Don't queue if already in the inbox or triaged.
           if (isAlreadyInInbox || currentTriagedLabel) {
-            let queueData = this.queuedLabelMap_[labelName];
-            if (queueData)
-              prefixedLabelName = this.dequeuedLabelName(queueData.queue, labelName);
-            else
+            let queueData = this.queuedLabelMap_.get(labelName);
+            if (queueData.queue == MailProcessor.IMMEDIATE)
               prefixedLabelName = this.addAutoPrefix(labelName);
+            else
+              prefixedLabelName = this.dequeuedLabelName(queueData.queue, labelName);
           } else {
             prefixedLabelName = this.addLabelPrefix(labelName);
           }
@@ -415,20 +409,17 @@ class MailProcessor {
   }
 
   async processSingleQueue(queue) {
-    let threadsProcessedCount = 0;
-    let labelNames = Object.keys(this.queuedLabelMap_);
-    let start = Date.now();
-    for (var i = 0; i < labelNames.length; i++) {
-      let labelName = labelNames[i];
-      if (this.queuedLabelMap_[labelName].queue == queue)
-        await this.dequeue(labelName, queue);
+    let queueDatas = this.queuedLabelMap_.entries();
+    for (let queueData of queueDatas) {
+      if (queueData[1].queue == queue)
+        await this.dequeue(queueData[0], queue);
     }
   }
 
   categoriesToDequeue(startTime, opt_endTime) {
     if (!startTime) {
-      let today = WEEKDAYS[new Date().getDay()];
-      return [today, DAILY];
+      let today = MailProcessor.WEEKDAYS[new Date().getDay()];
+      return [today, MailProcessor.DAILY];
     }
 
     let start = Number(startTime);
@@ -438,9 +429,9 @@ class MailProcessor {
     var diffDays = (end - start) / (oneDay);
 
     if (diffDays >= 30)
-      return WEEKDAYS.concat([DAILY, MONTHLY]);
+      return MailProcessor.WEEKDAYS.concat([MailProcessor.DAILY, MailProcessor.MONTHLY]);
     if (diffDays >= 7)
-      return WEEKDAYS.concat([DAILY]);
+      return MailProcessor.WEEKDAYS.concat([MailProcessor.DAILY]);
 
     let startDate = new Date(start);
     let endDate = new Date(end);
@@ -454,16 +445,16 @@ class MailProcessor {
     let days = [];
 
     while (true) {
-      var modded = ++startDay % WEEKDAYS.length;
-      days.push(WEEKDAYS[modded]);
+      var modded = ++startDay % MailProcessor.WEEKDAYS.length;
+      days.push(MailProcessor.WEEKDAYS[modded]);
       if (modded == endDay)
         break;
     }
 
-    days.push(DAILY);
+    days.push(MailProcessor.DAILY);
 
     if (startDate.getMonth() < endDate.getMonth())
-      days.push(MONTHLY);
+      days.push(MailProcessor.MONTHLY);
 
     return days;
   }
@@ -485,3 +476,10 @@ class MailProcessor {
   }
 
 }
+
+// TODO: This isn't really the righe place for these.
+MailProcessor.MONTHLY = 'Monthly';
+MailProcessor.WEEKLY = 'Weekly';
+MailProcessor.DAILY = 'Daily';
+MailProcessor.IMMEDIATE = 'Immediate';
+MailProcessor.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
