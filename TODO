@@ -5,6 +5,7 @@ Wicked witch mode:
 - Count not shown by doing a search without the date and a search with the date and counting the diff.
 
 P1: Will try to do soonish.
+- Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
 - Stop prefixing daily/weekly/monthly in the label name.
 - Do processing even if there are no filter rules
 - Merge priotization into the viewone mode instead of needsaction

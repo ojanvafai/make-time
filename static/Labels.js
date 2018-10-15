@@ -184,6 +184,10 @@ Labels.removePriorityPrefix = (labelName) => {
   return Labels.removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
 }
 
+Labels.addBankruptPrefix = (labelName) => {
+  return Labels.BANKRUPT_LABEL + "/" + labelName;
+}
+
 // TODO: This should be uppercase to match gmail.
 Labels.INBOX_LABEL = 'inbox';
 Labels.MAKE_TIME_PREFIX = 'maketime';
@@ -200,16 +204,15 @@ QUEUE_ORDER[Labels.DAILY_QUEUE_PREFIX] = 1;
 QUEUE_ORDER[Labels.WEEKLY_QUEUE_PREFIX] = 2;
 QUEUE_ORDER[Labels.MONTHLY_QUEUE_PREFIX] = 3;
 
-Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
 Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
 Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
 Labels.QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
 Labels.PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
-
 Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
+
+Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
 Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
 Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
-
 Labels.BLOCKED_LABEL = Labels.addQueuedPrefix(Labels.BLOCKED_SUFFIX);
 
 Labels.MUST_DO_LABEL = Labels.addPriorityPrefix('must-do');
