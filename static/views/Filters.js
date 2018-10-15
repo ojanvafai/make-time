@@ -215,7 +215,7 @@ class FiltersView extends HTMLElement {
     let checkbox = document.createElement('input');
     checkbox.classList.add(className);
     checkbox.type = 'checkbox';
-    checkbox.checked = value == 'yes' || value == 'TRUE';
+    checkbox.checked = value == 'yes' || value == 'true';
     let cell = this.appendCell_(container, checkbox);
     cell.style.textAlign = 'center';
   }
