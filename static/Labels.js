@@ -211,6 +211,7 @@ Labels.PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
 Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
 
 Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
+Labels.PROCESSED_ARCHIVE_LABEL = Labels.addMakeTimePrefix(Labels.ARCHIVE_LABEL);
 Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
 Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
 Labels.BLOCKED_LABEL = Labels.addQueuedPrefix(Labels.BLOCKED_SUFFIX);

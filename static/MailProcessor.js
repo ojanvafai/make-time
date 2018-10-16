@@ -329,6 +329,7 @@ class MailProcessor {
         let isAlreadyInInbox = thread.isInInbox();
 
         if (labelName == Labels.ARCHIVE_LABEL) {
+          addLabelIds.push(await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
           removeLabelIds.push('INBOX');
         } else {
           let prefixedLabelName;

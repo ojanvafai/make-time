@@ -94,7 +94,9 @@ class Triaged extends AbstractVueue {
     this.threads_.setTriaged([]);
 
     let labels = await this.allLabels_.getTheadCountForLabels((labelName) => {
-      return labelName != Labels.MUTED_LABEL && labelName.startsWith(Labels.TRIAGED_LABEL + '/');
+      return labelName != Labels.MUTED_LABEL &&
+          !labelName.startsWith(Labels.BANKRUPT_LABEL) &&
+          labelName.startsWith(Labels.TRIAGED_LABEL + '/');
     });
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
 

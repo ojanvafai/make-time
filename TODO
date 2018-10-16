@@ -1,3 +1,5 @@
+https://github.com/ojanvafai/make-time/issues
+
 Wicked witch mode:
 - default value of 7
 - Show in Triaged the count of threads that are not being shown and an option to load them (for this session?)
@@ -5,7 +7,9 @@ Wicked witch mode:
 - Count not shown by doing a search without the date and a search with the date and counting the diff.
 
 P1: Will try to do soonish.
+- Change best effort queues to show by default...make it just be a bankruptcy feature? Or make it easier to start processing best effort threads.
 - Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
+- Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
 - Stop prefixing daily/weekly/monthly in the label name.
 - Do processing even if there are no filter rules
 - Merge priotization into the viewone mode instead of needsaction
