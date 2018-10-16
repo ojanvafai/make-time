@@ -11,7 +11,6 @@ P1: Will try to do soonish.
 - Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
 - Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
 - Stop prefixing daily/weekly/monthly in the label name.
-- Do processing even if there are no filter rules
 - Merge priotization into the viewone mode instead of needsaction
 - archiving final thread in viewone on slow connection, shows the Triaged toolbar, but doesnt' clear out the messages panel while it's waiting for the triaged list so it looks broken.
 - Race condition with archiving too fast leaves the old thread around forever. maybe? Something crazy happens on slow connections.

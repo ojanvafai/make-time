@@ -299,11 +299,6 @@ class MailProcessor {
     let startTime = new Date();
     let rulesSheet = await this.settings.getFilters();
 
-    // Don't do any processing if there are no rules. This happens when someone
-    // creates a new backend spreadsheet for example.
-    if (!rulesSheet.rules.length)
-      return;
-
     let newlyLabeledThreadsCount = 0;
     let perLabelCounts = {};
 
