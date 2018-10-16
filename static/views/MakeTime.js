@@ -19,6 +19,10 @@ class MakeTime extends AbstractSingleThreadView {
     this.renderNext();
   }
 
+  async dispatchShortcut(e) {
+    this.actions_.dispatchShortcut(e);
+  };
+
   onSend_(opt_archive) {
     // Hackity hack. Check that it's actually true and not truthy because
     // sometimes opt_archive is a click event and we don't want to archive there.
