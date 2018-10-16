@@ -59,6 +59,10 @@ class Thread {
   }
 
   async modify(addLabelIds, removeLabelIds) {
+    // Make sure that any added labels are not also removed. 
+    // Gmail API will fail if you try to add and remove the same label.
+    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item));
+
     let request = {
       'userId': USER_ID,
       'id': this.id,
