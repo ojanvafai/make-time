@@ -94,9 +94,7 @@ class Triaged extends AbstractVueue {
     this.threads_.setTriaged([]);
 
     let labels = await this.allLabels_.getTheadCountForLabels((labelName) => {
-      return labelName != Labels.MUTED_LABEL &&
-          !labelName.startsWith(Labels.BANKRUPT_LABEL) &&
-          labelName.startsWith(Labels.TRIAGED_LABEL + '/');
+      return labelName.startsWith(Labels.PRIORITY_LABEL + '/');
     });
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
 
@@ -107,6 +105,13 @@ class Triaged extends AbstractVueue {
         includeTriaged: true,
       });
     }
+
+    // Fetch latent unprioritized actionitem threads.
+    // TODO: Remove this once we've fully removed actionitem as a concept.
+    await fetchThreads(this.addThread.bind(this), {
+      query: `in:${Labels.ACTION_ITEM_LABEL} -(in:${labels_.getPriorityLabelNames().join(' OR in:')})`,
+      includeTriaged: true,
+    });
   }
 
   async getDisplayableQueue(thread) {

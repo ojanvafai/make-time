@@ -81,7 +81,6 @@ class Actions extends HTMLElement {
     Actions.BLOCKED_ACTION.destination = Labels.BLOCKED_LABEL;
     Actions.SPAM_ACTION.destination = 'SPAM';
     Actions.MUTE_ACTION.destination = Labels.MUTED_LABEL;
-    Actions.NEEDS_ACTION_ACTION.destination = Labels.ACTION_ITEM_LABEL;
 
     Actions.MUST_DO_ACTION.destination = Labels.MUST_DO_LABEL;
     Actions.URGENT_ACTION.destination = Labels.URGENT_LABEL;
@@ -151,11 +150,6 @@ Actions.SPAM_ACTION = {
 Actions.MUTE_ACTION = {
   name: `Mute`,
   description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
-};
-
-Actions.NEEDS_ACTION_ACTION = {
-  name: `Needs Action`,
-  description: `Needs some action taken other than an email reply. Goes in triaged/actionitem label.`,
 };
 
 Actions.UNDO_ACTION = {

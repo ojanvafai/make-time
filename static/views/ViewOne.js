@@ -270,7 +270,10 @@ ViewOne.ACTIONS_ = [
   Actions.QUICK_REPLY_ACTION,
   Actions.BLOCKED_ACTION,
   Actions.MUTE_ACTION,
-  Actions.NEEDS_ACTION_ACTION,
+  Actions.MUST_DO_ACTION,
+  Actions.URGENT_ACTION,
+  Actions.NOT_URGENT_ACTION,
+  Actions.DELEGATE_ACTION,
   Actions.UNDO_ACTION,
   Actions.DONE_ACTION,
 ];

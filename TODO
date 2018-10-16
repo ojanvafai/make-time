@@ -1,3 +1,6 @@
+- Merge viewone/viewall into one mode with a toggle
+- Merge Triaged/MakeTime into one mode with a toggle as well and allow for reprioritizing from the MakeTime view
+
 https://github.com/ojanvafai/make-time/issues
 
 Wicked witch mode:
@@ -7,11 +10,10 @@ Wicked witch mode:
 - Count not shown by doing a search without the date and a search with the date and counting the diff.
 
 P1: Will try to do soonish.
+- Stop prefixing daily/weekly/monthly in the label name.
 - Change best effort queues to show by default...make it just be a bankruptcy feature? Or make it easier to start processing best effort threads.
 - Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
 - Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
-- Stop prefixing daily/weekly/monthly in the label name.
-- Merge priotization into the viewone mode instead of needsaction
 - archiving final thread in viewone on slow connection, shows the Triaged toolbar, but doesnt' clear out the messages panel while it's waiting for the triaged list so it looks broken.
 - Race condition with archiving too fast leaves the old thread around forever. maybe? Something crazy happens on slow connections.
 - Make header:foo the only syntax for rules with a bit of special casing for email rules to handle foo+bar@ syntax.
