@@ -251,11 +251,12 @@ async function isBankrupt(thread) {
   let messages = await thread.getMessages();
   let date = messages[messages.length - 1].date;
   let queue = await thread.getQueue();
+  let queueData = getQueuedLabelMap().get(queue);
 
   let numDays = 7;
-  if (queue.includes('/' + Labels.WEEKLY_QUEUE_PREFIX + '/'))
+  if (queueData.queue == MailProcessor.WEEKLY)
     numDays = 14;
-  else if (queue.includes('/' + Labels.MONTHLY_QUEUE_PREFIX + '/'))
+  else if (queueData.queue == MailProcessor.MONTHLY)
     numDays = 42;
 
   let oneDay = 24 * 60 * 60 * 1000;

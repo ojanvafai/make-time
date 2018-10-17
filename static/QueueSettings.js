@@ -56,10 +56,6 @@ class QueueSettings {
     let entries = [];
     for (let label of labels) {
       let suffix = Labels.removeNeedsTriagePrefix(label);
-      suffix = Labels.removeLabelPrefix(suffix, Labels.DAILY_QUEUE_PREFIX);
-      suffix = Labels.removeLabelPrefix(suffix, Labels.WEEKLY_QUEUE_PREFIX);
-      suffix = Labels.removeLabelPrefix(suffix, Labels.MONTHLY_QUEUE_PREFIX);
-
       let data = this.map_[suffix] || this.queueData_();
       entries.push([label, data]);
     }

@@ -195,15 +195,6 @@ Labels.FALLBACK_LABEL = 'needsfilter';
 Labels.ARCHIVE_LABEL = 'archive';
 Labels.BLOCKED_SUFFIX = 'blocked';
 
-Labels.DAILY_QUEUE_PREFIX = 'daily';
-Labels.WEEKLY_QUEUE_PREFIX = 'weekly';
-Labels.MONTHLY_QUEUE_PREFIX = 'monthly';
-
-let QUEUE_ORDER = {};
-QUEUE_ORDER[Labels.DAILY_QUEUE_PREFIX] = 1;
-QUEUE_ORDER[Labels.WEEKLY_QUEUE_PREFIX] = 2;
-QUEUE_ORDER[Labels.MONTHLY_QUEUE_PREFIX] = 3;
-
 Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
 Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
 Labels.QUEUED_LABEL = Labels.addMakeTimePrefix('queued');

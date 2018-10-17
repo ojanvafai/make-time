@@ -7,18 +7,6 @@ class MailProcessor {
     this.pushThread_ = pushThread;
     this.queuedLabelMap_ = queuedLabelMap;
     this.allLabels_ = allLabels;
-
-    this.queuePrefixMap_ = {
-      Daily: Labels.DAILY_QUEUE_PREFIX,
-      Monthly: Labels.MONTHLY_QUEUE_PREFIX,
-      Monday: Labels.WEEKLY_QUEUE_PREFIX,
-      Tuesday: Labels.WEEKLY_QUEUE_PREFIX,
-      Wednesday: Labels.WEEKLY_QUEUE_PREFIX,
-      Thursday: Labels.WEEKLY_QUEUE_PREFIX,
-      Friday: Labels.WEEKLY_QUEUE_PREFIX,
-      Saturday: Labels.WEEKLY_QUEUE_PREFIX,
-      Sunday: Labels.WEEKLY_QUEUE_PREFIX,
-    };
   }
 
   endsWithAddress(addresses, filterAddress) {
@@ -79,12 +67,6 @@ class MailProcessor {
 
   addAutoPrefix(labelName) {
     return Labels.NEEDS_TRIAGE_LABEL + "/" + labelName;
-  }
-
-  dequeuedLabelName(queue, labelName) {
-    if (!this.queuePrefixMap_[queue])
-      throw `Attempting to put label in a non-existant queue. queue: ${queue}, label: ${labelName}`;
-    return this.addAutoPrefix(this.queuePrefixMap_[queue] + '/' + labelName);
   }
 
   async writeToStatsPage(timestamp, num_threads_processed, per_label_counts, time_taken) {
@@ -331,11 +313,7 @@ class MailProcessor {
 
           // Don't queue if already in the inbox or triaged.
           if (isAlreadyInInbox || currentTriagedLabel) {
-            let queueData = this.queuedLabelMap_.get(labelName);
-            if (queueData.queue == MailProcessor.IMMEDIATE)
-              prefixedLabelName = this.addAutoPrefix(labelName);
-            else
-              prefixedLabelName = this.dequeuedLabelName(queueData.queue, labelName);
+            prefixedLabelName = this.addAutoPrefix(labelName);
           } else {
             prefixedLabelName = this.addLabelPrefix(labelName);
           }
@@ -382,7 +360,7 @@ class MailProcessor {
   async dequeue(labelName, queue) {
     var queuedLabelName = Labels.addQueuedPrefix(labelName);
     var queuedLabel = await this.allLabels_.getId(queuedLabelName);
-    var autoLabel = await this.allLabels_.getId(this.dequeuedLabelName(queue, labelName));
+    var autoLabel = await this.allLabels_.getId(this.addAutoPrefix(labelName));
 
     let threads = [];
     await fetchThreads(thread => threads.push(thread), {
