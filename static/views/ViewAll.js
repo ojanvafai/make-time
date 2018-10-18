@@ -1,6 +1,6 @@
 class ViewAll extends AbstractVueue {
   constructor(threads, updateTitleDelegate) {
-    super(ViewAll.ACTIONS_, updateTitleDelegate);
+    super(ViewAll.ACTIONS_, updateTitleDelegate, ViewAll.OVERFLOW_ACTIONS_);
     this.style.display = 'block';
     this.threads_ = threads;
     this.init_();
@@ -40,6 +40,10 @@ class ViewAll extends AbstractVueue {
       await router.run('/viewone');
       return;
     }
+    if (action == Actions.UNDO_ACTION) {
+      this.undoLastAction_();
+      return;
+    }
     await this.markTriaged_(action.destination);
   }
 
@@ -64,12 +68,41 @@ class ViewAll extends AbstractVueue {
 
     await this.processQueuedActions();
   }
+
+  async undoLastAction_() {
+    if (!this.undoableActions_ || !this.undoableActions_.length) {
+      new ErrorDialog('Nothing left to undo.');
+      return;
+    }
+
+    let actions = this.undoableActions_;
+    this.undoableActions_ = null;
+
+    for (let i = 0; i < actions.length; i++) {
+      let action = actions[i];
+      this.updateTitle_('undoLastAction_', `Undoing ${i+1}/${actions.length}...`);
+      await this.threads_.pushNeedsTriage(action.thread);
+      await action.thread.modify(action.removed, action.added);
+    }
+
+    this.updateTitle_('undoLastAction_');
+  }
+
 }
 window.customElements.define('mt-view-all', ViewAll);
 
 ViewAll.ACTIONS_ = [
   Actions.ARCHIVE_ACTION,
+  Actions.BLOCKED_ACTION,
   Actions.MUTE_ACTION,
-  Actions.SPAM_ACTION,
+  Actions.MUST_DO_ACTION,
+  Actions.URGENT_ACTION,
+  Actions.NOT_URGENT_ACTION,
+  Actions.DELEGATE_ACTION,
+  Actions.UNDO_ACTION,
   Actions.VIEW_ALL_DONE_ACTION,
+];
+
+ViewAll.OVERFLOW_ACTIONS_ = [
+  Actions.SPAM_ACTION,
 ];

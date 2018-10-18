@@ -1,5 +1,5 @@
 class AbstractVueue extends HTMLElement {
-  constructor(actions, updateTitleDelegate) {
+  constructor(actions, updateTitleDelegate, opt_overflowActions) {
     super();
     this.updateTitle_ = updateTitleDelegate;
 
@@ -15,7 +15,7 @@ class AbstractVueue extends HTMLElement {
 
     let footer = document.getElementById('footer');
     footer.textContent = '';
-    this.actions_ = new Actions(this, actions);
+    this.actions_ = new Actions(this, actions, opt_overflowActions);
     footer.append(this.actions_);
   }
 
@@ -125,17 +125,19 @@ class AbstractVueue extends HTMLElement {
     if (!this.queuedTriageActions_.length)
       return;
 
+    this.undoableActions_ = [];
+
     this.updateTitle_('archiving', `Archiving ${this.queuedTriageActions_.length} threads...`);
     let item;
     while (item = this.queuedTriageActions_.pop()) {
       this.updateTitle_('archiving', `Archiving ${this.queuedTriageActions_.length + 1} threads...`);
       let thread = item.row.thread;
       if (item.isSetPriority) {
-        await thread.setPriority(item.destination);
+        this.undoableActions_.push(await thread.setPriority(item.destination));
         await this.addThread(thread);
       } else {
         let queue = await this.getQueue(thread);
-        await thread.markTriaged(item.destination, queue);
+        this.undoableActions_.push(await thread.markTriaged(item.destination, queue));
       }
     }
     this.updateTitle_('archiving');
