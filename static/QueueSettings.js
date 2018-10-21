@@ -24,8 +24,8 @@ class QueueSettings {
     this.populateMap_(newData);
   }
 
-  get(label) {
-    return this.map_[label.toLowerCase()] || this.queueData_();;
+  get(labelSuffix) {
+    return this.map_[labelSuffix.toLowerCase()] || this.queueData_();;
   }
 
   queueComparator_(a, b) {
@@ -48,16 +48,25 @@ class QueueSettings {
     return {
       queue: opt_queue || MailProcessor.IMMEDIATE,
       goal: opt_goal || QueuesView.goals_[0],
-      index: opt_index || 1,
+      // For unknown queues, put them first.
+      index: opt_index || 0,
     }
+  }
+
+  queueEntry_(label) {
+    let suffix = Labels.removeNeedsTriagePrefix(label);
+    let data = this.get(suffix);
+    return [label, data];
+  }
+
+  queueNameComparator(a, b) {
+    return this.queueComparator_(this.queueEntry_(a), this.queueEntry_(b));
   }
 
   getSorted(labels) {
     let entries = [];
     for (let label of labels) {
-      let suffix = Labels.removeNeedsTriagePrefix(label);
-      let data = this.map_[suffix] || this.queueData_();
-      entries.push([label, data]);
+      entries.push(this.queueEntry_(label));
     }
     return entries.sort(this.queueComparator_);
   }

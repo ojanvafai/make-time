@@ -1,14 +1,14 @@
 class ViewAll extends AbstractVueue {
-  constructor(threads, updateTitleDelegate) {
-    super(ViewAll.ACTIONS_, updateTitleDelegate, ViewAll.OVERFLOW_ACTIONS_);
+  constructor(threads, queueSettings, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
+    super(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, ViewAll.ACTIONS_, ViewAll.RENDER_ONE_ACTIONS_, ViewAll.OVERFLOW_ACTIONS_);
     this.style.display = 'block';
     this.threads_ = threads;
+    this.queueSettings_ = queueSettings;
     this.init_();
   }
 
   async finishedInitialLoad() {
-    if (!this.rowGroupCount())
-      await router.run('/triaged');
+    await this.handleNoThreadsLeft();
   }
 
   async init_() {
@@ -17,34 +17,21 @@ class ViewAll extends AbstractVueue {
     }
   }
 
+  tearDown() {
+    this.threads_.setNeedsTriage(this.getThreads().allThreads);
+    super.tearDown();
+  }
+
   pushNeedsTriage(thread) {
     this.addThread(thread);
   }
 
-  async tearDown() {
-    // This can get called twice during teardown if /viewone redirects to
-    // /triaged since the setView call won't have finished at that point because
-    // promises run at microtask time. Blargh.
-    if (this.isTearingDown_)
-      return;
-
-    this.isTearingDown_ = true;
-    this.threads_.setNeedsTriage(this.getThreads().unselectedThreads);
-    // Intentionaly don't await this since we want to archive threads in parallel
-    // with showing the next triage phase.
-    this.markTriaged_(Actions.VIEW_ALL_DONE_ACTION.destination);
+  async handleTriageAction(action) {
+    await this.markTriaged(action.destination);
   }
 
-  async takeAction(action) {
-    if (action == Actions.VIEW_ALL_DONE_ACTION) {
-      await router.run('/viewone');
-      return;
-    }
-    if (action == Actions.UNDO_ACTION) {
-      this.undoLastAction_();
-      return;
-    }
-    await this.markTriaged_(action.destination);
+  compareRowGroups(a, b) {
+    return this.queueSettings_.queueNameComparator(a.queue, b.queue);
   }
 
   async getDisplayableQueue(thread) {
@@ -55,39 +42,10 @@ class ViewAll extends AbstractVueue {
     return thread.getQueue();
   }
 
-  async markTriaged_(destination) {
-    let threads = this.getThreads();
-    // Update the UI first and then archive one at a time.
-    await this.queueTriageActions(threads.selectedRows, destination);
-
-    // If nothing left to triage, move to the triaged view and then triage the
-    // threads async.
-    // TODO: Make sure triaged view gets the threads triaged in processQueuedActions_ below.
-    if (!this.isTearingDown_ && !threads.unselectedThreads.length)
+  async handleNoThreadsLeft() {
+    if (!this.rowGroupCount())
       await router.run('/triaged');
-
-    await this.processQueuedActions();
   }
-
-  async undoLastAction_() {
-    if (!this.undoableActions_ || !this.undoableActions_.length) {
-      new ErrorDialog('Nothing left to undo.');
-      return;
-    }
-
-    let actions = this.undoableActions_;
-    this.undoableActions_ = null;
-
-    for (let i = 0; i < actions.length; i++) {
-      let action = actions[i];
-      this.updateTitle_('undoLastAction_', `Undoing ${i+1}/${actions.length}...`);
-      await this.threads_.pushNeedsTriage(action.thread);
-      await action.thread.modify(action.removed, action.added);
-    }
-
-    this.updateTitle_('undoLastAction_');
-  }
-
 }
 window.customElements.define('mt-view-all', ViewAll);
 
@@ -100,8 +58,9 @@ ViewAll.ACTIONS_ = [
   Actions.NOT_URGENT_ACTION,
   Actions.DELEGATE_ACTION,
   Actions.UNDO_ACTION,
-  Actions.VIEW_ALL_DONE_ACTION,
 ];
+
+ViewAll.RENDER_ONE_ACTIONS_ = [Actions.QUICK_REPLY_ACTION].concat(ViewAll.ACTIONS_);
 
 ViewAll.OVERFLOW_ACTIONS_ = [
   Actions.SPAM_ACTION,

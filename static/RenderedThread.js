@@ -1,7 +1,9 @@
 class RenderedThread {
   constructor(thread) {
     this.thread = thread;
-    this.rendered = null;
+    thread.rendered = this;
+
+    this.dom_ = null;
     this.queued_ = [];
   }
 
@@ -16,41 +18,52 @@ class RenderedThread {
     this.queued_ = [];
   }
 
-  async render(forceRerender) {
+  remove() {
+    this.dom_.remove();
+  }
+
+  async update() {
+    let messages = await this.thread.updateMessageDetails();
+    this.appendMessages_(messages);
+  }
+
+  appendMessages_(messages) {
+    for (var message of messages) {
+      this.dom_.append(this.renderMessage_(message));
+    }
+  }
+
+  async render(newContainer) {
     // If we're in the middle of rendering this thread, then queue up rendering requests
     // to be processed when we finish instead of kicking off another set of network requests
     // to render this thread.
     if (this.isRendering_) {
       await this.queueTillRendered_();
-      return this.rendered;
+      return this.dom_;
     }
-
-    if (!forceRerender && this.rendered)
-      return this.rendered;
 
     this.isRendering_ = true;
 
-    // Force update the list of messages in case any new messages have come in
-    // since we first processed this thread.
-    await this.thread.updateMessageDetails();
-    let messages = await this.thread.getMessages();
-
-    this.rendered = document.createElement('div');
-    this.rendered.style.cssText = `
-      background-color: white;
-      position: absolute;
-      left: 0;
-      right: 0;
-      max-width: 1000px;
-    `;
-
-    for (var message of messages) {
-      this.rendered.append(this.renderMessage_(message));
+    if (!this.dom_) {
+      this.dom_ = document.createElement('div');
+      this.dom_.style.cssText = `
+        background-color: white;
+        position: absolute;
+        left: 0;
+        right: 0;
+        max-width: 1000px;
+      `;
     }
+
+    if (this.dom_.parentNode != newContainer)
+      newContainer.append(this.dom_);
+
+    let messages = await this.thread.getMessages();
+    this.appendMessages_(messages);
 
     this.isRendering_ = false;
     this.processRenderingQueue_();
-    return this.rendered;
+    return this.dom_;
   }
 
   renderMessage_(processedMessage) {

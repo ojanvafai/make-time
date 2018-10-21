@@ -48,18 +48,20 @@ class Thread {
     this.processLabels_(messages);
     if (!this.processedMessages_)
       this.processedMessages_ = [];
-    let hasNewMessages = this.processedMessages_.length != messages.length;
+    let newMessages = messages.splice(this.processedMessages_.length);
     // Only process new messages.
-    for (let i = this.processedMessages_.length; i < messages.length; i++) {
-      let message = messages[i];
+    let newProcessedMessages = [];
+    for (let message of newMessages) {
       let previousMessage = this.processedMessages_.length && this.processedMessages_[this.processedMessages_.length - 1];
-      this.processedMessages_.push(new Message(message, previousMessage));
+      let processed = new Message(message, previousMessage);
+      this.processedMessages_.push(processed);
+      newProcessedMessages.push(processed);
     }
-    return hasNewMessages;
+    return newProcessedMessages;
   }
 
   async modify(addLabelIds, removeLabelIds) {
-    // Make sure that any added labels are not also removed. 
+    // Make sure that any added labels are not also removed.
     // Gmail API will fail if you try to add and remove the same label.
     removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item));
 
@@ -200,6 +202,48 @@ class Thread {
     if (this.processedMessages_)
       return;
     return await this.updateMessageDetails();
+  }
+
+  async sendReply(replyText, extraEmails, shouldReplyAll) {
+    let messages = await this.getMessages();
+    let lastMessage = messages[messages.length - 1];
+
+    // Gmail will remove dupes for us.
+    let to = lastMessage.from
+    if (shouldReplyAll)
+      to += ',' + lastMessage.to;
+
+    if (extraEmails.length)
+      to += ',' + extraEmails.join(',');
+
+    let subject = lastMessage.subject;
+    let replyPrefix = 'Re: ';
+    if (subject && !subject.startsWith(replyPrefix))
+      subject = replyPrefix + subject;
+
+    let email = `Subject: ${subject}
+In-Reply-To: ${lastMessage.messageId}
+To: ${to}
+Content-Type: text/html; charset="UTF-8"
+`;
+
+    if (shouldReplyAll && lastMessage.cc)
+      email += `Cc: ${lastMessage.cc}\n`;
+
+    email += `
+  ${replyText}<br><br>${lastMessage.from} wrote:<br>
+  <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
+    ${lastMessage.getHtmlOrPlain()}
+  </blockquote>`;
+
+    let base64 = new Base64();
+    let response = await gapiFetch(gapi.client.gmail.users.messages.send, {
+      'userId': USER_ID,
+      'resource': {
+        'raw': base64.encode(email),
+        'threadId': this.id,
+      }
+    });
   }
 }
 

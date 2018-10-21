@@ -1,14 +1,16 @@
 class ThreadRow extends HTMLElement {
   constructor(thread) {
     super();
-    this.style.display = 'block';
+    this.style.display = 'flex';
 
     this.thread_ = thread;
 
     let label = document.createElement('label');
     label.style.cssText = `
-      display: flex;
       line-height: 1;
+      border-right: 0;
+      display: flex;
+      align-items: center;
     `;
 
     this.checkBox_ = document.createElement('input');
@@ -18,6 +20,9 @@ class ThreadRow extends HTMLElement {
       margin-right: 5px;
     `;
     this.checkBox_.onchange = this.updateHighlight_.bind(this);
+
+    label.append(this.checkBox_);
+    this.append(label);
 
     this.updateHighlight_();
 
@@ -31,6 +36,7 @@ class ThreadRow extends HTMLElement {
         fromContainer.style.cssText = `
           width: 150px;
           margin-right: 25px;
+          padding-left: 5px;
           display: flex;
           align-items: baseline;
         `;
@@ -73,21 +79,31 @@ class ThreadRow extends HTMLElement {
         popoutButton.style.marginLeft = '4px';
         popoutButton.style.marginRight = '4px';
 
+        let row = document.createElement('div');
+        row.style.cssText = `
+          display: flex;
+          overflow: hidden;
+        `;
+
+        row.onclick = () => {
+          this.dispatchEvent(new Event('renderThread', {bubbles: true}));
+        };
+
         if (window.innerWidth < 600) {
           let topRow = document.createElement('div');
           topRow.style.display = 'flex';
-          topRow.append(this.checkBox_, fromContainer, date, popoutButton);
-          label.append(topRow, title);
+          topRow.append(fromContainer, date, popoutButton);
+          row.append(topRow, title);
 
-          label.style.flexDirection = 'column';
+          row.style.flexDirection = 'column';
           fromContainer.style.flex = '1';
           title.style.fontSize = '12px';
           title.style.margin = '5px 5px 0 5px';
         } else {
-          label.append(this.checkBox_, fromContainer, title, date, popoutButton);
+          row.append(fromContainer, title, date, popoutButton);
         }
 
-        this.append(label);
+        this.append(row);
       });
     });
   }

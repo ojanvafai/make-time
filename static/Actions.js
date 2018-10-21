@@ -77,7 +77,6 @@ class Actions extends HTMLElement {
   setDestinations_() {
     // Done is removing all labels. Use null as a sentinel for that.
     Actions.ARCHIVE_ACTION.destination = null;
-    Actions.VIEW_ALL_DONE_ACTION.destination = null;
     Actions.BLOCKED_ACTION.destination = Labels.BLOCKED_LABEL;
     Actions.SPAM_ACTION.destination = 'SPAM';
     Actions.MUTE_ACTION.destination = Labels.MUTED_LABEL;
@@ -156,16 +155,6 @@ Actions.UNDO_ACTION = {
   name: `Undo`,
   description: `Undoes the last action taken.`,
 };
-
-Actions.DONE_ACTION = {
-  name: `Done`,
-  description: `Transition to next triage phase.`,
-}
-
-Actions.VIEW_ALL_DONE_ACTION = {
-  name: `Done and archive selected`,
-  description: `Archive the selected threads and transition to next triage phase.`,
-}
 
 Actions.MUST_DO_ACTION = {
   name: `1: Must Do`,

@@ -10,18 +10,6 @@ class ThreadGroups {
     this.listener_ = view;
   }
 
-  pushTriaged(thread) {
-    this.triaged_.push(thread);
-    if (this.listener_ && this.listener_.pushTriaged)
-      this.listener_.pushTriaged(thread);
-  }
-  getTriaged() {
-    return this.triaged_;
-  }
-  setTriaged(array) {
-    this.triaged_ = array;
-  }
-
   pushNeedsTriage(thread) {
     this.needsTriage_.push(thread);
     if (this.listener_ && this.listener_.pushNeedsTriage)

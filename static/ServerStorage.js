@@ -40,7 +40,6 @@ ServerStorage.KEYS = {
   TIMER_DURATION: 'timeout',
   AUTO_START_TIMER: 'auto_start_timer',
   ALLOWED_REPLY_LENGTH: 'allowed_reply_length',
-  VUEUE_IS_DEFAULT: 'vueue_is_default',
   DAYS_TO_SHOW: 'days_to_show',
 };
 

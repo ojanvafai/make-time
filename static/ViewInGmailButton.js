@@ -21,6 +21,7 @@ class ViewInGmailButton extends HTMLElement {
         throw 'Invalid message id';
       window.open(`https://mail.google.com/mail/#all/${this.messageId_}`);
       e.preventDefault();
+      e.stopPropagation();
     };
   }
 

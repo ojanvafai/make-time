@@ -24,25 +24,16 @@ let isProcessingMail_ = false;
 let threads_ = new ThreadGroups();
 
 var router = new PathParser();
-router.add('/viewone', async (foo) => {
-  if (currentView_)
-    await currentView_.tearDown();
-  await viewThreadAtATime();
-});
 router.add('/viewall', async (foo) => {
-  if (currentView_)
+  if (currentView_) {
     await currentView_.tearDown();
+  }
   await viewAll();
 });
 router.add('/triaged', async (foo) => {
   if (currentView_)
     await currentView_.tearDown();
   await viewTriaged();
-});
-router.add('/maketime', async (foo) => {
-  if (currentView_)
-    await currentView_.tearDown();
-  await viewMakeTime();
 });
 router.add('/besteffort', async (foo) => {
   if (currentView_)
@@ -107,29 +98,20 @@ function showDialog(contents) {
   return dialog;
 }
 
-async function viewThreadAtATime() {
-  let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
-  let timeout = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
-  let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ViewOne(threads_, autoStartTimer, timeout, allowedReplyLength, contacts_, setSubject, updateTitle, getQueuedLabelMap()));
-
-  // Ensure contacts are fetched.
-  await fetchContacts(gapi.auth.getToken());
-}
-
 async function viewAll() {
-  setView(new ViewAll(threads_, updateLoaderTitle));
+  let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
+  let timerDuration = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
+  let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+  setView(new ViewAll(threads_, getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
 async function viewTriaged() {
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
   let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new Triaged(threads_, labels_, vacation, updateLoaderTitle));
-}
-
-async function viewMakeTime() {
+  let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
+  let timerDuration = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new MakeTime(threads_, allowedReplyLength, contacts_, setSubject, updateTitle));
+  setView(new Triaged(threads_, labels_, vacation, updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
 function setView(view) {
@@ -221,6 +203,7 @@ async function fetchThreads(forEachThread, options) {
     let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
+      // TODO: Use an existing Thread if one already exists for this thread ID.
       let thread = new Thread(rawThread, labels_);
       if (options.queue)
         thread.setQueue(options.queue);
@@ -350,10 +333,8 @@ async function onLoad() {
 
   document.getElementById('drawer').append(
     menuTitle,
-    createMenuItem('1: View All', {href: '/viewall', nested: true}),
-    createMenuItem('2: View One', {href: '/viewone', nested: true}),
-    createMenuItem('3: Triaged', {href: '/triaged', nested: true}),
-    createMenuItem('4: MakeTime', {href: '/maketime', nested: true}),
+    createMenuItem('Triage', {href: '/viewall', nested: true}),
+    createMenuItem('MakeTime', {href: '/triaged', nested: true}),
     settingsButton,
     helpButton);
 
@@ -369,11 +350,7 @@ async function onLoad() {
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
   let queuesToFetch = getQueuedLabelMap().getSorted(labelsToFetch);
 
-  if (settings_.get(ServerStorage.KEYS.VUEUE_IS_DEFAULT))
-    await router.run('/viewall');
-  else
-    await router.run('/viewone');
-
+  await router.run('/viewall');
   await cleanupNeedsTriageThreads();
 
   // Put first threads that are in the inbox with no make-time labels. That way they always show up before
@@ -500,18 +477,6 @@ document.body.addEventListener('click', async (e) => {
       node.target = '_blank';
       node.rel = 'noopener';
     }
-  }
-});
-
-document.addEventListener('visibilitychange', (e) => {
-  if (!currentView_)
-    return;
-  if (document.visibilityState == 'hidden') {
-    if (currentView_.onHide)
-      currentView_.onHide();
-  } else {
-    if (currentView_.onShow)
-      currentView_.onShow();
   }
 });
 

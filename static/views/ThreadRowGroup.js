@@ -33,8 +33,11 @@ class ThreadRowGroup extends HTMLElement {
     return !!this.rowContainer_.children.length;
   }
 
-  push(row) {
-    this.rowContainer_.append(row);
+  push(row, opt_nextSibling) {
+    if (opt_nextSibling && opt_nextSibling.parentNode == this.rowContainer_)
+      opt_nextSibling.before(row);
+    else
+      this.rowContainer_.append(row);
   }
 
   createSelector_(textContent, callback) {

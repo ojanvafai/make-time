@@ -1,5 +1,9 @@
-- Merge viewone/viewall into one mode with a toggle
-- Merge Triaged/MakeTime into one mode with a toggle as well and allow for reprioritizing from the MakeTime view
+- Add Undo button to Triaged. Needs to correctly remove the item from it's queue and put it in the new queue.
+- Don't refetch triaged on every load of the Triaged view. Save the threads and just do an update.
+- If fetchThreads uses an in memory cache for threads, could we get rid of ThreadGroups? Need to avoid leaking memory indefinitly somehow though. Once there's an in memory cache, could back it by localStorage as well.
+- s/Triaged/MakeTime/, s/ViewAll/Triage/, s/AbstractVueue/AbstractThreadList/
+- Handle finish last thread in MakeTime (remove toolbar+timer, show a nice message?)
+- Remove besteffort button from triaged. Instead put it in ViewAll when the triage queue is empty.
 
 https://github.com/ojanvafai/make-time/issues
 
@@ -9,11 +13,15 @@ Wicked witch mode:
 - Count not shown by doing a search without the date and a search with the date and counting the diff.
 
 P1: Will try to do soonish.
+- Add manual sorting of triaged threads.
+- Make the timer in make-time mode count up from 0.
+- Give a more natural way to go back to threadlist from single thread (e.g. a back button)
+- Add Undo to Triaged/MakeTime view
+- Allow undo of the last item triaged (needs to undo, and send you back to ViewAll)
 - Change best effort queues to show by default...make it just be a bankruptcy feature? Or make it easier to start processing best effort threads.
 - auto delete needstriage labels that have no threads in them and have no filters that would cause that label to be created again as a way of not having a ton of cruft build up.
 - Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
 - Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
-- archiving final thread in viewone on slow connection, shows the Triaged toolbar, but doesnt' clear out the messages panel while it's waiting for the triaged list so it looks broken.
 - Race condition with archiving too fast leaves the old thread around forever. maybe? Something crazy happens on slow connections.
 - Make header:foo the only syntax for rules with a bit of special casing for email rules to handle foo+bar@ syntax.
 - Archive keyboard shortcut doesn't work in maketime view

@@ -1,10 +1,18 @@
 class AbstractVueue extends HTMLElement {
-  constructor(actions, updateTitleDelegate, opt_overflowActions) {
+  constructor(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
+
     this.updateTitle_ = updateTitleDelegate;
+    this.setSubject_ = setSubject;
+    this.allowedReplyLength_ = allowedReplyLength;
+    this.contacts_ = contacts;
+    this.autoStartTimer_ = autoStartTimer;
+    this.timerDuration_ = timerDuration;
+    this.viewAllActions_ = viewAllActions;
+    this.viewOneActions_ = viewOneActions;
+    this.overflowActions_ = opt_overflowActions;
 
     this.groupByQueue_ = {};
-    this.queuedTriageActions_ = [];
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -13,14 +21,47 @@ class AbstractVueue extends HTMLElement {
     `;
     this.append(this.rowGroupContainer_);
 
+    this.rowGroupContainer_.addEventListener('renderThread', (e) => {
+      this.renderOne_(e.target);
+    })
+
+    this.singleThreadContainer_ = document.createElement('div');
+    this.singleThreadContainer_.style.cssText = `
+      display: none;
+      position: relative;
+    `;
+    this.append(this.singleThreadContainer_);
+
+    this.updateActions_();
+  }
+
+  setFooter_(dom) {
     let footer = document.getElementById('footer');
     footer.textContent = '';
-    this.actions_ = new Actions(this, actions, opt_overflowActions);
+    this.actions_ = null;
+    footer.append(dom);
+  }
+
+  tearDown() {
+    this.tornDown_ = true;
+    this.setSubject_('');
+  }
+
+  updateActions_() {
+    let footer = document.getElementById('footer');
+    footer.textContent = '';
+    let actions = this.renderedRow_ ? this.viewOneActions_ : this.viewAllActions_;
+    this.actions_ = new Actions(this, actions, this.overflowActions_);
     footer.append(this.actions_);
+    if (this.renderedRow_) {
+      let timer = new Timer(this.autoStartTimer_,this.timerDuration_, this.singleThreadContainer_);
+      footer.append(timer);
+    }
   }
 
   async dispatchShortcut(e) {
-    this.actions_.dispatchShortcut(e);
+    if (this.actions_)
+      this.actions_.dispatchShortcut(e);
   };
 
   shouldSuppressActions() {
@@ -29,7 +70,7 @@ class AbstractVueue extends HTMLElement {
 
   sortGroups_() {
     let rowGroups = Array.prototype.slice.call(this.rowGroupContainer_.children);
-    rowGroups.sort(this.compareRowGroups);
+    rowGroups.sort(this.compareRowGroups.bind(this));
 
     for (var i = 0; i < rowGroups.length; i++) {
       let child = this.rowGroupContainer_.children[i];
@@ -39,40 +80,34 @@ class AbstractVueue extends HTMLElement {
     }
   }
 
-  async addThread(thread, opt_extraPaddingQueue) {
+  async addThread(thread, opt_nextSibling) {
+    if (this.tornDown_)
+      return;
+
     let queue = await this.getDisplayableQueue(thread);
     let rowGroup = this.groupByQueue_[queue];
     if (!rowGroup) {
       rowGroup = new ThreadRowGroup(queue);
-
-      if (queue == opt_extraPaddingQueue)
-        rowGroup.style.cssText = `padding-bottom: 50px;`;
-
       this.groupByQueue_[queue] = rowGroup;
       this.rowGroupContainer_.append(rowGroup);
       this.sortGroups_();
     }
 
     let row = new ThreadRow(thread);
-    rowGroup.push(row);
+    rowGroup.push(row, opt_nextSibling);
     return row;
   }
 
   getThreads() {
     let selected = [];
-    let unselected = [];
     let all = [];
     for (let child of this.rowGroupContainer_.querySelectorAll('mt-thread-row')) {
-      if (child.checked) {
+      if (child.checked)
         selected.push(child);
-      } else {
-        unselected.push(child.thread);
-      }
       all.push(child.thread);
     }
     return {
       selectedRows: selected,
-      unselectedThreads: unselected,
       allThreads: all,
     }
   }
@@ -107,39 +142,265 @@ class AbstractVueue extends HTMLElement {
     if (!rowGroup.hasRows()) {
       rowGroup.remove();
       delete this.groupByQueue_[queue];
+
+      if (this.handleNoThreadsLeft)
+        await this.handleNoThreadsLeft();
     }
   }
 
-  async queueTriageActions(rows, destination, opt_isSetPriority) {
-    for (let row of rows) {
-      await this.removeRow_(row);
-      this.queuedTriageActions_.push({
-        destination: destination,
-        row: row,
-        isSetPriority: opt_isSetPriority,
-      })
-    }
-  }
-
-  async processQueuedActions() {
-    if (!this.queuedTriageActions_.length)
+  async takeAction(action) {
+    if (action == Actions.UNDO_ACTION) {
+      this.undoLastAction_();
       return;
+    }
+    if (action == Actions.QUICK_REPLY_ACTION) {
+      this.showQuickReply();
+      return;
+    }
+    await this.handleTriageAction(action);
+  }
 
+  transitionToThreadList_() {
+    this.rowGroupContainer_.style.display = 'flex';
+    this.singleThreadContainer_.style.display = 'none';
+    this.undoableActions_ = [];
+    this.renderedRow_ = null;
+    this.setSubject_('');
+    this.updateActions_();
+  }
+
+  transitionToSingleThread_() {
+    this.rowGroupContainer_.style.display = 'none';
+    this.singleThreadContainer_.style.display = 'block';
+    this.undoableActions_ = [];
+  }
+
+  async markTriaged(destination, opt_isSetPriority) {
     this.undoableActions_ = [];
 
-    this.updateTitle_('archiving', `Archiving ${this.queuedTriageActions_.length} threads...`);
-    let item;
-    while (item = this.queuedTriageActions_.pop()) {
-      this.updateTitle_('archiving', `Archiving ${this.queuedTriageActions_.length + 1} threads...`);
-      let thread = item.row.thread;
-      if (item.isSetPriority) {
-        this.undoableActions_.push(await thread.setPriority(item.destination));
-        await this.addThread(thread);
-      } else {
-        let queue = await this.getQueue(thread);
-        this.undoableActions_.push(await thread.markTriaged(item.destination, queue));
+    let threads;
+    if (this.renderedRow_) {
+      let row = this.renderedRow_;
+
+      let nextRow = this.getNextRow(row);
+      await this.removeRow_(row);
+
+      if (nextRow)
+        await this.renderOne_(nextRow);
+      else
+        this.transitionToThreadList_();
+
+      this.markSingleThreadTriaged(row.thread, destination, opt_isSetPriority);
+    } else {
+      // Update the UI first and then archive one at a time.
+      let threads = this.getThreads();
+      for (let row of threads.selectedRows) {
+        await this.removeRow_(row);
       }
+
+      for (let i = 0; i < threads.selectedRows.length; i++) {
+        this.updateTitle_('archiving', `Archiving ${i + 1}/${threads.selectedRows.length} threads...`);
+        let row = threads.selectedRows[i];
+        await this.markSingleThreadTriaged(row.thread, destination, opt_isSetPriority);
+      }
+      this.updateTitle_('archiving');
     }
-    this.updateTitle_('archiving');
+  }
+
+  async markSingleThreadTriaged(thread, destination, opt_isSetPriority) {
+    if (opt_isSetPriority) {
+      this.undoableActions_.push(await thread.setPriority(destination));
+      await this.addThread(thread);
+    } else {
+      let queue = await this.getQueue(thread);
+      this.undoableActions_.push(await thread.markTriaged(destination, queue));
+    }
+  }
+
+  async undoLastAction_() {
+    if (!this.undoableActions_ || !this.undoableActions_.length) {
+      new ErrorDialog('Nothing left to undo.');
+      return;
+    }
+
+    let actions = this.undoableActions_;
+    this.undoableActions_ = null;
+
+    for (let i = 0; i < actions.length; i++) {
+      this.updateTitle_('undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
+
+      let action = actions[i];
+      await action.thread.modify(action.removed, action.added);
+      let row = await this.addThread(action.thread, this.renderedRow_);
+
+      if (this.renderedRow_)
+        this.renderOne_(row);
+    }
+
+    this.updateTitle_('undoLastAction_');
+  }
+
+  renderedThread_() {
+    return this.renderedRow_.thread.rendered;
+  }
+
+  async renderOne_(row) {
+    if (this.rowGroupContainer_.style.display != 'none')
+      this.transitionToSingleThread_();
+
+    if (this.renderedRow_)
+      this.renderedThread_().remove();
+
+    this.renderedRow_ = row;
+    if (!row.thread.rendered)
+      new RenderedThread(row.thread);
+
+    let messages = await row.thread.getMessages();
+    let viewInGmailButton = new ViewInGmailButton();
+    viewInGmailButton.setMessageId(messages[messages.length - 1].id);
+    viewInGmailButton.style.display = 'inline-flex';
+
+    let subject = await row.thread.getSubject();
+    let subjectText = document.createElement('div');
+    subjectText.style.flex = 1;
+    subjectText.append(subject, viewInGmailButton);
+
+    let queue = await this.getDisplayableQueue(row.thread);
+    this.setSubject_(subjectText, queue);
+
+    let dom = await this.renderedThread_().render(this.singleThreadContainer_);
+    // If previously prerendered offscreen, move it on screen.
+    dom.style.bottom = '';
+    dom.style.visibility = 'visible';
+
+    this.updateActions_();
+
+    var elementToScrollTo = document.querySelector('.unread') || dom.lastChild;
+    elementToScrollTo.scrollIntoView();
+    // Make sure that there's at least 50px of space above for showing that there's a
+    // previous message.
+    let y = elementToScrollTo.getBoundingClientRect().y;
+    if (y < 70)
+      document.documentElement.scrollTop -= 70 - y;
+
+    // Check if new messages have come in since we last fetched from the network.
+    await this.renderedThread_().update();
+
+    // Intentionally don't await this so other work can proceed.
+    this.prerenderNext();
+  }
+
+  async prerenderNext() {
+    let nextRow = this.getNextRow(this.renderedRow_);
+    if (!nextRow)
+      return;
+
+    let rendered = nextRow.thread.rendered || new RenderedThread(nextRow.thread);
+    let dom = await rendered.render(this.singleThreadContainer_);
+    dom.style.bottom = '0';
+    dom.style.visibility = 'hidden';
+  }
+
+  async updateCurrentThread() {
+    if (!this.renderedRow_)
+      return;
+    await this.renderedThread_().update();
+  }
+
+  showQuickReply() {
+    let container = document.createElement('div');
+    container.style.cssText = `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    `;
+
+    let compose = new Compose(this.contacts_);
+    compose.style.cssText = `
+      flex: 1;
+      margin: 4px;
+      display: flex;
+      background-color: white;
+    `;
+    compose.placeholder = 'Hit enter to send.';
+    container.append(compose);
+
+    let onClose = this.updateActions_.bind(this);
+
+    let cancel = document.createElement('button');
+    cancel.textContent = 'cancel';
+    cancel.onclick = onClose;
+    container.append(cancel);
+
+    compose.addEventListener('cancel', onClose);
+
+    let sideBar = document.createElement('div');
+    sideBar.style.cssText = `margin: 4px;`;
+
+    let replyAllLabel = document.createElement('label');
+    let replyAll = document.createElement('input');
+    replyAll.type = 'checkbox';
+    replyAll.checked = true;
+    replyAllLabel.append(replyAll, 'reply all');
+
+    let progressContainer = document.createElement('div');
+    progressContainer.style.cssText = `
+      display: flex;
+      align-items: center;
+    `;
+
+    let progress = document.createElement('progress');
+    progress.style.cssText = `
+      flex: 1;
+      width: 0;
+    `;
+    progress.max = this.allowedReplyLength_;
+    progress.value = 0;
+
+    let count = document.createElement('div');
+    count.style.cssText = `
+      margin: 4px;
+      color: red;
+    `;
+
+    progressContainer.append(count, progress);
+
+    sideBar.append(replyAllLabel, progressContainer);
+    container.append(sideBar);
+
+    compose.addEventListener('submit', async (e) => {
+      if (!compose.value.length)
+        return;
+
+      if (compose.value.length > this.allowedReplyLength_) {
+        new ErrorDialog(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
+        return;
+      }
+
+      if (this.isSending_)
+        return;
+      this.isSending_ = true;
+      this.updateTitle_('sendReply', 'Sending reply...');
+
+      // TODO: Handle if sending fails in such a way that the user can at least save their message text.
+      await this.renderedRow_.thread.sendReply_(compose.value, compose.getEmails(), replyAll.checked);
+      this.updateActions_();
+      await this.markTriaged(Actions.ARCHIVE_ACTION.destination, false);
+
+      this.updateTitle_('sendReply');
+      this.isSending_ = false;
+    })
+
+    compose.addEventListener('input', (e) => {
+      progress.value = compose.value.length;
+      let lengthDiff = this.allowedReplyLength_ - compose.value.length;
+      let exceedsLength = compose.value.length >= (this.allowedReplyLength_ - 10);
+      count.textContent = (lengthDiff < 10) ? lengthDiff : '';
+    });
+
+    this.setFooter_(container);
+
+    compose.focus();
   }
 }
