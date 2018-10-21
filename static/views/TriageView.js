@@ -1,6 +1,6 @@
-class ViewAll extends AbstractVueue {
+class TriageView extends AbstractThreadListView {
   constructor(threads, queueSettings, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
-    super(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, ViewAll.ACTIONS_, ViewAll.RENDER_ONE_ACTIONS_, ViewAll.OVERFLOW_ACTIONS_);
+    super(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
     this.style.display = 'block';
     this.threads_ = threads;
     this.queueSettings_ = queueSettings;
@@ -44,12 +44,12 @@ class ViewAll extends AbstractVueue {
 
   async handleNoThreadsLeft() {
     if (!this.rowGroupCount())
-      await router.run('/triaged');
+      await router.run('/make-time');
   }
 }
-window.customElements.define('mt-view-all', ViewAll);
+window.customElements.define('mt-triage-view', TriageView);
 
-ViewAll.ACTIONS_ = [
+TriageView.ACTIONS_ = [
   Actions.ARCHIVE_ACTION,
   Actions.BLOCKED_ACTION,
   Actions.MUTE_ACTION,
@@ -60,8 +60,8 @@ ViewAll.ACTIONS_ = [
   Actions.UNDO_ACTION,
 ];
 
-ViewAll.RENDER_ONE_ACTIONS_ = [Actions.QUICK_REPLY_ACTION].concat(ViewAll.ACTIONS_);
+TriageView.RENDER_ONE_ACTIONS_ = [Actions.QUICK_REPLY_ACTION].concat(TriageView.ACTIONS_);
 
-ViewAll.OVERFLOW_ACTIONS_ = [
+TriageView.OVERFLOW_ACTIONS_ = [
   Actions.SPAM_ACTION,
 ];

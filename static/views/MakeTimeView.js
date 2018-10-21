@@ -1,6 +1,6 @@
-class Triaged extends AbstractVueue {
+class MakeTimeView extends AbstractThreadListView {
   constructor(threads, allLabels, vacation, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
-    super(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, Triaged.ACTIONS_, Triaged.RENDER_ONE_ACTIONS_);
+    super(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
 
     this.style.display = 'flex';
     this.style.flexDirection = 'column';
@@ -18,7 +18,7 @@ class Triaged extends AbstractVueue {
     // there's no best effort threads.
     this.bestEffortButton_ = document.createElement('a');
     this.bestEffortButton_.className = 'label-button';
-    this.bestEffortButton_.href = '/besteffort';
+    this.bestEffortButton_.href = '/best-effort';
     this.append(this.bestEffortButton_);
     this.updateBestEffort_();
   }
@@ -29,8 +29,8 @@ class Triaged extends AbstractVueue {
   }
 
   compareRowGroups(a, b) {
-    let aOrder = Triaged.PRIORITY_SORT_ORDER[a.queue];
-    let bOrder = Triaged.PRIORITY_SORT_ORDER[b.queue];
+    let aOrder = MakeTimeView.PRIORITY_SORT_ORDER[a.queue];
+    let bOrder = MakeTimeView.PRIORITY_SORT_ORDER[b.queue];
     return aOrder - bOrder;
   }
 
@@ -59,9 +59,7 @@ class Triaged extends AbstractVueue {
 
   async getDisplayableQueue(thread) {
     let priority = await thread.getPriority();
-    if (priority)
-      return Labels.removePriorityPrefix(priority);
-    return Triaged.UNPRIORITIZED;
+    return Labels.removePriorityPrefix(priority);
   }
 
   async getQueue(thread) {
@@ -82,9 +80,9 @@ class Triaged extends AbstractVueue {
     }
   }
 }
-window.customElements.define('mt-triaged', Triaged);
+window.customElements.define('mt-make-time-view', MakeTimeView);
 
-Triaged.ACTIONS_ = [
+MakeTimeView.ACTIONS_ = [
   Actions.ARCHIVE_ACTION,
   Actions.MUST_DO_ACTION,
   Actions.URGENT_ACTION,
@@ -92,14 +90,10 @@ Triaged.ACTIONS_ = [
   Actions.DELEGATE_ACTION,
 ];
 
-Triaged.RENDER_ONE_ACTIONS_ = [Actions.QUICK_REPLY_ACTION].concat(Triaged.ACTIONS_);
+MakeTimeView.RENDER_ONE_ACTIONS_ = [Actions.QUICK_REPLY_ACTION].concat(MakeTimeView.ACTIONS_);
 
-Triaged.UNPRIORITIZED = 'Unpriortized';
-
-Triaged.PRIORITY_SORT_ORDER = {};
-Triaged.PRIORITY_SORT_ORDER[Triaged.UNPRIORITIZED] = 0;
-Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.MUST_DO_LABEL)] = 1;
-Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.URGENT_LABEL)] = 2;
-Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.NOT_URGENT_LABEL)] = 3;
-Triaged.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.DELEGATE_LABEL)] = 4;
-
+MakeTimeView.PRIORITY_SORT_ORDER = {};
+MakeTimeView.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.MUST_DO_LABEL)] = 1;
+MakeTimeView.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.URGENT_LABEL)] = 2;
+MakeTimeView.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.NOT_URGENT_LABEL)] = 3;
+MakeTimeView.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.DELEGATE_LABEL)] = 4;

@@ -83,6 +83,7 @@ class ThreadRow extends HTMLElement {
         row.style.cssText = `
           display: flex;
           overflow: hidden;
+          flex: 1;
         `;
 
         row.onclick = () => {

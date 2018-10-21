@@ -1,4 +1,4 @@
-class AbstractVueue extends HTMLElement {
+class AbstractThreadListView extends HTMLElement {
   constructor(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
 

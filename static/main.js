@@ -24,23 +24,23 @@ let isProcessingMail_ = false;
 let threads_ = new ThreadGroups();
 
 var router = new PathParser();
-router.add('/viewall', async (foo) => {
+router.add('/triage', async (foo) => {
   if (currentView_) {
     await currentView_.tearDown();
   }
-  await viewAll();
+  await viewTriage();
 });
-router.add('/triaged', async (foo) => {
+router.add('/make-time', async (foo) => {
   if (currentView_)
     await currentView_.tearDown();
-  await viewTriaged();
+  await viewMakeTime();
 });
-router.add('/besteffort', async (foo) => {
+router.add('/best-effort', async (foo) => {
   if (currentView_)
     await currentView_.tearDown();
 
   threads_.processBestEffort();
-  await viewAll();
+  await viewTriage();
 });
 
 let DRAWER_OPEN = 'drawer-open';
@@ -98,20 +98,20 @@ function showDialog(contents) {
   return dialog;
 }
 
-async function viewAll() {
+async function viewTriage() {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new ViewAll(threads_, getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  setView(new TriageView(threads_, getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
-async function viewTriaged() {
+async function viewMakeTime() {
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
   let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new Triaged(threads_, labels_, vacation, updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  setView(new MakeTimeView(threads_, labels_, vacation, updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
 function setView(view) {
@@ -333,8 +333,8 @@ async function onLoad() {
 
   document.getElementById('drawer').append(
     menuTitle,
-    createMenuItem('Triage', {href: '/viewall', nested: true}),
-    createMenuItem('MakeTime', {href: '/triaged', nested: true}),
+    createMenuItem('Triage', {href: '/triage', nested: true}),
+    createMenuItem('MakeTime', {href: '/make-time', nested: true}),
     settingsButton,
     helpButton);
 
@@ -350,7 +350,7 @@ async function onLoad() {
   let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
   let queuesToFetch = getQueuedLabelMap().getSorted(labelsToFetch);
 
-  await router.run('/viewall');
+  await router.run('/triage');
   await cleanupNeedsTriageThreads();
 
   // Put first threads that are in the inbox with no make-time labels. That way they always show up before
