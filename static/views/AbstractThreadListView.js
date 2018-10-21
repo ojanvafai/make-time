@@ -384,7 +384,7 @@ class AbstractThreadListView extends HTMLElement {
       this.updateTitle_('sendReply', 'Sending reply...');
 
       // TODO: Handle if sending fails in such a way that the user can at least save their message text.
-      await this.renderedRow_.thread.sendReply_(compose.value, compose.getEmails(), replyAll.checked);
+      await this.renderedRow_.thread.sendReply(compose.value, compose.getEmails(), replyAll.checked);
       this.updateActions_();
       await this.markTriaged(Actions.ARCHIVE_ACTION.destination, false);
 
