@@ -51,7 +51,7 @@ Filtering is technically optional and requires more setup (e.g. moving your gmai
 
 <b>To setup filtering:</b><ol style="margin: 0"><li>(optional, but recommended) Delete all your filters in gmail. If this is scary, you can export your old filters to an XML file first through the GMail web interface. Go to Settings > Filtered and Blocked Addresses, check the ""select all"" checkbox, then click the ""Export"" button."
 <li>Create one real gmail filter:
-    Matches: -in:chats -label:mute -from:me
+    Has the words: -in:chats -label:mute -from:me
     Do this: Skip Inbox, Apply label "maketime/unprocessed"
 
 If there are emails you don't want make-time to do anything with, modify your gmail filter with appropriate things like "to:(-YOURNAME+pager@google.com)"
