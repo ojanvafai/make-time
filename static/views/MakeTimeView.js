@@ -1,26 +1,15 @@
 class MakeTimeView extends AbstractThreadListView {
   constructor(threads, allLabels, vacation, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
-    super(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
+    super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
 
     this.style.display = 'flex';
     this.style.flexDirection = 'column';
 
-    this.threads_ = threads;
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitleDelegate;
 
-    // TODO: Only show vacation threads when in vacation mode.
-    this.vacation_ = vacation;
-
     this.fetch_();
-
-    // TODO: Move this to a toolbar and make a real button that greys out when
-    // there's no best effort threads.
-    this.bestEffortButton_ = document.createElement('a');
-    this.bestEffortButton_.className = 'label-button';
-    this.bestEffortButton_.href = '/best-effort';
-    this.append(this.bestEffortButton_);
-    this.updateBestEffort_();
+    this.appendButton_('/triage', 'Back to Triaging');
   }
 
   async handleTriageAction(action) {
@@ -66,20 +55,6 @@ class MakeTimeView extends AbstractThreadListView {
 
   async getQueue(thread) {
     return await thread.getPriority();
-  }
-
-  pushBestEffort(thread) {
-    this.updateBestEffort_();
-  }
-
-  updateBestEffort_() {
-    let bestEffort = this.threads_.getBestEffort();
-    if (bestEffort && bestEffort.length) {
-      this.bestEffortButton_.textContent = `Triage ${bestEffort.length} best effort threads`;
-      this.bestEffortButton_.style.display = '';
-    } else {
-      this.bestEffortButton_.style.display = 'none';
-    }
   }
 }
 window.customElements.define('mt-make-time-view', MakeTimeView);

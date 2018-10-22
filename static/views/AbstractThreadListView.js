@@ -1,7 +1,8 @@
 class AbstractThreadListView extends HTMLElement {
-  constructor(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
+  constructor(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
 
+    this.threads_ = threads;
     this.updateTitle_ = updateTitleDelegate;
     this.setSubject_ = setSubject;
     this.allowedReplyLength_ = allowedReplyLength;
@@ -32,7 +33,20 @@ class AbstractThreadListView extends HTMLElement {
     `;
     this.append(this.singleThreadContainer_);
 
+    this.bestEffortButton_ = this.appendButton_('/best-effort');
+    this.bestEffortButton_.style.display = 'none';
+    this.updateBestEffort_();
+
     this.updateActions_();
+  }
+
+  appendButton_(href, textContent = '') {
+    let button = document.createElement('a');
+    button.className = 'label-button';
+    button.href = href;
+    button.textContent = textContent;
+    this.append(button);
+    return button;
   }
 
   setFooter_(dom) {
@@ -98,6 +112,24 @@ class AbstractThreadListView extends HTMLElement {
     return row;
   }
 
+  clearBestEffort() {
+    this.threads_.setBestEffort([]);
+  }
+
+  pushBestEffort(thread) {
+    this.updateBestEffort_();
+  }
+
+  updateBestEffort_() {
+    let bestEffort = this.threads_.getBestEffort();
+    if (bestEffort && bestEffort.length) {
+      this.bestEffortButton_.textContent = `Triage ${bestEffort.length} best effort threads`;
+      this.bestEffortButton_.style.display = '';
+    } else {
+      this.bestEffortButton_.style.display = 'none';
+    }
+  }
+
   getThreads() {
     let selected = [];
     let all = [];
@@ -142,9 +174,6 @@ class AbstractThreadListView extends HTMLElement {
     if (!rowGroup.hasRows()) {
       rowGroup.remove();
       delete this.groupByQueue_[queue];
-
-      if (this.handleNoThreadsLeft)
-        await this.handleNoThreadsLeft();
     }
   }
 

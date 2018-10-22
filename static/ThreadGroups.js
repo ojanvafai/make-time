@@ -10,23 +10,7 @@ class ThreadGroups {
     this.listener_ = view;
   }
 
-  pushNeedsTriage(thread) {
-    this.needsTriage_.push(thread);
-    if (this.listener_ && this.listener_.pushNeedsTriage)
-      this.listener_.pushNeedsTriage(thread);
-  }
-  getNeedsTriage() {
-    return this.needsTriage_;
-  }
-  setNeedsTriage(array) {
-    this.needsTriage_ = array;
-  }
-
   processBestEffort() {
-    let threads = this.getNeedsTriage().concat(this.getBestEffort());
-    this.setNeedsTriage(threads);
-    // Null this out before to avoid adding more threads to threads_.bestEffort_
-    // once we've started triaging best effort threads.
     threads_.setBestEffort(null);
   }
   pushBestEffort(thread) {
@@ -45,6 +29,7 @@ class ThreadGroups {
     return this.bestEffort_;
   }
   setBestEffort(array) {
-    this.bestEffort_ = array;
+    if (this.bestEffort_)
+      this.bestEffort_ = array;
   }
 }

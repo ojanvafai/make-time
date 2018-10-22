@@ -1,15 +1,15 @@
 class TriageView extends AbstractThreadListView {
   constructor(threads, allLabels, vacationSubject, queueSettings, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
-    super(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
+    super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
 
     this.style.display = 'block';
 
-    this.threads_ = threads;
     this.allLabels_ = allLabels;
     this.vacationSubject_ = vacationSubject;
     this.queueSettings_ = queueSettings;
 
     this.fetch_();
+    this.appendButton_('/make-time', `It's make-time!`);
   }
 
   // TODO: Store the list of threads in localStorage and update asynchronously.
@@ -23,6 +23,8 @@ class TriageView extends AbstractThreadListView {
       vacationQuery = `subject:${this.vacationSubject_}`;
       updateTitle('vacation', `Vacation ${vacationQuery}`);
     }
+
+    this.clearBestEffort();
 
     // TODO: Don't use the global addThread.
 
@@ -39,17 +41,6 @@ class TriageView extends AbstractThreadListView {
         queue: queueData[0],
       });
     }
-
-    await this.handleNoThreadsLeft();
-  }
-
-  tearDown() {
-    this.threads_.setNeedsTriage(this.getThreads().allThreads);
-    super.tearDown();
-  }
-
-  pushNeedsTriage(thread) {
-    this.addThread(thread);
   }
 
   async handleTriageAction(action) {
@@ -66,11 +57,6 @@ class TriageView extends AbstractThreadListView {
 
   async getQueue(thread) {
     return thread.getQueue();
-  }
-
-  async handleNoThreadsLeft() {
-    if (!this.rowGroupCount())
-      await router.run('/make-time');
   }
 }
 window.customElements.define('mt-triage-view', TriageView);

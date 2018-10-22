@@ -267,12 +267,17 @@ async function addThread(thread) {
   if (threads_.getBestEffort() && await isBestEffortQueue(thread)) {
     if (await isBankrupt(thread)) {
       await bankruptThread(thread);
-    } else {
+      return;
+    } else if (threads_.getBestEffort()) {
+      // Check again that getBestEffort is non-null in case best effort threads started being
+      // triaged in the async time from the threads_.getBestEffort() call above.
       threads_.pushBestEffort(thread);
+      return;
     }
-  } else {
-    await threads_.pushNeedsTriage(thread);
   }
+
+  if (currentView_ instanceof TriageView)
+    await currentView_.addThread(thread);
 }
 
 function createMenuItem(name, options) {

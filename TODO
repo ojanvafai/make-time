@@ -1,7 +1,3 @@
-- Add Undo button to MakeTime. Needs to correctly remove the item from it's queue and put it in the new queue.
-- Handle finish last thread in MakeTime (remove toolbar+timer, show a nice message?)
-- Remove besteffort button from triaged. Instead put it in TriageView when the triage queue is empty and remove the auto transitioning to maketime
-
 https://github.com/ojanvafai/make-time/issues
 
 Wicked witch mode:
@@ -10,6 +6,7 @@ Wicked witch mode:
 - Count not shown by doing a search without the date and a search with the date and counting the diff.
 
 P1: Will try to do soonish.
+- Add Undo button to MakeTime. Needs to correctly remove the item from it's queue and put it in the new queue.
 - Use lit-element/lit-html for DOM creation?
 - Remove all uses of localStorage and just use IDBKeyVal.
 - Add a setting for how many weeks of email to keep in storage.
