@@ -1,5 +1,5 @@
 class Timer extends HTMLElement {
-  constructor(autoStart, timeout, overlayContainer) {
+  constructor(autoStart, countDown, duration, overlayContainer) {
     super();
 
     this.style.cssText = `
@@ -8,15 +8,19 @@ class Timer extends HTMLElement {
       padding: 4px;
     `;
 
-    // Never autostart the timer on the first thread.
-    if (Timer.autoStart_ === undefined) {
-      Timer.autoStart_ = autoStart;
-      this.paused_ = true;
-    } else {
-      this.paused_ = !Timer.autoStart_;
+
+    if (countDown) {
+      // Never autostart the timer on the first thread.
+      if (Timer.autoStart_ === undefined) {
+        Timer.autoStart_ = autoStart;
+        this.paused_ = true;
+      } else {
+        this.paused_ = !Timer.autoStart_;
+      }
     }
 
-    this.timeout_ = timeout;
+    this.countDown_ = countDown;
+    this.duration_ = duration;
     this.overlayContainer_ = overlayContainer;
 
     this.timeDisplay_ = document.createElement('span');
@@ -45,11 +49,9 @@ class Timer extends HTMLElement {
 
   visibilityChanged(isHidden) {
     if (!isHidden) {
-      this.restartTimer_();
+      this.nextTick_();
       return;
     }
-
-    this.timeLeft_ = -1;
     this.clearTimer_();
   }
 
@@ -65,12 +67,12 @@ class Timer extends HTMLElement {
     if (this.paused_)
       Timer.autoStart_ = false;
     this.updatePlayButton_();
-    this.clearOverlay_();
-    this.restartTimer_();
   }
 
   updatePlayButton_() {
     this.timerButton_.textContent = this.paused_ ? '▶️' : '⏸️';
+    this.clearOverlay_();
+    this.restartTimer_();
   }
 
   restartTimer_() {
@@ -82,7 +84,7 @@ class Timer extends HTMLElement {
       return;
     }
 
-    this.timeLeft_ = this.timeout_;
+    this.timeLeft_ = this.countDown_ ? this.duration_ : 0;
     this.clearTimer_();
     this.nextTick_();
   }
@@ -94,58 +96,73 @@ class Timer extends HTMLElement {
     }
   }
 
+  showOverlay_() {
+    this.overlay_ = document.createElement('div');
+    this.overlay_.style.cssText = `
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+    let background = document.createElement('div');
+    background.style.cssText = `
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: black;
+      opacity: 0.5;
+    `;
+    let text = document.createElement('div');
+    text.innerHTML = 'Out of time. Take an action!<br><br>The timer duration and whether it autostarts can be configured in the settings dialogs.';
+    text.style.cssText = `
+      position: absolute;
+      padding: 5px;
+      background-color: white;
+    `;
+    this.overlay_.append(background, text);
+    this.overlayContainer_.append(this.overlay_);
+  }
+
   async nextTick_() {
-    if (this.paused_ || this.timeLeft_ == -1) {
+    if (this.paused_) {
       this.timeDisplay_.textContent = '';
       return;
     }
 
-    if (this.timeLeft_ == 0) {
+    if (this.countDown_ && this.timeLeft_ == 0) {
       this.timeDisplay_.textContent = '';
-      this.overlay_ = document.createElement('div');
-      this.overlay_.style.cssText = `
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
-      let background = document.createElement('div');
-      background.style.cssText = `
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-        background-color: black;
-        opacity: 0.5;
-      `;
-      let text = document.createElement('div');
-      text.innerHTML = 'Out of time. Take an action!<br><br>The timer duration and whether it autostarts can be configured in the settings dialogs.';
-      text.style.cssText = `
-        position: absolute;
-        padding: 5px;
-        background-color: white;
-      `;
-      this.overlay_.append(background, text);
-      this.overlayContainer_.append(this.overlay_);
+      this.showOverlay_();
       return;
     }
 
-    if (this.timeLeft_ > 20) {
-      this.timeDisplay_.style.color = 'white';
-    } else if (this.timeLeft_ > 5) {
-      this.timeDisplay_.style.color = 'black';
+    if (this.countDown_) {
+      this.timeLeft_--;
+      if (this.timeLeft_ > 20) {
+        this.timeDisplay_.style.color = 'white';
+      } else if (this.timeLeft_ > 5) {
+        this.timeDisplay_.style.color = 'black';
+      } else {
+        this.timeDisplay_.style.color = 'red';
+      }
     } else {
-      this.timeDisplay_.style.color = 'red';
+      this.timeLeft_++;
+      if (this.timeLeft_ > 300) {
+        this.timeDisplay_.style.color = 'red';
+      } else if (this.timeLeft_ > 150) {
+        this.timeDisplay_.style.color = 'black';
+      } else {
+        this.timeDisplay_.style.color = 'white';
+      }
     }
 
     this.timeDisplay_.textContent = this.timeLeft_;
     this.timerKey_ = setTimeout(this.nextTick_.bind(this), 1000);
-    this.timeLeft_--;
   }
 }
 

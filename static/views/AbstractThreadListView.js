@@ -1,5 +1,5 @@
 class AbstractThreadListView extends HTMLElement {
-  constructor(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
+  constructor(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
 
     this.threads_ = threads;
@@ -8,6 +8,7 @@ class AbstractThreadListView extends HTMLElement {
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
     this.autoStartTimer_ = autoStartTimer;
+    this.countDown_ = countDown;
     this.timerDuration_ = timerDuration;
     this.viewAllActions_ = viewAllActions;
     this.viewOneActions_ = viewOneActions;
@@ -68,7 +69,7 @@ class AbstractThreadListView extends HTMLElement {
     this.actions_ = new Actions(this, actions, this.overflowActions_);
     footer.append(this.actions_);
     if (this.renderedRow_) {
-      let timer = new Timer(this.autoStartTimer_,this.timerDuration_, this.singleThreadContainer_);
+      let timer = new Timer(this.autoStartTimer_, this.countDown_, this.timerDuration_, this.singleThreadContainer_);
       footer.append(timer);
     }
   }

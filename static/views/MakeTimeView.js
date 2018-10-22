@@ -1,6 +1,7 @@
 class MakeTimeView extends AbstractThreadListView {
   constructor(threads, allLabels, vacation, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
-    super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
+    let countDown = false;
+    super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
 
     this.style.display = 'flex';
     this.style.flexDirection = 'column';

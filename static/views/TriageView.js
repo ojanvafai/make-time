@@ -1,6 +1,7 @@
 class TriageView extends AbstractThreadListView {
   constructor(threads, allLabels, vacationSubject, queueSettings, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
-    super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
+    let countDown = true;
+    super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
 
     this.style.display = 'block';
 
