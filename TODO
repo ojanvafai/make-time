@@ -1,40 +1,26 @@
-https://github.com/ojanvafai/make-time/issues
-
-Wicked witch mode:
-- default value of 7
-- Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
-- Count not shown by doing a search without the date and a search with the date and counting the diff.
+TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
 P1: Will try to do soonish.
+- Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
+- Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.
+- Add a compose view with a /compose URL to be able to go to compose messages without seeing inbox.
 - Add Undo button to MakeTime. Needs to correctly remove the item from it's queue and put it in the new queue.
 - Use lit-element/lit-html for DOM creation?
 - Remove all uses of localStorage and just use IDBKeyVal.
 - Add a setting for how many weeks of email to keep in storage.
 - Add manual sorting of triaged threads.
-- Make the timer in make-time mode count up from 0.
 - Give a more natural way to go back to threadlist from single thread (e.g. a back button)
 - Allow undo of the last item triaged (needs to undo, and send you back to TriageView)
-- Change best effort queues to show by default...make it just be a bankruptcy feature? Or make it easier to start processing best effort threads.
 - auto delete needstriage labels that have no threads in them and have no filters that would cause that label to be created again as a way of not having a ton of cruft build up.
 - Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
 - Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
 - Race condition with archiving too fast leaves the old thread around forever. maybe? Something crazy happens on slow connections.
 - Make header:foo the only syntax for rules with a bit of special casing for email rules to handle foo+bar@ syntax.
-- Archive keyboard shortcut doesn't work in maketime view
 - Add a skip button to MakeTime view
-- make-time phase: Must do / urgent one at a time (and maybe delegate). But for not urgent show list to pick from.
-- Give make time view it's own allowed reply length and color the progress meter green/orange/red as it get closer to the limit.
-- Add Undo to all the views.
 - triaged and maketime views need to give you an indication of there being new threads that need triaging.
 - add the ability to do inline responses
-- make more clear what phase your in and make navigation between phases more natural, e.g. allow going from prioritization flow into maketime for a given thread and back.
 - For best effort and -inbox +maketime label threads, do a query first to archive them, then fetch what's left. make addThread take a parameter to skip the vacation/bankrupt bits since those aren't needed in the query case done on load, so the page can load quickly.
-- make-time mode: Starts a stopwatch timer to count how long it take you to accomplish this task and store task durations for future data analysis
-- Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.
-- invalid directive hover effect in filters dialog is hella annoying
-- Can't undo the last triage item because it immediately moves to triaged. Really need undo manager to be outside the views so it can be reused across all views.
-- add hover effects to rows
-- on desktop: show mini drawer when it's not open so it can show counts and for easier nav?
+- make-time mode: store task durations for future data analysis. Need to split by action type.
 - Only show toolbar in any of the views when there are actually threads.
 - Find a way to separate out tasks that can be done on a phone so they can be fit into 5 minute breaks
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
@@ -45,10 +31,11 @@ P1: Will try to do soonish.
 - Use TypeScript and create an abstract View superclass and an abstract Dialog superclass.
 - Add the ability to create new action items that have no existing thread
 - Highlight the current phase in the drawer and actually update the url for each phase so people can link to the phase they want.
-- make shift+click select a range of threads
 - add ability to search for a set of threads and see which filter would match
 
 P2: Will only do if something makes these seem worth doing.
+- add hover effects to rows
+- Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.
 - sort by date within a given queue, with a setting for sort order
 - Make filters and queues tabs in the setting spreadsheet instead of separate dialogs? Change save button to save+reload once a basic setting is changed.
 - modal dialog pops up every minute when there's a message that can't be processed for some reason
@@ -88,15 +75,8 @@ P2: Will only do if something makes these seem worth doing.
 - Fix stats to show count of archived threads
 - Once the triage is done, allow picking which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
 - When updating messages, update the unread state even for old messages since that might have changed.
-- Cache threads in localstorage by their historyId. Prefix with the week so we can clear any entries that are more than two weeks old.
-- Add keyboard shortcuts for Vueue mode. j/k/x next/previous/toggle
 - disable title tags in emails. They currently update the title of make-time.
-- add stats of how much time you spend in each phase and what aggregations of actions taken with threads
-- Maybe have a generic list of filter buttons that can be configurable for quick experimentation with different labeling schemes. Keeps the principle of each thread gets a single keyborad shortcut action, but doesn't require the existing constrained set of labels. e.g. i find myself wanting to experiment with urgent/important options for action items and replies. Maybe this would all feel different if the action items actually went into the TODO list instead of the inbox though.
-- add a needs filter option?
-- add an urgent action item? what about important?
 - Google Assistant integration
 - Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.
 - Send replys from the recieving address for multiple email users. Using "From: ". Not quite sure how to figure out which email address to use. For mailing lists, could use Delivered-To, that might be good enough.
-- add a way of switching to a different queue in the thread at a time view
 - if the last message is vacation responder, and the message before that one is read, and it's not in a triager/auto queue, then auto archive
