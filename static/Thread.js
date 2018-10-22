@@ -1,6 +1,7 @@
 class Thread {
   constructor(thread, allLabels) {
     this.id = thread.id;
+    this.historyId = thread.historyId;
     this.snippet = thread.snippet;
     this.allLabels_ = allLabels;
   }
@@ -187,15 +188,31 @@ class Thread {
   }
 
   async updateMessageDetails() {
-    if (!this.fetchPromise_) {
-      this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
-        userId: USER_ID,
-        id: this.id,
-      })
+    let key = `thread-${getCurrentWeekNumber()}-${this.historyId}`;
+    let localData = await IDBKeyVal.getDefault().get(key);
+
+    let messages;
+    if (localData) {
+      messages = JSON.parse(localData);
+    } else {
+      if (!this.fetchPromise_) {
+        this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
+          userId: USER_ID,
+          id: this.id,
+        })
+      }
+      let resp = await this.fetchPromise_;
+      this.fetchPromise_ = null;
+      messages = resp.result.messages;
+
+      try {
+        await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
+      } catch (e) {
+        console.log('Fail storing message details in IDB.', e);
+      }
     }
-    let resp = await this.fetchPromise_;
-    this.fetchPromise_ = null;
-    return this.processMessages_(resp.result.messages);
+
+    return this.processMessages_(messages);
   }
 
   async fetchMessageDetails() {
@@ -246,4 +263,3 @@ Content-Type: text/html; charset="UTF-8"
     });
   }
 }
-

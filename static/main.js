@@ -17,11 +17,13 @@ let currentView_;
 let settings_;
 let labels_;
 let queuedLabelMap_;
+let threadCache_ = new ThreadCache();
 let contacts_ = [];
 let titleStack_ = [];
 let loaderTitleStack_ = [];
 let isProcessingMail_ = false;
 let threads_ = new ThreadGroups();
+let WEEKS_TO_STORE_ = 2;
 
 var router = new PathParser();
 router.add('/triage', async (foo) => {
@@ -102,7 +104,8 @@ async function viewTriage() {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new TriageView(threads_, getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
+  setView(new TriageView(threads_, labels_, vacation, getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
 async function viewMakeTime() {
@@ -203,8 +206,7 @@ async function fetchThreads(forEachThread, options) {
     let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      // TODO: Use an existing Thread if one already exists for this thread ID.
-      let thread = new Thread(rawThread, labels_);
+      let thread = threadCache_.get(rawThread, labels_);
       if (options.queue)
         thread.setQueue(options.queue);
       await forEachThread(thread);
@@ -338,37 +340,12 @@ async function onLoad() {
     settingsButton,
     helpButton);
 
-  let vacationQuery = '';
-  if (settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)) {
-    vacationQuery = `subject:${settings_.get(ServerStorage.KEYS.VACATION_SUBJECT)}`;
-    updateTitle('vacation', `Vacation ${vacationQuery}`);
-  }
-
   updateLoaderTitle('onLoad', 'Fetching threads to triage...');
 
-  let labels = await labels_.getTheadCountForLabels((labelName) => labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'));
-  let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
-  let queuesToFetch = getQueuedLabelMap().getSorted(labelsToFetch);
-
   await router.run('/triage');
+
+  // TODO: Make all the below happen after the TriageView is done loading.
   await cleanupNeedsTriageThreads();
-
-  // Put first threads that are in the inbox with no make-time labels. That way they always show up before
-  // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
-  await fetchThreads(addThread, {
-    query: `-(in:${labels_.getMakeTimeLabelNames().join(' OR in:')}) ${vacationQuery}`,
-    queue: 'inbox',
-  });
-
-  for (let queueData of queuesToFetch) {
-    await fetchThreads(addThread, {
-      query: vacationQuery,
-      queue: queueData[0],
-    });
-  }
-
-  if (currentView_.finishedInitialLoad)
-    await currentView_.finishedInitialLoad();
 
   // Don't want to show the earlier title, but still want to indicate loading is happening.
   // since we're going to processMail still. It's a less jarring experience if the loading
@@ -459,11 +436,39 @@ async function processMail() {
   isProcessingMail_ = false;
 }
 
+function getCurrentWeekNumber() {
+  let today = new Date();
+  var januaryFirst = new Date(today.getFullYear(), 0, 1);
+  var msInDay = 86400000;
+  return Math.ceil((((today - januaryFirst) / msInDay) + januaryFirst.getDay()) / 7);
+}
+
+async function gcLocalStorage() {
+  let storage = new ServerStorage(settings_.spreadsheetId);
+  let lastGCTime = storage.get(ServerStorage.KEYS.LAST_GC_TIME);
+  let oneDay = 24 * 60 * 60 * 1000;
+  if (!lastGCTime || Date.now() - lastGCTime > oneDay) {
+    let currentWeekNumber = getCurrentWeekNumber();
+    let keys = await IDBKeyVal.getDefault().keys();
+    for (let key of keys) {
+      let match = key.match(/^thread-(\d+)-\d+$/);
+      if (!match)
+        continue;
+
+      let weekNumber = Number(match[1]);
+      if (weekNumber + WEEKS_TO_STORE_ < currentWeekNumber)
+        await IDBKeyVal.getDefault().del(key);
+    }
+    await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_GC_TIME, value: Date.now()}]);
+  }
+}
+
 async function update() {
   await cleanupNeedsTriageThreads();
   if (currentView_.updateCurrentThread)
     await currentView_.updateCurrentThread();
-  processMail();
+  await processMail();
+  await gcLocalStorage();
 }
 
 // Make sure links open in new tabs.

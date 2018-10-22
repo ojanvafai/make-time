@@ -59,7 +59,9 @@ class MakeTimeView extends AbstractThreadListView {
 
   async getDisplayableQueue(thread) {
     let priority = await thread.getPriority();
-    return Labels.removePriorityPrefix(priority);
+    if (priority)
+      return Labels.removePriorityPrefix(priority);
+    return Labels.MUST_DO_LABEL;
   }
 
   async getQueue(thread) {

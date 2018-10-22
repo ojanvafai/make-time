@@ -1,20 +1,46 @@
 class TriageView extends AbstractThreadListView {
-  constructor(threads, queueSettings, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
+  constructor(threads, allLabels, vacationSubject, queueSettings, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
     super(updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
+
     this.style.display = 'block';
+
     this.threads_ = threads;
+    this.allLabels_ = allLabels;
+    this.vacationSubject_ = vacationSubject;
     this.queueSettings_ = queueSettings;
-    this.init_();
+
+    this.fetch_();
   }
 
-  async finishedInitialLoad() {
-    await this.handleNoThreadsLeft();
-  }
+  // TODO: Store the list of threads in localStorage and update asynchronously.
+  async fetch_() {
+    let labels = await this.allLabels_.getTheadCountForLabels((labelName) => labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'));
+    let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
+    let queuesToFetch = getQueuedLabelMap().getSorted(labelsToFetch);
 
-  async init_() {
-    for (let thread of this.threads_.getNeedsTriage()) {
-      await this.addThread(thread);
+    let vacationQuery = '';
+    if (this.vacationSubject_) {
+      vacationQuery = `subject:${this.vacationSubject_}`;
+      updateTitle('vacation', `Vacation ${vacationQuery}`);
     }
+
+    // TODO: Don't use the global addThread.
+
+    // Put first threads that are in the inbox with no make-time labels. That way they always show up before
+    // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
+    await fetchThreads(addThread, {
+      query: `-(in:${this.allLabels_.getMakeTimeLabelNames().join(' OR in:')}) ${vacationQuery}`,
+      queue: 'inbox',
+    });
+
+    for (let queueData of queuesToFetch) {
+      await fetchThreads(addThread, {
+        query: vacationQuery,
+        queue: queueData[0],
+      });
+    }
+
+    await this.handleNoThreadsLeft();
   }
 
   tearDown() {
