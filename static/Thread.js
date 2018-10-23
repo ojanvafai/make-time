@@ -49,7 +49,7 @@ class Thread {
     this.processLabels_(messages);
     if (!this.processedMessages_)
       this.processedMessages_ = [];
-    let newMessages = messages.splice(this.processedMessages_.length);
+    let newMessages = messages.slice(this.processedMessages_.length);
     // Only process new messages.
     let newProcessedMessages = [];
     for (let message of newMessages) {
@@ -187,31 +187,35 @@ class Thread {
     return this.priority_;
   }
 
-  async updateMessageDetails() {
+  async fetchMessageDetails_(forceNetwork) {
     let key = `thread-${getCurrentWeekNumber()}-${this.historyId}`;
-    let localData = await IDBKeyVal.getDefault().get(key);
 
-    let messages;
-    if (localData) {
-      messages = JSON.parse(localData);
-    } else {
-      if (!this.fetchPromise_) {
-        this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
-          userId: USER_ID,
-          id: this.id,
-        })
-      }
-      let resp = await this.fetchPromise_;
-      this.fetchPromise_ = null;
-      messages = resp.result.messages;
-
-      try {
-        await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
-      } catch (e) {
-        console.log('Fail storing message details in IDB.', e);
-      }
+    if (!forceNetwork) {
+      let localData = await IDBKeyVal.getDefault().get(key);
+      if (localData)
+        return JSON.parse(localData);
     }
 
+    if (!this.fetchPromise_) {
+      this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
+        userId: USER_ID,
+        id: this.id,
+      })
+    }
+    let resp = await this.fetchPromise_;
+    this.fetchPromise_ = null;
+
+    let messages = resp.result.messages;
+    try {
+      await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
+    } catch (e) {
+      console.log('Fail storing message details in IDB.', e);
+    }
+    return messages;
+  }
+
+  async updateMessageDetails(forceNetwork) {
+    let messages = await this.fetchMessageDetails_(forceNetwork);
     return this.processMessages_(messages);
   }
 

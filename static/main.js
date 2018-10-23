@@ -470,8 +470,7 @@ async function gcLocalStorage() {
 
 async function update() {
   await cleanupNeedsTriageThreads();
-  if (currentView_.updateCurrentThread)
-    await currentView_.updateCurrentThread();
+  await currentView_.updateCurrentThread();
   await processMail();
   await gcLocalStorage();
 }

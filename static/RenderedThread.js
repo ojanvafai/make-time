@@ -23,27 +23,20 @@ class RenderedThread {
   }
 
   async update() {
-    let messages = await this.thread.updateMessageDetails();
-    this.appendMessages_(messages);
+    await this.thread.updateMessageDetails(true);
+    await this.appendMessages_();
   }
 
-  appendMessages_(messages) {
-    for (var message of messages) {
+  async appendMessages_() {
+    let messages = await this.thread.getMessages();
+    // Only append new messages.
+    messages = messages.slice(this.dom_.children.length);
+    for (let message of messages) {
       this.dom_.append(this.renderMessage_(message));
     }
   }
 
   async render(newContainer) {
-    // If we're in the middle of rendering this thread, then queue up rendering requests
-    // to be processed when we finish instead of kicking off another set of network requests
-    // to render this thread.
-    if (this.isRendering_) {
-      await this.queueTillRendered_();
-      return this.dom_;
-    }
-
-    this.isRendering_ = true;
-
     if (!this.dom_) {
       this.dom_ = document.createElement('div');
       this.dom_.style.cssText = `
@@ -55,15 +48,34 @@ class RenderedThread {
       `;
     }
 
+    // No need to block on fetching messages if we've already rendering some of them.
+    if (this.dom_.children.length) {
+      // Intentionally don't await this so the messages are rendered ASAP.
+      this.update();
+    } else {
+      await this.fetchAndAppendMessages_();
+    }
+
     if (this.dom_.parentNode != newContainer)
       newContainer.append(this.dom_);
 
-    let messages = await this.thread.getMessages();
-    this.appendMessages_(messages);
-
-    this.isRendering_ = false;
-    this.processRenderingQueue_();
     return this.dom_;
+  }
+
+  async fetchAndAppendMessages_() {
+    // If we're in the middle of rendering this thread, then queue up rendering requests
+    // to be processed when we finish instead of kicking off another set of network requests
+    // to render this thread.
+    if (this.isFetching_) {
+      await this.queueTillRendered_();
+      return;
+    }
+
+    this.isFetching_ = true;
+    await this.appendMessages_();
+    this.isFetching_ = false;
+
+    this.processRenderingQueue_();
   }
 
   renderMessage_(processedMessage) {
