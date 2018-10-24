@@ -307,7 +307,12 @@ class AbstractThreadListView extends HTMLElement {
 
     this.updateActions_();
 
-    var elementToScrollTo = document.querySelector('.unread') || dom.lastChild;
+    var elementToScrollTo = dom.querySelector('.unread');
+    if (!elementToScrollTo) {
+      let messageNodes = dom.querySelectorAll('.message');
+      elementToScrollTo = messageNodes[messageNodes.length - 1];
+    }
+
     elementToScrollTo.scrollIntoView();
     // Make sure that there's at least 50px of space above for showing that there's a
     // previous message.
