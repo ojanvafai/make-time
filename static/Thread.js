@@ -4,15 +4,8 @@ class Thread {
     this.historyId = thread.historyId;
     this.snippet = thread.snippet;
     this.allLabels_ = allLabels;
-  }
-
-  clearDetails_() {
-    this.labelIds_ = null;
-    this.labelNames_ = null;
-    this.queue_ = null;
-    this.triagedQueue_ = null;
-    this.priority_ = null;
-    this.processedMessages_ = null;
+    if (thread.messages)
+      this.processMessages_(thread.messages);
   }
 
   processLabels_(messages) {
@@ -75,9 +68,8 @@ class Thread {
     let response = await gapiFetch(gapi.client.gmail.users.threads.modify, request);
     // TODO: Handle response.status != 200.
 
-    // Once a modify has happend the stored message details are stale and will need refeteching
-    // if this Thread instance continued to be used.
-    this.clearDetails_();
+    // Once a modify has happend the stored message details are stale and this Thread shouldn't be used anymore.
+    this.stale_ = true;
 
     return {
       added: addLabelIds,
@@ -165,6 +157,8 @@ class Thread {
   }
 
   async getQueue() {
+    this.assertNotStale_();
+
     if (!this.queue_)
       await this.fetchMessageDetails();
     return this.queue_;
@@ -187,7 +181,14 @@ class Thread {
     return this.priority_;
   }
 
+  assertNotStale_() {
+    if (this.stale_)
+      throw `Attempted to reuse stale thread with ID: ${this.id}`;
+  }
+
   async fetchMessageDetails_(forceNetwork) {
+    this.assertNotStale_();
+
     let key = `thread-${getCurrentWeekNumber()}-${this.historyId}`;
 
     if (!forceNetwork) {

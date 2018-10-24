@@ -174,6 +174,15 @@ function updateTitleBase(stack, node, key, ...opt_title) {
     node.append(...stack[stack.length - 1].title);
 }
 
+async function fetchThread(id) {
+  let requestParams = {
+    'userId': USER_ID,
+    'id': id,
+  };
+  let resp = await gapiFetch(gapi.client.gmail.users.threads.get, requestParams);
+  return threadCache_.get(resp.result, labels_);
+}
+
 async function fetchThreads(forEachThread, options) {
   // Chats don't expose their bodies in the gmail API, so just skip them.
   let query = '-in:chats ';

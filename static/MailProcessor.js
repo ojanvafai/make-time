@@ -4,9 +4,14 @@ const DAILY_STATS_SHEET_NAME = 'daily_stats';
 class MailProcessor {
   constructor(settings, pushThread, queuedLabelMap, allLabels) {
     this.settings = settings;
-    this.pushThread_ = pushThread;
+    this.pushThreadOriginal_ = pushThread;
     this.queuedLabelMap_ = queuedLabelMap;
     this.allLabels_ = allLabels;
+  }
+
+  async pushThread_(thread) {
+    let newThread = await fetchThread(thread.id);
+    await this.pushThreadOriginal_(newThread);
   }
 
   endsWithAddress(addresses, filterAddress) {
@@ -334,7 +339,7 @@ class MailProcessor {
         // TODO: If isAlreadyInInbox && !alreadyHadLabel, we should remove it from the threadlist
         // and add it back in so it gets put into the right queue.
         if (!isAlreadyInInbox && addLabelIds.includes('INBOX'))
-          this.pushThread_(thread);
+          await this.pushThread_(thread);
 
         if (!alreadyHadLabel) {
           if (!perLabelCounts[labelName])
@@ -377,7 +382,7 @@ class MailProcessor {
       let addLabelIds = ['INBOX', autoLabel];
       let removeLabelIds = [queuedLabel];
       await thread.modify(addLabelIds, removeLabelIds);
-      this.pushThread_(thread);
+      await this.pushThread_(thread);
     }
     updateLoaderTitle('dequeue');
   }

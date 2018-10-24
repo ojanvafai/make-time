@@ -170,6 +170,8 @@ class AbstractThreadListView extends HTMLElement {
 
   async removeRow_(row) {
     row.remove();
+    if (row.thread.rendered)
+      row.thread.rendered.remove();
     let queue = await this.getDisplayableQueue(row.thread);
     let rowGroup = this.groupByQueue_[queue];
     if (!rowGroup.hasRows()) {
