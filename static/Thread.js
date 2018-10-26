@@ -4,8 +4,12 @@ class Thread {
     this.historyId = thread.historyId;
     this.snippet = thread.snippet;
     this.allLabels_ = allLabels;
-    if (thread.messages)
+    if (thread.messages) {
       this.processMessages_(thread.messages);
+      // When the messages are included, the snippet isn't (i.e. for thread.get calls).
+      if (!this.snippet)
+        this.snippet = thread.messages[thread.messages.length - 1].snippet;
+    }
   }
 
   processLabels_(messages) {

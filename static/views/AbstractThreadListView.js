@@ -263,7 +263,8 @@ class AbstractThreadListView extends HTMLElement {
 
       let action = actions[i];
       await action.thread.modify(action.removed, action.added);
-      let row = await this.addThread(action.thread, this.renderedRow_);
+      let newThread = await fetchThread(action.thread.id);
+      let row = await this.addThread(newThread, this.renderedRow_);
 
       if (this.renderedRow_)
         this.renderOne_(row);
