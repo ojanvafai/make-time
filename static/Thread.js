@@ -1,4 +1,4 @@
-import { Base64 } from './Base64.js';
+import { Base64 } from './base64.js';
 import { gapiFetch } from './Net.js';
 import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
