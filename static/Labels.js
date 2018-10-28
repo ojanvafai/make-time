@@ -164,12 +164,20 @@ Labels.removeTriagedPrefix = (labelName) => {
   return Labels.removeLabelPrefix(labelName, Labels.TRIAGED_LABEL);
 }
 
+Labels.isTriagedLabel = (labelName) => {
+  return labelName.startsWith(Labels.TRIAGED_LABEL + '/');
+}
+
 Labels.needsTriageLabel = (labelName) => {
   return `${Labels.NEEDS_TRIAGE_LABEL}/${labelName}`;
 }
 
 Labels.removeNeedsTriagePrefix = (labelName) => {
   return Labels.removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
+}
+
+Labels.isNeedsTriageLabel = (labelName) => {
+  return labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/');
 }
 
 Labels.addQueuedPrefix = (labelName) => {
@@ -182,6 +190,10 @@ Labels.addPriorityPrefix = (labelName) => {
 
 Labels.removePriorityPrefix = (labelName) => {
   return Labels.removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
+}
+
+Labels.isPriorityLabel = (labelName) => {
+  return labelName.startsWith(Labels.PRIORITY_LABEL + '/');
 }
 
 Labels.addBankruptPrefix = (labelName) => {

@@ -189,7 +189,7 @@ class AbstractThreadListView extends HTMLElement {
       this.showQuickReply();
       return;
     }
-    await this.handleTriageAction(action);
+    await this.markTriaged(action.destination);
   }
 
   transitionToThreadList_() {
@@ -207,7 +207,7 @@ class AbstractThreadListView extends HTMLElement {
     this.undoableActions_ = [];
   }
 
-  async markTriaged(destination, opt_isSetPriority) {
+  async markTriaged(destination) {
     this.undoableActions_ = [];
 
     let threads;
@@ -222,7 +222,7 @@ class AbstractThreadListView extends HTMLElement {
       else
         this.transitionToThreadList_();
 
-      this.markSingleThreadTriaged(row.thread, destination, opt_isSetPriority);
+      this.markSingleThreadTriaged(row.thread, destination);
     } else {
       // Update the UI first and then archive one at a time.
       let threads = this.getThreads();
@@ -233,19 +233,23 @@ class AbstractThreadListView extends HTMLElement {
       for (let i = 0; i < threads.selectedRows.length; i++) {
         this.updateTitle_('archiving', `Archiving ${i + 1}/${threads.selectedRows.length} threads...`);
         let row = threads.selectedRows[i];
-        await this.markSingleThreadTriaged(row.thread, destination, opt_isSetPriority);
+        await this.markSingleThreadTriaged(row.thread, destination);
       }
       this.updateTitle_('archiving');
     }
   }
 
-  async markSingleThreadTriaged(thread, destination, opt_isSetPriority) {
-    if (opt_isSetPriority) {
-      this.undoableActions_.push(await thread.setPriority(destination));
+  async markSingleThreadTriaged(thread, destination) {
+    let triageResult = await thread.markTriaged(destination);
+    if (triageResult)
+      this.undoableActions_.push(triageResult);
+
+    // Setting priority adds the thread back into the triaged list at it's new priority.
+    if (destination && Labels.isPriorityLabel(destination)) {
+      // Don't need to do a fetch if the markTriaged call didn't do anything.
+      if (triageResult)
+        thread = await fetchThread(thread.id);
       await this.addThread(thread);
-    } else {
-      let queue = await this.getQueue(thread);
-      this.undoableActions_.push(await thread.markTriaged(destination, queue));
     }
   }
 
@@ -424,7 +428,7 @@ class AbstractThreadListView extends HTMLElement {
       // TODO: Handle if sending fails in such a way that the user can at least save their message text.
       await this.renderedRow_.thread.sendReply(compose.value, compose.getEmails(), replyAll.checked);
       this.updateActions_();
-      await this.markTriaged(Actions.ARCHIVE_ACTION.destination, false);
+      await this.markTriaged(Actions.ARCHIVE_ACTION.destination);
 
       this.updateTitle_('sendReply');
       this.isSending_ = false;

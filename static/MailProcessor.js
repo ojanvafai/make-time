@@ -64,16 +64,6 @@ class MailProcessor {
     return false;
   }
 
-  addLabelPrefix(labelName) {
-    if (this.queuedLabelMap_.get(labelName).queue != MailProcessor.IMMEDIATE)
-      return Labels.addQueuedPrefix(labelName);
-    return this.addAutoPrefix(labelName);
-  }
-
-  addAutoPrefix(labelName) {
-    return Labels.NEEDS_TRIAGE_LABEL + "/" + labelName;
-  }
-
   async writeToStatsPage(timestamp, num_threads_processed, per_label_counts, time_taken) {
     var data = [timestamp, num_threads_processed, time_taken, JSON.stringify(per_label_counts)];
     await SpreadsheetUtils.appendToSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
@@ -267,9 +257,9 @@ class MailProcessor {
 
   async currentTriagedLabel(thread) {
     var labels = await thread.getLabelNames();
-    for (var i = 0; i < labels.length; i++) {
-      if (labels[i].startsWith(Labels.TRIAGED_LABEL + '/'))
-        return labels[i];
+    for (let label of labels) {
+      if (Labels.isTriagedLabel(label))
+        return label;
     }
     return null;
   }
@@ -317,10 +307,10 @@ class MailProcessor {
           let prefixedLabelName;
 
           // Don't queue if already in the inbox or triaged.
-          if (isAlreadyInInbox || currentTriagedLabel) {
-            prefixedLabelName = this.addAutoPrefix(labelName);
+          if (isAlreadyInInbox || currentTriagedLabel || this.queuedLabelMap_.get(labelName).queue == MailProcessor.IMMEDIATE) {
+            prefixedLabelName = Labels.needsTriageLabel(labelName);
           } else {
-            prefixedLabelName = this.addLabelPrefix(labelName);
+            prefixedLabelName = Labels.addQueuedPrefix(labelName);
           }
 
           let prefixedLabelId = await this.allLabels_.getId(prefixedLabelName);
@@ -365,7 +355,7 @@ class MailProcessor {
   async dequeue(labelName, queue) {
     var queuedLabelName = Labels.addQueuedPrefix(labelName);
     var queuedLabel = await this.allLabels_.getId(queuedLabelName);
-    var autoLabel = await this.allLabels_.getId(this.addAutoPrefix(labelName));
+    var autoLabel = await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
 
     let threads = [];
     await fetchThreads(thread => threads.push(thread), {
@@ -453,7 +443,6 @@ class MailProcessor {
 
     await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_DEQUEUE_TIME, value: Date.now()}]);
   }
-
 }
 
 // TODO: This isn't really the righe place for these.

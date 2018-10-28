@@ -13,11 +13,6 @@ class MakeTimeView extends AbstractThreadListView {
     this.appendButton_('/triage', 'Back to Triaging');
   }
 
-  async handleTriageAction(action) {
-    let isSetPriority = action != Actions.ARCHIVE_ACTION;
-    await this.markTriaged(action.destination, isSetPriority);
-  }
-
   compareRowGroups(a, b) {
     let aOrder = MakeTimeView.PRIORITY_SORT_ORDER[a.queue];
     let bOrder = MakeTimeView.PRIORITY_SORT_ORDER[b.queue];
@@ -25,9 +20,7 @@ class MakeTimeView extends AbstractThreadListView {
   }
 
   async fetch_() {
-    let labels = await this.allLabels_.getTheadCountForLabels((labelName) => {
-      return labelName.startsWith(Labels.PRIORITY_LABEL + '/');
-    });
+    let labels = await this.allLabels_.getTheadCountForLabels(Labels.isPriorityLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
 
     // TODO: Sort labelsToFetch so higher priority labesl are fetched first.

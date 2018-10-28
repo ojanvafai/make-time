@@ -15,7 +15,7 @@ class TriageView extends AbstractThreadListView {
 
   // TODO: Store the list of threads in localStorage and update asynchronously.
   async fetch_() {
-    let labels = await this.allLabels_.getTheadCountForLabels((labelName) => labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'));
+    let labels = await this.allLabels_.getTheadCountForLabels(Labels.isNeedsTriageLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     let queuesToFetch = getQueuedLabelMap().getSorted(labelsToFetch);
 
@@ -42,10 +42,6 @@ class TriageView extends AbstractThreadListView {
         queue: queueData[0],
       });
     }
-  }
-
-  async handleTriageAction(action) {
-    await this.markTriaged(action.destination);
   }
 
   compareRowGroups(a, b) {

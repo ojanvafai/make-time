@@ -20,7 +20,7 @@ class Thread {
       }
     }
 
-    this.labelNames_ = [];
+    this.labelNames_ = new Set();
     for (let id of this.labelIds_) {
       let name = this.allLabels_.getName(id);
       if (!name) {
@@ -28,14 +28,14 @@ class Thread {
         continue;
       }
 
-      if (name.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'))
+      if (Labels.isNeedsTriageLabel(name))
         this.setQueue(name);
-      else if (name.startsWith(Labels.TRIAGED_LABEL + '/'))
+      else if (Labels.isTriagedLabel(name))
         this.triagedQueue_ = name;
-      else if (name.startsWith(Labels.PRIORITY_LABEL + '/'))
+      else if (Labels.isPriorityLabel(name))
         this.priority_ = name;
 
-      this.labelNames_.push(name);
+      this.labelNames_.add(name);
     }
 
     if (!this.queue_)
@@ -82,43 +82,30 @@ class Thread {
     }
   }
 
-  async setPriority(destination) {
-    if (destination === undefined)
-      throw `Invalid priority attempted.`;
-
-    var addLabelIds = [await this.allLabels_.getId(destination)];
-    var removeLabelNames = this.allLabels_.getPriorityLabelNames().filter(item => item != destination);
-    let removeLabelIds = await this.allLabels_.getIds(removeLabelNames);
-    return await this.modify(addLabelIds, removeLabelIds);
-  }
-
-  async markTriaged(destination, opt_queue) {
+  async markTriaged(destination) {
     if (destination === undefined)
       throw `Invalid triage action attempted.`;
 
     // Need the message details to get the list of current applied labels.
-    // Almost always we will have fetched this since we're showing the message
-    // to the user already.
+    // Almost always we will have alread fetched this since we're showing the
+    // thread to the user already.
     await this.fetchMessageDetails();
+
+    if (this.labelNames_.has(destination))
+      return null;
 
     var addLabelIds = [];
     if (destination)
       addLabelIds.push(await this.allLabels_.getId(destination));
 
     var removeLabelIds = ['UNREAD', 'INBOX'];
-    if (destination) {
-      // TODO: Should probably remove all make-time/needstriage labels here. Although, in theory
-      // there should never be two make-time/needstriage labels on a given thread.
-      var queue = opt_queue || await this.getQueue();
-      if (queue)
-        removeLabelIds.push(await this.allLabels_.getId(queue));
-    } else {
-      // If archiving, remove all make-time labels except unprocessed. Don't want
-      // archiving a thread to remove this label without actually processing it.
-      let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
-      let makeTimeIds = this.allLabels_.getMakeTimeLabelIds().filter((item) => item != unprocessedId);
-      removeLabelIds = removeLabelIds.concat(makeTimeIds);
-    }
+    // If archiving, remove all make-time labels except unprocessed. Don't want
+    // archiving a thread to remove this label without actually processing it.
+    let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
+    let makeTimeIds = this.allLabels_.getMakeTimeLabelIds().filter((item) => {
+      return item != unprocessedId && !addLabelIds.includes(item);
+    });
+    removeLabelIds = removeLabelIds.concat(makeTimeIds);
 
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
@@ -191,8 +178,6 @@ class Thread {
   }
 
   async fetchMessageDetails_(forceNetwork) {
-    this.assertNotStale_();
-
     let key = `thread-${getCurrentWeekNumber()}-${this.historyId}`;
 
     if (!forceNetwork) {
@@ -225,6 +210,7 @@ class Thread {
   }
 
   async fetchMessageDetails() {
+    this.assertNotStale_();
     if (this.processedMessages_)
       return;
     return await this.updateMessageDetails();
