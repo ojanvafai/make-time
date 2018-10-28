@@ -40,6 +40,16 @@ class MakeTimeView extends AbstractThreadListView {
     });
   }
 
+  async handleTriaged(destination, triageResult, thread) {
+    // Setting priority adds the thread back into the triaged list at it's new priority.
+    if (!destination || !Labels.isPriorityLabel(destination))
+      return;
+    // Don't need to do a fetch if the markTriaged call didn't do anything.
+    if (triageResult)
+      thread = await fetchThread(thread.id);
+    await this.addThread(thread);
+  }
+
   async getDisplayableQueue(thread) {
     let priority = await thread.getPriority();
     if (priority)

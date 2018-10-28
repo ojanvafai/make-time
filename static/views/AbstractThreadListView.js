@@ -243,14 +243,8 @@ class AbstractThreadListView extends HTMLElement {
     let triageResult = await thread.markTriaged(destination);
     if (triageResult)
       this.undoableActions_.push(triageResult);
-
-    // Setting priority adds the thread back into the triaged list at it's new priority.
-    if (destination && Labels.isPriorityLabel(destination)) {
-      // Don't need to do a fetch if the markTriaged call didn't do anything.
-      if (triageResult)
-        thread = await fetchThread(thread.id);
-      await this.addThread(thread);
-    }
+    if (this.handleTriaged)
+      await this.handleTriaged(destination, triageResult, thread);
   }
 
   async undoLastAction_() {
