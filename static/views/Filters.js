@@ -1,4 +1,7 @@
-class FiltersView extends HTMLElement {
+import { Settings } from '../Settings.js';
+import { showDialog } from '../main.js';
+
+export class FiltersView extends HTMLElement {
   constructor(settings) {
     super();
     this.style.cssText = `

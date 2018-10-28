@@ -1,4 +1,9 @@
-class TriageView extends AbstractThreadListView {
+import { AbstractThreadListView } from './AbstractThreadListView.js';
+import { Actions } from '../Actions.js';
+import { addThread, fetchThreads } from '../main.js';
+import { Labels } from '../Labels.js';
+
+export class TriageView extends AbstractThreadListView {
   constructor(threads, allLabels, vacationSubject, queueSettings, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
     let countDown = true;
     super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
@@ -17,7 +22,7 @@ class TriageView extends AbstractThreadListView {
   async fetch_() {
     let labels = await this.allLabels_.getTheadCountForLabels(Labels.isNeedsTriageLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
-    let queuesToFetch = getQueuedLabelMap().getSorted(labelsToFetch);
+    let queuesToFetch = this.queueSettings_.getSorted(labelsToFetch);
 
     let vacationQuery = '';
     if (this.vacationSubject_) {

@@ -1,7 +1,5 @@
 // Modified verison of https://github.com/dstillman/pathparser.js
-"use strict";
-
-class PathParser {
+export class Router {
   constructor() {
     this.rules_ = [];
   }

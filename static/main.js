@@ -1,3 +1,18 @@
+import { ErrorDialog } from './ErrorDialog.js';
+import { gapiFetch } from './Net.js';
+import { Labels } from './Labels.js';
+import { MailProcessor } from './MailProcessor.js';
+import { MakeTimeView } from './views/MakeTimeView.js';
+import { Router } from './Router.js';
+import { QueueSettings } from './QueueSettings.js';
+import { ServerStorage } from './ServerStorage.js';
+import { Settings } from './Settings.js';
+import { SettingsView } from './views/Settings.js';
+import { showHelp } from './help.js';
+import { ThreadCache } from './ThreadCache.js';
+import { ThreadGroups } from './ThreadGroups.js';
+import { TriageView } from './views/TriageView.js';
+
 // Client ID and API key from the Developer Console
 let CLIENT_ID = location.toString().includes('appspot') ? '410602498749-pe1lolovqrgun0ia1jipke33ojpcmbpq.apps.googleusercontent.com' : '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
 
@@ -10,7 +25,7 @@ let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/res
 // included, separated by spaces.
 let SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly';
 
-let USER_ID = 'me';
+export let USER_ID = 'me';
 let authorizeButton = document.getElementById('authorize-button');
 
 let currentView_;
@@ -25,7 +40,7 @@ let isProcessingMail_ = false;
 let threads_ = new ThreadGroups();
 let WEEKS_TO_STORE_ = 2;
 
-var router = new PathParser();
+var router = new Router();
 router.add('/triage', async (foo) => {
   if (currentView_) {
     await currentView_.tearDown();
@@ -78,7 +93,7 @@ document.getElementById('main-content').addEventListener('click', (e) => {
   }
 })
 
-function showDialog(contents) {
+export function showDialog(contents) {
   let dialog = document.createElement('dialog');
   // Subtract out the top/bottom, padding and border from the max-height.
   dialog.style.cssText = `
@@ -174,7 +189,7 @@ function updateTitleBase(stack, node, key, ...opt_title) {
     node.append(...stack[stack.length - 1].title);
 }
 
-async function fetchThread(id) {
+export async function fetchThread(id) {
   let requestParams = {
     'userId': USER_ID,
     'id': id,
@@ -183,7 +198,7 @@ async function fetchThread(id) {
   return threadCache_.get(resp.result, labels_);
 }
 
-async function fetchThreads(forEachThread, options) {
+export async function fetchThreads(forEachThread, options) {
   // Chats don't expose their bodies in the gmail API, so just skip them.
   let query = '-in:chats ';
 
@@ -265,7 +280,8 @@ async function bankruptThread(thread) {
   await thread.markTriaged(newLabel);
 }
 
-async function addThread(thread) {
+// TODO: Don't export this.
+export async function addThread(thread) {
   let vacationSubject = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
   if (vacationSubject) {
     let subject = await thread.getSubject();
@@ -441,7 +457,7 @@ async function processMail() {
   isProcessingMail_ = true;
   updateLoaderTitle('processMail', 'Processing mail backlog...');
 
-  let mailProcessor = new MailProcessor(settings_, addThread, getQueuedLabelMap(), labels_);
+  let mailProcessor = new MailProcessor(settings_, addThread, getQueuedLabelMap(), labels_, updateLoaderTitle);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
@@ -450,7 +466,8 @@ async function processMail() {
   isProcessingMail_ = false;
 }
 
-function getCurrentWeekNumber() {
+// TODO: Put this somewhere better.
+export function getCurrentWeekNumber() {
   let today = new Date();
   var januaryFirst = new Date(today.getFullYear(), 0, 1);
   var msInDay = 86400000;

@@ -1,4 +1,4 @@
-class LongTasks extends HTMLElement {
+export class LongTasks extends HTMLElement {
   constructor() {
     super();
 

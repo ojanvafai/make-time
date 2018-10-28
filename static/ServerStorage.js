@@ -1,4 +1,6 @@
-class ServerStorage {
+import { SpreadsheetUtils } from './SpreadsheetUtils.js';
+
+export class ServerStorage {
   constructor(spreadsheetId) {
     this.spreadsheetId_ = spreadsheetId;
   }

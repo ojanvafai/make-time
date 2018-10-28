@@ -1,4 +1,6 @@
-class ErrorDialog extends HTMLElement {
+import { showDialog } from './main.js';
+
+export class ErrorDialog extends HTMLElement {
   constructor(message) {
     super();
     this.append(message);

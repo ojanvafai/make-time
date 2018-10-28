@@ -1,4 +1,11 @@
-class Thread {
+import { Base64 } from './Base64.js';
+import { gapiFetch } from './Net.js';
+import { IDBKeyVal } from './idb-keyval.js';
+import { Labels } from './Labels.js';
+import { Message } from './Message.js';
+import { USER_ID, getCurrentWeekNumber } from './main.js';
+
+export class Thread {
   constructor(thread, allLabels) {
     this.id = thread.id;
     this.historyId = thread.historyId;

@@ -1,4 +1,7 @@
-class Labels {
+import { gapiFetch } from './Net.js';
+import { USER_ID } from './main.js';
+
+export class Labels {
   async fetch() {
     var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
       'userId': USER_ID

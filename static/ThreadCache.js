@@ -1,4 +1,6 @@
-class ThreadCache {
+import { Thread } from './Thread.js';
+
+export class ThreadCache {
   constructor() {
     this.cache_ = new Map();
   }

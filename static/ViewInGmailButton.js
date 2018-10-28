@@ -1,4 +1,4 @@
-class ViewInGmailButton extends HTMLElement {
+export class ViewInGmailButton extends HTMLElement {
   constructor() {
     super();
 

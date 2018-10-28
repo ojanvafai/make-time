@@ -1,4 +1,8 @@
-class QueuesView extends HTMLElement {
+import { FiltersView } from './Filters.js';
+import { MailProcessor } from '../MailProcessor.js';
+import { showDialog } from '../main.js';
+
+export class QueuesView extends HTMLElement {
   constructor(queueNames, queuedLabelData) {
     super();
 

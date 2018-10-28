@@ -1,4 +1,13 @@
-class AbstractThreadListView extends HTMLElement {
+import { Actions } from '../Actions.js';
+import { Compose } from '../Compose.js';
+import { fetchThread } from '../main.js';
+import { RenderedThread } from '../RenderedThread.js';
+import { ThreadRow } from './ThreadRow.js';
+import { ThreadRowGroup } from './ThreadRowGroup.js';
+import { Timer } from '../Timer.js';
+import { ViewInGmailButton } from '../ViewInGmailButton.js';
+
+export class AbstractThreadListView extends HTMLElement {
   constructor(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
 

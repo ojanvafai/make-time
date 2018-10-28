@@ -1,4 +1,10 @@
-class SettingsView extends HTMLElement {
+import { FiltersView } from './Filters.js';
+import { Labels } from '../Labels.js';
+import { QueuesView } from './Queues.js';
+import { Settings } from '../Settings.js';
+import { showDialog } from '../main.js';
+
+export class SettingsView extends HTMLElement {
   constructor(settingsData, queuedLabelData) {
     super();
     this.style.cssText = `

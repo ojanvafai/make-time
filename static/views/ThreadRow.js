@@ -1,4 +1,6 @@
-class ThreadRow extends HTMLElement {
+import { ViewInGmailButton } from '../ViewInGmailButton.js';
+
+export class ThreadRow extends HTMLElement {
   constructor(thread) {
     super();
     this.style.display = 'flex';

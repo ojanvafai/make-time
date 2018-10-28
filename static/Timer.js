@@ -1,4 +1,4 @@
-class Timer extends HTMLElement {
+export class Timer extends HTMLElement {
   constructor(autoStart, countDown, duration, overlayContainer) {
     super();
 

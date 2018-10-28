@@ -1,4 +1,7 @@
-class Settings {
+import { ServerStorage } from './ServerStorage.js';
+import { SpreadsheetUtils } from './SpreadsheetUtils.js';
+
+export class Settings {
   async fetch() {
     this.spreadsheetId = await this.getSpreadsheetId_();
     this.storage_ = new ServerStorage(this.spreadsheetId);

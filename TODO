@@ -43,7 +43,7 @@ P2: Will only do if something makes these seem worth doing.
 - Allow sorting the threads within a priority bucket.
 - auto go into make time when having triaged all the items
 - Generalize tha ability to skip any of the modes. Curreently can only skip TriageView.
-- Lazy load things like views/Settings.js and ViewOne.js. I guess this depends on switching to modules.
+- Lazy load things like views/Settings.js and ViewOne.js.
 - add undo to TriageView and MakeTime
 - Fix eliding to group better
 - Add autocomplete for label names in the queues and filters views.

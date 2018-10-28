@@ -1,6 +1,8 @@
+import { showDialog } from './main.js';
+
 let helpHtml_;
 
-function showHelp(settings) {
+export function showHelp(settings) {
   let contents = document.createElement('div');
   contents.style.overflow = 'auto';
   contents.innerHTML = helpText(settings);

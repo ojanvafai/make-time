@@ -1,12 +1,18 @@
+import { fetchThread, fetchThreads } from './main.js';
+import { Labels } from './Labels.js';
+import { ServerStorage } from './ServerStorage.js';
+import { SpreadsheetUtils } from './SpreadsheetUtils.js';
+
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
-class MailProcessor {
-  constructor(settings, pushThread, queuedLabelMap, allLabels) {
+export class MailProcessor {
+  constructor(settings, pushThread, queuedLabelMap, allLabels, updateTitle) {
     this.settings = settings;
     this.pushThreadOriginal_ = pushThread;
     this.queuedLabelMap_ = queuedLabelMap;
     this.allLabels_ = allLabels;
+    this.updateTitle_ = updateTitle;
   }
 
   async pushThread_(thread) {
@@ -89,7 +95,7 @@ class MailProcessor {
   }
 
   async collapseStats() {
-    updateLoaderTitle('collapseStats', 'Writing stats...');
+    this.updateTitle_('collapseStats', 'Writing stats...');
 
     let stats;
     var rows = await SpreadsheetUtils.fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
@@ -172,7 +178,7 @@ class MailProcessor {
     if (lastRowProcessed)
       await SpreadsheetUtils.deleteRows(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, 1, lastRowProcessed + 1);
 
-    updateLoaderTitle('collapseStats');
+    this.updateTitle_('collapseStats');
   }
 
   matchesHeader_(message, header) {
@@ -281,7 +287,7 @@ class MailProcessor {
 
     for (var i = 0; i < threads.length; i++) {
       try {
-        updateLoaderTitle('processMail', `Processing ${i + 1}/${threads.length} unprocessed threads...`);
+        this.updateTitle_('processMail', `Processing ${i + 1}/${threads.length} unprocessed threads...`);
 
         let thread = threads[i];
         let labelName;
@@ -348,7 +354,7 @@ class MailProcessor {
         startTime.getTime(), newlyLabeledThreadsCount, perLabelCounts, Date.now() - startTime.getTime());
     }
 
-    updateLoaderTitle('processMail');
+    this.updateTitle_('processMail');
     return threads.length;
   }
 
@@ -366,7 +372,7 @@ class MailProcessor {
       return;
 
     for (var i = 0; i < threads.length; i++) {
-      updateLoaderTitle('dequeue', `Dequeuing ${i + 1}/${threads.length} from ${labelName}...`);
+      this.updateTitle_('dequeue', `Dequeuing ${i + 1}/${threads.length} from ${labelName}...`);
 
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
@@ -374,7 +380,7 @@ class MailProcessor {
       await thread.modify(addLabelIds, removeLabelIds);
       await this.pushThread_(thread);
     }
-    updateLoaderTitle('dequeue');
+    this.updateTitle_('dequeue');
   }
 
   async processSingleQueue(queue) {

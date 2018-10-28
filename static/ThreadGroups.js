@@ -1,4 +1,4 @@
-class ThreadGroups {
+export class ThreadGroups {
   constructor() {
     this.triaged_ = [];
     this.needsTriage_ = [];

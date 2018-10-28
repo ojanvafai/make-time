@@ -1,4 +1,4 @@
-class ThreadRowGroup extends HTMLElement {
+export class ThreadRowGroup extends HTMLElement {
   constructor(queue) {
     super();
     this.style.display = 'block';

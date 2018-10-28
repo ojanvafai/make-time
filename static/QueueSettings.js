@@ -1,4 +1,10 @@
-class QueueSettings {
+import { Labels } from './Labels.js';
+import { MailProcessor } from './MailProcessor.js';
+import { QueuesView } from './views/Queues.js';
+import { Settings } from './Settings.js';
+import { SpreadsheetUtils } from './SpreadsheetUtils.js';
+
+export class QueueSettings {
   constructor(spreadsheetId) {
     this.spreadsheetId_ = spreadsheetId;
   }

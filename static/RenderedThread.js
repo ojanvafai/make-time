@@ -1,4 +1,4 @@
-class RenderedThread {
+export class RenderedThread {
   constructor(thread) {
     this.thread = thread;
     thread.rendered = this;

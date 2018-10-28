@@ -1,4 +1,6 @@
-class Actions extends HTMLElement {
+import { Labels } from './Labels.js';
+
+export class Actions extends HTMLElement {
   constructor(view, actions, opt_overflowActions) {
     super();
     this.style.display = 'flex';

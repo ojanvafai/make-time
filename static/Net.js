@@ -1,4 +1,3 @@
-
 let queuedRequests_ = [];
 let TEN_SECONDS = 10 * 1000;
 
@@ -17,7 +16,7 @@ window.addEventListener('online', (e) => {
   queuedRequests_ = [];
 });
 
-async function gapiFetch(method, requestParams, opt_requestBody) {
+export async function gapiFetch(method, requestParams, opt_requestBody) {
   let numRetries = 3;
   for (var i = 0; i < numRetries; i++) {
     try {

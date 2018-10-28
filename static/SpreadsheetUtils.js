@@ -1,6 +1,6 @@
-let SpreadsheetUtils = {};
+import { gapiFetch } from './Net.js';
 
-(() => {
+export let SpreadsheetUtils = {};
 
 SpreadsheetUtils.a1Notation = (sheetName, startRowIndex, numColumns) => {
   let aCharCode = "A".charCodeAt(0);
@@ -132,5 +132,3 @@ SpreadsheetUtils.deleteRows = async (spreadsheetId, sheetName, startIndex, endIn
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.batchUpdate, params, batchUpdateSpreadsheetRequestBody);
   // TODO: Handle response.status != 200.
 }
-
-})();

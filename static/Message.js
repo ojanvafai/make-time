@@ -1,4 +1,7 @@
-class Message {
+import { Base64 } from './base64.js';
+import { QuoteElidedMessage } from './QuoteElidedMessage.js';
+
+export class Message {
   constructor(message, previousMessage) {
     this.base64_ = new Base64();
 

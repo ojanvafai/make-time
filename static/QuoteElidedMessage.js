@@ -1,14 +1,9 @@
 // Rolling hash taken from https://gist.github.com/i-e-b/b892d95ac7c0cf4b70e4.
-'use strict';
-
-// TODO: Use ES Modules!
-(function() {
-
 let MINIMUM_HASH_LENGTH = 10;
 let MINIMUM_ELIDE_LENGTH = 100;
 let TOGGLER;
 
-class QuoteElidedMessage {
+export class QuoteElidedMessage {
   constructor(currentMessage, previousMessage) {
     this.computeHashes_(currentMessage);
     if (!previousMessage)
@@ -203,6 +198,3 @@ QuoteElidedMessage.toggleElided = (e, element) => {
     QuoteElidedMessage.updateStyling_(element);
   }
 }
-
-window.QuoteElidedMessage = QuoteElidedMessage;
-})();

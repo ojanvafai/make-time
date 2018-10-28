@@ -1,4 +1,4 @@
-class Compose extends HTMLElement {
+export class Compose extends HTMLElement {
   constructor(contacts) {
     super();
 

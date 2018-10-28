@@ -1,4 +1,9 @@
-class MakeTimeView extends AbstractThreadListView {
+import { AbstractThreadListView } from './AbstractThreadListView.js';
+import { Actions } from '../Actions.js';
+import { fetchThread, fetchThreads } from '../main.js';
+import { Labels } from '../Labels.js';
+
+export class MakeTimeView extends AbstractThreadListView {
   constructor(threads, allLabels, vacation, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
     let countDown = false;
     super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
@@ -35,7 +40,7 @@ class MakeTimeView extends AbstractThreadListView {
     // Fetch latent unprioritized actionitem threads.
     // TODO: Remove this once we've fully removed actionitem as a concept.
     await fetchThreads(this.addThread.bind(this), {
-      query: `in:${Labels.ACTION_ITEM_LABEL} -(in:${labels_.getPriorityLabelNames().join(' OR in:')})`,
+      query: `in:${Labels.ACTION_ITEM_LABEL} -(in:${this.allLabels_.getPriorityLabelNames().join(' OR in:')})`,
       includeTriaged: true,
     });
   }
