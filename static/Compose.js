@@ -1,5 +1,5 @@
 export class Compose extends HTMLElement {
-  constructor(contacts) {
+  constructor(contacts, opt_isMultiline) {
     super();
 
     this.style.display = 'flex';
@@ -31,12 +31,13 @@ export class Compose extends HTMLElement {
         if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey)
           return;
 
-        if (this.updateIsAutocompleting_())
+        if (this.updateIsAutocompleting_()) {
           this.submitAutocomplete_();
-        else
+          e.preventDefault();
+        } else if (!opt_isMultiline) {
           this.dispatchEvent(new Event('submit'));
-
-        e.preventDefault();
+          e.preventDefault();
+        }
         return;
 
       case 'ArrowLeft':
@@ -75,7 +76,7 @@ export class Compose extends HTMLElement {
       this.content_.removeAttribute('placeholder');
       this.content_.style.color = '';
     } else {
-      this.content_.setAttribute('placeholder', this.placeholder_);
+      this.content_.setAttribute('placeholder', this.placeholder_ || '');
       this.content_.style.color = 'grey';
     }
   }

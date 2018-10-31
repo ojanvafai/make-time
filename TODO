@@ -1,5 +1,9 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
+Load faster:
+- Don't init settings and whatnot for the compose view
+- Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
+
 P1: Will try to do soonish.
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
 - Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.

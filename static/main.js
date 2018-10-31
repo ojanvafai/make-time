@@ -1,5 +1,7 @@
+import { ComposeView } from './views/ComposeView.js';
 import { ErrorDialog } from './ErrorDialog.js';
 import { gapiFetch } from './Net.js';
+import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
 import { MailProcessor } from './MailProcessor.js';
 import { MakeTimeView } from './views/MakeTimeView.js';
@@ -41,12 +43,14 @@ let threads_ = new ThreadGroups();
 let WEEKS_TO_STORE_ = 2;
 
 var router = new Router();
-router.add('/triage', async (foo) => {
+router.add('/compose', async (foo) => {
   if (currentView_) {
     await currentView_.tearDown();
   }
-  await viewTriage();
+  await viewCompose();
 });
+router.add('/', routeToTriage);
+router.add('/triage', routeToTriage);
 router.add('/make-time', async (foo) => {
   if (currentView_)
     await currentView_.tearDown();
@@ -59,6 +63,13 @@ router.add('/best-effort', async (foo) => {
   threads_.processBestEffort();
   await viewTriage();
 });
+
+async function routeToTriage() {
+  if (currentView_) {
+    await currentView_.tearDown();
+  }
+  await viewTriage();
+}
 
 let DRAWER_OPEN = 'drawer-open';
 
@@ -115,12 +126,16 @@ export function showDialog(contents) {
   return dialog;
 }
 
+async function viewCompose() {
+  setView(new ComposeView(contacts_));
+}
+
 async function viewTriage() {
   let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
   let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new TriageView(threads_, labels_, vacation, getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  setView(new TriageView(threads_, labels_, vacation, await getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
 async function viewMakeTime() {
@@ -248,7 +263,7 @@ async function isBestEffortQueue(thread) {
   let queue = await thread.getQueue();
   let parts = queue.split('/');
   let lastPart = parts[parts.length - 1];
-  let data = getQueuedLabelMap().get(lastPart);
+  let data = (await getQueuedLabelMap()).get(lastPart);
   return data && data.goal == 'Best Effort';
 }
 
@@ -260,7 +275,7 @@ async function isBankrupt(thread) {
   let messages = await thread.getMessages();
   let date = messages[messages.length - 1].date;
   let queue = await thread.getQueue();
-  let queueData = getQueuedLabelMap().get(queue);
+  let queueData = (await getQueuedLabelMap()).get(queue);
 
   let numDays = 7;
   if (queueData.queue == MailProcessor.WEEKLY)
@@ -343,8 +358,8 @@ async function onLoad() {
   settings_ = new Settings();
   labels_ = new Labels();
 
+  // TODO: Don't block on this if we're just going into compose view.
   await Promise.all([settings_.fetch(), labels_.fetch()]);
-  await fetchQueuedLabelMap(settings_.spreadsheetId);
 
   let storage = new ServerStorage(settings_.spreadsheetId);
   if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
@@ -353,7 +368,7 @@ async function onLoad() {
   }
 
   let settingsButton = createMenuItem('Settings', {
-    onclick: () => new SettingsView(settings_, getQueuedLabelMap()),
+    onclick: async () => new SettingsView(settings_, await getQueuedLabelMap()),
   });
 
   let helpButton = createMenuItem('Help', {
@@ -365,6 +380,7 @@ async function onLoad() {
 
   document.getElementById('drawer').append(
     menuTitle,
+    createMenuItem('Compose', {href: '/compose', nested: true}),
     createMenuItem('Triage', {href: '/triage', nested: true}),
     createMenuItem('MakeTime', {href: '/make-time', nested: true}),
     settingsButton,
@@ -372,21 +388,18 @@ async function onLoad() {
 
   updateLoaderTitle('onLoad', 'Fetching threads to triage...');
 
-  await router.run('/triage');
-
-  // TODO: Make all the below happen after the TriageView is done loading.
-  await cleanupNeedsTriageThreads();
+  await router.run(window.location.pathname);
 
   // Don't want to show the earlier title, but still want to indicate loading is happening.
   // since we're going to processMail still. It's a less jarring experience if the loading
   // spinner doesn't go away and then come back when conteacts are done being fetched.
   updateLoaderTitle('onLoad', '\xa0');
 
+  await fetchContacts(gapi.auth.getToken());
+
+  update();
   // Wait until we've fetched all the threads before trying to process updates regularly.
   setInterval(update, 1000 * 60);
-
-  await fetchContacts(gapi.auth.getToken());
-  await processMail();
 
   updateLoaderTitle('onLoad');
 }
@@ -435,18 +448,12 @@ async function fetchContacts(token) {
   localStorage.setItem(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
-function getQueuedLabelMap() {
-  if (!queuedLabelMap_)
-    throw 'Attempted to use queuedLabelMap_ before it was fetched';
+async function getQueuedLabelMap() {
+  if (!queuedLabelMap_) {
+    queuedLabelMap_ = new QueueSettings(settings_.spreadsheetId);
+    await queuedLabelMap_.fetch();
+  }
   return queuedLabelMap_;
-}
-
-async function fetchQueuedLabelMap(spreadsheetId) {
-  if (queuedLabelMap_)
-    throw 'Attempted to fetch queuedLabelMap_ multiple times';
-
-  queuedLabelMap_ = new QueueSettings(spreadsheetId);
-  await queuedLabelMap_.fetch();
 }
 
 // TODO: Move this to a cron
@@ -457,7 +464,7 @@ async function processMail() {
   isProcessingMail_ = true;
   updateLoaderTitle('processMail', 'Processing mail backlog...');
 
-  let mailProcessor = new MailProcessor(settings_, addThread, getQueuedLabelMap(), labels_, updateLoaderTitle);
+  let mailProcessor = new MailProcessor(settings_, addThread, await getQueuedLabelMap(), labels_, updateLoaderTitle);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
@@ -496,7 +503,8 @@ async function gcLocalStorage() {
 
 async function update() {
   await cleanupNeedsTriageThreads();
-  await currentView_.updateCurrentThread();
+  if (currentView_.updateCurrentThread)
+    await currentView_.updateCurrentThread();
   await processMail();
   await gcLocalStorage();
 }
@@ -559,7 +567,7 @@ document.body.addEventListener('keydown', async (e) => {
     return;
   }
 
-  if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+  if (currentView_.dispatchShortcut && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
     await currentView_.dispatchShortcut(e);
 });
 

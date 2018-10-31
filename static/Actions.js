@@ -89,16 +89,6 @@ export class Actions extends HTMLElement {
     Actions.DELEGATE_ACTION.destination = Labels.DELEGATE_LABEL;
   }
 
-  findAction_(key, actions) {
-    for (let action of actions) {
-      // The first letter of the action name is always the keyboard shortcut.
-      if (action.name.charAt(0).toLowerCase() == e.key) {
-        this.takeAction(action, e);
-        return;
-      }
-    }
-  }
-
   dispatchShortcut(e) {
     let test = (action) => {
       return action.name.charAt(0).toLowerCase() == e.key;
