@@ -1,7 +1,6 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
 Load faster:
-- Don't init settings and whatnot for the compose view
 - Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
 
 P1: Will try to do soonish.

@@ -131,20 +131,26 @@ async function viewCompose() {
 }
 
 async function viewTriage() {
-  let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
-  let timerDuration = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
-  let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new TriageView(threads_, labels_, vacation, await getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  updateLoaderTitle('viewTriage', 'Fetching threads to triage...');
+
+  let settings = await getSettings();
+  let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
+  let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
+  let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+  let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
+  setView(new TriageView(threads_, await getLabels(), vacation, await getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+
+  updateLoaderTitle('viewTriage', '');
 }
 
 async function viewMakeTime() {
+  let settings = await getSettings();
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
-  let vacation = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  let autoStartTimer = settings_.get(ServerStorage.KEYS.AUTO_START_TIMER);
-  let timerDuration = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
-  let allowedReplyLength =  settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new MakeTimeView(threads_, labels_, vacation, updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
+  let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
+  let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
+  let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+  setView(new MakeTimeView(threads_, await getLabels(), vacation, updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
 function setView(view) {
@@ -210,7 +216,7 @@ export async function fetchThread(id) {
     'id': id,
   };
   let resp = await gapiFetch(gapi.client.gmail.users.threads.get, requestParams);
-  return threadCache_.get(resp.result, labels_);
+  return threadCache_.get(resp.result, await getLabels());
 }
 
 export async function fetchThreads(forEachThread, options) {
@@ -224,14 +230,14 @@ export async function fetchThreads(forEachThread, options) {
     query += ' in:' + options.queue;
 
 
-  let daysToShow = settings_.get(ServerStorage.KEYS.DAYS_TO_SHOW);
+  let daysToShow = (await getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW);
   if (daysToShow)
     query += ` newer_than:${daysToShow}d`;
 
 
   // We only have triaged labels once they've actually been created.
-  if (!options.includeTriaged && labels_.getTriagedLabelNames().length)
-    query += ' -(in:' + labels_.getTriagedLabelNames().join(' OR in:') + ')';
+  if (!options.includeTriaged && (await getLabels()).getTriagedLabelNames().length)
+    query += ' -(in:' + (await getLabels()).getTriagedLabelNames().join(' OR in:') + ')';
 
   let getPageOfThreads = async (opt_pageToken) => {
     let requestParams = {
@@ -245,7 +251,7 @@ export async function fetchThreads(forEachThread, options) {
     let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      let thread = threadCache_.get(rawThread, labels_);
+      let thread = threadCache_.get(rawThread, await getLabels());
       if (options.queue)
         thread.setQueue(options.queue);
       await forEachThread(thread);
@@ -297,7 +303,7 @@ async function bankruptThread(thread) {
 
 // TODO: Don't export this.
 export async function addThread(thread) {
-  let vacationSubject = settings_.get(ServerStorage.KEYS.VACATION_SUBJECT);
+  let vacationSubject = (await getSettings()).get(ServerStorage.KEYS.VACATION_SUBJECT);
   if (vacationSubject) {
     let subject = await thread.getSubject();
     if (!subject || !subject.toLowerCase().includes(vacationSubject.toLowerCase()))
@@ -345,7 +351,7 @@ async function markTriaged(thread) {
 
 // Archive threads that are needstriage, but not in the inbox or unprocessed.
 async function cleanupNeedsTriageThreads() {
-  let needsTriageLabels = labels_.getNeedsTriageLabelNames();
+  let needsTriageLabels = (await getLabels()).getNeedsTriageLabelNames();
   // For new users, they won't have any needstriage labels.
   if (!needsTriageLabels.length)
     return;
@@ -354,12 +360,29 @@ async function cleanupNeedsTriageThreads() {
   });
 }
 
-async function onLoad() {
+async function getLabels() {
+  if (!labels_)
+    await fetchTheSettingsThings();
+  return labels_;
+}
+
+async function getSettings() {
+  if (!settings_)
+    await fetchTheSettingsThings();
+  return settings_;
+}
+
+async function fetchTheSettingsThings() {
+  if (settings_ || labels_)
+    throw 'Tried to fetch settings or labels twice.';
+
   settings_ = new Settings();
   labels_ = new Labels();
 
-  // TODO: Don't block on this if we're just going into compose view.
-  await Promise.all([settings_.fetch(), labels_.fetch()]);
+  // Don't await this here so we fetch settings in parallel.
+  let labelsPromise = labels_.fetch();
+
+  await settings_.fetch();
 
   let storage = new ServerStorage(settings_.spreadsheetId);
   if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
@@ -367,12 +390,16 @@ async function onLoad() {
     storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
   }
 
+  await labelsPromise;
+}
+
+async function onLoad() {
   let settingsButton = createMenuItem('Settings', {
-    onclick: async () => new SettingsView(settings_, await getQueuedLabelMap()),
+    onclick: async () => new SettingsView(await getSettings(), await getQueuedLabelMap()),
   });
 
   let helpButton = createMenuItem('Help', {
-    onclick: () => showHelp(settings_),
+    onclick: async () => showHelp(await getSettings()),
   });
 
   let menuTitle = document.createElement('div');
@@ -385,8 +412,6 @@ async function onLoad() {
     createMenuItem('MakeTime', {href: '/make-time', nested: true}),
     settingsButton,
     helpButton);
-
-  updateLoaderTitle('onLoad', 'Fetching threads to triage...');
 
   await router.run(window.location.pathname);
 
@@ -450,7 +475,7 @@ async function fetchContacts(token) {
 
 async function getQueuedLabelMap() {
   if (!queuedLabelMap_) {
-    queuedLabelMap_ = new QueueSettings(settings_.spreadsheetId);
+    queuedLabelMap_ = new QueueSettings((await getSettings()).spreadsheetId);
     await queuedLabelMap_.fetch();
   }
   return queuedLabelMap_;
@@ -464,7 +489,7 @@ async function processMail() {
   isProcessingMail_ = true;
   updateLoaderTitle('processMail', 'Processing mail backlog...');
 
-  let mailProcessor = new MailProcessor(settings_, addThread, await getQueuedLabelMap(), labels_, updateLoaderTitle);
+  let mailProcessor = new MailProcessor(await getSettings(), addThread, await getQueuedLabelMap(), await getLabels(), updateLoaderTitle);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
@@ -482,7 +507,7 @@ export function getCurrentWeekNumber() {
 }
 
 async function gcLocalStorage() {
-  let storage = new ServerStorage(settings_.spreadsheetId);
+  let storage = new ServerStorage((await getSettings()).spreadsheetId);
   let lastGCTime = storage.get(ServerStorage.KEYS.LAST_GC_TIME);
   let oneDay = 24 * 60 * 60 * 1000;
   if (!lastGCTime || Date.now() - lastGCTime > oneDay) {
@@ -563,7 +588,7 @@ document.body.addEventListener('keydown', async (e) => {
     return;
 
   if (e.key == '?') {
-    showHelp(settings_);
+    showHelp(await getSettings());
     return;
   }
 
