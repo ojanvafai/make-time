@@ -118,6 +118,9 @@ export class Message {
     if (this.plain_ || this.html_)
       return;
 
+    // If a message has no body at all, fallback to empty string.
+    this.plain_ = '';
+
     var plainTextBody;
     var htmlBody;
     if (this.rawMessage_.payload.parts) {

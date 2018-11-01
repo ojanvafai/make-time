@@ -1,7 +1,7 @@
-import { Base64 } from './base64.js';
 import { gapiFetch } from './Net.js';
 import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
+import { Mail } from './Mail.js';
 import { Message } from './Message.js';
 import { USER_ID, getCurrentWeekNumber } from './main.js';
 
@@ -240,28 +240,15 @@ export class Thread {
     if (subject && !subject.startsWith(replyPrefix))
       subject = replyPrefix + subject;
 
-    let email = `Subject: ${subject}
-In-Reply-To: ${lastMessage.messageId}
-To: ${to}
-Content-Type: text/html; charset="UTF-8"
-`;
-
+    let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
     if (shouldReplyAll && lastMessage.cc)
-      email += `Cc: ${lastMessage.cc}\n`;
+      headers += `Cc: ${lastMessage.cc}\n`;
 
-    email += `
-  ${replyText}<br><br>${lastMessage.from} wrote:<br>
+    let text = `${replyText}<br><br>${lastMessage.from} wrote:<br>
   <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
     ${lastMessage.getHtmlOrPlain()}
   </blockquote>`;
 
-    let base64 = new Base64();
-    let response = await gapiFetch(gapi.client.gmail.users.messages.send, {
-      'userId': USER_ID,
-      'resource': {
-        'raw': base64.encode(email),
-        'threadId': this.id,
-      }
-    });
+    await Mail.send(text, to, subject, headers, this.id);
   }
 }

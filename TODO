@@ -5,9 +5,10 @@ Load faster:
 - Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
 
 P1: Will try to do soonish.
+- Allow manual modifications to to/cc/bcc lines in compose view?
+- Add undo send?
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
 - Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.
-- Add a compose view with a /compose URL to be able to go to compose messages without seeing inbox.
 - Add Undo button to MakeTime. Needs to correctly remove the item from it's queue and put it in the new queue.
 - Use lit-element/lit-html for DOM creation?
 - Remove all uses of localStorage and just use IDBKeyVal.

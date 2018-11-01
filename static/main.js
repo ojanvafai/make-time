@@ -127,7 +127,7 @@ export function showDialog(contents) {
 }
 
 async function viewCompose() {
-  setView(new ComposeView(contacts_));
+  setView(new ComposeView(contacts_, updateLoaderTitle));
 }
 
 async function viewTriage() {

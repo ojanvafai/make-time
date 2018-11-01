@@ -13,6 +13,7 @@ export class Compose extends HTMLElement {
       border: 1px solid;
       padding: 8px;
       word-break: break-word;
+      outline: none;
     `;
     this.content_.contentEditable = 'plaintext-only';
     this.content_.addEventListener('blur', this.cancelAutocomplete_.bind(this));
@@ -226,6 +227,7 @@ export class Compose extends HTMLElement {
     let link = document.createElement('a');
     link.href = `mailto:${selectedItem.email}`;
     link.textContent = `+${selectedItem.name || selectedItem.email}`;
+    link.tabIndex = -1;
     link.contentEditable = false;
     range.insertNode(link);
 
@@ -235,6 +237,8 @@ export class Compose extends HTMLElement {
     window.getSelection().collapse(space, space.length);
 
     this.cancelAutocomplete_();
+
+    this.dispatchEvent(new Event('email-added'));
   }
 
   getEmails() {
