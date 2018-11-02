@@ -21,7 +21,7 @@ export class QuoteElidedMessage {
     for (let entry of this.hashes_) {
       if (previousHashes.has(entry[0])) {
         for (let match of entry[1]) {
-          QuoteElidedMessage.setElidedState_(match, 'hidden');
+          setElidedState(match, 'hidden');
         }
       }
     }
@@ -38,13 +38,13 @@ export class QuoteElidedMessage {
       // TODO: Hash the outerHTML of the element to make sure it has at least
       // a corresponding thing in the previous message. Or maybe just exclude images?
       while (this.hasEmptyTextContent_(previous.previousSibling)) {
-        QuoteElidedMessage.setElidedState_(previous.previousSibling, 'hidden');
+        setElidedState(previous.previousSibling, 'hidden');
         previous = previous.previousSibling;
       }
 
       let next = match;
       while (this.hasEmptyTextContent_(next.nextSibling)) {
-        QuoteElidedMessage.setElidedState_(next.nextSibling, 'hidden');
+        setElidedState(next.nextSibling, 'hidden');
         next = next.nextSibling;
       }
     }
@@ -96,7 +96,7 @@ export class QuoteElidedMessage {
 
   updateAllStyling_() {
     for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
-      QuoteElidedMessage.updateStyling_(match);
+      updateStyling(match);
     }
   }
 
@@ -105,9 +105,13 @@ export class QuoteElidedMessage {
       TOGGLER = document.createElement('div');
       // Gross hack to render centered-ish elipsis without using an image.
       TOGGLER.style.overflow = 'hidden';
-      TOGGLER.innerHTML = `<div style="margin-top:-7px"><div class="toggler" onclick="QuoteElidedMessage.toggleElided(event, this)">...</div></div>`;
+      TOGGLER.innerHTML = `<div style="margin-top:-7px"><div class="toggler">...</div></div>`;
     }
-    return TOGGLER.cloneNode(true);
+    let toggler = TOGGLER.cloneNode(true);
+    toggler.querySelector('.toggler').onclick = function(e) {
+      toggleElided(e, this);
+    };
+    return toggler;
   }
 
   getHashes() {
@@ -173,18 +177,18 @@ export class QuoteElidedMessage {
   }
 }
 
-QuoteElidedMessage.updateStyling_ = (element) => {
+function updateStyling(element) {
   // Ideally we'd use clipping instead of display:none so that the toggler doesn't jump around
   // when the contents of the elided region are shown, but for threads with a lot of eliding,
   // display none is considerably faster at recalc and layout since we skip whole subtrees.
   element.style.display = element.getAttribute('mk-elide') == 'hidden' ? 'none' : '';
 }
 
-QuoteElidedMessage.setElidedState_ = (element, state) => {
+function setElidedState(element, state) {
   element.setAttribute('mk-elide', state);
 }
 
-QuoteElidedMessage.toggleElided = (e, element) => {
+function toggleElided(e, element) {
   e.preventDefault();
 
   while (!element.nextElementSibling || !element.nextElementSibling.hasAttribute('mk-elide')) {
@@ -194,7 +198,7 @@ QuoteElidedMessage.toggleElided = (e, element) => {
   while (element.nextElementSibling && element.nextElementSibling.hasAttribute('mk-elide')) {
     element = element.nextElementSibling;
     let newState = element.getAttribute('mk-elide') == 'visible' ? 'hidden' : 'visible';
-    QuoteElidedMessage.setElidedState_(element, newState);
-    QuoteElidedMessage.updateStyling_(element);
+    setElidedState(element, newState);
+    updateStyling(element);
   }
 }
