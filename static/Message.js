@@ -53,6 +53,7 @@ export class Message {
       this.date = new Date(Number(message.internalDate));
 
     this.isUnread = message.labelIds.includes('UNREAD');
+    this.isDraft = message.labelIds.includes('DRAFT');
   }
 
   getHeaderValue(name) {

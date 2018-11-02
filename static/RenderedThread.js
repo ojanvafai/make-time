@@ -143,7 +143,18 @@ export class RenderedThread {
     if (processedMessage.bcc)
       this.appendAddresses_(to, 'bcc', processedMessage.bcc);
 
-    headerDiv.append(rightItems, from, to)
+    headerDiv.append(rightItems, from, to);
+
+    if (processedMessage.isDraft) {
+      let draft = document.createElement('div');
+      draft.style.cssText = `
+        color: black;
+        font-weight: bold;
+        margin-top: 10px;
+      `;
+      draft.append('DRAFT MESSAGE');
+      headerDiv.append(draft);
+    }
 
     var bodyContainer = document.createElement('div');
     bodyContainer.classList.add('message-body');
