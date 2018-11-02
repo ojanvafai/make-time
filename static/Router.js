@@ -59,9 +59,14 @@ export class Router {
   }
 
   async run(location) {
+    // TODO: Don't allow strings as an argument. Allow Node or Location only.
     let isString = typeof location == 'string';
     let path = isString ? location : location.pathname;
     if (!path)
+      return false;
+
+    // Don't route cross origin links.
+    if (!isString && window.location.origin != location.origin)
       return false;
 
     let pathParts = this.parsePath_(path);
