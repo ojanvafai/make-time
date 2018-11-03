@@ -44,7 +44,6 @@ export class AbstractThreadListView extends HTMLElement {
 
     this.singleThreadContainer_ = document.createElement('div');
     this.singleThreadContainer_.style.cssText = `
-      display: none;
       position: relative;
     `;
     this.append(this.singleThreadContainer_);
@@ -213,11 +212,11 @@ export class AbstractThreadListView extends HTMLElement {
 
   transitionToThreadList_() {
     this.rowGroupContainer_.style.display = 'flex';
-    this.singleThreadContainer_.style.display = 'none';
+    this.singleThreadContainer_.textContent = '';
     this.scrollContainer_.scrollTop = this.scrollOffset_;
 
     this.undoableActions_ = [];
-    this.renderedRow_ = null;
+    this.setRenderedRow_(null);
     this.setSubject_('');
     this.updateActions_();
   }
@@ -227,7 +226,6 @@ export class AbstractThreadListView extends HTMLElement {
 
     this.scrollOffset_ = this.scrollContainer_.scrollTop;
     this.rowGroupContainer_.style.display = 'none';
-    this.singleThreadContainer_.style.display = 'block';
 
     this.undoableActions_ = [];
   }
@@ -300,14 +298,17 @@ export class AbstractThreadListView extends HTMLElement {
     return this.renderedRow_.thread.rendered;
   }
 
+  setRenderedRow_(row) {
+    if (this.renderedRow_)
+      this.renderedThread_().remove();
+    this.renderedRow_ = row;
+  }
+
   async renderOne_(row) {
     if (this.rowGroupContainer_.style.display != 'none')
       this.transitionToSingleThread_();
 
-    if (this.renderedRow_)
-      this.renderedThread_().remove();
-
-    this.renderedRow_ = row;
+    this.setRenderedRow_(row);
     if (!row.thread.rendered)
       new RenderedThread(row.thread);
 
