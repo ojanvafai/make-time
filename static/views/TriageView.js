@@ -47,6 +47,10 @@ export class TriageView extends AbstractThreadListView {
     }
   }
 
+  readdThread(thread) {
+    this.addThread(thread);
+  }
+
   compareRowGroups(a, b) {
     return this.queueSettings_.queueNameComparator(a.queue, b.queue);
   }

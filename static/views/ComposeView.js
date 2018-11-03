@@ -1,6 +1,5 @@
 import { Actions } from '../Actions.js';
 import { Compose } from '../Compose.js';
-import { Mail } from '../Mail.js';
 
 const SEND = { name: 'Send', description: 'Ummm...send the mail.' };
 const ACTIONS = [ SEND ];
@@ -111,7 +110,8 @@ export class ComposeView extends HTMLElement {
     this.sending_ = true;
 
     this.updateTitle_('sending', 'Sending...');
-    await Mail.send(this.compose_.value, this.to_.textContent, this.subject_.value);
+    let mail = await import('./Mail.js');
+    await mail.send(this.compose_.value, this.to_.textContent, this.subject_.value);
     this.updateTitle_('sending');
 
     this.compose_.value = '';

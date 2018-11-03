@@ -58,16 +58,19 @@ export class Router {
     return path.substring(1).split('/');
   }
 
-  async run(location) {
+  // Ewww...this can't be async because want to return a promise only in the case where
+  // the router handles this location so that the click handler for links can preventDefault
+  // synchronously.
+  run(location) {
     // TODO: Don't allow strings as an argument. Allow Node or Location only.
     let isString = typeof location == 'string';
     let path = isString ? location : location.pathname;
     if (!path)
-      return false;
+      return null;
 
     // Don't route cross origin links.
     if (!isString && window.location.origin != location.origin)
-      return false;
+      return null;
 
     let pathParts = this.parsePath_(path);
     // TODO: Allow including query parameters in the string version.
@@ -76,11 +79,9 @@ export class Router {
 
     for (let rule of this.rules_) {
       var params = this.getParams_(rule, pathParts, queryParts);
-      if (params) {
-        await rule.handler(params);
-        return true;
-      }
+      if (params)
+        return rule.handler(params);
     }
-    return false;
+    return null;
   }
 }

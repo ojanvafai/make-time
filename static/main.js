@@ -1,19 +1,13 @@
-import { ComposeView } from './views/ComposeView.js';
 import { ErrorLogger } from './ErrorLogger.js';
 import { gapiFetch } from './Net.js';
 import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
-import { MailProcessor } from './MailProcessor.js';
-import { MakeTimeView } from './views/MakeTimeView.js';
 import { Router } from './Router.js';
 import { QueueSettings } from './QueueSettings.js';
 import { ServerStorage } from './ServerStorage.js';
 import { Settings } from './Settings.js';
-import { SettingsView } from './views/Settings.js';
-import { showHelp } from './help.js';
 import { ThreadCache } from './ThreadCache.js';
 import { ThreadGroups } from './ThreadGroups.js';
-import { TriageView } from './views/TriageView.js';
 
 // Client ID and API key from the Developer Console
 let CLIENT_ID = location.toString().includes('appspot') ? '410602498749-pe1lolovqrgun0ia1jipke33ojpcmbpq.apps.googleusercontent.com' : '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
@@ -127,11 +121,13 @@ export function showDialog(contents) {
 }
 
 async function viewCompose() {
+  let ComposeView = (await import('./views/ComposeView.js')).ComposeView;
   setView(new ComposeView(contacts_, updateLoaderTitle));
 }
 
 async function viewTriage() {
   updateLoaderTitle('viewTriage', 'Fetching threads to triage...');
+  let TriageView = (await import('./views/TriageView.js')).TriageView;
 
   let settings = await getSettings();
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
@@ -144,6 +140,8 @@ async function viewTriage() {
 }
 
 async function viewMakeTime() {
+  let MakeTimeView = (await import('./views/MakeTimeView.js')).MakeTimeView;
+
   let settings = await getSettings();
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
   let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
@@ -284,9 +282,9 @@ async function isBankrupt(thread) {
   let queueData = (await getQueuedLabelMap()).get(queue);
 
   let numDays = 7;
-  if (queueData.queue == MailProcessor.WEEKLY)
+  if (queueData.queue == QueueSettings.WEEKLY)
     numDays = 14;
-  else if (queueData.queue == MailProcessor.MONTHLY)
+  else if (queueData.queue == QueueSettings.MONTHLY)
     numDays = 42;
 
   let oneDay = 24 * 60 * 60 * 1000;
@@ -322,8 +320,8 @@ export async function addThread(thread) {
     }
   }
 
-  if (currentView_ instanceof TriageView)
-    await currentView_.addThread(thread);
+  if (currentView_.readdThread)
+    await currentView_.readdThread(thread);
 }
 
 function createMenuItem(name, options) {
@@ -372,6 +370,11 @@ async function getSettings() {
   return settings_;
 }
 
+async function showHelp() {
+  let help = await import('./help.js');
+  help.showHelp(await getSettings());
+}
+
 async function fetchTheSettingsThings() {
   if (settings_ || labels_)
     throw 'Tried to fetch settings or labels twice.';
@@ -386,7 +389,7 @@ async function fetchTheSettingsThings() {
 
   let storage = new ServerStorage(settings_.spreadsheetId);
   if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
-    await showHelp(settings_);
+    await showHelp();
     storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
   }
 
@@ -395,11 +398,14 @@ async function fetchTheSettingsThings() {
 
 async function onLoad() {
   let settingsButton = createMenuItem('Settings', {
-    onclick: async () => new SettingsView(await getSettings(), await getQueuedLabelMap()),
+    onclick: async () => {
+      let SettingsView = (await import('./views/Settings.js')).SettingsView;
+      new SettingsView(await getSettings(), await getQueuedLabelMap());
+    }
   });
 
   let helpButton = createMenuItem('Help', {
-    onclick: async () => showHelp(await getSettings()),
+    onclick: async () => showHelp(),
   });
 
   let menuTitle = document.createElement('div');
@@ -489,6 +495,7 @@ async function processMail() {
   isProcessingMail_ = true;
   updateLoaderTitle('processMail', 'Processing mail backlog...');
 
+  let MailProcessor = (await import('./MailProcessor.js')).MailProcessor;
   let mailProcessor = new MailProcessor(await getSettings(), addThread, await getQueuedLabelMap(), await getLabels(), updateLoaderTitle);
   await mailProcessor.processMail();
   await mailProcessor.processQueues();
@@ -538,8 +545,12 @@ async function update() {
 document.body.addEventListener('click', async (e) => {
   for (let node of e.path) {
     if (node.tagName == 'A') {
-      if (await router.run(node)) {
+      let willHandlePromise = router.run(node);
+      if (willHandlePromise) {
+        // Need to preventDefault before the await, otherwise the browsers
+        // default action kicks in.
         e.preventDefault();
+        await willHandlePromise;
         return;
       }
       node.target = '_blank';
@@ -588,7 +599,7 @@ document.body.addEventListener('keydown', async (e) => {
     return;
 
   if (e.key == '?') {
-    showHelp(await getSettings());
+    showHelp();
     return;
   }
 

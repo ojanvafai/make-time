@@ -1,5 +1,4 @@
 import { FiltersView } from './Filters.js';
-import { MailProcessor } from '../MailProcessor.js';
 import { showDialog } from '../main.js';
 
 export class QueuesView extends HTMLElement {
@@ -114,9 +113,9 @@ export class QueuesView extends HTMLElement {
     this.append(scrollable);
 
     this.immediate_ = document.createElement('div');
-    this.daily_ = this.createRowGroup_(MailProcessor.DAILY);
-    this.weekly_ = this.createRowGroup_(MailProcessor.WEEKLY);
-    this.monthly_ = this.createRowGroup_(MailProcessor.MONTHLY);
+    this.daily_ = this.createRowGroup_(QueueSettings.DAILY);
+    this.weekly_ = this.createRowGroup_(QueueSettings.WEEKLY);
+    this.monthly_ = this.createRowGroup_(QueueSettings.MONTHLY);
 
     scrollable.append(this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
@@ -172,7 +171,7 @@ export class QueuesView extends HTMLElement {
     for (let i = 0; i < selectors.length; i++) {
       let selector = selectors[i];
       let label = selector.querySelector('.label').textContent;
-      if (queue == MailProcessor.WEEKLY)
+      if (queue == QueueSettings.WEEKLY)
         queue = selector.querySelector('.day').selectedOptions[0].value;
       let goal = selector.querySelector('.goal').selectedOptions[0].value;
       output.push([label, queue, goal, i + 1]);
@@ -182,10 +181,10 @@ export class QueuesView extends HTMLElement {
   async save_() {
     let newQueueData = [];
 
-    this.extractQueueData_(newQueueData, this.immediate_, MailProcessor.IMMEDIATE);
-    this.extractQueueData_(newQueueData, this.daily_, MailProcessor.DAILY);
-    this.extractQueueData_(newQueueData, this.weekly_, MailProcessor.WEEKLY);
-    this.extractQueueData_(newQueueData, this.monthly_, MailProcessor.MONTHLY);
+    this.extractQueueData_(newQueueData, this.immediate_, QueueSettings.IMMEDIATE);
+    this.extractQueueData_(newQueueData, this.daily_, QueueSettings.DAILY);
+    this.extractQueueData_(newQueueData, this.weekly_, QueueSettings.WEEKLY);
+    this.extractQueueData_(newQueueData, this.monthly_, QueueSettings.MONTHLY);
 
     if (newQueueData.length) {
       await this.queuedLabelData_.write(newQueueData);
@@ -241,7 +240,7 @@ export class QueuesView extends HTMLElement {
     row.append(label);
 
     let queue = queueData[1].queue;
-    let days = this.createSelect_(MailProcessor.WEEKDAYS, queue);
+    let days = this.createSelect_(QueueSettings.WEEKDAYS, queue);
     days.className = 'day';
     row.append(days);
 
@@ -255,11 +254,11 @@ export class QueuesView extends HTMLElement {
 
   insertRow_(row, queue) {
     let container = this.immediate_;
-    if (queue == MailProcessor.DAILY)
+    if (queue == QueueSettings.DAILY)
       container = this.daily_;
-    else if (queue == MailProcessor.MONTHLY)
+    else if (queue == QueueSettings.MONTHLY)
       container = this.monthly_;
-    else if (MailProcessor.WEEKDAYS.includes(queue))
+    else if (QueueSettings.WEEKDAYS.includes(queue))
       container = this.weekly_;
     container.append(row);
   }

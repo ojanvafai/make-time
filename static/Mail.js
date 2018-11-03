@@ -2,10 +2,7 @@ import { Base64 } from './base64.js';
 import { gapiFetch } from './Net.js';
 import { USER_ID } from './main.js';
 
-export class Mail {
-}
-
-Mail.send = async (text, to, subject, opt_extraHeaders, opt_threadId) => {
+export async send(text, to, subject, opt_extraHeaders, opt_threadId) {
   let email = `Subject: ${subject}
 To: ${to}
 Content-Type: text/html; charset="UTF-8"

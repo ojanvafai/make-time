@@ -1,5 +1,4 @@
 import { Actions } from '../Actions.js';
-import { Compose } from '../Compose.js';
 import { fetchThread } from '../main.js';
 import { RenderedThread } from '../RenderedThread.js';
 import { ThreadRow } from './ThreadRow.js';
@@ -200,7 +199,7 @@ export class AbstractThreadListView extends HTMLElement {
       return;
     }
     if (action == Actions.QUICK_REPLY_ACTION) {
-      this.showQuickReply();
+      await this.showQuickReply();
       return;
     }
     await this.markTriaged(action.destination);
@@ -357,7 +356,7 @@ export class AbstractThreadListView extends HTMLElement {
     await this.renderedThread_().update();
   }
 
-  showQuickReply() {
+  async showQuickReply() {
     let container = document.createElement('div');
     container.style.cssText = `
       display: flex;
@@ -366,6 +365,7 @@ export class AbstractThreadListView extends HTMLElement {
       width: 100%;
     `;
 
+    let Compose = (await import('../Compose.js')).Compose;
     let compose = new Compose(this.contacts_);
     compose.style.cssText = `
       flex: 1;

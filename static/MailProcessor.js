@@ -1,6 +1,7 @@
 import { ErrorLogger } from './ErrorLogger.js';
 import { fetchThread, fetchThreads } from './main.js';
 import { Labels } from './Labels.js';
+import { QueueSettings } from './QueueSettings.js';
 import { ServerStorage } from './ServerStorage.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 
@@ -160,11 +161,11 @@ export class MailProcessor {
           stats.nonIgnoredThreads += count;
 
           let queueData = this.queuedLabelMap_.get(label);
-          if (queueData.queue == MailProcessor.IMMEDIATE) {
+          if (queueData.queue == QueueSettings.IMMEDIATE) {
             stats.immediateCount += count;
-          } else if (queueData.queue == MailProcessor.DAILY) {
+          } else if (queueData.queue == QueueSettings.DAILY) {
             stats.dailyCount += count;
-          } else if (queueData.queue == MailProcessor.MONTHLY) {
+          } else if (queueData.queue == QueueSettings.MONTHLY) {
             stats.monthlyCount += count;
           } else {
             // Assume all the other queues are weekly queues.
@@ -314,7 +315,7 @@ export class MailProcessor {
           let prefixedLabelName;
 
           // Don't queue if already in the inbox or triaged.
-          if (isAlreadyInInbox || currentTriagedLabel || this.queuedLabelMap_.get(labelName).queue == MailProcessor.IMMEDIATE) {
+          if (isAlreadyInInbox || currentTriagedLabel || this.queuedLabelMap_.get(labelName).queue == QueueSettings.IMMEDIATE) {
             prefixedLabelName = Labels.needsTriageLabel(labelName);
           } else {
             prefixedLabelName = Labels.addQueuedPrefix(labelName);
@@ -393,8 +394,8 @@ export class MailProcessor {
 
   categoriesToDequeue(startTime, opt_endTime) {
     if (!startTime) {
-      let today = MailProcessor.WEEKDAYS[new Date().getDay()];
-      return [today, MailProcessor.DAILY];
+      let today = QueueSettings.WEEKDAYS[new Date().getDay()];
+      return [today, QueueSettings.DAILY];
     }
 
     let start = Number(startTime);
@@ -404,9 +405,9 @@ export class MailProcessor {
     var diffDays = (end - start) / (oneDay);
 
     if (diffDays >= 30)
-      return MailProcessor.WEEKDAYS.concat([MailProcessor.DAILY, MailProcessor.MONTHLY]);
+      return QueueSettings.WEEKDAYS.concat([QueueSettings.DAILY, QueueSettings.MONTHLY]);
     if (diffDays >= 7)
-      return MailProcessor.WEEKDAYS.concat([MailProcessor.DAILY]);
+      return QueueSettings.WEEKDAYS.concat([QueueSettings.DAILY]);
 
     let startDate = new Date(start);
     let endDate = new Date(end);
@@ -420,16 +421,16 @@ export class MailProcessor {
     let days = [];
 
     while (true) {
-      var modded = ++startDay % MailProcessor.WEEKDAYS.length;
-      days.push(MailProcessor.WEEKDAYS[modded]);
+      var modded = ++startDay % QueueSettings.WEEKDAYS.length;
+      days.push(QueueSettings.WEEKDAYS[modded]);
       if (modded == endDay)
         break;
     }
 
-    days.push(MailProcessor.DAILY);
+    days.push(QueueSettings.DAILY);
 
     if (startDate.getMonth() < endDate.getMonth())
-      days.push(MailProcessor.MONTHLY);
+      days.push(QueueSettings.MONTHLY);
 
     return days;
   }
@@ -451,9 +452,3 @@ export class MailProcessor {
   }
 }
 
-// TODO: This isn't really the righe place for these.
-MailProcessor.MONTHLY = 'Monthly';
-MailProcessor.WEEKLY = 'Weekly';
-MailProcessor.DAILY = 'Daily';
-MailProcessor.IMMEDIATE = 'Immediate';
-MailProcessor.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

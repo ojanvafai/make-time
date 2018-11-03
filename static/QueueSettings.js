@@ -1,5 +1,4 @@
 import { Labels } from './Labels.js';
-import { MailProcessor } from './MailProcessor.js';
 import { QueuesView } from './views/Queues.js';
 import { Settings } from './Settings.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
@@ -52,7 +51,7 @@ export class QueueSettings {
 
   queueData_(opt_queue, opt_goal, opt_index) {
     return {
-      queue: opt_queue || MailProcessor.IMMEDIATE,
+      queue: opt_queue || QueueSettings.IMMEDIATE,
       goal: opt_goal || QueuesView.goals_[0],
       // For unknown queues, put them first.
       index: opt_index || 0,
@@ -86,14 +85,20 @@ QueueSettings.queueIndex_ = (queueData) => {
   let multiplier = 1;
 
   let queue = queueData.queue;
-  if (queue == MailProcessor.DAILY)
+  if (queue == QueueSettings.DAILY)
     multiplier *= QueueSettings.BUFFER_;
-  else if (MailProcessor.WEEKDAYS.includes(queue))
+  else if (QueueSettings.WEEKDAYS.includes(queue))
     multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
-  else if (queue == MailProcessor.MONTHLY)
+  else if (queue == QueueSettings.MONTHLY)
     multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
 
   return queueData.index * multiplier;
 }
 
 QueueSettings.BUFFER_ = 10000;
+
+QueueSettings.MONTHLY = 'Monthly';
+QueueSettings.WEEKLY = 'Weekly';
+QueueSettings.DAILY = 'Daily';
+QueueSettings.IMMEDIATE = 'Immediate';
+QueueSettings.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
