@@ -79,8 +79,14 @@ export class Router {
 
     for (let rule of this.rules_) {
       var params = this.getParams_(rule, pathParts, queryParts);
-      if (params)
+      if (params) {
+        // TODO: Make this less hard-coded and allow for other query parameters in the path.
+        let appspot = '?appspot';
+        if (window.location.search == appspot)
+          path = path + appspot;
+        history.pushState({}, '', path);
         return rule.handler(params);
+      }
     }
     return null;
   }

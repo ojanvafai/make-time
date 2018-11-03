@@ -66,8 +66,18 @@ async function routeToTriage() {
 }
 
 let DRAWER_OPEN = 'drawer-open';
+let CURRENT_PAGE_CLASS = 'current-page';
 
 function openMenu() {
+  let menuItems = document.getElementById('drawer').querySelectorAll('a.item');
+  for (let item of menuItems) {
+    if (item.pathname == location.pathname) {
+      item.classList.add(CURRENT_PAGE_CLASS);
+    } else {
+      item.classList.remove(CURRENT_PAGE_CLASS);
+    }
+  }
+
   let mainContent = document.getElementById('main-content');
   mainContent.classList.add(DRAWER_OPEN);
 }

@@ -33,7 +33,6 @@ P1: Will try to do soonish.
 - Grey out undo button when there's nothing to undo
 - Use TypeScript
 - Add the ability to create new action items that have no existing thread
-- Highlight the current phase in the drawer and actually update the url for each phase so people can link to the phase they want.
 - add ability to search for a set of threads and see which filter would match
 
 P2: Will only do if something makes these seem worth doing.
