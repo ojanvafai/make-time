@@ -68,6 +68,11 @@ async function routeToTriage() {
 let DRAWER_OPEN = 'drawer-open';
 let CURRENT_PAGE_CLASS = 'current-page';
 
+function showBackArrow() {
+  document.getElementById('hambuger-menu-toggle').style.display = 'none';
+  document.getElementById('back-arrow').style.display = '';
+}
+
 function openMenu() {
   let menuItems = document.getElementById('drawer').querySelectorAll('a.item');
   for (let item of menuItems) {
@@ -94,6 +99,14 @@ function toggleMenu() {
   else
     openMenu();
 }
+
+document.getElementById('back-arrow').addEventListener('click', (e) => {
+  if (currentView_.goBack)
+    currentView_.goBack();
+
+  document.getElementById('hambuger-menu-toggle').style.display = '';
+  document.getElementById('back-arrow').style.display = 'none';
+});
 
 document.getElementById('hambuger-menu-toggle').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -144,7 +157,7 @@ async function viewTriage() {
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
   let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new TriageView(threads_, await getLabels(), vacation, await getQueuedLabelMap(), updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  setView(new TriageView(threads_, getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration, await getQueuedLabelMap()));
 
   updateLoaderTitle('viewTriage', '');
 }
@@ -158,7 +171,7 @@ async function viewMakeTime() {
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new MakeTimeView(threads_, await getLabels(), vacation, updateLoaderTitle, setSubject, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  setView(new MakeTimeView(threads_, getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
 function setView(view) {
@@ -168,6 +181,10 @@ function setView(view) {
   var content = document.getElementById('content');
   content.textContent = '';
   content.append(view);
+}
+
+function getScroller() {
+  return document.getElementById('content');
 }
 
 async function updateSigninStatus(isSignedIn) {

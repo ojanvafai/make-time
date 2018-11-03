@@ -7,7 +7,7 @@ import { Timer } from '../Timer.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
 
 export class AbstractThreadListView extends HTMLElement {
-  constructor(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
+  constructor(threads, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
 
     this.style.cssText = `
@@ -16,8 +16,10 @@ export class AbstractThreadListView extends HTMLElement {
     `;
 
     this.threads_ = threads;
+    this.scrollContainer_ = scrollContainer;
     this.updateTitle_ = updateTitleDelegate;
     this.setSubject_ = setSubject;
+    this.showBackArrow_ = showBackArrow;
     this.allowedReplyLength_ = allowedReplyLength;
     this.contacts_ = contacts;
     this.autoStartTimer_ = autoStartTimer;
@@ -73,6 +75,10 @@ export class AbstractThreadListView extends HTMLElement {
   tearDown() {
     this.tornDown_ = true;
     this.setSubject_('');
+  }
+
+  goBack() {
+    this.transitionToThreadList_();
   }
 
   updateActions_() {
@@ -208,6 +214,8 @@ export class AbstractThreadListView extends HTMLElement {
   transitionToThreadList_() {
     this.rowGroupContainer_.style.display = 'flex';
     this.singleThreadContainer_.style.display = 'none';
+    this.scrollContainer_.scrollTop = this.scrollOffset_;
+
     this.undoableActions_ = [];
     this.renderedRow_ = null;
     this.setSubject_('');
@@ -215,8 +223,12 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   transitionToSingleThread_() {
+    this.showBackArrow_();
+
+    this.scrollOffset_ = this.scrollContainer_.scrollTop;
     this.rowGroupContainer_.style.display = 'none';
     this.singleThreadContainer_.style.display = 'block';
+
     this.undoableActions_ = [];
   }
 

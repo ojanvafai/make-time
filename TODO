@@ -1,8 +1,5 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
-Load faster:
-- Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
-
 P1: Will try to do soonish.
 - Add send+priority buttons to the compose view
 - Allow manual modifications to to/cc/bcc lines in compose view?
@@ -10,12 +7,10 @@ P1: Will try to do soonish.
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
 - Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.
 - Add Undo button to MakeTime. Needs to correctly remove the item from it's queue and put it in the new queue.
-- Linkify URLs in the plain text or html content
 - Use lit-element/lit-html for DOM creation?
 - Remove all uses of localStorage and just use IDBKeyVal.
 - Add a setting for how many weeks of email to keep in storage.
 - Add manual sorting of triaged threads.
-- Give a more natural way to go back to threadlist from single thread (e.g. a back button)
 - auto delete needstriage labels that have no threads in them and have no filters that would cause that label to be created again as a way of not having a ton of cruft build up.
 - Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
 - Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
@@ -36,7 +31,8 @@ P1: Will try to do soonish.
 - add ability to search for a set of threads and see which filter would match
 
 P2: Will only do if something makes these seem worth doing.
-- add hover effects to rows
+- Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
+- Linkify URLs in the plain text or html content
 - Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.
 - sort by date within a given queue, with a setting for sort order
 - Make filters and queues tabs in the setting spreadsheet instead of separate dialogs? Change save button to save+reload once a basic setting is changed.
