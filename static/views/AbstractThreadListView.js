@@ -11,6 +11,11 @@ export class AbstractThreadListView extends HTMLElement {
   constructor(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
 
+    this.style.cssText = `
+      display: flex;
+      flex-direction: column;
+    `;
+
     this.threads_ = threads;
     this.updateTitle_ = updateTitleDelegate;
     this.setSubject_ = setSubject;

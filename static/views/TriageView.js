@@ -8,8 +8,6 @@ export class TriageView extends AbstractThreadListView {
     let countDown = true;
     super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
 
-    this.style.display = 'block';
-
     this.allLabels_ = allLabels;
     this.vacationSubject_ = vacationSubject;
     this.queueSettings_ = queueSettings;

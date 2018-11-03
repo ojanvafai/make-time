@@ -8,9 +8,6 @@ export class MakeTimeView extends AbstractThreadListView {
     let countDown = false;
     super(threads, updateTitleDelegate, setSubject, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
 
-    this.style.display = 'flex';
-    this.style.flexDirection = 'column';
-
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitleDelegate;
 

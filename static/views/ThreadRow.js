@@ -9,9 +9,10 @@ export class ThreadRow extends HTMLElement {
 
     let label = document.createElement('label');
     label.style.cssText = `
-      line-height: 1;
+      width: 32px;
       border-right: 0;
       display: flex;
+      justify-content: center;
       align-items: center;
     `;
 

@@ -4,6 +4,7 @@ Load faster:
 - Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
 
 P1: Will try to do soonish.
+- Make errors non-modal.
 - Allow manual modifications to to/cc/bcc lines in compose view?
 - Add undo send?
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
