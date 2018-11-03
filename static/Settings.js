@@ -1,3 +1,4 @@
+import { ErrorLogger } from './ErrorLogger.js';
 import { ServerStorage } from './ServerStorage.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 
@@ -32,7 +33,7 @@ export class Settings {
       generateBackendLink.append('Click here to generate a backend spreadsheet');
       generateBackendLink.onclick = async () => {
         generateBackendLink.textContent = 'generating...';
-        setTimeout(() => new ErrorDialog('Hmmm...this is taking a while, something might have gone wrong. Keep waiting a bit or reload to try again.'), 30000);
+        setTimeout(() => ErrorLogger.log('Hmmm...this is taking a while, something might have gone wrong. Keep waiting a bit or reload to try again.'), 30000);
         await this.generateSpreadsheet();
         window.location.reload();
       };

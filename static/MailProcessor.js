@@ -1,3 +1,4 @@
+import { ErrorLogger } from './ErrorLogger.js';
 import { fetchThread, fetchThreads } from './main.js';
 import { Labels } from './Labels.js';
 import { ServerStorage } from './ServerStorage.js';
@@ -184,7 +185,7 @@ export class MailProcessor {
   matchesHeader_(message, header) {
     let colonIndex = header.indexOf(':');
     if (colonIndex == -1) {
-      new ErrorDialog(`Invalid header filter. Header filters must be of the form headername:filtervalue.`);
+      ErrorLogger.log(`Invalid header filter. Header filters must be of the form headername:filtervalue.`);
       return false;
     }
     let name = header.substring(0, colonIndex).trim();
@@ -344,8 +345,7 @@ export class MailProcessor {
           newlyLabeledThreadsCount++;
         }
       } catch (e) {
-        console.log(e);
-        new ErrorDialog(`Failed to process message. Left it in the unprocessed label.\n\n${JSON.stringify(e)}`);
+        ErrorLogger.log(`Failed to process message. Left it in the unprocessed label.\n\n${JSON.stringify(e)}`);
       }
     }
 

@@ -263,7 +263,7 @@ export class AbstractThreadListView extends HTMLElement {
 
   async undoLastAction_() {
     if (!this.undoableActions_ || !this.undoableActions_.length) {
-      new ErrorDialog('Nothing left to undo.');
+      alert('Nothing left to undo.');
       return;
     }
 
@@ -424,7 +424,7 @@ export class AbstractThreadListView extends HTMLElement {
         return;
 
       if (compose.value.length > this.allowedReplyLength_) {
-        new ErrorDialog(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
+        alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
         return;
       }
 

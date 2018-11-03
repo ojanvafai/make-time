@@ -4,7 +4,7 @@ Load faster:
 - Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
 
 P1: Will try to do soonish.
-- Make errors non-modal.
+- Add send+priority buttons to the compose view
 - Allow manual modifications to to/cc/bcc lines in compose view?
 - Add undo send?
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
@@ -16,7 +16,6 @@ P1: Will try to do soonish.
 - Add a setting for how many weeks of email to keep in storage.
 - Add manual sorting of triaged threads.
 - Give a more natural way to go back to threadlist from single thread (e.g. a back button)
-- Allow undo of the last item triaged (needs to undo, and send you back to TriageView)
 - auto delete needstriage labels that have no threads in them and have no filters that would cause that label to be created again as a way of not having a ton of cruft build up.
 - Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
 - Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
@@ -32,9 +31,7 @@ P1: Will try to do soonish.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
 - Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 - Grey out undo button when there's nothing to undo
-- race condition: if the user hits undo before the triage action is done, it will undo the previous triage action
-- grey out filter rows and queues when they are deleted instead of immediately removing them and add an undo button in case the delete button was hit by accident.
-- Use TypeScript and create an abstract View superclass and an abstract Dialog superclass.
+- Use TypeScript
 - Add the ability to create new action items that have no existing thread
 - Highlight the current phase in the drawer and actually update the url for each phase so people can link to the phase they want.
 - add ability to search for a set of threads and see which filter would match
@@ -50,7 +47,6 @@ P2: Will only do if something makes these seem worth doing.
 - auto go into make time when having triaged all the items
 - Generalize tha ability to skip any of the modes. Curreently can only skip TriageView.
 - Lazy load things like views/Settings.js and ViewOne.js.
-- add undo to TriageView and MakeTime
 - Fix eliding to group better
 - Add autocomplete for label names in the queues and filters views.
 - Removing a queue means the currently queued messages never get dequeued

@@ -80,7 +80,7 @@ export class SettingsView extends HTMLElement {
 
   showFilterDialog_() {
     if (this.hadChanges_) {
-      new ErrorDialog("You have changed some settings in this dialog. Please save or cancel first.");
+      alert("You have changed some settings in this dialog. Please save or cancel first.");
       return;
     }
     new FiltersView(this.settings_);
@@ -89,7 +89,7 @@ export class SettingsView extends HTMLElement {
 
   async showQueuesDialog_() {
     if (this.hadChanges_) {
-      new ErrorDialog("You have changed some settings in this dialog. Please save or cancel first.");
+      alert("You have changed some settings in this dialog. Please save or cancel first.");
       return;
     }
 

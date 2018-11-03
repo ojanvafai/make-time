@@ -1,5 +1,5 @@
 import { ComposeView } from './views/ComposeView.js';
-import { ErrorDialog } from './ErrorDialog.js';
+import { ErrorLogger } from './ErrorLogger.js';
 import { gapiFetch } from './Net.js';
 import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
@@ -445,11 +445,11 @@ async function fetchContacts(token) {
 
     let contacts = localStorage.getItem(CONTACT_STORAGE_KEY_);
     if (!contacts) {
-      console.error(message);
+      ErrorLogger.log(message);
       return;
     }
 
-    console.error(`Using locally stored version of contacts. ${message}`);
+    ErrorLogger.log(`Using locally stored version of contacts. ${message}`);
     contacts_ = JSON.parse(contacts);
     return;
   }
@@ -620,14 +620,14 @@ window.addEventListener('error', (e) => {
     emailBody += '\n' + e.error;
   if (e.stack)
     emailBody += '\n\n' + e.stack;
-  new ErrorDialog(emailBody);
+  ErrorLogger.log(emailBody);
 });
 
 window.addEventListener('unhandledrejection', (e) => {
   // 401 means the credentials are invalid and you probably need to 2 factor.
   if (e.reason && e.reason.status == 401)
     window.location.reload();
-  new ErrorDialog(e.reason);
+  ErrorLogger.log(e.reason);
 });
 
 window.addEventListener('offline', (e) => {

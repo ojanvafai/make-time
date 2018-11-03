@@ -107,7 +107,7 @@ export class Actions extends HTMLElement {
       return;
 
     if (!navigator.onLine) {
-      new ErrorDialog(`This action requires a network connection.`);
+      alert(`This action requires a network connection.`);
       return;
     }
 
