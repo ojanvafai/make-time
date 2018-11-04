@@ -4,9 +4,9 @@ import { fetchThread, fetchThreads } from '../main.js';
 import { Labels } from '../Labels.js';
 
 export class MakeTimeView extends AbstractThreadListView {
-  constructor(threads, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
+  constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
     let countDown = false;
-    super(threads, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
+    super(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, MakeTimeView.ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
 
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitleDelegate;
@@ -33,7 +33,7 @@ export class MakeTimeView extends AbstractThreadListView {
     // TODO: Sort labelsToFetch so higher priority labesl are fetched first.
     for (let label of labelsToFetch) {
       this.currentGroup_ = label;
-      await fetchThreads(this.addThread.bind(this), {
+      await fetchThreads(this.processThread.bind(this), {
         query: `in:${label}`,
         includeTriaged: true,
       });
@@ -41,7 +41,7 @@ export class MakeTimeView extends AbstractThreadListView {
 
     // Fetch latent unprioritized actionitem threads.
     // TODO: Remove this once we've fully removed actionitem as a concept.
-    await fetchThreads(this.addThread.bind(this), {
+    await fetchThreads(this.processThread.bind(this), {
       query: `in:${Labels.ACTION_ITEM_LABEL} -(in:${this.allLabels_.getPriorityLabelNames().join(' OR in:')})`,
       includeTriaged: true,
     });

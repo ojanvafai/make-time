@@ -1,14 +1,13 @@
 import { AbstractThreadListView } from './AbstractThreadListView.js';
 import { Actions } from '../Actions.js';
-import { addThread, fetchThreads } from '../main.js';
+import { fetchThreads } from '../main.js';
 import { Labels } from '../Labels.js';
 
 export class TriageView extends AbstractThreadListView {
   constructor(threads, mailProcessor, scrollContainer, allLabels, vacationSubject, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration, queueSettings) {
     let countDown = true;
-    super(threads, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
+    super(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
 
-    this.mailProcessor_ = mailProcessor;
     this.allLabels_ = allLabels;
     this.vacationSubject_ = vacationSubject;
     this.queueSettings_ = queueSettings;
@@ -31,32 +30,20 @@ export class TriageView extends AbstractThreadListView {
 
     this.clearBestEffort();
 
-    let baseQuery = `newer_than:1m ${vacationQuery}`;
+    let makeTimeLabels = this.allLabels_.getMakeTimeLabelNames().filter((item) => item != Labels.PROCESSED_LABEL);
 
     // Put threads that are in the inbox with no make-time labels first. That way they always show up before
     // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
     await fetchThreads(this.processThread.bind(this), {
-      query: `${baseQuery} -(in:${this.allLabels_.getMakeTimeLabelNames().join(' OR in:')})`,
+      query: `${vacationQuery} -(in:${makeTimeLabels.join(' OR in:')})`,
       queue: 'inbox',
     });
 
     for (let queueData of queuesToFetch) {
       await fetchThreads(this.processThread.bind(this), {
-        query: baseQuery,
+        query: vacationQuery,
         queue: queueData[0],
       });
-    }
-  }
-
-  async processThread(thread) {
-    let processedId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
-    let messages = await thread.getMessages();
-    let lastMessage = messages[messages.length - 1];
-    if (!lastMessage.getLabelIds().includes(processedId)) {
-      await this.mailProcessor_.processThread(thread);
-    } else {
-      // TODO: Don't use the global addThread.
-      await addThread(thread);
     }
   }
 

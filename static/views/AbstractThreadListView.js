@@ -1,5 +1,6 @@
 import { Actions } from '../Actions.js';
-import { fetchThread } from '../main.js';
+import { addThread, fetchThread } from '../main.js';
+import { Labels } from '../Labels.js';
 import { RenderedThread } from '../RenderedThread.js';
 import { ThreadRow } from './ThreadRow.js';
 import { ThreadRowGroup } from './ThreadRowGroup.js';
@@ -7,7 +8,7 @@ import { Timer } from '../Timer.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
 
 export class AbstractThreadListView extends HTMLElement {
-  constructor(threads, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
+  constructor(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
 
     this.style.cssText = `
@@ -16,6 +17,7 @@ export class AbstractThreadListView extends HTMLElement {
     `;
 
     this.threads_ = threads;
+    this.mailProcessor_ = mailProcessor;
     this.scrollContainer_ = scrollContainer;
     this.updateTitle_ = updateTitleDelegate;
     this.setSubject_ = setSubject;
@@ -30,6 +32,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.overflowActions_ = opt_overflowActions;
 
     this.groupByQueue_ = {};
+    this.threadIdToRow_ = new Map();
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -113,6 +116,33 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
+  async processThread(thread) {
+    let processedId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
+    let messages = await thread.getMessages();
+    let lastMessage = messages[messages.length - 1];
+    if (!lastMessage.getLabelIds().includes(processedId)) {
+      // TODO: Remove this hack once all clients have upgraded to having processed
+      // labels on all processed threads. For now, don't reprocess threads that
+      // have already been triaged and have had no new messages since that would
+      // remove their priorities.
+      let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
+      if (await thread.getPriority() &&
+        !messages[0].getLabelIds().includes(processedId) &&
+        !thread.isInInbox() &&
+        !lastMessage.getLabelIds().includes(unprocessedId)) {
+        let addLabelIds = [processedId];
+        let removeLabelIds = [];
+        thread.modify(addLabelIds, removeLabelIds);
+      } else {
+        await this.mailProcessor_.processThread(thread);
+        return;
+      }
+    }
+
+    // TODO: Don't use the global addThread.
+    await addThread(thread);
+  }
+
   async addThread(thread, opt_nextSibling) {
     if (this.tornDown_)
       return;
@@ -127,8 +157,37 @@ export class AbstractThreadListView extends HTMLElement {
     }
 
     let row = new ThreadRow(thread);
-    rowGroup.push(row, opt_nextSibling);
+
+    let oldRow = this.threadIdToRow_[thread.id];
+    this.threadIdToRow_[thread.id] = row;
+
+    if (!oldRow) {
+      rowGroup.push(row, opt_nextSibling);
+      return row;
+    }
+
+    // If the thread changed queues, then remove it from the old one so
+    // it doesn't show up twice. But if it's in the same rowGroup, let
+    // replace the row to keep the thread in the same position.
+    let oldRowGroup = this.getParentRowGroup_(oldRow);
+    if (rowGroup == oldRowGroup) {
+      oldRow.replaceWith(row);
+      row.checked = oldRow.checked;
+    } else {
+      this.removeRow_(oldRow);
+      rowGroup.push(row, opt_nextSibling);
+    }
+
     return row;
+  }
+
+  getParentRowGroup_(row) {
+    let parent = row.parentNode;
+    while (parent) {
+      if (parent instanceof ThreadRowGroup)
+        return parent;
+      parent = parent.parentNode;
+    }
   }
 
   clearBestEffort() {
