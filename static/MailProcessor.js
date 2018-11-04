@@ -238,7 +238,7 @@ export class MailProcessor {
     return matches;
   }
 
-  async processThread(thread, rules) {
+  async getWinningLabel(thread, rules) {
     var messages = await thread.getMessages();
 
     for (let rule of rules) {
@@ -272,90 +272,130 @@ export class MailProcessor {
     return null;
   }
 
-  async processMail() {
+  async getPriority(thread) {
+    let messages = await thread.getMessages();
+    let lastMessage = messages[messages.length - 1];
+    // TODO: Also check the subject line? last message wins over subject?
+    let plainText = lastMessage.getPlain();
+    if (!plainText) {
+      // Lazy way of getting the plain text out of the HTML.
+      let dummyDiv = document.createElement('div');
+      dummyDiv.innerHTML = lastMessage.getHtml();
+      plainText = dummyDiv.textContent;
+    }
+
+    let lowestIndex = Number.MAX_SAFE_INTEGER;
+    let matchingPriority;
+    for (let priority of Labels.SORTED_PRIORITIES) {
+      let tag = `##${priority}`;
+      let index = plainText.indexOf(tag);
+
+      if (index == -1)
+        continue;
+      if (index > lowestIndex)
+        continue;
+      // Make sure what follows the tag is a space, newline, or end of message.
+      let nextChar = plainText.charAt(index + tag.length);
+      if (nextChar && nextChar != ' ' && nextChar != '\n' && nextChar != '\r')
+        continue;
+
+      lowestIndex = index;
+      matchingPriority = priority;
+    }
+
+    return matchingPriority;
+  }
+
+  async processThread(thread) {
+    try {
+      let startTime = new Date();
+
+      let removeLabelIds = this.allLabels_.getMakeTimeLabelIds().concat();
+      let processedLabelId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
+      let addLabelIds = [processedLabelId];
+
+      let currentTriagedLabel = await this.currentTriagedLabel(thread);
+      if (currentTriagedLabel == Labels.MUTED_LABEL) {
+        await thread.modify(addLabelIds, removeLabelIds);
+        this.logToStatsPage_(Labels.MUTED_LABEL, startTime);
+        return;
+      }
+
+      let priority = await this.getPriority(thread);
+      if (priority) {
+        let labelName = Labels.addPriorityPrefix(priority);
+        addLabelIds.push(await this.allLabels_.getId(labelName));
+        removeLabelIds.push('INBOX');
+        await thread.modify(addLabelIds, removeLabelIds);
+        await this.pushThread_(thread);
+        return;
+      }
+
+      let rulesSheet = await this.settings.getFilters();
+      let labelName = await this.getWinningLabel(thread, rulesSheet.rules);
+
+      if (labelName == Labels.ARCHIVE_LABEL) {
+        addLabelIds.push(await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
+        removeLabelIds.push('INBOX');
+        await thread.modify(addLabelIds, removeLabelIds);
+        if (thread.isInInbox())
+          this.logToStatsPage_(labelName, startTime);
+        return;
+      }
+
+      let prefixedLabelName;
+
+      // Don't queue if already in the inbox or triaged.
+      if (thread.isInInbox() || currentTriagedLabel || this.queuedLabelMap_.get(labelName).queue == QueueSettings.IMMEDIATE) {
+        prefixedLabelName = Labels.needsTriageLabel(labelName);
+        addLabelIds.push('INBOX');
+      } else {
+        prefixedLabelName = Labels.addQueuedPrefix(labelName);
+      }
+
+      let prefixedLabelId = await this.allLabels_.getId(prefixedLabelName);
+      let alreadyHadLabel = (await thread.getLabelIds()).has(prefixedLabelId);
+
+      addLabelIds.push(prefixedLabelId);
+      removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);
+
+      await thread.modify(addLabelIds, removeLabelIds);
+      if (addLabelIds.includes('INBOX'))
+        await this.pushThread_(thread);
+
+      if (!alreadyHadLabel)
+        this.logToStatsPage_(labelName, startTime);
+    } catch (e) {
+      ErrorLogger.log(`Failed to process message.\n\n${JSON.stringify(e)}`);
+    }
+  }
+
+  async logToStatsPage_(labelName, startTime) {
+    // TODO: Simplify this now that we write the stats for each thread at a time.
+    let perLabelCounts = {};
+    perLabelCounts[labelName] = 1;
+    await this.writeToStatsPage(
+      startTime.getTime(), 1, perLabelCounts, Date.now() - startTime.getTime());
+  }
+
+  async processUnprocessed() {
     let threads = [];
     await fetchThreads(thread => threads.push(thread), {
       query: `in:${Labels.UNPROCESSED_LABEL}`,
     });
 
+    await fetchThreads(thread => threads.push(thread), {
+      query: `in:inbox -in:${Labels.PROCESSED_LABEL}`,
+    });
+
     if (!threads.length)
       return;
 
-    let startTime = new Date();
-    let rulesSheet = await this.settings.getFilters();
-
-    let newlyLabeledThreadsCount = 0;
-    let perLabelCounts = {};
-
     for (var i = 0; i < threads.length; i++) {
-      try {
-        this.updateTitle_('processMail', `Processing ${i + 1}/${threads.length} unprocessed threads...`);
-
-        let thread = threads[i];
-        let labelName;
-
-        let removeLabelIds = this.allLabels_.getMakeTimeLabelIds().concat();
-        let addLabelIds = [];
-
-        let currentTriagedLabel = await this.currentTriagedLabel(thread);
-        if (currentTriagedLabel == Labels.MUTED_LABEL) {
-          await thread.modify(addLabelIds, removeLabelIds);
-          continue;
-        } else {
-          labelName = await this.processThread(thread, rulesSheet.rules);
-        }
-
-        let alreadyHadLabel = false;
-        let isAlreadyInInbox = thread.isInInbox();
-
-        if (labelName == Labels.ARCHIVE_LABEL) {
-          addLabelIds.push(await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
-          removeLabelIds.push('INBOX');
-        } else {
-          let prefixedLabelName;
-
-          // Don't queue if already in the inbox or triaged.
-          if (isAlreadyInInbox || currentTriagedLabel || this.queuedLabelMap_.get(labelName).queue == QueueSettings.IMMEDIATE) {
-            prefixedLabelName = Labels.needsTriageLabel(labelName);
-          } else {
-            prefixedLabelName = Labels.addQueuedPrefix(labelName);
-          }
-
-          let prefixedLabelId = await this.allLabels_.getId(prefixedLabelName);
-
-          let labelIds = await thread.getLabelIds();
-          alreadyHadLabel = labelIds.has(prefixedLabelId);
-
-          addLabelIds.push(prefixedLabelId);
-          removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);
-
-          if (prefixedLabelName != Labels.addQueuedPrefix(labelName))
-            addLabelIds.push('INBOX');
-        }
-
-        await thread.modify(addLabelIds, removeLabelIds);
-        // TODO: If isAlreadyInInbox && !alreadyHadLabel, we should remove it from the threadlist
-        // and add it back in so it gets put into the right queue.
-        if (!isAlreadyInInbox && addLabelIds.includes('INBOX'))
-          await this.pushThread_(thread);
-
-        if (!alreadyHadLabel) {
-          if (!perLabelCounts[labelName])
-            perLabelCounts[labelName] = 0;
-          perLabelCounts[labelName] += 1;
-          newlyLabeledThreadsCount++;
-        }
-      } catch (e) {
-        ErrorLogger.log(`Failed to process message. Left it in the unprocessed label.\n\n${JSON.stringify(e)}`);
-      }
+      this.updateTitle_('processUnprocessed', `Processing ${i + 1}/${threads.length} unprocessed threads...`);
+      await this.processThread(threads[i]);
     }
-
-    if (newlyLabeledThreadsCount) {
-      this.writeToStatsPage(
-        startTime.getTime(), newlyLabeledThreadsCount, perLabelCounts, Date.now() - startTime.getTime());
-    }
-
-    this.updateTitle_('processMail');
+    this.updateTitle_('processUnprocessed');
     return threads.length;
   }
 
@@ -451,4 +491,3 @@ export class MailProcessor {
     await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_DEQUEUE_TIME, value: Date.now()}]);
   }
 }
-

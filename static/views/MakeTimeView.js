@@ -16,14 +16,19 @@ export class MakeTimeView extends AbstractThreadListView {
   }
 
   compareRowGroups(a, b) {
-    let aOrder = MakeTimeView.PRIORITY_SORT_ORDER[a.queue];
-    let bOrder = MakeTimeView.PRIORITY_SORT_ORDER[b.queue];
+    this.comparePriorities_(a.queue, b.queue);
+  }
+
+  comparePriorities_(a, b) {
+    let aOrder = Labels.SORTED_PRIORITIES.indexOf(a);
+    let bOrder = Labels.SORTED_PRIORITIES.indexOf(b);
     return aOrder - bOrder;
   }
 
   async fetch_() {
     let labels = await this.allLabels_.getTheadCountForLabels(Labels.isPriorityLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
+    labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
 
     // TODO: Sort labelsToFetch so higher priority labesl are fetched first.
     for (let label of labelsToFetch) {
@@ -74,9 +79,3 @@ MakeTimeView.ACTIONS_ = [
 ];
 
 MakeTimeView.RENDER_ONE_ACTIONS_ = [Actions.QUICK_REPLY_ACTION].concat(MakeTimeView.ACTIONS_);
-
-MakeTimeView.PRIORITY_SORT_ORDER = {};
-MakeTimeView.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.MUST_DO_LABEL)] = 1;
-MakeTimeView.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.URGENT_LABEL)] = 2;
-MakeTimeView.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.NOT_URGENT_LABEL)] = 3;
-MakeTimeView.PRIORITY_SORT_ORDER[Labels.removePriorityPrefix(Labels.DELEGATE_LABEL)] = 4;

@@ -4,10 +4,11 @@ import { addThread, fetchThreads } from '../main.js';
 import { Labels } from '../Labels.js';
 
 export class TriageView extends AbstractThreadListView {
-  constructor(threads, scrollContainer, allLabels, vacationSubject, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration, queueSettings) {
+  constructor(threads, mailProcessor, scrollContainer, allLabels, vacationSubject, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration, queueSettings) {
     let countDown = true;
     super(threads, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
 
+    this.mailProcessor_ = mailProcessor;
     this.allLabels_ = allLabels;
     this.vacationSubject_ = vacationSubject;
     this.queueSettings_ = queueSettings;
@@ -30,25 +31,33 @@ export class TriageView extends AbstractThreadListView {
 
     this.clearBestEffort();
 
-    // TODO: Don't use the global addThread.
+    let baseQuery = `newer_than:1m ${vacationQuery}`;
 
-    // Put first threads that are in the inbox with no make-time labels. That way they always show up before
+    // Put threads that are in the inbox with no make-time labels first. That way they always show up before
     // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
-    await fetchThreads(addThread, {
-      query: `-(in:${this.allLabels_.getMakeTimeLabelNames().join(' OR in:')}) ${vacationQuery}`,
+    await fetchThreads(this.processThread.bind(this), {
+      query: `${baseQuery} -(in:${this.allLabels_.getMakeTimeLabelNames().join(' OR in:')})`,
       queue: 'inbox',
     });
 
     for (let queueData of queuesToFetch) {
-      await fetchThreads(addThread, {
-        query: vacationQuery,
+      await fetchThreads(this.processThread.bind(this), {
+        query: baseQuery,
         queue: queueData[0],
       });
     }
   }
 
-  readdThread(thread) {
-    this.addThread(thread);
+  async processThread(thread) {
+    let processedId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
+    let messages = await thread.getMessages();
+    let lastMessage = messages[messages.length - 1];
+    if (!lastMessage.getLabelIds().includes(processedId)) {
+      await this.mailProcessor_.processThread(thread);
+    } else {
+      // TODO: Don't use the global addThread.
+      await addThread(thread);
+    }
   }
 
   compareRowGroups(a, b) {

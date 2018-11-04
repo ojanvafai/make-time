@@ -69,6 +69,10 @@ export class Message {
     return str.replace(/"/g, '');
   }
 
+  getLabelIds() {
+    return this.rawMessage_.labelIds;
+  }
+
   getPlain() {
     this.parseMessageBody_();
     if (this.plain_)

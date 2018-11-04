@@ -79,7 +79,7 @@ export class Thread {
     // TODO: Handle response.status != 200.
 
     // Once a modify has happend the stored message details are stale and this Thread shouldn't be used anymore.
-    this.stale_ = true;
+    this.stale = true;
 
     return {
       added: addLabelIds,

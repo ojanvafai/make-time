@@ -34,6 +34,18 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   push(row, opt_nextSibling) {
+    let rows = this.rowContainer_.children;
+    for (var i = rows.length - 1; i >= 0; i--) {
+      let thisRow = rows[i];
+      if (thisRow.thread.id == row.thread.id) {
+        if (thisRow.thread.historyId != row.thread.historyId) {
+          thisRow.replaceWith(row);
+          row.checked = thisRow.checked;
+        }
+        return;
+      }
+    }
+
     if (opt_nextSibling && opt_nextSibling.parentNode == this.rowContainer_)
       opt_nextSibling.before(row);
     else

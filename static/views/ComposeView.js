@@ -3,6 +3,9 @@ import { Compose } from '../Compose.js';
 
 const SEND = { name: 'Send', description: 'Ummm...send the mail.' };
 const ACTIONS = [ SEND ];
+const HELP_TEXT = `
+Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##not-urgent, ##delegate.
+`;
 
 export class ComposeView extends HTMLElement {
   constructor(contacts, updateTitle) {
@@ -47,7 +50,7 @@ export class ComposeView extends HTMLElement {
     this.compose_.addEventListener('email-added', this.updateToField_.bind(this));
     this.compose_.addEventListener('input', this.debounceUpdateToField_.bind(this));
 
-    this.append(this.compose_);
+    this.append(this.compose_, HELP_TEXT);
   }
 
   debounceUpdateToField_() {

@@ -157,7 +157,7 @@ async function viewTriage() {
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
   let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new TriageView(threads_, getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration, await getQueuedLabelMap()));
+  setView(new TriageView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration, await getQueuedLabelMap()));
 
   updateLoaderTitle('viewTriage', '');
 }
@@ -241,7 +241,12 @@ export async function fetchThread(id) {
     'id': id,
   };
   let resp = await gapiFetch(gapi.client.gmail.users.threads.get, requestParams);
-  return threadCache_.get(resp.result, await getLabels());
+  let thread = threadCache_.get(resp.result, await getLabels());
+  // If we have a stale thread we just fetched, then it's not stale anymore.
+  // This can happen if we refetch a thread that wasn't actually modified
+  // by a modify call.
+  thread.stale = false;
+  return thread;
 }
 
 export async function fetchThreads(forEachThread, options) {
@@ -347,8 +352,8 @@ export async function addThread(thread) {
     }
   }
 
-  if (currentView_.readdThread)
-    await currentView_.readdThread(thread);
+  if (currentView_.addThread)
+    await currentView_.addThread(thread);
 }
 
 function createMenuItem(name, options) {
@@ -514,6 +519,11 @@ async function getQueuedLabelMap() {
   return queuedLabelMap_;
 }
 
+async function getMailProcessor() {
+  let MailProcessor = (await import('./MailProcessor.js')).MailProcessor;
+  return new MailProcessor(await getSettings(), addThread, await getQueuedLabelMap(), await getLabels(), updateLoaderTitle);
+}
+
 // TODO: Move this to a cron
 async function processMail() {
   if (isProcessingMail_)
@@ -522,9 +532,8 @@ async function processMail() {
   isProcessingMail_ = true;
   updateLoaderTitle('processMail', 'Processing mail backlog...');
 
-  let MailProcessor = (await import('./MailProcessor.js')).MailProcessor;
-  let mailProcessor = new MailProcessor(await getSettings(), addThread, await getQueuedLabelMap(), await getLabels(), updateLoaderTitle);
-  await mailProcessor.processMail();
+  let mailProcessor = await getMailProcessor();
+  await mailProcessor.processUnprocessed();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
 

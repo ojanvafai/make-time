@@ -216,13 +216,21 @@ Labels.QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
 Labels.PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
 Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
 
+Labels.PROCESSED_LABEL = Labels.addMakeTimePrefix('processed');
 Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
 Labels.PROCESSED_ARCHIVE_LABEL = Labels.triagedLabel('archivebyfilter');
 Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
 Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
 Labels.BLOCKED_LABEL = Labels.addQueuedPrefix(Labels.BLOCKED_SUFFIX);
 
-Labels.MUST_DO_LABEL = Labels.addPriorityPrefix('must-do');
-Labels.URGENT_LABEL = Labels.addPriorityPrefix('urgent');
-Labels.NOT_URGENT_LABEL = Labels.addPriorityPrefix('not-urgent');
-Labels.DELEGATE_LABEL = Labels.addPriorityPrefix('delegate');
+Labels.MUST_DO = 'must-do';
+Labels.URGENT = 'urgent';
+Labels.NOT_URGENT = 'not-urgent';
+Labels.DELEGATE = 'delegate';
+
+Labels.SORTED_PRIORITIES = [Labels.MUST_DO, Labels.URGENT, Labels.NOT_URGENT, Labels.DELEGATE];
+
+Labels.MUST_DO_LABEL = Labels.addPriorityPrefix(Labels.MUST_DO);
+Labels.URGENT_LABEL = Labels.addPriorityPrefix(Labels.URGENT);
+Labels.NOT_URGENT_LABEL = Labels.addPriorityPrefix(Labels.NOT_URGENT);
+Labels.DELEGATE_LABEL = Labels.addPriorityPrefix(Labels.DELEGATE);

@@ -1,7 +1,11 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
+- When a thread changes priority or queue due to MailProcessor, put it in the right priority/queue instead of having it in both the old and new locations.
+- Update the list of threads regularly.
+
 P1: Will try to do soonish.
-- Add send+priority buttons to the compose view
+- Add autocomplete of priorities in ComposeView after typing #.
+- Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
 - Allow manual modifications to to/cc/bcc lines in compose view?
 - Add undo send?
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
