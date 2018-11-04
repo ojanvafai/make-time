@@ -110,7 +110,7 @@ export class ComposeView extends HTMLElement {
     this.sending_ = true;
 
     this.updateTitle_('sending', 'Sending...');
-    let mail = await import('./Mail.js');
+    let mail = await import('../Mail.js');
     await mail.send(this.compose_.value, this.to_.textContent, this.subject_.value);
     this.updateTitle_('sending');
 
