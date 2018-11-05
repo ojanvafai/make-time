@@ -16,7 +16,7 @@ export class MakeTimeView extends AbstractThreadListView {
   }
 
   compareRowGroups(a, b) {
-    this.comparePriorities_(a.queue, b.queue);
+    return this.comparePriorities_(a.queue, b.queue);
   }
 
   comparePriorities_(a, b) {
