@@ -77,6 +77,7 @@ export class AbstractThreadListView extends HTMLElement {
   tearDown() {
     this.tornDown_ = true;
     this.setSubject_('');
+    this.showBackArrow_(false);
   }
 
   goBack() {
@@ -270,6 +271,8 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   transitionToThreadList_() {
+    this.showBackArrow_(false);
+
     this.rowGroupContainer_.style.display = 'flex';
     this.singleThreadContainer_.textContent = '';
     this.scrollContainer_.scrollTop = this.scrollOffset_;
@@ -281,7 +284,7 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   transitionToSingleThread_() {
-    this.showBackArrow_();
+    this.showBackArrow_(true);
 
     this.scrollOffset_ = this.scrollContainer_.scrollTop;
     this.rowGroupContainer_.style.display = 'none';

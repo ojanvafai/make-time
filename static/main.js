@@ -68,9 +68,9 @@ async function routeToTriage() {
 let DRAWER_OPEN = 'drawer-open';
 let CURRENT_PAGE_CLASS = 'current-page';
 
-function showBackArrow() {
-  document.getElementById('hambuger-menu-toggle').style.display = 'none';
-  document.getElementById('back-arrow').style.display = '';
+function showBackArrow(show) {
+  document.getElementById('hambuger-menu-toggle').style.display = show ? 'none' : '';
+  document.getElementById('back-arrow').style.display = show ? '' : 'none';
 }
 
 function openMenu() {
@@ -103,9 +103,6 @@ function toggleMenu() {
 document.getElementById('back-arrow').addEventListener('click', (e) => {
   if (currentView_.goBack)
     currentView_.goBack();
-
-  document.getElementById('hambuger-menu-toggle').style.display = '';
-  document.getElementById('back-arrow').style.display = 'none';
 });
 
 document.getElementById('hambuger-menu-toggle').addEventListener('click', (e) => {

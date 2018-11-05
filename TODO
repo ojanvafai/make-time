@@ -1,7 +1,6 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
 - Update the list of threads regularly.
-- Back arrow remains after triaging last thread
 
 P1: Will try to do soonish.
 - Add autocomplete of priorities in ComposeView after typing #.
