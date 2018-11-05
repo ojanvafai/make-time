@@ -1,7 +1,5 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
-- Update the list of threads regularly.
-
 P1: Will try to do soonish.
 - Add autocomplete of priorities in ComposeView after typing #.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
@@ -27,7 +25,6 @@ P1: Will try to do soonish.
 - Only show toolbar in any of the views when there are actually threads.
 - Find a way to separate out tasks that can be done on a phone so they can be fit into 5 minute breaks
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
-- Update the list of threads based off what's in the inbox periodically (e.g. to include things that get unsnoozed).
 - Grey out undo button when there's nothing to undo
 - Use TypeScript
 - Add the ability to create new action items that have no existing thread

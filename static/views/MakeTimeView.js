@@ -11,7 +11,7 @@ export class MakeTimeView extends AbstractThreadListView {
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitleDelegate;
 
-    this.fetch_();
+    this.fetch(this.processThread.bind(this));
     this.appendButton_('/triage', 'Back to Triaging');
   }
 
@@ -25,7 +25,7 @@ export class MakeTimeView extends AbstractThreadListView {
     return aOrder - bOrder;
   }
 
-  async fetch_() {
+  async fetch(forEachThread) {
     let labels = await this.allLabels_.getTheadCountForLabels(Labels.isPriorityLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
@@ -33,7 +33,7 @@ export class MakeTimeView extends AbstractThreadListView {
     // TODO: Sort labelsToFetch so higher priority labesl are fetched first.
     for (let label of labelsToFetch) {
       this.currentGroup_ = label;
-      await fetchThreads(this.processThread.bind(this), {
+      await fetchThreads(forEachThread, {
         query: `in:${label}`,
         includeTriaged: true,
       });
@@ -41,7 +41,7 @@ export class MakeTimeView extends AbstractThreadListView {
 
     // Fetch latent unprioritized actionitem threads.
     // TODO: Remove this once we've fully removed actionitem as a concept.
-    await fetchThreads(this.processThread.bind(this), {
+    await fetchThreads(forEachThread, {
       query: `in:${Labels.ACTION_ITEM_LABEL} -(in:${this.allLabels_.getPriorityLabelNames().join(' OR in:')})`,
       includeTriaged: true,
     });

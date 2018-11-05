@@ -84,6 +84,30 @@ export class AbstractThreadListView extends HTMLElement {
     this.transitionToThreadList_();
   }
 
+  async update() {
+    if (this.renderedRow_)
+      await this.renderedThread_().update();
+
+    // Mark
+    for (let row of this.threadIdToRow_.values()) {
+      row.mark = true;
+    }
+
+    await this.fetch(async (thread) => {
+      let oldRow = this.threadIdToRow_.get(thread.id);
+      if (!oldRow || oldRow.thread.historyId != thread.historyId)
+        await this.processThread(thread);
+      else
+        oldRow.mark = false;
+    })
+
+    // Sweep
+    for (let row of this.threadIdToRow_.values()) {
+      if (row.mark)
+        this.removeRow_(row);
+    }
+  }
+
   updateActions_() {
     let footer = document.getElementById('footer');
     footer.textContent = '';
@@ -159,8 +183,8 @@ export class AbstractThreadListView extends HTMLElement {
 
     let row = new ThreadRow(thread);
 
-    let oldRow = this.threadIdToRow_[thread.id];
-    this.threadIdToRow_[thread.id] = row;
+    let oldRow = this.threadIdToRow_.get(thread.id);
+    this.threadIdToRow_.set(thread.id, row);
 
     if (!oldRow) {
       rowGroup.push(row, opt_nextSibling);
@@ -175,7 +199,7 @@ export class AbstractThreadListView extends HTMLElement {
       oldRow.replaceWith(row);
       row.checked = oldRow.checked;
     } else {
-      this.removeRow_(oldRow);
+      this.removeFromRowGroup_(oldRow);
       rowGroup.push(row, opt_nextSibling);
     }
 
@@ -247,9 +271,16 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   async removeRow_(row) {
+    this.threadIdToRow_.delete(row.thread.id);
+    this.removeFromRowGroup_(row);
+  }
+
+  async removeFromRowGroup_(row) {
+    // TODO: If the currently rendered row is removed, render the next row or go back to threadlist?
     row.remove();
     if (row.thread.rendered)
       row.thread.rendered.remove();
+
     let queue = await this.getDisplayableQueue(row.thread);
     let rowGroup = this.groupByQueue_[queue];
     if (!rowGroup.hasRows()) {
@@ -423,12 +454,6 @@ export class AbstractThreadListView extends HTMLElement {
     let dom = await rendered.render(this.singleThreadContainer_);
     dom.style.bottom = '0';
     dom.style.visibility = 'hidden';
-  }
-
-  async updateCurrentThread() {
-    if (!this.renderedRow_)
-      return;
-    await this.renderedThread_().update();
   }
 
   async showQuickReply() {
