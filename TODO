@@ -1,5 +1,7 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
+- some issue with threadIdToRow and actual list of rows getting out of sync when updating causing rows that have already been removed to get removed more
+
 P1: Will try to do soonish.
 - Make updates more efficient (don't do a fetch per label, don't gc every minute, etc).
 - Add autocomplete of priorities in ComposeView after typing #.

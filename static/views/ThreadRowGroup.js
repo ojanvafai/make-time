@@ -30,7 +30,7 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   hasRows() {
-    return !!this.rowContainer_.children.length;
+    return !!this.rowContainer_.childElementCount;
   }
 
   push(row, opt_nextSibling) {

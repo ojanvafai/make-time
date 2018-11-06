@@ -88,8 +88,12 @@ export class AbstractThreadListView extends HTMLElement {
     if (this.renderedRow_)
       await this.renderedThread_().update();
 
+    // Save out the rows for this whole update to avoid race conditions
+    // when threadIdToRow_ is modified.
+    let rows = this.threadIdToRow_.values();
+
     // Mark
-    for (let row of this.threadIdToRow_.values()) {
+    for (let row of rows) {
       row.mark = true;
     }
 
@@ -102,8 +106,10 @@ export class AbstractThreadListView extends HTMLElement {
     })
 
     // Sweep
-    for (let row of this.threadIdToRow_.values()) {
-      if (row.mark)
+    for (let row of rows) {
+      // The row could have gotten removed while this update was processing,
+      // so check that it's still in the tree.
+      if (row.mark && row.parentNode)
         this.removeRow_(row);
     }
   }
@@ -157,7 +163,7 @@ export class AbstractThreadListView extends HTMLElement {
         !lastMessage.getLabelIds().includes(unprocessedId)) {
         let addLabelIds = [processedId];
         let removeLabelIds = [];
-        thread.modify(addLabelIds, removeLabelIds);
+        await thread.modify(addLabelIds, removeLabelIds);
       } else {
         await this.mailProcessor_.processThread(thread);
         return;
@@ -251,18 +257,10 @@ export class AbstractThreadListView extends HTMLElement {
     return this.rowGroupContainer_.children.length;
   }
 
-  parentRowGroup(row) {
-    let parent = row.parentNode;
-    while (!(parent instanceof ThreadRowGroup)) {
-      parent = parent.parentNode;
-    }
-    return parent;
-  }
-
   getNextRow(row) {
     let nextRow = row.nextSibling;
     if (!nextRow) {
-      let rowGroup = this.parentRowGroup(row);
+      let rowGroup = this.getParentRowGroup_(row);
       let nextRowGroup = rowGroup.nextSibling;
       if (nextRowGroup)
         nextRow = nextRowGroup.querySelector('mt-thread-row');
