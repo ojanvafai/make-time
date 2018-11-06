@@ -9,9 +9,9 @@ handlers:
   http_headers:
     Access-Control-Allow-Origin: '*'
 
-- url: /service-worker.js
-  static_files: service-worker.js
-  upload: service-worker.js
+- url: /manifest.json
+  static_files: manifest.json
+  upload: manifest.json
   secure: always
   http_headers:
     Access-Control-Allow-Origin: '*'
