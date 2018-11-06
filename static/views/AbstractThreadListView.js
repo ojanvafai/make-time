@@ -270,7 +270,7 @@ export class AbstractThreadListView extends HTMLElement {
 
   async removeRow_(row) {
     this.threadIdToRow_.delete(row.thread.id);
-    this.removeFromRowGroup_(row);
+    await this.removeFromRowGroup_(row);
   }
 
   async removeFromRowGroup_(row) {
