@@ -72,6 +72,8 @@ window.customElements.define('mt-make-time-view', MakeTimeView);
 
 MakeTimeView.ACTIONS_ = [
   Actions.ARCHIVE_ACTION,
+  Actions.BLOCKED_ACTION,
+  Actions.MUTE_ACTION,
   Actions.MUST_DO_ACTION,
   Actions.URGENT_ACTION,
   Actions.NOT_URGENT_ACTION,
