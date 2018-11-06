@@ -331,7 +331,7 @@ export class Settings {
   }
 
   async getFilters() {
-    if (this.filter_)
+    if (this.filters_)
       return this.filters_;
 
     let rawRules = await SpreadsheetUtils.fetchSheet(this.spreadsheetId, Settings.FILTERS_SHEET_NAME_);

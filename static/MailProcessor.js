@@ -97,8 +97,6 @@ export class MailProcessor {
   }
 
   async collapseStats() {
-    this.updateTitle_('collapseStats', 'Writing stats...');
-
     let stats;
     var rows = await SpreadsheetUtils.fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
     let todayYearMonthDay = this.getYearMonthDay(Date.now());
@@ -179,8 +177,6 @@ export class MailProcessor {
 
     if (lastRowProcessed)
       await SpreadsheetUtils.deleteRows(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, 1, lastRowProcessed + 1);
-
-    this.updateTitle_('collapseStats');
   }
 
   matchesHeader_(message, header) {

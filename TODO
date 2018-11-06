@@ -1,6 +1,7 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
 P1: Will try to do soonish.
+- Make updates more efficient (don't do a fetch per label, don't gc every minute, etc).
 - Add autocomplete of priorities in ComposeView after typing #.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
 - Allow manual modifications to to/cc/bcc lines in compose view?

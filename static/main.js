@@ -527,14 +527,12 @@ async function processMail() {
     return;
 
   isProcessingMail_ = true;
-  updateLoaderTitle('processMail', 'Processing mail backlog...');
 
   let mailProcessor = await getMailProcessor();
   await mailProcessor.processUnprocessed();
   await mailProcessor.processQueues();
   await mailProcessor.collapseStats();
 
-  updateLoaderTitle('processMail');
   isProcessingMail_ = false;
 }
 
@@ -573,6 +571,9 @@ async function update() {
   await processMail();
   await gcLocalStorage();
 }
+
+// Make it easier to debug from devtools by making the update method accessible there.
+globalThis.update = update;
 
 // Make sure links open in new tabs.
 document.body.addEventListener('click', async (e) => {
