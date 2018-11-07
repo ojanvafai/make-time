@@ -1,6 +1,17 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
 P1: Will try to do soonish.
+- Mute is broken?
+- ComposeView Send button covered by it's tooltip
+- Close button on error dialog gets smooshed
+- Back to triage view button gets overlapped for short messages or something
+- ComposeView: save state in local storage so you can change views and come back, or reload the page, and not lose your state.
+- make switching between compose/maketime/triage easier. Make the UI more prominent and add keyboard shortcuts.
+- add keyboard shortcut to go back to threadlist
+- ComposeView: Handle having missing to/subject/body gracefully instead of having a nonsensical error and getting stuck unable to send the message
+- Add embedded composeView in the maketime/triage views for quick compose that's not replying to the current thread.
+- add better UI for adding new filters.
+- e.g. when viewing an email. For needs filter, could have it route through the filter immediately so you can see it work.
 - Make updates more efficient (don't do a fetch per label, don't gc every minute, etc).
 - Add autocomplete of priorities in ComposeView after typing #.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
@@ -14,6 +25,8 @@ P1: Will try to do soonish.
 - Add a setting for how many weeks of email to keep in storage.
 - Add manual sorting of triaged threads.
 - auto delete needstriage labels that have no threads in them and have no filters that would cause that label to be created again as a way of not having a ton of cruft build up.
+- Make swipe work on mobile
+- Make back forward work for viewone and threadlist. Keep track of the last thread in viewone for forward navs instead of trying to put the thread into the history. This will make the back button on android do the right thing when in viewone.
 - Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
 - Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
 - Race condition with archiving too fast leaves the old thread around forever. maybe? Something crazy happens on slow connections.

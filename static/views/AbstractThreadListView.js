@@ -90,7 +90,7 @@ export class AbstractThreadListView extends HTMLElement {
 
     // Save out the rows for this whole update to avoid race conditions
     // when threadIdToRow_ is modified.
-    let rows = this.threadIdToRow_.values();
+    let rows = Array.from(this.threadIdToRow_.values());
 
     // Mark
     for (let row of rows) {
@@ -109,8 +109,12 @@ export class AbstractThreadListView extends HTMLElement {
     for (let row of rows) {
       // The row could have gotten removed while this update was processing,
       // so check that it's still in the tree.
-      if (row.mark && row.parentNode)
-        this.removeRow_(row);
+      if (row.mark && row.parentNode) {
+        if (row == this.renderedRow_)
+          await this.removeCurrentAndRenderNext_();
+        else
+          this.removeRow_(row);
+      }
     }
   }
 
@@ -321,21 +325,23 @@ export class AbstractThreadListView extends HTMLElement {
     this.undoableActions_ = [];
   }
 
+  async removeCurrentAndRenderNext_() {
+    let nextRow = this.getNextRow(this.renderedRow_);
+    await this.removeRow_(this.renderedRow_);
+    if (nextRow)
+      await this.renderOne_(nextRow);
+    else
+      this.transitionToThreadList_();
+  }
+
   async markTriaged(destination) {
     this.undoableActions_ = [];
 
     let threads;
     if (this.renderedRow_) {
+      // Save this off since removeCurrentAndRenderNext_ changes this.renderedRow_.
       let row = this.renderedRow_;
-
-      let nextRow = this.getNextRow(row);
-      await this.removeRow_(row);
-
-      if (nextRow)
-        await this.renderOne_(nextRow);
-      else
-        this.transitionToThreadList_();
-
+      await this.removeCurrentAndRenderNext_();
       this.markSingleThreadTriaged(row.thread, destination);
     } else {
       // Update the UI first and then archive one at a time.
