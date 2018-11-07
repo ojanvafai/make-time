@@ -76,7 +76,7 @@ export class ComposeView extends HTMLElement {
         button.tooltipElement = document.createElement('div');
         button.tooltipElement.style.cssText = `
           position: absolute;
-          bottom: ${this.offsetHeight}px;
+          bottom: ${footer.offsetHeight}px;
           left: 0;
           right: 0;
           display: flex;

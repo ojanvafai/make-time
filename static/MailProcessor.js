@@ -312,6 +312,9 @@ export class MailProcessor {
 
       let currentTriagedLabel = await this.currentTriagedLabel(thread);
       if (currentTriagedLabel == Labels.MUTED_LABEL) {
+        let mutedId = await this.allLabels_.getId(Labels.MUTED_LABEL);
+        removeLabelIds = removeLabelIds.filter((item) => item != mutedId);
+        removeLabelIds.push('INBOX');
         await thread.modify(addLabelIds, removeLabelIds);
         this.logToStatsPage_(Labels.MUTED_LABEL, startTime);
         return;

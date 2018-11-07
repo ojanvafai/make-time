@@ -1,8 +1,8 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
 P1: Will try to do soonish.
+- Use SendAs gmail API to avoid adding yourself to the to line of threads you're not already on to avoid them popping back into your inbox when you send.
 - Mute is broken?
-- ComposeView Send button covered by it's tooltip
 - Close button on error dialog gets smooshed
 - Back to triage view button gets overlapped for short messages or something
 - ComposeView: save state in local storage so you can change views and come back, or reload the page, and not lose your state.
@@ -10,8 +10,7 @@ P1: Will try to do soonish.
 - add keyboard shortcut to go back to threadlist
 - ComposeView: Handle having missing to/subject/body gracefully instead of having a nonsensical error and getting stuck unable to send the message
 - Add embedded composeView in the maketime/triage views for quick compose that's not replying to the current thread.
-- add better UI for adding new filters.
-- e.g. when viewing an email. For needs filter, could have it route through the filter immediately so you can see it work.
+- add better UI for adding new filters, e.g. when viewing an email. For needs filter, could have it route through the filter immediately so you can see it work.
 - Make updates more efficient (don't do a fetch per label, don't gc every minute, etc).
 - Add autocomplete of priorities in ComposeView after typing #.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
@@ -20,9 +19,7 @@ P1: Will try to do soonish.
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
 - Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.
 - Add Undo button to MakeTime. Needs to correctly remove the item from it's queue and put it in the new queue.
-- Use lit-element/lit-html for DOM creation?
 - Remove all uses of localStorage and just use IDBKeyVal.
-- Add a setting for how many weeks of email to keep in storage.
 - Add manual sorting of triaged threads.
 - auto delete needstriage labels that have no threads in them and have no filters that would cause that label to be created again as a way of not having a ton of cruft build up.
 - Make swipe work on mobile
@@ -31,20 +28,17 @@ P1: Will try to do soonish.
 - Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
 - Race condition with archiving too fast leaves the old thread around forever. maybe? Something crazy happens on slow connections.
 - Make header:foo the only syntax for rules with a bit of special casing for email rules to handle foo+bar@ syntax.
-- Add a skip button to MakeTime view
 - triaged and maketime views need to give you an indication of there being new threads that need triaging.
 - add the ability to do inline responses
-- For best effort and -inbox +maketime label threads, do a query first to archive them, then fetch what's left. make addThread take a parameter to skip the vacation/bankrupt bits since those aren't needed in the query case done on load, so the page can load quickly.
-- make-time mode: store task durations for future data analysis. Need to split by action type.
 - Only show toolbar in any of the views when there are actually threads.
-- Find a way to separate out tasks that can be done on a phone so they can be fit into 5 minute breaks
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
 - Grey out undo button when there's nothing to undo
-- Use TypeScript
-- Add the ability to create new action items that have no existing thread
 - add ability to search for a set of threads and see which filter would match
 
 P2: Will only do if something makes these seem worth doing.
+- Use TypeScript
+- make-time mode: store task durations for future data analysis. Need to split by action type.
+- Add a setting for how many weeks of email to keep in storage.
 - Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
 - Linkify URLs in the plain text or html content
 - Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.

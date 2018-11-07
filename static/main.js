@@ -256,15 +256,9 @@ export async function fetchThreads(forEachThread, options) {
   if (options.queue)
     query += ' in:' + options.queue;
 
-
   let daysToShow = (await getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW);
   if (daysToShow)
     query += ` newer_than:${daysToShow}d`;
-
-
-  // We only have triaged labels once they've actually been created.
-  if (!options.includeTriaged && (await getLabels()).getTriagedLabelNames().length)
-    query += ' -(in:' + (await getLabels()).getTriagedLabelNames().join(' OR in:') + ')';
 
   let getPageOfThreads = async (opt_pageToken) => {
     let requestParams = {
