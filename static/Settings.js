@@ -1,6 +1,7 @@
 import { ErrorLogger } from './ErrorLogger.js';
 import { ServerStorage } from './ServerStorage.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
+import { showDialog } from './main.js';
 
 export class Settings {
   async fetch() {
