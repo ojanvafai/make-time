@@ -50,12 +50,14 @@ router.add('/make-time', async (foo) => {
     await currentView_.tearDown();
   await viewMakeTime();
 });
+// TODO: best-effort should not be a URL since it's not a proper view.
+// or should it be a view instead?
 router.add('/best-effort', async (foo) => {
   if (currentView_)
     await currentView_.tearDown();
 
   threads_.processBestEffort();
-  await viewTriage();
+  await router.run('/triage');
 });
 
 async function routeToTriage() {
