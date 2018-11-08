@@ -259,15 +259,6 @@ export class MailProcessor {
     return Labels.FALLBACK_LABEL;
   }
 
-  async currentTriagedLabel(thread) {
-    var labels = await thread.getLabelNames();
-    for (let label of labels) {
-      if (Labels.isTriagedLabel(label))
-        return label;
-    }
-    return null;
-  }
-
   async getPriority(thread) {
     let messages = await thread.getMessages();
     let lastMessage = messages[messages.length - 1];
@@ -310,8 +301,7 @@ export class MailProcessor {
       let processedLabelId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
       let addLabelIds = [processedLabelId];
 
-      let currentTriagedLabel = await this.currentTriagedLabel(thread);
-      if (currentTriagedLabel == Labels.MUTED_LABEL) {
+      if (await thread.isMuted()) {
         let mutedId = await this.allLabels_.getId(Labels.MUTED_LABEL);
         removeLabelIds = removeLabelIds.filter((item) => item != mutedId);
         removeLabelIds.push('INBOX');
@@ -345,7 +335,9 @@ export class MailProcessor {
       let prefixedLabelName;
 
       // Don't queue if already in the inbox or triaged.
-      if (thread.isInInbox() || currentTriagedLabel || this.queuedLabelMap_.get(labelName).queue == QueueSettings.IMMEDIATE) {
+      if (thread.isInInbox() ||
+          (await thread.getPriority()) ||
+          this.queuedLabelMap_.get(labelName).queue == QueueSettings.IMMEDIATE) {
         prefixedLabelName = Labels.needsTriageLabel(labelName);
         addLabelIds.push('INBOX');
       } else {

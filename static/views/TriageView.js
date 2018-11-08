@@ -16,6 +16,14 @@ export class TriageView extends AbstractThreadListView {
     this.appendButton_('/make-time', `It's make-time!`);
   }
 
+  async addThread(thread) {
+    let priority = await thread.getPriority();
+    // Threads with a priority have already been triaged, so don't add them.
+    if (priority)
+      return;
+    super.addThread(thread);
+  }
+
   // TODO: Store the list of threads in localStorage and update asynchronously.
   async fetch(forEachThread) {
     let labels = await this.allLabels_.getTheadCountForLabels(Labels.isNeedsTriageLabel);

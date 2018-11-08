@@ -25,6 +25,13 @@ export class MakeTimeView extends AbstractThreadListView {
     return aOrder - bOrder;
   }
 
+  async addThread(thread) {
+    let priority = await thread.getPriority();
+    // Only threads with a priority should be added.
+    if (priority)
+      super.addThread(thread);
+  }
+
   async fetch(forEachThread) {
     let labels = await this.allLabels_.getTheadCountForLabels(Labels.isPriorityLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);

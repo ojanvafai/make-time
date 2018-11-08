@@ -12,7 +12,6 @@ export class Labels {
     this.makeTimeLabelIds_ = [];
     this.makeTimeLabelNames_ = [];
     this.needsTriageLabelNames_ = [];
-    this.triagedLabels_ = [];
     this.priorityLabels_ = [];
 
     for (let label of response.result.labels) {
@@ -26,9 +25,7 @@ export class Labels {
     if (Labels.isMakeTimeLabel(name)) {
       this.makeTimeLabelIds_.push(id);
       this.makeTimeLabelNames_.push(name);
-      if (name.startsWith(Labels.TRIAGED_LABEL + '/'))
-        this.triagedLabels_.push(name);
-      else if (name.startsWith(Labels.PRIORITY_LABEL + '/'))
+      if (name.startsWith(Labels.PRIORITY_LABEL + '/'))
         this.priorityLabels_.push(name);
       else if (name.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'))
         this.needsTriageLabelNames_.push(name);
@@ -95,10 +92,6 @@ export class Labels {
     return this.needsTriageLabelNames_;
   }
 
-  getTriagedLabelNames() {
-    return this.triagedLabels_;
-  }
-
   getPriorityLabelNames() {
     return this.priorityLabels_;
   }
@@ -161,14 +154,6 @@ Labels.isMakeTimeLabel = (labelName) => {
 
 Labels.triagedLabel = (labelName) => {
   return `${Labels.TRIAGED_LABEL}/${labelName}`;
-}
-
-Labels.removeTriagedPrefix = (labelName) => {
-  return Labels.removeLabelPrefix(labelName, Labels.TRIAGED_LABEL);
-}
-
-Labels.isTriagedLabel = (labelName) => {
-  return labelName.startsWith(Labels.TRIAGED_LABEL + '/');
 }
 
 Labels.needsTriageLabel = (labelName) => {

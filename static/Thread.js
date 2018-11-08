@@ -36,10 +36,10 @@ export class Thread {
 
       if (Labels.isNeedsTriageLabel(name))
         this.setQueue(name);
-      else if (Labels.isTriagedLabel(name))
-        this.triagedQueue_ = name;
       else if (Labels.isPriorityLabel(name))
         this.priority_ = name;
+      else if (name == Labels.MUTED)
+        this.muted_ = true;
 
       this.labelNames_.add(name);
     }
@@ -161,21 +161,14 @@ export class Thread {
     return this.queue_;
   }
 
-  async getDisplayableTriagedQueue() {
-    let queue = await this.getTriagedQueue();
-    return Labels.removeTriagedPrefix(queue);
-  }
-
-  async getTriagedQueue() {
-    await this.fetchMessageDetails();
-    if (!this.triagedQueue_)
-      throw 'Attempting to get triage queue of untriaged thread.';
-    return this.triagedQueue_;
-  }
-
   async getPriority() {
     await this.fetchMessageDetails();
     return this.priority_;
+  }
+
+  async isMuted() {
+    await this.fetchMessageDetails();
+    return this.muted_;
   }
 
   assertNotStale_() {
