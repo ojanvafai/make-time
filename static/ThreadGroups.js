@@ -11,7 +11,9 @@ export class ThreadGroups {
   }
 
   processBestEffort() {
-    threads_.setBestEffort(null);
+    this.setBestEffort(null);
+    if (this.listener_.update)
+      this.listener_.update();
   }
   pushBestEffort(thread) {
     // After we've started triaging best effort threads, no longer push things

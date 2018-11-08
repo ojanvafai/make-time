@@ -30,6 +30,7 @@ class Logger extends HTMLElement {
     buttonContainer.style.cssText = `
       display: flex;
       justify-content: center;
+      flex-shrink: 0;
     `;
     buttonContainer.append(ok);
     this.append(buttonContainer);
