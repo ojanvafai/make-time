@@ -1,11 +1,77 @@
 import { Actions } from '../Actions.js';
 import { addThread, fetchThread } from '../main.js';
 import { Labels } from '../Labels.js';
-import { RenderedThread } from '../RenderedThread.js';
 import { ThreadRow } from './ThreadRow.js';
 import { ThreadRowGroup } from './ThreadRowGroup.js';
 import { Timer } from '../Timer.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
+
+// TODO: Mvoe this to it's own file? Deal with the name overlap with ThreadRowGroup?
+class RowGroup {
+  constructor(queue) {
+    this.queue = queue;
+    this.node = new ThreadRowGroup(queue);
+    this.rows_ = {};
+  }
+
+  push(thread) {
+    let currentRow = this.rows_[thread.id];
+    if (currentRow) {
+      currentRow.mark = false;
+      currentRow.setThread(thread);
+      return;
+    }
+    this.rows_[thread.id] = new ThreadRow(thread, this);
+  }
+
+  delete(row) {
+    delete this.rows_[row.thread.id];
+  }
+
+  getRow(thread) {
+    return this.rows_[thread.id];
+  }
+
+  getRows() {
+    return Object.values(this.rows_);
+  }
+
+  hasRows() {
+    return !!this.getRows().length;
+  }
+
+  getFirstRow() {
+    return Object.values(this.rows_)[0];
+  }
+
+  getNextRow(row) {
+    let rows = Object.values(this.rows_);
+    let index = rows.indexOf(row);
+    if (index == -1)
+      throw `Tried to get next row on a row that's not in the group.`;
+    if (index + 1 < rows.length)
+      return rows[index + 1];
+  }
+
+  mark() {
+    for (let id in this.rows_) {
+      let row = this.rows_[id];
+      row.mark = true;
+    }
+  }
+
+  getMarked() {
+    return Object.values(this.rows_).filter((row) => row.mark);
+  }
+}
+
+RowGroup.groups_ = {};
+
+RowGroup.create = (queue) => {
+  if (!RowGroup.groups_[queue])
+    RowGroup.groups_[queue] = new RowGroup(queue);
+  return RowGroup.groups_[queue];
+}
 
 export class AbstractThreadListView extends HTMLElement {
   constructor(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
@@ -31,8 +97,8 @@ export class AbstractThreadListView extends HTMLElement {
     this.viewOneActions_ = viewOneActions;
     this.overflowActions_ = opt_overflowActions;
 
-    this.groupByQueue_ = {};
-    this.threadIdToRow_ = new Map();
+    // TODO: Rename this to groupedRows_?
+    this.groupedThreads_ = [];
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -80,42 +146,36 @@ export class AbstractThreadListView extends HTMLElement {
     this.showBackArrow_(false);
   }
 
-  goBack() {
-    this.transitionToThreadList_();
+  async goBack() {
+    await this.transitionToThreadList_();
   }
 
   async update() {
     if (this.renderedRow_)
       await this.renderedThread_().update();
 
-    // Save out the rows for this whole update to avoid race conditions
-    // when threadIdToRow_ is modified.
-    let rows = Array.from(this.threadIdToRow_.values());
-
-    // Mark
-    for (let row of rows) {
-      row.mark = true;
+    for (let group of this.groupedThreads_) {
+      group.mark();
     }
 
     await this.fetch(async (thread) => {
-      let oldRow = this.threadIdToRow_.get(thread.id);
-      if (!oldRow || oldRow.thread.historyId != thread.historyId)
-        await this.processThread(thread);
-      else
-        oldRow.mark = false;
-    })
+      await this.processThread(thread);
+    });
+    await this.renderThreadList_();
 
-    // Sweep
-    for (let row of rows) {
-      // The row could have gotten removed while this update was processing,
-      // so check that it's still in the tree.
-      if (row.mark && row.parentNode) {
-        if (row == this.renderedRow_)
-          await this.removeCurrentAndRenderNext_();
-        else
-          this.removeRow_(row);
+    for (let group of this.groupedThreads_) {
+      let rows = group.getMarked();
+      for (let row of rows) {
+        this.removeRow_(row);
       }
     }
+  }
+
+  async findRow_(thread) {
+    let queue = await this.getDisplayableQueue(thread);
+    let group = this.getRowGroup_(queue);
+    if (group)
+      return group.getRow(thread);
   }
 
   updateActions_() {
@@ -137,18 +197,6 @@ export class AbstractThreadListView extends HTMLElement {
 
   shouldSuppressActions() {
     return false;
-  }
-
-  sortGroups_() {
-    let rowGroups = Array.prototype.slice.call(this.rowGroupContainer_.children);
-    rowGroups.sort(this.compareRowGroups.bind(this));
-
-    for (var i = 0; i < rowGroups.length; i++) {
-      let child = this.rowGroupContainer_.children[i];
-      let rowGroup = rowGroups[i];
-      if (rowGroup != child)
-        child.before(rowGroup);
-    }
   }
 
   async processThread(thread) {
@@ -178,51 +226,69 @@ export class AbstractThreadListView extends HTMLElement {
     await addThread(thread);
   }
 
+  getRowGroup_(queue) {
+    return this.groupedThreads_.find((item) => item.queue == queue);
+  }
+
+  async renderThreadList_() {
+    // Delete empty row groups.
+    this.groupedThreads_ = this.groupedThreads_.filter((group) => {
+      let hasRows = group.hasRows();
+      if (!hasRows)
+        group.node.remove();
+      return hasRows;
+    });
+
+    // Ensure the row groups are sorted.
+    let sorted = Array.prototype.slice.call(this.groupedThreads_);
+    sorted.sort(this.compareRowGroups.bind(this));
+    for (var i = 0; i < sorted.length; i++) {
+      let newNode = sorted[i].node;
+      let oldNode = this.rowGroupContainer_.children[i];
+      if (!oldNode) {
+        this.rowGroupContainer_.append(newNode);
+      } else if (newNode != oldNode) {
+        oldNode.before(newNode);
+      }
+    }
+
+    for (let group of this.groupedThreads_) {
+      let newIdToRow = {};
+      for (let row of group.getRows()) {
+        newIdToRow[row.thread.id] = row;
+      }
+
+      let existingRows = group.node.rows();
+      for (let row of existingRows) {
+        let threadId = row.thread.id;
+        let newRow = newIdToRow[threadId];
+        delete newIdToRow[threadId];
+        if (!newRow)
+          row.remove();
+      }
+
+      // Everything left in newIdToRow is now new threads.
+      let newRowsLeft = Object.values(newIdToRow);
+      for (let row of newRowsLeft) {
+        group.node.push(row);
+      }
+    }
+  }
+
   async addThread(thread, opt_nextSibling) {
     if (this.tornDown_)
       return;
 
     let queue = await this.getDisplayableQueue(thread);
-    let rowGroup = this.groupByQueue_[queue];
-    if (!rowGroup) {
-      rowGroup = new ThreadRowGroup(queue);
-      this.groupByQueue_[queue] = rowGroup;
-      this.rowGroupContainer_.append(rowGroup);
-      this.sortGroups_();
+    let group = this.getRowGroup_(queue);
+    if (!group) {
+      group = RowGroup.create(queue);
+      this.groupedThreads_.push(group);
     }
+    group.push(thread);
 
-    let row = new ThreadRow(thread);
-
-    let oldRow = this.threadIdToRow_.get(thread.id);
-    this.threadIdToRow_.set(thread.id, row);
-
-    if (!oldRow) {
-      rowGroup.push(row, opt_nextSibling);
-      return row;
-    }
-
-    // If the thread changed queues, then remove it from the old one so
-    // it doesn't show up twice. But if it's in the same rowGroup, let
-    // replace the row to keep the thread in the same position.
-    let oldRowGroup = this.getParentRowGroup_(oldRow);
-    if (rowGroup == oldRowGroup) {
-      oldRow.replaceWith(row);
-      row.checked = oldRow.checked;
-    } else {
-      this.removeFromRowGroup_(oldRow);
-      rowGroup.push(row, opt_nextSibling);
-    }
-
-    return row;
-  }
-
-  getParentRowGroup_(row) {
-    let parent = row.parentNode;
-    while (parent) {
-      if (parent instanceof ThreadRowGroup)
-        return parent;
-      parent = parent.parentNode;
-    }
+    // TODO: debounce this or something.
+    await this.renderThreadList_(this.groupedThreads_);
   }
 
   clearBestEffort() {
@@ -257,38 +323,20 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  rowGroupCount() {
-    return this.rowGroupContainer_.children.length;
-  }
-
   getNextRow(row) {
-    let nextRow = row.nextSibling;
-    if (!nextRow) {
-      let rowGroup = this.getParentRowGroup_(row);
-      let nextRowGroup = rowGroup.nextSibling;
-      if (nextRowGroup)
-        nextRow = nextRowGroup.querySelector('mt-thread-row');
-    }
-    return nextRow;
+    let nextRow = row.group.getNextRow(row);
+    if (nextRow)
+      return nextRow;
+
+    let groupIndex = this.groupedThreads_.indexOf(row.group);
+    if (groupIndex == -1)
+      throw `Tried to get next row on a group that's not in the tree.`;
+    if (groupIndex + 1 < this.groupedThreads_.length)
+      return this.groupedThreads_[groupIndex + 1].getFirstRow();
   }
 
-  async removeRow_(row) {
-    this.threadIdToRow_.delete(row.thread.id);
-    await this.removeFromRowGroup_(row);
-  }
-
-  async removeFromRowGroup_(row) {
-    // TODO: If the currently rendered row is removed, render the next row or go back to threadlist?
-    row.remove();
-    if (row.thread.rendered)
-      row.thread.rendered.remove();
-
-    let queue = await this.getDisplayableQueue(row.thread);
-    let rowGroup = this.groupByQueue_[queue];
-    if (!rowGroup.hasRows()) {
-      rowGroup.remove();
-      delete this.groupByQueue_[queue];
-    }
+  removeRow_(row) {
+    row.group.delete(row);
   }
 
   async takeAction(action) {
@@ -303,7 +351,7 @@ export class AbstractThreadListView extends HTMLElement {
     await this.markTriaged(action.destination);
   }
 
-  transitionToThreadList_() {
+  async transitionToThreadList_() {
     this.showBackArrow_(false);
 
     this.rowGroupContainer_.style.display = 'flex';
@@ -314,6 +362,8 @@ export class AbstractThreadListView extends HTMLElement {
     this.setRenderedRow_(null);
     this.setSubject_('');
     this.updateActions_();
+
+    await this.renderThreadList_();
   }
 
   transitionToSingleThread_() {
@@ -331,7 +381,7 @@ export class AbstractThreadListView extends HTMLElement {
     if (nextRow)
       await this.renderOne_(nextRow);
     else
-      this.transitionToThreadList_();
+      await this.transitionToThreadList_();
   }
 
   async markTriaged(destination) {
@@ -346,9 +396,12 @@ export class AbstractThreadListView extends HTMLElement {
     } else {
       // Update the UI first and then archive one at a time.
       let threads = this.getThreads();
+      this.updateTitle_('archiving', `Archiving ${threads.selectedRows.length} threads...`);
+
       for (let row of threads.selectedRows) {
         await this.removeRow_(row);
       }
+      await this.renderThreadList_(this.groupedThreads_);
 
       for (let i = 0; i < threads.selectedRows.length; i++) {
         this.updateTitle_('archiving', `Archiving ${i + 1}/${threads.selectedRows.length} threads...`);
@@ -382,17 +435,20 @@ export class AbstractThreadListView extends HTMLElement {
       let action = actions[i];
       await action.thread.modify(action.removed, action.added);
       let newThread = await fetchThread(action.thread.id);
-      let row = await this.addThread(newThread, this.renderedRow_);
+      await this.addThread(newThread, this.renderedRow_);
 
-      if (this.renderedRow_)
-        this.renderOne_(row);
+      if (this.renderedRow_) {
+        let queue = await this.getDisplayableQueue(newThread);
+        let group = this.getRowGroup_(queue);
+        this.renderOne_(group.getRow(newThread));
+      }
     }
 
     this.updateTitle_('undoLastAction_');
   }
 
   renderedThread_() {
-    return this.renderedRow_.thread.rendered;
+    return this.renderedRow_.rendered;
   }
 
   setRenderedRow_(row) {
@@ -406,8 +462,6 @@ export class AbstractThreadListView extends HTMLElement {
       this.transitionToSingleThread_();
 
     this.setRenderedRow_(row);
-    if (!row.thread.rendered)
-      new RenderedThread(row.thread);
 
     let messages = await row.thread.getMessages();
     let viewInGmailButton = new ViewInGmailButton();
@@ -454,8 +508,7 @@ export class AbstractThreadListView extends HTMLElement {
     if (!nextRow)
       return;
 
-    let rendered = nextRow.thread.rendered || new RenderedThread(nextRow.thread);
-    let dom = await rendered.render(this.singleThreadContainer_);
+    let dom = await nextRow.rendered.render(this.singleThreadContainer_);
     dom.style.bottom = '0';
     dom.style.visibility = 'hidden';
   }

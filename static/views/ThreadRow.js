@@ -1,11 +1,12 @@
+import { RenderedThread } from '../RenderedThread.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
 
 export class ThreadRow extends HTMLElement {
-  constructor(thread) {
+  constructor(thread, group) {
     super();
     this.style.display = 'flex';
 
-    this.thread_ = thread;
+    this.group = group;
 
     let label = document.createElement('label');
     label.style.cssText = `
@@ -27,7 +28,27 @@ export class ThreadRow extends HTMLElement {
     label.append(this.checkBox_);
     this.append(label);
 
+    this.messageDetails_ = document.createElement('div');
+    this.messageDetails_.style.cssText = `
+      display: flex;
+      overflow: hidden;
+      flex: 1;
+    `;
+    this.messageDetails_.onclick = () => {
+      this.dispatchEvent(new Event('renderThread', {bubbles: true}));
+    };
+    this.append(this.messageDetails_);
+
     this.updateHighlight_();
+    this.setThread(thread);
+  }
+
+  setThread(thread) {
+    if (this.thread_ && this.thread_.historyId == thread.historyId)
+      return;
+
+    this.thread_ = thread;
+    this.rendered = new RenderedThread(thread);
 
     this.thread_.getSubject()
     .then(subject => {
@@ -82,32 +103,20 @@ export class ThreadRow extends HTMLElement {
         popoutButton.style.marginLeft = '4px';
         popoutButton.style.marginRight = '4px';
 
-        let row = document.createElement('div');
-        row.style.cssText = `
-          display: flex;
-          overflow: hidden;
-          flex: 1;
-        `;
-
-        row.onclick = () => {
-          this.dispatchEvent(new Event('renderThread', {bubbles: true}));
-        };
-
+        this.messageDetails_.textContent = '';
         if (window.innerWidth < 600) {
           let topRow = document.createElement('div');
           topRow.style.display = 'flex';
           topRow.append(fromContainer, date, popoutButton);
-          row.append(topRow, title);
+          this.messageDetails_.append(topRow, title);
 
-          row.style.flexDirection = 'column';
+          this.messageDetails_.style.flexDirection = 'column';
           fromContainer.style.flex = '1';
           title.style.fontSize = '12px';
           title.style.margin = '5px 5px 0 5px';
         } else {
-          row.append(fromContainer, title, date, popoutButton);
+          this.messageDetails_.append(fromContainer, title, date, popoutButton);
         }
-
-        this.append(row);
       });
     });
   }

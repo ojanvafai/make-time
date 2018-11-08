@@ -1,8 +1,6 @@
 export class RenderedThread {
   constructor(thread) {
     this.thread = thread;
-    thread.rendered = this;
-
     this.dom_ = null;
     this.queued_ = [];
   }
@@ -28,15 +26,6 @@ export class RenderedThread {
   }
 
   async appendMessages_() {
-    let messages = await this.thread.getMessages();
-    // Only append new messages.
-    messages = messages.slice(this.dom_.children.length);
-    for (let message of messages) {
-      this.dom_.append(this.renderMessage_(message));
-    }
-  }
-
-  async render(newContainer) {
     if (!this.dom_) {
       this.dom_ = document.createElement('div');
       this.dom_.style.cssText = `
@@ -48,8 +37,17 @@ export class RenderedThread {
       `;
     }
 
+    let messages = await this.thread.getMessages();
+    // Only append new messages.
+    messages = messages.slice(this.dom_.children.length);
+    for (let message of messages) {
+      this.dom_.append(this.renderMessage_(message));
+    }
+  }
+
+  async render(newContainer) {
     // No need to block on fetching messages if we've already rendering some of them.
-    if (this.dom_.children.length) {
+    if (this.dom_) {
       // Intentionally don't await this so the messages are rendered ASAP.
       this.update();
     } else {

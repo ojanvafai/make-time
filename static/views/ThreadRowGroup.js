@@ -33,6 +33,10 @@ export class ThreadRowGroup extends HTMLElement {
     return !!this.rowContainer_.childElementCount;
   }
 
+  rows() {
+    return this.rowContainer_.children;
+  }
+
   push(row, opt_nextSibling) {
     if (opt_nextSibling && opt_nextSibling.parentNode == this.rowContainer_)
       opt_nextSibling.before(row);

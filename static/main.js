@@ -102,9 +102,9 @@ function toggleMenu() {
     openMenu();
 }
 
-document.getElementById('back-arrow').addEventListener('click', (e) => {
+document.getElementById('back-arrow').addEventListener('click', async (e) => {
   if (currentView_.goBack)
-    currentView_.goBack();
+    await currentView_.goBack();
 });
 
 document.getElementById('hambuger-menu-toggle').addEventListener('click', (e) => {
