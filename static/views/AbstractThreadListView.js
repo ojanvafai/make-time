@@ -1,5 +1,5 @@
 import { Actions } from '../Actions.js';
-import { addThread, fetchThread } from '../main.js';
+import { addThread, fetchThread, fetchThreads } from '../main.js';
 import { Labels } from '../Labels.js';
 import { ThreadRow } from './ThreadRow.js';
 import { ThreadRowGroup } from './ThreadRowGroup.js';
@@ -160,13 +160,30 @@ export class AbstractThreadListView extends HTMLElement {
 
     await this.fetch(async (thread) => {
       await this.processThread(thread);
-    });
+    }, true);
     await this.renderThreadList_();
 
     for (let group of this.groupedThreads_) {
       let rows = group.getMarked();
       for (let row of rows) {
         this.removeRow_(row);
+      }
+    }
+  }
+
+  async fetchLabels(vacationQuery, labels, forEachThread, shouldBatch) {
+    if (!labels.length)
+      return;
+
+    if (shouldBatch) {
+      await fetchThreads(forEachThread, {
+        query: `${vacationQuery} (in:${labels.join(' OR in:')})`,
+      });
+    } else {
+      for (let label of labels) {
+        await fetchThreads(forEachThread, {
+          query: `${vacationQuery} in:${label}`,
+        });
       }
     }
   }

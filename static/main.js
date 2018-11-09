@@ -255,12 +255,11 @@ export async function fetchThreads(forEachThread, options) {
   if (options.query)
     query += ' ' + options.query;
 
-  if (options.queue)
-    query += ' in:' + options.queue;
-
   let daysToShow = (await getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW);
   if (daysToShow)
     query += ` newer_than:${daysToShow}d`;
+
+  let labels = await getLabels();
 
   let getPageOfThreads = async (opt_pageToken) => {
     let requestParams = {
@@ -274,9 +273,7 @@ export async function fetchThreads(forEachThread, options) {
     let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      let thread = threadCache_.get(rawThread, await getLabels());
-      if (options.queue)
-        thread.setQueue(options.queue);
+      let thread = threadCache_.get(rawThread, labels);
       await forEachThread(thread);
     }
 
