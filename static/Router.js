@@ -61,7 +61,7 @@ export class Router {
   // Ewww...this can't be async because want to return a promise only in the case where
   // the router handles this location so that the click handler for links can preventDefault
   // synchronously.
-  run(location) {
+  run(location, excludeFromHistory) {
     // TODO: Don't allow strings as an argument. Allow Node or Location only.
     let isString = typeof location == 'string';
     let path = isString ? location : location.pathname;
@@ -84,7 +84,8 @@ export class Router {
         let appspot = '?appspot';
         if (window.location.search == appspot)
           path = path + appspot;
-        history.pushState({}, '', path);
+        if (!excludeFromHistory)
+          history.pushState({}, '', path);
         return rule.handler(params);
       }
     }

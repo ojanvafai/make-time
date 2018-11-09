@@ -1,7 +1,5 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
-- Handle history navigations!
-
 P1: Will try to do soonish.
 - Use SendAs gmail API to avoid adding yourself to the to line of threads you're not already on to avoid them popping back into your inbox when you send.
 - Mute is broken?

@@ -37,6 +37,15 @@ let threads_ = new ThreadGroups();
 let WEEKS_TO_STORE_ = 2;
 
 var router = new Router();
+
+async function routeToCurrentLocation(opt_inPopState) {
+  await router.run(window.location.pathname, opt_inPopState);
+}
+
+window.onpopstate = () => {
+  routeToCurrentLocation(true);
+}
+
 router.add('/compose', async (foo) => {
   if (currentView_) {
     await currentView_.tearDown();
@@ -441,7 +450,7 @@ async function onLoad() {
     settingsButton,
     helpButton);
 
-  await router.run(window.location.pathname);
+  await routeToCurrentLocation();
 
   // Don't want to show the earlier title, but still want to indicate loading is happening.
   // since we're going to processMail still. It's a less jarring experience if the loading
