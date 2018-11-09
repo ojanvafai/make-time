@@ -254,6 +254,10 @@ export class Compose extends HTMLElement {
     return results;
   }
 
+  get plainText() {
+    return this.content_.textContent;
+  }
+
   get value() {
     return this.content_.innerHTML;
   }

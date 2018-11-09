@@ -1,6 +1,5 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
--Email length is based off the html length, not the text content length. Change it to be text content and word count based.
 - Handle history navigations!
 
 P1: Will try to do soonish.

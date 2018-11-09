@@ -617,9 +617,10 @@ export class AbstractThreadListView extends HTMLElement {
     })
 
     compose.addEventListener('input', (e) => {
-      progress.value = compose.value.length;
-      let lengthDiff = this.allowedReplyLength_ - compose.value.length;
-      let exceedsLength = compose.value.length >= (this.allowedReplyLength_ - 10);
+      let textLength = compose.plainText.length;
+      progress.value = textLength;
+      let lengthDiff = this.allowedReplyLength_ - textLength;
+      let exceedsLength = textLength >= (this.allowedReplyLength_ - 10);
       count.textContent = (lengthDiff < 10) ? lengthDiff : '';
     });
 
