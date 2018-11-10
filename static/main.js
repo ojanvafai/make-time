@@ -427,7 +427,46 @@ async function fetchTheSettingsThings() {
   await labelsPromise;
 }
 
+async function migrateLabels() {
+  let labels = await getLabels();
+
+  // Rename parent labesl before sublabels.
+  await labels.rename(Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX);
+  await labels.rename(Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL);
+  await labels.rename(Labels.OLD_QUEUED_LABEL, Labels.QUEUED_LABEL);
+
+  await labels.rename(Labels.OLD_PRIORITY_LABEL, Labels.PRIORITY_LABEL);
+  await labels.rename(Labels.OLD_NEEDS_TRIAGE_LABEL, Labels.NEEDS_TRIAGE_LABEL);
+  await labels.rename(Labels.OLD_PROCESSED_LABEL, Labels.PROCESSED_LABEL);
+  await labels.rename(Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL);
+
+  // Delete labels after the renames since the label names to delete are using the new names.
+  if (labels.isParentLabel(Labels.DAILY))
+    await labels.delete(Labels.DAILY, true);
+  if (labels.isParentLabel(Labels.WEEKLY))
+    await labels.delete(Labels.WEEKLY, true);
+  if (labels.isParentLabel(Labels.MONTHLY))
+    await labels.delete(Labels.MONTHLY, true);
+
+  let markMustDo = async (thread) => {
+    await thread.markTriaged(Labels.MUST_DO_LABEL);
+  };
+  await fetchThreads(markMustDo, {
+    query: `in:${Labels.ACTION_ITEM_LABEL} -(in:${labels.getPriorityLabelNames().join(' OR in:')})`,
+  });
+  await labels.delete(Labels.ACTION_ITEM_LABEL);
+
+  // This label's life was very brief.
+  await labels.delete(Labels.addMakeTimePrefix('archive'));
+
+  for (let label of Labels.HIDDEN_LABELS) {
+    await labels.updateVisibility(label);
+  }
+}
+
 async function onLoad() {
+  await migrateLabels();
+
   let settingsButton = createMenuItem('Settings', {
     onclick: async () => {
       let SettingsView = (await import('./views/Settings.js')).SettingsView;

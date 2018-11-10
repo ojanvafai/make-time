@@ -9,10 +9,10 @@ export class Labels {
 
     this.labelToId_ = {};
     this.idToLabel_ = {};
-    this.makeTimeLabelIds_ = [];
-    this.makeTimeLabelNames_ = [];
-    this.needsTriageLabelNames_ = [];
-    this.priorityLabels_ = [];
+    this.makeTimeLabelIds_ = new Set();
+    this.makeTimeLabelNames_ = new Set();
+    this.needsTriageLabelNames_ = new Set();
+    this.priorityLabels_ = new Set();
 
     for (let label of response.result.labels) {
       this.addLabel_(label.name, label.id);
@@ -23,26 +23,112 @@ export class Labels {
     this.labelToId_[name] = id;
     this.idToLabel_[id] = name;
     if (Labels.isMakeTimeLabel(name)) {
-      this.makeTimeLabelIds_.push(id);
-      this.makeTimeLabelNames_.push(name);
+      this.makeTimeLabelIds_.add(id);
+      this.makeTimeLabelNames_.add(name);
       if (name.startsWith(Labels.PRIORITY_LABEL + '/'))
-        this.priorityLabels_.push(name);
+        this.priorityLabels_.add(name);
       else if (name.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/'))
-        this.needsTriageLabelNames_.push(name);
+        this.needsTriageLabelNames_.add(name);
     }
+  }
+
+  removeLabel_(name) {
+    let id = this.labelToId_[name];
+    delete this.labelToId_[name];
+    delete this.idToLabel_[id];
+    this.makeTimeLabelIds_.delete(id);
+    this.makeTimeLabelNames_.delete(name);
+    this.needsTriageLabelNames_.delete(name);
+    this.priorityLabels_.delete(name);
   }
 
   getName(id) {
     return this.idToLabel_[id];
   }
 
-  async createLabel_(labelName) {
-    let resp = await gapiFetch(gapi.client.gmail.users.labels.create, {
-      userId: USER_ID,
-      name: labelName,
-      messageListVisibility: 'show',
-      labelListVisibility: 'labelShow',
-    });
+  isParentLabel(name) {
+    let prefix = `${name}/`;
+    for (let name in this.labelToId_) {
+      if (name.startsWith(prefix))
+        return true;
+    }
+    return false;
+  }
+
+  labelResource_(name) {
+    let isHidden = Labels.HIDDEN_LABELS.includes(name);
+    return {
+      name: name,
+      messageListVisibility: isHidden ? 'hide' : 'show',
+      labelListVisibility: isHidden ? 'labelHide' : 'labelShow',
+    };
+  }
+
+  async updateVisibility(name) {
+    let id = this.labelToId_[name];
+    if (!id)
+      return;
+
+    let resource = this.labelResource_(name);
+    resource.id = id;
+    resource.userId = USER_ID;
+    await gapiFetch(gapi.client.gmail.users.labels.update, resource);
+  }
+
+  async rename(oldName, newName) {
+    let id = this.labelToId_[oldName];
+    if (id) {
+      if (this.labelToId_[newName]) {
+        Error.log(`Can't rename ${oldName} to ${newName} because both labels already exist.`);
+      } else {
+        let resource = this.labelResource_(newName);
+        resource.id = id;
+        let body = {
+          'userId': USER_ID,
+          'id': id,
+          'resource': resource,
+        }
+        await gapiFetch(gapi.client.gmail.users.labels.update, body);
+        this.removeLabel_(oldName);
+        this.addLabel_(newName, id);
+      }
+    }
+
+    // Rename all the nested labels as well.
+    // Do sub labels even if the parent label doesn't exist in case previous
+    // renames failed partway through.
+    let oldPrefix = `${oldName}/`;
+    let newPrefix = `${newName}/`;
+    for (let name in this.labelToId_) {
+      if (name.startsWith(oldPrefix))
+        await this.rename(name, name.replace(oldPrefix, newPrefix));
+    }
+  }
+
+  async delete(name, opt_includeNested) {
+    let id = this.labelToId_[name];
+    if (id) {
+    console.log(name);
+      await gapiFetch(gapi.client.gmail.users.labels.delete, {
+        'userId': USER_ID,
+        'id': id,
+      });
+      this.removeLabel_(name);
+    }
+
+    if (opt_includeNested) {
+      let prefix = `${name}/`;
+      for (let name in this.labelToId_) {
+        if (name.startsWith(prefix))
+          await this.delete(name, true);
+      }
+    }
+  }
+
+  async createLabel_(name) {
+    let resource = this.labelResource_(name);
+    resource.userId = USER_ID;
+    let resp = await gapiFetch(gapi.client.gmail.users.labels.create, resource);
     return resp.result;
   }
 
@@ -81,30 +167,22 @@ export class Labels {
   }
 
   getMakeTimeLabelIds() {
-    return this.makeTimeLabelIds_;
+    return Array.from(this.makeTimeLabelIds_);
   }
 
   getMakeTimeLabelNames() {
-    return this.makeTimeLabelNames_;
+    return Array.from(this.makeTimeLabelNames_);
   }
 
   getNeedsTriageLabelNames() {
-    return this.needsTriageLabelNames_;
+    return Array.from(this.needsTriageLabelNames_);
   }
 
   getPriorityLabelNames() {
-    return this.priorityLabels_;
+    return Array.from(this.priorityLabels_);
   }
 
-  labelResultComparator_(a, b) {
-    if (a.name < b.name)
-      return -1;
-    if (a.name > b.name)
-      return 1;
-    return 0;
-  }
-
-  async getTheadCountForLabels(labelFilter) {
+  async getThreadCountForLabels(labelFilter) {
     let batch = gapi.client.newBatch();
 
     let addedAny = false;
@@ -132,7 +210,7 @@ export class Labels {
         });
       }
     }
-    return labelsWithThreads.sort(this.labelResultComparator_);
+    return labelsWithThreads;
   }
 }
 
@@ -190,22 +268,22 @@ Labels.addBankruptPrefix = (labelName) => {
 
 // TODO: This should be uppercase to match gmail.
 Labels.INBOX_LABEL = 'inbox';
-Labels.MAKE_TIME_PREFIX = 'maketime';
+Labels.MAKE_TIME_PREFIX = 'mt';
 Labels.FALLBACK_LABEL = 'needsfilter';
 Labels.ARCHIVE_LABEL = 'archive';
 Labels.BLOCKED_SUFFIX = 'blocked';
 
-Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
-Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
-Labels.QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
-Labels.PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
-Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
-
-Labels.PROCESSED_LABEL = Labels.addMakeTimePrefix('processed');
+Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix('z');
+Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('tri');
+Labels.QUEUED_LABEL = Labels.addMakeTimePrefix('que');
+Labels.PRIORITY_LABEL = Labels.addMakeTimePrefix('pri');
 Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
+
+Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
+Labels.PROCESSED_LABEL = Labels.triagedLabel('processed');
 Labels.PROCESSED_ARCHIVE_LABEL = Labels.triagedLabel('archivebyfilter');
-Labels.MUTED_LABEL = Labels.triagedLabel('supermuted');
-Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
+Labels.MUTED_LABEL = Labels.triagedLabel('mute');
+
 Labels.BLOCKED_LABEL = Labels.addQueuedPrefix(Labels.BLOCKED_SUFFIX);
 
 Labels.MUST_DO = 'must-do';
@@ -219,3 +297,25 @@ Labels.MUST_DO_LABEL = Labels.addPriorityPrefix(Labels.MUST_DO);
 Labels.URGENT_LABEL = Labels.addPriorityPrefix(Labels.URGENT);
 Labels.NOT_URGENT_LABEL = Labels.addPriorityPrefix(Labels.NOT_URGENT);
 Labels.DELEGATE_LABEL = Labels.addPriorityPrefix(Labels.DELEGATE);
+
+Labels.HIDDEN_LABELS = [
+  Labels.UNPROCESSED_LABEL,
+  Labels.TRIAGED_LABEL,
+  Labels.BANKRUPT_LABEL,
+  Labels.PROCESSED_LABEL,
+  Labels.PROCESSED_ARCHIVE_LABEL,
+  Labels.MUTED_LABEL,
+];
+
+// TODO: Delete these one all users have migrated.
+Labels.OLD_MAKE_TIME_PREFIX = 'maketime';
+Labels.OLD_TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
+Labels.OLD_PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
+Labels.OLD_NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
+Labels.OLD_MUTED_LABEL = Labels.triagedLabel('supermuted');
+Labels.OLD_PROCESSED_LABEL = Labels.addMakeTimePrefix('processed');
+Labels.OLD_QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
+Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
+Labels.DAILY = Labels.needsTriageLabel('daily');
+Labels.WEEKLY = Labels.needsTriageLabel('weekly');
+Labels.MONTHLY = Labels.needsTriageLabel('monthly');

@@ -28,7 +28,7 @@ export class TriageView extends AbstractThreadListView {
   async fetch(forEachThread, shouldBatch) {
     this.updateTitle_('fetch', ' ');
 
-    let labels = await this.allLabels_.getTheadCountForLabels(Labels.isNeedsTriageLabel);
+    let labels = await this.allLabels_.getThreadCountForLabels(Labels.isNeedsTriageLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch = this.queueSettings_.getSorted(labelsToFetch).map((item) => item[0]);
 

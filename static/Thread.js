@@ -65,9 +65,12 @@ export class Thread {
   }
 
   async modify(addLabelIds, removeLabelIds) {
+    // Only remove labels that are actually on the thread. That way
+    // undo will only reapply labels that were actually there.
     // Make sure that any added labels are not also removed.
     // Gmail API will fail if you try to add and remove the same label.
-    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item));
+    // Also, request will fail if the removeLabelIds list is too long (>100).
+    removeLabelIds = removeLabelIds.filter((item) => this.labelIds_.has(item) && !addLabelIds.includes(item));
 
     let request = {
       'userId': USER_ID,
@@ -112,10 +115,6 @@ export class Thread {
       return item != unprocessedId && !addLabelIds.includes(item);
     });
     removeLabelIds = removeLabelIds.concat(makeTimeIds);
-
-    // Only remove labels that are actually on the thread. That way
-    // undo will only reapply labels that were actually there.
-    removeLabelIds = removeLabelIds.filter((item) => this.labelIds_.has(item));
 
     return await this.modify(addLabelIds, removeLabelIds);
   }

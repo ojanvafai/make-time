@@ -35,20 +35,13 @@ export class MakeTimeView extends AbstractThreadListView {
   async fetch(forEachThread, shouldBatch) {
     this.updateTitle_('fetch', ' ');
 
-    let labels = await this.allLabels_.getTheadCountForLabels(Labels.isPriorityLabel);
+    let labels = await this.allLabels_.getThreadCountForLabels(Labels.isPriorityLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
 
     // TODO: Pipe this in through the constructor from main.js.
     let vacationQuery = '';
     await this.fetchLabels(vacationQuery, labelsToFetch, forEachThread, shouldBatch);
-
-    // Fetch latent unprioritized actionitem threads.
-    // TODO: Remove this once we've fully removed actionitem as a concept.
-    await fetchThreads(forEachThread, {
-      query: `in:${Labels.ACTION_ITEM_LABEL} -(in:${this.allLabels_.getPriorityLabelNames().join(' OR in:')})`,
-    });
-
     this.updateTitle_('fetch');
   }
 
