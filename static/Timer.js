@@ -29,6 +29,7 @@ export class Timer extends HTMLElement {
     `;
 
     this.timerButton_ = document.createElement('span');
+    this.timerButton_.style.cssText = `user-select: none;`;
     this.append(this.timeDisplay_, '\xa0', this.timerButton_);
 
     this.updatePlayButton_();
@@ -76,9 +77,6 @@ export class Timer extends HTMLElement {
   }
 
   restartTimer_() {
-    if (this.overlay_)
-      return;
-
     if (this.paused_) {
       this.timeDisplay_.textContent = '';
       return;
@@ -130,13 +128,15 @@ export class Timer extends HTMLElement {
   }
 
   async nextTick_() {
+    if (this.overlay_)
+      return;
+
     if (this.paused_) {
       this.timeDisplay_.textContent = '';
       return;
     }
 
     if (this.countDown_ && this.timeLeft_ == 0) {
-      this.timeDisplay_.textContent = '';
       this.showOverlay_();
       return;
     }
