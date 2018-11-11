@@ -221,10 +221,7 @@ export class AbstractThreadListView extends HTMLElement {
     let messages = await thread.getMessages();
     let lastMessage = messages[messages.length - 1];
     if (!lastMessage.getLabelIds().includes(processedId)) {
-      // TODO: Remove this hack once all clients have upgraded to having processed
-      // labels on all processed threads. For now, don't reprocess threads that
-      // have already been triaged and have had no new messages since that would
-      // remove their priorities.
+      // TODO: Remove the need for this by leaving the processed ID on threads when modifying them.
       let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
       if (await thread.getPriority() &&
         !messages[0].getLabelIds().includes(processedId) &&

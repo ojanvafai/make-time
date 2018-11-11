@@ -64,13 +64,15 @@ export class Thread {
     return newProcessedMessages;
   }
 
-  async modify(addLabelIds, removeLabelIds) {
+  async modify(addLabelIds, removeLabelIds, opt_skipHasLabelsCheck) {
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
     // Make sure that any added labels are not also removed.
     // Gmail API will fail if you try to add and remove the same label.
     // Also, request will fail if the removeLabelIds list is too long (>100).
-    removeLabelIds = removeLabelIds.filter((item) => this.labelIds_.has(item) && !addLabelIds.includes(item));
+    // However, for cases where we know we haven't fetch the labels for this thread,
+    // like dequeueing, we want to be able to skip the labelIds_.has check.
+    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (opt_skipHasLabelsCheck || this.labelIds_.has(item)));
 
     let request = {
       'userId': USER_ID,
