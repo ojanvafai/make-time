@@ -220,20 +220,14 @@ export class AbstractThreadListView extends HTMLElement {
     let processedId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
     let messages = await thread.getMessages();
     let lastMessage = messages[messages.length - 1];
-    if (!lastMessage.getLabelIds().includes(processedId)) {
-      // TODO: Remove the need for this by leaving the processed ID on threads when modifying them.
-      let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
-      if (await thread.getPriority() &&
-        !messages[0].getLabelIds().includes(processedId) &&
-        !thread.isInInbox() &&
-        !lastMessage.getLabelIds().includes(unprocessedId)) {
-        let addLabelIds = [processedId];
-        let removeLabelIds = [];
-        await thread.modify(addLabelIds, removeLabelIds);
-      } else {
-        await this.mailProcessor_.processThread(thread);
-        return;
-      }
+
+    // Since processing threads is destructive (e.g. it removes priority labels),
+    // only process threads in the inbox or with the unprocessed label. Otherwise,
+    // they might be threads that are prioritized, but lack the processed label for some reason.
+    if (!lastMessage.getLabelIds().includes(processedId) &&
+        (thread.isInInbox() || (await thread.getLabelNames()).has(Labels.UNPROCESSED_LABEL))) {
+      await this.mailProcessor_.processThread(thread);
+      return;
     }
 
     // TODO: Don't use the global addThread.
