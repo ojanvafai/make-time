@@ -374,21 +374,6 @@ function createMenuItem(name, options) {
   return a;
 }
 
-async function markTriaged(thread) {
-  await thread.markTriaged(null);
-}
-
-// Archive threads that are needstriage, but not in the inbox or unprocessed.
-async function cleanupNeedsTriageThreads() {
-  let needsTriageLabels = (await getLabels()).getNeedsTriageLabelNames();
-  // For new users, they won't have any needstriage labels.
-  if (!needsTriageLabels.length)
-    return;
-  await fetchThreads(markTriaged, {
-    query: `-in:inbox -in:${Labels.UNPROCESSED_LABEL} (in:${needsTriageLabels.join(' OR in:')})`,
-  });
-}
-
 async function getLabels() {
   if (!labels_)
     await fetchTheSettingsThings();
@@ -606,7 +591,6 @@ async function gcLocalStorage() {
 }
 
 async function update() {
-  await cleanupNeedsTriageThreads();
   if (currentView_.update)
     await currentView_.update();
   await processMail();

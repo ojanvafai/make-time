@@ -1,3 +1,4 @@
+import { ErrorLogger } from './ErrorLogger.js';
 import { gapiFetch } from './Net.js';
 import { USER_ID } from './main.js';
 
@@ -79,7 +80,7 @@ export class Labels {
     let id = this.labelToId_[oldName];
     if (id) {
       if (this.labelToId_[newName]) {
-        Error.log(`Can't rename ${oldName} to ${newName} because both labels already exist.`);
+        ErrorLogger.log(`Can't rename ${oldName} to ${newName} because both labels already exist.`);
       } else {
         let resource = this.labelResource_(newName);
         resource.id = id;

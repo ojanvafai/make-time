@@ -21,6 +21,14 @@ export class TriageView extends AbstractThreadListView {
     // Threads with a priority have already been triaged, so don't add them.
     if (priority)
       return;
+
+    // Threads that have triage labels but aren't in the inbox were archived outside
+    // of maketime and should have their triage labels removed.
+    if (!thread.isInInbox()) {
+      await thread.markTriaged(null);
+      return;
+    }
+
     super.addThread(thread);
   }
 
