@@ -45,8 +45,11 @@ class RowGroup {
   }
 
   getNextRow(row) {
+    let rowToFind = this.getRow(thread);
+    if (rowToFind != row)
+      ErrorLogger.log(`Warning: ThreadRows don't match. Something went wrong in bookkeeping.`);
     let rows = Object.values(this.rows_);
-    let index = rows.indexOf(row);
+    let index = rows.indexOf(rowToFind);
     if (index == -1)
       throw `Tried to get next row on a row that's not in the group.`;
     if (index + 1 < rows.length)
