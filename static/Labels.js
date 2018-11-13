@@ -1,6 +1,6 @@
 import { ErrorLogger } from './ErrorLogger.js';
 import { gapiFetch } from './Net.js';
-import { USER_ID } from './main.js';
+import { fetchThreads, USER_ID } from './main.js';
 
 export class Labels {
   async fetch() {
@@ -76,11 +76,22 @@ export class Labels {
     await gapiFetch(gapi.client.gmail.users.labels.update, resource);
   }
 
+  async migrateThreads(oldName, newName) {
+    let addLabelIds = [await this.labelToId_[newName]];
+    let removeLabelIds = [await this.labelToId_[oldName]];
+    await fetchThreads(async thread => {
+      await thread.modify(addLabelIds, removeLabelIds, true);
+    }, {
+      query: `in:${oldName}`,
+    });
+  }
+
   async rename(oldName, newName) {
     let id = this.labelToId_[oldName];
     if (id) {
       if (this.labelToId_[newName]) {
-        ErrorLogger.log(`Can't rename ${oldName} to ${newName} because both labels already exist.`);
+        await this.migrateThreads(oldName, newName);
+        this.delete(oldName);
       } else {
         let resource = this.labelResource_(newName);
         resource.id = id;
