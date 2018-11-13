@@ -1,5 +1,8 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
+- Select a bunch and archive doesn't always remove all the rows from the UI. It does seem to archive them though.
+- Processing mail takes a long time now. It seems ot make 3-5 requests per thread where it shoud only make 1-2.
+
 Tasks UI:
 - need ui for changing task state even if there is rich text tags for setting all of it initially
 - need the ability to add comments to tasks that doesn't archive them

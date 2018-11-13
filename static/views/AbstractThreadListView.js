@@ -45,7 +45,7 @@ class RowGroup {
   }
 
   getNextRow(row) {
-    let rowToFind = this.getRow(thread);
+    let rowToFind = this.getRow(row.thread);
     if (rowToFind != row)
       ErrorLogger.log(`Warning: ThreadRows don't match. Something went wrong in bookkeeping.`);
     let rows = Object.values(this.rows_);
