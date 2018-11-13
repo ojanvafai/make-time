@@ -1,5 +1,6 @@
 import { Actions } from '../Actions.js';
 import { addThread, fetchThread, fetchThreads } from '../main.js';
+import { ErrorLogger } from '../ErrorLogger.js';
 import { Labels } from '../Labels.js';
 import { ThreadRow } from './ThreadRow.js';
 import { ThreadRowGroup } from './ThreadRowGroup.js';

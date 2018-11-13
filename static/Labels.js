@@ -77,8 +77,8 @@ export class Labels {
   }
 
   async migrateThreads(oldName, newName) {
-    let addLabelIds = [await this.labelToId_[newName]];
-    let removeLabelIds = [await this.labelToId_[oldName]];
+    let addLabelIds = [this.labelToId_[newName]];
+    let removeLabelIds = [this.labelToId_[oldName]];
     await fetchThreads(async thread => {
       await thread.modify(addLabelIds, removeLabelIds, true);
     }, {
