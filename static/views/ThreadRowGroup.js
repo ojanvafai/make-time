@@ -34,7 +34,7 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   rows() {
-    return this.rowContainer_.children;
+    return Array.prototype.slice.call(this.rowContainer_.children);
   }
 
   push(row, opt_nextSibling) {
