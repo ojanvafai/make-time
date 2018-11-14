@@ -516,6 +516,11 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   async prerenderNext() {
+    // Since the call to prerender is async, the page can go back to the threadlist
+    // before this is called.
+    if (!this.renderedRow_)
+      return;
+
     let nextRow = this.getNextRow(this.renderedRow_);
     if (!nextRow)
       return;

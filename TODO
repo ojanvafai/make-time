@@ -3,6 +3,12 @@ TODO: Make this file just be codebase cleanups and move all bugs/feature request
 - Select a bunch and archive doesn't always remove all the rows from the UI. It does seem to archive them though.
 - Processing mail takes a long time now. It seems ot make 3-5 requests per thread where it shoud only make 1-2.
 
+- Add a mode to default to view one
+- Add cc/bcc/body as closed by default sections
+- Add to field.
+- Add query parameters to prefill compose fields
+- Save compose state to localstorage
+
 Tasks UI:
 - need ui for changing task state even if there is rich text tags for setting all of it initially
 - need the ability to add comments to tasks that doesn't archive them
