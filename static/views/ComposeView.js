@@ -13,22 +13,8 @@ export class ComposeView extends HTMLElement {
 
     this.updateTitle_ = updateTitle;
 
-    let toLine = document.createElement('div');
-    toLine.style.cssText = `
-      display: flex;
-      margin: 4px;
-    `;
-    this.append(toLine);
-
     this.to_ = document.createElement('div');
-    toLine.append('To:\xa0', this.to_);
-
-    let subjectLine = document.createElement('div');
-    subjectLine.style.cssText = `
-      display: flex;
-      margin: 4px;
-    `;
-    this.append(subjectLine);
+    this.appendLine_('To:\xa0', this.to_);
 
     this.subject_ = document.createElement('input');
     this.subject_.style.cssText = `
@@ -36,7 +22,7 @@ export class ComposeView extends HTMLElement {
       flex: 1;
       outline: none;
     `;
-    subjectLine.append('Subject:\xa0', this.subject_);
+    this.appendLine_('Subject:\xa0', this.subject_);
 
     this.compose_ = new Compose(contacts, true);
     this.compose_.style.cssText = `
@@ -51,6 +37,17 @@ export class ComposeView extends HTMLElement {
     this.compose_.addEventListener('input', this.debounceUpdateToField_.bind(this));
 
     this.append(this.compose_, HELP_TEXT);
+  }
+
+  appendLine_(...children) {
+    let line = document.createElement('div');
+    line.style.cssText = `
+      display: flex;
+      margin: 4px;
+    `;
+    this.append(line);
+    line.append(...children);
+    return line;
   }
 
   debounceUpdateToField_() {
