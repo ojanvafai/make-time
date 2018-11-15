@@ -94,7 +94,7 @@ export class Actions extends HTMLElement {
   dispatchShortcut(e) {
     let test = (action) => {
       if (action.key)
-        return action.key;
+        return action.key == e.key;
       return action.name.charAt(0).toLowerCase() == e.key;
     };
 
@@ -147,10 +147,24 @@ Actions.MUTE_ACTION = {
   description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
 };
 
-Actions.NEXT_EMAIL = {
+Actions.NEXT_EMAIL_ACTION = {
   name: `NextEmail`,
-  description: `Select the next email.`,
+  description: `Focus the next email.`,
   key: "j",
+  hidden: true,
+};
+
+Actions.PREVIOUS_EMAIL_ACTION = {
+  name: `PreviousEmail`,
+  description: `Focus the previous email.`,
+  key: "k",
+  hidden: true,
+};
+
+Actions.TOGGLE_FOCUSED_ACTION = {
+  name: `ToggleFocused`,
+  description: `Toggler whether or not the focused element is selected.`,
+  key: " ",
   hidden: true,
 };
 

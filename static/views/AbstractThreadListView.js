@@ -45,16 +45,26 @@ class RowGroup {
     return Object.values(this.rows_)[0];
   }
 
-  getNextRow(row) {
+  getRowFromRelativeOffset(row, offset) {
+    // TODO: name this such that offset is clearer.
+    offset = Math.abs(offset) / offset;
     let rowToFind = this.getRow(row.thread);
     if (rowToFind != row)
       ErrorLogger.log(`Warning: ThreadRows don't match. Something went wrong in bookkeeping.`);
     let rows = Object.values(this.rows_);
     let index = rows.indexOf(rowToFind);
     if (index == -1)
-      throw `Tried to get next row on a row that's not in the group.`;
-    if (index + 1 < rows.length)
-      return rows[index + 1];
+      throw `Tried to get row via relative offset on a row that's not in the group.`;
+    if (0 <= index + offset && index + offset < rows.length)
+      return rows[index + offset];
+  }
+
+  getNextRow(row) {
+    return getRowFromRelativeOffset(row, 1);
+  }
+
+  getPreviousRow(row) {
+    return getRowFromRelativeOffset(row, -1);
   }
 
   mark() {
@@ -103,6 +113,8 @@ export class AbstractThreadListView extends HTMLElement {
 
     // TODO: Rename this to groupedRows_?
     this.groupedThreads_ = [];
+
+    this.focusedEmail_ = null;
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -335,20 +347,66 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  getNextRow(row) {
-    let nextRow = row.group.getNextRow(row);
+  getRowFromRelativeOffset(row, offset) {
+    // TODO: name this such that offset is clearer.
+    offset = Math.abs(offset) / offset;
+
+    let nextRow = row.group.getRowFromRelativeOffset(row, offset);
     if (nextRow)
       return nextRow;
 
     let groupIndex = this.groupedThreads_.indexOf(row.group);
     if (groupIndex == -1)
-      throw `Tried to get next row on a group that's not in the tree.`;
-    if (groupIndex + 1 < this.groupedThreads_.length)
-      return this.groupedThreads_[groupIndex + 1].getFirstRow();
+      throw `Tried to get row via relative offset on a group that's not in the tree.`;
+
+    if (0 <= groupIndex + offset && groupIndex + offset < this.groupedThreads_.length) {
+      const rows = this.groupedThreads_[groupIndex + offset].getRows();
+      if (offset > 0) {
+        return rows[0];
+      } else {
+        return rows[rows.length - 1];
+      }
+    }
+  }
+
+  getNextRow(row) {
+    return this.getRowFromRelativeOffset(row, 1);
+  }
+
+  getPreviousRow(row) {
+    return this.getRowFromRelativeOffset(row, -1);
   }
 
   removeRow_(row) {
     row.group.delete(row);
+  }
+
+  moveFocus(action) {
+    if (this.focusedEmail_ == null) {
+      if (action == Actions.NEXT_EMAIL_ACTION) {
+        this.focusedEmail_ = this.groupedThreads_[0].getRows()[0];
+      } else {
+        const lastThreadGroupRows =
+          this.groupedThreads_[this.groupedThreads_.length - 1].getRows();
+        this.focusedEmail_ = lastThreadGroupRows[lastThreadGroupRows.length - 1];
+      }
+      this.focusedEmail_.focused = true;
+      this.focusedEmail_.updateHighlight_();
+      this.focusedEmail_.scrollIntoView({"block":"nearest"});
+      return;
+    }
+    this.focusedEmail_.focused = false;
+    this.focusedEmail_.updateHighlight_();
+    if (action == Actions.NEXT_EMAIL_ACTION) {
+      this.focusedEmail_ = this.getNextRow(this.focusedEmail_);
+    } else {
+      this.focusedEmail_ = this.getPreviousRow(this.focusedEmail_);
+    }
+    if (this.focusedEmail_ === undefined)
+      return;
+    this.focusedEmail_.focused = true;
+    this.focusedEmail_.updateHighlight_();
+    this.focusedEmail_.scrollIntoView({"block":"nearest"});
   }
 
   async takeAction(action) {
@@ -360,8 +418,14 @@ export class AbstractThreadListView extends HTMLElement {
       await this.showQuickReply();
       return;
     }
-    if (action == Actions.NEXT_EMAIL) {
-      console.log("Next email");
+    if (action == Actions.NEXT_EMAIL_ACTION ||
+        action == Actions.PREVIOUS_EMAIL_ACTION) {
+      this.moveFocus(action);
+      return;
+    }
+    if (action == Actions.TOGGLE_FOCUSED_ACTION) {
+      this.focusedEmail_.checkBox_.checked = !this.focusedEmail_.checkBox_.checked;
+      this.focusedEmail_.updateHighlight_();
       return;
     }
     await this.markTriaged(action.destination);

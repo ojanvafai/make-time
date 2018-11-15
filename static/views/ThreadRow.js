@@ -7,6 +7,7 @@ export class ThreadRow extends HTMLElement {
     this.style.display = 'flex';
 
     this.group = group;
+    this.focused = false;
 
     let label = document.createElement('label');
     label.style.cssText = `
@@ -122,7 +123,12 @@ export class ThreadRow extends HTMLElement {
   }
 
   updateHighlight_() {
-    this.style.backgroundColor = this.checkBox_.checked ? '#c2dbff' : 'white';
+    if (this.checkBox_.checked)
+      this.style.backgroundColor = '#c2dbff';
+    else if (this.focused)
+      this.style.backgroundColor = "#ccc";
+    else
+      this.style.backgroundColor = 'white';
   }
 
   dateString_(date) {

@@ -85,9 +85,15 @@ TriageView.ACTIONS_ = [
   Actions.UNDO_ACTION,
 ];
 
-TriageView.RENDER_ALL_ACTIONS_ = [Actions.NEXT_EMAIL].concat(TriageView.ACTIONS_);
+TriageView.RENDER_ALL_ACTIONS_ = [
+  Actions.PREVIOUS_EMAIL_ACTION,
+  Actions.NEXT_EMAIL_ACTION,
+  Actions.TOGGLE_FOCUSED_ACTION,
+].concat(TriageView.ACTIONS_);
 
-TriageView.RENDER_ONE_ACTIONS_ = [Actions.QUICK_REPLY_ACTION].concat(TriageView.ACTIONS_);
+TriageView.RENDER_ONE_ACTIONS_ = [
+  Actions.QUICK_REPLY_ACTION
+].concat(TriageView.ACTIONS_);
 
 TriageView.OVERFLOW_ACTIONS_ = [
   Actions.SPAM_ACTION,
