@@ -3,20 +3,25 @@ import { Compose } from '../Compose.js';
 
 const SEND = { name: 'Send', description: 'Ummm...send the mail.' };
 const ACTIONS = [ SEND ];
-const HELP_TEXT = `
+const PRE_FILL_URL = '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
+const HELP_TEXT = `Hints:
+
 Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##not-urgent, ##delegate.
+
+URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
 
 export class ComposeView extends HTMLElement {
-  constructor(contacts, updateTitle) {
+  constructor(contacts, updateTitle, params) {
     super();
 
     this.updateTitle_ = updateTitle;
+    console.log(params);
 
-    this.to_ = this.createInput_();
+    this.to_ = this.createInput_(params.to);
     this.appendLine_('To:\xa0', this.to_);
 
-    this.subject_ = this.createInput_();
+    this.subject_ = this.createInput_(params.subject);
     this.appendLine_('Subject:\xa0', this.subject_);
 
     this.compose_ = new Compose(contacts, true);
@@ -28,19 +33,27 @@ export class ComposeView extends HTMLElement {
       min-height: 200px;
     `;
 
+    if (params.body)
+      this.compose_.value = params.body;
+
     this.compose_.addEventListener('email-added', this.updateToField_.bind(this));
     this.compose_.addEventListener('input', this.debounceUpdateToField_.bind(this));
 
-    this.append(this.compose_, HELP_TEXT);
+    let help = document.createElement('div');
+    help.style.cssText = `white-space: pre-wrap;`;
+    help.innerHTML = HELP_TEXT;
+    this.append(this.compose_, help);
   }
 
-  createInput_() {
+  createInput_(opt_value) {
     let input = document.createElement('input');
     input.style.cssText = `
       border: 1px solid;
       flex: 1;
       outline: none;
     `;
+    if (opt_value)
+      input.value = opt_value;
     return input;
   }
 

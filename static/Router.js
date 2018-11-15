@@ -38,7 +38,7 @@ export class Router {
       var key = nameValue[0];
       // But ignore empty parameters and don't override named parameters
       if (nameValue.length == 2 && !params[key] && !missingParams[key])
-        params[key] = nameValue[1];
+        params[key] = decodeURIComponent(nameValue[1]);
     }
 
     return params;
@@ -80,12 +80,15 @@ export class Router {
     for (let rule of this.rules_) {
       var params = this.getParams_(rule, pathParts, queryParts);
       if (params) {
-        // TODO: Make this less hard-coded and allow for other query parameters in the path.
-        let appspot = '?appspot';
-        if (window.location.search == appspot)
-          path = path + appspot;
+        let newPath = location.toString();
+
+        // TODO: Make this less hard-coded.
+        let appspot = 'appspot';
+        if (window.location.search.includes(appspot) && !newPath.includes(appspot))
+          newPath += newPath.includes('?') ? `&${appspot}` : `?${appspot}`;
+
         if (!excludeFromHistory)
-          history.pushState({}, '', path);
+          history.pushState({}, '', newPath);
         return rule.handler(params);
       }
     }
