@@ -263,11 +263,10 @@ export class AbstractThreadListView extends HTMLElement {
       return hasRows;
     });
 
-    // Ensure the row groups are sorted.
-    let sorted = Array.prototype.slice.call(this.groupedThreads_);
-    sorted.sort(this.compareRowGroups.bind(this));
-    for (var i = 0; i < sorted.length; i++) {
-      let newNode = sorted[i].node;
+    // Ensure the row group nodes are in sorted order.
+    let groups = Array.prototype.slice.call(this.groupedThreads_);
+    for (var i = 0; i < groups.length; i++) {
+      let newNode = groups[i].node;
       let oldNode = this.rowGroupContainer_.children[i];
       if (!oldNode) {
         this.rowGroupContainer_.append(newNode);
@@ -308,6 +307,7 @@ export class AbstractThreadListView extends HTMLElement {
     if (!group) {
       group = RowGroup.create(queue);
       this.groupedThreads_.push(group);
+      this.groupedThreads_.sort(this.compareRowGroups.bind(this));
     }
     group.push(thread);
 
@@ -584,6 +584,11 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   async prerenderNext() {
+    // Since the call to prerender is async, the page can go back to the threadlist
+    // before this is called.
+    if (!this.renderedRow_)
+      return;
+
     let nextRow = this.getNextRow(this.renderedRow_);
     if (!nextRow)
       return;

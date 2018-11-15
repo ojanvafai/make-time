@@ -38,30 +38,30 @@ let WEEKS_TO_STORE_ = 2;
 
 var router = new Router();
 
-async function routeToCurrentLocation(opt_inPopState) {
-  await router.run(window.location.pathname, opt_inPopState);
+async function routeToCurrentLocation() {
+  await router.run(window.location, true);
 }
 
 window.onpopstate = () => {
-  routeToCurrentLocation(true);
+  routeToCurrentLocation();
 }
 
-router.add('/compose', async (foo) => {
+router.add('/compose', async (params) => {
   if (currentView_) {
     await currentView_.tearDown();
   }
-  await viewCompose();
+  await viewCompose(params);
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
-router.add('/make-time', async (foo) => {
+router.add('/make-time', async (params) => {
   if (currentView_)
     await currentView_.tearDown();
   await viewMakeTime();
 });
 // TODO: best-effort should not be a URL since it's not a proper view.
 // or should it be a view instead?
-router.add('/best-effort', async (foo) => {
+router.add('/best-effort', async (params) => {
   if (currentView_)
     await currentView_.tearDown();
 
@@ -151,9 +151,9 @@ export function showDialog(contents) {
   return dialog;
 }
 
-async function viewCompose() {
+async function viewCompose(params) {
   let ComposeView = (await import('./views/ComposeView.js')).ComposeView;
-  setView(new ComposeView(contacts_, updateLoaderTitle));
+  setView(new ComposeView(contacts_, updateLoaderTitle, params));
 }
 
 async function viewTriage() {
