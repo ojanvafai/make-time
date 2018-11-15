@@ -39,6 +39,8 @@ export class Actions extends HTMLElement {
 
   appendActions_(container, actions) {
     for (let action of actions) {
+      if (action.hidden)
+        continue;
       let button = document.createElement('button');
       button.tooltip = action.description;
 
@@ -91,6 +93,8 @@ export class Actions extends HTMLElement {
 
   dispatchShortcut(e) {
     let test = (action) => {
+      if (action.key)
+        return action.key;
       return action.name.charAt(0).toLowerCase() == e.key;
     };
 
@@ -141,6 +145,13 @@ Actions.SPAM_ACTION = {
 Actions.MUTE_ACTION = {
   name: `Mute`,
   description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
+};
+
+Actions.NEXT_EMAIL = {
+  name: `NextEmail`,
+  description: `Select the next email.`,
+  key: "j",
+  hidden: true,
 };
 
 Actions.UNDO_ACTION = {

@@ -360,6 +360,10 @@ export class AbstractThreadListView extends HTMLElement {
       await this.showQuickReply();
       return;
     }
+    if (action == Actions.NEXT_EMAIL) {
+      console.log("Next email");
+      return;
+    }
     await this.markTriaged(action.destination);
   }
 
