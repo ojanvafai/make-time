@@ -7,7 +7,7 @@ import { ThreadRowGroup } from './ThreadRowGroup.js';
 import { Timer } from '../Timer.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
 
-// TODO: Mvoe this to it's own file? Deal with the name overlap with ThreadRowGroup?
+// TODO: Move this to it's own file? Deal with the name overlap with ThreadRowGroup?
 class RowGroup {
   constructor(queue) {
     this.queue = queue;
