@@ -5,7 +5,6 @@ TODO: Make this file just be codebase cleanups and move all bugs/feature request
 
 - Add a mode to default to view one
 - Add cc/bcc/body as closed by default sections
-- Add to field.
 - Add query parameters to prefill compose fields
 - Save compose state to localstorage
 

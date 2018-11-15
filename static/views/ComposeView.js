@@ -13,15 +13,10 @@ export class ComposeView extends HTMLElement {
 
     this.updateTitle_ = updateTitle;
 
-    this.to_ = document.createElement('div');
+    this.to_ = this.createInput_();
     this.appendLine_('To:\xa0', this.to_);
 
-    this.subject_ = document.createElement('input');
-    this.subject_.style.cssText = `
-      border: 1px solid;
-      flex: 1;
-      outline: none;
-    `;
+    this.subject_ = this.createInput_();
     this.appendLine_('Subject:\xa0', this.subject_);
 
     this.compose_ = new Compose(contacts, true);
@@ -39,15 +34,38 @@ export class ComposeView extends HTMLElement {
     this.append(this.compose_, HELP_TEXT);
   }
 
+  createInput_() {
+    let input = document.createElement('input');
+    input.style.cssText = `
+      border: 1px solid;
+      flex: 1;
+      outline: none;
+    `;
+    return input;
+  }
+
   appendLine_(...children) {
+    let line = this.createLine_(...children);
+    this.append(line);
+  }
+
+  createLine_(...children) {
     let line = document.createElement('div');
     line.style.cssText = `
       display: flex;
       margin: 4px;
     `;
-    this.append(line);
     line.append(...children);
     return line;
+  }
+
+  getInlineTo_() {
+    if (!this.inlineTo_) {
+      this.inlineTo_ = document.createElement('div');
+      let line = this.createLine_('Inline to:\xa0', this.inlineTo_);
+      this.to_.parentNode.after(line);
+    }
+    return this.inlineTo_;
   }
 
   debounceUpdateToField_() {
@@ -55,7 +73,9 @@ export class ComposeView extends HTMLElement {
   }
 
   updateToField_() {
-    this.to_.textContent = this.compose_.getEmails().join(', ');
+    let emails = this.compose_.getEmails();
+    if (emails.length)
+      this.getInlineTo_().textContent = emails.join(', ');
   }
 
   connectedCallback() {
@@ -111,12 +131,20 @@ export class ComposeView extends HTMLElement {
 
     this.updateTitle_('sending', 'Sending...');
     let mail = await import('../Mail.js');
-    await mail.send(this.compose_.value, this.to_.textContent, this.subject_.value);
+
+    let to = '';
+    if (this.to_.value)
+      to += this.to_.value + ',';
+    if (this.getInlineTo_().textContent)
+      to += this.getInlineTo_().textContent + ',';
+
+    await mail.send(this.compose_.value, to, this.subject_.value);
     this.updateTitle_('sending');
 
-    this.compose_.value = '';
-    this.to_.textContent = '';
+    this.to_.value = '';
+    this.getInlineTo_().textContent = '';
     this.subject_.value = '';
+    this.compose_.value = '';
 
     this.sending_ = false;
   }
