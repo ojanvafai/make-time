@@ -93,6 +93,11 @@ export class Actions extends HTMLElement {
 
   dispatchShortcut(e) {
     let test = (action) => {
+     // Don't allow certain actions to apply in rapid succession for each
+     // thread. This prevents accidents of archiving a lot of threads at once
+     // when your stupid keyboard gets stuck holding the archive key down. #sigh
+      if (!action.repeatable && e.repeat)
+        return false;
       if (action.key)
         return action.key == e.key;
       return action.name.charAt(0).toLowerCase() == e.key;
@@ -152,6 +157,7 @@ Actions.NEXT_EMAIL_ACTION = {
   description: `Focus the next email.`,
   key: "j",
   hidden: true,
+  repeatable: true,
 };
 
 Actions.PREVIOUS_EMAIL_ACTION = {
@@ -159,6 +165,7 @@ Actions.PREVIOUS_EMAIL_ACTION = {
   description: `Focus the previous email.`,
   key: "k",
   hidden: true,
+  repeatable: true,
 };
 
 Actions.TOGGLE_FOCUSED_ACTION = {

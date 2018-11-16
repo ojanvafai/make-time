@@ -651,12 +651,6 @@ document.body.addEventListener('keydown', async (e) => {
   if (isEditable(e.target))
     return;
 
-  // Don't allow actions to apply in rapid succession for each thread.
-  // This prevents accidents of archiving a lot of threads at once
-  // when your stupid keyboard gets stuck holding the archive key down. #sigh
-  if (e.repeat)
-    return;
-
   if (e.key == '?') {
     showHelp();
     return;
