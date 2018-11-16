@@ -175,6 +175,20 @@ Actions.TOGGLE_FOCUSED_ACTION = {
   hidden: true,
 };
 
+Actions.VIEW_FOCUSED_ACTION = {
+  name: `ViewFocused`,
+  description: `View the focused email.`,
+  key: "Enter",
+  hidden: true,
+};
+
+Actions.VIEW_TRIAGE_ACTION = {
+  name: `ViewTriage`,
+  description: `Go to the triage view.`,
+  key: "Escape",
+  hidden: true,
+};
+
 Actions.UNDO_ACTION = {
   name: `Undo`,
   description: `Undoes the last action taken.`,

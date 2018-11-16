@@ -82,8 +82,10 @@ MakeTimeView.RENDER_ALL_ACTIONS_ = [
   Actions.PREVIOUS_EMAIL_ACTION,
   Actions.NEXT_EMAIL_ACTION,
   Actions.TOGGLE_FOCUSED_ACTION,
+  Actions.VIEW_FOCUSED_ACTION,
 ].concat(MakeTimeView.ACTIONS_);
 
 MakeTimeView.RENDER_ONE_ACTIONS_ = [
-  Actions.QUICK_REPLY_ACTION
+  Actions.QUICK_REPLY_ACTION,
+  Actions.VIEW_TRIAGE_ACTION,
 ].concat(MakeTimeView.ACTIONS_);

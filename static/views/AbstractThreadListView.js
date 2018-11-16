@@ -428,6 +428,14 @@ export class AbstractThreadListView extends HTMLElement {
       this.focusedEmail_.updateHighlight_();
       return;
     }
+    if (action == Actions.VIEW_TRIAGE_ACTION) {
+      this.transitionToThreadList_();
+      return;
+    }
+    if (action == Actions.VIEW_FOCUSED_ACTION) {
+      this.renderOne_(this.focusedEmail_);
+      return;
+    }
     await this.markTriaged(action.destination);
   }
 
