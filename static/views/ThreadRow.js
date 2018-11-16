@@ -123,10 +123,10 @@ export class ThreadRow extends HTMLElement {
   }
 
   updateHighlight_() {
-    if (this.checkBox_.checked)
-      this.style.backgroundColor = '#c2dbff';
-    else if (this.focused)
+    if (this.focused)
       this.style.backgroundColor = "#ccc";
+    else if (this.checkBox_.checked)
+      this.style.backgroundColor = '#c2dbff';
     else
       this.style.backgroundColor = 'white';
   }
