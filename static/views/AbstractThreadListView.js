@@ -376,6 +376,8 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   removeRow_(row) {
+    if (this.focusedEmail_ == row)
+      this.focusedEmail_ = this.getNextRow(row);
     row.group.delete(row);
   }
 
