@@ -46,8 +46,6 @@ class RowGroup {
   }
 
   getRowFromRelativeOffset(row, offset) {
-    // TODO: name this such that offset is clearer.
-    offset = Math.abs(offset) / offset;
     let rowToFind = this.getRow(row.thread);
     if (rowToFind != row)
       ErrorLogger.log(`Warning: ThreadRows don't match. Something went wrong in bookkeeping.`);
@@ -348,8 +346,8 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   getRowFromRelativeOffset(row, offset) {
-    // TODO: name this such that offset is clearer.
-    offset = Math.abs(offset) / offset;
+    if (offset != -1 && offset != 1)
+      throw `getRowFromRelativeOffset called with offset of ${offset}`
 
     let nextRow = row.group.getRowFromRelativeOffset(row, offset);
     if (nextRow)
