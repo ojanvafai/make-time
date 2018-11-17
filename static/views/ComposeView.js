@@ -1,6 +1,8 @@
 import { Actions } from '../Actions.js';
 import { Compose } from '../Compose.js';
+import { IDBKeyVal } from '../idb-keyval.js';
 
+const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 const SEND = { name: 'Send', description: 'Ummm...send the mail.' };
 const ACTIONS = [ SEND ];
 const PRE_FILL_URL = '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
@@ -16,12 +18,11 @@ export class ComposeView extends HTMLElement {
     super();
 
     this.updateTitle_ = updateTitle;
-    console.log(params);
 
-    this.to_ = this.createInput_(params.to);
+    this.to_ = this.createInput_();
     this.appendLine_('To:\xa0', this.to_);
 
-    this.subject_ = this.createInput_(params.subject);
+    this.subject_ = this.createInput_();
     this.appendLine_('Subject:\xa0', this.subject_);
 
     this.compose_ = new Compose(contacts, true);
@@ -33,11 +34,10 @@ export class ComposeView extends HTMLElement {
       min-height: 200px;
     `;
 
-    if (params.body)
-      this.compose_.value = params.body;
+    this.prefill_(params);
 
-    this.compose_.addEventListener('email-added', this.updateToField_.bind(this));
-    this.compose_.addEventListener('input', this.debounceUpdateToField_.bind(this));
+    this.compose_.addEventListener('email-added', this.handleUpdates_.bind(this));
+    this.compose_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
 
     let help = document.createElement('div');
     help.style.cssText = `white-space: pre-wrap;`;
@@ -45,15 +45,31 @@ export class ComposeView extends HTMLElement {
     this.append(this.compose_, help);
   }
 
-  createInput_(opt_value) {
+  async prefill_(queryParams) {
+    let localData = await IDBKeyVal.getDefault().get(AUTO_SAVE_KEY);
+    if (!localData)
+      localData = queryParams;
+
+    if (localData.to)
+      this.to_.value = localData.to;
+    if (localData.inlineTo)
+      this.getInlineTo_().textContent = localData.inlineTo;
+    if (localData.subject)
+      this.subject_.value = localData.subject;
+    if (localData.body)
+      this.compose_.value = localData.body;
+
+    this.focusFirstEmpty_();
+  }
+
+  createInput_() {
     let input = document.createElement('input');
+    input.addEventListener('input', this.debounceHandleUpdates_.bind(this));
     input.style.cssText = `
       border: 1px solid;
       flex: 1;
       outline: none;
     `;
-    if (opt_value)
-      input.value = opt_value;
     return input;
   }
 
@@ -72,6 +88,12 @@ export class ComposeView extends HTMLElement {
     return line;
   }
 
+  inlineToText_() {
+    if (!this.inlineTo_)
+      return '';
+    return this.inlineTo_.textContent;
+  }
+
   getInlineTo_() {
     if (!this.inlineTo_) {
       this.inlineTo_ = document.createElement('div');
@@ -81,19 +103,55 @@ export class ComposeView extends HTMLElement {
     return this.inlineTo_;
   }
 
-  debounceUpdateToField_() {
-    requestIdleCallback(this.updateToField_.bind(this));
+  debounceHandleUpdates_() {
+    requestIdleCallback(this.handleUpdates_.bind(this));
   }
 
-  updateToField_() {
+  async handleUpdates_() {
     let emails = this.compose_.getEmails();
     if (emails.length)
       this.getInlineTo_().textContent = emails.join(', ');
+
+    let data = {};
+    let hasData = false;
+    if (this.to_.value) {
+      data.to = this.to_.value;
+      hasData = true;
+    }
+    if (this.inlineTo_) {
+      data.inlineTo = this.inlineToText_();
+      hasData = true;
+    }
+    if (this.subject_.value) {
+      data.subject = this.subject_.value;
+      hasData = true;
+    }
+    if (this.compose_.value) {
+      data.body = this.compose_.value;
+      hasData = true;
+    }
+
+    if (hasData)
+      await IDBKeyVal.getDefault().set(AUTO_SAVE_KEY, data);
+    else
+     await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
+  }
+
+  focusFirstEmpty_() {
+    if (!this.to_.value) {
+      this.to_.focus();
+      return;
+    }
+
+    if (!this.subject_.value) {
+      this.subject_.focus();
+      return;
+    }
+
+    this.compose_.focus();
   }
 
   connectedCallback() {
-    this.compose_.focus();
-
     let footer = document.getElementById('footer');
     footer.textContent = '';
 
@@ -148,14 +206,16 @@ export class ComposeView extends HTMLElement {
     let to = '';
     if (this.to_.value)
       to += this.to_.value + ',';
-    if (this.getInlineTo_().textContent)
-      to += this.getInlineTo_().textContent + ',';
+    if (this.inlineTo_)
+      to += this.inlineToText_() + ',';
 
     await mail.send(this.compose_.value, to, this.subject_.value);
+    await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
     this.updateTitle_('sending');
 
     this.to_.value = '';
-    this.getInlineTo_().textContent = '';
+    if (this.inlineTo_)
+      this.getInlineTo_().textContent = '';
     this.subject_.value = '';
     this.compose_.value = '';
 

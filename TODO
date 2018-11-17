@@ -18,7 +18,6 @@ Tasks UI:
 
 P1: Will try to do soonish.
 - Use SendAs gmail API to avoid adding yourself to the to line of threads you're not already on to avoid them popping back into your inbox when you send.
-- ComposeView: save state in local storage so you can change views and come back, or reload the page, and not lose your state.
 - make switching between compose/maketime/triage easier. Make the UI more prominent and add keyboard shortcuts.
 - ComposeView: Handle having missing to/subject/body gracefully instead of having a nonsensical error and getting stuck unable to send the message
 - Add embedded composeView in the maketime/triage views for quick compose that's not replying to the current thread.
