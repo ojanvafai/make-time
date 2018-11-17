@@ -12,7 +12,6 @@ export class TriageView extends AbstractThreadListView {
     this.vacationSubject_ = vacationSubject;
     this.queueSettings_ = queueSettings;
 
-    this.fetch();
     this.appendButton_('/make-time', `It's make-time!`);
   }
 

@@ -44,6 +44,7 @@ ServerStorage.KEYS = {
   AUTO_START_TIMER: 'auto_start_timer',
   ALLOWED_REPLY_LENGTH: 'allowed_reply_length',
   DAYS_TO_SHOW: 'days_to_show',
+  LOG_MATCHING_RULES: 'log_matching_rules',
 };
 
 ServerStorage.BACKEND_SHEET_NAME_ = 'backend-do-not-modify';

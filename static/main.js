@@ -153,7 +153,7 @@ export function showDialog(contents) {
 
 async function viewCompose(params) {
   let ComposeView = (await import('./views/ComposeView.js')).ComposeView;
-  setView(new ComposeView(contacts_, updateLoaderTitle, params));
+  await setView(new ComposeView(contacts_, updateLoaderTitle, params));
 }
 
 async function viewTriage() {
@@ -165,7 +165,7 @@ async function viewTriage() {
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
   let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
-  setView(new TriageView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration, await getQueuedLabelMap()));
+  await setView(new TriageView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration, await getQueuedLabelMap()));
 
   updateLoaderTitle('viewTriage', '');
 }
@@ -179,12 +179,15 @@ async function viewMakeTime() {
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  setView(new MakeTimeView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  await setView(new MakeTimeView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
-function setView(view) {
+async function setView(view) {
   threads_.setListener(view);
   currentView_ = view;
+
+  if (view.fetch)
+    await view.fetch();
 
   var content = document.getElementById('content');
   content.textContent = '';

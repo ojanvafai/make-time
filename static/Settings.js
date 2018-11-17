@@ -449,4 +449,11 @@ Settings.fields = [
     description: `For times when you're melting, only show emails from the past N days.`,
     type: 'number',
   },
+  {
+    key: ServerStorage.KEYS.LOG_MATCHING_RULES,
+    name: 'Log matching rules',
+    description: `Log the matching filter rule to the chrome developer console.`,
+    default: false,
+    type: 'checkbox',
+  },
 ];

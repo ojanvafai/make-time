@@ -234,6 +234,14 @@ export class MailProcessor {
     return matches;
   }
 
+  // TODO: Also log which message matched.
+  async logMatchingRule_(thread, rule) {
+    if (this.settings.get(ServerStorage.KEYS.LOG_MATCHING_RULES)) {
+      let subject = await thread.getSubject();
+      console.log(`Thread with subject "${subject}" matched rule ${JSON.stringify(rule)}`);
+    }
+  }
+
   async getWinningLabel(thread, rules) {
     var messages = await thread.getMessages();
 
@@ -245,12 +253,16 @@ export class MailProcessor {
           if (!matches)
             break;
         }
-        if (matches)
+        if (matches) {
+          await this.logMatchingRule_(thread, rule);
           return rule.label;
+        }
       } else {
         for (let message of messages) {
-          if (this.matchesRule(rule, message))
+          if (this.matchesRule(rule, message)) {
+            await this.logMatchingRule_(thread, rule);
             return rule.label;
+          }
         }
       }
     }

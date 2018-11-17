@@ -11,7 +11,6 @@ export class MakeTimeView extends AbstractThreadListView {
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitleDelegate;
 
-    this.fetch();
     this.appendButton_('/triage', 'Back to Triaging');
   }
 
