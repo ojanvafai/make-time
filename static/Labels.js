@@ -16,6 +16,11 @@ export class Labels {
     this.priorityLabels_ = new Set();
 
     for (let label of response.result.labels) {
+      if (Labels.isUserLabel(label.id)) {
+        let shouldBeHidden = Labels.HIDDEN_LABELS.includes(label.name);
+        if (shouldBeHidden ^ label.messageListVisibility == 'hide')
+          label = await this.updateVisibility_(label.name, label.id);
+      }
       this.addLabel_(label.name, label.id);
     }
   }
@@ -65,15 +70,12 @@ export class Labels {
     };
   }
 
-  async updateVisibility(name) {
-    let id = this.labelToId_[name];
-    if (!id)
-      return;
-
+  async updateVisibility_(name, id) {
     let resource = this.labelResource_(name);
     resource.id = id;
     resource.userId = USER_ID;
-    await gapiFetch(gapi.client.gmail.users.labels.update, resource);
+    let response = await gapiFetch(gapi.client.gmail.users.labels.update, resource);
+    return response.result;
   }
 
   async migrateThreads(oldName, newName) {
@@ -224,6 +226,10 @@ export class Labels {
     }
     return labelsWithThreads;
   }
+}
+
+Labels.isUserLabel = (id) => {
+  return id.startsWith('Label_');
 }
 
 Labels.removeLabelPrefix = (labelName, prefix) => {

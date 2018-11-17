@@ -446,10 +446,6 @@ async function migrateLabels() {
 
   // This label's life was very brief.
   await labels.delete(Labels.addMakeTimePrefix('archive'));
-
-  for (let label of Labels.HIDDEN_LABELS) {
-    await labels.updateVisibility(label);
-  }
 }
 
 async function onLoad() {
