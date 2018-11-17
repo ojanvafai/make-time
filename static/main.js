@@ -413,11 +413,10 @@ async function fetchTheSettingsThings() {
   }
 
   await labelsPromise;
+  await migrateLabels(labels_);
 }
 
-async function migrateLabels() {
-  let labels = await getLabels();
-
+async function migrateLabels(labels) {
   // Rename parent labesl before sublabels.
   await labels.rename(Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX);
   await labels.rename(Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL);
@@ -430,8 +429,6 @@ async function migrateLabels() {
 }
 
 async function onLoad() {
-  await migrateLabels();
-
   let settingsButton = createMenuItem('Settings', {
     onclick: async () => {
       let SettingsView = (await import('./views/Settings.js')).SettingsView;
