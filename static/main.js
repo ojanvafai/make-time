@@ -185,12 +185,12 @@ async function setView(view) {
   threads_.setListener(view);
   currentView_ = view;
 
-  if (view.fetch)
-    await view.fetch();
-
   var content = document.getElementById('content');
   content.textContent = '';
   content.append(view);
+
+  if (view.fetch)
+    await view.fetch();
 }
 
 function getScroller() {
