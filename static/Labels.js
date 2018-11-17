@@ -333,7 +333,3 @@ Labels.OLD_NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
 Labels.OLD_MUTED_LABEL = Labels.triagedLabel('supermuted');
 Labels.OLD_PROCESSED_LABEL = Labels.addMakeTimePrefix('processed');
 Labels.OLD_QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
-Labels.ACTION_ITEM_LABEL = Labels.triagedLabel('actionitem');
-Labels.DAILY = Labels.needsTriageLabel('daily');
-Labels.WEEKLY = Labels.needsTriageLabel('weekly');
-Labels.MONTHLY = Labels.needsTriageLabel('monthly');
