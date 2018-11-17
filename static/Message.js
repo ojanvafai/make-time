@@ -79,8 +79,9 @@ export class Message {
       return this.plain_;
 
     if (!this.plainedHtml_) {
+      // If there's no email body at all, return empty string.
       if (!this.html_)
-        throw `Message is missing both plain text and html email bodies. Message id: ${this.id}`;
+        return '';
 
       // Extract the text out of the HTML content.
       let div = document.createElement('div');
