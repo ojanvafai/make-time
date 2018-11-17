@@ -21,8 +21,9 @@ let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/res
 let SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly';
 
 export let USER_ID = 'me';
-let authorizeButton = document.getElementById('authorize-button');
 
+let isSignedIn_ = false;
+let loginDialog_;
 let currentView_;
 let settings_;
 let labels_;
@@ -189,6 +190,8 @@ async function setView(view) {
   content.textContent = '';
   content.append(view);
 
+  await login();
+
   if (view.fetch)
     await view.fetch();
 }
@@ -198,12 +201,17 @@ function getScroller() {
 }
 
 async function updateSigninStatus(isSignedIn) {
-  if (!isSignedIn) {
-    authorizeButton.parentNode.style.display = '';
-    return;
+  isSignedIn_ = isSignedIn;
+  if (isSignedIn_) {
+    if (loginDialog_)
+      loginDialog_.close();
+  } else {
+    let loginButton = document.createElement('button');
+    loginButton.style.cssText = `font-size: 40px;`;
+    loginButton.textContent = 'Log In';
+    loginButton.onclick = () => gapi.auth2.getAuthInstance().signIn();
+    loginDialog_ = showDialog(loginButton);
   }
-  authorizeButton.parentNode.style.display = 'none';
-  await onLoad();
 }
 
 function setSubject(...items) {
@@ -405,6 +413,8 @@ async function fetchTheSettingsThings() {
   if (settings_ || labels_)
     throw 'Tried to fetch settings or labels twice.';
 
+  await login();
+
   settings_ = new Settings();
   labels_ = new Labels();
 
@@ -473,6 +483,8 @@ async function onLoad() {
 
   updateLoaderTitle('onLoad');
 }
+
+onLoad();
 
 let CONTACT_STORAGE_KEY_ = 'contacts';
 
@@ -644,21 +656,31 @@ document.body.addEventListener('keydown', async (e) => {
     await currentView_.dispatchShortcut(e);
 });
 
-window.addEventListener('load', () => {
-  gapi.load('client:auth2', () => {
-    gapi.client.init({
-      discoveryDocs: DISCOVERY_DOCS,
-      clientId: CLIENT_ID,
-      scope: SCOPES
-    }).then(function () {
-      // Listen for sign-in state changes.
-      gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-      // Handle the initial sign-in state.
-      updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-      authorizeButton.onclick = () => gapi.auth2.getAuthInstance().signIn();
-    });
+function loadGapi() {
+  return new Promise((resolve, reject) => {
+    gapi.load('client:auth2', () => resolve());
   });
-});
+};
+
+async function login() {
+  if (isSignedIn_)
+    return;
+
+  updateLoaderTitle('login', 'Logging in...');
+
+  await loadGapi();
+  await gapi.client.init({
+    discoveryDocs: DISCOVERY_DOCS,
+    clientId: CLIENT_ID,
+    scope: SCOPES
+  });
+  // Listen for sign-in state changes.
+  gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+  // Handle the initial sign-in state.
+  updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+
+  updateLoaderTitle('login');
+}
 
 window.addEventListener('error', (e) => {
   var emailBody = 'Something went wrong...';
