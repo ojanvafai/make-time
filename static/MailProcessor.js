@@ -293,7 +293,7 @@ export class MailProcessor {
     return matchingPriority;
   }
 
-  async processThread(thread) {
+  async processThread_(thread) {
     try {
       let startTime = new Date();
 
@@ -369,6 +369,14 @@ export class MailProcessor {
       startTime.getTime(), 1, perLabelCounts, Date.now() - startTime.getTime());
   }
 
+  async processThreads(threads) {
+    for (var i = 0; i < threads.length; i++) {
+      this.updateTitle_('processUnprocessed', `Processing ${i + 1}/${threads.length} unprocessed threads...`);
+      await this.processThread_(threads[i]);
+    }
+    this.updateTitle_('processUnprocessed');
+  }
+
   async processUnprocessed() {
     let threads = [];
     await fetchThreads(thread => threads.push(thread), {
@@ -382,12 +390,7 @@ export class MailProcessor {
     if (!threads.length)
       return;
 
-    for (var i = 0; i < threads.length; i++) {
-      this.updateTitle_('processUnprocessed', `Processing ${i + 1}/${threads.length} unprocessed threads...`);
-      await this.processThread(threads[i]);
-    }
-    this.updateTitle_('processUnprocessed');
-    return threads.length;
+    this.processThreads(threads);
   }
 
   async dequeue(labelName, queue) {

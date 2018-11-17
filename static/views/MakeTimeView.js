@@ -11,7 +11,7 @@ export class MakeTimeView extends AbstractThreadListView {
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitleDelegate;
 
-    this.fetch(this.processThread.bind(this));
+    this.fetch();
     this.appendButton_('/triage', 'Back to Triaging');
   }
 
@@ -32,7 +32,7 @@ export class MakeTimeView extends AbstractThreadListView {
       super.addThread(thread);
   }
 
-  async fetch(forEachThread, shouldBatch) {
+  async fetch(shouldBatch) {
     this.updateTitle_('fetch', ' ');
 
     let labels = await this.allLabels_.getThreadCountForLabels(Labels.isPriorityLabel);
@@ -41,7 +41,7 @@ export class MakeTimeView extends AbstractThreadListView {
 
     // TODO: Pipe this in through the constructor from main.js.
     let vacationQuery = '';
-    await this.fetchLabels(vacationQuery, labelsToFetch, forEachThread, shouldBatch);
+    await this.fetchLabels(vacationQuery, labelsToFetch, shouldBatch);
     this.updateTitle_('fetch');
   }
 

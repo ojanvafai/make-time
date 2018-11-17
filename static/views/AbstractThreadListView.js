@@ -111,6 +111,7 @@ export class AbstractThreadListView extends HTMLElement {
 
     // TODO: Rename this to groupedRows_?
     this.groupedThreads_ = [];
+    this.needsProcessingThreads_ = [];
 
     this.focusedEmail_ = null;
 
@@ -172,9 +173,7 @@ export class AbstractThreadListView extends HTMLElement {
       group.mark();
     }
 
-    await this.fetch(async (thread) => {
-      await this.processThread(thread);
-    }, true);
+    await this.fetch(true);
     await this.renderThreadList_();
 
     for (let group of this.groupedThreads_) {
@@ -185,21 +184,23 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  async fetchLabels(vacationQuery, labels, forEachThread, shouldBatch) {
+  async fetchLabels(vacationQuery, labels, shouldBatch) {
     if (!labels.length)
       return;
 
     if (shouldBatch) {
-      await fetchThreads(forEachThread, {
+      await fetchThreads(this.processThread.bind(this), {
         query: `${vacationQuery} (in:${labels.join(' OR in:')})`,
       });
     } else {
       for (let label of labels) {
-        await fetchThreads(forEachThread, {
+        await fetchThreads(this.processThread.bind(this), {
           query: `${vacationQuery} in:${label}`,
         });
       }
     }
+
+    await this.processThreads_();
   }
 
   async findRow_(thread) {
@@ -240,12 +241,18 @@ export class AbstractThreadListView extends HTMLElement {
     // they might be threads that are prioritized, but lack the processed label for some reason.
     if (!lastMessage.getLabelIds().includes(processedId) &&
         (thread.isInInbox() || (await thread.getLabelNames()).has(Labels.UNPROCESSED_LABEL))) {
-      await this.mailProcessor_.processThread(thread);
+      this.needsProcessingThreads_.push(thread);
       return;
     }
 
     // TODO: Don't use the global addThread.
     await addThread(thread);
+  }
+
+  async processThreads_() {
+    let threads = this.needsProcessingThreads_.concat();
+    this.needsProcessingThreads_ = [];
+    await this.mailProcessor_.processThreads(threads);
   }
 
   getRowGroup_(queue) {

@@ -12,7 +12,7 @@ export class TriageView extends AbstractThreadListView {
     this.vacationSubject_ = vacationSubject;
     this.queueSettings_ = queueSettings;
 
-    this.fetch(this.processThread.bind(this));
+    this.fetch();
     this.appendButton_('/make-time', `It's make-time!`);
   }
 
@@ -33,7 +33,7 @@ export class TriageView extends AbstractThreadListView {
   }
 
   // TODO: Store the list of threads in localStorage and update asynchronously.
-  async fetch(forEachThread, shouldBatch) {
+  async fetch(shouldBatch) {
     this.updateTitle_('fetch', ' ');
 
     let labels = await this.allLabels_.getThreadCountForLabels(Labels.isNeedsTriageLabel);
@@ -52,11 +52,11 @@ export class TriageView extends AbstractThreadListView {
 
     // Put threads that are in the inbox with no make-time labels first. That way they always show up before
     // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
-    await fetchThreads(forEachThread, {
+    await fetchThreads(this.processThread.bind(this), {
       query: `${vacationQuery} in:inbox -(in:${makeTimeLabels.join(' OR in:')})`,
     });
 
-    await this.fetchLabels(vacationQuery, labelsToFetch, forEachThread, shouldBatch);
+    await this.fetchLabels(vacationQuery, labelsToFetch, shouldBatch);
     this.updateTitle_('fetch');
   }
 
