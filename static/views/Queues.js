@@ -246,7 +246,7 @@ export class QueuesView extends HTMLElement {
     row.append(days);
 
     let goal = queueData[1].goal;
-    let goals = this.createSelect_(QueuesView.goals_, goal);
+    let goals = this.createSelect_(QueueSettings.goals, goal);
     goals.className = 'goal';
     row.append(goals);
 
@@ -273,7 +273,6 @@ export class QueuesView extends HTMLElement {
 }
 
 QueuesView.rowClassName_ = 'queue-row';
-QueuesView.goals_ = ['Inbox Zero', 'Best Effort']
 
 // TODO: update this text.
 QueuesView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>

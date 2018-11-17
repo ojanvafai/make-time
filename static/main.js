@@ -6,7 +6,6 @@ import { Router } from './Router.js';
 import { QueueSettings } from './QueueSettings.js';
 import { ServerStorage } from './ServerStorage.js';
 import { Settings } from './Settings.js';
-import { ThreadCache } from './ThreadCache.js';
 import { ThreadGroups } from './ThreadGroups.js';
 
 // Client ID and API key from the Developer Console
@@ -28,7 +27,7 @@ let currentView_;
 let settings_;
 let labels_;
 let queuedLabelMap_;
-let threadCache_ = new ThreadCache();
+let threadCache_;
 let contacts_ = [];
 let titleStack_ = [];
 let loaderTitleStack_ = [];
@@ -252,7 +251,7 @@ export async function fetchThread(id) {
     'id': id,
   };
   let resp = await gapiFetch(gapi.client.gmail.users.threads.get, requestParams);
-  let thread = threadCache_.get(resp.result, await getLabels());
+  let thread = await getCachedThread(resp.result, await getLabels());
   // If we have a stale thread we just fetched, then it's not stale anymore.
   // This can happen if we refetch a thread that wasn't actually modified
   // by a modify call.
@@ -285,7 +284,7 @@ export async function fetchThreads(forEachThread, options) {
     let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      let thread = threadCache_.get(rawThread, labels);
+      let thread = await getCachedThread(rawThread, labels);
       await forEachThread(thread);
     }
 
@@ -375,6 +374,14 @@ function createMenuItem(name, options) {
   a.addEventListener('click', closeMenu);
 
   return a;
+}
+
+async function getCachedThread(response, labels) {
+  if (!threadCache_) {
+    let ThreadCache = (await import('./ThreadCache.js')).ThreadCache;
+    threadCache_ = new ThreadCache();
+  }
+  return threadCache_.get(response, labels);
 }
 
 async function getLabels() {

@@ -1,5 +1,4 @@
 import { Labels } from './Labels.js';
-import { QueuesView } from './views/Queues.js';
 import { Settings } from './Settings.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 
@@ -52,7 +51,7 @@ export class QueueSettings {
   queueData_(opt_queue, opt_goal, opt_index) {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
-      goal: opt_goal || QueuesView.goals_[0],
+      goal: opt_goal || QueueSettings.goals[0],
       // For unknown queues, put them first.
       index: opt_index || 0,
     }
@@ -102,3 +101,5 @@ QueueSettings.WEEKLY = 'Weekly';
 QueueSettings.DAILY = 'Daily';
 QueueSettings.IMMEDIATE = 'Immediate';
 QueueSettings.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+QueueSettings.goals = ['Inbox Zero', 'Best Effort']
