@@ -23,6 +23,7 @@ export class ComposeView extends HTMLElement {
     super();
 
     this.updateTitle_ = updateTitle;
+    this.params_ = params || {};
 
     this.to_ = this.createInput_();
     this.appendLine_('To:\xa0', this.to_);
@@ -30,8 +31,8 @@ export class ComposeView extends HTMLElement {
     this.subject_ = this.createInput_();
     this.appendLine_('Subject:\xa0', this.subject_);
 
-    this.compose_ = new Compose(contacts, true);
-    this.compose_.style.cssText = `
+    this.body_ = new Compose(contacts, true);
+    this.body_.style.cssText = `
       flex: 1;
       margin: 4px;
       display: flex;
@@ -39,21 +40,21 @@ export class ComposeView extends HTMLElement {
       min-height: 200px;
     `;
 
-    this.prefill_(params);
+    this.prefill_();
 
-    this.compose_.addEventListener('email-added', this.handleUpdates_.bind(this));
-    this.compose_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
+    this.body_.addEventListener('email-added', this.handleUpdates_.bind(this));
+    this.body_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
 
     let help = document.createElement('div');
     help.style.cssText = `white-space: pre-wrap;`;
     help.innerHTML = HELP_TEXT;
-    this.append(this.compose_, help);
+    this.append(this.body_, help);
   }
 
-  async prefill_(queryParams) {
+  async prefill_() {
     let localData = await (await idbKeyVal()).get(AUTO_SAVE_KEY);
     if (!localData)
-      localData = queryParams;
+      localData = this.params_;
 
     if (localData.to)
       this.to_.value = localData.to;
@@ -62,7 +63,7 @@ export class ComposeView extends HTMLElement {
     if (localData.subject)
       this.subject_.value = localData.subject;
     if (localData.body)
-      this.compose_.value = localData.body;
+      this.body_.value = localData.body;
 
     this.focusFirstEmpty_();
   }
@@ -113,7 +114,7 @@ export class ComposeView extends HTMLElement {
   }
 
   async handleUpdates_() {
-    let emails = this.compose_.getEmails();
+    let emails = this.body_.getEmails();
     if (emails.length)
       this.getInlineTo_().textContent = emails.join(', ');
 
@@ -131,8 +132,8 @@ export class ComposeView extends HTMLElement {
       data.subject = this.subject_.value;
       hasData = true;
     }
-    if (this.compose_.value) {
-      data.body = this.compose_.value;
+    if (this.body_.value) {
+      data.body = this.body_.value;
       hasData = true;
     }
 
@@ -153,7 +154,7 @@ export class ComposeView extends HTMLElement {
       return;
     }
 
-    this.compose_.focus();
+    this.body_.focus();
   }
 
   connectedCallback() {
@@ -214,15 +215,15 @@ export class ComposeView extends HTMLElement {
     if (this.inlineTo_)
       to += this.inlineToText_() + ',';
 
-    await mail.send(this.compose_.value, to, this.subject_.value);
+    await mail.send(this.body_.value, to, this.subject_.value);
     await (await idbKeyVal()).del(AUTO_SAVE_KEY);
     this.updateTitle_('sending');
 
-    this.to_.value = '';
+    this.to_.value = '' || this.params_.to;
     if (this.inlineTo_)
       this.getInlineTo_().textContent = '';
-    this.subject_.value = '';
-    this.compose_.value = '';
+    this.subject_.value = '' || this.params_.subject;
+    this.body_.value = '' || this.params_.body;
 
     this.sending_ = false;
   }
