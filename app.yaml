@@ -6,6 +6,7 @@ handlers:
 - url: /static
   static_dir: static
   secure: always
+  expiration: "365d"
   http_headers:
     Access-Control-Allow-Origin: '*'
 
@@ -13,6 +14,7 @@ handlers:
   static_files: manifest.json
   upload: manifest.json
   secure: always
+  expiration: "365d"
   http_headers:
     Access-Control-Allow-Origin: '*'
 
