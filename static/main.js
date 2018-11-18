@@ -572,7 +572,7 @@ async function getMailProcessor() {
 let idbKeyVal_;
 async function idbKeyVal() {
   if (!idbKeyVal_)
-    idbKeyVal_ = (await import('../idb-keyval.js')).IDBKeyVal.getDefault();
+    idbKeyVal_ = (await import('./idb-keyval.js')).IDBKeyVal.getDefault();
   return idbKeyVal_;
 }
 
@@ -606,8 +606,8 @@ async function gcLocalStorage() {
   let oneDay = 24 * 60 * 60 * 1000;
   if (!lastGCTime || Date.now() - lastGCTime > oneDay) {
     let currentWeekNumber = getCurrentWeekNumber();
-    let idbKeyVal = await idbKeyVal();
-    let keys = await idbKeyVal.keys();
+    let idb = await idbKeyVal();
+    let keys = await idb.keys();
     for (let key of keys) {
       let match = key.match(/^thread-(\d+)-\d+$/);
       if (!match)
@@ -615,7 +615,7 @@ async function gcLocalStorage() {
 
       let weekNumber = Number(match[1]);
       if (weekNumber + WEEKS_TO_STORE_ < currentWeekNumber)
-        await idbKeyVal.del(key);
+        await idb.del(key);
     }
     await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_GC_TIME, value: Date.now()}]);
   }
