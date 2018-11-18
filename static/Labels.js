@@ -1,4 +1,3 @@
-import { ErrorLogger } from './ErrorLogger.js';
 import { fetchThreads, USER_ID } from './main.js';
 
 let gapiFetch_;

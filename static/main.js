@@ -1,9 +1,6 @@
 import { ErrorLogger } from './ErrorLogger.js';
 import { Labels } from './Labels.js';
 import { Router } from './Router.js';
-import { QueueSettings } from './QueueSettings.js';
-import { ServerStorage } from './ServerStorage.js';
-import { Settings } from './Settings.js';
 import { ThreadGroups } from './ThreadGroups.js';
 
 // Client ID and API key from the Developer Console
@@ -159,6 +156,7 @@ async function viewTriage() {
   let TriageView = (await import('./views/TriageView.js')).TriageView;
 
   let settings = await getSettings();
+  let ServerStorage = await serverStorage();
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
@@ -172,6 +170,7 @@ async function viewMakeTime() {
   let MakeTimeView = (await import('./views/MakeTimeView.js')).MakeTimeView;
 
   let settings = await getSettings();
+  let ServerStorage = await serverStorage();
   // Don't show triaged queues view when in vacation mode as that's non-vacation work.
   let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
@@ -272,6 +271,7 @@ export async function fetchThreads(forEachThread, options) {
   if (options.query)
     query += ' ' + options.query;
 
+  let ServerStorage = await serverStorage();
   let daysToShow = (await getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW);
   if (daysToShow)
     query += ` newer_than:${daysToShow}d`;
@@ -321,6 +321,7 @@ async function isBankrupt(thread) {
   let queueData = (await getQueuedLabelMap()).get(queue);
 
   let numDays = 7;
+  let QueueSettings = await queueSettings();
   if (queueData.queue == QueueSettings.WEEKLY)
     numDays = 14;
   else if (queueData.queue == QueueSettings.MONTHLY)
@@ -340,6 +341,7 @@ async function bankruptThread(thread) {
 
 // TODO: Don't export this.
 export async function addThread(thread) {
+  let ServerStorage = await serverStorage();
   let vacationSubject = (await getSettings()).get(ServerStorage.KEYS.VACATION_SUBJECT);
   if (vacationSubject) {
     let subject = await thread.getSubject();
@@ -389,6 +391,20 @@ async function gapiFetch(method, requestParams, opt_requestBody) {
   return gapiFetch_(method, requestParams, opt_requestBody);
 }
 
+let queueSettings_;
+async function queueSettings() {
+  if (!queueSettings_)
+    queueSettings_ = (await import('./QueueSettings.js')).QueueSettings;
+  return queueSettings_;
+}
+
+let serverStorage_;
+async function serverStorage() {
+  if (!serverStorage_)
+    serverStorage_ = (await import('./ServerStorage.js')).ServerStorage;
+  return serverStorage_;
+}
+
 async function getCachedThread(response, labels) {
   if (!threadCache_) {
     let ThreadCache = (await import('./ThreadCache.js')).ThreadCache;
@@ -420,6 +436,7 @@ async function fetchTheSettingsThings() {
 
   await login();
 
+  let Settings = (await import('./Settings.js')).Settings;
   settings_ = new Settings();
   labels_ = new Labels();
 
@@ -428,6 +445,7 @@ async function fetchTheSettingsThings() {
 
   await settings_.fetch();
 
+  let ServerStorage = await serverStorage();
   let storage = new ServerStorage(settings_.spreadsheetId);
   if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
     await showHelp();
@@ -537,6 +555,7 @@ async function fetchContacts(token) {
 
 async function getQueuedLabelMap() {
   if (!queuedLabelMap_) {
+    let QueueSettings = await queueSettings();
     queuedLabelMap_ = new QueueSettings((await getSettings()).spreadsheetId);
     await queuedLabelMap_.fetch();
   }
@@ -581,6 +600,7 @@ export function getCurrentWeekNumber() {
 }
 
 async function gcLocalStorage() {
+  let ServerStorage = await serverStorage();
   let storage = new ServerStorage((await getSettings()).spreadsheetId);
   let lastGCTime = storage.get(ServerStorage.KEYS.LAST_GC_TIME);
   let oneDay = 24 * 60 * 60 * 1000;
