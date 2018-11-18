@@ -52,7 +52,7 @@ for root, directories, files in os.walk(temp_dir, topdown=True):
         content = re.sub(old, new, content, flags=re.M)
 
       if (file == 'app.yaml'):
-        content = re.sub('expiration: "0"', 'expiration="365d"', content, flags=re.M)
+        content = re.sub('expiration: "0"', 'expiration: "365d"', content, flags=re.M)
 
       f.seek(0)
       f.write(content)
@@ -63,4 +63,4 @@ for project in projects:
   deploy_command = ['gcloud', 'app', 'deploy', '-q', '--project', project, '--version', version, yaml_path]
   subprocess.call(deploy_command)
 
-shutil.rmtree(temp_dir)
+# shutil.rmtree(temp_dir)
