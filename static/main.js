@@ -1,6 +1,4 @@
 import { ErrorLogger } from './ErrorLogger.js';
-import { gapiFetch } from './Net.js';
-import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
 import { Router } from './Router.js';
 import { QueueSettings } from './QueueSettings.js';
@@ -384,6 +382,13 @@ function createMenuItem(name, options) {
   return a;
 }
 
+let gapiFetch_;
+async function gapiFetch(method, requestParams, opt_requestBody) {
+  if (!gapiFetch_)
+    gapiFetch_ = (await import('./Net.js')).gapiFetch;
+  return gapiFetch_(method, requestParams, opt_requestBody);
+}
+
 async function getCachedThread(response, labels) {
   if (!threadCache_) {
     let ThreadCache = (await import('./ThreadCache.js')).ThreadCache;
@@ -543,6 +548,15 @@ async function getMailProcessor() {
   return new MailProcessor(await getSettings(), addThread, await getQueuedLabelMap(), await getLabels(), updateLoaderTitle);
 }
 
+// TODO: Move this to a helper file with all the other async import things so that they're all in
+// one file that is imported instead of duplicated across the codebase.
+let idbKeyVal_;
+async function idbKeyVal() {
+  if (!idbKeyVal_)
+    idbKeyVal_ = (await import('../idb-keyval.js')).IDBKeyVal.getDefault();
+  return idbKeyVal_;
+}
+
 // TODO: Move this to a cron
 async function processMail() {
   if (isProcessingMail_)
@@ -572,7 +586,8 @@ async function gcLocalStorage() {
   let oneDay = 24 * 60 * 60 * 1000;
   if (!lastGCTime || Date.now() - lastGCTime > oneDay) {
     let currentWeekNumber = getCurrentWeekNumber();
-    let keys = await IDBKeyVal.getDefault().keys();
+    let idbKeyVal = await idbKeyVal();
+    let keys = await idbKeyVal.keys();
     for (let key of keys) {
       let match = key.match(/^thread-(\d+)-\d+$/);
       if (!match)
@@ -580,7 +595,7 @@ async function gcLocalStorage() {
 
       let weekNumber = Number(match[1]);
       if (weekNumber + WEEKS_TO_STORE_ < currentWeekNumber)
-        await IDBKeyVal.getDefault().del(key);
+        await idbKeyVal.del(key);
     }
     await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_GC_TIME, value: Date.now()}]);
   }

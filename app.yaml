@@ -6,7 +6,8 @@ handlers:
 - url: /static
   static_dir: static
   secure: always
-  expiration: "365d"
+  # Use 0 for local development. deploy.py changes this to 365d with perma-urls
+  expiration: "0"
   http_headers:
     Access-Control-Allow-Origin: '*'
 
@@ -14,7 +15,8 @@ handlers:
   static_files: manifest.json
   upload: manifest.json
   secure: always
-  expiration: "365d"
+  # Use 0 for local development. deploy.py changes this to 365d with perma-urls
+  expiration: "0"
   http_headers:
     Access-Control-Allow-Origin: '*'
 

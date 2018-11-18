@@ -1,6 +1,4 @@
-import { Actions } from '../Actions.js';
 import { Compose } from '../Compose.js';
-import { IDBKeyVal } from '../idb-keyval.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 const SEND = { name: 'Send', description: 'Ummm...send the mail.' };
@@ -12,6 +10,13 @@ Put ## followed by a priority level in your email to automatically route your me
 
 URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
+
+let idbKeyVal_;
+async function idbKeyVal() {
+  if (!idbKeyVal_)
+    idbKeyVal_ = (await import('../idb-keyval.js')).IDBKeyVal.getDefault();
+  return idbKeyVal_;
+}
 
 export class ComposeView extends HTMLElement {
   constructor(contacts, updateTitle, params) {
@@ -46,7 +51,7 @@ export class ComposeView extends HTMLElement {
   }
 
   async prefill_(queryParams) {
-    let localData = await IDBKeyVal.getDefault().get(AUTO_SAVE_KEY);
+    let localData = await (await idbKeyVal()).get(AUTO_SAVE_KEY);
     if (!localData)
       localData = queryParams;
 
@@ -132,9 +137,9 @@ export class ComposeView extends HTMLElement {
     }
 
     if (hasData)
-      await IDBKeyVal.getDefault().set(AUTO_SAVE_KEY, data);
+      await (await idbKeyVal()).set(AUTO_SAVE_KEY, data);
     else
-     await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
+     await (await idbKeyVal()).del(AUTO_SAVE_KEY);
   }
 
   focusFirstEmpty_() {
@@ -210,7 +215,7 @@ export class ComposeView extends HTMLElement {
       to += this.inlineToText_() + ',';
 
     await mail.send(this.compose_.value, to, this.subject_.value);
-    await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
+    await (await idbKeyVal()).del(AUTO_SAVE_KEY);
     this.updateTitle_('sending');
 
     this.to_.value = '';

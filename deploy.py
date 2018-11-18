@@ -50,6 +50,10 @@ for root, directories, files in os.walk(temp_dir, topdown=True):
       content = f.read()
       for old, new in substitutions.iteritems():
         content = re.sub(old, new, content, flags=re.M)
+
+      if (file == 'app.yaml'):
+        content = re.sub('expiration: "0"', 'expiration="365d"', content, flags=re.M)
+
       f.seek(0)
       f.write(content)
       f.truncate()
