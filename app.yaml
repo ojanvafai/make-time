@@ -16,6 +16,13 @@ handlers:
   http_headers:
     Access-Control-Allow-Origin: '*'
 
+- url: /favicon.ico
+  static_files: favicon.ico
+  upload: favicon.ico
+  secure: always
+  http_headers:
+    Access-Control-Allow-Origin: '*'
+
 - url: /
   static_files: index.html
   upload: index.html

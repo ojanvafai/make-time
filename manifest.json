@@ -2,11 +2,7 @@
   "short_name": "MakeTime",
   "name": "MakeTime",
   "icons": [
-    {
-      "src": "/static/favicon.png",
-      "type": "image/png",
-      "sizes": "240x240"
-    }
+
   ],
   "start_url": "/",
   "display": "standalone",
