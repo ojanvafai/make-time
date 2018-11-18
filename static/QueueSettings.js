@@ -1,3 +1,4 @@
+import { AsyncOnce } from './AsyncOnce.js';
 import { Labels } from './Labels.js';
 import { Settings } from './Settings.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
@@ -5,9 +6,14 @@ import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 export class QueueSettings {
   constructor(spreadsheetId) {
     this.spreadsheetId_ = spreadsheetId;
+    this.fetcher_ = new AsyncOnce(this.fetch_.bind(this))
   }
 
   async fetch() {
+    await this.fetcher_.do()
+  }
+
+  async fetch_() {
     let values = await SpreadsheetUtils.fetchSheet(this.spreadsheetId_, `${Settings.QUEUED_LABELS_SHEET_NAME}!A2:D`);
     this.populateMap_(values);
   }

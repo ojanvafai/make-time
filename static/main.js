@@ -1,3 +1,4 @@
+import { AsyncOnce } from './AsyncOnce.js';
 import { ErrorLogger } from './ErrorLogger.js';
 import { Labels } from './Labels.js';
 import { Router } from './Router.js';
@@ -384,44 +385,33 @@ function createMenuItem(name, options) {
   return a;
 }
 
-let gapiFetch_;
 async function gapiFetch(method, requestParams, opt_requestBody) {
-  if (!gapiFetch_)
-    gapiFetch_ = (await import('./Net.js')).gapiFetch;
-  return gapiFetch_(method, requestParams, opt_requestBody);
+  let fetcher = (await import('./Net.js')).gapiFetch;
+  return fetcher(method, requestParams, opt_requestBody);
 }
 
-let queueSettings_;
 async function queueSettings() {
-  if (!queueSettings_)
-    queueSettings_ = (await import('./QueueSettings.js')).QueueSettings;
-  return queueSettings_;
+  return (await import('./QueueSettings.js')).QueueSettings;
 }
 
-let serverStorage_;
 async function serverStorage() {
-  if (!serverStorage_)
-    serverStorage_ = (await import('./ServerStorage.js')).ServerStorage;
-  return serverStorage_;
+  return (await import('./ServerStorage.js')).ServerStorage;
 }
 
 async function getCachedThread(response, labels) {
-  if (!threadCache_) {
-    let ThreadCache = (await import('./ThreadCache.js')).ThreadCache;
+  let ThreadCache = (await import('./ThreadCache.js')).ThreadCache;
+  if (!threadCache_)
     threadCache_ = new ThreadCache();
-  }
   return threadCache_.get(response, labels);
 }
 
 async function getLabels() {
-  if (!labels_)
-    await fetchTheSettingsThings();
+  await fetchTheSettingsThings();
   return labels_;
 }
 
 async function getSettings() {
-  if (!settings_)
-    await fetchTheSettingsThings();
+  await fetchTheSettingsThings();
   return settings_;
 }
 
@@ -430,30 +420,36 @@ async function showHelp() {
   help.showHelp(await getSettings());
 }
 
+let settingThingsFetcher_;
 async function fetchTheSettingsThings() {
-  if (settings_ || labels_)
-    throw 'Tried to fetch settings or labels twice.';
+  if (!settingThingsFetcher_) {
+    settingThingsFetcher_ = new AsyncOnce(async () => {
+      if (settings_ || labels_)
+        throw 'Tried to fetch settings or labels twice.';
 
-  await login();
+      await login();
 
-  let Settings = (await import('./Settings.js')).Settings;
-  settings_ = new Settings();
-  labels_ = new Labels();
+      let Settings = (await import('./Settings.js')).Settings;
+      settings_ = new Settings();
+      labels_ = new Labels();
 
-  // Don't await this here so we fetch settings in parallel.
-  let labelsPromise = labels_.fetch();
+      // Don't await this here so we fetch settings in parallel.
+      let labelsPromise = labels_.fetch();
 
-  await settings_.fetch();
+      await settings_.fetch();
 
-  let ServerStorage = await serverStorage();
-  let storage = new ServerStorage(settings_.spreadsheetId);
-  if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
-    await showHelp();
-    storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
+      let ServerStorage = await serverStorage();
+      let storage = new ServerStorage(settings_.spreadsheetId);
+      if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
+        await showHelp();
+        storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
+      }
+
+      await labelsPromise;
+      await migrateLabels(labels_);
+    });
   }
-
-  await labelsPromise;
-  await migrateLabels(labels_);
+  await settingThingsFetcher_.do();
 }
 
 async function migrateLabels(labels) {
@@ -553,12 +549,16 @@ async function fetchContacts(token) {
   localStorage.setItem(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
+let queueSettingsFetcher_;
 async function getQueuedLabelMap() {
-  if (!queuedLabelMap_) {
-    let QueueSettings = await queueSettings();
-    queuedLabelMap_ = new QueueSettings((await getSettings()).spreadsheetId);
-    await queuedLabelMap_.fetch();
+  if (!queueSettingsFetcher_) {
+    queueSettingsFetcher_ = new AsyncOnce(async () => {
+      let QueueSettings = await queueSettings();
+      queuedLabelMap_ = new QueueSettings((await getSettings()).spreadsheetId);
+      await queuedLabelMap_.fetch();
+    });
   }
+  await queueSettingsFetcher_.do();
   return queuedLabelMap_;
 }
 
@@ -571,8 +571,9 @@ async function getMailProcessor() {
 // one file that is imported instead of duplicated across the codebase.
 let idbKeyVal_;
 async function idbKeyVal() {
+  let IDBKeyVal = (await import('./idb-keyval.js')).IDBKeyVal;
   if (!idbKeyVal_)
-    idbKeyVal_ = (await import('./idb-keyval.js')).IDBKeyVal.getDefault();
+    idbKeyVal_ = IDBKeyVal.getDefault();
   return idbKeyVal_;
 }
 

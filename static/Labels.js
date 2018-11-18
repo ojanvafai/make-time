@@ -1,10 +1,8 @@
 import { fetchThreads, USER_ID } from './main.js';
 
-let gapiFetch_;
 async function gapiFetch(method, requestParams, opt_requestBody) {
-  if (!gapiFetch_)
-    gapiFetch_ = (await import('./Net.js')).gapiFetch;
-  return gapiFetch_(method, requestParams, opt_requestBody);
+  let fetcher = (await import('./Net.js')).gapiFetch;
+  return fetcher(method, requestParams, opt_requestBody);
 }
 
 export class Labels {
@@ -127,7 +125,6 @@ export class Labels {
   async delete(name, opt_includeNested) {
     let id = this.labelToId_[name];
     if (id) {
-    console.log(name);
       await gapiFetch(gapi.client.gmail.users.labels.delete, {
         'userId': USER_ID,
         'id': id,

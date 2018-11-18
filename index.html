@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="./manifest.json">
 
-    <link rel="preload" href="static/main.js" as="script">
-    <link rel="preload" href="static/Compose.js" as="script">
-    <link rel="preload" href="static/ErrorLogger.js" as="script">
-    <link rel="preload" href="static/Labels.js" as="script">
-    <link rel="preload" href="static/Router.js" as="script">
-    <link rel="preload" href="static/ThreadGroups.js" as="script">
-    <link rel="preload" href="static/views/ComposeView.js" as="script">
+    <!-- Include crossorigin since these are for JS modules. -->
+    <link rel="preload" href="static/main.js" as="script" crossorigin>
+    <link rel="preload" href="static/AsyncOnce.js" as="script" crossorigin>
+    <link rel="preload" href="static/Compose.js" as="script" crossorigin>
+    <link rel="preload" href="static/ErrorLogger.js" as="script" crossorigin>
+    <link rel="preload" href="static/Labels.js" as="script" crossorigin>
+    <link rel="preload" href="static/Router.js" as="script" crossorigin>
+    <link rel="preload" href="static/ThreadGroups.js" as="script" crossorigin>
+    <link rel="preload" href="static/views/ComposeView.js" as="script" crossorigin>
 
     <style>
       /* Hack to avoid horizontal scrolling. */

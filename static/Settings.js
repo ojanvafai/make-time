@@ -1,10 +1,19 @@
+import { AsyncOnce } from './AsyncOnce.js';
 import { ErrorLogger } from './ErrorLogger.js';
 import { ServerStorage } from './ServerStorage.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 import { showDialog } from './main.js';
 
 export class Settings {
+  constructor() {
+    this.fetcher_ = new AsyncOnce(this.fetch_.bind(this))
+  }
+
   async fetch() {
+    await this.fetcher_.do();
+  }
+
+  async fetch_() {
     this.spreadsheetId = await this.getSpreadsheetId_();
     this.storage_ = new ServerStorage(this.spreadsheetId);
     await this.storage_.fetch();

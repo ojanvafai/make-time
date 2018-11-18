@@ -13,8 +13,9 @@ URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 
 let idbKeyVal_;
 async function idbKeyVal() {
+  let IDBKeyVal = (await import('../idb-keyval.js')).IDBKeyVal;
   if (!idbKeyVal_)
-    idbKeyVal_ = (await import('../idb-keyval.js')).IDBKeyVal.getDefault();
+    idbKeyVal_ = IDBKeyVal.getDefault();
   return idbKeyVal_;
 }
 

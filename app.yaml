@@ -24,6 +24,7 @@ handlers:
   static_files: favicon.ico
   upload: favicon.ico
   secure: always
+  expiration: "28d"
   http_headers:
     Access-Control-Allow-Origin: '*'
 
