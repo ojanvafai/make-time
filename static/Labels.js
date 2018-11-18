@@ -1,6 +1,12 @@
 import { ErrorLogger } from './ErrorLogger.js';
-import { gapiFetch } from './Net.js';
 import { fetchThreads, USER_ID } from './main.js';
+
+let gapiFetch_;
+async function gapiFetch(method, requestParams, opt_requestBody) {
+  if (!gapiFetch_)
+    gapiFetch_ = (await import('./Net.js')).gapiFetch;
+  return gapiFetch_(method, requestParams, opt_requestBody);
+}
 
 export class Labels {
   async fetch() {

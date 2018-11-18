@@ -1,7 +1,5 @@
 export class ThreadGroups {
   constructor() {
-    this.triaged_ = [];
-    this.needsTriage_ = [];
     this.bestEffort_ = [];
     this.listener_;
   }
