@@ -63,4 +63,4 @@ for project in projects:
   deploy_command = ['gcloud', 'app', 'deploy', '-q', '--project', project, '--version', version, yaml_path]
   subprocess.call(deploy_command)
 
-# shutil.rmtree(temp_dir)
+shutil.rmtree(temp_dir)

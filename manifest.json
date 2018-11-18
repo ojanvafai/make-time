@@ -3,7 +3,7 @@
   "name": "MakeTime",
   "icons": [
     {
-      "src": "/static/favicon.ico",
+      "src": "/favicon.ico",
       "type": "image/png",
       "sizes": "240x240"
     }
