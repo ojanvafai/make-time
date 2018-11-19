@@ -39,9 +39,12 @@ export class RenderedThread {
 
     let messages = await this.thread.getMessages();
     // Only append new messages.
-    messages = messages.slice(this.dom_.children.length);
+    messages = messages.slice(this.dom_.childElementCount);
     for (let message of messages) {
-      this.dom_.append(this.renderMessage_(message));
+      let rendered = this.renderMessage_(message);
+      if (this.dom_.childElementCount == 0)
+        rendered.style.border = 0;
+      this.dom_.append(rendered);
     }
   }
 
@@ -78,6 +81,9 @@ export class RenderedThread {
 
   renderMessage_(processedMessage) {
     var messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+      padding: 0 8px;
+    `;
     messageDiv.className = 'message';
     messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
 
@@ -97,6 +103,7 @@ export class RenderedThread {
       white-space: pre-wrap;
       font-size: 90%;
       color: grey;
+      display: flex;
     `;
 
     let from = document.createElement('div');
@@ -121,7 +128,7 @@ export class RenderedThread {
     let expander = document.createElement('span');
     expander.classList.add('expander');
     expander.style.cssText = `
-      padding: 1px 3px;
+      padding: 0 3px;
       user-select: none;
       float: right;
     `;
@@ -141,7 +148,11 @@ export class RenderedThread {
     if (processedMessage.bcc)
       this.appendAddresses_(to, 'bcc', processedMessage.bcc);
 
-    headerDiv.append(rightItems, from, to);
+    let addressContainer = document.createElement('div');
+    addressContainer.style.cssText = `flex: 1;`;
+    addressContainer.append(from, to);
+
+    headerDiv.append(addressContainer, rightItems);
 
     if (processedMessage.isDraft) {
       let draft = document.createElement('div');
