@@ -85,6 +85,7 @@ export class ComposeView extends HTMLElement {
       border: 1px solid;
       flex: 1;
       outline: none;
+      padding: 4px;
     `;
     return input;
   }
@@ -99,6 +100,7 @@ export class ComposeView extends HTMLElement {
     line.style.cssText = `
       display: flex;
       margin: 4px;
+      align-items: baseline;
     `;
     line.append(...children);
     return line;

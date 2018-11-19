@@ -72,7 +72,7 @@ export class FiltersView extends HTMLElement {
     let rules = filters.rules;
 
     let container = document.createElement('table');
-    container.style.cssText = `font-size: 11px;`;
+    container.style.cssText = `font-size: 13px;`;
 
     let header = document.createElement('thead');
     header.innerHTML = `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th><th>No List-ID</th>`;
@@ -170,6 +170,9 @@ export class FiltersView extends HTMLElement {
 
   createRule_(rule) {
     let container = document.createElement('tr');
+    container.style.cssText = `
+      line-height: 1.7em;
+    `;
 
     let buttons = document.createElement('div');
     buttons.style.display = 'flex';

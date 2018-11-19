@@ -134,7 +134,6 @@ export class QueuesView extends HTMLElement {
       -webkit-box-orient: vertical;
       overflow: hidden;
       margin-top: 4px;
-      font-size: 13px;
     `;
     help.innerHTML = FiltersView.HELP_TEXT_;
 
@@ -222,7 +221,6 @@ export class QueuesView extends HTMLElement {
     let row = document.createElement('div');
     row.style.cssText = `
       display: flex;
-      font-size: 13px;
     `;
     row.className = QueuesView.rowClassName_;
 

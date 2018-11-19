@@ -1,5 +1,7 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
+- Autocomplete to field: Make a superclass from Compose.js that is an autocompleting composer with the ability to customize the triggers and behavior of the autocomplete action (to field does it for all typing and comma separates the emails. Needs to handle <> syntax, but otherwise normalize whitespace.
+
 - Add a mode to default to view one
 - Add cc/bcc/body as closed by default sections
 
