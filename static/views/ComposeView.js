@@ -1,7 +1,7 @@
 import { Compose } from '../Compose.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
-const SEND = { name: 'Send', description: 'Ummm...send the mail.' };
+const SEND = { name: 'Send', description: 'Send the mail.' };
 const ACTIONS = [ SEND ];
 const PRE_FILL_URL = '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
 const HELP_TEXT = `Hints:
@@ -23,6 +23,12 @@ export class ComposeView extends HTMLElement {
   constructor(contacts, updateTitle, params) {
     super();
 
+    this.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    `;
+
     this.updateTitle_ = updateTitle;
     this.params_ = params || {};
 
@@ -34,7 +40,7 @@ export class ComposeView extends HTMLElement {
 
     this.body_ = new Compose(contacts, true);
     this.body_.style.cssText = `
-      flex: 1;
+      flex: 1 1 0;
       margin: 4px;
       display: flex;
       background-color: white;
@@ -45,11 +51,14 @@ export class ComposeView extends HTMLElement {
 
     this.body_.addEventListener('email-added', this.handleUpdates_.bind(this));
     this.body_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
+    this.append(this.body_);
+
+    this.appendButtons_();
 
     let help = document.createElement('div');
     help.style.cssText = `white-space: pre-wrap;`;
     help.innerHTML = HELP_TEXT;
-    this.append(this.body_, help);
+    this.append(help);
   }
 
   async prefill_() {
@@ -158,9 +167,14 @@ export class ComposeView extends HTMLElement {
     this.body_.focus();
   }
 
-  connectedCallback() {
-    let footer = document.getElementById('footer');
-    footer.textContent = '';
+  appendButtons_() {
+    let container = document.createElement('div');
+    container.style.cssText = `
+      display: flex;
+      justify-content: center;
+      position: relative;
+    `;
+    this.append(container);
 
     for (let action of ACTIONS) {
       let button = document.createElement('button');
@@ -171,7 +185,7 @@ export class ComposeView extends HTMLElement {
         button.tooltipElement = document.createElement('div');
         button.tooltipElement.style.cssText = `
           position: absolute;
-          bottom: ${footer.offsetHeight}px;
+          top: ${container.offsetHeight}px;
           left: 0;
           right: 0;
           display: flex;
@@ -188,14 +202,14 @@ export class ComposeView extends HTMLElement {
 
         text.append(button.tooltip);
         button.tooltipElement.append(text);
-        footer.append(button.tooltipElement);
+        container.append(button.tooltipElement);
       }
       button.onmouseleave = () => {
         button.tooltipElement.remove();
       }
       let name = action.name;
       button.textContent = name;
-      footer.append(button);
+      container.append(button);
     }
   }
 
@@ -220,11 +234,11 @@ export class ComposeView extends HTMLElement {
     await (await idbKeyVal()).del(AUTO_SAVE_KEY);
     this.updateTitle_('sending');
 
-    this.to_.value = '' || this.params_.to;
+    this.to_.value = this.params_.to || '';
     if (this.inlineTo_)
       this.getInlineTo_().textContent = '';
-    this.subject_.value = '' || this.params_.subject;
-    this.body_.value = '' || this.params_.body;
+    this.subject_.value = this.params_.subject || '';
+    this.body_.value = this.params_.body || '';
 
     this.sending_ = false;
   }

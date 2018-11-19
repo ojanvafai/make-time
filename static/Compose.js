@@ -9,7 +9,7 @@ export class Compose extends HTMLElement {
     this.content_.style.cssText = `
       flex: 1;
       white-space: pre-wrap;
-      overflow: hidden;
+      overflow: auto;
       border: 1px solid;
       padding: 8px;
       word-break: break-word;
