@@ -686,10 +686,11 @@ export class AbstractThreadListView extends HTMLElement {
     container.append(sideBar);
 
     compose.addEventListener('submit', async (e) => {
-      if (!compose.value.length)
+      let textLength = compose.plainText.length;
+      if (!textLength)
         return;
 
-      if (compose.value.length > this.allowedReplyLength_) {
+      if (textLength > this.allowedReplyLength_) {
         alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
         return;
       }

@@ -1,6 +1,7 @@
 TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
-- Autocomplete to field: Make a superclass from Compose.js that is an autocompleting composer with the ability to customize the triggers and behavior of the autocomplete action (to field does it for all typing and comma separates the emails. Needs to handle <> syntax, but otherwise normalize whitespace.
+- Autocomplete to field: Create AddressCompose that opens autocomplete for every non-comma input and autocompletes whatever is between the two commas and stops autocomplete when the cursor passes over a commn. Need to normalize whitespace outside of <>'s.
+- Give progress indicator for threads left to load in make-time/triage views.
 
 - Add a mode to default to view one
 - Add cc/bcc/body as closed by default sections
