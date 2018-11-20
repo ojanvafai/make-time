@@ -179,7 +179,7 @@ export class AbstractThreadListView extends HTMLElement {
     for (let group of this.groupedThreads_) {
       let rows = group.getMarked();
       for (let row of rows) {
-        this.removeRow_(row);
+        await this.removeRow_(row);
       }
     }
   }
@@ -382,13 +382,28 @@ export class AbstractThreadListView extends HTMLElement {
     return this.getRowFromRelativeOffset(row, -1);
   }
 
-  removeRow_(row) {
+  async removeRow_(row) {
     if (this.focusedEmail_ == row) {
       this.focusedEmail_ = this.getNextRow(row);
       this.focusedEmail_.focused = true;
       this.focusedEmail_.updateHighlight_();
     }
+
+    let shouldTransitionToThreadList = false;
+    if (this.renderedRow_ == row) {
+      let nextRow = this.getNextRow(row);
+      if (nextRow)
+        await this.renderOne_(nextRow);
+      else
+        shouldTransitionToThreadList = true;
+    }
+
     row.group.delete(row);
+
+    // This has to happen after the delete call since it will render the updated
+    // threadlist and the deleted row needs to not be there.
+    if (shouldTransitionToThreadList)
+      await this.transitionToThreadList_();
   }
 
   moveFocus(action) {
@@ -473,23 +488,14 @@ export class AbstractThreadListView extends HTMLElement {
     this.undoableActions_ = [];
   }
 
-  async removeCurrentAndRenderNext_() {
-    let nextRow = this.getNextRow(this.renderedRow_);
-    await this.removeRow_(this.renderedRow_);
-    if (nextRow)
-      await this.renderOne_(nextRow);
-    else
-      await this.transitionToThreadList_();
-  }
-
   async markTriaged(destination) {
     this.undoableActions_ = [];
 
     let threads;
     if (this.renderedRow_) {
-      // Save this off since removeCurrentAndRenderNext_ changes this.renderedRow_.
+      // Save this off since removeRow_ changes this.renderedRow_.
       let row = this.renderedRow_;
-      await this.removeCurrentAndRenderNext_();
+      await this.removeRow_(row);
       this.markSingleThreadTriaged(row.thread, destination);
     } else {
       // Update the UI first and then archive one at a time.
