@@ -180,6 +180,10 @@ export class Message {
     for (let image of inlineImages) {
       let contentId = `<${image.src.match(/^cid:([^>]*)$/)[1]}>`;
       let attachment = await this.findAttachment_(contentId);
+      // There can be images from quoted sections that no longer have the attachments.
+      // So handle them gracefully.
+      if (!attachment)
+        continue;
       let fetched = await gapi.client.gmail.users.messages.attachments.get({
         'id': attachment.id,
         'messageId': this.id,
