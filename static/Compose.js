@@ -41,11 +41,6 @@ export class Compose extends HTMLElement {
         }
         return;
 
-      case 'ArrowLeft':
-      case 'ArrowRight':
-        this.cancelAutocomplete_();
-        return;
-
       case 'ArrowUp':
         if (this.updateIsAutocompleting_()) {
           e.preventDefault();
@@ -65,8 +60,8 @@ export class Compose extends HTMLElement {
     this.addEventListener('input', async (e) => {
       if (this.updateIsAutocompleting_()) {
         this.renderAutocomplete_();
-      } else if (e.data == '+') {
-        this.prepareAutocomplete_();
+      } else {
+        this.prepareAutocomplete(e);
       }
       this.updatePlaceholder_();
     });
@@ -83,20 +78,14 @@ export class Compose extends HTMLElement {
   }
 
   updateIsAutocompleting_() {
-    if (this.autocompleteRange_ && this.autocompleteRange_.toString() == '+')
-      return true;
-    this.cancelAutocomplete_();
-    return false;
+    let isAutoCompleting = this.isStillAutoCompleting();
+    if (!isAutoCompleting)
+      this.cancelAutocomplete_();
+    return isAutoCompleting;
   }
 
   cursor_() {
     return window.getSelection().getRangeAt(0).cloneRange();
-  }
-
-  prepareAutocomplete_() {
-    // TODO: Only start auto complete at start of line or after a whitespace
-    this.autocompleteRange_ = this.cursor_();
-    this.autocompleteRange_.setStart(this.autocompleteRange_.startContainer, this.autocompleteRange_.startOffset - 1);
   }
 
   autocompleteText_() {
@@ -137,12 +126,13 @@ export class Compose extends HTMLElement {
       }
       entry.style.cssText = `padding: 4px;`;
       let text = '';
-      if (candidate.name)
+      if (candidate.name) {
         text += `${candidate.name}: `;
+        entry.name = candidate.name;
+      }
       text += candidate.email;
       entry.textContent = text
       entry.email = candidate.email;
-      entry.name = candidate.name;
       this.autocompleteContainer_.append(entry);
     }
 
@@ -217,6 +207,10 @@ export class Compose extends HTMLElement {
     this.hideAutocompleteMenu_();
   }
 
+  selectedEntry(selectedItem) {
+    throw 'Abstract method not overridden.';
+  }
+
   submitAutocomplete_(opt_selectedItem, opt_savedCursor) {
     let selectedItem = opt_selectedItem || this.autocompleteContainer_.children[this.autocompleteIndex_];
 
@@ -224,20 +218,15 @@ export class Compose extends HTMLElement {
     range.setStart(this.autocompleteRange_.startContainer, this.autocompleteRange_.startOffset);
     range.deleteContents();
 
-    let link = document.createElement('a');
-    link.href = `mailto:${selectedItem.email}`;
-    link.textContent = `+${selectedItem.name || selectedItem.email}`;
-    link.tabIndex = -1;
-    link.contentEditable = false;
-    range.insertNode(link);
+    let selectedEntry = this.selectedEntry(selectedItem);
+    range.insertNode(selectedEntry);
 
-    let space = document.createTextNode(' ');
+    let separator = document.createTextNode(this.separator_);
     range.collapse();
-    range.insertNode(space);
-    window.getSelection().collapse(space, space.length);
+    range.insertNode(separator);
+    window.getSelection().collapse(separator, separator.length);
 
     this.cancelAutocomplete_();
-
     this.dispatchEvent(new Event('email-added'));
   }
 

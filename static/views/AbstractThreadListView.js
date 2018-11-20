@@ -625,8 +625,8 @@ export class AbstractThreadListView extends HTMLElement {
       width: 100%;
     `;
 
-    let Compose = (await import('../Compose.js')).Compose;
-    let compose = new Compose(this.contacts_);
+    let EmailCompose = (await import('../EmailCompose.js')).EmailCompose;
+    let compose = new EmailCompose(this.contacts_);
     compose.style.cssText = `
       flex: 1;
       margin: 4px;

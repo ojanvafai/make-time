@@ -1,4 +1,4 @@
-import { Compose } from '../Compose.js';
+import { EmailCompose } from '../EmailCompose.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 const SEND = { name: 'Send', description: 'Send the mail.' };
@@ -38,7 +38,7 @@ export class ComposeView extends HTMLElement {
     this.subject_ = this.createInput_();
     this.appendLine_('Subject:\xa0', this.subject_);
 
-    this.body_ = new Compose(contacts, true);
+    this.body_ = new EmailCompose(contacts, true);
     this.body_.style.cssText = `
       flex: 1 1 0;
       margin: 4px;
@@ -125,10 +125,18 @@ export class ComposeView extends HTMLElement {
     requestIdleCallback(this.handleUpdates_.bind(this));
   }
 
+  clearInlineTo_() {
+    if (this.inlineTo_)
+      this.inlineTo_.textContent = '';
+  }
+
   async handleUpdates_() {
     let emails = this.body_.getEmails();
-    if (emails.length)
+    if (emails.length) {
       this.getInlineTo_().textContent = emails.join(', ');
+    } else {
+      this.clearInlineTo_();
+    }
 
     let data = {};
     let hasData = false;
@@ -237,8 +245,7 @@ export class ComposeView extends HTMLElement {
     this.updateTitle_('sending');
 
     this.to_.value = this.params_.to || '';
-    if (this.inlineTo_)
-      this.getInlineTo_().textContent = '';
+    this.clearInlineTo_();
     this.subject_.value = this.params_.subject || '';
     this.body_.value = this.params_.body || '';
 
