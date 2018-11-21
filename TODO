@@ -44,6 +44,7 @@ P1: Will try to do soonish.
 - add ability to search for a set of threads and see which filter would match
 
 P2: Will only do if something makes these seem worth doing.
+- use requestIdleCallback for the rerendering of the threadlist to avoid potential n^2 slowness
 - Add drafts concept instead of one compose at a time. Right now two compose windows will mean one overrides the other in local storage.
 - Use TypeScript
 - make-time mode: store task durations for future data analysis. Need to split by action type.
