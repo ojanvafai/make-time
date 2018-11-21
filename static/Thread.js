@@ -222,7 +222,7 @@ export class Thread {
 
     // Gmail will remove dupes for us.
     let to = lastMessage.from
-    if (shouldReplyAll)
+    if (shouldReplyAll && lastMessage.to)
       to += ',' + lastMessage.to;
 
     if (extraEmails.length)
