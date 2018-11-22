@@ -44,13 +44,21 @@ export class MakeTimeView extends AbstractThreadListView {
     this.updateTitle_('fetch');
   }
 
+  async handleUndo(thread) {
+    if (thread)
+      await this.removeThread(thread);
+  }
+
   async handleTriaged(destination, triageResult, thread) {
     // Setting priority adds the thread back into the triaged list at it's new priority.
     if (!destination || !Labels.isPriorityLabel(destination))
       return;
     // Don't need to do a fetch if the markTriaged call didn't do anything.
-    if (triageResult)
+    if (triageResult) {
       thread = await fetchThread(thread.id);
+      // Store this away so undo can grab the right thread.
+      triageResult.newThread = thread;
+    }
     await this.addThread(thread);
   }
 
@@ -75,6 +83,7 @@ MakeTimeView.ACTIONS_ = [
   Actions.URGENT_ACTION,
   Actions.NOT_URGENT_ACTION,
   Actions.DELEGATE_ACTION,
+  Actions.UNDO_ACTION,
 ];
 
 MakeTimeView.RENDER_ALL_ACTIONS_ = [

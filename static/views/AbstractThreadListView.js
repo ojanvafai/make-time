@@ -382,6 +382,11 @@ export class AbstractThreadListView extends HTMLElement {
     return this.getRowFromRelativeOffset(row, -1);
   }
 
+  async removeThread(thread) {
+    let row = await this.findRow_(thread);
+    await this.removeRow_(row);
+  }
+
   async removeRow_(row) {
     if (this.focusedEmail_ == row) {
       this.focusedEmail_ = this.getNextRow(row);
@@ -537,7 +542,10 @@ export class AbstractThreadListView extends HTMLElement {
       this.updateTitle_('undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
 
       let action = actions[i];
-      await action.thread.modify(action.removed, action.added);
+      if (this.handleUndo)
+        await this.handleUndo(action.newThread);
+
+      await action.thread.modify(action.removed, action.added, true);
       let newThread = await fetchThread(action.thread.id);
       await this.addThread(newThread, this.renderedRow_);
 
