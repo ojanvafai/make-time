@@ -6,7 +6,7 @@ import { Labels } from '../Labels.js';
 export class MakeTimeView extends AbstractThreadListView {
   constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
     let countDown = false;
-    super(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, MakeTimeView.RENDER_ALL_ACTIONS_, MakeTimeView.RENDER_ONE_ACTIONS_);
+    super(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration);
 
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitleDelegate;

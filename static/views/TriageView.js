@@ -6,7 +6,7 @@ import { Labels } from '../Labels.js';
 export class TriageView extends AbstractThreadListView {
   constructor(threads, mailProcessor, scrollContainer, allLabels, vacationSubject, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration, queueSettings) {
     let countDown = true;
-    super(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.RENDER_ALL_ACTIONS_, TriageView.RENDER_ONE_ACTIONS_, TriageView.OVERFLOW_ACTIONS_);
+    super(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.OVERFLOW_ACTIONS_);
 
     this.allLabels_ = allLabels;
     this.vacationSubject_ = vacationSubject;
@@ -72,29 +72,6 @@ export class TriageView extends AbstractThreadListView {
   }
 }
 window.customElements.define('mt-triage-view', TriageView);
-
-TriageView.ACTIONS_ = [
-  Actions.ARCHIVE_ACTION,
-  Actions.BLOCKED_ACTION,
-  Actions.MUTE_ACTION,
-  Actions.MUST_DO_ACTION,
-  Actions.URGENT_ACTION,
-  Actions.NOT_URGENT_ACTION,
-  Actions.DELEGATE_ACTION,
-  Actions.UNDO_ACTION,
-];
-
-TriageView.RENDER_ALL_ACTIONS_ = [
-  Actions.PREVIOUS_EMAIL_ACTION,
-  Actions.NEXT_EMAIL_ACTION,
-  Actions.TOGGLE_FOCUSED_ACTION,
-  Actions.VIEW_FOCUSED_ACTION,
-].concat(TriageView.ACTIONS_);
-
-TriageView.RENDER_ONE_ACTIONS_ = [
-  Actions.QUICK_REPLY_ACTION,
-  Actions.VIEW_TRIAGE_ACTION,
-].concat(TriageView.ACTIONS_);
 
 TriageView.OVERFLOW_ACTIONS_ = [
   Actions.SPAM_ACTION,

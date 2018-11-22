@@ -105,8 +105,6 @@ export class AbstractThreadListView extends HTMLElement {
     this.autoStartTimer_ = autoStartTimer;
     this.countDown_ = countDown;
     this.timerDuration_ = timerDuration;
-    this.viewAllActions_ = viewAllActions;
-    this.viewOneActions_ = viewOneActions;
     this.overflowActions_ = opt_overflowActions;
 
     // TODO: Rename this to groupedRows_?
@@ -213,7 +211,7 @@ export class AbstractThreadListView extends HTMLElement {
   updateActions_() {
     let footer = document.getElementById('footer');
     footer.textContent = '';
-    let actions = this.renderedRow_ ? this.viewOneActions_ : this.viewAllActions_;
+    let actions = this.renderedRow_ ? AbstractThreadListView.RENDER_ONE_ACTIONS_ : AbstractThreadListView.RENDER_ALL_ACTIONS_;
     this.actions_ = new Actions(this, actions, this.overflowActions_);
     footer.append(this.actions_);
     if (this.renderedRow_) {
@@ -730,3 +728,26 @@ export class AbstractThreadListView extends HTMLElement {
     compose.focus();
   }
 }
+
+AbstractThreadListView.ACTIONS_ = [
+  Actions.ARCHIVE_ACTION,
+  Actions.BLOCKED_ACTION,
+  Actions.MUTE_ACTION,
+  Actions.MUST_DO_ACTION,
+  Actions.URGENT_ACTION,
+  Actions.NOT_URGENT_ACTION,
+  Actions.DELEGATE_ACTION,
+  Actions.UNDO_ACTION,
+];
+
+AbstractThreadListView.RENDER_ALL_ACTIONS_ = [
+  Actions.PREVIOUS_EMAIL_ACTION,
+  Actions.NEXT_EMAIL_ACTION,
+  Actions.TOGGLE_FOCUSED_ACTION,
+  Actions.VIEW_FOCUSED_ACTION,
+].concat(AbstractThreadListView.ACTIONS_);
+
+AbstractThreadListView.RENDER_ONE_ACTIONS_ = [
+  Actions.QUICK_REPLY_ACTION,
+  Actions.VIEW_TRIAGE_ACTION,
+].concat(AbstractThreadListView.ACTIONS_);
