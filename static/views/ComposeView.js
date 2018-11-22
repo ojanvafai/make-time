@@ -227,20 +227,30 @@ export class ComposeView extends HTMLElement {
     if (action != SEND)
       throw `Invalid action: ${JSON.stringify(action)}`;
 
-    if (this.sending_)
-      return;
-    this.sending_ = true;
-
-    this.updateTitle_('sending', 'Sending...');
-    let mail = await import('../Mail.js');
-
     let to = '';
     if (this.to_.value)
       to += this.to_.value + ',';
     if (this.inlineTo_)
       to += this.inlineToText_() + ',';
 
-    await mail.send(this.body_.value, to, this.subject_.value);
+    if (!to || !to.includes('@') || !to.includes('.')) {
+      alert(`To field does not include a valid email address: ${to}`);
+      return;
+    }
+
+    let subject = this.subject_.value;
+    if (!subject) {
+      alert(`Subject is empty.`);
+      return;
+    }
+
+    if (this.sending_)
+      return;
+    this.sending_ = true;
+
+    this.updateTitle_('sending', 'Sending...');
+    let mail = await import('../Mail.js');
+    await mail.send(this.body_.value, to, subject);
     await (await idbKeyVal()).del(AUTO_SAVE_KEY);
     this.updateTitle_('sending');
 

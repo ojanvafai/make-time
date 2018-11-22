@@ -3,9 +3,6 @@ TODO: Make this file just be codebase cleanups and move all bugs/feature request
 - Autocomplete to field: Create AddressCompose that opens autocomplete for every non-comma input and autocompletes whatever is between the two commas and stops autocomplete when the cursor passes over a commn. Need to normalize whitespace outside of <>'s.
 - Give progress indicator for threads left to load in make-time/triage views.
 
-- Add a mode to default to view one
-- Add cc/bcc/body as closed by default sections
-
 Tasks UI:
 - need ui for changing task state even if there is rich text tags for setting all of it initially
 - need the ability to add comments to tasks that doesn't archive them
@@ -15,35 +12,34 @@ Tasks UI:
 - Add filtering over tasks to just show the last n days
 
 P1: Will try to do soonish.
-- Use SendAs gmail API to avoid adding yourself to the to line of threads you're not already on to avoid them popping back into your inbox when you send.
+- Give more reply options: ability to forward, reply to a specific message, reply+!archive/reply+blocked/reply+priority?
+- Use SendAs gmail API to avoid adding yourself to the to line of threads you're not already on to avoid them popping back into your inbox when you send. Also would allow for changing sender in compose view.
 - make switching between compose/maketime/triage easier. Make the UI more prominent and add keyboard shortcuts.
-- ComposeView: Handle having missing to/subject/body gracefully instead of having a nonsensical error and getting stuck unable to send the message
 - Add embedded composeView in the maketime/triage views for quick compose that's not replying to the current thread.
 - add better UI for adding new filters, e.g. when viewing an email. For needs filter, could have it route through the filter immediately so you can see it work.
 - Add autocomplete of priorities in ComposeView after typing #.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
-- Allow manual modifications to to/cc/bcc lines in compose view?
 - Add undo send?
-- Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
-- Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.
 - Add Undo button to MakeTime. Needs to correctly remove the item from it's queue and put it in the new queue.
 - Remove all uses of localStorage and just use IDBKeyVal.
 - Add manual sorting of triaged threads.
-- auto delete needstriage labels that have no threads in them and have no filters that would cause that label to be created again as a way of not having a ton of cruft build up.
-- Make swipe work on mobile
+- Keep track of labels that have had no threads for >1 month and auto delete them as a way of not having a ton of cruft build up.
 - Make back forward work for viewone and threadlist. Keep track of the last thread in viewone for forward navs instead of trying to put the thread into the history. This will make the back button on android do the right thing when in viewone.
-- Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
-- Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
-- Race condition with archiving too fast leaves the old thread around forever. maybe? Something crazy happens on slow connections.
 - Make header:foo the only syntax for rules with a bit of special casing for email rules to handle foo+bar@ syntax.
-- triaged and maketime views need to give you an indication of there being new threads that need triaging.
 - add the ability to do inline responses
-- Only show toolbar in any of the views when there are actually threads.
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
-- Grey out undo button when there's nothing to undo
 - add ability to search for a set of threads and see which filter would match
 
 P2: Will only do if something makes these seem worth doing.
+- Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
+- Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.
+- Make swipe work on mobile
+- Add a debankrupt button that unbankrupts 10-30 bankrupt threads.
+- Change the title when bankrupting threads so it doesn't seem like it's still fetching? Or maybe queue up the best effort queues and do them all after the non-best effort queues are done.
+- triaged and maketime views need to give you an indication of there being new threads that need triaging.
+- Grey out undo button when there's nothing to undo
+- Add a mode to default to view one
+- Add cc/bcc/body as closed by default sections
 - use requestIdleCallback for the rerendering of the threadlist to avoid potential n^2 slowness
 - Add drafts concept instead of one compose at a time. Right now two compose windows will mean one overrides the other in local storage.
 - Use TypeScript
