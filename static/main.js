@@ -511,6 +511,8 @@ async function fetchContacts(token) {
   if (contacts_.length)
     return;
 
+  let idb = await idbKeyVal();
+
   // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send
   // the data we don't need.
   let response;
@@ -519,14 +521,20 @@ async function fetchContacts(token) {
   } catch(e) {
     let message = `Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`;
 
-    let contacts = localStorage.getItem(CONTACT_STORAGE_KEY_);
+    let contacts = await idb.get(CONTACT_STORAGE_KEY_);
     if (!contacts) {
       ErrorLogger.log(message);
       return;
     }
 
     ErrorLogger.log(`Using locally stored version of contacts. ${message}`);
-    contacts_ = JSON.parse(contacts);
+
+    // Manually copy each contact instead of just assigning because contacts_ is passed
+    // around and stored.
+    let parsed = JSON.parse(contacts);
+    for (let contact of parsed) {
+      contacts_.push(contact);
+    }
     return;
   }
 
@@ -546,7 +554,7 @@ async function fetchContacts(token) {
 
   // Store the final contacts object instead of the data fetched off the network since the latter
   // can is order of magnitude larger and can exceed the allowed localStorage quota.
-  localStorage.setItem(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
+  await idb.set(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
 let queueSettingsFetcher_;

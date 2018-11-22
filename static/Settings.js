@@ -27,14 +27,7 @@ export class Settings {
 
     if (!response.result.files.length)
       await this.showSetupDialog_();
-
-    let id = response.result.files[0].id;
-    if (id)
-      return id;
-
-    // TODO: remove this one all users have transitioned.
-    if (localStorage.spreadsheetId)
-      return localStorage.spreadsheetId;
+    return response.result.files[0].id;
   }
 
   async showSetupDialog_() {

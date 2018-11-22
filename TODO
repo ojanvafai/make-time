@@ -20,7 +20,6 @@ P1: Will try to do soonish.
 - Add autocomplete of priorities in ComposeView after typing #.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
 - Add undo send?
-- Remove all uses of localStorage and just use IDBKeyVal.
 - Add manual sorting of triaged threads.
 - Keep track of labels that have had no threads for >1 month and auto delete them as a way of not having a ton of cruft build up.
 - Make back forward work for viewone and threadlist. Keep track of the last thread in viewone for forward navs instead of trying to put the thread into the history. This will make the back button on android do the right thing when in viewone.
