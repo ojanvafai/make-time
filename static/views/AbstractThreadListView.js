@@ -409,32 +409,35 @@ export class AbstractThreadListView extends HTMLElement {
       await this.transitionToThreadList_();
   }
 
-  moveFocus(action) {
-    if (this.focusedEmail_ == null) {
-      if (action == Actions.NEXT_EMAIL_ACTION) {
-        this.focusedEmail_ = this.groupedThreads_[0].getRows()[0];
-      } else {
-        const lastThreadGroupRows =
-          this.groupedThreads_[this.groupedThreads_.length - 1].getRows();
-        this.focusedEmail_ = lastThreadGroupRows[lastThreadGroupRows.length - 1];
-      }
-      this.focusedEmail_.focused = true;
+  setFocus(email) {
+    if(this.focusedEmail_) {
+      this.focusedEmail_.focused = false;
       this.focusedEmail_.updateHighlight_();
-      this.focusedEmail_.scrollIntoView({"block":"nearest"});
-      return;
     }
-    this.focusedEmail_.focused = false;
-    this.focusedEmail_.updateHighlight_();
-    if (action == Actions.NEXT_EMAIL_ACTION) {
-      this.focusedEmail_ = this.getNextRow(this.focusedEmail_);
-    } else {
-      this.focusedEmail_ = this.getPreviousRow(this.focusedEmail_);
-    }
-    if (this.focusedEmail_ === undefined)
+    this.focusedEmail_ = email;
+    if(!this.focusedEmail_)
       return;
     this.focusedEmail_.focused = true;
     this.focusedEmail_.updateHighlight_();
     this.focusedEmail_.scrollIntoView({"block":"nearest"});
+  }
+
+  moveFocus(action) {
+    if (this.focusedEmail_ == null) {
+      if (action == Actions.NEXT_EMAIL_ACTION) {
+        this.setFocus(this.groupedThreads_[0].getRows()[0])
+      } else {
+        const lastThreadGroupRows =
+          this.groupedThreads_[this.groupedThreads_.length - 1].getRows();
+        this.setFocus(lastThreadGroupRows[lastThreadGroupRows.length - 1]);
+      }
+      return;
+    }
+    if (action == Actions.NEXT_EMAIL_ACTION) {
+      this.setFocus(this.getNextRow(this.focusedEmail_));
+    } else {
+      this.setFocus(this.getPreviousRow(this.focusedEmail_));
+    }
   }
 
   async takeAction(action) {
@@ -452,8 +455,12 @@ export class AbstractThreadListView extends HTMLElement {
       return;
     }
     if (action == Actions.TOGGLE_FOCUSED_ACTION) {
+      // If nothing is focused, pretend the first email was focused.
+      if(!this.focusedEmail_)
+        this.moveFocus(Actions.NEXT_EMAIL_ACTION);
       this.focusedEmail_.checkBox_.checked = !this.focusedEmail_.checkBox_.checked;
       this.focusedEmail_.updateHighlight_();
+      this.moveFocus(Actions.NEXT_EMAIL_ACTION);
       return;
     }
     if (action == Actions.VIEW_TRIAGE_ACTION) {
@@ -504,6 +511,18 @@ export class AbstractThreadListView extends HTMLElement {
       // Update the UI first and then archive one at a time.
       let threads = this.getThreads();
       this.updateTitle_('archiving', `Archiving ${threads.selectedRows.length} threads...`);
+
+      // Move focus to the first unselected email.
+      // TODO - this could easily be faster.
+      if (threads.selectedRows.indexOf(this.focusedEmail_) != -1) {
+        for (let row of threads.selectedRows) {
+          const nextRow = this.getNextRow(row);
+          if(threads.selectedRows.indexOf(nextRow) == -1) {
+            this.setFocus(nextRow);
+            break;
+          }
+        }
+      }
 
       for (let row of threads.selectedRows) {
         await this.removeRow_(row);
