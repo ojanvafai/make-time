@@ -386,11 +386,8 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   async removeRow_(row) {
-    if (this.focusedEmail_ == row) {
-      this.focusedEmail_ = this.getNextRow(row);
-      this.focusedEmail_.focused = true;
-      this.focusedEmail_.updateHighlight_();
-    }
+    if (this.focusedEmail_ == row)
+      this.setFocus(this.getNextRow(row));
 
     let shouldTransitionToThreadList = false;
     if (this.renderedRow_ == row) {
