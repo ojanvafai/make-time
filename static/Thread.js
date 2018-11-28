@@ -38,7 +38,7 @@ export class Thread {
         this.setQueue(name);
       else if (Labels.isPriorityLabel(name))
         this.priority_ = name;
-      else if (name == Labels.MUTED)
+      else if (name == Labels.MUTED_LABEL)
         this.muted_ = true;
 
       this.labelNames_.add(name);
