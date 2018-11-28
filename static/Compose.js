@@ -8,14 +8,12 @@ export class Compose extends HTMLElement {
     this.content_ = document.createElement('div');
     this.content_.style.cssText = `
       flex: 1;
-      white-space: pre-wrap;
       overflow: auto;
       border: 1px solid;
       padding: 8px;
-      word-break: break-word;
       outline: none;
     `;
-    this.content_.contentEditable = 'plaintext-only';
+    this.content_.contentEditable = opt_isMultiline ? 'true' : 'plaintext-only';
     this.content_.addEventListener('blur', this.cancelAutocomplete_.bind(this));
     this.append(this.content_);
 
