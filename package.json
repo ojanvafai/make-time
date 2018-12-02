@@ -1,0 +1,25 @@
+{
+  "name": "make-time",
+  "version": "1.0.0",
+  "description": "Make-time is an opinionated email client for Gmail. See help.js for more details.",
+  "main": "main.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ojanvafai/make-time.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ojanvafai/make-time/issues"
+  },
+  "homepage": "https://github.com/ojanvafai/make-time#readme",
+  "devDependencies": {
+    "typescript": "^3.2.1"
+  }
+}

@@ -24,7 +24,10 @@ TEMP_DIR_NAME = 'make_time_deploy'
 temp_dir = os.path.join(tempfile.gettempdir(), TEMP_DIR_NAME)
 if os.path.exists(temp_dir):
   shutil.rmtree(temp_dir)
-shutil.copytree(os.path.dirname(__file__), temp_dir, ignore=shutil.ignore_patterns('.git'))
+
+root_dir = os.path.dirname(__file__)
+subprocess.call([os.path.join(root_dir, 'node_modules/typescript/bin/tsc')])
+shutil.copytree(root_dir, temp_dir, ignore=shutil.ignore_patterns('.git', 'static/'))
 
 substitutions = dict()
 
@@ -38,6 +41,9 @@ for root, directories, files in os.walk(temp_dir, topdown=True):
     name, extension = os.path.splitext(file)
     if extension in INDEXES:
       newFile = name + SUFFIX + extension
+    elif extension == '.map':
+      name, sub_extension = os.path.splitext(name)
+      newFile = name + SUFFIX + sub_extension + extension
     else:
       newFile = file;
 

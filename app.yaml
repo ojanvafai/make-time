@@ -4,7 +4,7 @@ threadsafe: true
 
 handlers:
 - url: /static
-  static_dir: static
+  static_dir: out
   secure: always
   # Use 0 for local development. deploy.py changes this to 365d with perma-urls
   expiration: "0"
