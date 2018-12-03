@@ -1,12 +1,12 @@
 import { EmailCompose } from '../EmailCompose.js';
+import { showDialog } from '../main.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 const SEND = { name: 'Send', description: 'Send the mail.' };
-const ACTIONS = [ SEND ];
+const HELP = { name: 'Help', description: 'Help tips.' };
+const ACTIONS = [ SEND, HELP ];
 const PRE_FILL_URL = '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
-const HELP_TEXT = `Hints:
-
-Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##not-urgent, ##delegate.
+const HELP_TEXT = `Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##not-urgent, ##delegate.
 
 URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
@@ -44,7 +44,7 @@ export class ComposeView extends HTMLElement {
       margin: 4px;
       display: flex;
       background-color: white;
-      min-height: 200px;
+      min-height: 50px;
     `;
 
     this.prefill_();
@@ -54,11 +54,6 @@ export class ComposeView extends HTMLElement {
     this.append(this.body_);
 
     this.appendButtons_();
-
-    let help = document.createElement('div');
-    help.style.cssText = `white-space: pre-wrap;`;
-    help.innerHTML = HELP_TEXT;
-    this.append(help);
   }
 
   async prefill_() {
@@ -223,10 +218,7 @@ export class ComposeView extends HTMLElement {
     }
   }
 
-  async takeAction_(action) {
-    if (action != SEND)
-      throw `Invalid action: ${JSON.stringify(action)}`;
-
+  async send_() {
     let to = '';
     if (this.to_.value)
       to += this.to_.value + ',';
@@ -260,6 +252,40 @@ export class ComposeView extends HTMLElement {
     this.body_.value = this.params_.body || '';
 
     this.sending_ = false;
+  }
+
+  showHelp_() {
+    let contents = document.createElement('div');
+    contents.style.overflow = 'auto';
+    contents.innerHTML = HELP_TEXT;
+    let dialog = showDialog(contents);
+    dialog.style.whiteSpace = 'pre-wrap';
+
+    let closeButton = document.createElement('div');
+    closeButton.classList.add('close-button');
+    closeButton.style.cssText = `
+      float: right;
+      position: sticky;
+      top: 0;
+      background-color: white;
+      padding-left: 10px;
+    `;
+    closeButton.onclick = () => dialog.close();
+    contents.prepend(closeButton);
+  }
+
+  async takeAction_(action) {
+    if (action == SEND) {
+      await this.send_();
+      return;
+    }
+
+    if (action == HELP) {
+      this.showHelp_();
+      return;
+    }
+
+    throw `Invalid action: ${JSON.stringify(action)}`;
   }
 
   tearDown() {
