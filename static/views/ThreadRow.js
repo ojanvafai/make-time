@@ -134,7 +134,7 @@ export class ThreadRow extends HTMLElement {
   dateString_(date) {
     let options = {};
     let today = new Date();
-    if (today.getYear() != date.getYear())
+    if (today.getFullYear() != date.getFullYear())
       options.year = 'numeric';
 
     if (today.getMonth() != date.getMonth() || today.getDate() != date.getDate()) {

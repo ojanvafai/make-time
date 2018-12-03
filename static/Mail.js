@@ -20,6 +20,7 @@ ${text}`;
   if (opt_threadId)
     resource.threadId = opt_threadId;
 
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let response = await gapiFetch(gapi.client.gmail.users.messages.send, {
     'userId': USER_ID,
     'resource': resource,

@@ -34,18 +34,20 @@ export class FiltersView extends HTMLElement {
   }
 
   moveRow_(direction, move10) {
+    // TODO: Put a proper type on this.
+    /** @type {any} */
     let focused = document.activeElement;
 
-    let row = focused.parentNode;
+    let row = focused.parentElement;
     while (row && row.tagName != 'TR') {
-      row = row.parentNode;
+      row = row.parentElement;
     }
     if (!row)
       return;
 
-    let parent = row.parentNode;
+    let parent = row.parentElement;
     while (parent && parent != this) {
-      parent = parent.parentNode;
+      parent = parent.parentElement;
     }
     if (!parent)
       return;
@@ -145,11 +147,21 @@ export class FiltersView extends HTMLElement {
     for (let row of rows) {
       let query = row.querySelector('.query').textContent;
       let rule = this.parseQuery_(query, true);
-      rule.label = row.querySelector('.label').value;
-      if (row.querySelector('.matchallmessages').checked)
+
+      /** @type {HTMLInputElement}*/
+      let label = row.querySelector('.label');
+      rule.label = label.value;
+
+      /** @type {HTMLInputElement}*/
+      let matchAll = row.querySelector('.matchallmessages');
+      if (matchAll.checked)
         rule.matchallmessages = 'yes';
-      if (row.querySelector('.nolistid').checked)
+
+      /** @type {HTMLInputElement}*/
+      let noListId = row.querySelector('.nolistid')
+      if (noListId.checked)
         rule.nolistid = true;
+
       rules.push(rule);
     }
     await this.settings_.writeFilters(rules);
@@ -364,14 +376,15 @@ export class FiltersView extends HTMLElement {
     `;
     this.appendQueryParts_(editor, queryParts);
 
-    editor.undoStack_ = [];
+    let undoStack = [];
+    let redoStack_ = [];
 
     editor.addEventListener('beforeinput', (e) => {
       if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo')
         return;
 
-      editor.redoStack_ = [];
-      editor.undoStack_.push(this.getEditorTextContentWithSentinel_(editor));
+      redoStack_ = [];
+      undoStack.push(this.getEditorTextContentWithSentinel_(editor));
     });
 
     editor.oninput = (e) => {
@@ -387,8 +400,8 @@ export class FiltersView extends HTMLElement {
       if (e.key == 'z' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
 
-        let popStack = e.shiftKey ? editor.redoStack_ : editor.undoStack_;
-        let pushStack = e.shiftKey ? editor.undoStack_ : editor.redoStack_;
+        let popStack = e.shiftKey ? redoStack_ : undoStack;
+        let pushStack = e.shiftKey ? undoStack : redoStack_;
 
         let newValue = popStack.pop();
         if (newValue) {

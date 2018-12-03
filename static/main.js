@@ -81,6 +81,7 @@ function showBackArrow(show) {
 }
 
 function openMenu() {
+  /** @type {NodeListOf<HTMLAnchorElement>} */
   let menuItems = document.getElementById('drawer').querySelectorAll('a.item');
   for (let item of menuItems) {
     if (item.pathname == location.pathname) {
@@ -207,6 +208,7 @@ async function updateSigninStatus(isSignedIn) {
     let loginButton = document.createElement('button');
     loginButton.style.cssText = `font-size: 40px;`;
     loginButton.textContent = 'Log In';
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     loginButton.onclick = () => gapi.auth2.getAuthInstance().signIn();
     loginDialog_ = showDialog(loginButton);
   }
@@ -256,6 +258,7 @@ export async function fetchThread(id) {
     'userId': USER_ID,
     'id': id,
   };
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let resp = await gapiFetch(gapi.client.gmail.users.threads.get, requestParams);
   let thread = await getCachedThread(resp.result, await getLabels());
   // If we have a stale thread we just fetched, then it's not stale anymore.
@@ -288,6 +291,7 @@ export async function fetchThreads(forEachThread, options) {
     if (opt_pageToken)
       requestParams.pageToken = opt_pageToken;
 
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
@@ -494,6 +498,7 @@ async function onLoad() {
   // spinner doesn't go away and then come back when conteacts are done being fetched.
   updateLoaderTitle('onLoad', '\xa0');
 
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   await fetchContacts(gapi.auth.getToken());
 
   update();
@@ -605,6 +610,7 @@ export function getCurrentWeekNumber() {
   let today = new Date();
   var januaryFirst = new Date(today.getFullYear(), 0, 1);
   var msInDay = 86400000;
+  // @ts-ignore TODO: Make subtracting date types from each other actually work.
   return Math.ceil((((today - januaryFirst) / msInDay) + januaryFirst.getDay()) / 7);
 }
 
@@ -644,7 +650,10 @@ globalThis.update = update;
 document.body.addEventListener('click', async (e) => {
   for (let node of e.path) {
     if (node.tagName == 'A') {
-      let willHandlePromise = router.run(node);
+      // TODO: Give this a proper type of HTMLAnchorElement
+      /** @type {any} */ 
+      let anchor = node;
+      let willHandlePromise = router.run(anchor);
       if (willHandlePromise) {
         // Need to preventDefault before the await, otherwise the browsers
         // default action kicks in.
@@ -652,8 +661,8 @@ document.body.addEventListener('click', async (e) => {
         await willHandlePromise;
         return;
       }
-      node.target = '_blank';
-      node.rel = 'noopener';
+      anchor.target = '_blank';
+      anchor.rel = 'noopener';
     }
   }
 });
@@ -702,6 +711,7 @@ document.body.addEventListener('keydown', async (e) => {
 
 function loadGapi() {
   return new Promise((resolve, reject) => {
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     gapi.load('client:auth2', () => resolve());
   });
 };
@@ -713,14 +723,17 @@ async function login() {
   updateLoaderTitle('login', 'Logging in...');
 
   await loadGapi();
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   await gapi.client.init({
     discoveryDocs: DISCOVERY_DOCS,
     clientId: CLIENT_ID,
     scope: SCOPES
   });
   // Listen for sign-in state changes.
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
   // Handle the initial sign-in state.
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
 
   updateLoaderTitle('login');

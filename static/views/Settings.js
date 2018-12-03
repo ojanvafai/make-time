@@ -124,13 +124,14 @@ export class SettingsView extends HTMLElement {
         color: blue;
       `;
       helpButton.textContent = '?';
-      helpButton.tooltip = field.description;
+      helpButton.setAttribute('tooltip', field.description);
 
+      let tooltipElement;
       helpButton.onmouseenter = () => {
-        helpButton.tooltipElement = document.createElement('div');
+        tooltipElement = document.createElement('div');
 
         let rect = helpButton.getBoundingClientRect();
-        helpButton.tooltipElement.style.cssText = `
+        tooltipElement.style.cssText = `
           position: absolute;
           top: ${helpButton.offsetHeight + 2}px;
           width: 300px;
@@ -140,11 +141,11 @@ export class SettingsView extends HTMLElement {
           z-index: 100;
         `;
 
-        helpButton.tooltipElement.append(helpButton.tooltip);
-        helpButton.after(helpButton.tooltipElement);
+        tooltipElement.append(helpButton.getAttribute('tooltip'));
+        helpButton.after(tooltipElement);
       }
       helpButton.onmouseleave = () => {
-        helpButton.tooltipElement.remove();
+        tooltipElement.remove();
       }
 
       let input = document.createElement('input');
@@ -163,7 +164,7 @@ export class SettingsView extends HTMLElement {
       else if (this.settings_.has(field.key))
         input.value = this.settings_.get(field.key);
 
-      input.key = field.key;
+      input.setAttribute('key', field.key);
 
       label.append(field.name, helpButton, input);
       this.basicSettings_.append(label);
@@ -183,7 +184,7 @@ export class SettingsView extends HTMLElement {
     let inputs = this.basicSettings_.querySelectorAll('input');
     for (let input of inputs) {
       let value = input.type == 'checkbox' ? input.checked : input.value;
-      updates.push({key: input.key, value: value});
+      updates.push({key: input.getAttribute('key'), value: value});
     }
     await this.settings_.writeUpdates(updates);
 

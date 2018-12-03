@@ -117,7 +117,7 @@ export class ComposeView extends HTMLElement {
   }
 
   debounceHandleUpdates_() {
-    requestIdleCallback(this.handleUpdates_.bind(this));
+    window.requestIdleCallback(this.handleUpdates_.bind(this));
   }
 
   clearInlineTo_() {
@@ -183,12 +183,14 @@ export class ComposeView extends HTMLElement {
 
     for (let action of ACTIONS) {
       let button = document.createElement('button');
-      button.tooltip = action.description;
+      button.setAttribute('tooltip', action.description);
 
       button.onclick = () => this.takeAction_(action);
+
+      let tooltipElement;
       button.onmouseenter = () => {
-        button.tooltipElement = document.createElement('div');
-        button.tooltipElement.style.cssText = `
+        tooltipElement = document.createElement('div');
+        tooltipElement.style.cssText = `
           position: absolute;
           top: ${container.offsetHeight}px;
           left: 0;
@@ -205,12 +207,12 @@ export class ComposeView extends HTMLElement {
           width: 300px;
         `;
 
-        text.append(button.tooltip);
-        button.tooltipElement.append(text);
-        container.append(button.tooltipElement);
+        text.append(button.getAttribute('tooltip'));
+        tooltipElement.append(text);
+        container.append(tooltipElement);
       }
       button.onmouseleave = () => {
-        button.tooltipElement.remove();
+        tooltipElement.remove();
       }
       let name = action.name;
       button.textContent = name;

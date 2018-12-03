@@ -9,6 +9,7 @@ SpreadsheetUtils.a1Notation = (sheetName, startRowIndex, numColumns) => {
 }
 
 SpreadsheetUtils.fetchSheet = async (spreadsheetId, range) => {
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let response =  await gapiFetch(gapi.client.sheets.spreadsheets.values.get, {
     spreadsheetId: spreadsheetId,
     range: range,
@@ -26,6 +27,7 @@ SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToO
   let requestBody = {
     values: rows,
   };
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.update, requestParams, requestBody);
   // TODO: Handle if response.status != 200.
 
@@ -38,6 +40,7 @@ SpreadsheetUtils.writeSheet = async (spreadsheetId, sheetName, rows, opt_rowsToO
       spreadsheetId: spreadsheetId,
       range: `${sheetName}!A${startRow}:ZZ${finalRow}`,
     }
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     await gapiFetch(gapi.client.sheets.spreadsheets.values.clear, requestParams, {});
   }
 }
@@ -66,6 +69,7 @@ SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows, opt_
   let requestBody = {
     values: rows,
   };
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.update, requestParams, requestBody);
   // TODO: Handle if response.status != 200.
 
@@ -77,6 +81,7 @@ SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows, opt_
       spreadsheetId: spreadsheetId,
       range: `${sheetName}!A${startRow}:B${finalRow}`,
     }
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     await gapiFetch(gapi.client.sheets.spreadsheets.values.clear, requestParams, {});
   }
 }
@@ -92,11 +97,13 @@ SpreadsheetUtils.appendToSheet = async (spreadsheetId, sheetName, rows) => {
   let requestBody = {
     values: rows,
   };
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.append, requestParams, requestBody);
   // TODO: Handle if response.status != 200.
 }
 
 let getSheetId = async (spreadsheetId, sheetName) => {
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.get, {
     spreadsheetId: spreadsheetId,
     ranges: [sheetName],
@@ -129,6 +136,7 @@ SpreadsheetUtils.deleteRows = async (spreadsheetId, sheetName, startIndex, endIn
     ],
   };
 
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.batchUpdate, params, batchUpdateSpreadsheetRequestBody);
   // TODO: Handle response.status != 200.
 }

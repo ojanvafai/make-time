@@ -166,6 +166,7 @@ export class Timer extends HTMLElement {
   }
 }
 
+Timer.autoStart_ = undefined;
 Timer.activeTimers_ = [];
 
 window.customElements.define('mt-timer', Timer);

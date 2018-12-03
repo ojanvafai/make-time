@@ -34,6 +34,8 @@ export class ServerStorage {
   }
 }
 
+ServerStorage.backendValues_ = null;
+
 // List of keys stored in the backend sheet.
 ServerStorage.KEYS = {
   HAS_SHOWN_FIRST_RUN: 'has_shown_first_run',

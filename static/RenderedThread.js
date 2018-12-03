@@ -43,7 +43,7 @@ export class RenderedThread {
     for (let message of messages) {
       let rendered = this.renderMessage_(message);
       if (this.dom_.childElementCount == 0)
-        rendered.style.border = 0;
+        rendered.style.border = '0';
       this.dom_.append(rendered);
     }
   }
@@ -190,7 +190,7 @@ export class RenderedThread {
     };
 
     let today = new Date();
-    if (today.getYear() != date.getYear())
+    if (today.getFullYear() != date.getFullYear())
       options.year = 'numeric';
 
     if (today.getMonth() != date.getMonth() || today.getDate() != date.getDate()) {

@@ -7,6 +7,7 @@ async function gapiFetch(method, requestParams, opt_requestBody) {
 
 export class Labels {
   async fetch() {
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
       'userId': USER_ID
     });
@@ -21,7 +22,7 @@ export class Labels {
     for (let label of response.result.labels) {
       if (Labels.isUserLabel(label.id)) {
         let shouldBeHidden = Labels.HIDDEN_LABELS.includes(label.name);
-        if (shouldBeHidden ^ label.messageListVisibility == 'hide')
+        if (shouldBeHidden !== (label.messageListVisibility == 'hide'))
           label = await this.updateVisibility_(label.name, label.id);
       }
       this.addLabel_(label.name, label.id);
@@ -77,6 +78,7 @@ export class Labels {
     let resource = this.labelResource_(name);
     resource.id = id;
     resource.userId = USER_ID;
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let response = await gapiFetch(gapi.client.gmail.users.labels.update, resource);
     return response.result;
   }
@@ -105,7 +107,8 @@ export class Labels {
           'id': id,
           'resource': resource,
         }
-        await gapiFetch(gapi.client.gmail.users.labels.update, body);
+      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
+      await gapiFetch(gapi.client.gmail.users.labels.update, body);
         this.removeLabel_(oldName);
         this.addLabel_(newName, id);
       }
@@ -125,6 +128,7 @@ export class Labels {
   async delete(name, opt_includeNested) {
     let id = this.labelToId_[name];
     if (id) {
+      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
       await gapiFetch(gapi.client.gmail.users.labels.delete, {
         'userId': USER_ID,
         'id': id,
@@ -144,6 +148,7 @@ export class Labels {
   async createLabel_(name) {
     let resource = this.labelResource_(name);
     resource.userId = USER_ID;
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let resp = await gapiFetch(gapi.client.gmail.users.labels.create, resource);
     return resp.result;
   }
@@ -199,12 +204,14 @@ export class Labels {
   }
 
   async getThreadCountForLabels(labelFilter) {
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let batch = gapi.client.newBatch();
 
     let addedAny = false;
     for (let id in this.idToLabel_) {
       if (labelFilter(this.idToLabel_[id])) {
         addedAny = true;
+        // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
         batch.add(gapi.client.gmail.users.labels.get({
           userId: USER_ID,
           id: id,

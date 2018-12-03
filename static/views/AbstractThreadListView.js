@@ -57,14 +57,6 @@ class RowGroup {
       return rows[index + offset];
   }
 
-  getNextRow(row) {
-    return getRowFromRelativeOffset(row, 1);
-  }
-
-  getPreviousRow(row) {
-    return getRowFromRelativeOffset(row, -1);
-  }
-
   mark() {
     for (let id in this.rows_) {
       let row = this.rows_[id];
@@ -86,7 +78,7 @@ RowGroup.create = (queue) => {
 }
 
 export class AbstractThreadListView extends HTMLElement {
-  constructor(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
+  constructor(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
     super();
 
     this.style.cssText = `
@@ -95,9 +87,10 @@ export class AbstractThreadListView extends HTMLElement {
     `;
 
     this.threads_ = threads;
+    this.allLabels = allLabels;
     this.mailProcessor_ = mailProcessor;
     this.scrollContainer_ = scrollContainer;
-    this.updateTitle_ = updateTitleDelegate;
+    this.updateTitle = updateTitleDelegate;
     this.setSubject_ = setSubject;
     this.showBackArrow_ = showBackArrow;
     this.allowedReplyLength_ = allowedReplyLength;
@@ -136,6 +129,10 @@ export class AbstractThreadListView extends HTMLElement {
 
     this.updateActions_();
   }
+
+  fetch(shouldBatch) {
+    throw 'TODO: Make this an abstract method once converted to TypeScript';
+  };
 
   appendButton_(href, textContent = '') {
     let button = document.createElement('a');
@@ -201,6 +198,10 @@ export class AbstractThreadListView extends HTMLElement {
     await this.processThreads_();
   }
 
+  getDisplayableQueue(thread) {
+    throw 'TODO: Make this an abstract method once converted to TypeScript';
+  }
+
   async findRow_(thread) {
     let queue = await this.getDisplayableQueue(thread);
     let group = this.getRowGroup_(queue);
@@ -230,7 +231,7 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   async processThread(thread) {
-    let processedId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
+    let processedId = await this.allLabels.getId(Labels.PROCESSED_LABEL);
     let messages = await thread.getMessages();
     let lastMessage = messages[messages.length - 1];
 
@@ -301,6 +302,10 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
+  compareRowGroups(a, b) {
+    throw 'TODO: Make this an abstract method once converted to TypeScript';
+  };
+
   async addThread(thread, opt_nextSibling) {
     if (this.tornDown_)
       return;
@@ -315,7 +320,7 @@ export class AbstractThreadListView extends HTMLElement {
     group.push(thread);
 
     // TODO: debounce this or something.
-    await this.renderThreadList_(this.groupedThreads_);
+    await this.renderThreadList_();
   }
 
   clearBestEffort() {
@@ -339,7 +344,9 @@ export class AbstractThreadListView extends HTMLElement {
   getThreads() {
     let selected = [];
     let all = [];
-    for (let child of this.rowGroupContainer_.querySelectorAll('mt-thread-row')) {
+    /** @type {NodeListOf<ThreadRow>} */
+    let rows = this.rowGroupContainer_.querySelectorAll('mt-thread-row');
+    for (let child of rows) {
       if (child.checked)
         selected.push(child);
       all.push(child.thread);
@@ -507,7 +514,7 @@ export class AbstractThreadListView extends HTMLElement {
     } else {
       // Update the UI first and then archive one at a time.
       let threads = this.getThreads();
-      this.updateTitle_('archiving', `Archiving ${threads.selectedRows.length} threads...`);
+      this.updateTitle('archiving', `Archiving ${threads.selectedRows.length} threads...`);
 
       // Move focus to the first unselected email.
       // TODO - this could easily be faster.
@@ -524,16 +531,20 @@ export class AbstractThreadListView extends HTMLElement {
       for (let row of threads.selectedRows) {
         await this.removeRow_(row);
       }
-      await this.renderThreadList_(this.groupedThreads_);
+      await this.renderThreadList_();
 
       for (let i = 0; i < threads.selectedRows.length; i++) {
-        this.updateTitle_('archiving', `Archiving ${i + 1}/${threads.selectedRows.length} threads...`);
+        this.updateTitle('archiving', `Archiving ${i + 1}/${threads.selectedRows.length} threads...`);
         let row = threads.selectedRows[i];
         await this.markSingleThreadTriaged(row.thread, destination);
       }
-      this.updateTitle_('archiving');
+      this.updateTitle('archiving');
     }
   }
+
+  handleTriaged(destination, triageResult, thread) {
+    // TODO: Make this an abstract method once converted to TypeScript.
+  };
 
   async markSingleThreadTriaged(thread, destination) {
     let triageResult = await thread.markTriaged(destination);
@@ -542,6 +553,10 @@ export class AbstractThreadListView extends HTMLElement {
     if (this.handleTriaged)
       await this.handleTriaged(destination, triageResult, thread);
   }
+
+  handleUndo(thread) {
+    // TODO: Make this an abstract method once converted to TypeScript.
+  };
 
   async undoLastAction_() {
     if (!this.undoableActions_ || !this.undoableActions_.length) {
@@ -553,7 +568,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.undoableActions_ = null;
 
     for (let i = 0; i < actions.length; i++) {
-      this.updateTitle_('undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
+      this.updateTitle('undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
 
       let action = actions[i];
       if (this.handleUndo)
@@ -570,7 +585,7 @@ export class AbstractThreadListView extends HTMLElement {
       }
     }
 
-    this.updateTitle_('undoLastAction_');
+    this.updateTitle('undoLastAction_');
   }
 
   renderedThread_() {
@@ -596,7 +611,7 @@ export class AbstractThreadListView extends HTMLElement {
 
     let subject = await row.thread.getSubject();
     let subjectText = document.createElement('div');
-    subjectText.style.flex = 1;
+    subjectText.style.flex = '1';
     subjectText.append(subject, viewInGmailButton);
 
     let queue = await this.getDisplayableQueue(row.thread);
@@ -720,14 +735,14 @@ export class AbstractThreadListView extends HTMLElement {
       if (this.isSending_)
         return;
       this.isSending_ = true;
-      this.updateTitle_('sendReply', 'Sending reply...');
+      this.updateTitle('sendReply', 'Sending reply...');
 
       // TODO: Handle if sending fails in such a way that the user can at least save their message text.
       await this.renderedRow_.thread.sendReply(compose.value, compose.getEmails(), replyAll.checked);
       this.updateActions_();
       await this.markTriaged(Actions.ARCHIVE_ACTION.destination);
 
-      this.updateTitle_('sendReply');
+      this.updateTitle('sendReply');
       this.isSending_ = false;
     })
 
@@ -736,7 +751,7 @@ export class AbstractThreadListView extends HTMLElement {
       progress.value = textLength;
       let lengthDiff = this.allowedReplyLength_ - textLength;
       let exceedsLength = textLength >= (this.allowedReplyLength_ - 10);
-      count.textContent = (lengthDiff < 10) ? lengthDiff : '';
+      count.textContent = (lengthDiff < 10) ? String(lengthDiff) : '';
     });
 
     this.setFooter_(container);

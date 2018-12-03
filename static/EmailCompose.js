@@ -30,7 +30,7 @@ export class EmailCompose extends Compose {
     link.href = `mailto:${selectedItem.email}`;
     link.textContent = `+${selectedItem.name || selectedItem.email}`;
     link.tabIndex = -1;
-    link.contentEditable = false;
+    link.contentEditable = 'false';
     return link;
   }
 }

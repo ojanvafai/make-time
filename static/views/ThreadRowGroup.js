@@ -1,3 +1,5 @@
+import { ThreadRow } from './ThreadRow.js';
+
 export class ThreadRowGroup extends HTMLElement {
   constructor(queue) {
     super();
@@ -62,7 +64,10 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   selectRows_(value) {
-    for (let child of this.rowContainer_.children) {
+    // TODO: Give this a proper type.
+    /** @type {NodeListOf<any>} */
+    let rows = this.rowContainer_.childNodes;
+    for (let child of rows) {
       child.checked = value;
     }
   }

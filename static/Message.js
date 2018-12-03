@@ -130,7 +130,7 @@ export class Message {
     var plainTextBody;
     var htmlBody;
     if (this.rawMessage_.payload.parts) {
-      this.getMessageBody_(this.rawMessage_.payload.parts, this);
+      this.getMessageBody_(this.rawMessage_.payload.parts);
     } else {
       let messageText = this.base64_.decode(this.rawMessage_.payload.body.data);;
       if (this.rawMessage_.payload.mimeType == "text/html")
@@ -184,6 +184,7 @@ export class Message {
       // So handle them gracefully.
       if (!attachment)
         continue;
+      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
       let fetched = await gapi.client.gmail.users.messages.attachments.get({
         'id': attachment.id,
         'messageId': this.id,
@@ -272,6 +273,9 @@ export class Message {
           return '&quot;';
         case `'`:
           return '&#039;';
+        default:
+          throw `Matched a character that isn't being escaped.`;
+          return m;
       }
     });
   };

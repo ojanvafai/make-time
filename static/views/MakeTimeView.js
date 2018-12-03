@@ -6,10 +6,7 @@ import { Labels } from '../Labels.js';
 export class MakeTimeView extends AbstractThreadListView {
   constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
     let countDown = false;
-    super(threads, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration);
-
-    this.allLabels_ = allLabels;
-    this.updateTitle_ = updateTitleDelegate;
+    super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration);
 
     this.appendButton_('/triage', 'Back to Triaging');
   }
@@ -32,16 +29,16 @@ export class MakeTimeView extends AbstractThreadListView {
   }
 
   async fetch(shouldBatch) {
-    this.updateTitle_('fetch', ' ');
+    this.updateTitle('fetch', ' ');
 
-    let labels = await this.allLabels_.getThreadCountForLabels(Labels.isPriorityLabel);
+    let labels = await this.allLabels.getThreadCountForLabels(Labels.isPriorityLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
 
     // TODO: Pipe this in through the constructor from main.js.
     let vacationQuery = '';
     await this.fetchLabels(vacationQuery, labelsToFetch, shouldBatch);
-    this.updateTitle_('fetch');
+    this.updateTitle('fetch');
   }
 
   async handleUndo(thread) {

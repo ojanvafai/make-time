@@ -20,6 +20,7 @@ export class Settings {
   }
 
   async getSpreadsheetId_() {
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let response = await gapi.client.drive.files.list({
       q: "trashed=false and name='make-time backend (do not rename!)'",
       spaces: 'drive',
@@ -55,6 +56,7 @@ export class Settings {
   }
 
   async generateSpreadsheet() {
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let response = await gapi.client.sheets.spreadsheets.create({},
       {"properties": {"title": 'make-time backend (do not rename!)'}
     });
@@ -68,6 +70,7 @@ export class Settings {
     }
     addSheetRequests.push({deleteSheet: {sheetId: 0}});
 
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let addSheetsResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
       spreadsheetId: spreadsheetId,
       resource: {requests: addSheetRequests},
@@ -91,6 +94,7 @@ export class Settings {
         continue;
 
       let values = data.initialData;
+      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
       let addDataResponse = await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: spreadsheetId,
         range: SpreadsheetUtils.a1Notation(data.name, 0, values[0].length),
@@ -138,6 +142,7 @@ export class Settings {
         this.addDailyStatsCharts_(sheetId, formatSheetRequests);
     }
 
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let formatSheetsResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
       spreadsheetId: spreadsheetId,
       resource: {requests: formatSheetRequests},

@@ -30,12 +30,14 @@ export class LongTasks extends HTMLElement {
   }
 
   flash_() {
-    var animation = [
+    // TODO: Fix this type.
+    /** @type {any} */
+    let animation = [
       { opacity: '0.6' },
       { opacity: '0' },
     ];
 
-    var timing = {
+    let timing = {
       duration: 1000,
     };
 

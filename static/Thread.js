@@ -80,10 +80,11 @@ export class Thread {
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let response = await gapiFetch(gapi.client.gmail.users.threads.modify, request);
     // TODO: Handle response.status != 200.
 
-    // Once a modify has happend the stored message details are stale and this Thread shouldn't be used anymore.
+    // Once a modify has happened the stored message details are stale and this Thread shouldn't be used anymore.
     this.stale = true;
 
     return {
@@ -173,7 +174,7 @@ export class Thread {
   }
 
   assertNotStale_() {
-    if (this.stale_)
+    if (this.stale)
       throw `Attempted to reuse stale thread with ID: ${this.id}`;
   }
 
@@ -187,6 +188,7 @@ export class Thread {
     }
 
     if (!this.fetchPromise_) {
+      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
       this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
         userId: USER_ID,
         id: this.id,
@@ -212,7 +214,7 @@ export class Thread {
   async fetchMessageDetails() {
     this.assertNotStale_();
     if (this.processedMessages_)
-      return;
+      return null;
     return await this.updateMessageDetails();
   }
 

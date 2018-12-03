@@ -1,3 +1,12 @@
+class AutoCompleteEntry extends HTMLElement {
+  constructor() {
+    super();
+    this.name = '';
+    this.email = '';
+  }
+}
+window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
+
 export class Compose extends HTMLElement {
   constructor(contacts, opt_isMultiline) {
     super();
@@ -5,6 +14,9 @@ export class Compose extends HTMLElement {
     this.style.display = 'flex';
 
     this.contacts_ = contacts;
+
+    this.separator_ = '';
+
     this.content_ = document.createElement('div');
     this.content_.style.cssText = `
       flex: 1;
@@ -65,6 +77,15 @@ export class Compose extends HTMLElement {
     });
   }
 
+  prepareAutocomplete(e) {
+    throw 'TODO: Make this an abstract method once converted to TypeScript';
+  };
+
+  isStillAutoCompleting() {
+    throw 'TODO: Make this an abstract method once converted to TypeScript';
+    return false;
+  };
+
   updatePlaceholder_() {
     if (this.content_.textContent.length) {
       this.content_.removeAttribute('placeholder');
@@ -111,10 +132,9 @@ export class Compose extends HTMLElement {
 
     let candidates = this.getAutocompleteCandidates_();
 
-    this.autocompleteContainer_.size = 100;
     this.autocompleteContainer_.textContent = '';
     for (let candidate of candidates) {
-      let entry = document.createElement('div');
+      let entry = new AutoCompleteEntry();
       // Prevent clicking on the menu losing cursor position.
       entry.onmousedown = (e) => {
         e.preventDefault();
@@ -149,6 +169,8 @@ export class Compose extends HTMLElement {
   selectAutocompleteItem_(index) {
     this.autocompleteIndex_ = index;
     for (let i = 0; i < this.autocompleteContainer_.children.length; i++) {
+      // TODO: Give this a proper type.
+      /** @type {any} */
       let child = this.autocompleteContainer_.children[i];
       child.style.backgroundColor = (i == index) ? '#6677dd' : 'white';
       child.style.color = (i == index) ? 'white' : 'black';
@@ -207,6 +229,7 @@ export class Compose extends HTMLElement {
 
   selectedEntry(selectedItem) {
     throw 'Abstract method not overridden.';
+    return null;
   }
 
   submitAutocomplete_(opt_selectedItem, opt_savedCursor) {

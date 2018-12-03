@@ -42,12 +42,13 @@ export class Actions extends HTMLElement {
       if (action.hidden)
         continue;
       let button = document.createElement('button');
-      button.tooltip = action.description;
+      button.setAttribute('tooltip', action.description);
 
       button.onclick = () => this.takeAction(action);
+      let tooltipElement;
       button.onmouseenter = () => {
-        button.tooltipElement = document.createElement('div');
-        button.tooltipElement.style.cssText = `
+        tooltipElement = document.createElement('div');
+        tooltipElement.style.cssText = `
           position: absolute;
           bottom: ${this.offsetHeight}px;
           left: 0;
@@ -64,12 +65,12 @@ export class Actions extends HTMLElement {
           width: 300px;
         `;
 
-        text.append(button.tooltip);
-        button.tooltipElement.append(text);
-        this.append(button.tooltipElement);
+        text.append(button.getAttribute('tooltip'));
+        tooltipElement.append(text);
+        this.append(tooltipElement);
       }
       button.onmouseleave = () => {
-        button.tooltipElement.remove();
+        tooltipElement.remove();
       }
       let name = action.name;
       button.innerHTML = `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
@@ -130,26 +131,41 @@ export class Actions extends HTMLElement {
 Actions.ARCHIVE_ACTION = {
   name: `Archive`,
   description: `Archive and remove from the current queue.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 };
 
 Actions.QUICK_REPLY_ACTION = {
   name: `Quick Reply`,
   description: `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 };
 
 Actions.BLOCKED_ACTION = {
   name: `Blocked`,
   description: `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 };
 
 Actions.SPAM_ACTION = {
   name: `Spam`,
   description: `Report spam. Same beavhior as reporting spam in gmail.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 };
 
 Actions.MUTE_ACTION = {
   name: `Mute`,
   description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 };
 
 Actions.NEXT_EMAIL_ACTION = {
@@ -173,6 +189,7 @@ Actions.TOGGLE_FOCUSED_ACTION = {
   description: `Toggler whether or not the focused element is selected.`,
   key: " ",
   hidden: true,
+  repeatable: false,
 };
 
 Actions.VIEW_FOCUSED_ACTION = {
@@ -180,6 +197,7 @@ Actions.VIEW_FOCUSED_ACTION = {
   description: `View the focused email.`,
   key: "Enter",
   hidden: true,
+  repeatable: false,
 };
 
 Actions.VIEW_TRIAGE_ACTION = {
@@ -187,31 +205,47 @@ Actions.VIEW_TRIAGE_ACTION = {
   description: `Go to the triage view.`,
   key: "Escape",
   hidden: true,
+  repeatable: false,
 };
 
 Actions.UNDO_ACTION = {
   name: `Undo`,
   description: `Undoes the last action taken.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 };
 
 Actions.MUST_DO_ACTION = {
   name: `1: Must Do`,
   description: `Must do today. Literally won't go home till it's done.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 }
 
 Actions.URGENT_ACTION = {
   name: `2: Urgent`,
   description: `Needs to happen ASAP.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 }
 
 Actions.NOT_URGENT_ACTION = {
   name: `3: Not Urgent`,
   description: `Important for achieving my mission, but can be done at leisure. Aim to spend >60% of your time here.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 }
 
 Actions.DELEGATE_ACTION = {
   name: `4: Delegate`,
   description: `Can't just drop this, but not important for my mission. Find someone for whom it is part of their mission.`,
+  key: undefined,
+  hidden: false,
+  repeatable: false,
 }
 
 window.customElements.define('mt-actions', Actions);

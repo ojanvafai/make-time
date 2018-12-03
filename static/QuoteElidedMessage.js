@@ -33,6 +33,7 @@ export class QuoteElidedMessage {
 
   expandToNonTextSiblings_() {
     for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
+      /** @type {Node} */
       let previous = match;
       // TODO: Include "XXX wrote" prefixes here as well.
       // TODO: Hash the outerHTML of the element to make sure it has at least
@@ -42,6 +43,7 @@ export class QuoteElidedMessage {
         previous = previous.previousSibling;
       }
 
+      /** @type {Node} */
       let next = match;
       while (this.hasEmptyTextContent_(next.nextSibling)) {
         setElidedState(next.nextSibling, 'hidden');
