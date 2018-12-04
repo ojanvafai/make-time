@@ -162,7 +162,7 @@ async function viewTriage() {
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
+  let vacation = settings.get(ServerStorage.KEYS.VACATION);
   await setView(new TriageView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration, await getQueuedLabelMap()));
 
   updateLoaderTitle('viewTriage', '');
@@ -173,11 +173,10 @@ async function viewMakeTime() {
 
   let settings = await getSettings();
   let ServerStorage = await serverStorage();
-  // Don't show triaged queues view when in vacation mode as that's non-vacation work.
-  let vacation = settings.get(ServerStorage.KEYS.VACATION_SUBJECT);
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+  let vacation = settings.get(ServerStorage.KEYS.VACATION);
   await setView(new MakeTimeView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
@@ -346,14 +345,6 @@ async function bankruptThread(thread) {
 
 // TODO: Don't export this.
 export async function addThread(thread) {
-  let ServerStorage = await serverStorage();
-  let vacationSubject = (await getSettings()).get(ServerStorage.KEYS.VACATION_SUBJECT);
-  if (vacationSubject) {
-    let subject = await thread.getSubject();
-    if (!subject || !subject.toLowerCase().includes(vacationSubject.toLowerCase()))
-      return;
-  }
-
   if (threads_.getBestEffort() && await isBestEffortQueue(thread)) {
     if (await isBankrupt(thread)) {
       await bankruptThread(thread);

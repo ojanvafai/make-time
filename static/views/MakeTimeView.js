@@ -7,7 +7,7 @@ export class MakeTimeView extends AbstractThreadListView {
   constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
     let countDown = false;
     super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration);
-
+    this.vacation_ = vacation;
     this.appendButton_('/triage', 'Back to Triaging');
   }
 
@@ -23,21 +23,22 @@ export class MakeTimeView extends AbstractThreadListView {
 
   async addThread(thread) {
     let priority = await thread.getPriority();
-    // Only threads with a priority should be added.
-    if (priority)
+    // Only threads with a priority should be added and
+    // only show MUST_DO_LABEL when on vacation.
+    if (priority && (!this.vacation_ || priority == Labels.MUST_DO_LABEL))
       super.addThread(thread);
   }
 
   async fetch(shouldBatch) {
     this.updateTitle('fetch', ' ');
 
-    let labels = await this.allLabels.getThreadCountForLabels(Labels.isPriorityLabel);
+    let labels = await this.allLabels.getThreadCountForLabels((label) => {
+      return this.vacation_ ? label == Labels.MUST_DO_LABEL : Labels.isPriorityLabel(label);
+    });
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
 
-    // TODO: Pipe this in through the constructor from main.js.
-    let vacationQuery = '';
-    await this.fetchLabels(vacationQuery, labelsToFetch, shouldBatch);
+    await this.fetchLabels(labelsToFetch, shouldBatch);
     this.updateTitle('fetch');
   }
 
