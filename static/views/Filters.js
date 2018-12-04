@@ -77,7 +77,7 @@ export class FiltersView extends HTMLElement {
     container.style.cssText = `font-size: 13px;`;
 
     let header = document.createElement('thead');
-    header.innerHTML = `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th><th>No List-ID</th>`;
+    header.innerHTML = `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th><th>No List-ID</th><th>No CCs</th>`;
     container.append(header);
 
     let body = document.createElement('tbody');
@@ -162,6 +162,11 @@ export class FiltersView extends HTMLElement {
       if (noListId.checked)
         rule.nolistid = true;
 
+      /** @type {HTMLInputElement}*/
+      let noCc = row.querySelector('.nocc')
+      if (noCc.checked)
+        rule.nocc = true;
+
       rules.push(rule);
     }
     await this.settings_.writeFilters(rules);
@@ -225,6 +230,7 @@ export class FiltersView extends HTMLElement {
 
     this.appendCheckbox_(container, 'matchallmessages', rule.matchallmessages);
     this.appendCheckbox_(container, 'nolistid', rule.nolistid);
+    this.appendCheckbox_(container, 'nocc', rule.nocc);
 
     return container;
   }
@@ -439,6 +445,7 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
  - Rule is the rule to match.
  - Match All Messages will required the rule to match all the messages in the thread to be considered a match. Otherwise, any message in the thread matching will mean the whole thread matches.
  - No List-ID matches messages that are not sent to an email list.
+ - No CCs matches messages that have exactly one email address in the union of the to/cc/bcc fields.
  - Gmail filters match only the newly incoming message. make-time matches all messages in the thread each time the thread is processed.
  - Every thread in the unprocessed queue gets exactly one needstriage label applied. If none of your filters apply to a thread, then make-time will apply a "needsfilter" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
 

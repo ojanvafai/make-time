@@ -196,6 +196,20 @@ export class MailProcessor {
         return false;
       matches = true;
     }
+    if (rule.nocc) {
+      let emailCount = 0;
+
+      if (message.toEmails)
+        emailCount += message.toEmails.length;
+      if (message.ccEmails)
+        emailCount += message.ccEmails.length;
+      if (message.bccEmails)
+        emailCount += message.bccEmails.length;
+
+      if (emailCount != 1)
+        return false;
+      matches = true;
+    }
     if (rule.to) {
       if (!this.containsAddress(message.toEmails, rule.to) &&
           !this.containsAddress(message.ccEmails, rule.to) &&
