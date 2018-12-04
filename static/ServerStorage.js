@@ -41,7 +41,7 @@ ServerStorage.KEYS = {
   HAS_SHOWN_FIRST_RUN: 'has_shown_first_run',
   LAST_DEQUEUE_TIME: 'Last dequeue time',
   LAST_GC_TIME: 'Last GC time',
-  VACATION: 'vacation',
+  VACATION_SUBJECT: 'vacation_subject',
   TIMER_DURATION: 'timeout',
   AUTO_START_TIMER: 'auto_start_timer',
   ALLOWED_REPLY_LENGTH: 'allowed_reply_length',

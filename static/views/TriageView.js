@@ -4,11 +4,13 @@ import { fetchThreads } from '../main.js';
 import { Labels } from '../Labels.js';
 
 export class TriageView extends AbstractThreadListView {
-  constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration, queueSettings) {
+  constructor(threads, mailProcessor, scrollContainer, allLabels, vacationSubject, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration, queueSettings) {
     let countDown = true;
     super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.OVERFLOW_ACTIONS_);
-    this.vacation_ = vacation;
+
+    this.vacationSubject_ = vacationSubject;
     this.queueSettings_ = queueSettings;
+
     this.appendButton_('/make-time', `It's make-time!`);
   }
 
@@ -25,10 +27,6 @@ export class TriageView extends AbstractThreadListView {
       return;
     }
 
-    let queue = await thread.getDisplayableQueue();
-    if (this.vacation_ !== queue)
-      return;
-
     super.addThread(thread);
   }
 
@@ -36,11 +34,15 @@ export class TriageView extends AbstractThreadListView {
   async fetch(shouldBatch) {
     this.updateTitle('fetch', ' ');
 
-    let labels = await this.allLabels.getThreadCountForLabels((label) => {
-      return this.vacation_ ? label == Labels.needsTriageLabel(this.vacation_) : Labels.isNeedsTriageLabel(label);
-    });
+    let labels = await this.allLabels.getThreadCountForLabels(Labels.isNeedsTriageLabel);
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch = this.queueSettings_.getSorted(labelsToFetch).map((item) => item[0]);
+
+    let vacationQuery = '';
+    if (this.vacationSubject_) {
+      vacationQuery = `subject:${this.vacationSubject_}`;
+      this.updateTitle.updateTitle('vacation', `Vacation ${vacationQuery}`);
+    }
 
     this.clearBestEffort();
 
@@ -49,10 +51,10 @@ export class TriageView extends AbstractThreadListView {
     // Put threads that are in the inbox with no make-time labels first. That way they always show up before
     // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
     await fetchThreads(this.processThread.bind(this), {
-      query: `in:inbox -(in:${makeTimeLabels.join(' OR in:')})`,
+      query: `${vacationQuery} in:inbox -(in:${makeTimeLabels.join(' OR in:')})`,
     });
 
-    await this.fetchLabels(labelsToFetch, shouldBatch);
+    await this.fetchLabels(vacationQuery, labelsToFetch, shouldBatch);
     this.updateTitle('fetch');
   }
 

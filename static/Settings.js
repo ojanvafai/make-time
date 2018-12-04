@@ -425,9 +425,9 @@ Settings.sheetData_ = [
 
 Settings.fields = [
   {
-    key: ServerStorage.KEYS.VACATION,
-    name: 'Vacation',
-    description: `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
+    key: ServerStorage.KEYS.VACATION_SUBJECT,
+    name: 'Vacation subject',
+    description: `String to search subject lines to search for to show. When on vacation, you can restrict make-time to only process and show urgent messages so you can be on vacation with the peace of mind that nothing urgent has come up without actually getting embroiled in non-urgent vacation activities.`,
   },
   {
     key: ServerStorage.KEYS.TIMER_DURATION,
