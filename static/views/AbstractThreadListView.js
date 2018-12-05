@@ -179,18 +179,18 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  async fetchLabels(vacationQuery, labels, shouldBatch) {
+  async fetchLabels(labels, shouldBatch) {
     if (!labels.length)
       return;
 
     if (shouldBatch) {
       await fetchThreads(this.processThread.bind(this), {
-        query: `${vacationQuery} (in:${labels.join(' OR in:')})`,
+        query: `in:${labels.join(' OR in:')}`,
       });
     } else {
       for (let label of labels) {
         await fetchThreads(this.processThread.bind(this), {
-          query: `${vacationQuery} in:${label}`,
+          query: `in:${label}`,
         });
       }
     }
