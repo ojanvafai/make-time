@@ -505,7 +505,6 @@ export class AbstractThreadListView extends HTMLElement {
   async markTriaged(destination) {
     this.undoableActions_ = [];
 
-    let threads;
     if (this.renderedRow_) {
       // Save this off since removeRow_ changes this.renderedRow_.
       let row = this.renderedRow_;
@@ -750,7 +749,6 @@ export class AbstractThreadListView extends HTMLElement {
       let textLength = compose.plainText.length;
       progress.value = textLength;
       let lengthDiff = this.allowedReplyLength_ - textLength;
-      let exceedsLength = textLength >= (this.allowedReplyLength_ - 10);
       count.textContent = (lengthDiff < 10) ? String(lengthDiff) : '';
     });
 

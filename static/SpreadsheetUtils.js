@@ -87,7 +87,6 @@ SpreadsheetUtils.write2ColumnSheet = async (spreadsheetId, sheetName, rows, opt_
 }
 
 SpreadsheetUtils.appendToSheet = async (spreadsheetId, sheetName, rows) => {
-  let rowCount = Object.keys(rows).length;
   let requestParams = {
     spreadsheetId: spreadsheetId,
     range: sheetName,

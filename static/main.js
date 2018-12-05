@@ -412,7 +412,7 @@ async function getSettings() {
 
 async function showHelp() {
   let help = await import('./help.js');
-  help.showHelp(await getSettings());
+  help.showHelp();
 }
 
 let settingThingsFetcher_;

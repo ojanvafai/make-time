@@ -5,7 +5,7 @@ let b64pad = '=';
 export class Base64 {
   base64decode(data) {
     var dst = ""
-    var i, a, b, c, d, z
+    var i, a, b, c, d;
 
     for (i = 0; i < data.length - 3; i += 4) {
       a = this.charIndex(data.charAt(i+0))

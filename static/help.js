@@ -2,10 +2,10 @@ import { showDialog } from './main.js';
 
 let helpHtml_;
 
-export function showHelp(settings) {
+export function showHelp() {
   let contents = document.createElement('div');
   contents.style.overflow = 'auto';
-  contents.innerHTML = helpText(settings);
+  contents.innerHTML = helpText();
   let dialog = showDialog(contents);
   dialog.style.whiteSpace = 'pre-wrap';
 
@@ -26,11 +26,9 @@ export function showHelp(settings) {
   });
 }
 
-function helpText(settings) {
+function helpText() {
   if (helpHtml_)
     return helpHtml_;
-
-  let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${settings.spreadsheetId}/edit`;
 
   helpHtml_ = `make-time is an opinionated way of handling unreasonable amounts of email.
 

@@ -130,7 +130,6 @@ export class SettingsView extends HTMLElement {
       helpButton.onmouseenter = () => {
         tooltipElement = document.createElement('div');
 
-        let rect = helpButton.getBoundingClientRect();
         tooltipElement.style.cssText = `
           position: absolute;
           top: ${helpButton.offsetHeight + 2}px;

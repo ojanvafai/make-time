@@ -61,7 +61,6 @@ export class Settings {
       {"properties": {"title": 'make-time backend (do not rename!)'}
     });
     let spreadsheetId = response.result.spreadsheetId;
-    let spreadheetUrl = response.result.spreadsheetUrl;
 
     let addSheetRequests = [];
     for (let i = 0; i < Settings.sheetData_.length; i++) {

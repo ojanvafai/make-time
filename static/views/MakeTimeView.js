@@ -1,6 +1,6 @@
 import { AbstractThreadListView } from './AbstractThreadListView.js';
 import { Actions } from '../Actions.js';
-import { fetchThread, fetchThreads } from '../main.js';
+import { fetchThread } from '../main.js';
 import { Labels } from '../Labels.js';
 
 export class MakeTimeView extends AbstractThreadListView {

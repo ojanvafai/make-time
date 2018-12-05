@@ -1,4 +1,3 @@
-import { ThreadRow } from './ThreadRow.js';
 
 export class ThreadRowGroup extends HTMLElement {
   constructor(queue) {
