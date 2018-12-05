@@ -1,4 +1,6 @@
 class Logger extends HTMLElement {
+  messageContainer_: HTMLDivElement;
+
   constructor() {
     super();
 
