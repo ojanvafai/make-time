@@ -21,7 +21,7 @@ export class AsyncOnce {
     for (let resolve of this.queued_) {
       resolve();
     }
-    this.queued_ = null;
+    delete this.queued_;
     this.asyncAction_ = null;
 
     return this.value_;

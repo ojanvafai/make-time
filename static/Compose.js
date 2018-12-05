@@ -87,12 +87,13 @@ export class Compose extends HTMLElement {
   };
 
   updatePlaceholder_() {
-    if (this.content_.textContent.length) {
-      this.content_.removeAttribute('placeholder');
-      this.content_.style.color = '';
+    let content = this.content_;
+    if (content.textContent.length) {
+      content.removeAttribute('placeholder');
+      content.style.color = '';
     } else {
-      this.content_.setAttribute('placeholder', this.placeholder_ || '');
-      this.content_.style.color = 'grey';
+      content.setAttribute('placeholder', this.placeholder_ || '');
+      content.style.color = 'grey';
     }
   }
 
