@@ -171,7 +171,7 @@ Timer.activeTimers_ = [];
 
 window.customElements.define('mt-timer', Timer);
 
-document.addEventListener('visibilitychange', (e) => {
+document.addEventListener('visibilitychange', () => {
   for (let timer of Timer.activeTimers_) {
     timer.visibilityChanged(document.visibilityState == 'hidden');
   }

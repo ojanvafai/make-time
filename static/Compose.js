@@ -77,7 +77,7 @@ export class Compose extends HTMLElement {
     });
   }
 
-  prepareAutocomplete(e) {
+  prepareAutocomplete(_e) {
     throw 'TODO: Make this an abstract method once converted to TypeScript';
   };
 
@@ -139,7 +139,7 @@ export class Compose extends HTMLElement {
       entry.onmousedown = (e) => {
         e.preventDefault();
       }
-      entry.onclick = (e) => {
+      entry.onclick = () => {
         this.submitAutocomplete_(entry);
       }
       entry.style.cssText = `padding: 4px;`;
@@ -227,12 +227,12 @@ export class Compose extends HTMLElement {
     this.hideAutocompleteMenu_();
   }
 
-  selectedEntry(selectedItem) {
+  selectedEntry(_selectedItem) {
     throw 'Abstract method not overridden.';
     return null;
   }
 
-  submitAutocomplete_(opt_selectedItem, opt_savedCursor) {
+  submitAutocomplete_(opt_selectedItem) {
     let selectedItem = opt_selectedItem || this.autocompleteContainer_.children[this.autocompleteIndex_];
 
     let range = this.cursor_();

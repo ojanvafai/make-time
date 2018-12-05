@@ -32,7 +32,7 @@ export class Settings {
   }
 
   async showSetupDialog_() {
-    return new Promise((resolve, reject) => {
+    return new Promise(() => {
       let generateBackendLink = document.createElement('a');
       generateBackendLink.append('Click here to generate a backend spreadsheet');
       generateBackendLink.onclick = async () => {

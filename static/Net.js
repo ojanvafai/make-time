@@ -9,7 +9,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-window.addEventListener('online', (e) => {
+window.addEventListener('online', (_e) => {
   for (let request of queuedRequests_) {
     request();
   }

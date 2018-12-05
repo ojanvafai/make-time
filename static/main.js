@@ -50,14 +50,14 @@ router.add('/compose', async (params) => {
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
-router.add('/make-time', async (params) => {
+router.add('/make-time', async (_params) => {
   if (currentView_)
     await currentView_.tearDown();
   await viewMakeTime();
 });
 // TODO: best-effort should not be a URL since it's not a proper view.
 // or should it be a view instead?
-router.add('/best-effort', async (params) => {
+router.add('/best-effort', async (_params) => {
   if (currentView_)
     await currentView_.tearDown();
 
@@ -108,7 +108,7 @@ function toggleMenu() {
     openMenu();
 }
 
-document.getElementById('back-arrow').addEventListener('click', async (e) => {
+document.getElementById('back-arrow').addEventListener('click', async () => {
   if (currentView_.goBack)
     await currentView_.goBack();
 });
@@ -701,7 +701,7 @@ document.body.addEventListener('keydown', async (e) => {
 });
 
 function loadGapi() {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     gapi.load('client:auth2', () => resolve());
   });
@@ -748,11 +748,11 @@ window.addEventListener('unhandledrejection', (e) => {
   ErrorLogger.log(e.reason);
 });
 
-window.addEventListener('offline', (e) => {
+window.addEventListener('offline', () => {
   updateTitle('offline', 'No network connection...');
 });
 
-window.addEventListener('online', (e) => {
+window.addEventListener('online', () => {
   updateTitle('offline');
   update();
 });

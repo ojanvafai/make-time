@@ -21,7 +21,7 @@ export function showHelp(settings) {
   closeButton.onclick = () => dialog.close();
   contents.prepend(closeButton);
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     dialog.addEventListener('close', resolve);
   });
 }

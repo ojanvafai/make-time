@@ -417,7 +417,7 @@ export class MailProcessor {
     this.processThreads(threads);
   }
 
-  async dequeue(labelName, queue) {
+  async dequeue(labelName) {
     var queuedLabelName = Labels.addQueuedPrefix(labelName);
     var queuedLabel = await this.allLabels_.getId(queuedLabelName);
     var autoLabel = await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
@@ -446,7 +446,7 @@ export class MailProcessor {
     let queueDatas = this.queuedLabelMap_.entries();
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)
-        await this.dequeue(queueData[0], queue);
+        await this.dequeue(queueData[0]);
     }
   }
 

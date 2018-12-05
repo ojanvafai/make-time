@@ -78,7 +78,7 @@ RowGroup.create = (queue) => {
 }
 
 export class AbstractThreadListView extends HTMLElement {
-  constructor(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, viewAllActions, viewOneActions, opt_overflowActions) {
+  constructor(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, opt_overflowActions) {
     super();
 
     this.style.cssText = `
@@ -130,7 +130,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.updateActions_();
   }
 
-  fetch(shouldBatch) {
+  fetch(_shouldBatch) {
     throw 'TODO: Make this an abstract method once converted to TypeScript';
   };
 
@@ -198,7 +198,7 @@ export class AbstractThreadListView extends HTMLElement {
     await this.processThreads_();
   }
 
-  getDisplayableQueue(thread) {
+  getDisplayableQueue(_thread) {
     throw 'TODO: Make this an abstract method once converted to TypeScript';
   }
 
@@ -302,11 +302,11 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  compareRowGroups(a, b) {
+  compareRowGroups(_a, _b) {
     throw 'TODO: Make this an abstract method once converted to TypeScript';
   };
 
-  async addThread(thread, opt_nextSibling) {
+  async addThread(thread) {
     if (this.tornDown_)
       return;
 
@@ -327,7 +327,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.threads_.setBestEffort([]);
   }
 
-  pushBestEffort(thread) {
+  pushBestEffort(_thread) {
     this.updateBestEffort_();
   }
 
@@ -542,7 +542,7 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  handleTriaged(destination, triageResult, thread) {
+  handleTriaged(_destination, _triageResult, _thread) {
     // TODO: Make this an abstract method once converted to TypeScript.
   };
 
@@ -554,7 +554,7 @@ export class AbstractThreadListView extends HTMLElement {
       await this.handleTriaged(destination, triageResult, thread);
   }
 
-  handleUndo(thread) {
+  handleUndo(_thread) {
     // TODO: Make this an abstract method once converted to TypeScript.
   };
 
@@ -576,7 +576,7 @@ export class AbstractThreadListView extends HTMLElement {
 
       await action.thread.modify(action.removed, action.added, true);
       let newThread = await fetchThread(action.thread.id);
-      await this.addThread(newThread, this.renderedRow_);
+      await this.addThread(newThread);
 
       if (this.renderedRow_) {
         let queue = await this.getDisplayableQueue(newThread);
@@ -722,7 +722,7 @@ export class AbstractThreadListView extends HTMLElement {
     sideBar.append(replyAllLabel, progressContainer);
     container.append(sideBar);
 
-    compose.addEventListener('submit', async (e) => {
+    compose.addEventListener('submit', async () => {
       let textLength = compose.plainText.length;
       if (!textLength)
         return;
@@ -746,7 +746,7 @@ export class AbstractThreadListView extends HTMLElement {
       this.isSending_ = false;
     })
 
-    compose.addEventListener('input', (e) => {
+    compose.addEventListener('input', () => {
       let textLength = compose.plainText.length;
       progress.value = textLength;
       let lengthDiff = this.allowedReplyLength_ - textLength;
