@@ -1,4 +1,11 @@
+import { Thread } from './Thread.js';
+
 export class RenderedThread {
+  thread: Thread;
+  private dom_: HTMLElement;
+  private queued_: ((value?: {} | PromiseLike<{}>) => void)[];
+  private isFetching_: boolean;
+
   constructor(thread) {
     this.thread = thread;
     this.dom_ = null;
@@ -183,8 +190,8 @@ export class RenderedThread {
     container.append(div);
   }
 
-  dateString_(date) {
-    let options = {
+  dateString_(date: Date) {
+    let options: { [property: string]: string } = {
       hour: 'numeric',
       minute: 'numeric',
     };
@@ -200,4 +207,4 @@ export class RenderedThread {
 
     return date.toLocaleString(undefined, options);
   }
-}
+} 

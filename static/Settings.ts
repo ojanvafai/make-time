@@ -5,6 +5,18 @@ import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 import { showDialog } from './main.js';
 
 export class Settings {
+  private fetcher_: AsyncOnce;
+  spreadsheetId: string;
+  private storage_: ServerStorage;
+  static sheetData_: any;
+  static fields: any;
+  static FILTERS_SHEET_COLUMNS_: string[];
+  private filters_: any;
+  static FILTERS_SHEET_NAME_: string;
+  static QUEUED_LABELS_SHEET_NAME: string;
+  static QUEUED_LABELS_SHEET_COLUMNS: string[];
+  static FILTERS_RULE_DIRECTIVES: string[];
+
   constructor() {
     this.fetcher_ = new AsyncOnce(this.fetch_.bind(this))
   }

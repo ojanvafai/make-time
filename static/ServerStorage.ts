@@ -1,6 +1,11 @@
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 
 export class ServerStorage {
+  private spreadsheetId_: string;
+  private static backendValues_: {};
+  static BACKEND_SHEET_NAME_: string;
+  static KEYS: KeyTypes;
+
   constructor(spreadsheetId) {
     this.spreadsheetId_ = spreadsheetId;
   }
@@ -34,10 +39,19 @@ export class ServerStorage {
   }
 }
 
-ServerStorage.backendValues_ = null;
+interface KeyTypes {
+  HAS_SHOWN_FIRST_RUN: string,
+  LAST_DEQUEUE_TIME: string,
+  LAST_GC_TIME: string,
+  VACATION: string,
+  TIMER_DURATION: string,
+  AUTO_START_TIMER: string,
+  ALLOWED_REPLY_LENGTH: string,
+  DAYS_TO_SHOW: string,
+  LOG_MATCHING_RULES: string,
+}
 
-// List of keys stored in the backend sheet.
-ServerStorage.KEYS = {
+let keys: KeyTypes = {
   HAS_SHOWN_FIRST_RUN: 'has_shown_first_run',
   LAST_DEQUEUE_TIME: 'Last dequeue time',
   LAST_GC_TIME: 'Last GC time',
@@ -48,5 +62,8 @@ ServerStorage.KEYS = {
   DAYS_TO_SHOW: 'days_to_show',
   LOG_MATCHING_RULES: 'log_matching_rules',
 };
+
+// List of keys stored in the backend sheet.
+ServerStorage.KEYS = keys;
 
 ServerStorage.BACKEND_SHEET_NAME_ = 'backend-do-not-modify';
