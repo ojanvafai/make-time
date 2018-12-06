@@ -1,4 +1,16 @@
 export class Timer extends HTMLElement {
+  static autoStart_: boolean;
+  static activeTimers_: Timer[];
+  paused_: boolean;
+  countDown_: number;
+  duration_: number;
+  overlayContainer_: HTMLElement;
+  timeDisplay_: HTMLElement;
+  timerButton_: HTMLElement;
+  timerKey_: number;
+  timeLeft_: number;
+  overlay_: HTMLElement;
+
   constructor(autoStart, countDown, duration, overlayContainer) {
     super();
 
@@ -161,7 +173,7 @@ export class Timer extends HTMLElement {
       }
     }
 
-    this.timeDisplay_.textContent = this.timeLeft_;
+    this.timeDisplay_.textContent = String(this.timeLeft_);
     this.timerKey_ = setTimeout(this.nextTick_.bind(this), 1000);
   }
 }

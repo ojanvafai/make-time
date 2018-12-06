@@ -5,6 +5,20 @@ import { Message } from './Message.js';
 import { USER_ID, getCurrentWeekNumber } from './main.js';
 
 export class Thread {
+  id: string;
+  historyId: string;
+  snippet: string;
+  stale: boolean;
+  private allLabels_: Labels;
+  private labelIds_: Set<string>;
+  private labelNames_: Set<string>;
+  private priority_: string;
+  private muted_: boolean;
+  private queue_: boolean;
+  private processedMessages_: Message[];
+  // TODO: Give this a non-any value once we import gapi types.
+  private fetchPromise_: Promise<any>;
+
   constructor(thread, allLabels) {
     this.id = thread.id;
     this.historyId = thread.historyId;
@@ -64,7 +78,7 @@ export class Thread {
     return newProcessedMessages;
   }
 
-  async modify(addLabelIds, removeLabelIds, opt_skipHasLabelsCheck) {
+  async modify(addLabelIds, removeLabelIds, skipHasLabelsCheck?) {
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
     // Make sure that any added labels are not also removed.
@@ -72,7 +86,7 @@ export class Thread {
     // Also, request will fail if the removeLabelIds list is too long (>100).
     // However, for cases where we know we haven't fetch the labels for this thread,
     // like dequeueing, we want to be able to skip the labelIds_.has check.
-    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (opt_skipHasLabelsCheck || this.labelIds_.has(item)));
+    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (skipHasLabelsCheck || this.labelIds_.has(item)));
 
     let request = {
       'userId': USER_ID,
@@ -206,7 +220,7 @@ export class Thread {
     return messages;
   }
 
-  async updateMessageDetails(forceNetwork) {
+  async updateMessageDetails(forceNetwork?) {
     let messages = await this.fetchMessageDetails_(forceNetwork);
     return this.processMessages_(messages);
   }

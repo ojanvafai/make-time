@@ -1,6 +1,14 @@
 import { gapiFetch } from './Net.js';
 
-export let SpreadsheetUtils = {};
+export class SpreadsheetUtils{
+  static a1Notation;
+  static fetchSheet;
+  static writeSheet;
+  static fetch2ColumnSheet;
+  static write2ColumnSheet;
+  static appendToSheet;
+  static deleteRows;
+};
 
 SpreadsheetUtils.a1Notation = (sheetName, startRowIndex, numColumns) => {
   let aCharCode = "A".charCodeAt(0);

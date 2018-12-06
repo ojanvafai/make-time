@@ -1,4 +1,10 @@
+import { Thread } from './Thread.js';
+import { AbstractThreadListView } from './views/AbstractThreadListView.js';
+
 export class ThreadGroups {
+  bestEffort_: Thread[];
+  listener_: AbstractThreadListView;
+
   constructor() {
     this.bestEffort_ = [];
     this.listener_;

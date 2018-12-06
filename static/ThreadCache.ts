@@ -1,6 +1,8 @@
 import { Thread } from './Thread.js';
 
 export class ThreadCache {
+  cache_: Map<Number, Thread>;
+
   constructor() {
     this.cache_ = new Map();
   }

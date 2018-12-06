@@ -1,4 +1,6 @@
 export class ViewInGmailButton extends HTMLElement {
+  messageId_: string;
+
   constructor() {
     super();
 
@@ -30,7 +32,6 @@ export class ViewInGmailButton extends HTMLElement {
     // Linking to the messageId seems to work reliably. The message ID listed will be expanded
     // in the gmail UI, so link to the last one since that one is definitionally always expanded.
     this.messageId_ = messageId;
-
   }
 }
 
