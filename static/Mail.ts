@@ -7,7 +7,7 @@ interface Resource {
   threadId?: string,
 }
 
-export async function send(text, to, subject, opt_extraHeaders, opt_threadId) {
+export async function send(text, to, subject, opt_extraHeaders?, opt_threadId?) {
   let email = `Subject: ${subject}
 To: ${to}
 Content-Type: text/html; charset="UTF-8"
