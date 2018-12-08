@@ -1,5 +1,10 @@
 // Modified version of https://github.com/jakearchibald/idb-keyval.
 export class IDBKeyVal {
+  storeName: string;
+  _dbp: Promise<any>;
+  static store_: IDBKeyVal;
+  static getDefault: () => IDBKeyVal;
+
   constructor(dbName = 'keyval-store', storeName = 'keyval') {
     this.storeName = storeName;
     this._dbp = new Promise((resolve, reject) => {

@@ -3,11 +3,11 @@ import { Compose } from './Compose.js';
 export class EmailCompose extends Compose {
   constructor(contacts, opt_isMultiline) {
     super(contacts, opt_isMultiline);
-    this.separator_ = ' ';
+    this.separator = ' ';
   }
 
   isStillAutoCompleting() {
-    return this.autocompleteRange_ && this.autocompleteRange_.toString() == '+';
+    return this.autocompleteRange && this.autocompleteRange.toString() == '+';
   }
 
   prepareAutocomplete(inputEvent) {
@@ -20,8 +20,8 @@ export class EmailCompose extends Compose {
     let offset = cursor.startOffset;
     let nextChar = container.textContent.substring(offset, offset + 1);
     if (!nextChar || nextChar == ' ') {
-      this.autocompleteRange_ = cursor;
-      this.autocompleteRange_.setStart(container, offset - 1);
+      this.autocompleteRange = cursor;
+      this.autocompleteRange.setStart(container, offset - 1);
     }
   }
 

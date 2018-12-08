@@ -1,6 +1,27 @@
 import { Labels } from './Labels.js';
+import { AbstractThreadListView } from './views/AbstractThreadListView.js';
 
 export class Actions extends HTMLElement {
+  private view_: AbstractThreadListView;
+  // TODO: Give these proper types.
+  private actions_: any[];
+  private overflowActions_: any[];
+  static ARCHIVE_ACTION: any;
+  static BLOCKED_ACTION: any;
+  static SPAM_ACTION: any;
+  static MUTE_ACTION: any;
+  static MUST_DO_ACTION: any;
+  static URGENT_ACTION: any;
+  static NOT_URGENT_ACTION: any;
+  static DELEGATE_ACTION: any;
+  static QUICK_REPLY_ACTION: any;
+  static NEXT_EMAIL_ACTION: any;
+  static PREVIOUS_EMAIL_ACTION: any;
+  static TOGGLE_FOCUSED_ACTION: any;
+  static VIEW_FOCUSED_ACTION: any;
+  static VIEW_TRIAGE_ACTION: any;
+  static UNDO_ACTION: any;
+
   constructor(view, actions, opt_overflowActions) {
     super();
     this.style.display = 'flex';
@@ -113,7 +134,7 @@ export class Actions extends HTMLElement {
       this.takeAction(action, e);
   }
 
-  async takeAction(action, opt_e) {
+  async takeAction(action, opt_e?) {
     if (this.view_.shouldSuppressActions())
       return;
 

@@ -1,4 +1,7 @@
 class AutoCompleteEntry extends HTMLElement {
+  name: string;
+  email: string;
+
   constructor() {
     super();
     this.name = '';
@@ -8,14 +11,21 @@ class AutoCompleteEntry extends HTMLElement {
 window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
 
 export class Compose extends HTMLElement {
+  private contacts_: any;
+  separator: string;
+  private content_: HTMLElement;
+  private placeholder_: string;
+  autocompleteRange: Range;
+  private autocompleteContainer_: HTMLElement;
+  private autocompleteIndex_: number;
+
   constructor(contacts, opt_isMultiline) {
     super();
 
     this.style.display = 'flex';
 
     this.contacts_ = contacts;
-
-    this.separator_ = '';
+    this.separator = '';
 
     this.content_ = document.createElement('div');
     this.content_.style.cssText = `
@@ -110,7 +120,7 @@ export class Compose extends HTMLElement {
 
   autocompleteText_() {
     let range = this.cursor_();
-    range.setStart(this.autocompleteRange_.endContainer, this.autocompleteRange_.endOffset);
+    range.setStart(this.autocompleteRange.endContainer, this.autocompleteRange.endOffset);
     return range.toString();
   }
 
@@ -157,7 +167,7 @@ export class Compose extends HTMLElement {
 
     this.selectAutocompleteItem_(0);
 
-    let rect = this.autocompleteRange_.getBoundingClientRect();
+    let rect = this.autocompleteRange.getBoundingClientRect();
     this.autocompleteContainer_.style.left = `${rect.left}px`;
     this.autocompleteContainer_.style.bottom = `${document.documentElement.offsetHeight - rect.top}px`;
   }
@@ -170,9 +180,7 @@ export class Compose extends HTMLElement {
   selectAutocompleteItem_(index) {
     this.autocompleteIndex_ = index;
     for (let i = 0; i < this.autocompleteContainer_.children.length; i++) {
-      // TODO: Give this a proper type.
-      /** @type {any} */
-      let child = this.autocompleteContainer_.children[i];
+      let child = <AutoCompleteEntry> this.autocompleteContainer_.children[i];
       child.style.backgroundColor = (i == index) ? '#6677dd' : 'white';
       child.style.color = (i == index) ? 'white' : 'black';
     }
@@ -224,7 +232,7 @@ export class Compose extends HTMLElement {
   }
 
   cancelAutocomplete_() {
-    this.autocompleteRange_ = null;
+    this.autocompleteRange = null;
     this.hideAutocompleteMenu_();
   }
 
@@ -233,17 +241,17 @@ export class Compose extends HTMLElement {
     return null;
   }
 
-  submitAutocomplete_(opt_selectedItem) {
+  submitAutocomplete_(opt_selectedItem?) {
     let selectedItem = opt_selectedItem || this.autocompleteContainer_.children[this.autocompleteIndex_];
 
     let range = this.cursor_();
-    range.setStart(this.autocompleteRange_.startContainer, this.autocompleteRange_.startOffset);
+    range.setStart(this.autocompleteRange.startContainer, this.autocompleteRange.startOffset);
     range.deleteContents();
 
     let selectedEntry = this.selectedEntry(selectedItem);
     range.insertNode(selectedEntry);
 
-    let separator = document.createTextNode(this.separator_);
+    let separator = document.createTextNode(this.separator);
     range.collapse();
     range.insertNode(separator);
     window.getSelection().collapse(separator, separator.length);
