@@ -1,6 +1,12 @@
 // Pattern for doing an async action exactly once even if it's called from
 // multiple locations with async yields in the middle.
 export class AsyncOnce {
+  private queued_: ((value?: {} | PromiseLike<{}>) => void)[];
+  private asyncAction_: any;
+  private hasValue_: boolean;
+  private value_: string;
+  private isDoing_: boolean;
+
   constructor(asyncAction) {
     this.queued_ = [];
     this.asyncAction_ = asyncAction;

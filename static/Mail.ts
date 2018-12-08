@@ -2,6 +2,11 @@ import { Base64 } from './base64.js';
 import { gapiFetch } from './Net.js';
 import { USER_ID } from './main.js';
 
+interface Resource {
+  raw: string,
+  threadId?: string,
+}
+
 export async function send(text, to, subject, opt_extraHeaders, opt_threadId) {
   let email = `Subject: ${subject}
 To: ${to}
@@ -16,7 +21,7 @@ Content-Type: text/html; charset="UTF-8"
 ${text}`;
 
   let base64 = new Base64();
-  let resource = { 'raw': base64.encode(email) };
+  let resource : Resource = { 'raw': base64.encode(email) };
   if (opt_threadId)
     resource.threadId = opt_threadId;
 
