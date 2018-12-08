@@ -26,7 +26,10 @@ if os.path.exists(temp_dir):
   shutil.rmtree(temp_dir)
 
 root_dir = os.path.dirname(__file__)
-subprocess.call([os.path.join(root_dir, 'node_modules/typescript/bin/tsc')])
+return_code = subprocess.call([os.path.join(root_dir, 'node_modules/typescript/bin/tsc')])
+if return_code != 0:
+  raise Exception('Running typescript compiler failed.')
+
 shutil.copytree(root_dir, temp_dir, ignore=shutil.ignore_patterns('.git', 'static/'))
 
 substitutions = dict()

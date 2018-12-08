@@ -1,7 +1,7 @@
 import { Compose } from './Compose.js';
 
 export class EmailCompose extends Compose {
-  constructor(contacts, opt_isMultiline) {
+  constructor(contacts, opt_isMultiline?) {
     super(contacts, opt_isMultiline);
     this.separator = ' ';
   }
