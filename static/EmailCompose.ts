@@ -27,6 +27,7 @@ export class EmailCompose extends Compose {
 
   selectedEntry(selectedItem) {
     let link = document.createElement('a');
+    link.className = Compose.EMAIL_CLASS_NAME;
     link.href = `mailto:${selectedItem.email}`;
     link.textContent = `+${selectedItem.name || selectedItem.email}`;
     link.tabIndex = -1;

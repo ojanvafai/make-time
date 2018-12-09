@@ -18,6 +18,7 @@ export class Compose extends HTMLElement {
   autocompleteRange: Range;
   private autocompleteContainer_: HTMLElement;
   private autocompleteIndex_: number;
+  static EMAIL_CLASS_NAME: string;
 
   constructor(contacts, opt_isMultiline) {
     super();
@@ -153,7 +154,10 @@ export class Compose extends HTMLElement {
       entry.onclick = () => {
         this.submitAutocomplete_(entry);
       }
-      entry.style.cssText = `padding: 4px;`;
+      entry.style.cssText = `
+        display: block;
+        padding: 4px;
+      `;
       let text = '';
       if (candidate.name) {
         text += `${candidate.name}: `;
@@ -195,7 +199,6 @@ export class Compose extends HTMLElement {
 
     search = search.toLowerCase();
 
-    let hasFullSearch = false;
     for (let contact of this.contacts_) {
       if (contact.name && contact.name.toLowerCase().includes(search)) {
         for (let email of contact.emails) {
@@ -204,8 +207,6 @@ export class Compose extends HTMLElement {
       } else {
         for (let email of contact.emails) {
           let lowerCaseEmail = email.toLowerCase();
-          if (!hasFullSearch && lowerCaseEmail == search)
-            hasFullSearch = true;
           if (lowerCaseEmail.split('@')[0].includes(search))
             results.push({name: contact.name, email: email});
         }
@@ -214,8 +215,7 @@ export class Compose extends HTMLElement {
 
     // Include whatever the user is typing in case it's not in their contacts or if
     // the contacts API is down.
-    if (!hasFullSearch)
-      results.push({name: search.split('@')[0], email: search});
+    results.push({name: search.split('@')[0], email: search});
 
     // TODO: Sort the results to put +foo address after the main ones.
     // Prefer things that start with the search text over substring matching.
@@ -261,7 +261,7 @@ export class Compose extends HTMLElement {
   }
 
   getEmails() {
-    let links = this.content_.querySelectorAll('a');
+    let links = <NodeListOf<HTMLLinkElement>> this.content_.querySelectorAll(`a.${Compose.EMAIL_CLASS_NAME}`);
     let results = [];
     for (let link of links) {
       let name = link.textContent;
@@ -278,7 +278,14 @@ export class Compose extends HTMLElement {
   }
 
   get value() {
-    return this.content_.innerHTML;
+    let cloned = <HTMLElement> this.content_.cloneNode(true);
+    let emails = cloned.querySelectorAll(`a.${Compose.EMAIL_CLASS_NAME}`);
+    for (let email of emails) {
+      email.removeAttribute('class');
+      email.removeAttribute('contentEditable');
+      email.removeAttribute('tabIndex');
+    }
+    return cloned.innerHTML;
   }
 
   set value(html) {
@@ -300,3 +307,5 @@ export class Compose extends HTMLElement {
 }
 
 window.customElements.define('mt-compose', Compose);
+
+Compose.EMAIL_CLASS_NAME = 'mk-email';
