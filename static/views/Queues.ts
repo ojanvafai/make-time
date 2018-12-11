@@ -153,7 +153,7 @@ export class QueuesView extends HTMLElement {
     `;
     help.innerHTML = FiltersView.HELP_TEXT;
 
-    let expander = help.querySelector('a');
+    let expander = <HTMLAnchorElement> help.querySelector('a');
     expander.onclick = () => {
       let existing = window.getComputedStyle(help)['-webkit-line-clamp'];
       // Wow. Setting this to 'none' doens't work. But setting it to 'unset'

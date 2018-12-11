@@ -340,7 +340,7 @@ export class Labels {
       }
     }
 
-    let labelsWithThreads = [];
+    let labelsWithThreads: {name: string, count: number}[] = [];
 
     // If this is a first run, there may be no labels that match the filter rule
     // and gapi batching throws when you try to await a batch that has no entries.

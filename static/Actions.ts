@@ -86,7 +86,7 @@ export class Actions extends HTMLElement {
           width: 300px;
         `;
 
-        let tooltip = button.getAttribute('tooltip');
+        let tooltip = <string> button.getAttribute('tooltip');
         text.append(tooltip);
         tooltipElement.append(text);
         this.append(tooltipElement);

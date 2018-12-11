@@ -30,8 +30,6 @@ export class LongTasks extends HTMLElement {
   }
 
   flash_() {
-    // TODO: Fix this type.
-    /** @type {any} */
     let animation = [
       { opacity: '0.6' },
       { opacity: '0' },
@@ -41,7 +39,7 @@ export class LongTasks extends HTMLElement {
       duration: 1000,
     };
 
-    document.querySelector("mt-long-tasks").animate(
+    this.animate(
       animation,
       timing
     );

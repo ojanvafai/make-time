@@ -54,7 +54,6 @@ export class IDBKeyVal {
   }
 }
 
-IDBKeyVal.store_ = null;
 IDBKeyVal.getDefault = () => {
   if (!IDBKeyVal.store_)
     IDBKeyVal.store_ = new IDBKeyVal();

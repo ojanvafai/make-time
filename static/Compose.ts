@@ -15,8 +15,8 @@ export class Compose extends HTMLElement {
   separator: string;
   private content_: HTMLElement;
   private placeholder_: string;
-  autocompleteRange: Range;
-  private autocompleteContainer_: HTMLElement;
+  autocompleteRange: Range | null;
+  private autocompleteContainer_: HTMLElement | null;
   private autocompleteIndex_: number;
   static EMAIL_CLASS_NAME: string;
 
@@ -191,7 +191,7 @@ export class Compose extends HTMLElement {
   }
 
   getAutocompleteCandidates_() {
-    let results = [];
+    let results: {name: string, email: string}[] = [];
 
     let search = this.autocompleteText_();
     if (!search)
