@@ -1,7 +1,47 @@
 import { Settings } from '../Settings.js';
 import { showDialog } from '../main.js';
 
+interface FilterRule {
+  label: string;
+  matchallmessages: string;
+  nolistid: boolean;
+  nocc: boolean;
+}
+
 export class FiltersView extends HTMLElement {
+  private settings_: Settings;
+  private cursorSentinel_: string;
+  private cursorSentinelElement_: HTMLElement;
+  private dialog_: HTMLDialogElement;
+
+  private static DIRECTIVE_SEPARATOR_ = ':';
+  private static QUERY_SEPARATOR_ = '&&';
+  static HELP_TEXT = `<b>Help</b> <a>show more</a>
+Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "archive" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
+
+ - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
+ - "archive" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
+ - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
+ - The first rule that matches is the one that applies, so order matters.
+ - Label is the label that will apply qhen the rule matches. This is *not* the full label name. The full label name gets prefixed as maketime/.../labelname. Put just the last bit here.
+ - Rule is the rule to match.
+ - Match All Messages will required the rule to match all the messages in the thread to be considered a match. Otherwise, any message in the thread matching will mean the whole thread matches.
+ - No List-ID matches messages that are not sent to an email list.
+ - No CCs matches messages that have exactly one email address in the union of the to/cc/bcc fields.
+ - Gmail filters match only the newly incoming message. make-time matches all messages in the thread each time the thread is processed.
+ - Every thread in the unprocessed queue gets exactly one needstriage label applied. If none of your filters apply to a thread, then make-time will apply a "needsfilter" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
+
+<b>Rule directives</b>
+ - <b>to:</b> Matches the to/cc/bcc fields of the email. "foo" will match foo+anything@anything.com, "foo@gmail.com" will match foo@gmail.com and foo+anything@gmail.com, "gmail.com" will match anything@gmail.com.
+ - <b>from:</b> Matches the from field of the email. Same matching rules as the "to" directive.
+ - <b>subject:</b> Matches if the subject of the email includes this text.
+ - <b>plaintext:</b> Matches if the plain text of the email includes this text.
+ - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
+ - <b>header:</b> Matches arbitrary email headers. You can see the email headers by going to gmail and clicking "Show original" for a given a message. The format is "header:value" where "header" is the name of the mail header and "value" is the value to search for in that mail header. For example, "X-Autoreply:yes" is a filter gmail (and probably other) vacation autoresponders as they put an X-Autoreply header on autoresponse messages.
+
+If there's a bug in the filtering code, emails should remain in the unprocessed label.
+`;
+
   constructor(settings) {
     super();
     this.style.cssText = `
@@ -35,8 +75,7 @@ export class FiltersView extends HTMLElement {
 
   moveRow_(direction, move10) {
     // TODO: Put a proper type on this.
-    /** @type {any} */
-    let focused = document.activeElement;
+    let focused = <any> document.activeElement;
 
     let row = focused.parentElement;
     while (row && row.tagName != 'TR') {
@@ -110,7 +149,7 @@ export class FiltersView extends HTMLElement {
       margin-top: 4px;
       font-size: 13px;
     `;
-    help.innerHTML = FiltersView.HELP_TEXT_;
+    help.innerHTML = FiltersView.HELP_TEXT;
 
     let expander = help.querySelector('a');
     expander.onclick = () => {
@@ -148,22 +187,18 @@ export class FiltersView extends HTMLElement {
       let query = row.querySelector('.query').textContent;
       let rule = this.parseQuery_(query, true);
 
-      /** @type {HTMLInputElement}*/
-      let label = row.querySelector('.label');
+      let label = <HTMLInputElement>row.querySelector('.label');
       rule.label = label.value;
 
-      /** @type {HTMLInputElement}*/
-      let matchAll = row.querySelector('.matchallmessages');
+      let matchAll = <HTMLInputElement>row.querySelector('.matchallmessages');
       if (matchAll.checked)
         rule.matchallmessages = 'yes';
 
-      /** @type {HTMLInputElement}*/
-      let noListId = row.querySelector('.nolistid')
+      let noListId = <HTMLInputElement>row.querySelector('.nolistid')
       if (noListId.checked)
         rule.nolistid = true;
 
-      /** @type {HTMLInputElement}*/
-      let noCc = row.querySelector('.nocc')
+      let noCc = <HTMLInputElement>row.querySelector('.nocc')
       if (noCc.checked)
         rule.nocc = true;
 
@@ -321,7 +356,7 @@ export class FiltersView extends HTMLElement {
   }
 
   parseQuery_(query, trimWhitespace) {
-    let queryParts = {};
+    let queryParts = <FilterRule>{};
     query = query.replace(/[\n\r]/g, '');
     let directives = query.split(FiltersView.QUERY_SEPARATOR_);
     for (let directive of directives) {
@@ -431,33 +466,5 @@ export class FiltersView extends HTMLElement {
     return option;
   }
 }
-
-FiltersView.DIRECTIVE_SEPARATOR_ = ':';
-FiltersView.QUERY_SEPARATOR_ = '&&';
-FiltersView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>
-Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "archive" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
-
- - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
- - "archive" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
- - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
- - The first rule that matches is the one that applies, so order matters.
- - Label is the label that will apply qhen the rule matches. This is *not* the full label name. The full label name gets prefixed as maketime/.../labelname. Put just the last bit here.
- - Rule is the rule to match.
- - Match All Messages will required the rule to match all the messages in the thread to be considered a match. Otherwise, any message in the thread matching will mean the whole thread matches.
- - No List-ID matches messages that are not sent to an email list.
- - No CCs matches messages that have exactly one email address in the union of the to/cc/bcc fields.
- - Gmail filters match only the newly incoming message. make-time matches all messages in the thread each time the thread is processed.
- - Every thread in the unprocessed queue gets exactly one needstriage label applied. If none of your filters apply to a thread, then make-time will apply a "needsfilter" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
-
-<b>Rule directives</b>
- - <b>to:</b> Matches the to/cc/bcc fields of the email. "foo" will match foo+anything@anything.com, "foo@gmail.com" will match foo@gmail.com and foo+anything@gmail.com, "gmail.com" will match anything@gmail.com.
- - <b>from:</b> Matches the from field of the email. Same matching rules as the "to" directive.
- - <b>subject:</b> Matches if the subject of the email includes this text.
- - <b>plaintext:</b> Matches if the plain text of the email includes this text.
- - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
- - <b>header:</b> Matches arbitrary email headers. You can see the email headers by going to gmail and clicking "Show original" for a given a message. The format is "header:value" where "header" is the name of the mail header and "value" is the value to search for in that mail header. For example, "X-Autoreply:yes" is a filter gmail (and probably other) vacation autoresponders as they put an X-Autoreply header on autoresponse messages.
-
-If there's a bug in the filtering code, emails should remain in the unprocessed label.
-`;
 
 window.customElements.define('mt-filters', FiltersView);

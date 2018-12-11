@@ -1,5 +1,8 @@
 
 export class ThreadRowGroup extends HTMLElement {
+  private queue_: string;
+  private rowContainer_: HTMLElement;
+
   constructor(queue) {
     super();
     this.style.display = 'block';
@@ -38,7 +41,7 @@ export class ThreadRowGroup extends HTMLElement {
     return Array.prototype.slice.call(this.rowContainer_.children);
   }
 
-  push(row, opt_nextSibling) {
+  push(row, opt_nextSibling?) {
     if (opt_nextSibling && opt_nextSibling.parentNode == this.rowContainer_)
       opt_nextSibling.before(row);
     else
@@ -64,8 +67,7 @@ export class ThreadRowGroup extends HTMLElement {
 
   selectRows_(value) {
     // TODO: Give this a proper type.
-    /** @type {NodeListOf<any>} */
-    let rows = this.rowContainer_.childNodes;
+    let rows = <NodeListOf<any>>this.rowContainer_.childNodes;
     for (let child of rows) {
       child.checked = value;
     }

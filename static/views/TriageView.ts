@@ -2,14 +2,22 @@ import { AbstractThreadListView } from './AbstractThreadListView.js';
 import { Actions } from '../Actions.js';
 import { fetchThreads } from '../main.js';
 import { Labels } from '../Labels.js';
+import { QueueSettings } from '../QueueSettings.js';
 
 export class TriageView extends AbstractThreadListView {
+  private vacation_ : string;
+  private queueSettings_: QueueSettings;
+
+  private static OVERFLOW_ACTIONS_ = [
+    Actions.SPAM_ACTION,
+  ];
+
   constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration, queueSettings) {
     let countDown = true;
     super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.OVERFLOW_ACTIONS_);
     this.vacation_ = vacation;
     this.queueSettings_ = queueSettings;
-    this.appendButton_('/make-time', `It's make-time!`);
+    this.appendButton('/make-time', `It's make-time!`);
   }
 
   async addThread(thread) {
@@ -68,7 +76,3 @@ export class TriageView extends AbstractThreadListView {
   }
 }
 window.customElements.define('mt-triage-view', TriageView);
-
-TriageView.OVERFLOW_ACTIONS_ = [
-  Actions.SPAM_ACTION,
-];

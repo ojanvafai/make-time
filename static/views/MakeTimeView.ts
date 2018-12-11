@@ -4,11 +4,37 @@ import { fetchThread } from '../main.js';
 import { Labels } from '../Labels.js';
 
 export class MakeTimeView extends AbstractThreadListView {
+  private vacation_: string;
+
+  static ACTIONS_ = [
+    Actions.ARCHIVE_ACTION,
+    Actions.BLOCKED_ACTION,
+    Actions.MUTE_ACTION,
+    Actions.MUST_DO_ACTION,
+    Actions.URGENT_ACTION,
+    Actions.NOT_URGENT_ACTION,
+    Actions.DELEGATE_ACTION,
+    Actions.UNDO_ACTION,
+  ];
+
+  static RENDER_ALL_ACTIONS_ = [
+    Actions.PREVIOUS_EMAIL_ACTION,
+    Actions.NEXT_EMAIL_ACTION,
+    Actions.TOGGLE_FOCUSED_ACTION,
+    Actions.VIEW_FOCUSED_ACTION,
+  ].concat(MakeTimeView.ACTIONS_);
+
+  static RENDER_ONE_ACTIONS_ = [
+    Actions.QUICK_REPLY_ACTION,
+    Actions.VIEW_TRIAGE_ACTION,
+  ].concat(MakeTimeView.ACTIONS_);
+
   constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
     let countDown = false;
     super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration);
     this.vacation_ = vacation;
-    this.appendButton_('/triage', 'Back to Triaging');
+    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
+    (<AbstractThreadListView>this).appendButton('/triage', 'Back to Triaging');
   }
 
   compareRowGroups(a, b) {
@@ -30,21 +56,26 @@ export class MakeTimeView extends AbstractThreadListView {
   }
 
   async fetch(shouldBatch) {
-    this.updateTitle('fetch', ' ');
+    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
+    (<AbstractThreadListView>this).updateTitle('fetch', ' ');
 
-    let labels = await this.allLabels.getThreadCountForLabels((label) => {
+    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
+    let labels = await (<AbstractThreadListView>this).allLabels.getThreadCountForLabels((label) => {
       return this.vacation_ ? label == Labels.MUST_DO_LABEL : Labels.isPriorityLabel(label);
     });
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
 
-    await this.fetchLabels(labelsToFetch, shouldBatch);
-    this.updateTitle('fetch');
+    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
+    await (<AbstractThreadListView>this).fetchLabels(labelsToFetch, shouldBatch);
+    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
+    (<AbstractThreadListView>this).updateTitle('fetch');
   }
 
   async handleUndo(thread) {
+    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
     if (thread)
-      await this.removeThread(thread);
+      await (<AbstractThreadListView>this).removeThread(thread);
   }
 
   async handleTriaged(destination, triageResult, thread) {
@@ -72,26 +103,3 @@ export class MakeTimeView extends AbstractThreadListView {
   }
 }
 window.customElements.define('mt-make-time-view', MakeTimeView);
-
-MakeTimeView.ACTIONS_ = [
-  Actions.ARCHIVE_ACTION,
-  Actions.BLOCKED_ACTION,
-  Actions.MUTE_ACTION,
-  Actions.MUST_DO_ACTION,
-  Actions.URGENT_ACTION,
-  Actions.NOT_URGENT_ACTION,
-  Actions.DELEGATE_ACTION,
-  Actions.UNDO_ACTION,
-];
-
-MakeTimeView.RENDER_ALL_ACTIONS_ = [
-  Actions.PREVIOUS_EMAIL_ACTION,
-  Actions.NEXT_EMAIL_ACTION,
-  Actions.TOGGLE_FOCUSED_ACTION,
-  Actions.VIEW_FOCUSED_ACTION,
-].concat(MakeTimeView.ACTIONS_);
-
-MakeTimeView.RENDER_ONE_ACTIONS_ = [
-  Actions.QUICK_REPLY_ACTION,
-  Actions.VIEW_TRIAGE_ACTION,
-].concat(MakeTimeView.ACTIONS_);

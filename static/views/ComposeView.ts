@@ -19,7 +19,22 @@ async function idbKeyVal() {
   return idbKeyVal_;
 }
 
+interface EmailData {
+  to: string;
+  inlineTo: string;
+  subject: string;
+  body: string;
+}
+
 export class ComposeView extends HTMLElement {
+  private updateTitle_: any;
+  private params_: any;
+  private to_: HTMLInputElement;
+  private subject_: HTMLInputElement;
+  private body_: EmailCompose;
+  private inlineTo_: HTMLElement;
+  private sending_: boolean;
+
   constructor(contacts, updateTitle, params) {
     super();
 
@@ -133,7 +148,7 @@ export class ComposeView extends HTMLElement {
       this.clearInlineTo_();
     }
 
-    let data = {};
+    let data = <EmailData> {};
     let hasData = false;
     if (this.to_.value) {
       data.to = this.to_.value;

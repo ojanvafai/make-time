@@ -3,8 +3,16 @@ import { Labels } from '../Labels.js';
 import { QueuesView } from './Queues.js';
 import { Settings } from '../Settings.js';
 import { showDialog } from '../main.js';
+import { QueueSettings } from '../QueueSettings.js';
 
 export class SettingsView extends HTMLElement {
+  private settings_: Settings;
+  private queuedLabelData_: QueueSettings;
+  private scrollable_: HTMLElement;
+  private hadChanges_: boolean;
+  private dialog_: HTMLDialogElement;
+  private basicSettings_: HTMLElement;
+
   constructor(settingsData, queuedLabelData) {
     super();
     this.style.cssText = `

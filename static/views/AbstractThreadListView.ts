@@ -6,9 +6,24 @@ import { ThreadRow } from './ThreadRow.js';
 import { ThreadRowGroup } from './ThreadRowGroup.js';
 import { Timer } from '../Timer.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
+import { MailProcessor } from '../MailProcessor.js';
+import { Thread } from '../Thread.js';
+import { ThreadGroups } from '../ThreadGroups.js';
 
 // TODO: Move this to it's own file? Deal with the name overlap with ThreadRowGroup?
 class RowGroup {
+  queue: string;
+  node: ThreadRowGroup;
+  private rows_: { [threadId: string]: ThreadRow; };
+
+  private static groups_ = {};
+
+  static create = (queue) => {
+    if (!RowGroup.groups_[queue])
+      RowGroup.groups_[queue] = new RowGroup(queue);
+    return RowGroup.groups_[queue];
+  }
+
   constructor(queue) {
     this.queue = queue;
     this.node = new ThreadRowGroup(queue);
@@ -55,6 +70,7 @@ class RowGroup {
       throw `Tried to get row via relative offset on a row that's not in the group.`;
     if (0 <= index + offset && index + offset < rows.length)
       return rows[index + offset];
+    return null;
   }
 
   mark() {
@@ -65,20 +81,69 @@ class RowGroup {
   }
 
   getMarked() {
-    return Object.values(this.rows_).filter((row) => row.mark);
+    return Object.values(this.rows_).filter((row) => (<ThreadRow>row).mark);
   }
 }
 
-RowGroup.groups_ = {};
-
-RowGroup.create = (queue) => {
-  if (!RowGroup.groups_[queue])
-    RowGroup.groups_[queue] = new RowGroup(queue);
-  return RowGroup.groups_[queue];
+interface TriageResult {
+  newThread: Thread;
+  thread: Thread;
+  removed: string[];
+  added: string[];
 }
 
 export class AbstractThreadListView extends HTMLElement {
-  constructor(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, opt_overflowActions) {
+  updateTitle: any;
+  allLabels: Labels;
+  private threads_: ThreadGroups;
+  private mailProcessor_: MailProcessor;
+  private scrollContainer_: HTMLElement;
+  private setSubject_: any;
+  private showBackArrow_: any;
+  private allowedReplyLength_: number;
+  private contacts_: any;
+  private autoStartTimer_: boolean;
+  private countDown_: boolean;
+  private timerDuration_: number;
+  private overflowActions_: [];
+    // TODO: Rename this to groupedRows_?
+  private groupedThreads_: RowGroup[];
+  private needsProcessingThreads_: Thread[];
+  private focusedEmail_: any;
+  private rowGroupContainer_: HTMLElement;
+  private singleThreadContainer_: HTMLElement;
+  private bestEffortButton_: HTMLElement;
+  private actions_: Actions;
+  private tornDown_: boolean;
+  private renderedRow_: ThreadRow;
+  private undoableActions_: TriageResult[];
+  private scrollOffset_: number;
+  private isSending_: boolean;
+
+  static ACTIONS_ = [
+    Actions.ARCHIVE_ACTION,
+    Actions.BLOCKED_ACTION,
+    Actions.MUTE_ACTION,
+    Actions.MUST_DO_ACTION,
+    Actions.URGENT_ACTION,
+    Actions.NOT_URGENT_ACTION,
+    Actions.DELEGATE_ACTION,
+    Actions.UNDO_ACTION,
+  ];
+
+  static RENDER_ALL_ACTIONS_ = [
+    Actions.PREVIOUS_EMAIL_ACTION,
+    Actions.NEXT_EMAIL_ACTION,
+    Actions.TOGGLE_FOCUSED_ACTION,
+    Actions.VIEW_FOCUSED_ACTION,
+  ].concat(AbstractThreadListView.ACTIONS_);
+
+  static RENDER_ONE_ACTIONS_ = [
+    Actions.QUICK_REPLY_ACTION,
+    Actions.VIEW_TRIAGE_ACTION,
+  ].concat(AbstractThreadListView.ACTIONS_);
+
+  constructor(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, opt_overflowActions?) {
     super();
 
     this.style.cssText = `
@@ -123,7 +188,7 @@ export class AbstractThreadListView extends HTMLElement {
     `;
     this.append(this.singleThreadContainer_);
 
-    this.bestEffortButton_ = this.appendButton_('/best-effort');
+    this.bestEffortButton_ = this.appendButton('/best-effort');
     this.bestEffortButton_.style.display = 'none';
     this.updateBestEffort_();
 
@@ -134,7 +199,7 @@ export class AbstractThreadListView extends HTMLElement {
     throw 'TODO: Make this an abstract method once converted to TypeScript';
   };
 
-  appendButton_(href, textContent = '') {
+  protected appendButton(href, textContent = '') {
     let button = document.createElement('a');
     button.className = 'label-button';
     button.href = href;
@@ -207,6 +272,7 @@ export class AbstractThreadListView extends HTMLElement {
     let group = this.getRowGroup_(queue);
     if (group)
       return group.getRow(thread);
+    return null;
   }
 
   updateActions_() {
@@ -344,8 +410,7 @@ export class AbstractThreadListView extends HTMLElement {
   getThreads() {
     let selected = [];
     let all = [];
-    /** @type {NodeListOf<ThreadRow>} */
-    let rows = this.rowGroupContainer_.querySelectorAll('mt-thread-row');
+    let rows = <NodeListOf<ThreadRow>> this.rowGroupContainer_.querySelectorAll('mt-thread-row');
     for (let child of rows) {
       if (child.checked)
         selected.push(child);
@@ -546,7 +611,7 @@ export class AbstractThreadListView extends HTMLElement {
   };
 
   async markSingleThreadTriaged(thread, destination) {
-    let triageResult = await thread.markTriaged(destination);
+    let triageResult = <TriageResult>(await thread.markTriaged(destination));
     if (triageResult)
       this.undoableActions_.push(triageResult);
     if (this.handleTriaged)
@@ -632,7 +697,7 @@ export class AbstractThreadListView extends HTMLElement {
     elementToScrollTo.scrollIntoView();
     // Make sure that there's at least 50px of space above for showing that there's a
     // previous message.
-    let y = elementToScrollTo.getBoundingClientRect().y;
+    let y = elementToScrollTo.getBoundingClientRect().top;
     if (y < 70)
       document.documentElement.scrollTop -= 70 - y;
 
@@ -757,26 +822,3 @@ export class AbstractThreadListView extends HTMLElement {
     compose.focus();
   }
 }
-
-AbstractThreadListView.ACTIONS_ = [
-  Actions.ARCHIVE_ACTION,
-  Actions.BLOCKED_ACTION,
-  Actions.MUTE_ACTION,
-  Actions.MUST_DO_ACTION,
-  Actions.URGENT_ACTION,
-  Actions.NOT_URGENT_ACTION,
-  Actions.DELEGATE_ACTION,
-  Actions.UNDO_ACTION,
-];
-
-AbstractThreadListView.RENDER_ALL_ACTIONS_ = [
-  Actions.PREVIOUS_EMAIL_ACTION,
-  Actions.NEXT_EMAIL_ACTION,
-  Actions.TOGGLE_FOCUSED_ACTION,
-  Actions.VIEW_FOCUSED_ACTION,
-].concat(AbstractThreadListView.ACTIONS_);
-
-AbstractThreadListView.RENDER_ONE_ACTIONS_ = [
-  Actions.QUICK_REPLY_ACTION,
-  Actions.VIEW_TRIAGE_ACTION,
-].concat(AbstractThreadListView.ACTIONS_);

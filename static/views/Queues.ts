@@ -3,6 +3,22 @@ import { showDialog } from '../main.js';
 import { QueueSettings } from '../QueueSettings.js';
 
 export class QueuesView extends HTMLElement {
+  private queueNames_: string[];
+  private queuedLabelData_: QueueSettings;
+  private immediate_: HTMLElement;
+  private daily_: HTMLElement;
+  private weekly_: HTMLElement;
+  private monthly_: HTMLElement;
+  private dialog_: HTMLDialogElement;
+
+  static rowClassName_ = 'queue-row';
+  static HELP_TEXT_ = `<b>Help</b> <a>show more</a>
+ - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
+
+ Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
+
+ Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
+
   constructor(queueNames, queuedLabelData) {
     super();
 
@@ -135,7 +151,7 @@ export class QueuesView extends HTMLElement {
       overflow: hidden;
       margin-top: 4px;
     `;
-    help.innerHTML = FiltersView.HELP_TEXT_;
+    help.innerHTML = FiltersView.HELP_TEXT;
 
     let expander = help.querySelector('a');
     expander.onclick = () => {
@@ -211,8 +227,7 @@ export class QueuesView extends HTMLElement {
   }
 
   updateHighlights_() {
-    /** @type {NodeListOf<HTMLElement>} */
-    let rows = document.querySelectorAll(`.${QueuesView.rowClassName_}`);
+    let rows = <NodeListOf<HTMLElement>>document.querySelectorAll(`.${QueuesView.rowClassName_}`);
     for (let row of rows) {
       row.style.backgroundColor = this.isChecked_(row) ? '#c2dbff' : 'white';
     }
@@ -270,15 +285,5 @@ export class QueuesView extends HTMLElement {
     return option;
   }
 }
-
-QueuesView.rowClassName_ = 'queue-row';
-
-// TODO: update this text.
-QueuesView.HELP_TEXT_ = `<b>Help</b> <a>show more</a>
- - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
-
- Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
-
- Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
 
 window.customElements.define('mt-queues', QueuesView);

@@ -1,7 +1,24 @@
 import { RenderedThread } from '../RenderedThread.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
+import { Thread } from '../Thread.js';
+
+interface DateFormatOptions {
+  year: string;
+  month: string;
+  day: string;
+  hour: string;
+  minute: string;
+}
 
 export class ThreadRow extends HTMLElement {
+  group: string;
+  focused: boolean;
+  rendered: RenderedThread;
+  mark: boolean;
+  private checkBox_: HTMLInputElement;
+  private messageDetails_: HTMLElement;
+  private thread_: Thread;
+
   constructor(thread, group) {
     super();
     this.style.display = 'flex';
@@ -79,7 +96,7 @@ export class ThreadRow extends HTMLElement {
           color: grey;
         `;
         if (messages.length > 1)
-          count.textContent = messages.length;
+          count.textContent = String(messages.length);
 
         fromContainer.append(from, count);
 
@@ -132,7 +149,7 @@ export class ThreadRow extends HTMLElement {
   }
 
   dateString_(date) {
-    let options = {};
+    let options = <DateFormatOptions>{};
     let today = new Date();
     if (today.getFullYear() != date.getFullYear())
       options.year = 'numeric';
