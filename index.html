@@ -282,7 +282,10 @@
     </div>
 
     <script src="https://apis.google.com/js/api.js"></script>
-    <script type=module src="static/main.js"></script>
+    <script type=module>
+      import {update} from '/static/main.js';
+      window.update = update;
+    </script>
 
     <mt-long-tasks></mt-long-tasks>
   </body>

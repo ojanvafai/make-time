@@ -4,11 +4,18 @@ import { Labels } from './Labels.js';
 import { QueueSettings } from './QueueSettings.js';
 import { ServerStorage } from './ServerStorage.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
+import { Settings } from './Settings.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
 export class MailProcessor {
+  settings: Settings;
+  private pushThreadOriginal_: any;
+  private queuedLabelMap_: any;
+  private allLabels_: any;
+  private updateTitle_: any;
+
   constructor(settings, pushThread, queuedLabelMap, allLabels, updateTitle) {
     this.settings = settings;
     this.pushThreadOriginal_ = pushThread;
@@ -450,7 +457,7 @@ export class MailProcessor {
     }
   }
 
-  categoriesToDequeue(startTime, opt_endTime) {
+  categoriesToDequeue(startTime, opt_endTime?) {
     if (!startTime) {
       let today = QueueSettings.WEEKDAYS[new Date().getDay()];
       return [today, QueueSettings.DAILY];

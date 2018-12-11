@@ -81,8 +81,7 @@ function showBackArrow(show) {
 }
 
 function openMenu() {
-  /** @type {NodeListOf<HTMLAnchorElement>} */
-  let menuItems = document.getElementById('drawer').querySelectorAll('a.item');
+  let menuItems = <NodeListOf<HTMLAnchorElement>> document.getElementById('drawer').querySelectorAll('a.item');
   for (let item of menuItems) {
     if (item.pathname == location.pathname) {
       item.classList.add(CURRENT_PAGE_CLASS);
@@ -219,12 +218,12 @@ function setSubject(...items) {
   subject.append(...items);
 }
 
-function updateTitle(key, opt_title) {
+function updateTitle(key, opt_title?) {
   let node = document.getElementById('title');
   updateTitleBase(titleStack_, node, key, opt_title);
 }
 
-function updateLoaderTitle(key, opt_title) {
+function updateLoaderTitle(key, opt_title?) {
   let node = document.getElementById('loader-title');
   updateTitleBase(loaderTitleStack_, node, key, opt_title);
 
@@ -267,6 +266,12 @@ export async function fetchThread(id) {
   return thread;
 }
 
+interface FetchRequestParameters {
+  userId: string;
+  q: string;
+  pageToken: string;
+}
+
 export async function fetchThreads(forEachThread, options) {
   // Chats don't expose their bodies in the gmail API, so just skip them.
   let query = '-in:chats ';
@@ -281,8 +286,8 @@ export async function fetchThreads(forEachThread, options) {
 
   let labels = await getLabels();
 
-  let getPageOfThreads = async (opt_pageToken) => {
-    let requestParams = {
+  let getPageOfThreads = async (opt_pageToken?) => {
+    let requestParams = <FetchRequestParameters> {
       'userId': USER_ID,
       'q': query,
     };
@@ -503,6 +508,11 @@ onLoad();
 
 let CONTACT_STORAGE_KEY_ = 'contacts';
 
+interface Contact {
+  name: string;
+  emails: string[];
+}
+
 async function fetchContacts(token) {
   if (contacts_.length)
     return;
@@ -538,7 +548,7 @@ async function fetchContacts(token) {
   for (let entry of json.feed.entry) {
     if (!entry.gd$email)
       continue;
-    let contact = {};
+    let contact = <Contact> {};
     if (entry.title.$t)
       contact.name = entry.title.$t;
     contact.emails = [];
@@ -627,23 +637,18 @@ async function gcLocalStorage() {
   }
 }
 
-async function update() {
+export async function update() {
   if (currentView_.update)
     await currentView_.update();
   await processMail();
   await gcLocalStorage();
 }
 
-// Make it easier to debug from devtools by making the update method accessible there.
-globalThis.update = update;
-
 // Make sure links open in new tabs.
 document.body.addEventListener('click', async (e) => {
   for (let node of e.path) {
     if (node.tagName == 'A') {
-      // TODO: Give this a proper type of HTMLAnchorElement
-      /** @type {any} */ 
-      let anchor = node;
+      let anchor = <HTMLAnchorElement> node;
       let willHandlePromise = router.run(anchor);
       if (willHandlePromise) {
         // Need to preventDefault before the await, otherwise the browsers

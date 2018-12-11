@@ -4,6 +4,9 @@ let MINIMUM_ELIDE_LENGTH = 100;
 let TOGGLER;
 
 export class QuoteElidedMessage {
+  private hashes_: Map<string, Element[]>;
+  private dom_: HTMLElement;
+
   constructor(currentMessage, previousMessage) {
     this.computeHashes_(currentMessage);
     if (!previousMessage)
@@ -33,8 +36,7 @@ export class QuoteElidedMessage {
 
   expandToNonTextSiblings_() {
     for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
-      /** @type {Node} */
-      let previous = match;
+      let previous = <Node> match;
       // TODO: Include "XXX wrote" prefixes here as well.
       // TODO: Hash the outerHTML of the element to make sure it has at least
       // a corresponding thing in the previous message. Or maybe just exclude images?
@@ -43,8 +45,7 @@ export class QuoteElidedMessage {
         previous = previous.previousSibling;
       }
 
-      /** @type {Node} */
-      let next = match;
+      let next = <Node> match;
       while (this.hasEmptyTextContent_(next.nextSibling)) {
         setElidedState(next.nextSibling, 'hidden');
         next = next.nextSibling;
@@ -138,7 +139,7 @@ export class QuoteElidedMessage {
     for (let element of elements) {
       let text = this.quoteStrippedText_(element);
       if (text.length > MINIMUM_HASH_LENGTH) {
-        let list = this.hashes_.get(text);
+        let list: Element[] = this.hashes_.get(text);
         if (!list) {
           list = [];
           this.hashes_.set(text, list);

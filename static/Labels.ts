@@ -5,7 +5,128 @@ async function gapiFetch(method, requestParams, opt_requestBody) {
   return fetcher(method, requestParams, opt_requestBody);
 }
 
+interface LabelResource {
+  name: string;
+  messageListVisibility: string;
+  labelListVisibility: string;
+  id: string;
+  userId: string;
+}
+
 export class Labels {
+  static isUserLabel = (id) => {
+    return id.startsWith('Label_');
+  }
+
+  static removeLabelPrefix = (labelName, prefix) => {
+    return labelName.replace(new RegExp(`^${prefix}/`), '');
+  }
+
+  static addMakeTimePrefix = (labelName) => {
+    return Labels.MAKE_TIME_PREFIX + '/' + labelName;
+  }
+
+  static removeMakeTimePrefix = (labelName) => {
+    return Labels.removeLabelPrefix(labelName, Labels.MAKE_TIME_PREFIX);
+  }
+
+  static isMakeTimeLabel = (labelName) => {
+    return labelName.startsWith(Labels.MAKE_TIME_PREFIX + '/');
+  }
+
+  static triagedLabel = (labelName) => {
+    return `${Labels.TRIAGED_LABEL}/${labelName}`;
+  }
+
+  static needsTriageLabel = (labelName) => {
+    return `${Labels.NEEDS_TRIAGE_LABEL}/${labelName}`;
+  }
+
+  static removeNeedsTriagePrefix = (labelName) => {
+    return Labels.removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
+  }
+
+  static isNeedsTriageLabel = (labelName) => {
+    return labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/');
+  }
+
+  static addQueuedPrefix = (labelName) => {
+    return Labels.QUEUED_LABEL + "/" + labelName;
+  }
+
+  static addPriorityPrefix = (labelName) => {
+    return Labels.PRIORITY_LABEL + "/" + labelName;
+  }
+
+  static removePriorityPrefix = (labelName) => {
+    return Labels.removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
+  }
+
+  static isPriorityLabel = (labelName) => {
+    return labelName.startsWith(Labels.PRIORITY_LABEL + '/');
+  }
+
+  static addBankruptPrefix = (labelName) => {
+    return Labels.BANKRUPT_LABEL + "/" + labelName;
+  }
+
+  // TODO: This should be uppercase to match gmail.
+  static INBOX_LABEL = 'inbox';
+  static MAKE_TIME_PREFIX = 'mt';
+  static FALLBACK_LABEL = 'needsfilter';
+  static ARCHIVE_LABEL = 'archive';
+  static BLOCKED_SUFFIX = 'blocked';
+
+  static TRIAGED_LABEL = Labels.addMakeTimePrefix('z');
+  static NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('tri');
+  static QUEUED_LABEL = Labels.addMakeTimePrefix('que');
+  static PRIORITY_LABEL = Labels.addMakeTimePrefix('pri');
+  static UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
+
+  static BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
+  static PROCESSED_LABEL = Labels.triagedLabel('processed');
+  static PROCESSED_ARCHIVE_LABEL = Labels.triagedLabel('archivebyfilter');
+  static MUTED_LABEL = Labels.triagedLabel('mute');
+
+  static BLOCKED_LABEL = Labels.addQueuedPrefix(Labels.BLOCKED_SUFFIX);
+
+  static MUST_DO = 'must-do';
+  static URGENT = 'urgent';
+  static NOT_URGENT = 'not-urgent';
+  static DELEGATE = 'delegate';
+
+  static SORTED_PRIORITIES = [Labels.MUST_DO, Labels.URGENT, Labels.NOT_URGENT, Labels.DELEGATE];
+
+  static MUST_DO_LABEL = Labels.addPriorityPrefix(Labels.MUST_DO);
+  static URGENT_LABEL = Labels.addPriorityPrefix(Labels.URGENT);
+  static NOT_URGENT_LABEL = Labels.addPriorityPrefix(Labels.NOT_URGENT);
+  static DELEGATE_LABEL = Labels.addPriorityPrefix(Labels.DELEGATE);
+
+  static HIDDEN_LABELS = [
+    Labels.UNPROCESSED_LABEL,
+    Labels.TRIAGED_LABEL,
+    Labels.BANKRUPT_LABEL,
+    Labels.PROCESSED_LABEL,
+    Labels.PROCESSED_ARCHIVE_LABEL,
+    Labels.MUTED_LABEL,
+  ];
+
+  // TODO: Delete these one all users have migrated.
+  static OLD_MAKE_TIME_PREFIX = 'maketime';
+  static OLD_TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
+  static OLD_PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
+  static OLD_NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
+  static OLD_MUTED_LABEL = Labels.triagedLabel('supermuted');
+  static OLD_PROCESSED_LABEL = Labels.addMakeTimePrefix('processed');
+  static OLD_QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
+
+  private labelToId_: {};
+  private idToLabel_: {};
+  private makeTimeLabelIds_: Set<string>;
+  private makeTimeLabelNames_: Set<string>;
+  private needsTriageLabelNames_: Set<string>;
+  private priorityLabels_: Set<string>;
+
   async fetch() {
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
@@ -67,7 +188,7 @@ export class Labels {
 
   labelResource_(name) {
     let isHidden = Labels.HIDDEN_LABELS.includes(name);
-    return {
+    return <LabelResource> {
       name: name,
       messageListVisibility: isHidden ? 'hide' : 'show',
       labelListVisibility: isHidden ? 'labelHide' : 'labelShow',
@@ -125,7 +246,7 @@ export class Labels {
     }
   }
 
-  async delete(name, opt_includeNested) {
+  async delete(name, opt_includeNested?) {
     let id = this.labelToId_[name];
     if (id) {
       // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
@@ -236,109 +357,3 @@ export class Labels {
     return labelsWithThreads;
   }
 }
-
-Labels.isUserLabel = (id) => {
-  return id.startsWith('Label_');
-}
-
-Labels.removeLabelPrefix = (labelName, prefix) => {
-  return labelName.replace(new RegExp(`^${prefix}/`), '');
-}
-
-Labels.addMakeTimePrefix = (labelName) => {
-  return Labels.MAKE_TIME_PREFIX + '/' + labelName;
-}
-
-Labels.removeMakeTimePrefix = (labelName) => {
-  return Labels.removeLabelPrefix(labelName, Labels.MAKE_TIME_PREFIX);
-}
-
-Labels.isMakeTimeLabel = (labelName) => {
-  return labelName.startsWith(Labels.MAKE_TIME_PREFIX + '/');
-}
-
-Labels.triagedLabel = (labelName) => {
-  return `${Labels.TRIAGED_LABEL}/${labelName}`;
-}
-
-Labels.needsTriageLabel = (labelName) => {
-  return `${Labels.NEEDS_TRIAGE_LABEL}/${labelName}`;
-}
-
-Labels.removeNeedsTriagePrefix = (labelName) => {
-  return Labels.removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
-}
-
-Labels.isNeedsTriageLabel = (labelName) => {
-  return labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/');
-}
-
-Labels.addQueuedPrefix = (labelName) => {
-  return Labels.QUEUED_LABEL + "/" + labelName;
-}
-
-Labels.addPriorityPrefix = (labelName) => {
-  return Labels.PRIORITY_LABEL + "/" + labelName;
-}
-
-Labels.removePriorityPrefix = (labelName) => {
-  return Labels.removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
-}
-
-Labels.isPriorityLabel = (labelName) => {
-  return labelName.startsWith(Labels.PRIORITY_LABEL + '/');
-}
-
-Labels.addBankruptPrefix = (labelName) => {
-  return Labels.BANKRUPT_LABEL + "/" + labelName;
-}
-
-// TODO: This should be uppercase to match gmail.
-Labels.INBOX_LABEL = 'inbox';
-Labels.MAKE_TIME_PREFIX = 'mt';
-Labels.FALLBACK_LABEL = 'needsfilter';
-Labels.ARCHIVE_LABEL = 'archive';
-Labels.BLOCKED_SUFFIX = 'blocked';
-
-Labels.TRIAGED_LABEL = Labels.addMakeTimePrefix('z');
-Labels.NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('tri');
-Labels.QUEUED_LABEL = Labels.addMakeTimePrefix('que');
-Labels.PRIORITY_LABEL = Labels.addMakeTimePrefix('pri');
-Labels.UNPROCESSED_LABEL = Labels.addMakeTimePrefix('unprocessed');
-
-Labels.BANKRUPT_LABEL = Labels.triagedLabel('bankrupt');
-Labels.PROCESSED_LABEL = Labels.triagedLabel('processed');
-Labels.PROCESSED_ARCHIVE_LABEL = Labels.triagedLabel('archivebyfilter');
-Labels.MUTED_LABEL = Labels.triagedLabel('mute');
-
-Labels.BLOCKED_LABEL = Labels.addQueuedPrefix(Labels.BLOCKED_SUFFIX);
-
-Labels.MUST_DO = 'must-do';
-Labels.URGENT = 'urgent';
-Labels.NOT_URGENT = 'not-urgent';
-Labels.DELEGATE = 'delegate';
-
-Labels.SORTED_PRIORITIES = [Labels.MUST_DO, Labels.URGENT, Labels.NOT_URGENT, Labels.DELEGATE];
-
-Labels.MUST_DO_LABEL = Labels.addPriorityPrefix(Labels.MUST_DO);
-Labels.URGENT_LABEL = Labels.addPriorityPrefix(Labels.URGENT);
-Labels.NOT_URGENT_LABEL = Labels.addPriorityPrefix(Labels.NOT_URGENT);
-Labels.DELEGATE_LABEL = Labels.addPriorityPrefix(Labels.DELEGATE);
-
-Labels.HIDDEN_LABELS = [
-  Labels.UNPROCESSED_LABEL,
-  Labels.TRIAGED_LABEL,
-  Labels.BANKRUPT_LABEL,
-  Labels.PROCESSED_LABEL,
-  Labels.PROCESSED_ARCHIVE_LABEL,
-  Labels.MUTED_LABEL,
-];
-
-// TODO: Delete these one all users have migrated.
-Labels.OLD_MAKE_TIME_PREFIX = 'maketime';
-Labels.OLD_TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
-Labels.OLD_PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
-Labels.OLD_NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
-Labels.OLD_MUTED_LABEL = Labels.triagedLabel('supermuted');
-Labels.OLD_PROCESSED_LABEL = Labels.addMakeTimePrefix('processed');
-Labels.OLD_QUEUED_LABEL = Labels.addMakeTimePrefix('queued');

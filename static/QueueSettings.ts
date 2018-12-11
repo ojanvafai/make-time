@@ -4,6 +4,18 @@ import { Settings } from './Settings.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 
 export class QueueSettings {
+  private spreadsheetId_: string;
+  private fetcher_: AsyncOnce;
+  private map_: {};
+
+  private static BUFFER_ = 10000;
+  static MONTHLY = 'Monthly';
+  static WEEKLY = 'Weekly';
+  static DAILY = 'Daily';
+  static IMMEDIATE = 'Immediate';
+  static WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  static goals = ['Inbox Zero', 'Best Effort']
+
   constructor(spreadsheetId) {
     this.spreadsheetId_ = spreadsheetId;
     this.fetcher_ = new AsyncOnce(this.fetch_.bind(this))
@@ -54,7 +66,7 @@ export class QueueSettings {
     return aIndex - bIndex;
   }
 
-  queueData_(opt_queue, opt_goal, opt_index) {
+  queueData_(opt_queue?, opt_goal?, opt_index?) {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
       goal: opt_goal || QueueSettings.goals[0],
@@ -84,28 +96,18 @@ export class QueueSettings {
   entries() {
     return Object.entries(this.map_);
   }
+
+  static queueIndex_ = (queueData) => {
+    let multiplier = 1;
+
+    let queue = queueData.queue;
+    if (queue == QueueSettings.DAILY)
+      multiplier *= QueueSettings.BUFFER_;
+    else if (QueueSettings.WEEKDAYS.includes(queue))
+      multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
+    else if (queue == QueueSettings.MONTHLY)
+      multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
+
+    return queueData.index * multiplier;
+  }
 }
-
-QueueSettings.queueIndex_ = (queueData) => {
-  let multiplier = 1;
-
-  let queue = queueData.queue;
-  if (queue == QueueSettings.DAILY)
-    multiplier *= QueueSettings.BUFFER_;
-  else if (QueueSettings.WEEKDAYS.includes(queue))
-    multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
-  else if (queue == QueueSettings.MONTHLY)
-    multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
-
-  return queueData.index * multiplier;
-}
-
-QueueSettings.BUFFER_ = 10000;
-
-QueueSettings.MONTHLY = 'Monthly';
-QueueSettings.WEEKLY = 'Weekly';
-QueueSettings.DAILY = 'Daily';
-QueueSettings.IMMEDIATE = 'Immediate';
-QueueSettings.WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-QueueSettings.goals = ['Inbox Zero', 'Best Effort']

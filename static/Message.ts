@@ -2,10 +2,44 @@ import { Base64 } from './base64.js';
 import { QuoteElidedMessage } from './QuoteElidedMessage.js';
 import { USER_ID } from './main.js';
 
-export class Message {
-  constructor(message, previousMessage) {
-    this.base64_ = new Base64();
+interface AttachmentResult {
+  id: string,
+  name: string,
+  contentType: string;
+  contentId: string;
+}
 
+export class Message {
+  static base64_ = new Base64();
+  private rawMessage_: any;
+  private previousMessage_: Message;
+  private plain_: string;
+  private plainedHtml_: string;
+  private html_: string;
+  private quoteElidedMessage_: QuoteElidedMessage;
+
+  id: string;
+  attachments_: any[];
+  subject: string;
+  date: Date;
+  from: string;
+  fromEmails: string[];
+  fromName: string;
+  to: string;
+  toEmails: string[];
+  toName: string;
+  cc: string;
+  ccEmails: string[];
+  ccName: string;
+  bcc: string;
+  bccEmails: string[];
+  bccName: string;
+  messageId: string;
+  listId: string;
+  isUnread: boolean;
+  isDraft: boolean;
+
+  constructor(message, previousMessage) {
     this.rawMessage_ = message;
     this.previousMessage_ = previousMessage;
     this.id = message.id;
@@ -130,7 +164,7 @@ export class Message {
     if (this.rawMessage_.payload.parts) {
       this.getMessageBody_(this.rawMessage_.payload.parts);
     } else {
-      let messageText = this.base64_.decode(this.rawMessage_.payload.body.data);;
+      let messageText = Message.base64_.decode(this.rawMessage_.payload.body.data);;
       if (this.rawMessage_.payload.mimeType == "text/html")
         this.html_ = messageText;
       else
@@ -188,7 +222,7 @@ export class Message {
         'messageId': this.id,
         'userId': USER_ID,
       });
-      let data = this.base64_.base64decode(fetched.result.data);
+      let data = Message.base64_.base64decode(fetched.result.data);
       image.src = `data:${attachment.contentType},${data}`;
     }
   }
@@ -217,7 +251,7 @@ export class Message {
   }
 
   parseAttachment_(attachment) {
-    let result = {
+    let result = <AttachmentResult> {
       id: attachment.body.attachmentId,
       name: attachment.filename,
     };
@@ -249,10 +283,10 @@ export class Message {
 
       switch (part.mimeType) {
         case 'text/plain':
-          this.plain_ = this.base64_.decode(part.body.data);
+          this.plain_ = Message.base64_.decode(part.body.data);
           break;
         case 'text/html':
-          this.html_ = this.base64_.decode(part.body.data);
+          this.html_ = Message.base64_.decode(part.body.data);
           break;
       }
     }
