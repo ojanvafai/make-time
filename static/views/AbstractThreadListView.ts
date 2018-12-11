@@ -368,7 +368,7 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  compareRowGroups(_a, _b) {
+  compareRowGroups(_a, _b): number {
     throw 'TODO: Make this an abstract method once converted to TypeScript';
   };
 
