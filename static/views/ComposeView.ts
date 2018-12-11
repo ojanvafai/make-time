@@ -126,7 +126,8 @@ export class ComposeView extends HTMLElement {
     if (!this.inlineTo_) {
       this.inlineTo_ = document.createElement('div');
       let line = this.createLine_('Inline to:\xa0', this.inlineTo_);
-      this.to_.parentNode.after(line);
+      let parent = <HTMLElement> this.to_.parentNode;
+      parent.after(line);
     }
     return this.inlineTo_;
   }
@@ -222,7 +223,7 @@ export class ComposeView extends HTMLElement {
           width: 300px;
         `;
 
-        text.append(button.getAttribute('tooltip'));
+        text.append(<string>button.getAttribute('tooltip'));
         tooltipElement.append(text);
         container.append(tooltipElement);
       }

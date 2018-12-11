@@ -10,7 +10,7 @@ class AutoCompleteEntry extends HTMLElement {
 }
 window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
 
-export class Compose extends HTMLElement {
+export abstract class Compose extends HTMLElement {
   private contacts_: any;
   separator: string;
   private content_: HTMLElement;
@@ -19,6 +19,10 @@ export class Compose extends HTMLElement {
   private autocompleteContainer_: HTMLElement | null;
   private autocompleteIndex_: number;
   static EMAIL_CLASS_NAME: string;
+
+  abstract prepareAutocomplete(e: Event): void;
+  abstract isStillAutoCompleting(): boolean | null;
+  abstract selectedEntry(selectedItem: any): any;
 
   constructor(contacts, opt_isMultiline) {
     super();
@@ -88,15 +92,6 @@ export class Compose extends HTMLElement {
     });
   }
 
-  prepareAutocomplete(_e) {
-    throw 'TODO: Make this an abstract method once converted to TypeScript';
-  };
-
-  isStillAutoCompleting() {
-    throw 'TODO: Make this an abstract method once converted to TypeScript';
-    return false;
-  };
-
   updatePlaceholder_() {
     let content = this.content_;
     if (content.textContent.length) {
@@ -120,9 +115,10 @@ export class Compose extends HTMLElement {
   }
 
   autocompleteText_() {
-    let range = this.cursor_();
-    range.setStart(this.autocompleteRange.endContainer, this.autocompleteRange.endOffset);
-    return range.toString();
+    let cursor = this.cursor_();
+    let range = <Range> this.autocompleteRange;
+    cursor.setStart(range.endContainer, range.endOffset);
+    return cursor.toString();
   }
 
   renderAutocomplete_() {
@@ -171,20 +167,23 @@ export class Compose extends HTMLElement {
 
     this.selectAutocompleteItem_(0);
 
-    let rect = this.autocompleteRange.getBoundingClientRect();
+    let range = <Range> this.autocompleteRange;
+    let rect = range.getBoundingClientRect();
     this.autocompleteContainer_.style.left = `${rect.left}px`;
     this.autocompleteContainer_.style.bottom = `${document.documentElement.offsetHeight - rect.top}px`;
   }
 
   adjustAutocompleteIndex(adjustment) {
-    let newIndex = Math.max(0, Math.min(this.autocompleteIndex_ + adjustment, this.autocompleteContainer_.children.length - 1));
+    let container = <HTMLElement> this.autocompleteContainer_;
+    let newIndex = Math.max(0, Math.min(this.autocompleteIndex_ + adjustment, container.children.length - 1));
     this.selectAutocompleteItem_(newIndex);
   }
 
   selectAutocompleteItem_(index) {
+    let container = <HTMLElement> this.autocompleteContainer_;
     this.autocompleteIndex_ = index;
-    for (let i = 0; i < this.autocompleteContainer_.children.length; i++) {
-      let child = <AutoCompleteEntry> this.autocompleteContainer_.children[i];
+    for (let i = 0; i < container.children.length; i++) {
+      let child = <AutoCompleteEntry> container.children[i];
       child.style.backgroundColor = (i == index) ? '#6677dd' : 'white';
       child.style.color = (i == index) ? 'white' : 'black';
     }
@@ -236,24 +235,22 @@ export class Compose extends HTMLElement {
     this.hideAutocompleteMenu_();
   }
 
-  selectedEntry(_selectedItem) {
-    throw 'Abstract method not overridden.';
-    return null;
-  }
-
   submitAutocomplete_(opt_selectedItem?) {
-    let selectedItem = opt_selectedItem || this.autocompleteContainer_.children[this.autocompleteIndex_];
+    let container = <HTMLElement> this.autocompleteContainer_;
+    let range = <Range> this.autocompleteRange;
 
-    let range = this.cursor_();
-    range.setStart(this.autocompleteRange.startContainer, this.autocompleteRange.startOffset);
-    range.deleteContents();
+    let selectedItem = opt_selectedItem || container.children[this.autocompleteIndex_];
+
+    let cursor = this.cursor_();
+    cursor.setStart(range.startContainer, range.startOffset);
+    cursor.deleteContents();
 
     let selectedEntry = this.selectedEntry(selectedItem);
-    range.insertNode(selectedEntry);
+    cursor.insertNode(selectedEntry);
 
     let separator = document.createTextNode(this.separator);
-    range.collapse();
-    range.insertNode(separator);
+    cursor.collapse();
+    cursor.insertNode(separator);
     window.getSelection().collapse(separator, separator.length);
 
     this.cancelAutocomplete_();
@@ -262,7 +259,7 @@ export class Compose extends HTMLElement {
 
   getEmails() {
     let links = <NodeListOf<HTMLLinkElement>> this.content_.querySelectorAll(`a.${Compose.EMAIL_CLASS_NAME}`);
-    let results = [];
+    let results: string[] = [];
     for (let link of links) {
       let name = link.textContent;
       // Remove the leading +.

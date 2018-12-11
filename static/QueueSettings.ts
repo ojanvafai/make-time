@@ -86,7 +86,7 @@ export class QueueSettings {
   }
 
   getSorted(labels) {
-    let entries = [];
+    let entries: any[] = [];
     for (let label of labels) {
       entries.push(this.queueEntry_(label));
     }

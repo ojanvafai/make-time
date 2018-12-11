@@ -118,7 +118,7 @@ export class Message {
         return '';
 
       // Extract the text out of the HTML content.
-      let div = document.createElement('div');
+      let div: HTMLElement = document.createElement('div');
       div.innerHTML = this.html_;
       this.plainedHtml_ = div.textContent;
     }
@@ -231,12 +231,12 @@ export class Message {
   extractEmails_(str) {
     var regex = new RegExp('<(.*?)>|(\\S*?@\\S*)', 'g');
     str = str.toLowerCase();
-    var emails = [];
+    var emails: string[] = [];
     var match;
     while ((match = regex.exec(str.toLowerCase())) !== null) {
       for (var i = 1; i < match.length; ++i) {
         if (match[i]) {
-          emails.push(String(match[i]));
+          emails.push(match[i]);
         }
       }
     }

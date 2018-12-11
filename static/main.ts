@@ -25,7 +25,7 @@ let settings_;
 let labels_;
 let queuedLabelMap_;
 let threadCache_;
-let contacts_ = [];
+let contacts_: Contact[] = [];
 let titleStack_ = [];
 let loaderTitleStack_ = [];
 let isProcessingMail_ = false;
@@ -76,12 +76,13 @@ let DRAWER_OPEN = 'drawer-open';
 let CURRENT_PAGE_CLASS = 'current-page';
 
 function showBackArrow(show) {
-  document.getElementById('hambuger-menu-toggle').style.display = show ? 'none' : '';
-  document.getElementById('back-arrow').style.display = show ? '' : 'none';
+  (<HTMLElement> document.getElementById('hambuger-menu-toggle')).style.display = show ? 'none' : '';
+  (<HTMLElement> document.getElementById('back-arrow')).style.display = show ? '' : 'none';
 }
 
 function openMenu() {
-  let menuItems = <NodeListOf<HTMLAnchorElement>> document.getElementById('drawer').querySelectorAll('a.item');
+  let drawer = <HTMLElement> document.getElementById('drawer');
+  let menuItems = <NodeListOf<HTMLAnchorElement>> drawer.querySelectorAll('a.item');
   for (let item of menuItems) {
     if (item.pathname == location.pathname) {
       item.classList.add(CURRENT_PAGE_CLASS);
@@ -90,35 +91,35 @@ function openMenu() {
     }
   }
 
-  let mainContent = document.getElementById('main-content');
+  let mainContent = <HTMLElement> document.getElementById('main-content');
   mainContent.classList.add(DRAWER_OPEN);
 }
 
 function closeMenu() {
-  let mainContent = document.getElementById('main-content');
+  let mainContent = <HTMLElement> document.getElementById('main-content');
   mainContent.classList.remove(DRAWER_OPEN);
 }
 
 function toggleMenu() {
-  let mainContent = document.getElementById('main-content');
+  let mainContent = <HTMLElement> document.getElementById('main-content');
   if (mainContent.classList.contains(DRAWER_OPEN))
     closeMenu();
   else
     openMenu();
 }
 
-document.getElementById('back-arrow').addEventListener('click', async () => {
+(<HTMLElement> document.getElementById('back-arrow')).addEventListener('click', async () => {
   if (currentView_.goBack)
     await currentView_.goBack();
 });
 
-document.getElementById('hambuger-menu-toggle').addEventListener('click', (e) => {
+(<HTMLElement> document.getElementById('hambuger-menu-toggle')).addEventListener('click', (e) => {
   e.stopPropagation();
   toggleMenu();
 });
 
-document.getElementById('main-content').addEventListener('click', (e) => {
-  let mainContent = document.getElementById('main-content');
+(<HTMLElement> document.getElementById('main-content')).addEventListener('click', (e) => {
+  let mainContent = <HTMLElement> document.getElementById('main-content');
   if (mainContent.classList.contains(DRAWER_OPEN)) {
     e.preventDefault();
     closeMenu();
@@ -183,7 +184,7 @@ async function setView(view) {
   threads_.setListener(view);
   currentView_ = view;
 
-  var content = document.getElementById('content');
+  var content = <HTMLElement> document.getElementById('content');
   content.textContent = '';
   content.append(view);
 
@@ -213,7 +214,7 @@ async function updateSigninStatus(isSignedIn) {
 }
 
 function setSubject(...items) {
-  let subject = document.getElementById('subject');
+  let subject = <HTMLElement> document.getElementById('subject');
   subject.textContent = '';
   subject.append(...items);
 }
@@ -227,7 +228,7 @@ function updateLoaderTitle(key, opt_title?) {
   let node = document.getElementById('loader-title');
   updateTitleBase(loaderTitleStack_, node, key, opt_title);
 
-  let titleContainer = document.getElementById('loader');
+  let titleContainer = <HTMLElement> document.getElementById('loader');
   titleContainer.style.display = loaderTitleStack_.length ? '' : 'none';
 }
 
@@ -479,7 +480,7 @@ async function onLoad() {
   let menuTitle = document.createElement('div');
   menuTitle.append('MakeTime phases');
 
-  document.getElementById('drawer').append(
+  (<HTMLElement>document.getElementById('drawer')).append(
     menuTitle,
     createMenuItem('Compose', {href: '/compose', nested: true}),
     createMenuItem('Triage', {href: '/triage', nested: true}),
@@ -674,16 +675,19 @@ let NON_TEXT_INPUT_TYPES = [
 ];
 
 function isEditable(target) {
-  if (target.tagName == 'INPUT' && !NON_TEXT_INPUT_TYPES.includes(target.type))
+  let element = <Element> target;
+  if (element.tagName == 'INPUT' && !NON_TEXT_INPUT_TYPES.includes((<HTMLInputElement>element).type))
     return true;
 
-  if (target.tagName == 'TEXTAREA')
+  if (element.tagName == 'TEXTAREA')
     return true;
 
-  while (target) {
-    if (getComputedStyle(target).webkitUserModify.startsWith('read-write'))
+  let parent: Element | null = element;
+  while (parent) {
+    let userModify = getComputedStyle(parent).webkitUserModify;
+    if (userModify && userModify.startsWith('read-write'))
       return true;
-    target = target.parentElement;
+    parent = parent.parentElement;
   }
 
   return false;
@@ -693,7 +697,7 @@ document.body.addEventListener('keydown', async (e) => {
   if (!currentView_)
     return;
 
-  if (isEditable(e.target))
+  if (isEditable(<Node>e.target))
     return;
 
   if (e.key == '?') {

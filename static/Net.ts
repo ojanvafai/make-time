@@ -1,4 +1,4 @@
-let queuedRequests_ = [];
+let queuedRequests_: ((value?: {} | PromiseLike<{}> | undefined) => void)[] = [];
 let TEN_SECONDS = 10 * 1000;
 
 function backOnline() {

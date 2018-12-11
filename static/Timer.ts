@@ -1,5 +1,5 @@
 export class Timer extends HTMLElement {
-  static autoStart_: boolean;
+  static autoStart_: boolean | undefined;
   static activeTimers_: Timer[];
   paused_: boolean;
   countDown_: number;
@@ -7,9 +7,9 @@ export class Timer extends HTMLElement {
   overlayContainer_: HTMLElement;
   timeDisplay_: HTMLElement;
   timerButton_: HTMLElement;
-  timerKey_: number;
+  timerKey_: number | null;
   timeLeft_: number;
-  overlay_: HTMLElement;
+  overlay_: HTMLElement | null;
 
   constructor(autoStart, countDown, duration, overlayContainer) {
     super();
@@ -178,7 +178,6 @@ export class Timer extends HTMLElement {
   }
 }
 
-Timer.autoStart_ = undefined;
 Timer.activeTimers_ = [];
 
 window.customElements.define('mt-timer', Timer);

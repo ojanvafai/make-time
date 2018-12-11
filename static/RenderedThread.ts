@@ -2,7 +2,7 @@ import { Thread } from './Thread.js';
 
 export class RenderedThread {
   thread: Thread;
-  private dom_: HTMLElement;
+  private dom_: HTMLElement | null;
   private queued_: ((value?: {} | PromiseLike<{}>) => void)[];
   private isFetching_: boolean;
 
@@ -24,7 +24,8 @@ export class RenderedThread {
   }
 
   remove() {
-    this.dom_.remove();
+    if (this.dom_)
+      this.dom_.remove();
   }
 
   async update() {
@@ -64,10 +65,11 @@ export class RenderedThread {
       await this.fetchAndAppendMessages_();
     }
 
-    if (this.dom_.parentNode != newContainer)
-      newContainer.append(this.dom_);
+    let dom = <HTMLElement>this.dom_;
+    if (dom.parentNode != newContainer)
+      newContainer.append(dom);
 
-    return this.dom_;
+    return dom;
   }
 
   async fetchAndAppendMessages_() {

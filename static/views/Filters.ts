@@ -151,7 +151,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     `;
     help.innerHTML = FiltersView.HELP_TEXT;
 
-    let expander = help.querySelector('a');
+    let expander = <HTMLAnchorElement>help.querySelector('a');
     expander.onclick = () => {
       let existing = window.getComputedStyle(help)['-webkit-line-clamp'];
       // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
@@ -182,9 +182,9 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
 
   async save_() {
     let rows = this.querySelectorAll('tbody > tr');
-    let rules = [];
+    let rules: {}[] = [];
     for (let row of rows) {
-      let query = row.querySelector('.query').textContent;
+      let query = (<HTMLElement>row.querySelector('.query')).textContent;
       let rule = this.parseQuery_(query, true);
 
       let label = <HTMLInputElement>row.querySelector('.label');
@@ -417,8 +417,8 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     `;
     this.appendQueryParts_(editor, queryParts);
 
-    let undoStack = [];
-    let redoStack_ = [];
+    let undoStack: string[] = [];
+    let redoStack_: string[] = [];
 
     editor.addEventListener('beforeinput', (e) => {
       if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo')

@@ -21,6 +21,22 @@ declare global {
     before: ((...nodes: Node[] | string[]) => void);
   }
 
+  interface CharacterData {
+    // Technically textContent accepts null as a value in the setter, 
+    // but that's not a feature we need and needing to null check every
+    // use of the getter is a pain. See
+    // https://github.com/Microsoft/TypeScript/issues/10315.
+    textContent: string;
+  }
+
+  interface Element {
+    // Technically textContent accepts null as a value in the setter, 
+    // but that's not a feature we need and needing to null check every
+    // use of the getter is a pain. See
+    // https://github.com/Microsoft/TypeScript/issues/10315.
+    textContent: string;
+  }
+
   interface Event {
     // TODO: Technically this is only in InputEvent.
     readonly inputType: string;

@@ -17,7 +17,7 @@ export class Thread {
   private queue_: boolean;
   private processedMessages_: Message[];
   // TODO: Give this a non-any value once we import gapi types.
-  private fetchPromise_: Promise<any>;
+  private fetchPromise_: Promise<any> | null;
 
   constructor(thread, allLabels) {
     this.id = thread.id;
@@ -68,7 +68,7 @@ export class Thread {
       this.processedMessages_ = [];
     let newMessages = messages.slice(this.processedMessages_.length);
     // Only process new messages.
-    let newProcessedMessages = [];
+    let newProcessedMessages: Message[] = [];
     for (let message of newMessages) {
       let previousMessage = this.processedMessages_.length && this.processedMessages_[this.processedMessages_.length - 1];
       let processed = new Message(message, previousMessage);
@@ -120,7 +120,7 @@ export class Thread {
     if (this.labelNames_.has(destination))
       return null;
 
-    var addLabelIds = [];
+    var addLabelIds: string[] = [];
     if (destination)
       addLabelIds.push(await this.allLabels_.getId(destination));
 

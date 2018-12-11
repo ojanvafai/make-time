@@ -8,14 +8,77 @@ export class Settings {
   private fetcher_: AsyncOnce;
   spreadsheetId: string;
   private storage_: ServerStorage;
-  static sheetData_: any;
-  static fields: any;
-  static FILTERS_SHEET_COLUMNS_: string[];
   private filters_: any;
-  static FILTERS_SHEET_NAME_: string;
-  static QUEUED_LABELS_SHEET_NAME: string;
-  static QUEUED_LABELS_SHEET_COLUMNS: string[];
-  static FILTERS_RULE_DIRECTIVES: string[];
+
+  static QUEUED_LABELS_SHEET_NAME = 'queued_labels';
+  static QUEUED_LABELS_SHEET_COLUMNS = ['label', 'queue', 'goal', 'index'];
+  static FILTERS_SHEET_NAME_ = 'filters';
+  static FILTERS_RULE_DIRECTIVES = ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
+  static FILTERS_SHEET_COLUMNS_ = ['label'].concat(Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
+
+  static sheetData_ = [
+    {
+      name: Settings.FILTERS_SHEET_NAME_,
+      initialData: [Settings.FILTERS_SHEET_COLUMNS_],
+    },
+    {
+      name: Settings.QUEUED_LABELS_SHEET_NAME,
+      initialData: [Settings.QUEUED_LABELS_SHEET_COLUMNS],
+    },
+    {
+      name: 'statistics',
+      initialData: [['timestamp', 'num_threads_labelled', 'total_time', 'per_label_counts']],
+    },
+    {
+      name: 'daily_stats',
+      initialData: [['date', 'total_threads', 'archived_threads_count', 'non_archived_threads_count', 'immediate_count', 'daily_count', 'weekly_count', 'monthly_count', 'num_invocations', 'total_running_time', 'min_running_time', 'max_running_time']],
+    },
+    {
+      name: 'backend-do-not-modify',
+    },
+  ];
+
+  static fields = [
+    {
+      key: ServerStorage.KEYS.VACATION,
+      name: 'Vacation',
+      description: `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
+    },
+    {
+      key: ServerStorage.KEYS.TIMER_DURATION,
+      name: 'Triage countdown timer',
+      description: `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
+      default: 60,
+      type: 'number',
+    },
+    {
+      key: ServerStorage.KEYS.AUTO_START_TIMER,
+      name: 'Auto start timer',
+      description: `Timer automatically starts after triaging the first thread.`,
+      default: true,
+      type: 'checkbox',
+    },
+    {
+      key: ServerStorage.KEYS.ALLOWED_REPLY_LENGTH,
+      name: 'Allowed quick reply length',
+      description: `Allowed length of quick replies. Longer messages will refuse to send.`,
+      default: 280,
+      type: 'number',
+    },
+    {
+      key: ServerStorage.KEYS.DAYS_TO_SHOW,
+      name: 'Wicked witch count',
+      description: `For times when you're melting, only show emails from the past N days.`,
+      type: 'number',
+    },
+    {
+      key: ServerStorage.KEYS.LOG_MATCHING_RULES,
+      name: 'Log matching rules',
+      description: `Log the matching filter rule to the chrome developer console.`,
+      default: false,
+      type: 'checkbox',
+    },
+  ];
 
   constructor() {
     this.fetcher_ = new AsyncOnce(this.fetch_.bind(this))
@@ -74,7 +137,7 @@ export class Settings {
     });
     let spreadsheetId = response.result.spreadsheetId;
 
-    let addSheetRequests = [];
+    let addSheetRequests: {}[] = [];
     for (let i = 0; i < Settings.sheetData_.length; i++) {
       let data = Settings.sheetData_[i];
       addSheetRequests.push({addSheet: {properties: {title: data.name}}});
@@ -96,7 +159,7 @@ export class Settings {
       sheetNameToId[properties.title] = properties.sheetId;
     }
 
-    let formatSheetRequests = [];
+    let formatSheetRequests: {}[] = [];
 
     for (let i = 0; i < Settings.sheetData_.length; i++) {
       let data = Settings.sheetData_[i];
@@ -354,7 +417,7 @@ export class Settings {
       return this.filters_;
 
     let rawRules = await SpreadsheetUtils.fetchSheet(this.spreadsheetId, Settings.FILTERS_SHEET_NAME_);
-    let rules = [];
+    let rules: {}[] = [];
     let labels = {};
     this.filters_ = {
       rules: rules,
@@ -382,7 +445,7 @@ export class Settings {
   async writeFilters(rules) {
     let rows = [Settings.FILTERS_SHEET_COLUMNS_];
     for (let rule of rules) {
-      let newRule = [];
+      let newRule: string[] = [];
 
       for (let field in rule) {
         if (!Settings.FILTERS_SHEET_COLUMNS_.includes(field))
@@ -405,73 +468,3 @@ export class Settings {
     this.filters_ = null;
   }
 }
-
-Settings.QUEUED_LABELS_SHEET_NAME = 'queued_labels';
-Settings.QUEUED_LABELS_SHEET_COLUMNS = ['label', 'queue', 'goal', 'index'];
-Settings.FILTERS_SHEET_NAME_ = 'filters';
-Settings.FILTERS_RULE_DIRECTIVES = ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
-Settings.FILTERS_SHEET_COLUMNS_ = [].concat('label', Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
-
-Settings.sheetData_ = [
-  {
-    name: Settings.FILTERS_SHEET_NAME_,
-    initialData: [Settings.FILTERS_SHEET_COLUMNS_],
-  },
-  {
-    name: Settings.QUEUED_LABELS_SHEET_NAME,
-    initialData: [Settings.QUEUED_LABELS_SHEET_COLUMNS],
-  },
-  {
-    name: 'statistics',
-    initialData: [['timestamp', 'num_threads_labelled', 'total_time', 'per_label_counts']],
-  },
-  {
-    name: 'daily_stats',
-    initialData: [['date', 'total_threads', 'archived_threads_count', 'non_archived_threads_count', 'immediate_count', 'daily_count', 'weekly_count', 'monthly_count', 'num_invocations', 'total_running_time', 'min_running_time', 'max_running_time']],
-  },
-  {
-    name: 'backend-do-not-modify',
-  },
-];
-
-Settings.fields = [
-  {
-    key: ServerStorage.KEYS.VACATION,
-    name: 'Vacation',
-    description: `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
-  },
-  {
-    key: ServerStorage.KEYS.TIMER_DURATION,
-    name: 'Triage countdown timer',
-    description: `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
-    default: 60,
-    type: 'number',
-  },
-  {
-    key: ServerStorage.KEYS.AUTO_START_TIMER,
-    name: 'Auto start timer',
-    description: `Timer automatically starts after triaging the first thread.`,
-    default: true,
-    type: 'checkbox',
-  },
-  {
-    key: ServerStorage.KEYS.ALLOWED_REPLY_LENGTH,
-    name: 'Allowed quick reply length',
-    description: `Allowed length of quick replies. Longer messages will refuse to send.`,
-    default: 280,
-    type: 'number',
-  },
-  {
-    key: ServerStorage.KEYS.DAYS_TO_SHOW,
-    name: 'Wicked witch count',
-    description: `For times when you're melting, only show emails from the past N days.`,
-    type: 'number',
-  },
-  {
-    key: ServerStorage.KEYS.LOG_MATCHING_RULES,
-    name: 'Log matching rules',
-    description: `Log the matching filter rule to the chrome developer console.`,
-    default: false,
-    type: 'checkbox',
-  },
-];

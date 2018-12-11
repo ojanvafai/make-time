@@ -5,6 +5,7 @@ import { QueueSettings } from './QueueSettings.js';
 import { ServerStorage } from './ServerStorage.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 import { Settings } from './Settings.js';
+import { Thread } from './Thread.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
@@ -409,7 +410,7 @@ export class MailProcessor {
   }
 
   async processUnprocessed() {
-    let threads = [];
+    let threads: Thread[] = [];
     await fetchThreads(thread => threads.push(thread), {
       query: `in:${Labels.UNPROCESSED_LABEL}`,
     });
@@ -429,7 +430,7 @@ export class MailProcessor {
     var queuedLabel = await this.allLabels_.getId(queuedLabelName);
     var autoLabel = await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
 
-    let threads = [];
+    let threads: Thread[] = [];
     await fetchThreads(thread => threads.push(thread), {
       query: `in:${queuedLabelName}`,
     });
@@ -483,7 +484,7 @@ export class MailProcessor {
     if (startDay == endDay && diffDays < 1)
       return [];
 
-    let days = [];
+    let days: string[] = [];
 
     while (true) {
       var modded = ++startDay % QueueSettings.WEEKDAYS.length;

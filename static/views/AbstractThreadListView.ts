@@ -18,10 +18,10 @@ class RowGroup {
 
   private static groups_ = {};
 
-  static create = (queue) => {
+  static create(queue) {
     if (!RowGroup.groups_[queue])
       RowGroup.groups_[queue] = new RowGroup(queue);
-    return RowGroup.groups_[queue];
+    return <RowGroup> RowGroup.groups_[queue];
   }
 
   constructor(queue) {
@@ -113,7 +113,7 @@ export class AbstractThreadListView extends HTMLElement {
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private bestEffortButton_: HTMLElement;
-  private actions_: Actions;
+  private actions_: Actions | null;
   private tornDown_: boolean;
   private renderedRow_: ThreadRow;
   private undoableActions_: TriageResult[];
@@ -209,7 +209,7 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   setFooter_(dom) {
-    let footer = document.getElementById('footer');
+    let footer = <HTMLElement>document.getElementById('footer');
     footer.textContent = '';
     this.actions_ = null;
     footer.append(dom);
@@ -276,7 +276,7 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   updateActions_() {
-    let footer = document.getElementById('footer');
+    let footer = <HTMLElement>document.getElementById('footer');
     footer.textContent = '';
     let actions = this.renderedRow_ ? AbstractThreadListView.RENDER_ONE_ACTIONS_ : AbstractThreadListView.RENDER_ALL_ACTIONS_;
     this.actions_ = new Actions(this, actions, this.overflowActions_);
@@ -408,8 +408,8 @@ export class AbstractThreadListView extends HTMLElement {
   }
 
   getThreads() {
-    let selected = [];
-    let all = [];
+    let selected: ThreadRow[] = [];
+    let all: Thread[] = [];
     let rows = <NodeListOf<ThreadRow>> this.rowGroupContainer_.querySelectorAll('mt-thread-row');
     for (let child of rows) {
       if (child.checked)
@@ -550,7 +550,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.singleThreadContainer_.textContent = '';
     this.scrollContainer_.scrollTop = this.scrollOffset_;
 
-    this.undoableActions_ = [];
+    this.resetUndoableActions_();
     this.setRenderedRow_(null);
     this.setSubject_('');
     this.updateActions_();
@@ -564,11 +564,11 @@ export class AbstractThreadListView extends HTMLElement {
     this.scrollOffset_ = this.scrollContainer_.scrollTop;
     this.rowGroupContainer_.style.display = 'none';
 
-    this.undoableActions_ = [];
+    this.resetUndoableActions_();
   }
 
   async markTriaged(destination) {
-    this.undoableActions_ = [];
+    this.resetUndoableActions_();
 
     if (this.renderedRow_) {
       // Save this off since removeRow_ changes this.renderedRow_.
@@ -610,10 +610,15 @@ export class AbstractThreadListView extends HTMLElement {
     // TODO: Make this an abstract method once converted to TypeScript.
   };
 
+  resetUndoableActions_() {
+    this.undoableActions_ = [];
+  }
+
   async markSingleThreadTriaged(thread, destination) {
     let triageResult = <TriageResult>(await thread.markTriaged(destination));
-    if (triageResult)
+    if (triageResult) {
       this.undoableActions_.push(triageResult);
+    }
     if (this.handleTriaged)
       await this.handleTriaged(destination, triageResult, thread);
   }
@@ -629,7 +634,7 @@ export class AbstractThreadListView extends HTMLElement {
     }
 
     let actions = this.undoableActions_;
-    this.undoableActions_ = null;
+    this.resetUndoableActions_();
 
     for (let i = 0; i < actions.length; i++) {
       this.updateTitle('undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
@@ -644,7 +649,7 @@ export class AbstractThreadListView extends HTMLElement {
 
       if (this.renderedRow_) {
         let queue = await this.getDisplayableQueue(newThread);
-        let group = this.getRowGroup_(queue);
+        let group = <RowGroup>this.getRowGroup_(queue);
         this.renderOne_(group.getRow(newThread));
       }
     }
