@@ -199,7 +199,7 @@ export class AbstractThreadListView extends HTMLElement {
     throw 'TODO: Make this an abstract method once converted to TypeScript';
   };
 
-  protected appendButton(href, textContent = '') {
+  appendButton(href, textContent = '') {
     let button = document.createElement('a');
     button.className = 'label-button';
     button.href = href;
