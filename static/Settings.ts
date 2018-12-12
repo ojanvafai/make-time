@@ -152,7 +152,7 @@ export class Settings {
       resource: {requests: addSheetRequests},
     });
 
-    let sheetNameToId = {};
+    let sheetNameToId: any = {};
 
     for (let reply of addSheetsResponse.result.replies) {
       if (!reply.addSheet)
@@ -227,7 +227,7 @@ export class Settings {
     return spreadsheetId;
   }
 
-  addDailyStatsCharts_(sheetId, requests) {
+  addDailyStatsCharts_(sheetId: string, requests: any[]) {
     requests.push({
       "addChart": {
         "chart": {
@@ -387,12 +387,12 @@ export class Settings {
     });
   }
 
-  has(setting) {
+  has(setting: string) {
     let value = this.storage_.get(setting);
     return value !== undefined;
   }
 
-  get(setting) {
+  get(setting: string) {
     let value = this.storage_.get(setting);
     if (value === undefined)
       return this.defaultValue_(setting);
@@ -402,11 +402,11 @@ export class Settings {
     return value;
   }
 
-  async writeUpdates(updates) {
+  async writeUpdates(updates: any[]) {
     await this.storage_.writeUpdates(updates);
   }
 
-  defaultValue_(setting) {
+  defaultValue_(setting: string) {
     for (let field of Settings.fields) {
       if (field.key == setting)
         return field.default;
@@ -420,7 +420,7 @@ export class Settings {
 
     let rawRules = await SpreadsheetUtils.fetchSheet(this.spreadsheetId, Settings.FILTERS_SHEET_NAME_);
     let rules: {}[] = [];
-    let labels = {};
+    let labels: any = {};
     this.filters_ = {
       rules: rules,
     }
@@ -428,7 +428,7 @@ export class Settings {
     let labelColumn = ruleNames.indexOf('label');
 
     for (let i = 1, l = rawRules.length; i < l; i++) {
-      let ruleObj = {};
+      let ruleObj: any = {};
       for (let j = 0; j < ruleNames.length; j++) {
         let name = ruleNames[j];
         let value = rawRules[i][j];
@@ -444,7 +444,7 @@ export class Settings {
     return this.filters_;
   }
 
-  async writeFilters(rules) {
+  async writeFilters(rules: any[]) {
     let rows = [Settings.FILTERS_SHEET_COLUMNS_];
     for (let rule of rules) {
       let newRule: string[] = [];

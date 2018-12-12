@@ -16,12 +16,12 @@ export class Thread {
   private labelNames_!: Set<string>;
   private priority_!: string;
   private muted_!: boolean;
-  private queue_!: boolean;
+  private queue_!: string;
   private processedMessages_!: Message[];
   // TODO: Give this a non-any value once we import gapi types.
   private fetchPromise_: Promise<any> | null = null;
 
-  constructor(thread, allLabels) {
+  constructor(thread: any, allLabels: Labels) {
     this.id = thread.id;
     this.historyId = thread.historyId;
     this.snippet = thread.snippet;
@@ -34,7 +34,7 @@ export class Thread {
     }
   }
 
-  processLabels_(messages) {
+  processLabels_(messages: any[]) {
     this.labelIds_ = new Set();
     for (var message of messages) {
       for (let labelId of message.labelIds) {
@@ -64,7 +64,7 @@ export class Thread {
       this.setQueue('inbox');
   }
 
-  processMessages_(messages) {
+  processMessages_(messages: any[]) {
     this.processLabels_(messages);
     if (!this.processedMessages_)
       this.processedMessages_ = [];
@@ -72,7 +72,9 @@ export class Thread {
     // Only process new messages.
     let newProcessedMessages: Message[] = [];
     for (let message of newMessages) {
-      let previousMessage = this.processedMessages_.length && this.processedMessages_[this.processedMessages_.length - 1];
+      let previousMessage;
+      if (this.processedMessages_.length)
+        previousMessage = this.processedMessages_[this.processedMessages_.length - 1];
       let processed = new Message(message, previousMessage);
       this.processedMessages_.push(processed);
       newProcessedMessages.push(processed);
@@ -80,7 +82,7 @@ export class Thread {
     return newProcessedMessages;
   }
 
-  async modify(addLabelIds, removeLabelIds, skipHasLabelsCheck?) {
+  async modify(addLabelIds: string[], removeLabelIds: string[], skipHasLabelsCheck?: boolean) {
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
     // Make sure that any added labels are not also removed.
@@ -110,16 +112,13 @@ export class Thread {
     }
   }
 
-  async markTriaged(destination) {
-    if (destination === undefined)
-      throw `Invalid triage action attempted.`;
-
+  async markTriaged(destination: string | null) {
     // Need the message details to get the list of current applied labels.
     // Almost always we will have alread fetched this since we're showing the
     // thread to the user already.
     await this.fetchMessageDetails();
 
-    if (this.labelNames_.has(destination))
+    if (destination && this.labelNames_.has(destination))
       return null;
 
     var addLabelIds: string[] = [];
@@ -162,7 +161,7 @@ export class Thread {
     return this.processedMessages_;
   }
 
-  setQueue(queue) {
+  setQueue(queue: string) {
     this.queue_ = queue;
   }
 
@@ -194,7 +193,7 @@ export class Thread {
       throw `Attempted to reuse stale thread with ID: ${this.id}`;
   }
 
-  async fetchMessageDetails_(forceNetwork) {
+  async fetchMessageDetails_(forceNetwork?: boolean) {
     let key = `thread-${getCurrentWeekNumber()}-${this.historyId}`;
 
     if (!forceNetwork) {
@@ -222,7 +221,7 @@ export class Thread {
     return messages;
   }
 
-  async updateMessageDetails(forceNetwork?) {
+  async updateMessageDetails(forceNetwork?: boolean) {
     let messages = await this.fetchMessageDetails_(forceNetwork);
     return this.processMessages_(messages);
   }
@@ -234,19 +233,19 @@ export class Thread {
     return await this.updateMessageDetails();
   }
 
-  async sendReply(replyText, extraEmails, shouldReplyAll) {
+  async sendReply(replyText: string, extraEmails: string[], shouldReplyAll: boolean) {
     let messages = await this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
     // Gmail will remove dupes for us.
-    let to = lastMessage.from
+    let to = lastMessage.from || '';
     if (shouldReplyAll && lastMessage.to)
       to += ',' + lastMessage.to;
 
     if (extraEmails.length)
       to += ',' + extraEmails.join(',');
 
-    let subject = lastMessage.subject;
+    let subject = lastMessage.subject || '';
     let replyPrefix = 'Re: ';
     if (subject && !subject.startsWith(replyPrefix))
       subject = replyPrefix + subject;

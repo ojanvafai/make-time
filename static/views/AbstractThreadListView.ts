@@ -1,89 +1,14 @@
 import { Actions } from '../Actions.js';
 import { addThread, fetchThread, fetchThreads } from '../main.js';
-import { ErrorLogger } from '../ErrorLogger.js';
 import { Labels } from '../Labels.js';
 import { ThreadRow } from './ThreadRow.js';
-import { ThreadRowGroup } from './ThreadRowGroup.js';
 import { Timer } from '../Timer.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
 import { MailProcessor } from '../MailProcessor.js';
+import { RowGroup } from '../RowGroup.js';
 import { Thread } from '../Thread.js';
 import { ThreadGroups } from '../ThreadGroups.js';
-
-// TODO: Move this to it's own file? Deal with the name overlap with ThreadRowGroup?
-class RowGroup {
-  queue: string;
-  node: ThreadRowGroup;
-  private rows_: { [threadId: string]: ThreadRow; };
-
-  private static groups_ = {};
-
-  static create(queue) {
-    if (!RowGroup.groups_[queue])
-      RowGroup.groups_[queue] = new RowGroup(queue);
-    return <RowGroup> RowGroup.groups_[queue];
-  }
-
-  constructor(queue) {
-    this.queue = queue;
-    this.node = new ThreadRowGroup(queue);
-    this.rows_ = {};
-  }
-
-  push(thread) {
-    let currentRow = this.rows_[thread.id];
-    if (currentRow) {
-      currentRow.mark = false;
-      currentRow.setThread(thread);
-      return;
-    }
-    this.rows_[thread.id] = new ThreadRow(thread, this);
-  }
-
-  delete(row) {
-    delete this.rows_[row.thread.id];
-  }
-
-  getRow(thread) {
-    return this.rows_[thread.id];
-  }
-
-  getRows() {
-    return Object.values(this.rows_);
-  }
-
-  hasRows() {
-    return !!this.getRows().length;
-  }
-
-  getFirstRow() {
-    return Object.values(this.rows_)[0];
-  }
-
-  getRowFromRelativeOffset(row, offset) {
-    let rowToFind = this.getRow(row.thread);
-    if (rowToFind != row)
-      ErrorLogger.log(`Warning: ThreadRows don't match. Something went wrong in bookkeeping.`);
-    let rows = Object.values(this.rows_);
-    let index = rows.indexOf(rowToFind);
-    if (index == -1)
-      throw `Tried to get row via relative offset on a row that's not in the group.`;
-    if (0 <= index + offset && index + offset < rows.length)
-      return rows[index + offset];
-    return null;
-  }
-
-  mark() {
-    for (let id in this.rows_) {
-      let row = this.rows_[id];
-      row.mark = true;
-    }
-  }
-
-  getMarked() {
-    return Object.values(this.rows_).filter((row) => (<ThreadRow>row).mark);
-  }
-}
+import { View } from './View.js';
 
 interface TriageResult {
   newThread: Thread;
@@ -92,7 +17,7 @@ interface TriageResult {
   added: string[];
 }
 
-export class AbstractThreadListView extends HTMLElement {
+export abstract class AbstractThreadListView extends View {
   updateTitle: any;
   allLabels: Labels;
   private threads_: ThreadGroups;
@@ -105,7 +30,7 @@ export class AbstractThreadListView extends HTMLElement {
   private autoStartTimer_: boolean;
   private countDown_: boolean;
   private timerDuration_: number;
-  private overflowActions_: [];
+  private overflowActions_: any[] | undefined;
     // TODO: Rename this to groupedRows_?
   private groupedThreads_: RowGroup[];
   private needsProcessingThreads_: Thread[];
@@ -143,7 +68,7 @@ export class AbstractThreadListView extends HTMLElement {
     Actions.VIEW_TRIAGE_ACTION,
   ].concat(AbstractThreadListView.ACTIONS_);
 
-  constructor(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, opt_overflowActions?) {
+  constructor(threads: ThreadGroups, allLabels: Labels, mailProcessor: MailProcessor, scrollContainer: HTMLElement, updateTitleDelegate: any, setSubject: any, showBackArrow: any, allowedReplyLength: number, contacts: any, autoStartTimer: boolean, countDown: boolean, timerDuration: number, opt_overflowActions?: any[]) {
     super();
 
     this.style.cssText = `
@@ -178,8 +103,8 @@ export class AbstractThreadListView extends HTMLElement {
     `;
     this.append(this.rowGroupContainer_);
 
-    this.rowGroupContainer_.addEventListener('renderThread', (e) => {
-      this.renderOne_(e.target);
+    this.rowGroupContainer_.addEventListener('renderThread', (e: Event) => {
+      this.renderOne_(<ThreadRow> e.target);
     })
 
     this.singleThreadContainer_ = document.createElement('div');
@@ -197,11 +122,13 @@ export class AbstractThreadListView extends HTMLElement {
     this.resetUndoableActions_();
   }
 
-  fetch(_shouldBatch) {
-    throw 'TODO: Make this an abstract method once converted to TypeScript';
-  };
+  abstract async fetch(shouldBatch?: boolean): Promise<void>;
+  abstract async getDisplayableQueue(thread: Thread): Promise<string>;
+  abstract compareRowGroups(a: any, b: any): number;
+  abstract handleUndo(thread: Thread): void;
+  abstract handleTriaged(destination: string | null, triageResult: any, thread: Thread): void;
 
-  appendButton(href, textContent = '') {
+  appendButton(href: string, textContent = '') {
     let button = document.createElement('a');
     button.className = 'label-button';
     button.href = href;
@@ -210,7 +137,7 @@ export class AbstractThreadListView extends HTMLElement {
     return button;
   }
 
-  setFooter_(dom) {
+  setFooter_(dom: HTMLElement) {
     let footer = <HTMLElement>document.getElementById('footer');
     footer.textContent = '';
     this.actions_ = null;
@@ -246,7 +173,7 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  async fetchLabels(labels, shouldBatch) {
+  async fetchLabels(labels: string[], shouldBatch?: boolean) {
     if (!labels.length)
       return;
 
@@ -265,11 +192,7 @@ export class AbstractThreadListView extends HTMLElement {
     await this.processThreads_();
   }
 
-  getDisplayableQueue(_thread) {
-    throw 'TODO: Make this an abstract method once converted to TypeScript';
-  }
-
-  async findRow_(thread) {
+  async findRow_(thread: Thread) {
     let queue = await this.getDisplayableQueue(thread);
     let group = this.getRowGroup_(queue);
     if (group)
@@ -289,7 +212,7 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  async dispatchShortcut(e) {
+  async dispatchShortcut(e: KeyboardEvent) {
     if (this.actions_)
       this.actions_.dispatchShortcut(e);
   };
@@ -298,7 +221,7 @@ export class AbstractThreadListView extends HTMLElement {
     return false;
   }
 
-  async processThread(thread) {
+  async processThread(thread: Thread) {
     let processedId = await this.allLabels.getId(Labels.PROCESSED_LABEL);
     let messages = await thread.getMessages();
     let lastMessage = messages[messages.length - 1];
@@ -322,7 +245,7 @@ export class AbstractThreadListView extends HTMLElement {
     await this.mailProcessor_.processThreads(threads);
   }
 
-  getRowGroup_(queue) {
+  getRowGroup_(queue: string) {
     return this.groupedThreads_.find((item) => item.queue == queue);
   }
 
@@ -348,7 +271,7 @@ export class AbstractThreadListView extends HTMLElement {
     }
 
     for (let group of this.groupedThreads_) {
-      let newIdToRow = {};
+      let newIdToRow: any = {};
       for (let row of group.getRows()) {
         newIdToRow[row.thread.id] = row;
       }
@@ -363,18 +286,14 @@ export class AbstractThreadListView extends HTMLElement {
       }
 
       // Everything left in newIdToRow is now new threads.
-      let newRowsLeft = Object.values(newIdToRow);
+      let newRowsLeft: ThreadRow[] = Object.values(newIdToRow);
       for (let row of newRowsLeft) {
         group.node.push(row);
       }
     }
   }
 
-  compareRowGroups(_a, _b): number {
-    throw 'TODO: Make this an abstract method once converted to TypeScript';
-  };
-
-  async addThread(thread) {
+  async addThread(thread: Thread) {
     if (this.tornDown_)
       return;
 
@@ -395,7 +314,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.threads_.setBestEffort([]);
   }
 
-  pushBestEffort(_thread) {
+  pushBestEffort() {
     this.updateBestEffort_();
   }
 
@@ -424,7 +343,7 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  getRowFromRelativeOffset(row, offset) {
+  getRowFromRelativeOffset(row: ThreadRow, offset: number) {
     if (offset != -1 && offset != 1)
       throw `getRowFromRelativeOffset called with offset of ${offset}`
 
@@ -444,24 +363,31 @@ export class AbstractThreadListView extends HTMLElement {
         return rows[rows.length - 1];
       }
     }
+
+    // Satisfy TypeScript that returning undefined here is intentional.
+    return;
   }
 
-  getNextRow(row) {
+  getNextRow(row: ThreadRow) {
     return this.getRowFromRelativeOffset(row, 1);
   }
 
-  getPreviousRow(row) {
+  getPreviousRow(row: ThreadRow) {
     return this.getRowFromRelativeOffset(row, -1);
   }
 
-  async removeThread(thread) {
+  async removeThread(thread: Thread) {
     let row = await this.findRow_(thread);
-    await this.removeRow_(row);
+    if (row)
+      await this.removeRow_(row);
   }
 
-  async removeRow_(row) {
-    if (this.focusedEmail_ == row)
-      this.setFocus(this.getNextRow(row));
+  async removeRow_(row: ThreadRow) {
+    if (this.focusedEmail_ == row) {
+      let nextRow = this.getNextRow(row);
+      if (nextRow)
+        this.setFocus(nextRow);
+    }
 
     let shouldTransitionToThreadList = false;
     if (this.renderedRow_ == row) {
@@ -480,7 +406,7 @@ export class AbstractThreadListView extends HTMLElement {
       await this.transitionToThreadList_();
   }
 
-  setFocus(email) {
+  setFocus(email: HTMLElement) {
     if(this.focusedEmail_) {
       this.focusedEmail_.focused = false;
       this.focusedEmail_.updateHighlight_();
@@ -493,7 +419,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.focusedEmail_.scrollIntoView({"block":"nearest"});
   }
 
-  moveFocus(action) {
+  moveFocus(action: any) {
     if (this.focusedEmail_ == null) {
       if (action == Actions.NEXT_EMAIL_ACTION) {
         this.setFocus(this.groupedThreads_[0].getRows()[0])
@@ -505,13 +431,17 @@ export class AbstractThreadListView extends HTMLElement {
       return;
     }
     if (action == Actions.NEXT_EMAIL_ACTION) {
-      this.setFocus(this.getNextRow(this.focusedEmail_));
+      let nextRow = this.getNextRow(this.focusedEmail_);
+      if (nextRow)
+        this.setFocus(nextRow);
     } else {
-      this.setFocus(this.getPreviousRow(this.focusedEmail_));
+      let previousRow = this.getPreviousRow(this.focusedEmail_);
+      if (previousRow)
+        this.setFocus(previousRow);
     }
   }
 
-  async takeAction(action) {
+  async takeAction(action: any) {
     if (action == Actions.UNDO_ACTION) {
       this.undoLastAction_();
       return;
@@ -553,7 +483,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.scrollContainer_.scrollTop = this.scrollOffset_ || 0;
 
     this.resetUndoableActions_();
-    this.setRenderedRow_(null);
+    this.setRenderedRow_();
     this.setSubject_('');
     this.updateActions_();
 
@@ -569,7 +499,7 @@ export class AbstractThreadListView extends HTMLElement {
     this.resetUndoableActions_();
   }
 
-  async markTriaged(destination) {
+  async markTriaged(destination: string | null) {
     this.resetUndoableActions_();
 
     if (this.renderedRow_) {
@@ -587,7 +517,7 @@ export class AbstractThreadListView extends HTMLElement {
       if (threads.selectedRows.indexOf(this.focusedEmail_) != -1) {
         for (let row of threads.selectedRows) {
           const nextRow = this.getNextRow(row);
-          if(threads.selectedRows.indexOf(nextRow) == -1) {
+          if (nextRow && threads.selectedRows.indexOf(nextRow) == -1) {
             this.setFocus(nextRow);
             break;
           }
@@ -608,26 +538,17 @@ export class AbstractThreadListView extends HTMLElement {
     }
   }
 
-  handleTriaged(_destination, _triageResult, _thread) {
-    // TODO: Make this an abstract method once converted to TypeScript.
-  };
-
   resetUndoableActions_() {
     this.undoableActions_ = [];
   }
 
-  async markSingleThreadTriaged(thread, destination) {
+  async markSingleThreadTriaged(thread: Thread, destination: string | null) {
     let triageResult = <TriageResult>(await thread.markTriaged(destination));
     if (triageResult) {
       this.undoableActions_.push(triageResult);
     }
-    if (this.handleTriaged)
-      await this.handleTriaged(destination, triageResult, thread);
+    await this.handleTriaged(destination, triageResult, thread);
   }
-
-  handleUndo(_thread) {
-    // TODO: Make this an abstract method once converted to TypeScript.
-  };
 
   async undoLastAction_() {
     if (!this.undoableActions_ || !this.undoableActions_.length) {
@@ -642,8 +563,7 @@ export class AbstractThreadListView extends HTMLElement {
       this.updateTitle('undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
 
       let action = actions[i];
-      if (this.handleUndo)
-        await this.handleUndo(action.newThread);
+      await this.handleUndo(action.newThread);
 
       await action.thread.modify(action.removed, action.added, true);
       let newThread = await fetchThread(action.thread.id);
@@ -659,13 +579,13 @@ export class AbstractThreadListView extends HTMLElement {
     this.updateTitle('undoLastAction_');
   }
 
-  setRenderedRow_(row) {
+  setRenderedRow_(row?: ThreadRow) {
     if (this.renderedRow_)
       this.renderedRow_.removeRendered();
     this.renderedRow_ = row;
   }
 
-  async renderOne_(row) {
+  async renderOne_(row: ThreadRow) {
     if (this.rowGroupContainer_.style.display != 'none')
       this.transitionToSingleThread_();
 

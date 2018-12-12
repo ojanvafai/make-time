@@ -3,6 +3,9 @@ import { Actions } from '../Actions.js';
 import { fetchThreads } from '../main.js';
 import { Labels } from '../Labels.js';
 import { QueueSettings } from '../QueueSettings.js';
+import { Thread } from '../Thread.js';
+import { MailProcessor } from '../MailProcessor.js';
+import { ThreadGroups } from '../ThreadGroups.js';
 
 export class TriageView extends AbstractThreadListView {
   private vacation_ : string;
@@ -12,7 +15,7 @@ export class TriageView extends AbstractThreadListView {
     Actions.SPAM_ACTION,
   ];
 
-  constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration, queueSettings) {
+  constructor(threads: ThreadGroups, mailProcessor: MailProcessor, scrollContainer: HTMLElement, allLabels: Labels, vacation: string, updateTitleDelegate: any, setSubject: any, showBackArrow: any, allowedReplyLength: number, contacts: any, autoStartTimer: boolean, timerDuration: number, queueSettings: QueueSettings) {
     let countDown = true;
     super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.OVERFLOW_ACTIONS_);
     this.vacation_ = vacation;
@@ -20,7 +23,13 @@ export class TriageView extends AbstractThreadListView {
     this.appendButton('/make-time', `It's make-time!`);
   }
 
-  async addThread(thread) {
+  handleUndo(_thread: Thread) {
+  }
+
+  handleTriaged(_destination: string | null, _triageResult: any, _thread: Thread) {
+  }
+
+  async addThread(thread: Thread) {
     let priority = await thread.getPriority();
     // Threads with a priority have already been triaged, so don't add them.
     if (priority)
@@ -40,10 +49,10 @@ export class TriageView extends AbstractThreadListView {
   }
 
   // TODO: Store the list of threads in localStorage and update asynchronously.
-  async fetch(shouldBatch) {
+  async fetch(shouldBatch?: boolean) {
     this.updateTitle('fetch', ' ');
 
-    let labels = await this.allLabels.getThreadCountForLabels((label) => {
+    let labels = await this.allLabels.getThreadCountForLabels((label: string) => {
       return this.vacation_ ? label == Labels.needsTriageLabel(this.vacation_) : Labels.isNeedsTriageLabel(label);
     });
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
@@ -63,15 +72,15 @@ export class TriageView extends AbstractThreadListView {
     this.updateTitle('fetch');
   }
 
-  compareRowGroups(a, b) {
+  compareRowGroups(a: any, b: any) {
     return this.queueSettings_.queueNameComparator(a.queue, b.queue);
   }
 
-  async getDisplayableQueue(thread) {
+  async getDisplayableQueue(thread: Thread) {
     return await thread.getDisplayableQueue();
   }
 
-  async getQueue(thread) {
+  async getQueue(thread: Thread) {
     return thread.getQueue();
   }
 }

@@ -1,7 +1,7 @@
-import { Compose } from './Compose.js';
+import { AutoCompleteEntry, Compose } from './Compose.js';
 
 export class EmailCompose extends Compose {
-  constructor(contacts, opt_isMultiline?) {
+  constructor(contacts: any, opt_isMultiline?: boolean) {
     super(contacts, opt_isMultiline);
     this.separator = ' ';
   }
@@ -10,7 +10,7 @@ export class EmailCompose extends Compose {
     return this.autocompleteRange && this.autocompleteRange.toString() == '+';
   }
 
-  prepareAutocomplete(inputEvent) {
+  prepareAutocomplete(inputEvent: InputEvent) {
     if (inputEvent.data != '+')
       return;
 
@@ -25,7 +25,7 @@ export class EmailCompose extends Compose {
     }
   }
 
-  selectedEntry(selectedItem) {
+  selectedEntry(selectedItem: AutoCompleteEntry) {
     let link = document.createElement('a');
     link.className = Compose.EMAIL_CLASS_NAME;
     link.href = `mailto:${selectedItem.email}`;

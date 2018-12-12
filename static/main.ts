@@ -3,6 +3,12 @@ import { ErrorLogger } from './ErrorLogger.js';
 import { Labels } from './Labels.js';
 import { Router } from './Router.js';
 import { ThreadGroups } from './ThreadGroups.js';
+import { Settings } from './Settings.js';
+import { ThreadCache } from './ThreadCache.js';
+import { QueueSettings } from './QueueSettings.js';
+import { Thread } from './Thread.js';
+import { View } from './views/View.js';
+import { IDBKeyVal } from './idb-keyval.js';
 
 // Client ID and API key from the Developer Console
 let CLIENT_ID = location.toString().includes('appspot') ? '410602498749-pe1lolovqrgun0ia1jipke33ojpcmbpq.apps.googleusercontent.com' : '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
@@ -19,15 +25,15 @@ let SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapi
 export let USER_ID = 'me';
 
 let isSignedIn_ = false;
-let loginDialog_;
-let currentView_;
-let settings_;
-let labels_;
-let queuedLabelMap_;
-let threadCache_;
+let loginDialog_: HTMLDialogElement;
+let currentView_: View;
+let settings_: Settings;
+let labels_: Labels;
+let queuedLabelMap_: QueueSettings;
+let threadCache_: ThreadCache;
 let contacts_: Contact[] = [];
-let titleStack_ = [];
-let loaderTitleStack_ = [];
+let titleStack_: any[] = [];
+let loaderTitleStack_: any[] = [];
 let isProcessingMail_ = false;
 let threads_ = new ThreadGroups();
 let WEEKS_TO_STORE_ = 2;
@@ -43,39 +49,37 @@ window.onpopstate = () => {
 }
 
 router.add('/compose', async (params) => {
-  if (currentView_) {
-    await currentView_.tearDown();
-  }
+  if (currentView_)
+    currentView_.tearDown();
   await viewCompose(params);
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
 router.add('/make-time', async (_params) => {
   if (currentView_)
-    await currentView_.tearDown();
+    currentView_.tearDown();
   await viewMakeTime();
 });
 // TODO: best-effort should not be a URL since it's not a proper view.
 // or should it be a view instead?
 router.add('/best-effort', async (_params) => {
   if (currentView_)
-    await currentView_.tearDown();
+    currentView_.tearDown();
 
   threads_.processBestEffort();
   await router.run('/triage');
 });
 
 async function routeToTriage() {
-  if (currentView_) {
-    await currentView_.tearDown();
-  }
+  if (currentView_)
+    currentView_.tearDown();
   await viewTriage();
 }
 
 let DRAWER_OPEN = 'drawer-open';
 let CURRENT_PAGE_CLASS = 'current-page';
 
-function showBackArrow(show) {
+function showBackArrow(show: boolean) {
   (<HTMLElement> document.getElementById('hambuger-menu-toggle')).style.display = show ? 'none' : '';
   (<HTMLElement> document.getElementById('back-arrow')).style.display = show ? '' : 'none';
 }
@@ -126,7 +130,7 @@ function toggleMenu() {
   }
 })
 
-export function showDialog(contents) {
+export function showDialog(contents: HTMLElement) {
   let dialog = document.createElement('dialog');
   // Subtract out the top/bottom, padding and border from the max-height.
   dialog.style.cssText = `
@@ -148,7 +152,7 @@ export function showDialog(contents) {
   return dialog;
 }
 
-async function viewCompose(params) {
+async function viewCompose(params: any) {
   let ComposeView = (await import('./views/ComposeView.js')).ComposeView;
   await setView(new ComposeView(contacts_, updateLoaderTitle, params));
 }
@@ -180,7 +184,7 @@ async function viewMakeTime() {
   await setView(new MakeTimeView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
-async function setView(view) {
+async function setView(view: View) {
   threads_.setListener(view);
   currentView_ = view;
 
@@ -189,16 +193,14 @@ async function setView(view) {
   content.append(view);
 
   await login();
-
-  if (view.fetch)
-    await view.fetch();
+  await view.fetch();
 }
 
 function getScroller() {
-  return document.getElementById('content');
+  return <HTMLElement> document.getElementById('content');
 }
 
-async function updateSigninStatus(isSignedIn) {
+async function updateSigninStatus(isSignedIn: boolean) {
   isSignedIn_ = isSignedIn;
   if (isSignedIn_) {
     if (loginDialog_)
@@ -213,26 +215,26 @@ async function updateSigninStatus(isSignedIn) {
   }
 }
 
-function setSubject(...items) {
+function setSubject(...items: (string | Node)[]) {
   let subject = <HTMLElement> document.getElementById('subject');
   subject.textContent = '';
   subject.append(...items);
 }
 
-function updateTitle(key, opt_title?) {
+function updateTitle(key: string, ...opt_title: string[]) {
   let node = document.getElementById('title');
-  updateTitleBase(titleStack_, node, key, opt_title);
+  updateTitleBase(titleStack_, node!, key, ...opt_title);
 }
 
-function updateLoaderTitle(key, opt_title?) {
+function updateLoaderTitle(key: string, ...opt_title: string[]) {
   let node = document.getElementById('loader-title');
-  updateTitleBase(loaderTitleStack_, node, key, opt_title);
+  updateTitleBase(loaderTitleStack_, node!, key, ...opt_title);
 
   let titleContainer = <HTMLElement> document.getElementById('loader');
   titleContainer.style.display = loaderTitleStack_.length ? '' : 'none';
 }
 
-function updateTitleBase(stack, node, key, ...opt_title) {
+function updateTitleBase(stack: any[], node: HTMLElement, key: string, ...opt_title: string[]) {
   let index = stack.findIndex((item) => item.key == key);
   if (!opt_title[0]) {
     if (index != -1)
@@ -252,7 +254,7 @@ function updateTitleBase(stack, node, key, ...opt_title) {
     node.append(...stack[stack.length - 1].title);
 }
 
-export async function fetchThread(id) {
+export async function fetchThread(id: string) {
   let requestParams = {
     'userId': USER_ID,
     'id': id,
@@ -273,7 +275,7 @@ interface FetchRequestParameters {
   pageToken: string;
 }
 
-export async function fetchThreads(forEachThread, options) {
+export async function fetchThreads(forEachThread: (thread: Thread) => void, options: any) {
   // Chats don't expose their bodies in the gmail API, so just skip them.
   let query = '-in:chats ';
 
@@ -287,7 +289,7 @@ export async function fetchThreads(forEachThread, options) {
 
   let labels = await getLabels();
 
-  let getPageOfThreads = async (opt_pageToken?) => {
+  let getPageOfThreads = async (opt_pageToken?: string) => {
     let requestParams = <FetchRequestParameters> {
       'userId': USER_ID,
       'q': query,
@@ -312,7 +314,7 @@ export async function fetchThreads(forEachThread, options) {
   await getPageOfThreads();
 }
 
-async function isBestEffortQueue(thread) {
+async function isBestEffortQueue(thread: Thread) {
   let queue = await thread.getQueue();
   let parts = queue.split('/');
   let lastPart = parts[parts.length - 1];
@@ -324,7 +326,7 @@ async function isBestEffortQueue(thread) {
 // aren't great. Would be best to know how long the email was actually in the
 // inbox rather than when the last email was sent, e.g. if someone was on vacation.
 // Could track the last N dequeue dates for each queue maybe?
-async function isBankrupt(thread) {
+async function isBankrupt(thread: Thread) {
   let messages = await thread.getMessages();
   let date = messages[messages.length - 1].date;
   let queue = await thread.getQueue();
@@ -342,7 +344,7 @@ async function isBankrupt(thread) {
   return diffDays > numDays;
 }
 
-async function bankruptThread(thread) {
+async function bankruptThread(thread: Thread) {
   let queue = await thread.getQueue();
   queue = Labels.removeNeedsTriagePrefix(queue);
   let newLabel = Labels.addBankruptPrefix(queue);
@@ -350,7 +352,7 @@ async function bankruptThread(thread) {
 }
 
 // TODO: Don't export this.
-export async function addThread(thread) {
+export async function addThread(thread: Thread) {
   if (threads_.getBestEffort() && await isBestEffortQueue(thread)) {
     if (await isBankrupt(thread)) {
       await bankruptThread(thread);
@@ -363,11 +365,10 @@ export async function addThread(thread) {
     }
   }
 
-  if (currentView_.addThread)
-    await currentView_.addThread(thread);
+  await currentView_.addThread(thread);
 }
 
-function createMenuItem(name, options) {
+function createMenuItem(name: string, options: any) {
   let a = document.createElement('a');
   a.append(name);
   a.className = 'item';
@@ -386,7 +387,7 @@ function createMenuItem(name, options) {
   return a;
 }
 
-async function gapiFetch(method, requestParams, opt_requestBody) {
+async function gapiFetch(method: any, requestParams: any, opt_requestBody: any) {
   let fetcher = (await import('./Net.js')).gapiFetch;
   return fetcher(method, requestParams, opt_requestBody);
 }
@@ -399,7 +400,7 @@ async function serverStorage() {
   return (await import('./ServerStorage.js')).ServerStorage;
 }
 
-async function getCachedThread(response, labels) {
+async function getCachedThread(response: any, labels: Labels) {
   let ThreadCache = (await import('./ThreadCache.js')).ThreadCache;
   if (!threadCache_)
     threadCache_ = new ThreadCache();
@@ -421,7 +422,7 @@ async function showHelp() {
   help.showHelp();
 }
 
-let settingThingsFetcher_;
+let settingThingsFetcher_: AsyncOnce;
 async function fetchTheSettingsThings() {
   if (!settingThingsFetcher_) {
     settingThingsFetcher_ = new AsyncOnce(async () => {
@@ -453,7 +454,7 @@ async function fetchTheSettingsThings() {
   await settingThingsFetcher_.do();
 }
 
-async function migrateLabels(labels) {
+async function migrateLabels(labels: Labels) {
   // Rename parent labesl before sublabels.
   await labels.rename(Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX);
   await labels.rename(Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL);
@@ -514,7 +515,7 @@ interface Contact {
   emails: string[];
 }
 
-async function fetchContacts(token) {
+async function fetchContacts(token: any) {
   if (contacts_.length)
     return;
 
@@ -564,7 +565,7 @@ async function fetchContacts(token) {
   await idb.set(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
-let queueSettingsFetcher_;
+let queueSettingsFetcher_: AsyncOnce;
 async function getQueuedLabelMap() {
   if (!queueSettingsFetcher_) {
     queueSettingsFetcher_ = new AsyncOnce(async () => {
@@ -584,7 +585,7 @@ async function getMailProcessor() {
 
 // TODO: Move this to a helper file with all the other async import things so that they're all in
 // one file that is imported instead of duplicated across the codebase.
-let idbKeyVal_;
+let idbKeyVal_: IDBKeyVal;
 async function idbKeyVal() {
   let IDBKeyVal = (await import('./idb-keyval.js')).IDBKeyVal;
   if (!idbKeyVal_)
@@ -674,8 +675,7 @@ let NON_TEXT_INPUT_TYPES = [
   'submit',
 ];
 
-function isEditable(target) {
-  let element = <Element> target;
+function isEditable(element: Element) {
   if (element.tagName == 'INPUT' && !NON_TEXT_INPUT_TYPES.includes((<HTMLInputElement>element).type))
     return true;
 
@@ -697,7 +697,7 @@ document.body.addEventListener('keydown', async (e) => {
   if (!currentView_)
     return;
 
-  if (isEditable(<Node>e.target))
+  if (isEditable(<Element>e.target))
     return;
 
   if (e.key == '?') {

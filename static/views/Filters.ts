@@ -6,6 +6,7 @@ interface FilterRule {
   matchallmessages: string;
   nolistid: boolean;
   nocc: boolean;
+  [property: string]: string | boolean;
 }
 
 export class FiltersView extends HTMLElement {
@@ -42,7 +43,7 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
 If there's a bug in the filtering code, emails should remain in the unprocessed label.
 `;
 
-  constructor(settings) {
+  constructor(settings: Settings) {
     super();
     this.style.cssText = `
       display: flex;
@@ -56,7 +57,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     this.render_();
   }
 
-  handleKeyDown_(e) {
+  handleKeyDown_(e: KeyboardEvent) {
     // TODO: Use metaKey on mac and ctrlKey elsewhere.
     let hasModifier = e.ctrlKey || e.metaKey;
     if (!hasModifier)
@@ -73,7 +74,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     }
   }
 
-  moveRow_(direction, move10) {
+  moveRow_(direction: string, move10: boolean) {
     // TODO: Put a proper type on this.
     let focused = <any> document.activeElement;
 
@@ -153,11 +154,11 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
 
     let expander = <HTMLAnchorElement>help.querySelector('a');
     expander.onclick = () => {
-      let existing = window.getComputedStyle(help)['-webkit-line-clamp'];
+      let existing = window.getComputedStyle(help).webkitLineClamp;
       // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
       // returns 'none' from computed style.
       let wasUnclamped = existing == 'none';
-      help.style['-webkit-line-clamp'] = wasUnclamped ? '2' : 'unset';
+      help.style.webkitLineClamp = wasUnclamped ? '2' : 'unset';
       expander.textContent = wasUnclamped ? 'show more' : 'show less';
     };
 
@@ -218,14 +219,14 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     this.dialog_.close();
   }
 
-  appendCell_(container, item) {
+  appendCell_(container: HTMLElement, item: HTMLElement) {
     let td = document.createElement('td');
     td.append(item);
     container.append(td);
     return td;
   }
 
-  createRule_(rule) {
+  createRule_(rule: any) {
     let container = document.createElement('tr');
     container.style.cssText = `
       line-height: 1.7em;
@@ -257,7 +258,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
       label.value = rule.label;
     this.appendCell_(container, label);
 
-    let queryParts = {};
+    let queryParts: any = {};
     for (let field in rule) {
       if (!Settings.FILTERS_RULE_DIRECTIVES.includes(field))
         continue;
@@ -275,7 +276,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     return container;
   }
 
-  appendCheckbox_(container, className, value) {
+  appendCheckbox_(container: HTMLElement, className: string, value: string) {
     let checkbox = document.createElement('input');
     checkbox.classList.add(className);
     checkbox.type = 'checkbox';
@@ -284,7 +285,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     cell.style.textAlign = 'center';
   }
 
-  appendWithSentinel_(container, text) {
+  appendWithSentinel_(container: HTMLElement, text: string) {
     let index = text.indexOf(this.cursorSentinel_);
     if (index == -1) {
       container.append(text);
@@ -296,12 +297,12 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     container.append(text.substring(index + this.cursorSentinel_.length));
   }
 
-  appendSentinelElement_(container) {
+  appendSentinelElement_(container: HTMLElement) {
     this.cursorSentinelElement_ = document.createElement('span');
     container.append(this.cursorSentinelElement_);
   }
 
-  appendQueryParts_(container, queryParts) {
+  appendQueryParts_(container: HTMLElement, queryParts: any) {
     let isFirst = true;
     let previousEndedInWhiteSpace = false;
     let space = ' ';
@@ -360,7 +361,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     }
   }
 
-  parseQuery_(query, trimWhitespace) {
+  parseQuery_(query: string, trimWhitespace: boolean) {
     let queryParts = <FilterRule>{};
     query = query.replace(/[\n\r]/g, '');
     let directives = query.split(FiltersView.QUERY_SEPARATOR_);
@@ -385,13 +386,13 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     return queryParts;
   }
 
-  setEditorText_(editor, text, trimWhitespace) {
+  setEditorText_(editor: HTMLElement, text: string, trimWhitespace: boolean) {
     editor.textContent = '';
     let newParts = this.parseQuery_(text, trimWhitespace);
     this.appendQueryParts_(editor, newParts);
   }
 
-  setEditorTextAndSelectSentinel_(editor, text) {
+  setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
     if (!this.cursorSentinelElement_)
       throw 'Something went wrong. This should never happen.';
@@ -405,14 +406,14 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     return node;
   }
 
-  getEditorTextContentWithSentinel_(editor) {
+  getEditorTextContentWithSentinel_(editor: HTMLElement) {
     let sentinel = this.insertSentinelText_();
     let content = editor.textContent;
     sentinel.remove();
     return content;
   }
 
-  createQueryEditor_(queryParts) {
+  createQueryEditor_(queryParts: any) {
     let editor = document.createElement('div');
     editor.contentEditable = 'plaintext-only';
     editor.style.cssText = `
@@ -466,7 +467,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
     return editor;
   }
 
-  createOption_(value) {
+  createOption_(value: string) {
     let option = document.createElement('option');
     option.value = value;
     option.append(value);

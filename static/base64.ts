@@ -3,7 +3,7 @@ let b64u = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";  
 let b64pad = '=';
 
 export class Base64 {
-  base64decode(data) {
+  base64decode(data: string) {
     var dst = ""
     var i, a, b, c, d;
 
@@ -27,12 +27,12 @@ export class Base64 {
    * Input is assumed to be a base64url encoded UTF-8 string.
    * Returned result is a JavaScript (UCS-2) string.
    */
-  decode(data) {
+  decode(data: string) {
     let dst = this.base64decode(data);
     return decodeURIComponent(dst);
   }
 
-  encode(str) {
+  encode(str: string) {
     var data = unescape(encodeURIComponent(str));
     var len = data.length;
 
@@ -65,7 +65,7 @@ export class Base64 {
     return dst;
   }
 
-  charIndex(c) {
+  charIndex(c: string) {
     if (c == "+") return 62
     if (c == "/") return 63
     return b64u.indexOf(c)

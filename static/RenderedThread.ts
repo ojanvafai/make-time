@@ -1,4 +1,5 @@
 import { Thread } from './Thread.js';
+import { Message } from './Message.js';
 
 export class RenderedThread {
   thread: Thread;
@@ -6,7 +7,7 @@ export class RenderedThread {
   private queued_: ((value?: {} | PromiseLike<{}>) => void)[];
   private isFetching_: boolean = false;
 
-  constructor(thread) {
+  constructor(thread: Thread) {
     this.thread = thread;
     this.dom_ = null;
     this.queued_ = [];
@@ -56,7 +57,7 @@ export class RenderedThread {
     }
   }
 
-  async render(newContainer) {
+  async render(newContainer: HTMLElement) {
     // No need to block on fetching messages if we've already rendering some of them.
     if (this.dom_) {
       // Intentionally don't await this so the messages are rendered ASAP.
@@ -88,7 +89,7 @@ export class RenderedThread {
     this.processRenderingQueue_();
   }
 
-  renderMessage_(processedMessage) {
+  renderMessage_(processedMessage: Message) {
     var messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
       padding: 0 8px;
@@ -118,12 +119,14 @@ export class RenderedThread {
     let from = document.createElement('div');
     from.style.cssText = `color: black`;
 
-    if (processedMessage.from.includes('<')) {
-      let b = document.createElement('b');
-      b.append(processedMessage.fromName);
-      from.append(b, ' <', processedMessage.fromEmails[0], '>');
-    } else {
-      from.append(processedMessage.from);
+    if (processedMessage.from) {
+      if (processedMessage.from.includes('<')) {
+        let b = document.createElement('b');
+        b.append(<string> processedMessage.fromName);
+        from.append(b, ' <', (<string[]> processedMessage.fromEmails)[0], '>');
+      } else {
+        from.append(processedMessage.from);
+      }
     }
 
     let to = document.createElement('div');
@@ -142,10 +145,10 @@ export class RenderedThread {
       float: right;
     `;
     expander.onclick = () => {
-      let existing = window.getComputedStyle(to)['-webkit-line-clamp'];
+      let existing = window.getComputedStyle(to).webkitLineClamp;
       // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
       // returns 'none' from computed style.
-      to.style['-webkit-line-clamp'] = existing == 'none' ? '1' : 'unset';
+      to.style.webkitLineClamp = existing == 'none' ? '1' : 'unset';
     };
     expander.append('▾');
     rightItems.append(expander);
@@ -183,7 +186,7 @@ export class RenderedThread {
     return messageDiv;
   }
 
-  appendAddresses_(container, name, value) {
+  appendAddresses_(container: HTMLElement, name: string, value: string) {
     let div = document.createElement('div');
     div.style.cssText = `overflow: hidden;`;
     let b = document.createElement('b');

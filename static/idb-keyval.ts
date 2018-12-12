@@ -17,7 +17,7 @@ export class IDBKeyVal {
       };
     });
   }
-  _withIDBStore(type, callback) {
+  _withIDBStore(type: any, callback: any) {
     return this._dbp.then(db => new Promise((resolve, reject) => {
       const transaction = db.transaction(this.storeName, type);
       transaction.oncomplete = () => resolve();
@@ -25,30 +25,30 @@ export class IDBKeyVal {
       callback(transaction.objectStore(this.storeName));
     }));
   }
-  get(key) {
-    let req;
-    return this._withIDBStore('readonly', store => {
+  get(key: string) {
+    let req: any;
+    return this._withIDBStore('readonly', (store: any) => {
       req = store.get(key);
     }).then(() => req.result);
   }
-  set(key, value) {
-    return this._withIDBStore('readwrite', store => {
+  set(key: string, value: any) {
+    return this._withIDBStore('readwrite', (store: any) => {
       store.put(value, key);
     });
   }
-  del(key) {
-    return this._withIDBStore('readwrite', store => {
+  del(key: string) {
+    return this._withIDBStore('readwrite', (store: any) => {
       store.delete(key);
     });
   }
   clear() {
-    return this._withIDBStore('readwrite', store => {
+    return this._withIDBStore('readwrite', (store: any) => {
       store.clear();
     });
   }
   keys() {
-    let req;
-    return this._withIDBStore('readonly', store => {
+    let req: any;
+    return this._withIDBStore('readonly', (store: any) => {
       req = store.getAllKeys();
     }).then(() => req.result);
   }

@@ -6,9 +6,9 @@ export class Router {
     this.rules_ = [];
   }
 
-  getParams_(rule, pathParts, queryParts) {
-    var params = {};
-    var missingParams = {};
+  getParams_(rule: any, pathParts: string[], queryParts: string[]) {
+    var params: any = {};
+    var missingParams: any = {};
 
     // Don't match if fixed rule is longer than path
     if (rule.parts.length < pathParts.length)
@@ -46,14 +46,14 @@ export class Router {
     return params;
   }
 
-  add(route, handler) {
+  add(route: any, handler: (params: any) => void) {
     this.rules_.push({
       parts: this.parsePath_(route),
       handler: handler
     });
   }
 
-  parsePath_(path) {
+  parsePath_(path: string) {
     if (path.charAt(0) != '/')
       throw `Path must start with a /. Path: ${path}`;
     // Strip the leading '/'.
@@ -63,21 +63,21 @@ export class Router {
   // Ewww...this can't be async because want to return a promise only in the case where
   // the router handles this location so that the click handler for links can preventDefault
   // synchronously.
-  run(location, excludeFromHistory?) {
+  run(location: Location | HTMLAnchorElement | string, excludeFromHistory?: boolean) {
     // TODO: Don't allow strings as an argument. Allow Node or Location only.
     let isString = typeof location == 'string';
-    let path = isString ? location : location.pathname;
+    let path = isString ? <string> location : (<Location | HTMLAnchorElement> location).pathname;
     if (!path)
       return null;
 
     // Don't route cross origin links.
-    if (!isString && window.location.origin != location.origin)
+    if (!isString && window.location.origin != (<Location | HTMLAnchorElement> location).origin)
       return null;
 
     let pathParts = this.parsePath_(path);
     // TODO: Allow including query parameters in the string version.
     // Strip the leading '?'.
-    let queryParts = isString ? [] : location.search.substring(1).split('&');
+    let queryParts = isString ? [] : (<Location | HTMLAnchorElement> location).search.substring(1).split('&');
 
     for (let rule of this.rules_) {
       var params = this.getParams_(rule, pathParts, queryParts);

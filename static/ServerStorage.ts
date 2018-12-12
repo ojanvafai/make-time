@@ -2,11 +2,11 @@ import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 
 export class ServerStorage {
   private spreadsheetId_: string;
-  private static backendValues_: {};
+  private static backendValues_: any;
   static BACKEND_SHEET_NAME_: string;
   static KEYS: KeyTypes;
 
-  constructor(spreadsheetId) {
+  constructor(spreadsheetId: string) {
     this.spreadsheetId_ = spreadsheetId;
   }
 
@@ -25,13 +25,13 @@ export class ServerStorage {
     }
   }
 
-  get(key) {
+  get(key: string) {
     if (!ServerStorage.backendValues_)
       throw `Attempted to read out of storage before fetching from the network: ${key}.`;
     return ServerStorage.backendValues_[key];
   }
 
-  async writeUpdates(updates) {
+  async writeUpdates(updates: any[]) {
     for (let update of updates) {
       ServerStorage.backendValues_[update.key] = update.value;
     }

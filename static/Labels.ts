@@ -1,6 +1,7 @@
 import { fetchThreads, USER_ID } from './main.js';
+import { Thread } from './Thread.js';
 
-async function gapiFetch(method, requestParams, opt_requestBody) {
+async function gapiFetch(method: any, requestParams: any, opt_requestBody?: string) {
   let fetcher = (await import('./Net.js')).gapiFetch;
   return fetcher(method, requestParams, opt_requestBody);
 }
@@ -14,59 +15,59 @@ interface LabelResource {
 }
 
 export class Labels {
-  static isUserLabel = (id) => {
+  static isUserLabel = (id: string) => {
     return id.startsWith('Label_');
   }
 
-  static removeLabelPrefix = (labelName, prefix) => {
+  static removeLabelPrefix = (labelName: string, prefix: string) => {
     return labelName.replace(new RegExp(`^${prefix}/`), '');
   }
 
-  static addMakeTimePrefix = (labelName) => {
+  static addMakeTimePrefix = (labelName: string) => {
     return Labels.MAKE_TIME_PREFIX + '/' + labelName;
   }
 
-  static removeMakeTimePrefix = (labelName) => {
+  static removeMakeTimePrefix = (labelName: string) => {
     return Labels.removeLabelPrefix(labelName, Labels.MAKE_TIME_PREFIX);
   }
 
-  static isMakeTimeLabel = (labelName) => {
+  static isMakeTimeLabel = (labelName: string) => {
     return labelName.startsWith(Labels.MAKE_TIME_PREFIX + '/');
   }
 
-  static triagedLabel = (labelName) => {
+  static triagedLabel = (labelName: string) => {
     return `${Labels.TRIAGED_LABEL}/${labelName}`;
   }
 
-  static needsTriageLabel = (labelName) => {
+  static needsTriageLabel = (labelName: string) => {
     return `${Labels.NEEDS_TRIAGE_LABEL}/${labelName}`;
   }
 
-  static removeNeedsTriagePrefix = (labelName) => {
+  static removeNeedsTriagePrefix = (labelName: string) => {
     return Labels.removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
   }
 
-  static isNeedsTriageLabel = (labelName) => {
+  static isNeedsTriageLabel = (labelName: string) => {
     return labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/');
   }
 
-  static addQueuedPrefix = (labelName) => {
+  static addQueuedPrefix = (labelName: string) => {
     return Labels.QUEUED_LABEL + "/" + labelName;
   }
 
-  static addPriorityPrefix = (labelName) => {
+  static addPriorityPrefix = (labelName: string) => {
     return Labels.PRIORITY_LABEL + "/" + labelName;
   }
 
-  static removePriorityPrefix = (labelName) => {
+  static removePriorityPrefix = (labelName: string) => {
     return Labels.removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
   }
 
-  static isPriorityLabel = (labelName) => {
+  static isPriorityLabel = (labelName: string) => {
     return labelName.startsWith(Labels.PRIORITY_LABEL + '/');
   }
 
-  static addBankruptPrefix = (labelName) => {
+  static addBankruptPrefix = (labelName: string) => {
     return Labels.BANKRUPT_LABEL + "/" + labelName;
   }
 
@@ -122,8 +123,8 @@ export class Labels {
 
   // TODO: These can be undefined if fetch hasn't finished. Make the code
   // robust to that and remove the !'s
-  private labelToId_!: {};
-  private idToLabel_!: {};
+  private labelToId_!: any;
+  private idToLabel_!: any;
   private makeTimeLabelIds_!: Set<string>;
   private makeTimeLabelNames_!: Set<string>;
   private needsTriageLabelNames_!: Set<string>;
@@ -152,7 +153,7 @@ export class Labels {
     }
   }
 
-  addLabel_(name, id) {
+  addLabel_(name: string, id: string) {
     this.labelToId_[name] = id;
     this.idToLabel_[id] = name;
     if (Labels.isMakeTimeLabel(name)) {
@@ -165,7 +166,7 @@ export class Labels {
     }
   }
 
-  removeLabel_(name) {
+  removeLabel_(name: string) {
     let id = this.labelToId_[name];
     delete this.labelToId_[name];
     delete this.idToLabel_[id];
@@ -175,11 +176,11 @@ export class Labels {
     this.priorityLabels_.delete(name);
   }
 
-  getName(id) {
+  getName(id: string) {
     return this.idToLabel_[id];
   }
 
-  isParentLabel(name) {
+  isParentLabel(name: string) {
     let prefix = `${name}/`;
     for (let name in this.labelToId_) {
       if (name.startsWith(prefix))
@@ -188,7 +189,7 @@ export class Labels {
     return false;
   }
 
-  labelResource_(name) {
+  labelResource_(name: string) {
     let isHidden = Labels.HIDDEN_LABELS.includes(name);
     return <LabelResource> {
       name: name,
@@ -197,7 +198,7 @@ export class Labels {
     };
   }
 
-  async updateVisibility_(name, id) {
+  async updateVisibility_(name: string, id: string) {
     let resource = this.labelResource_(name);
     resource.id = id;
     resource.userId = USER_ID;
@@ -206,17 +207,17 @@ export class Labels {
     return response.result;
   }
 
-  async migrateThreads(oldName, newName) {
+  async migrateThreads(oldName: string, newName: string) {
     let addLabelIds = [this.labelToId_[newName]];
     let removeLabelIds = [this.labelToId_[oldName]];
-    await fetchThreads(async thread => {
+    await fetchThreads(async (thread: Thread) => {
       await thread.modify(addLabelIds, removeLabelIds, true);
     }, {
       query: `in:${oldName}`,
     });
   }
 
-  async rename(oldName, newName) {
+  async rename(oldName: string, newName: string) {
     let id = this.labelToId_[oldName];
     if (id) {
       if (this.labelToId_[newName]) {
@@ -248,7 +249,7 @@ export class Labels {
     }
   }
 
-  async delete(name, opt_includeNested?) {
+  async delete(name: string, opt_includeNested?: boolean) {
     let id = this.labelToId_[name];
     if (id) {
       // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
@@ -268,7 +269,7 @@ export class Labels {
     }
   }
 
-  async createLabel_(name) {
+  async createLabel_(name: string) {
     let resource = this.labelResource_(name);
     resource.userId = USER_ID;
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
@@ -276,11 +277,11 @@ export class Labels {
     return resp.result;
   }
 
-  async getIds(names) {
+  async getIds(names: string[]) {
     return await Promise.all(names.map(async (name) => await this.getId(name)));
   }
 
-  async getId(labelName) {
+  async getId(labelName: string) {
     if (this.labelToId_[labelName])
       return this.labelToId_[labelName];
 
@@ -326,7 +327,7 @@ export class Labels {
     return Array.from(this.priorityLabels_);
   }
 
-  async getThreadCountForLabels(labelFilter) {
+  async getThreadCountForLabels(labelFilter: any) {
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let batch = gapi.client.newBatch();
 

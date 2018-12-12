@@ -2,7 +2,7 @@ export class Timer extends HTMLElement {
   static autoStart_: boolean | undefined;
   static activeTimers_: Timer[];
   paused_: boolean = false;
-  countDown_: number;
+  countDown_: boolean;
   duration_: number;
   overlayContainer_: HTMLElement;
   timeDisplay_: HTMLElement;
@@ -11,7 +11,7 @@ export class Timer extends HTMLElement {
   timeLeft_: number = 0;
   overlay_: HTMLElement | null = null;
 
-  constructor(autoStart, countDown, duration, overlayContainer) {
+  constructor(autoStart: boolean, countDown: boolean, duration: number, overlayContainer: HTMLElement) {
     super();
 
     this.style.cssText = `
@@ -60,7 +60,7 @@ export class Timer extends HTMLElement {
     this.clearOverlay_();
   }
 
-  visibilityChanged(isHidden) {
+  visibilityChanged(isHidden: boolean) {
     if (!isHidden) {
       this.nextTick_();
       return;

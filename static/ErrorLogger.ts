@@ -38,7 +38,7 @@ class Logger extends HTMLElement {
     this.append(buttonContainer);
   }
 
-  log(message) {
+  log(message: string) {
     console.error(message);
 
     if (!this.parentNode)

@@ -27,7 +27,7 @@ export class ViewInGmailButton extends HTMLElement {
     };
   }
 
-  setMessageId(messageId) {
+  setMessageId(messageId: string) {
     // In theory, linking to the threadId should work, but it doesn't for some threads.
     // Linking to the messageId seems to work reliably. The message ID listed will be expanded
     // in the gmail UI, so link to the last one since that one is definitionally always expanded.

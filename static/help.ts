@@ -1,6 +1,6 @@
 import { showDialog } from './main.js';
 
-let helpHtml_;
+let helpHtml_: string;
 
 export function showHelp() {
   let contents = document.createElement('div');

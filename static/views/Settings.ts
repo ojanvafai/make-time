@@ -13,7 +13,7 @@ export class SettingsView extends HTMLElement {
   private dialog_: HTMLDialogElement;
   private basicSettings_: HTMLElement;
 
-  constructor(settingsData, queuedLabelData) {
+  constructor(settingsData: Settings, queuedLabelData: QueueSettings) {
     super();
     this.style.cssText = `
       display: flex;
@@ -103,7 +103,7 @@ export class SettingsView extends HTMLElement {
     }
 
     let filters = await this.settings_.getFilters();
-    let queues = new Set();
+    let queues: Set<string> = new Set();
     for (let rule of filters.rules) {
       queues.add(rule.label);
     }
@@ -116,7 +116,7 @@ export class SettingsView extends HTMLElement {
     this.cancel_();
   }
 
-  populateSettings_(container) {
+  populateSettings_(container: HTMLElement) {
     for (let field of Settings.fields) {
       let label = document.createElement('label');
       label.style.cssText = `
@@ -134,7 +134,7 @@ export class SettingsView extends HTMLElement {
       helpButton.textContent = '?';
       helpButton.setAttribute('tooltip', field.description);
 
-      let tooltipElement;
+      let tooltipElement: HTMLElement;
       helpButton.onmouseenter = () => {
         tooltipElement = document.createElement('div');
 
@@ -148,7 +148,7 @@ export class SettingsView extends HTMLElement {
           z-index: 100;
         `;
 
-        tooltipElement.append(helpButton.getAttribute('tooltip'));
+        tooltipElement.append(<string> helpButton.getAttribute('tooltip'));
         helpButton.after(tooltipElement);
       }
       helpButton.onmouseleave = () => {

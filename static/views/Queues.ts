@@ -3,7 +3,7 @@ import { showDialog } from '../main.js';
 import { QueueSettings } from '../QueueSettings.js';
 
 export class QueuesView extends HTMLElement {
-  private queueNames_: string[];
+  private queueNames_: Set<string>;
   private queuedLabelData_: QueueSettings;
   private immediate_: HTMLElement | undefined;
   private daily_: HTMLElement | undefined;
@@ -19,7 +19,7 @@ export class QueuesView extends HTMLElement {
 
  Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
 
-  constructor(queueNames, queuedLabelData) {
+  constructor(queueNames: Set<string>, queuedLabelData: QueueSettings) {
     super();
 
     this.style.cssText = `
@@ -37,7 +37,7 @@ export class QueuesView extends HTMLElement {
     this.render_();
   }
 
-  handleKeyDown_(e) {
+  handleKeyDown_(e: KeyboardEvent) {
     // TODO: Use metaKey on mac and ctrlKey elsewhere.
     let hasModifier = e.ctrlKey || e.metaKey;
     if (!hasModifier)
@@ -54,13 +54,13 @@ export class QueuesView extends HTMLElement {
     }
   }
 
-  isChecked_(row) {
-    return row.querySelector('input').checked;
+  isChecked_(row: HTMLElement) {
+    return (<HTMLInputElement> row.querySelector('input')).checked;
   }
 
-  moveRow_(direction, move10) {
+  moveRow_(direction: string, move10: boolean) {
     let rows = [].slice.call(this.querySelectorAll(`.${QueuesView.rowClassName_}`));
-    let row;
+    let row: HTMLElement | undefined;
     for (let currentRow of rows) {
       if (this.isChecked_(currentRow)) {
         row = currentRow;
@@ -81,11 +81,13 @@ export class QueuesView extends HTMLElement {
 
     if (direction == 'ArrowUp') {
       while (count--) {
-        // Swtich to the next queue group. Skip over the title for the queue group.
+        // Switch to the next queue group. Skip over the title for the queue group.
         if (!row.previousSibling || row.previousSibling.nodeType == Node.TEXT_NODE) {
           let parent = row.parentNode;
+          if (!parent)
+            throw 'Something went wrong. This should never happen';
           if (parent.previousSibling)
-            parent.previousSibling.append(row);
+            (<HTMLElement> parent.previousSibling).append(row);
           else
             break;
         } else {
@@ -96,8 +98,10 @@ export class QueuesView extends HTMLElement {
       while (count--) {
         if (!row.nextSibling) {
           let parent = row.parentNode;
+          if (!parent)
+            throw 'Something went wrong. This should never happen';
           if (parent.nextSibling)
-            parent.nextSibling.firstChild.after(row);
+            parent.nextSibling.firstChild!.after(row);
           else
             break;
         } else {
@@ -112,7 +116,7 @@ export class QueuesView extends HTMLElement {
     this.focus();
   }
 
-  createRowGroup_(groupName) {
+  createRowGroup_(groupName: string) {
     let group = document.createElement('div');
     group.className = groupName.toLowerCase();
     group.textContent = groupName;
@@ -155,11 +159,11 @@ export class QueuesView extends HTMLElement {
 
     let expander = <HTMLAnchorElement> help.querySelector('a');
     expander.onclick = () => {
-      let existing = window.getComputedStyle(help)['-webkit-line-clamp'];
+      let existing = window.getComputedStyle(help).webkitLineClamp;
       // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
       // returns 'none' from computed style.
       let wasUnclamped = existing == 'none';
-      help.style['-webkit-line-clamp'] = wasUnclamped ? '2' : 'unset';
+      help.style.webkitLineClamp = wasUnclamped ? '2' : 'unset';
       expander.textContent = wasUnclamped ? 'show more' : 'show less';
     };
 
@@ -182,25 +186,25 @@ export class QueuesView extends HTMLElement {
     this.dialog_ = showDialog(this);
   }
 
-  extractQueueData_(output, group, queue) {
+  extractQueueData_(output: (string | number)[][], group: HTMLElement, queue: string) {
     let selectors = group.querySelectorAll(`.${QueuesView.rowClassName_}`);
     for (let i = 0; i < selectors.length; i++) {
       let selector = selectors[i];
-      let label = selector.querySelector('.label').textContent;
+      let label = selector.querySelector('.label')!.textContent;
       if (queue == QueueSettings.WEEKLY)
-        queue = selector.querySelector('.day').selectedOptions[0].value;
-      let goal = selector.querySelector('.goal').selectedOptions[0].value;
+        queue = (<HTMLSelectElement> selector.querySelector('.day')!).selectedOptions[0].value;
+      let goal = (<HTMLSelectElement> selector.querySelector('.goal')!).selectedOptions[0].value;
       output.push([label, queue, goal, i + 1]);
     }
   }
 
   async save_() {
-    let newQueueData = [];
+    let newQueueData: (string | number)[][] = [];
 
-    this.extractQueueData_(newQueueData, this.immediate_, QueueSettings.IMMEDIATE);
-    this.extractQueueData_(newQueueData, this.daily_, QueueSettings.DAILY);
-    this.extractQueueData_(newQueueData, this.weekly_, QueueSettings.WEEKLY);
-    this.extractQueueData_(newQueueData, this.monthly_, QueueSettings.MONTHLY);
+    this.extractQueueData_(newQueueData, this.immediate_!, QueueSettings.IMMEDIATE);
+    this.extractQueueData_(newQueueData, this.daily_!, QueueSettings.DAILY);
+    this.extractQueueData_(newQueueData, this.weekly_!, QueueSettings.WEEKLY);
+    this.extractQueueData_(newQueueData, this.monthly_!, QueueSettings.MONTHLY);
 
     if (newQueueData.length) {
       await this.queuedLabelData_.write(newQueueData);
@@ -220,7 +224,7 @@ export class QueuesView extends HTMLElement {
     this.dialog_.close();
   }
 
-  createSelect_(list, opt_selectedItem) {
+  createSelect_(list: string[], opt_selectedItem?: string) {
     let select = document.createElement('select');
     for (let item of list) {
       let option = this.createOption_(item);
@@ -237,7 +241,7 @@ export class QueuesView extends HTMLElement {
     }
   }
 
-  appendRow_(queueData) {
+  appendRow_(queueData: any) {
     let row = document.createElement('div');
     row.style.cssText = `
       display: flex;
@@ -274,7 +278,7 @@ export class QueuesView extends HTMLElement {
     container.append(row);
   }
 
-  getRowContainer_(queue) {
+  getRowContainer_(queue: string) {
     if (queue == QueueSettings.DAILY)
       return this.daily_;
     if (queue == QueueSettings.MONTHLY)
@@ -284,7 +288,7 @@ export class QueuesView extends HTMLElement {
     return this.immediate_;
   }
 
-  createOption_(value) {
+  createOption_(value: string) {
     let option = document.createElement('option');
     option.value = value;
     option.append(value);

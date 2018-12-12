@@ -1,4 +1,4 @@
-class AutoCompleteEntry extends HTMLElement {
+export class AutoCompleteEntry extends HTMLElement {
   name: string;
   email: string;
 
@@ -24,7 +24,7 @@ export abstract class Compose extends HTMLElement {
   abstract isStillAutoCompleting(): boolean | null;
   abstract selectedEntry(selectedItem: any): any;
 
-  constructor(contacts, opt_isMultiline) {
+  constructor(contacts: any, opt_isMultiline?: boolean) {
     super();
 
     this.style.display = 'flex';
@@ -173,13 +173,16 @@ export abstract class Compose extends HTMLElement {
     this.autocompleteContainer_.style.bottom = `${document.documentElement.offsetHeight - rect.top}px`;
   }
 
-  adjustAutocompleteIndex(adjustment) {
+  adjustAutocompleteIndex(adjustment: number) {
+    if (!this.autocompleteIndex_)
+      throw 'Something went wrong. This should never happen.';
+
     let container = <HTMLElement> this.autocompleteContainer_;
     let newIndex = Math.max(0, Math.min(this.autocompleteIndex_ + adjustment, container.children.length - 1));
     this.selectAutocompleteItem_(newIndex);
   }
 
-  selectAutocompleteItem_(index) {
+  selectAutocompleteItem_(index: number) {
     let container = <HTMLElement> this.autocompleteContainer_;
     this.autocompleteIndex_ = index;
     for (let i = 0; i < container.children.length; i++) {
@@ -235,7 +238,7 @@ export abstract class Compose extends HTMLElement {
     this.hideAutocompleteMenu_();
   }
 
-  submitAutocomplete_(opt_selectedItem?) {
+  submitAutocomplete_(opt_selectedItem?: HTMLElement) {
     if (!this.autocompleteIndex_) {
       throw 'Attempted to submit autocomplete without a selected entry.';
       return;

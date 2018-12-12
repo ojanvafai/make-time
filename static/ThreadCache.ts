@@ -1,4 +1,5 @@
 import { Thread } from './Thread.js';
+import { Labels } from './Labels.js';
 
 export class ThreadCache {
   cache_: Map<Number, Thread>;
@@ -7,7 +8,7 @@ export class ThreadCache {
     this.cache_ = new Map();
   }
 
-  get(threadData, allLabels) {
+  get(threadData: any, allLabels: Labels) {
     let entry = this.cache_.get(threadData.id);
     if (entry && entry.historyId == threadData.historyId)
       return entry;

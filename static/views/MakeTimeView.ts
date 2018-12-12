@@ -2,6 +2,9 @@ import { AbstractThreadListView } from './AbstractThreadListView.js';
 import { Actions } from '../Actions.js';
 import { fetchThread } from '../main.js';
 import { Labels } from '../Labels.js';
+import { ThreadGroups } from '../ThreadGroups.js';
+import { MailProcessor } from '../MailProcessor.js';
+import { Thread } from '../Thread.js';
 
 export class MakeTimeView extends AbstractThreadListView {
   private vacation_: string;
@@ -29,25 +32,24 @@ export class MakeTimeView extends AbstractThreadListView {
     Actions.VIEW_TRIAGE_ACTION,
   ].concat(MakeTimeView.ACTIONS_);
 
-  constructor(threads, mailProcessor, scrollContainer, allLabels, vacation, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, timerDuration) {
+  constructor(threads: ThreadGroups, mailProcessor: MailProcessor, scrollContainer: HTMLElement, allLabels: Labels, vacation: string, updateTitleDelegate: any, setSubject: any, showBackArrow: any, allowedReplyLength: number, contacts: any, autoStartTimer: boolean, timerDuration: number) {
     let countDown = false;
     super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration);
     this.vacation_ = vacation;
-    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
-    (<AbstractThreadListView>this).appendButton('/triage', 'Back to Triaging');
+    this.appendButton('/triage', 'Back to Triaging');
   }
 
-  compareRowGroups(a, b) {
+  compareRowGroups(a: any, b: any) {
     return this.comparePriorities_(a.queue, b.queue);
   }
 
-  comparePriorities_(a, b) {
+  comparePriorities_(a: any, b: any) {
     let aOrder = Labels.SORTED_PRIORITIES.indexOf(a);
     let bOrder = Labels.SORTED_PRIORITIES.indexOf(b);
     return aOrder - bOrder;
   }
 
-  async addThread(thread) {
+  async addThread(thread: Thread) {
     let priority = await thread.getPriority();
     // Only threads with a priority should be added and
     // only show MUST_DO_LABEL when on vacation.
@@ -55,30 +57,25 @@ export class MakeTimeView extends AbstractThreadListView {
       super.addThread(thread);
   }
 
-  async fetch(shouldBatch) {
-    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
-    (<AbstractThreadListView>this).updateTitle('fetch', ' ');
+  async fetch(shouldBatch?: boolean) {
+    this.updateTitle('fetch', ' ');
 
-    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
-    let labels = await (<AbstractThreadListView>this).allLabels.getThreadCountForLabels((label) => {
+    let labels = await this.allLabels.getThreadCountForLabels((label: string) => {
       return this.vacation_ ? label == Labels.MUST_DO_LABEL : Labels.isPriorityLabel(label);
     });
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
 
-    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
-    await (<AbstractThreadListView>this).fetchLabels(labelsToFetch, shouldBatch);
-    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
-    (<AbstractThreadListView>this).updateTitle('fetch');
+    await this.fetchLabels(labelsToFetch, shouldBatch);
+    this.updateTitle('fetch');
   }
 
-  async handleUndo(thread) {
-    // TODO: Why doesn't TypeScript realize MakeTimeView is a AbstractThreadListView?
+  async handleUndo(thread: Thread) {
     if (thread)
-      await (<AbstractThreadListView>this).removeThread(thread);
+      await this.removeThread(thread);
   }
 
-  async handleTriaged(destination, triageResult, thread) {
+  async handleTriaged(destination: string, triageResult: any, thread: Thread) {
     // Setting priority adds the thread back into the triaged list at it's new priority.
     if (!destination || !Labels.isPriorityLabel(destination))
       return;
@@ -91,14 +88,14 @@ export class MakeTimeView extends AbstractThreadListView {
     await this.addThread(thread);
   }
 
-  async getDisplayableQueue(thread) {
+  async getDisplayableQueue(thread: Thread) {
     let priority = await thread.getPriority();
     if (priority)
       return Labels.removePriorityPrefix(priority);
     return Labels.MUST_DO_LABEL;
   }
 
-  async getQueue(thread) {
+  async getQueue(thread: Thread) {
     return await thread.getPriority();
   }
 }

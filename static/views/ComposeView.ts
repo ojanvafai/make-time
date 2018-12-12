@@ -1,5 +1,8 @@
 import { EmailCompose } from '../EmailCompose.js';
 import { showDialog } from '../main.js';
+import { IDBKeyVal } from '../idb-keyval.js';
+import { Thread } from '../Thread.js';
+import { View } from './View.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 const SEND = { name: 'Send', description: 'Send the mail.' };
@@ -11,7 +14,7 @@ const HELP_TEXT = `Put ## followed by a priority level in your email to automati
 URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
 
-let idbKeyVal_;
+let idbKeyVal_: IDBKeyVal;
 async function idbKeyVal() {
   let IDBKeyVal = (await import('../idb-keyval.js')).IDBKeyVal;
   if (!idbKeyVal_)
@@ -26,7 +29,7 @@ interface EmailData {
   body: string;
 }
 
-export class ComposeView extends HTMLElement {
+export class ComposeView extends View {
   private updateTitle_: any;
   private params_: any;
   private to_: HTMLInputElement;
@@ -35,7 +38,7 @@ export class ComposeView extends HTMLElement {
   private inlineTo_: HTMLElement| undefined;
   private sending_: boolean | undefined;
 
-  constructor(contacts, updateTitle, params) {
+  constructor(contacts: any, updateTitle: any, params: any) {
     super();
 
     this.style.cssText = `
@@ -100,12 +103,12 @@ export class ComposeView extends HTMLElement {
     return input;
   }
 
-  appendLine_(...children) {
+  appendLine_(...children: (string | Node)[]) {
     let line = this.createLine_(...children);
     this.append(line);
   }
 
-  createLine_(...children) {
+  createLine_(...children: (string | Node)[]) {
     let line = document.createElement('div');
     line.style.cssText = `
       display: flex;
@@ -203,7 +206,7 @@ export class ComposeView extends HTMLElement {
 
       button.onclick = () => this.takeAction_(action);
 
-      let tooltipElement;
+      let tooltipElement: HTMLElement;
       button.onmouseenter = () => {
         tooltipElement = document.createElement('div');
         tooltipElement.style.cssText = `
@@ -292,7 +295,7 @@ export class ComposeView extends HTMLElement {
     contents.prepend(closeButton);
   }
 
-  async takeAction_(action) {
+  async takeAction_(action: any) {
     if (action == SEND) {
       await this.send_();
       return;
@@ -307,6 +310,24 @@ export class ComposeView extends HTMLElement {
   }
 
   tearDown() {
+  }
+
+  async goBack() {
+  }
+
+  async update() {
+  }
+
+  async addThread(_thread: Thread) {
+  }
+
+  async fetch(_shouldBatch?: boolean) {
+  }
+
+  async dispatchShortcut(_e: KeyboardEvent) {
+  }
+
+  pushBestEffort() {
   }
 }
 

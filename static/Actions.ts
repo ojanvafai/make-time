@@ -5,7 +5,7 @@ export class Actions extends HTMLElement {
   private view_: AbstractThreadListView;
   // TODO: Give these proper types.
   private actions_: any[];
-  private overflowActions_: any[];
+  private overflowActions_: any[] | undefined;
   static ARCHIVE_ACTION: any;
   static BLOCKED_ACTION: any;
   static SPAM_ACTION: any;
@@ -22,7 +22,7 @@ export class Actions extends HTMLElement {
   static VIEW_TRIAGE_ACTION: any;
   static UNDO_ACTION: any;
 
-  constructor(view, actions, opt_overflowActions) {
+  constructor(view: AbstractThreadListView, actions: any[], opt_overflowActions?: any[]) {
     super();
     this.style.display = 'flex';
     this.style.flexWrap = 'wrap';
@@ -58,7 +58,7 @@ export class Actions extends HTMLElement {
     }
   }
 
-  appendActions_(container, actions) {
+  appendActions_(container: HTMLElement, actions: any[]) {
     for (let action of actions) {
       if (action.hidden)
         continue;
@@ -66,7 +66,7 @@ export class Actions extends HTMLElement {
       button.setAttribute('tooltip', action.description);
 
       button.onclick = () => this.takeAction(action);
-      let tooltipElement;
+      let tooltipElement: HTMLElement;
       button.onmouseenter = () => {
         tooltipElement = document.createElement('div');
         tooltipElement.style.cssText = `
@@ -114,8 +114,8 @@ export class Actions extends HTMLElement {
     Actions.DELEGATE_ACTION.destination = Labels.DELEGATE_LABEL;
   }
 
-  dispatchShortcut(e) {
-    let test = (action) => {
+  dispatchShortcut(e: KeyboardEvent) {
+    let test = (action: any) => {
      // Don't allow certain actions to apply in rapid succession for each
      // thread. This prevents accidents of archiving a lot of threads at once
      // when your stupid keyboard gets stuck holding the archive key down. #sigh
@@ -134,7 +134,7 @@ export class Actions extends HTMLElement {
       this.takeAction(action, e);
   }
 
-  async takeAction(action, opt_e?) {
+  async takeAction(action: any, opt_e?: KeyboardEvent) {
     if (this.view_.shouldSuppressActions())
       return;
 

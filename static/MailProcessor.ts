@@ -6,6 +6,7 @@ import { ServerStorage } from './ServerStorage.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 import { Settings } from './Settings.js';
 import { Thread } from './Thread.js';
+import { Message } from './Message.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
@@ -13,11 +14,11 @@ const DAILY_STATS_SHEET_NAME = 'daily_stats';
 export class MailProcessor {
   settings: Settings;
   private pushThreadOriginal_: any;
-  private queuedLabelMap_: any;
-  private allLabels_: any;
+  private queuedLabelMap_: QueueSettings;
+  private allLabels_: Labels;
   private updateTitle_: any;
 
-  constructor(settings, pushThread, queuedLabelMap, allLabels, updateTitle) {
+  constructor(settings: Settings, pushThread: any, queuedLabelMap: QueueSettings, allLabels: Labels, updateTitle: any) {
     this.settings = settings;
     this.pushThreadOriginal_ = pushThread;
     this.queuedLabelMap_ = queuedLabelMap;
@@ -25,12 +26,12 @@ export class MailProcessor {
     this.updateTitle_ = updateTitle;
   }
 
-  async pushThread_(thread) {
+  async pushThread_(thread: Thread) {
     let newThread = await fetchThread(thread.id);
     await this.pushThreadOriginal_(newThread);
   }
 
-  endsWithAddress(addresses, filterAddress) {
+  endsWithAddress(addresses: string[], filterAddress: string) {
     for (var j = 0; j < addresses.length; j++) {
       if (addresses[j].endsWith(filterAddress))
         return true;
@@ -38,17 +39,17 @@ export class MailProcessor {
     return false;
   }
 
-  matchesRegexp(regex, str) {
+  matchesRegexp(regex: string, str: string) {
     return (new RegExp(regex, 'm')).test(str);
   }
 
   // This is to avoid triggering regexps accidentally on plain test things
   // being run through this.matchesRegexp
-  escapeRegExp(str) {
+  escapeRegExp(str: string) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  startsWithAddress(addresses, filterAddress) {
+  startsWithAddress(addresses: string[], filterAddress: string) {
     var parts = this.escapeRegExp(filterAddress).split('@');
     var regexp = '^' + parts[0] + '(?:\\+[^@]*?)?@' + parts[1];
     for (var j = 0; j < addresses.length; j++) {
@@ -58,7 +59,7 @@ export class MailProcessor {
     return false;
   }
 
-  containsAddress(addresses, filterAddressCsv) {
+  containsAddress(addresses: string[] | undefined, filterAddressCsv: string) {
     if (!addresses)
       return false;
 
@@ -80,12 +81,12 @@ export class MailProcessor {
     return false;
   }
 
-  async writeToStatsPage(timestamp, num_threads_processed, per_label_counts, time_taken) {
+  async writeToStatsPage(timestamp: number, num_threads_processed: number, per_label_counts: any, time_taken: number) {
     var data = [timestamp, num_threads_processed, time_taken, JSON.stringify(per_label_counts)];
     await SpreadsheetUtils.appendToSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
   }
 
-  getYearMonthDay(timestamp) {
+  getYearMonthDay(timestamp: number) {
     let date = new Date(timestamp);
 
     let month = date.getMonth() + 1;
@@ -97,13 +98,13 @@ export class MailProcessor {
     return date.getFullYear() + '/' + paddedMonth + '/' + paddedDay;
   }
 
-  async writeCollapsedStats(stats) {
+  async writeCollapsedStats(stats: any) {
     if (stats && stats.numInvocations)
       await SpreadsheetUtils.appendToSheet(this.settings.spreadsheetId, DAILY_STATS_SHEET_NAME, [Object.values(stats)]);
   }
 
   async collapseStats() {
-    let stats;
+    let stats: any;
     var rows = await SpreadsheetUtils.fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
     let todayYearMonthDay = this.getYearMonthDay(Date.now());
     let currentYearMonthDay;
@@ -185,7 +186,7 @@ export class MailProcessor {
       await SpreadsheetUtils.deleteRows(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, 1, lastRowProcessed + 1);
   }
 
-  matchesHeader_(message, header) {
+  matchesHeader_(message: Message, header: string) {
     let colonIndex = header.indexOf(':');
     if (colonIndex == -1) {
       ErrorLogger.log(`Invalid header filter. Header filters must be of the form headername:filtervalue.`);
@@ -197,7 +198,7 @@ export class MailProcessor {
     return headerValue && headerValue.toLowerCase().trim().includes(value);
   }
 
-  matchesRule(rule, message) {
+  matchesRule(rule: any, message: Message) {
     var matches = false;
     if (rule.nolistid) {
       if (message.listId)
@@ -255,14 +256,14 @@ export class MailProcessor {
   }
 
   // TODO: Also log which message matched.
-  async logMatchingRule_(thread, rule) {
+  async logMatchingRule_(thread: Thread, rule: any) {
     if (this.settings.get(ServerStorage.KEYS.LOG_MATCHING_RULES)) {
       let subject = await thread.getSubject();
       console.log(`Thread with subject "${subject}" matched rule ${JSON.stringify(rule)}`);
     }
   }
 
-  async getWinningLabel(thread, rules) {
+  async getWinningLabel(thread: Thread, rules: any[]) {
     var messages = await thread.getMessages();
 
     for (let rule of rules) {
@@ -291,7 +292,7 @@ export class MailProcessor {
     return Labels.FALLBACK_LABEL;
   }
 
-  async getPriority(thread) {
+  async getPriority(thread: Thread) {
     let messages = await thread.getMessages();
     let lastMessage = messages[messages.length - 1];
     // TODO: Also check the subject line? last message wins over subject?
@@ -299,7 +300,7 @@ export class MailProcessor {
     if (!plainText) {
       // Lazy way of getting the plain text out of the HTML.
       let dummyDiv = document.createElement('div');
-      dummyDiv.innerHTML = lastMessage.getHtml();
+      dummyDiv.innerHTML = lastMessage.getHtml() || '';
       plainText = dummyDiv.textContent;
     }
 
@@ -325,7 +326,7 @@ export class MailProcessor {
     return matchingPriority;
   }
 
-  async processThread_(thread) {
+  async processThread_(thread: Thread) {
     try {
       let startTime = new Date();
 
@@ -393,15 +394,15 @@ export class MailProcessor {
     }
   }
 
-  async logToStatsPage_(labelName, startTime) {
+  async logToStatsPage_(labelName: string, startTime: Date) {
     // TODO: Simplify this now that we write the stats for each thread at a time.
-    let perLabelCounts = {};
+    let perLabelCounts: any = {};
     perLabelCounts[labelName] = 1;
     await this.writeToStatsPage(
       startTime.getTime(), 1, perLabelCounts, Date.now() - startTime.getTime());
   }
 
-  async processThreads(threads) {
+  async processThreads(threads: Thread[]) {
     for (var i = 0; i < threads.length; i++) {
       this.updateTitle_('processUnprocessed', `Processing ${i + 1}/${threads.length} unprocessed threads...`);
       await this.processThread_(threads[i]);
@@ -411,11 +412,11 @@ export class MailProcessor {
 
   async processUnprocessed() {
     let threads: Thread[] = [];
-    await fetchThreads(thread => threads.push(thread), {
+    await fetchThreads((thread: Thread) => threads.push(thread), {
       query: `in:${Labels.UNPROCESSED_LABEL}`,
     });
 
-    await fetchThreads(thread => threads.push(thread), {
+    await fetchThreads((thread: Thread) => threads.push(thread), {
       query: `in:inbox -in:${Labels.PROCESSED_LABEL}`,
     });
 
@@ -425,13 +426,13 @@ export class MailProcessor {
     this.processThreads(threads);
   }
 
-  async dequeue(labelName) {
+  async dequeue(labelName: string) {
     var queuedLabelName = Labels.addQueuedPrefix(labelName);
     var queuedLabel = await this.allLabels_.getId(queuedLabelName);
     var autoLabel = await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
 
     let threads: Thread[] = [];
-    await fetchThreads(thread => threads.push(thread), {
+    await fetchThreads((thread: Thread) => threads.push(thread), {
       query: `in:${queuedLabelName}`,
     });
 
@@ -450,15 +451,15 @@ export class MailProcessor {
     this.updateTitle_('dequeue');
   }
 
-  async processSingleQueue(queue) {
-    let queueDatas = this.queuedLabelMap_.entries();
+  async processSingleQueue(queue: string) {
+    let queueDatas: any[] = this.queuedLabelMap_.entries();
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)
         await this.dequeue(queueData[0]);
     }
   }
 
-  categoriesToDequeue(startTime, opt_endTime?) {
+  categoriesToDequeue(startTime: number, opt_endTime?: number) {
     if (!startTime) {
       let today = QueueSettings.WEEKDAYS[new Date().getDay()];
       return [today, QueueSettings.DAILY];

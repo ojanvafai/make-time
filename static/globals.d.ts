@@ -48,6 +48,19 @@ declare global {
     readonly stack: string;
   }
 
+  interface InputEvent extends UIEvent {
+    readonly data: string;
+    readonly inputType: string;
+    readonly isComposing: boolean;
+
+    // TODO: Add these. Too lazy to figure out the proper types.
+    // readonly dataTransfer
+    // getTargetRanges()
+  }
+
+  interface CSSStyleDeclaration {
+    webkitLineClamp: string;
+  }
 }
 
 export { };

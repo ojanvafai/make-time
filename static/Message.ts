@@ -12,7 +12,7 @@ interface AttachmentResult {
 export class Message {
   static base64_ = new Base64();
   private rawMessage_: any;
-  private previousMessage_: Message;
+  private previousMessage_: Message | undefined;
   private plain_: string | undefined;
   private plainedHtml_: string | undefined;
   private html_: string | undefined;
@@ -21,7 +21,7 @@ export class Message {
   id: string;
   attachments_: any[];
   subject: string | undefined;
-  date: Date | undefined;
+  date!: Date;
   from: string | undefined;
   fromEmails: string[] | undefined;
   fromName: string | undefined;
@@ -39,12 +39,14 @@ export class Message {
   isUnread: boolean;
   isDraft: boolean;
 
-  constructor(message, previousMessage) {
+  constructor(message: any, previousMessage?: Message) {
     this.rawMessage_ = message;
     this.previousMessage_ = previousMessage;
     this.id = message.id;
 
     this.attachments_ = [];
+
+    let hasDate = false;
 
     for (var header of message.payload.headers) {
     // Some mail users lower case header names (probably just spam).
@@ -53,6 +55,7 @@ export class Message {
         this.subject = header.value;
         break;
       case 'date':
+        hasDate = true;
         this.date = new Date(header.value);
         break;
       case 'from':
@@ -83,14 +86,14 @@ export class Message {
 
     // Things like chats don't have a date header. Use internalDate as per
     // https://developers.google.com/gmail/api/release-notes#2015-06-18.
-    if (!this.date)
+    if (!hasDate)
       this.date = new Date(Number(message.internalDate));
 
     this.isUnread = message.labelIds.includes('UNREAD');
     this.isDraft = message.labelIds.includes('DRAFT');
   }
 
-  getHeaderValue(name) {
+  getHeaderValue(name: string) {
     name = name.toLowerCase();
     for (var header of this.rawMessage_.payload.headers) {
       if (header.name.toLowerCase().includes(name))
@@ -99,7 +102,7 @@ export class Message {
     return null;
   }
 
-  cleanseAddresses_(str) {
+  cleanseAddresses_(str: string) {
     return str.replace(/"/g, '');
   }
 
@@ -133,7 +136,7 @@ export class Message {
 
   getHtmlOrPlain() {
     this.parseMessageBody_();
-    return this.html_ || this.plain_;
+    return this.html_ || this.plain_ || '';
   }
 
   getHtmlOrHtmlWrappedPlain() {
@@ -146,10 +149,14 @@ export class Message {
     // special handling for plain text emails.
     //
     // Also, wrap the plain text in white-space:pre-wrap to make it render nicely.
+    if (this.plain_ === undefined)
+      throw 'Something went wrong. This should never happen.';
     let escaped = this.htmlEscape_(this.plain_);
+
     // Normalize newlines to simplify the logic.
     let paragraphs = escaped.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
     let html = `<div style="white-space:pre-wrap"><div>${paragraphs.join('</div><div>')}</div></div>`;
+
     // For multiple newlines in a row, put <br>s since empty divs don't render.
     return html.replace(/<div><\/div>/g, '<br>');
   }
@@ -181,17 +188,17 @@ export class Message {
       this.fetchInlineImages_(dom);
       this.appendAttachments_(dom);
     }
-    return this.quoteElidedMessage_;
+    return <QuoteElidedMessage> this.quoteElidedMessage_;
   }
 
-  findAttachment_(contentId) {
+  findAttachment_(contentId: string) {
     for (let attachment of this.attachments_) {
       if (attachment.contentId == contentId)
         return attachment;
     }
   }
 
-  appendAttachments_(dom) {
+  appendAttachments_(dom: HTMLElement) {
     if (!this.attachments_.length)
       return;
 
@@ -207,10 +214,11 @@ export class Message {
     }
   }
 
-  async fetchInlineImages_(dom) {
-    let inlineImages = dom.querySelectorAll('img[src^=cid]');
+  async fetchInlineImages_(dom: HTMLElement) {
+    let inlineImages = <NodeListOf<HTMLImageElement>> dom.querySelectorAll('img[src^=cid]');
     for (let image of inlineImages) {
-      let contentId = `<${image.src.match(/^cid:([^>]*)$/)[1]}>`;
+      let match = <any> image.src.match(/^cid:([^>]*)$/);
+      let contentId = `<${match[1]}>`;
       let attachment = await this.findAttachment_(contentId);
       // There can be images from quoted sections that no longer have the attachments.
       // So handle them gracefully.
@@ -228,7 +236,7 @@ export class Message {
   }
 
   // TODO: Restructure so people can search over the plain text of the emails as well.
-  extractEmails_(str) {
+  extractEmails_(str: string) {
     var regex = new RegExp('<(.*?)>|(\\S*?@\\S*)', 'g');
     str = str.toLowerCase();
     var emails: string[] = [];
@@ -243,14 +251,14 @@ export class Message {
     return emails;
   }
 
-  extractName_(str) {
+  extractName_(str: string) {
     let parts = str.split('<');
     if (parts.length > 1)
       return parts[0].trim();
     return str;
   }
 
-  parseAttachment_(attachment) {
+  parseAttachment_(attachment: any) {
     let result = <AttachmentResult> {
       id: attachment.body.attachmentId,
       name: attachment.filename,
@@ -269,7 +277,7 @@ export class Message {
     return result;
   }
 
-  getMessageBody_(mimeParts) {
+  getMessageBody_(mimeParts: any) {
     for (var part of mimeParts) {
       // For the various 'multipart/*" mime types.
       if (part.parts)
@@ -292,7 +300,7 @@ export class Message {
     }
   }
 
-  htmlEscape_(html) {
+  htmlEscape_(html: string) {
     return html.replace(/[&<>"']/g, function(m) {
       switch (m) {
         case '&':
@@ -313,7 +321,7 @@ export class Message {
   };
 
   // Don't want stylesheets in emails to style the whole page.
-  disableStyleSheets_(messageDom) {
+  disableStyleSheets_(messageDom: HTMLElement) {
     let styles = messageDom.querySelectorAll('style');
     for (let style of styles) {
       style.setAttribute('type', 'not-css');

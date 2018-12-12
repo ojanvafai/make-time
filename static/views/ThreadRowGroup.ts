@@ -1,9 +1,10 @@
+import { ThreadRow } from "./ThreadRow";
 
 export class ThreadRowGroup extends HTMLElement {
   private queue_: string;
   private rowContainer_: HTMLElement;
 
-  constructor(queue) {
+  constructor(queue: string) {
     super();
     this.style.display = 'block';
 
@@ -41,14 +42,14 @@ export class ThreadRowGroup extends HTMLElement {
     return Array.prototype.slice.call(this.rowContainer_.children);
   }
 
-  push(row, opt_nextSibling?) {
+  push(row: ThreadRow, opt_nextSibling?: HTMLElement) {
     if (opt_nextSibling && opt_nextSibling.parentNode == this.rowContainer_)
       opt_nextSibling.before(row);
     else
       this.rowContainer_.append(row);
   }
 
-  createSelector_(textContent, callback) {
+  createSelector_(textContent: string, callback: () => void) {
     let selector = document.createElement('span');
     selector.textContent = textContent;
     selector.style.textDecoration = 'underline';
@@ -65,7 +66,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.selectRows_(false);
   }
 
-  selectRows_(value) {
+  selectRows_(value: boolean) {
     // TODO: Give this a proper type.
     let rows = <NodeListOf<any>>this.rowContainer_.childNodes;
     for (let child of rows) {

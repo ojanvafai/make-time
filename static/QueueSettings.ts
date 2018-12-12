@@ -8,7 +8,7 @@ export class QueueSettings {
   private fetcher_: AsyncOnce;
   // TODO: Fix these to not assert non-null since they could realistically be null if
   // fetch() isn't completed.
-  private map_!: {};
+  private map_!: any;
 
   private static BUFFER_ = 10000;
   static MONTHLY = 'Monthly';
@@ -18,7 +18,7 @@ export class QueueSettings {
   static WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   static goals = ['Inbox Zero', 'Best Effort']
 
-  constructor(spreadsheetId) {
+  constructor(spreadsheetId: string) {
     this.spreadsheetId_ = spreadsheetId;
     this.fetcher_ = new AsyncOnce(this.fetch_.bind(this))
   }
@@ -32,7 +32,7 @@ export class QueueSettings {
     this.populateMap_(values);
   }
 
-  populateMap_(rawData) {
+  populateMap_(rawData: any) {
     this.map_ = {};
 
     for (let value of rawData) {
@@ -41,18 +41,18 @@ export class QueueSettings {
     }
   }
 
-  async write(newData) {
+  async write(newData: any[]) {
     let originalQueueCount = Object.keys(this.map_).length;
     let dataToWrite = [Settings.QUEUED_LABELS_SHEET_COLUMNS].concat(newData);
     await SpreadsheetUtils.writeSheet(this.spreadsheetId_, Settings.QUEUED_LABELS_SHEET_NAME, dataToWrite, originalQueueCount);
     this.populateMap_(newData);
   }
 
-  get(labelSuffix) {
+  get(labelSuffix: string ) {
     return this.map_[labelSuffix.toLowerCase()] || this.queueData_();;
   }
 
-  queueComparator_(a, b) {
+  queueComparator_(a: any, b: any) {
     let aIndex = QueueSettings.queueIndex_(a[1]);
     let bIndex = QueueSettings.queueIndex_(b[1]);
 
@@ -68,7 +68,7 @@ export class QueueSettings {
     return aIndex - bIndex;
   }
 
-  queueData_(opt_queue?, opt_goal?, opt_index?) {
+  queueData_(opt_queue?: string, opt_goal?: string, opt_index?: number) {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
       goal: opt_goal || QueueSettings.goals[0],
@@ -77,17 +77,17 @@ export class QueueSettings {
     }
   }
 
-  queueEntry_(label) {
+  queueEntry_(label: string) {
     let suffix = Labels.removeNeedsTriagePrefix(label);
     let data = this.get(suffix);
     return [label, data];
   }
 
-  queueNameComparator(a, b) {
+  queueNameComparator(a: any, b: any) {
     return this.queueComparator_(this.queueEntry_(a), this.queueEntry_(b));
   }
 
-  getSorted(labels) {
+  getSorted(labels: Iterable<string>) {
     let entries: any[] = [];
     for (let label of labels) {
       entries.push(this.queueEntry_(label));
@@ -99,7 +99,7 @@ export class QueueSettings {
     return Object.entries(this.map_);
   }
 
-  static queueIndex_ = (queueData) => {
+  static queueIndex_ = (queueData: any) => {
     let multiplier = 1;
 
     let queue = queueData.queue;

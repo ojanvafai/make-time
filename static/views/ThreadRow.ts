@@ -1,4 +1,5 @@
 import { RenderedThread } from '../RenderedThread.js';
+import { RowGroup } from '../RowGroup.js';
 import { ViewInGmailButton } from '../ViewInGmailButton.js';
 import { Thread } from '../Thread.js';
 
@@ -11,7 +12,7 @@ interface DateFormatOptions {
 }
 
 export class ThreadRow extends HTMLElement {
-  group: string;
+  group: RowGroup;
   focused: boolean;
   rendered!: RenderedThread;
   mark: boolean | undefined;
@@ -19,7 +20,7 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private thread_!: Thread;
 
-  constructor(thread, group) {
+  constructor(thread: Thread, group: RowGroup) {
     super();
     this.style.display = 'flex';
 
@@ -69,7 +70,7 @@ export class ThreadRow extends HTMLElement {
     this.rendered.update();
   }
 
-  async render(container) {
+  async render(container: HTMLElement) {
     return await this.rendered.render(container);
   }
 
@@ -166,7 +167,7 @@ export class ThreadRow extends HTMLElement {
       this.style.backgroundColor = 'white';
   }
 
-  dateString_(date) {
+  dateString_(date: Date) {
     let options = <DateFormatOptions>{};
     let today = new Date();
     if (today.getFullYear() != date.getFullYear())
