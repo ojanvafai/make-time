@@ -4,8 +4,9 @@ let MINIMUM_ELIDE_LENGTH = 100;
 let TOGGLER;
 
 export class QuoteElidedMessage {
-  private hashes_: Map<string, Element[]>;
-  private dom_: HTMLElement;
+  // These are initialized in computeHashes_, which is always called from the constructor.
+  private hashes_!: Map<string, Element[]>;
+  private dom_!: HTMLElement;
 
   constructor(currentMessage, previousMessage) {
     this.computeHashes_(currentMessage);

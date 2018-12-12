@@ -4,7 +4,7 @@ export class RenderedThread {
   thread: Thread;
   private dom_: HTMLElement | null;
   private queued_: ((value?: {} | PromiseLike<{}>) => void)[];
-  private isFetching_: boolean;
+  private isFetching_: boolean = false;
 
   constructor(thread) {
     this.thread = thread;

@@ -1,15 +1,15 @@
 export class Timer extends HTMLElement {
   static autoStart_: boolean | undefined;
   static activeTimers_: Timer[];
-  paused_: boolean;
+  paused_: boolean = false;
   countDown_: number;
   duration_: number;
   overlayContainer_: HTMLElement;
   timeDisplay_: HTMLElement;
   timerButton_: HTMLElement;
-  timerKey_: number | null;
-  timeLeft_: number;
-  overlay_: HTMLElement | null;
+  timerKey_: number | null = null;
+  timeLeft_: number = 0;
+  overlay_: HTMLElement | null = null;
 
   constructor(autoStart, countDown, duration, overlayContainer) {
     super();

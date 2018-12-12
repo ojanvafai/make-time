@@ -6,8 +6,10 @@ import { showDialog } from './main.js';
 
 export class Settings {
   private fetcher_: AsyncOnce;
-  spreadsheetId: string;
-  private storage_: ServerStorage;
+  // TODO: Fix these to not assert non-null since they could realistically be null if
+  // fetch() isn't completed.
+  spreadsheetId!: string;
+  private storage_!: ServerStorage;
   private filters_: any;
 
   static QUEUED_LABELS_SHEET_NAME = 'queued_labels';

@@ -1,5 +1,5 @@
 export class ViewInGmailButton extends HTMLElement {
-  messageId_: string;
+  messageId_: string | undefined;
 
   constructor() {
     super();

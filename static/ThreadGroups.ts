@@ -3,11 +3,10 @@ import { AbstractThreadListView } from './views/AbstractThreadListView.js';
 
 export class ThreadGroups {
   bestEffort_: Thread[];
-  listener_: AbstractThreadListView;
+  listener_: AbstractThreadListView | undefined;
 
   constructor() {
     this.bestEffort_ = [];
-    this.listener_;
   }
 
   setListener(view) {
@@ -16,7 +15,7 @@ export class ThreadGroups {
 
   processBestEffort() {
     this.setBestEffort(null);
-    if (this.listener_.update)
+    if (this.listener_ && this.listener_.update)
       this.listener_.update();
   }
   pushBestEffort(thread) {

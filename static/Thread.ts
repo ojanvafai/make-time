@@ -8,16 +8,18 @@ export class Thread {
   id: string;
   historyId: string;
   snippet: string;
-  stale: boolean;
+  stale: boolean = false;
   private allLabels_: Labels;
-  private labelIds_: Set<string>;
-  private labelNames_: Set<string>;
-  private priority_: string;
-  private muted_: boolean;
-  private queue_: boolean;
-  private processedMessages_: Message[];
+  // TODO: Fix these to not assert non-null since they could realistically be null if
+  // fetch() isn't completed.
+  private labelIds_!: Set<string>;
+  private labelNames_!: Set<string>;
+  private priority_!: string;
+  private muted_!: boolean;
+  private queue_!: boolean;
+  private processedMessages_!: Message[];
   // TODO: Give this a non-any value once we import gapi types.
-  private fetchPromise_: Promise<any> | null;
+  private fetchPromise_: Promise<any> | null = null;
 
   constructor(thread, allLabels) {
     this.id = thread.id;

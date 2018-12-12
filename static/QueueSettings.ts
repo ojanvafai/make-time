@@ -6,7 +6,9 @@ import { SpreadsheetUtils } from './SpreadsheetUtils.js';
 export class QueueSettings {
   private spreadsheetId_: string;
   private fetcher_: AsyncOnce;
-  private map_: {};
+  // TODO: Fix these to not assert non-null since they could realistically be null if
+  // fetch() isn't completed.
+  private map_!: {};
 
   private static BUFFER_ = 10000;
   static MONTHLY = 'Monthly';
