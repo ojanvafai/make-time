@@ -11,8 +11,8 @@ interface FilterRule {
 export class FiltersView extends HTMLElement {
   private settings_: Settings;
   private cursorSentinel_: string;
-  private cursorSentinelElement_: HTMLElement;
-  private dialog_: HTMLDialogElement;
+  private cursorSentinelElement_: HTMLElement | undefined;
+  private dialog_: HTMLDialogElement | undefined;
 
   private static DIRECTIVE_SEPARATOR_ = ':';
   private static QUERY_SEPARATOR_ = '&&';
@@ -205,11 +205,16 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
       rules.push(rule);
     }
     await this.settings_.writeFilters(rules);
+
+    if (!this.dialog_)
+      throw 'Something went wrong. This should never happen.'
     this.dialog_.close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
+    if (!this.dialog_)
+      throw 'Something went wrong. This should never happen.'
     this.dialog_.close();
   }
 
@@ -388,6 +393,8 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
 
   setEditorTextAndSelectSentinel_(editor, text) {
     this.setEditorText_(editor, text, false);
+    if (!this.cursorSentinelElement_)
+      throw 'Something went wrong. This should never happen.';
     window.getSelection().selectAllChildren(this.cursorSentinelElement_);
   }
 

@@ -32,8 +32,8 @@ export class ComposeView extends HTMLElement {
   private to_: HTMLInputElement;
   private subject_: HTMLInputElement;
   private body_: EmailCompose;
-  private inlineTo_: HTMLElement;
-  private sending_: boolean;
+  private inlineTo_: HTMLElement| undefined;
+  private sending_: boolean | undefined;
 
   constructor(contacts, updateTitle, params) {
     super();

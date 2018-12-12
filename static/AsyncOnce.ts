@@ -3,9 +3,9 @@
 export class AsyncOnce {
   private queued_: ((value?: {} | PromiseLike<{}>) => void)[];
   private asyncAction_: any;
-  private hasValue_: boolean;
-  private value_: string;
-  private isDoing_: boolean;
+  private hasValue_: boolean | undefined;
+  private value_: string | undefined;
+  private isDoing_: boolean | undefined;
 
   constructor(asyncAction) {
     this.queued_ = [];

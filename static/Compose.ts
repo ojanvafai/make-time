@@ -14,10 +14,10 @@ export abstract class Compose extends HTMLElement {
   private contacts_: any;
   separator: string;
   private content_: HTMLElement;
-  private placeholder_: string;
-  autocompleteRange: Range | null;
-  private autocompleteContainer_: HTMLElement | null;
-  private autocompleteIndex_: number;
+  private placeholder_: string | undefined;
+  autocompleteRange: Range | null = null;
+  private autocompleteContainer_: HTMLElement | null = null;
+  private autocompleteIndex_: number | undefined;
   static EMAIL_CLASS_NAME: string;
 
   abstract prepareAutocomplete(e: Event): void;
@@ -236,6 +236,11 @@ export abstract class Compose extends HTMLElement {
   }
 
   submitAutocomplete_(opt_selectedItem?) {
+    if (!this.autocompleteIndex_) {
+      throw 'Attempted to submit autocomplete without a selected entry.';
+      return;
+    }
+
     let container = <HTMLElement> this.autocompleteContainer_;
     let range = <Range> this.autocompleteRange;
 

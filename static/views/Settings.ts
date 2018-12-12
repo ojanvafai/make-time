@@ -58,7 +58,8 @@ export class SettingsView extends HTMLElement {
     queuesLinkContainer.append(queuesLink);
     this.scrollable_.append(queuesLinkContainer);
 
-    this.addSettings_();
+    this.basicSettings_ = document.createElement('div');
+    this.populateSettings_(this.basicSettings_);
 
     let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.settings_.spreadsheetId}/edit`;
     let clearBackendInstructions = document.createElement('div');
@@ -115,8 +116,7 @@ export class SettingsView extends HTMLElement {
     this.cancel_();
   }
 
-  addSettings_() {
-    this.basicSettings_ = document.createElement('div');
+  populateSettings_(container) {
     for (let field of Settings.fields) {
       let label = document.createElement('label');
       label.style.cssText = `
@@ -174,10 +174,10 @@ export class SettingsView extends HTMLElement {
       input.setAttribute('key', field.key);
 
       label.append(field.name, helpButton, input);
-      this.basicSettings_.append(label);
+      container.append(label);
     }
 
-    this.scrollable_.append(this.basicSettings_);
+    this.scrollable_.append(container);
   }
 
   async save_() {

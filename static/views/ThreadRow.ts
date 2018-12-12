@@ -13,11 +13,11 @@ interface DateFormatOptions {
 export class ThreadRow extends HTMLElement {
   group: string;
   focused: boolean;
-  rendered: RenderedThread;
-  mark: boolean;
+  rendered!: RenderedThread;
+  mark: boolean | undefined;
   private checkBox_: HTMLInputElement;
   private messageDetails_: HTMLElement;
-  private thread_: Thread;
+  private thread_!: Thread;
 
   constructor(thread, group) {
     super();
@@ -61,7 +61,19 @@ export class ThreadRow extends HTMLElement {
     this.setThread(thread);
   }
 
-  setThread(thread) {
+  removeRendered() {
+    this.rendered.remove();
+  }
+
+  update() {
+    this.rendered.update();
+  }
+
+  async render(container) {
+    return await this.rendered.render(container);
+  }
+
+  setThread(thread: Thread) {
     if (this.thread_ && this.thread_.historyId == thread.historyId)
       return;
 
@@ -70,8 +82,14 @@ export class ThreadRow extends HTMLElement {
 
     this.thread_.getSubject()
     .then(subject => {
+      if (!this.thread_)
+        throw 'This should never happen. this.thread_ got nulled out.';
+
       this.thread_.getMessages()
       .then(messages => {
+        if (!this.thread_)
+          throw 'This should never happen. this.thread_ got nulled out.';
+
         let lastMessage = messages[messages.length - 1];
 
         let fromContainer = document.createElement('div');
@@ -87,7 +105,7 @@ export class ThreadRow extends HTMLElement {
         from.style.cssText = `
           overflow: hidden;
         `;
-        from.textContent = lastMessage.fromName;
+        from.textContent = lastMessage.fromName || '';
 
         let count = document.createElement('div');
         count.style.cssText = `

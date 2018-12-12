@@ -113,12 +113,12 @@ export class AbstractThreadListView extends HTMLElement {
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private bestEffortButton_: HTMLElement;
-  private actions_: Actions | null;
-  private tornDown_: boolean;
-  private renderedRow_: ThreadRow;
-  private undoableActions_: TriageResult[];
-  private scrollOffset_: number;
-  private isSending_: boolean;
+  private actions_: Actions | null = null;
+  private tornDown_: boolean | undefined;
+  private renderedRow_: ThreadRow | undefined;
+  private undoableActions_!: TriageResult[];
+  private scrollOffset_: number | undefined;
+  private isSending_: boolean | undefined;
 
   static ACTIONS_ = [
     Actions.ARCHIVE_ACTION,
@@ -193,6 +193,8 @@ export class AbstractThreadListView extends HTMLElement {
     this.updateBestEffort_();
 
     this.updateActions_();
+
+    this.resetUndoableActions_();
   }
 
   fetch(_shouldBatch) {
@@ -227,7 +229,7 @@ export class AbstractThreadListView extends HTMLElement {
 
   async update() {
     if (this.renderedRow_)
-      await this.renderedThread_().update();
+      await this.renderedRow_.update();
 
     for (let group of this.groupedThreads_) {
       group.mark();
@@ -548,7 +550,7 @@ export class AbstractThreadListView extends HTMLElement {
 
     this.rowGroupContainer_.style.display = 'flex';
     this.singleThreadContainer_.textContent = '';
-    this.scrollContainer_.scrollTop = this.scrollOffset_;
+    this.scrollContainer_.scrollTop = this.scrollOffset_ || 0;
 
     this.resetUndoableActions_();
     this.setRenderedRow_(null);
@@ -657,13 +659,9 @@ export class AbstractThreadListView extends HTMLElement {
     this.updateTitle('undoLastAction_');
   }
 
-  renderedThread_() {
-    return this.renderedRow_.rendered;
-  }
-
   setRenderedRow_(row) {
     if (this.renderedRow_)
-      this.renderedThread_().remove();
+      this.renderedRow_.removeRendered();
     this.renderedRow_ = row;
   }
 
@@ -686,7 +684,10 @@ export class AbstractThreadListView extends HTMLElement {
     let queue = await this.getDisplayableQueue(row.thread);
     this.setSubject_(subjectText, queue);
 
-    let dom = await this.renderedThread_().render(this.singleThreadContainer_);
+    if (!this.renderedRow_)
+      throw 'Something went wrong. This should never happen.'
+
+    let dom = await this.renderedRow_.render(this.singleThreadContainer_);
     // If previously prerendered offscreen, move it on screen.
     dom.style.bottom = '';
     dom.style.visibility = 'visible';
@@ -707,7 +708,7 @@ export class AbstractThreadListView extends HTMLElement {
       document.documentElement.scrollTop -= 70 - y;
 
     // Check if new messages have come in since we last fetched from the network.
-    await this.renderedThread_().update();
+    await this.renderedRow_.update();
 
     // Intentionally don't await this so other work can proceed.
     this.prerenderNext();
@@ -805,6 +806,9 @@ export class AbstractThreadListView extends HTMLElement {
         return;
       this.isSending_ = true;
       this.updateTitle('sendReply', 'Sending reply...');
+
+      if (!this.renderedRow_)
+        throw 'Something went wrong. This should never happen.';
 
       // TODO: Handle if sending fails in such a way that the user can at least save their message text.
       await this.renderedRow_.thread.sendReply(compose.value, compose.getEmails(), replyAll.checked);

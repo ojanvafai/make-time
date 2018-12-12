@@ -5,11 +5,11 @@ import { QueueSettings } from '../QueueSettings.js';
 export class QueuesView extends HTMLElement {
   private queueNames_: string[];
   private queuedLabelData_: QueueSettings;
-  private immediate_: HTMLElement;
-  private daily_: HTMLElement;
-  private weekly_: HTMLElement;
-  private monthly_: HTMLElement;
-  private dialog_: HTMLDialogElement;
+  private immediate_: HTMLElement | undefined;
+  private daily_: HTMLElement | undefined;
+  private weekly_: HTMLElement | undefined;
+  private monthly_: HTMLElement | undefined;
+  private dialog_: HTMLDialogElement | undefined;
 
   static rowClassName_ = 'queue-row';
   static HELP_TEXT_ = `<b>Help</b> <a>show more</a>
@@ -208,11 +208,15 @@ export class QueuesView extends HTMLElement {
       return;
     }
 
+    if (!this.dialog_)
+      throw 'Something went wrong. This should never happen.'
     this.dialog_.close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
+    if (!this.dialog_)
+      throw 'Something went wrong. This should never happen.'
     this.dialog_.close();
   }
 
@@ -264,18 +268,20 @@ export class QueuesView extends HTMLElement {
     goals.className = 'goal';
     row.append(goals);
 
-    this.insertRow_(row, queue)
+    let container = this.getRowContainer_(queue);
+    if (!container)
+      throw 'Something went wrong. This should never happen.'
+    container.append(row);
   }
 
-  insertRow_(row, queue) {
-    let container = this.immediate_;
+  getRowContainer_(queue) {
     if (queue == QueueSettings.DAILY)
-      container = this.daily_;
-    else if (queue == QueueSettings.MONTHLY)
-      container = this.monthly_;
-    else if (QueueSettings.WEEKDAYS.includes(queue))
-      container = this.weekly_;
-    container.append(row);
+      return this.daily_;
+    if (queue == QueueSettings.MONTHLY)
+      return this.monthly_;
+    if (QueueSettings.WEEKDAYS.includes(queue))
+      return this.weekly_;
+    return this.immediate_;
   }
 
   createOption_(value) {

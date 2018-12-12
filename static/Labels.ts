@@ -120,12 +120,14 @@ export class Labels {
   static OLD_PROCESSED_LABEL = Labels.addMakeTimePrefix('processed');
   static OLD_QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
 
-  private labelToId_: {};
-  private idToLabel_: {};
-  private makeTimeLabelIds_: Set<string>;
-  private makeTimeLabelNames_: Set<string>;
-  private needsTriageLabelNames_: Set<string>;
-  private priorityLabels_: Set<string>;
+  // TODO: These can be undefined if fetch hasn't finished. Make the code
+  // robust to that and remove the !'s
+  private labelToId_!: {};
+  private idToLabel_!: {};
+  private makeTimeLabelIds_!: Set<string>;
+  private makeTimeLabelNames_!: Set<string>;
+  private needsTriageLabelNames_!: Set<string>;
+  private priorityLabels_!: Set<string>;
 
   async fetch() {
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
