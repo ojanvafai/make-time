@@ -94,14 +94,14 @@ export class Labels {
   static MUST_DO = 'must-do';
   static URGENT = 'urgent';
   static NOT_URGENT = 'not-urgent';
-  static DELEGATE = 'delegate';
+  static NEEDS_FILTER = 'needs-filter';
 
-  static SORTED_PRIORITIES = [Labels.MUST_DO, Labels.URGENT, Labels.NOT_URGENT, Labels.DELEGATE];
+  static SORTED_PRIORITIES = [Labels.MUST_DO, Labels.URGENT, Labels.NOT_URGENT, Labels.NEEDS_FILTER];
 
   static MUST_DO_LABEL = Labels.addPriorityPrefix(Labels.MUST_DO);
   static URGENT_LABEL = Labels.addPriorityPrefix(Labels.URGENT);
   static NOT_URGENT_LABEL = Labels.addPriorityPrefix(Labels.NOT_URGENT);
-  static DELEGATE_LABEL = Labels.addPriorityPrefix(Labels.DELEGATE);
+  static NEEDS_FILTER_LABEL = Labels.addPriorityPrefix(Labels.NEEDS_FILTER);
 
   static HIDDEN_LABELS = [
     Labels.UNPROCESSED_LABEL,

@@ -13,7 +13,7 @@ export class Actions extends HTMLElement {
   static MUST_DO_ACTION: any;
   static URGENT_ACTION: any;
   static NOT_URGENT_ACTION: any;
-  static DELEGATE_ACTION: any;
+  static NEEDS_FILTER_ACTION: any;
   static QUICK_REPLY_ACTION: any;
   static NEXT_EMAIL_ACTION: any;
   static PREVIOUS_EMAIL_ACTION: any;
@@ -111,7 +111,7 @@ export class Actions extends HTMLElement {
     Actions.MUST_DO_ACTION.destination = Labels.MUST_DO_LABEL;
     Actions.URGENT_ACTION.destination = Labels.URGENT_LABEL;
     Actions.NOT_URGENT_ACTION.destination = Labels.NOT_URGENT_LABEL;
-    Actions.DELEGATE_ACTION.destination = Labels.DELEGATE_LABEL;
+    Actions.NEEDS_FILTER_ACTION.destination = Labels.NEEDS_FILTER_LABEL;
   }
 
   dispatchShortcut(e: KeyboardEvent) {
@@ -262,9 +262,9 @@ Actions.NOT_URGENT_ACTION = {
   repeatable: false,
 }
 
-Actions.DELEGATE_ACTION = {
-  name: `4: Delegate`,
-  description: `Can't just drop this, but not important for my mission. Find someone for whom it is part of their mission.`,
+Actions.NEEDS_FILTER_ACTION = {
+  name: `4: Needs Filter`,
+  description: `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   key: undefined,
   hidden: false,
   repeatable: false,
