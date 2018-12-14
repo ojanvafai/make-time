@@ -11,7 +11,12 @@ import { View } from './views/View.js';
 import { IDBKeyVal } from './idb-keyval.js';
 
 // Client ID and API key from the Developer Console
-let CLIENT_ID = location.toString().includes('appspot') ? '410602498749-pe1lolovqrgun0ia1jipke33ojpcmbpq.apps.googleusercontent.com' : '749725088976-5n899es2a9o5p85epnamiqekvkesluo5.apps.googleusercontent.com';
+let CLIENT_ID: string;
+let isGoogle = location.toString().includes(':5555/') || location.toString().includes('https://com-mktime');
+if (isGoogle)
+  CLIENT_ID = '800053010416-p1p6n47o6ovdm04329v9p8mskl618kuj.apps.googleusercontent.com';
+else
+  CLIENT_ID = '475495334695-0i3hbt50i5lj8blad3j7bj8j4fco8edo.apps.googleusercontent.com';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",

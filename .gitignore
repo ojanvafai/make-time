@@ -1,3 +1,5 @@
+.firebase/
+.firebaserc
 .vscode
-out/
-
+firebase-debug.log
+public/gen/

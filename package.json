@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/ojanvafai/make-time#readme",
   "devDependencies": {
+    "firebase-tools": "^6.1.2",
     "typescript": "^3.2.1"
   }
 }

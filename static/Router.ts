@@ -83,12 +83,6 @@ export class Router {
       var params = this.getParams_(rule, pathParts, queryParts);
       if (params) {
         let newPath = location.toString();
-
-        // TODO: Make this less hard-coded.
-        let appspot = 'appspot';
-        if (window.location.search.includes(appspot) && !newPath.includes(appspot))
-          newPath += newPath.includes('?') ? `&${appspot}` : `?${appspot}`;
-
         if (!excludeFromHistory)
           history.pushState({}, '', newPath);
         return rule.handler(params);
