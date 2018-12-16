@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import time
 
-parser = ArgumentParser(usage='./deploy.py --projects="make-time,google.com:make-time"')
+parser = ArgumentParser(usage='./deploy.py --projects="mk-time,google.com:mktime"')
 parser.add_argument("--projects", dest="projects", help="Comma separated list of projects to deploy to")
 args = parser.parse_args()
 
