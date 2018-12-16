@@ -39,6 +39,10 @@ export abstract class Compose extends HTMLElement {
       border: 1px solid;
       padding: 8px;
       outline: none;
+
+      /* Match gmail default style of tiny text in compose to avoid different sizes on copy-paste. */
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: small;
     `;
     this.content_.contentEditable = opt_isMultiline ? 'true' : 'plaintext-only';
     this.content_.addEventListener('blur', this.cancelAutocomplete_.bind(this));
