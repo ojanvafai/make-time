@@ -210,6 +210,8 @@ async function updateSigninStatus(isSignedIn: boolean) {
   if (isSignedIn_) {
     if (loginDialog_)
       loginDialog_.close();
+    if (queuedLogin_)
+      queuedLogin_();
   } else {
     let loginButton = document.createElement('button');
     loginButton.style.cssText = `font-size: 40px;`;
@@ -721,6 +723,8 @@ function loadGapi() {
   });
 };
 
+let queuedLogin_: ((value?: {} | PromiseLike<{}> | undefined) => void);
+
 async function login() {
   if (isSignedIn_)
     return;
@@ -739,7 +743,16 @@ async function login() {
   gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
   // Handle the initial sign-in state.
   // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-  updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+  let isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
+  updateSigninStatus(isSignedIn);
+
+  if (!isSignedIn) {
+    await new Promise((resolve) => {
+      if (queuedLogin_)
+        throw 'login() was called twice while waiting for login to finish.'
+      queuedLogin_ = resolve;
+    });
+  }
 
   updateLoaderTitle('login');
 }
