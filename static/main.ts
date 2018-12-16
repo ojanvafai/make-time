@@ -360,7 +360,12 @@ async function bankruptThread(thread: Thread) {
 
 // TODO: Don't export this.
 export async function addThread(thread: Thread) {
-  if (threads_.getBestEffort() && await isBestEffortQueue(thread)) {
+  // Don't ever show best effort threads when on vacation.
+  let settings = await getSettings();
+  let ServerStorage = await serverStorage();
+  let vacation = settings.get(ServerStorage.KEYS.VACATION);
+
+  if (!vacation && threads_.getBestEffort() && await isBestEffortQueue(thread)) {
     if (await isBankrupt(thread)) {
       await bankruptThread(thread);
       return;

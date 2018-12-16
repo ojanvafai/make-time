@@ -44,7 +44,7 @@ export class Settings {
     {
       key: ServerStorage.KEYS.VACATION,
       name: 'Vacation',
-      description: `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
+      description: `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail. Cannot be a Best Effort queue.`,
     },
     {
       key: ServerStorage.KEYS.TIMER_DURATION,
