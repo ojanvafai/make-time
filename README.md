@@ -16,11 +16,9 @@ Now http://localhost:5000 serves make-time the same as consumer. For google.com 
 
 Deploying:
 $ cd make-time
-$ ./deploy.sh --help
+$ ./deploy.sh
 
-The help will print out a usage that is the actual deploy command you should run. In order to deploy, Ojan
-will need to make you a collaborator on the relevant appengine projects first though, so give him your
-personal Google address to use for that.
+In order to deploy, Ojan will need to make you a collaborator on the relevant appengine projects first.
 
 Navigating the code:
 index.html is the file that gets served, but it basically just loads main.js, which in turn loads everything

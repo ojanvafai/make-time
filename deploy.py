@@ -12,7 +12,8 @@ parser = ArgumentParser(usage='./deploy.py --projects="mk-time,google.com:mktime
 parser.add_argument("--projects", dest="projects", help="Comma separated list of projects to deploy to")
 args = parser.parse_args()
 
-projects = args.projects.split(',')
+projects_arg = args.projects if args.projects else "mk-time,google.com:mktime"
+projects = projects_arg.split(',')
 
 INDEXES = ['.js']
 FILES_TO_MODIFY = ['manifest.json']
@@ -73,7 +74,7 @@ for root, directories, files in os.walk(temp_dir, topdown=True):
       f.truncate()
 
 os.chdir(temp_dir)
-try: 
+try:
   firebase_path = os.path.join(root_dir, 'node_modules/firebase-tools/lib/bin/firebase.js')
   for project in projects:
     # TODO: Add in deleting old version automatically https://gist.github.com/mbleigh/5be2e807746cdd9549d0c33260871d21.
