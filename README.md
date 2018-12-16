@@ -16,7 +16,7 @@ Now http://localhost:5000 serves make-time the same as consumer. For google.com 
 
 Deploying:
 $ cd make-time
-$ ./deploy.sh
+$ ./deploy.py
 
 In order to deploy, Ojan will need to make you a collaborator on the relevant appengine projects first.
 
