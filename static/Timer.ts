@@ -174,7 +174,7 @@ export class Timer extends HTMLElement {
     }
 
     this.timeDisplay_.textContent = String(this.timeLeft_);
-    this.timerKey_ = setTimeout(this.nextTick_.bind(this), 1000);
+    this.timerKey_ = window.setTimeout(this.nextTick_.bind(this), 1000);
   }
 }
 

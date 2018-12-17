@@ -1,5 +1,5 @@
 import { FiltersView } from './Filters.js';
-import { showDialog } from '../main.js';
+import { showDialog } from '../BaseMain.js';
 import { QueueSettings } from '../QueueSettings.js';
 
 export class QueuesView extends HTMLElement {

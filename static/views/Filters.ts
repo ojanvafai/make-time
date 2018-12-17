@@ -1,5 +1,5 @@
 import { Settings } from '../Settings.js';
-import { showDialog } from '../main.js';
+import { showDialog } from '../BaseMain.js';
 
 interface FilterRule {
   label: string;

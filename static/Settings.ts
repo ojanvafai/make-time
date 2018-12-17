@@ -2,7 +2,7 @@ import { AsyncOnce } from './AsyncOnce.js';
 import { ErrorLogger } from './ErrorLogger.js';
 import { ServerStorage } from './ServerStorage.js';
 import { SpreadsheetUtils } from './SpreadsheetUtils.js';
-import { showDialog } from './main.js';
+import { showDialog } from './BaseMain.js';
 
 export class Settings {
   private fetcher_: AsyncOnce;

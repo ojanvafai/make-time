@@ -1,4 +1,4 @@
-import { showDialog } from './main.js';
+import { showDialog } from './BaseMain.js';
 
 let helpHtml_: string;
 

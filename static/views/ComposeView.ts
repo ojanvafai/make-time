@@ -1,5 +1,5 @@
 import { EmailCompose } from '../EmailCompose.js';
-import { showDialog } from '../main.js';
+import { showDialog } from '../BaseMain.js';
 import { IDBKeyVal } from '../idb-keyval.js';
 import { Thread } from '../Thread.js';
 import { View } from './View.js';

@@ -2,7 +2,7 @@ import { FiltersView } from './Filters.js';
 import { Labels } from '../Labels.js';
 import { QueuesView } from './Queues.js';
 import { Settings } from '../Settings.js';
-import { showDialog } from '../main.js';
+import { showDialog } from '../BaseMain.js';
 import { QueueSettings } from '../QueueSettings.js';
 
 export class SettingsView extends HTMLElement {

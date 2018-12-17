@@ -1,46 +1,12 @@
-import { AsyncOnce } from './AsyncOnce.js';
 import { ErrorLogger } from './ErrorLogger.js';
-import { Labels } from './Labels.js';
 import { Router } from './Router.js';
-import { ThreadGroups } from './ThreadGroups.js';
-import { Settings } from './Settings.js';
-import { ThreadCache } from './ThreadCache.js';
-import { QueueSettings } from './QueueSettings.js';
-import { Thread } from './Thread.js';
-import { View } from './views/View.js';
 import { IDBKeyVal } from './idb-keyval.js';
+// TODO: Clean up these dependencies to be less spaghetti.
+import { threads_, updateLoaderTitle, updateTitle, setView, getView, getSettings, getQueuedLabelMap, serverStorage, getLabels, showHelp, addThread } from './BaseMain.js';
+import { getCurrentWeekNumber } from './Base.js';
 
-// Client ID and API key from the Developer Console
-let CLIENT_ID: string;
-let isGoogle = location.toString().includes(':5555/') || location.toString().includes('https://com-mktime');
-if (isGoogle)
-  CLIENT_ID = '800053010416-p1p6n47o6ovdm04329v9p8mskl618kuj.apps.googleusercontent.com';
-else
-  CLIENT_ID = '475495334695-0i3hbt50i5lj8blad3j7bj8j4fco8edo.apps.googleusercontent.com';
-
-// Array of API discovery doc URLs for APIs used by the quickstart
-let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
-    "https://sheets.googleapis.com/$discovery/rest?version=v4",
-    "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-
-// Authorization scopes required by the API; multiple scopes can be
-// included, separated by spaces.
-let SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly';
-
-export let USER_ID = 'me';
-
-let isSignedIn_ = false;
-let loginDialog_: HTMLDialogElement;
-let currentView_: View;
-let settings_: Settings;
-let labels_: Labels;
-let queuedLabelMap_: QueueSettings;
-let threadCache_: ThreadCache;
 let contacts_: Contact[] = [];
-let titleStack_: any[] = [];
-let loaderTitleStack_: any[] = [];
 let isProcessingMail_ = false;
-let threads_ = new ThreadGroups();
 let WEEKS_TO_STORE_ = 2;
 
 var router = new Router();
@@ -54,30 +20,30 @@ window.onpopstate = () => {
 }
 
 router.add('/compose', async (params) => {
-  if (currentView_)
-    currentView_.tearDown();
+  if (getView())
+    getView().tearDown();
   await viewCompose(params);
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
 router.add('/make-time', async (_params) => {
-  if (currentView_)
-    currentView_.tearDown();
+  if (getView())
+    getView().tearDown();
   await viewMakeTime();
 });
 // TODO: best-effort should not be a URL since it's not a proper view.
 // or should it be a view instead?
 router.add('/best-effort', async (_params) => {
-  if (currentView_)
-    currentView_.tearDown();
+  if (getView())
+    getView().tearDown();
 
   threads_.processBestEffort();
   await router.run('/triage');
 });
 
 async function routeToTriage() {
-  if (currentView_)
-    currentView_.tearDown();
+  if (getView())
+    getView().tearDown();
   await viewTriage();
 }
 
@@ -118,8 +84,8 @@ function toggleMenu() {
 }
 
 (<HTMLElement> document.getElementById('back-arrow')).addEventListener('click', async () => {
-  if (currentView_.goBack)
-    await currentView_.goBack();
+  if (getView().goBack)
+    await getView().goBack();
 });
 
 (<HTMLElement> document.getElementById('hambuger-menu-toggle')).addEventListener('click', (e) => {
@@ -134,28 +100,6 @@ function toggleMenu() {
     closeMenu();
   }
 })
-
-export function showDialog(contents: HTMLElement) {
-  let dialog = document.createElement('dialog');
-  // Subtract out the top/bottom, padding and border from the max-height.
-  dialog.style.cssText = `
-    top: 15px;
-    padding: 8px;
-    border: 3px solid grey;
-    max-height: calc(100vh - 30px - 16px - 6px);
-    max-width: 800px;
-    position: fixed;
-    display: flex;
-    overscroll-behavior: none;
-  `;
-  dialog.addEventListener('close', () => dialog.remove());
-
-  dialog.append(contents);
-  document.body.append(dialog);
-
-  dialog.showModal();
-  return dialog;
-}
 
 async function viewCompose(params: any) {
   let ComposeView = (await import('./views/ComposeView.js')).ComposeView;
@@ -189,195 +133,14 @@ async function viewMakeTime() {
   await setView(new MakeTimeView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
-async function setView(view: View) {
-  threads_.setListener(view);
-  currentView_ = view;
-
-  var content = <HTMLElement> document.getElementById('content');
-  content.textContent = '';
-  content.append(view);
-
-  await login();
-  await view.fetch();
-}
-
 function getScroller() {
   return <HTMLElement> document.getElementById('content');
-}
-
-async function updateSigninStatus(isSignedIn: boolean) {
-  isSignedIn_ = isSignedIn;
-  if (isSignedIn_) {
-    if (loginDialog_)
-      loginDialog_.close();
-    if (queuedLogin_)
-      queuedLogin_();
-  } else {
-    let loginButton = document.createElement('button');
-    loginButton.style.cssText = `font-size: 40px;`;
-    loginButton.textContent = 'Log In';
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    loginButton.onclick = () => gapi.auth2.getAuthInstance().signIn();
-    loginDialog_ = showDialog(loginButton);
-  }
 }
 
 function setSubject(...items: (string | Node)[]) {
   let subject = <HTMLElement> document.getElementById('subject');
   subject.textContent = '';
   subject.append(...items);
-}
-
-function updateTitle(key: string, ...opt_title: string[]) {
-  let node = document.getElementById('title');
-  updateTitleBase(titleStack_, node!, key, ...opt_title);
-}
-
-function updateLoaderTitle(key: string, ...opt_title: string[]) {
-  let node = document.getElementById('loader-title');
-  updateTitleBase(loaderTitleStack_, node!, key, ...opt_title);
-
-  let titleContainer = <HTMLElement> document.getElementById('loader');
-  titleContainer.style.display = loaderTitleStack_.length ? '' : 'none';
-}
-
-function updateTitleBase(stack: any[], node: HTMLElement, key: string, ...opt_title: string[]) {
-  let index = stack.findIndex((item) => item.key == key);
-  if (!opt_title[0]) {
-    if (index != -1)
-      stack.splice(index, 1);
-  } else if (index == -1) {
-    stack.push({
-      key: key,
-      title: opt_title,
-    });
-  } else {
-    let entry = stack[index];
-    entry.title = opt_title;
-  }
-
-  node.textContent = '';
-  if (stack.length)
-    node.append(...stack[stack.length - 1].title);
-}
-
-export async function fetchThread(id: string) {
-  let requestParams = {
-    'userId': USER_ID,
-    'id': id,
-  };
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-  let resp = await gapiFetch(gapi.client.gmail.users.threads.get, requestParams);
-  let thread = await getCachedThread(resp.result, await getLabels());
-  // If we have a stale thread we just fetched, then it's not stale anymore.
-  // This can happen if we refetch a thread that wasn't actually modified
-  // by a modify call.
-  thread.stale = false;
-  return thread;
-}
-
-interface FetchRequestParameters {
-  userId: string;
-  q: string;
-  pageToken: string;
-}
-
-export async function fetchThreads(forEachThread: (thread: Thread) => void, options: any) {
-  // Chats don't expose their bodies in the gmail API, so just skip them.
-  let query = '-in:chats ';
-
-  if (options.query)
-    query += ' ' + options.query;
-
-  let ServerStorage = await serverStorage();
-  let daysToShow = (await getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW);
-  if (daysToShow)
-    query += ` newer_than:${daysToShow}d`;
-
-  let labels = await getLabels();
-
-  let getPageOfThreads = async (opt_pageToken?: string) => {
-    let requestParams = <FetchRequestParameters> {
-      'userId': USER_ID,
-      'q': query,
-    };
-
-    if (opt_pageToken)
-      requestParams.pageToken = opt_pageToken;
-
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
-    let threads = resp.result.threads || [];
-    for (let rawThread of threads) {
-      let thread = await getCachedThread(rawThread, labels);
-      await forEachThread(thread);
-    }
-
-    let nextPageToken = resp.result.nextPageToken;
-    if (nextPageToken)
-      await getPageOfThreads(nextPageToken);
-  };
-
-  await getPageOfThreads();
-}
-
-async function isBestEffortQueue(thread: Thread) {
-  let queue = await thread.getQueue();
-  let parts = queue.split('/');
-  let lastPart = parts[parts.length - 1];
-  let data = (await getQueuedLabelMap()).get(lastPart);
-  return data && data.goal == 'Best Effort';
-}
-
-// This function is all gross and hardcoded. Also, the constants themselves
-// aren't great. Would be best to know how long the email was actually in the
-// inbox rather than when the last email was sent, e.g. if someone was on vacation.
-// Could track the last N dequeue dates for each queue maybe?
-async function isBankrupt(thread: Thread) {
-  let messages = await thread.getMessages();
-  let date = messages[messages.length - 1].date;
-  let queue = await thread.getQueue();
-  let queueData = (await getQueuedLabelMap()).get(queue);
-
-  let numDays = 7;
-  let QueueSettings = await queueSettings();
-  if (queueData.queue == QueueSettings.WEEKLY)
-    numDays = 14;
-  else if (queueData.queue == QueueSettings.MONTHLY)
-    numDays = 42;
-
-  let oneDay = 24 * 60 * 60 * 1000;
-  let diffDays = (Date.now() - date.getTime()) / (oneDay);
-  return diffDays > numDays;
-}
-
-async function bankruptThread(thread: Thread) {
-  let queue = await thread.getQueue();
-  queue = Labels.removeNeedsTriagePrefix(queue);
-  let newLabel = Labels.addBankruptPrefix(queue);
-  await thread.markTriaged(newLabel);
-}
-
-// TODO: Don't export this.
-export async function addThread(thread: Thread) {
-  // Don't ever show best effort threads when on vacation.
-  let settings = await getSettings();
-  let ServerStorage = await serverStorage();
-  let vacation = settings.get(ServerStorage.KEYS.VACATION);
-
-  if (!vacation && threads_.getBestEffort() && await isBestEffortQueue(thread)) {
-    if (await isBankrupt(thread)) {
-      await bankruptThread(thread);
-      return;
-    } else if (threads_.getBestEffort()) {
-      // Check again that getBestEffort is non-null in case best effort threads started being
-      // triaged in the async time from the threads_.getBestEffort() call above.
-      threads_.pushBestEffort(thread);
-      return;
-    }
-  }
-
-  await currentView_.addThread(thread);
 }
 
 function createMenuItem(name: string, options: any) {
@@ -397,85 +160,6 @@ function createMenuItem(name: string, options: any) {
   a.addEventListener('click', closeMenu);
 
   return a;
-}
-
-async function gapiFetch(method: any, requestParams: any, opt_requestBody: any) {
-  let fetcher = (await import('./Net.js')).gapiFetch;
-  return fetcher(method, requestParams, opt_requestBody);
-}
-
-async function queueSettings() {
-  return (await import('./QueueSettings.js')).QueueSettings;
-}
-
-async function serverStorage() {
-  return (await import('./ServerStorage.js')).ServerStorage;
-}
-
-async function getCachedThread(response: any, labels: Labels) {
-  let ThreadCache = (await import('./ThreadCache.js')).ThreadCache;
-  if (!threadCache_)
-    threadCache_ = new ThreadCache();
-  return threadCache_.get(response, labels);
-}
-
-async function getLabels() {
-  await fetchTheSettingsThings();
-  return labels_;
-}
-
-async function getSettings() {
-  await fetchTheSettingsThings();
-  return settings_;
-}
-
-async function showHelp() {
-  let help = await import('./help.js');
-  help.showHelp();
-}
-
-let settingThingsFetcher_: AsyncOnce;
-async function fetchTheSettingsThings() {
-  if (!settingThingsFetcher_) {
-    settingThingsFetcher_ = new AsyncOnce(async () => {
-      if (settings_ || labels_)
-        throw 'Tried to fetch settings or labels twice.';
-
-      await login();
-
-      let Settings = (await import('./Settings.js')).Settings;
-      settings_ = new Settings();
-      labels_ = new Labels();
-
-      // Don't await this here so we fetch settings in parallel.
-      let labelsPromise = labels_.fetch();
-
-      await settings_.fetch();
-
-      let ServerStorage = await serverStorage();
-      let storage = new ServerStorage(settings_.spreadsheetId);
-      if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
-        await showHelp();
-        storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
-      }
-
-      await labelsPromise;
-      await migrateLabels(labels_);
-    });
-  }
-  await settingThingsFetcher_.do();
-}
-
-async function migrateLabels(labels: Labels) {
-  // Rename parent labesl before sublabels.
-  await labels.rename(Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX);
-  await labels.rename(Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL);
-  await labels.rename(Labels.OLD_QUEUED_LABEL, Labels.QUEUED_LABEL);
-
-  await labels.rename(Labels.OLD_PRIORITY_LABEL, Labels.PRIORITY_LABEL);
-  await labels.rename(Labels.OLD_NEEDS_TRIAGE_LABEL, Labels.NEEDS_TRIAGE_LABEL);
-  await labels.rename(Labels.OLD_PROCESSED_LABEL, Labels.PROCESSED_LABEL);
-  await labels.rename(Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL);
 }
 
 async function onLoad() {
@@ -577,19 +261,6 @@ async function fetchContacts(token: any) {
   await idb.set(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
-let queueSettingsFetcher_: AsyncOnce;
-async function getQueuedLabelMap() {
-  if (!queueSettingsFetcher_) {
-    queueSettingsFetcher_ = new AsyncOnce(async () => {
-      let QueueSettings = await queueSettings();
-      queuedLabelMap_ = new QueueSettings((await getSettings()).spreadsheetId);
-      await queuedLabelMap_.fetch();
-    });
-  }
-  await queueSettingsFetcher_.do();
-  return queuedLabelMap_;
-}
-
 async function getMailProcessor() {
   let MailProcessor = (await import('./MailProcessor.js')).MailProcessor;
   return new MailProcessor(await getSettings(), addThread, await getQueuedLabelMap(), await getLabels(), updateLoaderTitle);
@@ -620,15 +291,6 @@ async function processMail() {
   isProcessingMail_ = false;
 }
 
-// TODO: Put this somewhere better.
-export function getCurrentWeekNumber() {
-  let today = new Date();
-  var januaryFirst = new Date(today.getFullYear(), 0, 1);
-  var msInDay = 86400000;
-  // @ts-ignore TODO: Make subtracting date types from each other actually work.
-  return Math.ceil((((today - januaryFirst) / msInDay) + januaryFirst.getDay()) / 7);
-}
-
 async function gcLocalStorage() {
   let ServerStorage = await serverStorage();
   let storage = new ServerStorage((await getSettings()).spreadsheetId);
@@ -652,8 +314,8 @@ async function gcLocalStorage() {
 }
 
 export async function update() {
-  if (currentView_.update)
-    await currentView_.update();
+  if (getView().update)
+    await getView().update();
   await processMail();
   await gcLocalStorage();
 }
@@ -706,7 +368,7 @@ function isEditable(element: Element) {
 }
 
 document.body.addEventListener('keydown', async (e) => {
-  if (!currentView_)
+  if (!getView())
     return;
 
   if (isEditable(<Element>e.target))
@@ -717,50 +379,9 @@ document.body.addEventListener('keydown', async (e) => {
     return;
   }
 
-  if (currentView_.dispatchShortcut && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
-    await currentView_.dispatchShortcut(e);
+  if (getView().dispatchShortcut && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+    await getView().dispatchShortcut(e);
 });
-
-function loadGapi() {
-  return new Promise((resolve) => {
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    gapi.load('client:auth2', () => resolve());
-  });
-};
-
-let queuedLogin_: ((value?: {} | PromiseLike<{}> | undefined) => void);
-
-async function login() {
-  if (isSignedIn_)
-    return;
-
-  updateLoaderTitle('login', 'Logging in...');
-
-  await loadGapi();
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-  await gapi.client.init({
-    discoveryDocs: DISCOVERY_DOCS,
-    clientId: CLIENT_ID,
-    scope: SCOPES
-  });
-  // Listen for sign-in state changes.
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-  gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-  // Handle the initial sign-in state.
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-  let isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-  updateSigninStatus(isSignedIn);
-
-  if (!isSignedIn) {
-    await new Promise((resolve) => {
-      if (queuedLogin_)
-        throw 'login() was called twice while waiting for login to finish.'
-      queuedLogin_ = resolve;
-    });
-  }
-
-  updateLoaderTitle('login');
-}
 
 window.addEventListener('error', (e) => {
   var emailBody = 'Something went wrong...';

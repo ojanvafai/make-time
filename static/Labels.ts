@@ -1,4 +1,4 @@
-import { fetchThreads, USER_ID } from './main.js';
+import { fetchThreads, USER_ID } from './Base.js';
 import { Thread } from './Thread.js';
 
 async function gapiFetch(method: any, requestParams: any, opt_requestBody?: string) {

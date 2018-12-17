@@ -5,19 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="./manifest.json">
 
-    <link rel="preload" href="https://apis.google.com/js/api.js" as="script">
-
-    <!-- Include crossorigin since these are for JS modules. -->
-    <link rel="preload" href="gen/main.js" as="script" crossorigin>
-    <link rel="preload" href="gen/AsyncOnce.js" as="script" crossorigin>
-    <link rel="preload" href="gen/Compose.js" as="script" crossorigin>
-    <link rel="preload" href="gen/EmailCompose.js" as="script" crossorigin>
-    <link rel="preload" href="gen/ErrorLogger.js" as="script" crossorigin>
-    <link rel="preload" href="gen/Labels.js" as="script" crossorigin>
-    <link rel="preload" href="gen/Router.js" as="script" crossorigin>
-    <link rel="preload" href="gen/ThreadGroups.js" as="script" crossorigin>
-    <link rel="preload" href="gen/views/ComposeView.js" as="script" crossorigin>
-
     <style>
       /* Hack to avoid horizontal scrolling. */
       .message-body * {
@@ -285,9 +272,26 @@
 
     <script src="https://apis.google.com/js/api.js"></script>
     <script type=module>
-      import {update} from '/gen/main.js';
-      import '/gen/LongTasks.js';
-      window.update = update;
+      let shouldBundle = window.location.search.includes('bundle=1');
+      if (!shouldBundle) {
+        let forceUnbundle = window.location.search.includes('bundle=0');
+        if (!forceUnbundle)
+          shouldBundle = window.location.hostname != 'localhost';
+      }
+
+      let script = document.createElement('script');
+      script.type = 'module';
+      if (shouldBundle) {
+        script.textContent = `
+import {update} from '/gen/bundle.js';
+window.update = update;`;
+      } else {
+        script.textContent = `
+import {update} from '/gen/main.js';
+import '/gen/LongTasks.js';
+window.update = update;`;
+      }
+      document.body.append(script);
     </script>
 
     <mt-long-tasks></mt-long-tasks>

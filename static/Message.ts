@@ -1,6 +1,6 @@
 import { Base64 } from './base64.js';
 import { QuoteElidedMessage } from './QuoteElidedMessage.js';
-import { USER_ID } from './main.js';
+import { USER_ID } from './Base.js';
 
 interface AttachmentResult {
   id: string,

@@ -1,6 +1,6 @@
 import { Base64 } from './base64.js';
 import { gapiFetch } from './Net.js';
-import { USER_ID } from './main.js';
+import { USER_ID } from './Base.js';
 
 interface Resource {
   raw: string,

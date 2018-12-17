@@ -1,6 +1,6 @@
 import { AbstractThreadListView } from './AbstractThreadListView.js';
 import { Actions } from '../Actions.js';
-import { fetchThreads } from '../main.js';
+import { fetchThreads } from '../Base.js';
 import { Labels } from '../Labels.js';
 import { QueueSettings } from '../QueueSettings.js';
 import { Thread } from '../Thread.js';

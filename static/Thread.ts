@@ -2,7 +2,7 @@ import { gapiFetch } from './Net.js';
 import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
 import { Message } from './Message.js';
-import { USER_ID, getCurrentWeekNumber } from './main.js';
+import { USER_ID, getCurrentWeekNumber } from './Base.js';
 
 export class Thread {
   id: string;
