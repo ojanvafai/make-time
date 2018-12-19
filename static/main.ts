@@ -2,10 +2,9 @@ import { ErrorLogger } from './ErrorLogger.js';
 import { Router } from './Router.js';
 import { IDBKeyVal } from './idb-keyval.js';
 // TODO: Clean up these dependencies to be less spaghetti.
-import { threads_, updateLoaderTitle, updateTitle, setView, getView, getSettings, getQueuedLabelMap, getLabels, addThread } from './BaseMain.js';
+import { threads_, updateLoaderTitle, updateTitle, setView, getView, getSettings, getQueuedLabelMap, getLabels, addThread, showHelp } from './BaseMain.js';
 import { getCurrentWeekNumber } from './Base.js';
 import { ServerStorage } from './ServerStorage.js';
-import { showHelp } from "./help.js";
 import { ComposeView } from './views/ComposeView.js';
 import { TriageView } from './views/TriageView.js';
 import { MakeTimeView } from './views/MakeTimeView.js';

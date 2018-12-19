@@ -1,5 +1,5 @@
 import { ErrorLogger } from './ErrorLogger.js';
-import { fetchThread, fetchThreads } from './Base.js';
+import { fetchThread, fetchThreads } from './BaseMain.js';
 import { Labels } from './Labels.js';
 import { QueueSettings } from './QueueSettings.js';
 import { ServerStorage } from './ServerStorage.js';

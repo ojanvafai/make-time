@@ -1,6 +1,5 @@
 import { Actions } from '../Actions.js';
-import { addThread } from '../BaseMain.js';
-import { fetchThread, fetchThreads } from '../Base.js';
+import { addThread, fetchThread, fetchThreads } from '../BaseMain.js';
 import { Labels } from '../Labels.js';
 import { ThreadRow } from './ThreadRow.js';
 import { Timer } from '../Timer.js';

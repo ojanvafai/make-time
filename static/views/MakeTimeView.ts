@@ -1,5 +1,5 @@
 import { AbstractThreadListView } from './AbstractThreadListView.js';
-import { fetchThread } from '../Base.js';
+import { fetchThread } from '../BaseMain.js';
 import { Labels } from '../Labels.js';
 import { ThreadGroups } from '../ThreadGroups.js';
 import { MailProcessor } from '../MailProcessor.js';

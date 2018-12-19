@@ -1,6 +1,6 @@
 import { EmailCompose } from '../EmailCompose.js';
 import { send } from '../Mail.js';
-import { showDialog } from '../BaseMain.js';
+import { showDialog } from '../Base.js';
 import { IDBKeyVal } from '../idb-keyval.js';
 import { Thread } from '../Thread.js';
 import { View } from './View.js';

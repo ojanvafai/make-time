@@ -1,3 +1,8 @@
+// TODO: This file probably shouldn't exist. It's a holdover from early spaghetti
+// code that was extracted out to remove circular dependencies between modules.
+// It's not trivial to detangle though. It's mostly reused functions that have
+// to know about Threads and things like that.
+
 import { Thread } from "./Thread.js";
 import { Labels } from "./Labels.js";
 import { AsyncOnce } from "./AsyncOnce.js";
@@ -6,7 +11,26 @@ import { QueueSettings } from "./QueueSettings.js";
 import { ThreadGroups } from "./ThreadGroups.js";
 import { View } from "./views/View.js";
 import { ServerStorage } from "./ServerStorage.js";
-import { showHelp } from "./help.js";
+import { showDialog, USER_ID } from "./Base.js";
+import { gapiFetch } from './Net.js';
+
+class ThreadCache {
+  cache_: Map<Number, Thread>;
+
+  constructor() {
+    this.cache_ = new Map();
+  }
+
+  async get(threadData: any) {
+    let entry = this.cache_.get(threadData.id);
+    if (entry && entry.historyId == threadData.historyId)
+      return entry;
+
+    let thread = new Thread(threadData, await getLabels());
+    this.cache_.set(threadData.id, thread);
+    return thread;
+  }
+}
 
 let settings_: Settings;
 let labels_: Labels;
@@ -15,6 +39,8 @@ let loginDialog_: HTMLDialogElement;
 let currentView_: View;
 let titleStack_: any[] = [];
 let loaderTitleStack_: any[] = [];
+let threadCache_: ThreadCache;
+
 export let threads_ = new ThreadGroups();
 
 // Client ID and API key from the Developer Console
@@ -54,28 +80,6 @@ export async function addThread(thread: Thread) {
   }
 
   await currentView_.addThread(thread);
-}
-
-export function showDialog(contents: HTMLElement) {
-  let dialog = document.createElement('dialog');
-  // Subtract out the top/bottom, padding and border from the max-height.
-  dialog.style.cssText = `
-    top: 15px;
-    padding: 8px;
-    border: 3px solid grey;
-    max-height: calc(100vh - 30px - 16px - 6px);
-    max-width: 800px;
-    position: fixed;
-    display: flex;
-    overscroll-behavior: none;
-  `;
-  dialog.addEventListener('close', () => dialog.remove());
-
-  dialog.append(contents);
-  document.body.append(dialog);
-
-  dialog.showModal();
-  return dialog;
 }
 
 async function isBestEffortQueue(thread: Thread) {
@@ -170,16 +174,25 @@ async function fetchTheSettingsThings() {
   await settingThingsFetcher_.do();
 }
 
+
+async function doLabelMigration(addLabelIds: string[], removeLabelIds: string[], query: string) {
+  await fetchThreads(async (thread: Thread) => {
+    await thread.modify(addLabelIds, removeLabelIds, true);
+  }, {
+    query: query,
+  });
+}
+
 async function migrateLabels(labels: Labels) {
   // Rename parent labesl before sublabels.
-  await labels.rename(Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX);
-  await labels.rename(Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL);
-  await labels.rename(Labels.OLD_QUEUED_LABEL, Labels.QUEUED_LABEL);
+  await labels.rename(Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX, doLabelMigration);
+  await labels.rename(Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL, doLabelMigration);
+  await labels.rename(Labels.OLD_QUEUED_LABEL, Labels.QUEUED_LABEL, doLabelMigration);
 
-  await labels.rename(Labels.OLD_PRIORITY_LABEL, Labels.PRIORITY_LABEL);
-  await labels.rename(Labels.OLD_NEEDS_TRIAGE_LABEL, Labels.NEEDS_TRIAGE_LABEL);
-  await labels.rename(Labels.OLD_PROCESSED_LABEL, Labels.PROCESSED_LABEL);
-  await labels.rename(Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL);
+  await labels.rename(Labels.OLD_PRIORITY_LABEL, Labels.PRIORITY_LABEL, doLabelMigration);
+  await labels.rename(Labels.OLD_NEEDS_TRIAGE_LABEL, Labels.NEEDS_TRIAGE_LABEL, doLabelMigration);
+  await labels.rename(Labels.OLD_PROCESSED_LABEL, Labels.PROCESSED_LABEL, doLabelMigration);
+  await labels.rename(Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL, doLabelMigration);
 }
 
 let queueSettingsFetcher_: AsyncOnce;
@@ -284,3 +297,125 @@ function updateTitleBase(stack: any[], node: HTMLElement, key: string, ...opt_ti
   if (stack.length)
     node.append(...stack[stack.length - 1].title);
 }
+
+async function getCachedThread(response: any) {
+  if (!threadCache_)
+    threadCache_ = new ThreadCache();
+  return await threadCache_.get(response);
+}
+
+interface FetchRequestParameters {
+  userId: string;
+  q: string;
+  pageToken: string;
+}
+
+export async function fetchThreads(forEachThread: (thread: Thread) => void, options: any) {
+  // Chats don't expose their bodies in the gmail API, so just skip them.
+  let query = '-in:chats ';
+
+  if (options.query)
+    query += ' ' + options.query;
+
+  // let daysToShow = (await getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW);
+  // if (daysToShow)
+  //   query += ` newer_than:${daysToShow}d`;
+
+  let getPageOfThreads = async (opt_pageToken?: string) => {
+    let requestParams = <FetchRequestParameters> {
+      'userId': USER_ID,
+      'q': query,
+    };
+
+    if (opt_pageToken)
+      requestParams.pageToken = opt_pageToken;
+
+    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
+    let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
+    let threads = resp.result.threads || [];
+    for (let rawThread of threads) {
+      let thread = await getCachedThread(rawThread);
+      await forEachThread(thread);
+    }
+
+    let nextPageToken = resp.result.nextPageToken;
+    if (nextPageToken)
+      await getPageOfThreads(nextPageToken);
+  };
+
+  await getPageOfThreads();
+}
+
+export async function fetchThread(id: string) {
+  let requestParams = {
+    'userId': USER_ID,
+    'id': id,
+  };
+  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
+  let resp = await gapiFetch(gapi.client.gmail.users.threads.get, requestParams);
+  let thread = await getCachedThread(resp.result);
+  // If we have a stale thread we just fetched, then it's not stale anymore.
+  // This can happen if we refetch a thread that wasn't actually modified
+  // by a modify call.
+  thread.stale = false;
+  return thread;
+}
+
+let helpHtml_: string;
+
+export function showHelp() {
+  let contents = document.createElement('div');
+  contents.style.overflow = 'auto';
+  contents.innerHTML = helpText();
+  let dialog = showDialog(contents);
+  dialog.style.whiteSpace = 'pre-wrap';
+
+  let closeButton = document.createElement('div');
+  closeButton.classList.add('close-button');
+  closeButton.style.cssText = `
+    float: right;
+    position: sticky;
+    top: 0;
+    background-color: white;
+    padding-left: 10px;
+  `;
+  closeButton.onclick = () => dialog.close();
+  contents.prepend(closeButton);
+
+  return new Promise((resolve) => {
+    dialog.addEventListener('close', resolve);
+  });
+}
+
+function helpText() {
+  if (helpHtml_)
+    return helpHtml_;
+
+  helpHtml_ = `make-time is an opinionated way of handling unreasonable amounts of email.
+
+<b style="font-size:120%">Disclaimers</b>
+Patches welcome, but otherwise, I built it for my needs. :) Feature requests are very welcome though. Often you'll think of something I want that I don't have and I'll build it. Contact ojan@ or file issues at https://github.com/ojanvafai/make-time if you want to contribute, give feedback, etc.
+
+<span style="color: red">This is a side project. While I use it for my day to day email management, you might not want to. It has bugs.</span> They may be hard to deal with if you're not willing to dig into the code when they happen.
+
+<b style="font-size:120%">Triage</b>
+
+All the triage actions mark a thread as read, remove it from the inbox, and remove the maketime labels. <b>Aside from archiving messages (and bugs), maketime will only modify labels under the "maketime" parent label.</b> So you can do whatever you want with other labels.
+
+The goal of triage is to get in the flow of doing all the triage quickly. After triage is done, you enter make-time mode where you work through each thread in priority order. This helps avoid flip-flopping back and forth between quick triage and deep thinking.
+
+<b style="font-size:120%">Filtering</b>
+
+Philosopy: Labels are a triage tool, not a search/organization tool. The goal is to have all your labels and inbox be empty when you're done with triage. The first filter that applies to a thread wins, so every thread gets exactly one label. This enables richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day. See the fillter settings dialog for more information.
+
+Make-time processes all emails in your inbox and all emails in the maketime/unprocessed label. You don't have to, but typically, people will delete all their gmail filters and just use make-time filtering. See the Settings dialog for adding filters and modifying queues. Queues can be setup to show up in a specific order and/or only show once a day/week/month. See the queues settings dialog for more information.
+
+Whether you leave emails in your inbox by default or moved them into the unprocessed label so you don't see them in in gmail itself till they've been processed is up to you. If you want all your mail to be unprocessed by default, create a real gmail filter with:
+    Has the words: -in:chats -label:mute -from:me
+    Do this: Skip Inbox, Apply label "maketime/unprocessed"
+
+<span style="color: red">Emails are only processed when make-time is open in a browser tab. Otherwise, your mail will stay in the unprocessed label. Would love to move this to a server cron, but this is a side project and I can't be bothered to figure out how to manage server-side gmail API oauth. <b>Patches *very* welcome for this.</b></span>
+`;
+
+  return helpHtml_;
+};

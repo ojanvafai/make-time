@@ -1,6 +1,6 @@
 # MakeTime
 
-Make-time is an opinionated email client for Gmail. See help.js for more details.
+Make-time is an opinionated email client for Gmail.
 
 ## Build dependencies
 1. Checkout https://github.com/ojanvafai/make-time

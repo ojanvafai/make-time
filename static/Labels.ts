@@ -1,6 +1,5 @@
 import { gapiFetch } from './Net.js';
-import { fetchThreads, USER_ID } from './Base.js';
-import { Thread } from './Thread.js';
+import { USER_ID } from './Base.js';
 
 interface LabelResource {
   name: string;
@@ -203,21 +202,20 @@ export class Labels {
     return response.result;
   }
 
-  async migrateThreads(oldName: string, newName: string) {
+  async migrateThreads(oldName: string, newName: string,
+      migrater: (addLabelIds: string[], removeLabelIds: string[], query: string) => {}) {
     let addLabelIds = [this.labelToId_[newName]];
     let removeLabelIds = [this.labelToId_[oldName]];
-    await fetchThreads(async (thread: Thread) => {
-      await thread.modify(addLabelIds, removeLabelIds, true);
-    }, {
-      query: `in:${oldName}`,
-    });
+    let query = `in:${oldName}`;
+    migrater(addLabelIds, removeLabelIds, query);
   }
 
-  async rename(oldName: string, newName: string) {
+  async rename(oldName: string, newName: string,
+      migrater: (addLabelIds: string[], removeLabelIds: string[], query: string) => {}) {
     let id = this.labelToId_[oldName];
     if (id) {
       if (this.labelToId_[newName]) {
-        await this.migrateThreads(oldName, newName);
+        await this.migrateThreads(oldName, newName, migrater);
         this.delete(oldName);
       } else {
         let resource = this.labelResource_(newName);
@@ -241,7 +239,7 @@ export class Labels {
     let newPrefix = `${newName}/`;
     for (let name in this.labelToId_) {
       if (name.startsWith(oldPrefix))
-        await this.rename(name, name.replace(oldPrefix, newPrefix));
+        await this.rename(name, name.replace(oldPrefix, newPrefix), migrater);
     }
   }
 
