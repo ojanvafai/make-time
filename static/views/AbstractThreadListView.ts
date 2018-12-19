@@ -10,6 +10,7 @@ import { RowGroup } from '../RowGroup.js';
 import { Thread } from '../Thread.js';
 import { ThreadGroups } from '../ThreadGroups.js';
 import { View } from './View.js';
+import { EmailCompose } from '../EmailCompose.js';
 
 interface TriageResult {
   newThread: Thread;
@@ -626,7 +627,7 @@ export abstract class AbstractThreadListView extends View {
     // previous message.
     let y = elementToScrollTo.getBoundingClientRect().top;
     if (y < 70)
-      document.documentElement.scrollTop -= 70 - y;
+      document.documentElement!.scrollTop -= 70 - y;
 
     // Check if new messages have come in since we last fetched from the network.
     await this.renderedRow_.update();
@@ -659,7 +660,6 @@ export abstract class AbstractThreadListView extends View {
       width: 100%;
     `;
 
-    let EmailCompose = (await import('../EmailCompose.js')).EmailCompose;
     let compose = new EmailCompose(this.contacts_);
     compose.style.cssText = `
       flex: 1;

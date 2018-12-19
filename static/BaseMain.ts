@@ -5,6 +5,8 @@ import { Settings } from "./Settings.js";
 import { QueueSettings } from "./QueueSettings.js";
 import { ThreadGroups } from "./ThreadGroups.js";
 import { View } from "./views/View.js";
+import { ServerStorage } from "./ServerStorage.js";
+import { showHelp } from "./help.js";
 
 let settings_: Settings;
 let labels_: Labels;
@@ -37,7 +39,6 @@ let isSignedIn_ = false;
 export async function addThread(thread: Thread) {
   // Don't ever show best effort threads when on vacation.
   let settings = await getSettings();
-  let ServerStorage = await serverStorage();
   let vacation = settings.get(ServerStorage.KEYS.VACATION);
 
   if (!vacation && threads_.getBestEffort() && await isBestEffortQueue(thread)) {
@@ -77,10 +78,6 @@ export function showDialog(contents: HTMLElement) {
   return dialog;
 }
 
-async function queueSettings() {
-  return (await import('./QueueSettings.js')).QueueSettings;
-}
-
 async function isBestEffortQueue(thread: Thread) {
   let queue = await thread.getQueue();
   let parts = queue.split('/');
@@ -100,7 +97,6 @@ async function isBankrupt(thread: Thread) {
   let queueData = (await getQueuedLabelMap()).get(queue);
 
   let numDays = 7;
-  let QueueSettings = await queueSettings();
   if (queueData.queue == QueueSettings.WEEKLY)
     numDays = 14;
   else if (queueData.queue == QueueSettings.MONTHLY)
@@ -128,10 +124,6 @@ export async function getSettings() {
   return settings_;
 }
 
-export async function serverStorage() {
-  return (await import('./ServerStorage.js')).ServerStorage;
-}
-
 export function getView() {
   return currentView_;
 }
@@ -157,7 +149,6 @@ async function fetchTheSettingsThings() {
 
       await login();
 
-      let Settings = (await import('./Settings.js')).Settings;
       settings_ = new Settings();
       labels_ = new Labels();
 
@@ -166,7 +157,6 @@ async function fetchTheSettingsThings() {
 
       await settings_.fetch();
 
-      let ServerStorage = await serverStorage();
       let storage = new ServerStorage(settings_.spreadsheetId);
       if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
         await showHelp();
@@ -196,18 +186,12 @@ let queueSettingsFetcher_: AsyncOnce;
 export async function getQueuedLabelMap() {
   if (!queueSettingsFetcher_) {
     queueSettingsFetcher_ = new AsyncOnce(async () => {
-      let QueueSettings = await queueSettings();
       queuedLabelMap_ = new QueueSettings((await getSettings()).spreadsheetId);
       await queuedLabelMap_.fetch();
     });
   }
   await queueSettingsFetcher_.do();
   return queuedLabelMap_;
-}
-
-export async function showHelp() {
-  let help = await import('./help.js');
-  help.showHelp();
 }
 
 function loadGapi() {

@@ -1,10 +1,6 @@
+import { gapiFetch } from './Net.js';
 import { fetchThreads, USER_ID } from './Base.js';
 import { Thread } from './Thread.js';
-
-async function gapiFetch(method: any, requestParams: any, opt_requestBody?: string) {
-  let fetcher = (await import('./Net.js')).gapiFetch;
-  return fetcher(method, requestParams, opt_requestBody);
-}
 
 interface LabelResource {
   name: string;

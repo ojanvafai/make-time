@@ -2,8 +2,15 @@ import { ErrorLogger } from './ErrorLogger.js';
 import { Router } from './Router.js';
 import { IDBKeyVal } from './idb-keyval.js';
 // TODO: Clean up these dependencies to be less spaghetti.
-import { threads_, updateLoaderTitle, updateTitle, setView, getView, getSettings, getQueuedLabelMap, serverStorage, getLabels, showHelp, addThread } from './BaseMain.js';
+import { threads_, updateLoaderTitle, updateTitle, setView, getView, getSettings, getQueuedLabelMap, getLabels, addThread } from './BaseMain.js';
 import { getCurrentWeekNumber } from './Base.js';
+import { ServerStorage } from './ServerStorage.js';
+import { showHelp } from "./help.js";
+import { ComposeView } from './views/ComposeView.js';
+import { TriageView } from './views/TriageView.js';
+import { MakeTimeView } from './views/MakeTimeView.js';
+import { SettingsView } from './views/Settings.js';
+import { MailProcessor } from './MailProcessor.js';
 
 let contacts_: Contact[] = [];
 let isProcessingMail_ = false;
@@ -102,16 +109,13 @@ function toggleMenu() {
 })
 
 async function viewCompose(params: any) {
-  let ComposeView = (await import('./views/ComposeView.js')).ComposeView;
   await setView(new ComposeView(contacts_, updateLoaderTitle, params));
 }
 
 async function viewTriage() {
   updateLoaderTitle('viewTriage', 'Fetching threads to triage...');
-  let TriageView = (await import('./views/TriageView.js')).TriageView;
 
   let settings = await getSettings();
-  let ServerStorage = await serverStorage();
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
@@ -122,10 +126,7 @@ async function viewTriage() {
 }
 
 async function viewMakeTime() {
-  let MakeTimeView = (await import('./views/MakeTimeView.js')).MakeTimeView;
-
   let settings = await getSettings();
-  let ServerStorage = await serverStorage();
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
@@ -165,7 +166,6 @@ function createMenuItem(name: string, options: any) {
 async function onLoad() {
   let settingsButton = createMenuItem('Settings', {
     onclick: async () => {
-      let SettingsView = (await import('./views/Settings.js')).SettingsView;
       new SettingsView(await getSettings(), await getQueuedLabelMap());
     }
   });
@@ -215,8 +215,6 @@ async function fetchContacts(token: any) {
   if (contacts_.length)
     return;
 
-  let idb = await idbKeyVal();
-
   // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send
   // the data we don't need.
   let response;
@@ -225,7 +223,7 @@ async function fetchContacts(token: any) {
   } catch(e) {
     let message = `Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`;
 
-    let contacts = await idb.get(CONTACT_STORAGE_KEY_);
+    let contacts = await IDBKeyVal.getDefault().get(CONTACT_STORAGE_KEY_);
     if (!contacts) {
       ErrorLogger.log(message);
       return;
@@ -258,22 +256,11 @@ async function fetchContacts(token: any) {
 
   // Store the final contacts object instead of the data fetched off the network since the latter
   // can is order of magnitude larger and can exceed the allowed localStorage quota.
-  await idb.set(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
+  await IDBKeyVal.getDefault().set(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
 async function getMailProcessor() {
-  let MailProcessor = (await import('./MailProcessor.js')).MailProcessor;
   return new MailProcessor(await getSettings(), addThread, await getQueuedLabelMap(), await getLabels(), updateLoaderTitle);
-}
-
-// TODO: Move this to a helper file with all the other async import things so that they're all in
-// one file that is imported instead of duplicated across the codebase.
-let idbKeyVal_: IDBKeyVal;
-async function idbKeyVal() {
-  let IDBKeyVal = (await import('./idb-keyval.js')).IDBKeyVal;
-  if (!idbKeyVal_)
-    idbKeyVal_ = IDBKeyVal.getDefault();
-  return idbKeyVal_;
 }
 
 // TODO: Move this to a cron
@@ -292,14 +279,12 @@ async function processMail() {
 }
 
 async function gcLocalStorage() {
-  let ServerStorage = await serverStorage();
   let storage = new ServerStorage((await getSettings()).spreadsheetId);
   let lastGCTime = storage.get(ServerStorage.KEYS.LAST_GC_TIME);
   let oneDay = 24 * 60 * 60 * 1000;
   if (!lastGCTime || Date.now() - lastGCTime > oneDay) {
     let currentWeekNumber = getCurrentWeekNumber();
-    let idb = await idbKeyVal();
-    let keys = await idb.keys();
+    let keys = await IDBKeyVal.getDefault().keys();
     for (let key of keys) {
       let match = key.match(/^thread-(\d+)-\d+$/);
       if (!match)
@@ -307,7 +292,7 @@ async function gcLocalStorage() {
 
       let weekNumber = Number(match[1]);
       if (weekNumber + WEEKS_TO_STORE_ < currentWeekNumber)
-        await idb.del(key);
+        await IDBKeyVal.getDefault().del(key);
     }
     await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_GC_TIME, value: Date.now()}]);
   }

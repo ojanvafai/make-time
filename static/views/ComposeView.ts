@@ -1,4 +1,5 @@
 import { EmailCompose } from '../EmailCompose.js';
+import { send } from '../Mail.js';
 import { showDialog } from '../BaseMain.js';
 import { IDBKeyVal } from '../idb-keyval.js';
 import { Thread } from '../Thread.js';
@@ -13,14 +14,6 @@ const HELP_TEXT = `Put ## followed by a priority level in your email to automati
 
 URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
-
-let idbKeyVal_: IDBKeyVal;
-async function idbKeyVal() {
-  let IDBKeyVal = (await import('../idb-keyval.js')).IDBKeyVal;
-  if (!idbKeyVal_)
-    idbKeyVal_ = IDBKeyVal.getDefault();
-  return idbKeyVal_;
-}
 
 interface EmailData {
   to: string;
@@ -75,7 +68,7 @@ export class ComposeView extends View {
   }
 
   async prefill_() {
-    let localData = await (await idbKeyVal()).get(AUTO_SAVE_KEY);
+    let localData = await IDBKeyVal.getDefault().get(AUTO_SAVE_KEY);
     if (!localData)
       localData = this.params_;
 
@@ -172,9 +165,9 @@ export class ComposeView extends View {
     }
 
     if (hasData)
-      await (await idbKeyVal()).set(AUTO_SAVE_KEY, data);
+      await IDBKeyVal.getDefault().set(AUTO_SAVE_KEY, data);
     else
-     await (await idbKeyVal()).del(AUTO_SAVE_KEY);
+     await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
   }
 
   focusFirstEmpty_() {
@@ -262,9 +255,8 @@ export class ComposeView extends View {
     this.sending_ = true;
 
     this.updateTitle_('sending', 'Sending...');
-    let mail = await import('../Mail.js');
-    await mail.send(this.body_.value, to, subject);
-    await (await idbKeyVal()).del(AUTO_SAVE_KEY);
+    await send(this.body_.value, to, subject);
+    await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
     this.updateTitle_('sending');
 
     this.to_.value = this.params_.to || '';

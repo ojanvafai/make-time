@@ -1,6 +1,7 @@
 import { gapiFetch } from './Net.js';
 import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
+import { send } from './Mail.js';
 import { Message } from './Message.js';
 import { USER_ID, getCurrentWeekNumber } from './Base.js';
 
@@ -259,7 +260,6 @@ export class Thread {
     ${lastMessage.getHtmlOrPlain()}
   </blockquote>`;
 
-    let mail = await import('./Mail.js');
-    await mail.send(text, to, subject, headers, this.id);
+    await send(text, to, subject, headers, this.id);
   }
 }

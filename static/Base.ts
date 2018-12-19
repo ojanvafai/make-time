@@ -1,3 +1,4 @@
+import { gapiFetch } from './Net.js';
 import { Thread } from './Thread.js';
 import { ThreadCache } from './ThreadCache.js';
 
@@ -12,13 +13,7 @@ export function getCurrentWeekNumber() {
   return Math.ceil((((today - januaryFirst) / msInDay) + januaryFirst.getDay()) / 7);
 }
 
-async function gapiFetch(method: any, requestParams: any, opt_requestBody: any) {
-  let fetcher = (await import('./Net.js')).gapiFetch;
-  return fetcher(method, requestParams, opt_requestBody);
-}
-
 async function getCachedThread(response: any) {
-  let ThreadCache = (await import('./ThreadCache.js')).ThreadCache;
   if (!threadCache_)
     threadCache_ = new ThreadCache();
   return await threadCache_.get(response);
@@ -37,7 +32,6 @@ export async function fetchThreads(forEachThread: (thread: Thread) => void, opti
   if (options.query)
     query += ' ' + options.query;
 
-  // let ServerStorage = await serverStorage();
   // let daysToShow = (await getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW);
   // if (daysToShow)
   //   query += ` newer_than:${daysToShow}d`;
