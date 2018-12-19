@@ -63,7 +63,7 @@ export class MailProcessor {
     if (!addresses)
       return false;
 
-    var filterAddresses = filterAddressCsv.split(',');
+    var filterAddresses = filterAddressCsv.split(',').map((item) => item.trim());
     for (var i = 0; i < filterAddresses.length; i++) {
       var filterAddress = filterAddresses[i];
       // If there's no @ symbol, we don't know if it's a username or a domain.
