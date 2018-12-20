@@ -411,7 +411,7 @@ export abstract class AbstractThreadListView extends View {
       await this.transitionToThreadList_();
   }
 
-  setFocus(email: HTMLElement) {
+  setFocus(email: HTMLElement | null) {
     if(this.focusedEmail_) {
       this.focusedEmail_.focused = false;
       this.focusedEmail_.updateHighlight_();
@@ -425,6 +425,8 @@ export abstract class AbstractThreadListView extends View {
   }
 
   moveFocus(action: any) {
+    if(this.groupedThreads_.length == 0)
+      return;
     if (this.focusedEmail_ == null) {
       if (action == Actions.NEXT_EMAIL_ACTION) {
         this.setFocus(this.groupedThreads_[0].getRows()[0])
@@ -464,6 +466,8 @@ export abstract class AbstractThreadListView extends View {
       // If nothing is focused, pretend the first email was focused.
       if(!this.focusedEmail_)
         this.moveFocus(Actions.NEXT_EMAIL_ACTION);
+      if (!this.focusedEmail_)
+        return;
       this.focusedEmail_.checkBox_.checked = !this.focusedEmail_.checkBox_.checked;
       this.focusedEmail_.updateHighlight_();
       this.moveFocus(Actions.NEXT_EMAIL_ACTION);
@@ -474,6 +478,10 @@ export abstract class AbstractThreadListView extends View {
       return;
     }
     if (action == Actions.VIEW_FOCUSED_ACTION) {
+      if (!this.focusedEmail_)
+        this.moveFocus(Actions.NEXT_EMAIL_ACTION);
+      if (!this.focusedEmail_)
+        return;
       this.renderOne_(this.focusedEmail_);
       return;
     }
@@ -518,8 +526,12 @@ export abstract class AbstractThreadListView extends View {
       this.updateTitle('archiving', `Archiving ${threads.selectedRows.length} threads...`);
 
       // Move focus to the first unselected email.
+      // If we aren't able to find an unselected email,
+      // focusedEmail_ should end up null.
+      const previouslyFocused = this.focusedEmail_;
+      this.setFocus(null);
       // TODO - this could easily be faster.
-      if (threads.selectedRows.indexOf(this.focusedEmail_) != -1) {
+      if (threads.selectedRows.indexOf(previouslyFocused) != -1) {
         for (let row of threads.selectedRows) {
           const nextRow = this.getNextRow(row);
           if (nextRow && threads.selectedRows.indexOf(nextRow) == -1) {
