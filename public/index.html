@@ -283,7 +283,7 @@
       script.type = 'module';
       if (shouldBundle) {
         script.textContent = `
-import {update} from '/gen/bundle.js';
+import {update} from '/gen/bundle/main.js';
 window.update = update;`;
       } else {
         script.textContent = `

@@ -21,7 +21,14 @@
   "homepage": "https://github.com/ojanvafai/make-time#readme",
   "devDependencies": {
     "firebase-tools": "^6.1.2",
+    "gulp": "^4.0.0",
+    "gulp-better-rollup": "^3.4.0",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-typescript": "^5.0.0",
+    "gulp-uglify-es": "^1.0.4",
+    "rimraf": "^2.6.2",
     "rollup": "^0.68.0",
+    "strip-json-comments": "^2.0.1",
     "typescript": "^3.2.1"
   }
 }

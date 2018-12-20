@@ -28,10 +28,9 @@ if os.path.exists(temp_dir):
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
 
-print 'Compiling typescript...'
-return_code = subprocess.call([os.path.join(root_dir, 'node_modules/typescript/bin/tsc')])
+return_code = subprocess.call([os.path.join(root_dir, 'node_modules/gulp/bin/gulp.js')])
 if return_code != 0:
-  raise Exception('Running typescript compiler failed.')
+  raise Exception('Gulp steps failed.')
 
 print 'Copying files to temp directory ' + temp_dir + '...'
 shutil.copytree(root_dir, temp_dir, ignore=shutil.ignore_patterns('.git', 'static', 'node_modules', 'tests'))
