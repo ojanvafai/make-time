@@ -9,16 +9,17 @@ export class Thread {
   id: string;
   historyId: string;
   snippet: string;
-  stale: boolean = false;
   private allLabels_: Labels;
-  // TODO: Fix these to not assert non-null since they could realistically be null if
-  // fetch() isn't completed.
+
+  // These are all set in resetState_, which is called from the constructor.
+  private hasMessageDetails_!: boolean;
   private labelIds_!: Set<string>;
   private labelNames_!: Set<string>;
   private priority_!: string;
   private muted_!: boolean;
   private queue_!: string;
   private processedMessages_!: Message[];
+
   // TODO: Give this a non-any value once we import gapi types.
   private fetchPromise_: Promise<any> | null = null;
 
@@ -27,6 +28,9 @@ export class Thread {
     this.historyId = thread.historyId;
     this.snippet = thread.snippet;
     this.allLabels_ = allLabels;
+
+    this.resetState_();
+
     if (thread.messages) {
       this.processMessages_(thread.messages);
       // When the messages are included, the snippet isn't (i.e. for thread.get calls).
@@ -35,15 +39,24 @@ export class Thread {
     }
   }
 
-  processLabels_(messages: any[]) {
+  resetState_() {
+    this.hasMessageDetails_ = true;
+
     this.labelIds_ = new Set();
+    this.labelNames_ = new Set();
+    this.priority_ = '';
+    this.muted_ = false;
+    this.queue_ = '';
+    this.processedMessages_ = [];
+  }
+
+  processLabels_(messages: any[]) {
     for (var message of messages) {
       for (let labelId of message.labelIds) {
         this.labelIds_.add(labelId);
       }
     }
 
-    this.labelNames_ = new Set();
     for (let id of this.labelIds_) {
       let name = this.allLabels_.getName(id);
       if (!name) {
@@ -66,9 +79,9 @@ export class Thread {
   }
 
   processMessages_(messages: any[]) {
+    this.hasMessageDetails_ = false;
+
     this.processLabels_(messages);
-    if (!this.processedMessages_)
-      this.processedMessages_ = [];
     let newMessages = messages.slice(this.processedMessages_.length);
     // Only process new messages.
     let newProcessedMessages: Message[] = [];
@@ -103,8 +116,8 @@ export class Thread {
     let response = await gapiFetch(gapi.client.gmail.users.threads.modify, request);
     // TODO: Handle response.status != 200.
 
-    // Once a modify has happened the stored message details are stale and this Thread shouldn't be used anymore.
-    this.stale = true;
+    // Once a modify has happened the stored message details are stale.
+    this.resetState_;
 
     return {
       added: addLabelIds,
@@ -172,8 +185,6 @@ export class Thread {
   }
 
   async getQueue() {
-    this.assertNotStale_();
-
     if (!this.queue_)
       await this.fetchMessageDetails();
     return this.queue_;
@@ -187,11 +198,6 @@ export class Thread {
   async isMuted() {
     await this.fetchMessageDetails();
     return this.muted_;
-  }
-
-  assertNotStale_() {
-    if (this.stale)
-      throw `Attempted to reuse stale thread with ID: ${this.id}`;
   }
 
   async fetchMessageDetails_(forceNetwork?: boolean) {
@@ -228,8 +234,7 @@ export class Thread {
   }
 
   async fetchMessageDetails() {
-    this.assertNotStale_();
-    if (this.processedMessages_)
+    if (!this.hasMessageDetails_)
       return null;
     return await this.updateMessageDetails();
   }

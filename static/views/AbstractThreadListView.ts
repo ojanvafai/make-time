@@ -1,5 +1,5 @@
 import { Actions } from '../Actions.js';
-import { addThread, fetchThread, fetchThreads } from '../BaseMain.js';
+import { addThread, fetchThreads } from '../BaseMain.js';
 import { Labels } from '../Labels.js';
 import { ThreadRow } from './ThreadRow.js';
 import { Timer } from '../Timer.js';
@@ -12,7 +12,6 @@ import { View } from './View.js';
 import { EmailCompose } from '../EmailCompose.js';
 
 interface TriageResult {
-  newThread: Thread;
   thread: Thread;
   removed: string[];
   added: string[];
@@ -127,7 +126,7 @@ export abstract class AbstractThreadListView extends View {
   abstract async getDisplayableQueue(thread: Thread): Promise<string>;
   abstract compareRowGroups(a: any, b: any): number;
   abstract handleUndo(thread: Thread): void;
-  abstract handleTriaged(destination: string | null, triageResult: any, thread: Thread): void;
+  abstract handleTriaged(destination: string | null, thread: Thread): void;
 
   appendButton(href: string, textContent = '') {
     let button = document.createElement('a');
@@ -254,8 +253,13 @@ export abstract class AbstractThreadListView extends View {
     // Delete empty row groups.
     this.groupedThreads_ = this.groupedThreads_.filter((group) => {
       let hasRows = group.hasRows();
-      if (!hasRows)
+      if (!hasRows) {
         group.node.remove();
+        // Clear out the child rows so they don't reappear if the group
+        // is shown again, e.g. in the case of archive+undo the last thread
+        // in a group.
+        group.node.removeChildren();
+      }
       return hasRows;
     });
 
@@ -548,7 +552,7 @@ export abstract class AbstractThreadListView extends View {
     if (triageResult) {
       this.undoableActions_.push(triageResult);
     }
-    await this.handleTriaged(destination, triageResult, thread);
+    await this.handleTriaged(destination, thread);
   }
 
   async undoLastAction_() {
@@ -564,16 +568,15 @@ export abstract class AbstractThreadListView extends View {
       this.updateTitle('undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
 
       let action = actions[i];
-      await this.handleUndo(action.newThread);
+      await this.handleUndo(action.thread);
 
       await action.thread.modify(action.removed, action.added, true);
-      let newThread = await fetchThread(action.thread.id);
-      await this.addThread(newThread);
+      await this.addThread(action.thread);
 
       if (this.renderedRow_) {
-        let queue = await this.getDisplayableQueue(newThread);
+        let queue = await this.getDisplayableQueue(action.thread);
         let group = <RowGroup>this.getRowGroup_(queue);
-        this.renderOne_(group.getRow(newThread));
+        this.renderOne_(group.getRow(action.thread));
       }
     }
 

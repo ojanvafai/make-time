@@ -1,5 +1,5 @@
 import { ErrorLogger } from './ErrorLogger.js';
-import { fetchThread, fetchThreads } from './BaseMain.js';
+import { fetchThreads } from './BaseMain.js';
 import { Labels } from './Labels.js';
 import { QueueSettings } from './QueueSettings.js';
 import { ServerStorage } from './ServerStorage.js';
@@ -13,22 +13,17 @@ const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
 export class MailProcessor {
   settings: Settings;
-  private pushThreadOriginal_: any;
+  private pushThread_: any;
   private queuedLabelMap_: QueueSettings;
   private allLabels_: Labels;
   private updateTitle_: any;
 
   constructor(settings: Settings, pushThread: any, queuedLabelMap: QueueSettings, allLabels: Labels, updateTitle: any) {
     this.settings = settings;
-    this.pushThreadOriginal_ = pushThread;
+    this.pushThread_ = pushThread;
     this.queuedLabelMap_ = queuedLabelMap;
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitle;
-  }
-
-  async pushThread_(thread: Thread) {
-    let newThread = await fetchThread(thread.id);
-    await this.pushThreadOriginal_(newThread);
   }
 
   endsWithAddress(addresses: string[], filterAddress: string) {

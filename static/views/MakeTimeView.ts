@@ -1,5 +1,4 @@
 import { AbstractThreadListView } from './AbstractThreadListView.js';
-import { fetchThread } from '../BaseMain.js';
 import { Labels } from '../Labels.js';
 import { ThreadGroups } from '../ThreadGroups.js';
 import { MailProcessor } from '../MailProcessor.js';
@@ -51,16 +50,10 @@ export class MakeTimeView extends AbstractThreadListView {
       await this.removeThread(thread);
   }
 
-  async handleTriaged(destination: string, triageResult: any, thread: Thread) {
+  async handleTriaged(destination: string, thread: Thread) {
     // Setting priority adds the thread back into the triaged list at it's new priority.
     if (!destination || !Labels.isPriorityLabel(destination))
       return;
-    // Don't need to do a fetch if the markTriaged call didn't do anything.
-    if (triageResult) {
-      thread = await fetchThread(thread.id);
-      // Store this away so undo can grab the right thread.
-      triageResult.newThread = thread;
-    }
     await this.addThread(thread);
   }
 

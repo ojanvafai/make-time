@@ -26,7 +26,7 @@ export class TriageView extends AbstractThreadListView {
   handleUndo(_thread: Thread) {
   }
 
-  handleTriaged(_destination: string | null, _triageResult: any, _thread: Thread) {
+  handleTriaged(_destination: string | null, _thread: Thread) {
   }
 
   async addThread(thread: Thread) {

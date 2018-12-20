@@ -23,7 +23,7 @@ class ThreadCache {
 
   async get(threadData: any) {
     let entry = this.cache_.get(threadData.id);
-    if (entry && entry.historyId == threadData.historyId)
+    if (entry)
       return entry;
 
     let thread = new Thread(threadData, await getLabels());
@@ -344,21 +344,6 @@ export async function fetchThreads(forEachThread: (thread: Thread) => void, opti
   };
 
   await getPageOfThreads();
-}
-
-export async function fetchThread(id: string) {
-  let requestParams = {
-    'userId': USER_ID,
-    'id': id,
-  };
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-  let resp = await gapiFetch(gapi.client.gmail.users.threads.get, requestParams);
-  let thread = await getCachedThread(resp.result);
-  // If we have a stale thread we just fetched, then it's not stale anymore.
-  // This can happen if we refetch a thread that wasn't actually modified
-  // by a modify call.
-  thread.stale = false;
-  return thread;
 }
 
 let helpHtml_: string;

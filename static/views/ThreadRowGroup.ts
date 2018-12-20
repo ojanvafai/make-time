@@ -34,6 +34,10 @@ export class ThreadRowGroup extends HTMLElement {
     this.append(header, this.rowContainer_);
   }
 
+  removeChildren() {
+    this.rowContainer_.textContent = '';
+  }
+
   hasRows() {
     return !!this.rowContainer_.childElementCount;
   }

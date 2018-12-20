@@ -75,7 +75,7 @@ export class ThreadRow extends HTMLElement {
   }
 
   setThread(thread: Thread) {
-    if (this.thread_ && this.thread_.historyId == thread.historyId)
+    if (this.thread_)
       return;
 
     this.thread_ = thread;

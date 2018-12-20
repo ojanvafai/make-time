@@ -19,7 +19,7 @@
     "headers": [
       // Use 0 max-age for regular js|json since these are only served to developers.
       {
-        "source": "**/*.@(js|json)",
+        "source": "**/*.@(js|json|map)",
         "headers": [ { "key": "Cache-Control", "value": "public, max-age=0" }]
       },
       // Override max-age for js|json files with MD5 checksum in their name to be 1 year.
