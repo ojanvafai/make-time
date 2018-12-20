@@ -13,28 +13,24 @@ See https://stackoverflow.com/posts/30319507/revisions.
 For the dev server to work, you need to both start the firebase server and
 compile typescript after every change.
 
-TODO: Create a gulp command that starts the server and the tsc --watch.
-
+You can run both with the following command:
 ```
-$ ./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time
+$ ./node_modules/concurrently/bin/concurrently.js --kill-others './node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time' './node_modules/typescript/bin/tsc --project tsconfig.json --watch'
 ```
 
 Now http://localhost:5000 serves make-time the same as consumer. For google.com
 credentials, use --port 5555 to serve from localhost:5555.
 
-## Compiling typescript
-You need to compile typescript anytime you modify a .ts file.
+TODO: Create a gulp command does the above.
 
-// TODO: turn these into gulp commands.
+### To start just the server
+```
+$ ./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time
+```
 
-### Compiling once
+### Compiling typescript
 ```
 $ ./node_modules/.bin/tsc -p tsconfig.json
-```
-
-### Setup a watch to compile any time a .ts file is modified
-```
-$ ./node_modules/.bin/tsc --watch -p tsconfig.json
 ```
 
 ## Deploying

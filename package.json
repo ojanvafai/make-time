@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/ojanvafai/make-time#readme",
   "devDependencies": {
+    "concurrently": "^4.1.0",
     "firebase-tools": "^6.1.2",
     "gulp": "^4.0.0",
     "gulp-better-rollup": "^3.4.0",
