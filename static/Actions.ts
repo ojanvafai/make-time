@@ -19,6 +19,9 @@ export class Actions extends HTMLElement {
   static PREVIOUS_EMAIL_ACTION: any;
   static TOGGLE_FOCUSED_ACTION: any;
   static VIEW_FOCUSED_ACTION: any;
+  static NEXT_QUEUE_ACTION: any;
+  static PREVIOUS_QUEUE_ACTION: any;
+  static TOGGLE_QUEUE_ACTION: any;
   static VIEW_TRIAGE_ACTION: any;
   static UNDO_ACTION: any;
 
@@ -208,7 +211,7 @@ Actions.PREVIOUS_EMAIL_ACTION = {
 
 Actions.TOGGLE_FOCUSED_ACTION = {
   name: `ToggleFocused`,
-  description: `Toggler whether or not the focused element is selected.`,
+  description: `Toggle whether or not the focused element is selected.`,
   key: " ",
   hidden: true,
   repeatable: false,
@@ -218,6 +221,30 @@ Actions.VIEW_FOCUSED_ACTION = {
   name: `ViewFocused`,
   description: `View the focused email.`,
   key: "Enter",
+  hidden: true,
+  repeatable: false,
+};
+
+Actions.NEXT_QUEUE_ACTION = {
+  name: `NextQueue`,
+  description: `Focus the first email of the next queue.`,
+  key: "n",
+  hidden: true,
+  repeatable: true,
+};
+
+Actions.PREVIOUS_QUEUE_ACTION = {
+  name: `PreviousQueue`,
+  description: `Focus the first email of the previous queue.`,
+  key: "p",
+  hidden: true,
+  repeatable: true,
+};
+
+Actions.TOGGLE_QUEUE_ACTION = {
+  name: `ToggleQueue`,
+  description: `Toggle all items in the current queue.`,
+  key: "g",
   hidden: true,
   repeatable: false,
 };

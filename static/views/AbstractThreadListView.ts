@@ -35,7 +35,7 @@ export abstract class AbstractThreadListView extends View {
     // TODO: Rename this to groupedRows_?
   private groupedThreads_: RowGroup[];
   private needsProcessingThreads_: Thread[];
-  private focusedEmail_: any;
+  private focusedEmail_: ThreadRow | null;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private bestEffortButton_: HTMLElement;
@@ -60,7 +60,10 @@ export abstract class AbstractThreadListView extends View {
   static RENDER_ALL_ACTIONS_ = [
     Actions.PREVIOUS_EMAIL_ACTION,
     Actions.NEXT_EMAIL_ACTION,
+    Actions.PREVIOUS_QUEUE_ACTION,
+    Actions.NEXT_QUEUE_ACTION,
     Actions.TOGGLE_FOCUSED_ACTION,
+    Actions.TOGGLE_QUEUE_ACTION,
     Actions.VIEW_FOCUSED_ACTION,
   ].concat(AbstractThreadListView.ACTIONS_);
 
@@ -349,7 +352,7 @@ export abstract class AbstractThreadListView extends View {
     }
   }
 
-  getRowFromRelativeOffset(row: ThreadRow, offset: number) {
+  getRowFromRelativeOffset(row: ThreadRow, offset: number): ThreadRow | undefined {
     if (offset != -1 && offset != 1)
       throw `getRowFromRelativeOffset called with offset of ${offset}`
 
@@ -361,14 +364,13 @@ export abstract class AbstractThreadListView extends View {
     if (groupIndex == -1)
       throw `Tried to get row via relative offset on a group that's not in the tree.`;
 
-    if (0 <= groupIndex + offset && groupIndex + offset < this.groupedThreads_.length) {
-      const rows = this.groupedThreads_[groupIndex + offset].getRows();
-      if (offset > 0) {
-        return rows[0];
-      } else {
-        return rows[rows.length - 1];
-      }
-    }
+    const group = this.getGroupFromRelativeOffset(row.group, offset);
+    if (!group)
+      return;
+    if (offset > 0)
+      return group.getFirstRow();
+    else
+      return group.getLastRow();
 
     // Satisfy TypeScript that returning undefined here is intentional.
     return null;
@@ -380,6 +382,24 @@ export abstract class AbstractThreadListView extends View {
 
   getPreviousRow(row: ThreadRow) {
     return this.getRowFromRelativeOffset(row, -1);
+  }
+
+  getGroupFromRelativeOffset(rowGroup:RowGroup, offset : number) : RowGroup | null {
+    let groupIndex = this.groupedThreads_.indexOf(rowGroup);
+    if (groupIndex == -1)
+      throw `Tried to get row via relative offset on a group that's not in the tree.`;
+    if (0 <= groupIndex + offset && groupIndex + offset < this.groupedThreads_.length) {
+      return this.groupedThreads_[groupIndex + offset];
+    }
+    return null;
+  }
+
+  getNextGroup(rowGroup: RowGroup) : RowGroup | null {
+    return this.getGroupFromRelativeOffset(rowGroup, 1);
+  }
+
+  getPreviousGroup(rowGroup: RowGroup) : RowGroup | null {
+    return this.getGroupFromRelativeOffset(rowGroup, -1);
   }
 
   async removeThread(thread: Thread) {
@@ -413,7 +433,7 @@ export abstract class AbstractThreadListView extends View {
       await this.transitionToThreadList_();
   }
 
-  setFocus(email: HTMLElement | null) {
+  setFocus(email: ThreadRow | null) {
     if(this.focusedEmail_) {
       this.focusedEmail_.focused = false;
       this.focusedEmail_.updateHighlight_();
@@ -430,23 +450,52 @@ export abstract class AbstractThreadListView extends View {
     if(this.groupedThreads_.length == 0)
       return;
     if (this.focusedEmail_ == null) {
-      if (action == Actions.NEXT_EMAIL_ACTION) {
-        this.setFocus(this.groupedThreads_[0].getRows()[0])
-      } else {
-        const lastThreadGroupRows =
-          this.groupedThreads_[this.groupedThreads_.length - 1].getRows();
-        this.setFocus(lastThreadGroupRows[lastThreadGroupRows.length - 1]);
+      switch(action) {
+        case Actions.NEXT_EMAIL_ACTION:
+        case Actions.NEXT_QUEUE_ACTION: {
+          this.setFocus(this.groupedThreads_[0].getRows()[0])
+          break;
+        }
+        case Actions.PREVIOUS_EMAIL_ACTION: {
+          const lastThreadGroupRows =
+            this.groupedThreads_[this.groupedThreads_.length - 1].getRows();
+          this.setFocus(lastThreadGroupRows[lastThreadGroupRows.length - 1]);
+          break;
+        }
+        case Actions.PREVIOUS_QUEUE_ACTION: {
+          const lastThreadGroupRows =
+            this.groupedThreads_[this.groupedThreads_.length - 1].getRows();
+          this.setFocus(lastThreadGroupRows[0]);
+          break;
+        }
       }
       return;
     }
-    if (action == Actions.NEXT_EMAIL_ACTION) {
-      let nextRow = this.getNextRow(this.focusedEmail_);
-      if (nextRow)
-        this.setFocus(nextRow);
-    } else {
-      let previousRow = this.getPreviousRow(this.focusedEmail_);
-      if (previousRow)
-        this.setFocus(previousRow);
+    switch (action) {
+      case Actions.NEXT_EMAIL_ACTION: {
+        const nextRow = this.getNextRow(this.focusedEmail_);
+        if (nextRow)
+          this.setFocus(nextRow);
+        break;
+      }
+      case Actions.PREVIOUS_EMAIL_ACTION: {
+        const previousRow = this.getPreviousRow(this.focusedEmail_);
+        if (previousRow)
+          this.setFocus(previousRow);
+        break;
+      }
+      case Actions.NEXT_QUEUE_ACTION: {
+        const nextGroup = this.getNextGroup(this.focusedEmail_.group);
+        if (nextGroup)
+          this.setFocus(nextGroup.getFirstRow());
+        break;
+      }
+      case Actions.PREVIOUS_QUEUE_ACTION: {
+        const previousGroup = this.getPreviousGroup(this.focusedEmail_.group);
+        if (previousGroup)
+          this.setFocus(previousGroup.getFirstRow());
+        break;
+      }
     }
   }
 
@@ -470,9 +519,33 @@ export abstract class AbstractThreadListView extends View {
         this.moveFocus(Actions.NEXT_EMAIL_ACTION);
       if (!this.focusedEmail_)
         return;
-      this.focusedEmail_.checkBox_.checked = !this.focusedEmail_.checkBox_.checked;
+      this.focusedEmail_.checked = !this.focusedEmail_.checked;
       this.focusedEmail_.updateHighlight_();
       this.moveFocus(Actions.NEXT_EMAIL_ACTION);
+      return;
+    }
+    if (action == Actions.TOGGLE_QUEUE_ACTION) {
+      // If nothing is focused, pretend the first email was focused.
+      if(!this.focusedEmail_)
+        this.moveFocus(Actions.NEXT_EMAIL_ACTION);
+      if (!this.focusedEmail_)
+        return;
+      const checking = !this.focusedEmail_.checked;
+
+      for (let row of this.focusedEmail_.group.getRows()) {
+        row.checked = checking;
+        row.updateHighlight_();
+      }
+    }
+    if (action == Actions.NEXT_QUEUE_ACTION) {
+      this.moveFocus(action);
+      return;
+    }
+    if (action == Actions.PREVIOUS_QUEUE_ACTION) {
+      this.moveFocus(action);
+      return;
+    }
+    if (action == Actions.TOGGLE_QUEUE_ACTION) {
       return;
     }
     if (action == Actions.VIEW_TRIAGE_ACTION) {
