@@ -23,11 +23,18 @@ class ThreadCache {
 
   async get(threadData: any) {
     let entry = this.cache_.get(threadData.id);
-    if (entry)
+    if (entry) {
+      if (entry.historyId != threadData.historyId) {
+        entry.resetState();
+        await entry.update();
+      }
       return entry;
+    }
 
     let thread = new Thread(threadData, await getLabels());
     this.cache_.set(threadData.id, thread);
+
+    await thread.fetch();
     return thread;
   }
 }

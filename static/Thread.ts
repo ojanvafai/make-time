@@ -5,20 +5,25 @@ import { send } from './Mail.js';
 import { Message } from './Message.js';
 import { USER_ID, getCurrentWeekNumber, getPreviousWeekNumber } from './Base.js';
 
+let staleThreadError = 'Thread was modified before message details were fetched.';
+
 export class Thread {
   id: string;
   historyId: string;
-  snippet: string;
   private allLabels_: Labels;
+  private hasMessageDetails_: boolean = false;
 
-  // These are all set in resetState_, which is called from the constructor.
-  private hasMessageDetails_!: boolean;
-  private labelIds_!: Set<string>;
-  private labelNames_!: Set<string>;
-  private priority_!: string;
-  private muted_!: boolean;
-  private queue_!: string;
-  private processedMessages_!: Message[];
+  // These are all set in resetState, which is called from the constructor.
+  // and they shouldn't be undefined because we fetch the thread details
+  // immediately after constructing the Thread. Technically there's a race
+  // there though since fetching the thread details involves a network fetch.
+  snippet: string | undefined;
+  private labelIds_: Set<string> | undefined;
+  private labelNames_: Set<string> | undefined;
+  private priority_: string | null | undefined;
+  private muted_: boolean | undefined;
+  private queue_: string | undefined;
+  private processedMessages_: Message[] | undefined;
 
   // TODO: Give this a non-any value once we import gapi types.
   private fetchPromise_: Promise<any> | null = null;
@@ -26,31 +31,34 @@ export class Thread {
   constructor(thread: any, allLabels: Labels) {
     this.id = thread.id;
     this.historyId = thread.historyId;
-    this.snippet = thread.snippet;
     this.allLabels_ = allLabels;
 
-    this.resetState_();
+    this.resetState();
 
-    if (thread.messages) {
+    if (thread.messages)
       this.processMessages_(thread.messages);
-      // When the messages are included, the snippet isn't (i.e. for thread.get calls).
-      if (!this.snippet)
-        this.snippet = thread.messages[thread.messages.length - 1].snippet;
-    }
   }
 
-  private resetState_() {
+  resetState() {
     this.hasMessageDetails_ = false;
-
-    this.labelIds_ = new Set();
-    this.labelNames_ = new Set();
-    this.priority_ = '';
-    this.muted_ = false;
-    this.queue_ = '';
-    this.processedMessages_ = [];
+    // Set these to undefined so we can be sure to never read uninitialized
+    // values. processLabels_ will set some of these to null to indicated
+    // that it's initialized but null.
+    this.snippet = undefined;
+    this.labelIds_ = undefined;
+    this.labelNames_ = undefined;
+    this.priority_ = undefined;
+    this.muted_ = undefined;
+    this.queue_ = undefined;
+    this.processedMessages_ = undefined;
   }
 
   private processLabels_(messages: any[]) {
+    this.labelIds_ = new Set();
+    this.labelNames_ = new Set();
+    this.priority_ = null;
+    this.muted_ = false;
+
     for (var message of messages) {
       for (let labelId of message.labelIds) {
         this.labelIds_.add(labelId);
@@ -65,7 +73,7 @@ export class Thread {
       }
 
       if (Labels.isNeedsTriageLabel(name))
-        this.setQueue(name);
+        this.queue_ = name;
       else if (Labels.isPriorityLabel(name))
         this.priority_ = name;
       else if (name == Labels.MUTED_LABEL)
@@ -74,12 +82,16 @@ export class Thread {
       this.labelNames_.add(name);
     }
 
-    if (!this.queue_)
-      this.setQueue('inbox');
+    if (this.queue_ === undefined)
+      this.queue_ = 'inbox';
   }
 
   private processMessages_(messages: any[]) {
-    this.hasMessageDetails_ = false;
+    this.hasMessageDetails_ = true;
+    if (this.processedMessages_ === undefined)
+      this.processedMessages_ = [];
+
+    this.snippet = messages[messages.length - 1].snippet;
 
     this.processLabels_(messages);
     let newMessages = messages.slice(this.processedMessages_.length);
@@ -96,13 +108,18 @@ export class Thread {
     return newProcessedMessages;
   }
 
-  async modify(addLabelIds: string[], removeLabelIds: string[], skipHasLabelsCheck?: boolean, messageIds?: string[]) {
+  async modify(addLabelIds: string[], removeLabelIds: string[], skipFetching?: boolean, messageIds?: string[]) {
     // Need the message details to get the list of current applied labels,
     // as well as the message IDs of all the messages to modify.
     // Almost always we will have alread fetched this since we're showing the
-    // thread to the user already.
-    if (!messageIds || !skipHasLabelsCheck)
-      await this.fetchMessageDetails_();
+    // thread to the user already or we'll all least have it on disk.
+    if (!skipFetching)
+      await this.fetch();
+
+    // This undefined-check is to satisfy the typscript compiler that the this.labelIds_
+    // call below can't be undefined.
+    if (!skipFetching && this.labelIds_ === undefined)
+      throw staleThreadError;
 
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
@@ -111,23 +128,37 @@ export class Thread {
     // Also, request will fail if the removeLabelIds list is too long (>100).
     // However, for cases where we know we haven't fetch the labels for this thread,
     // like dequeueing, we want to be able to skip the labelIds_.has check.
-    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (skipHasLabelsCheck || this.labelIds_.has(item)));
+    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (skipFetching || this.labelIds_!.has(item)));
 
-    if (!messageIds)
+    if (!skipFetching && !messageIds) {
+      if (this.processedMessages_ === undefined)
+        throw staleThreadError;
       messageIds = this.processedMessages_.map((message) => message.id);
+    }
 
     // Once a modify has happened the stored message details are stale.
-    this.resetState_();
+    this.resetState();
 
-    let request = {
+    let request: any = {
       'userId': USER_ID,
-      'ids': messageIds,
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
+
+    if (skipFetching) {
+      request.id = this.id;
+      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
+      await gapiFetch(gapi.client.gmail.users.thread.modify, request);
+      // Return value isn't used for any of the skipFetching codepaths, so make it
+      // error in case it is accidentaly used.
+      return null;
+    }
+
+    request.ids = messageIds;
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    let response = await gapiFetch(gapi.client.gmail.users.messages.batchModify, request);
+    await gapiFetch(gapi.client.gmail.users.messages.batchModify, request);
     // TODO: Handle response.status != 200.
+
     return {
       added: addLabelIds,
       removed: removeLabelIds,
@@ -140,7 +171,10 @@ export class Thread {
     // Need the message details to get the list of current applied labels.
     // Almost always we will have alread fetched this since we're showing the
     // thread to the user already.
-    await this.fetchMessageDetails_();
+    await this.fetch();
+
+    if (this.labelNames_ === undefined)
+      throw staleThreadError;
 
     if (destination && this.labelNames_.has(destination))
       return null;
@@ -161,33 +195,35 @@ export class Thread {
     return await this.modify(addLabelIds, removeLabelIds);
   }
 
+  // TODO: make all these sync now that they don't fetch.
   async isInInbox() {
-    await this.fetchMessageDetails_();
+    if (this.labelIds_ === undefined)
+      throw staleThreadError;
     return this.labelIds_.has('INBOX');
   }
 
   async getLabelIds() {
-    await this.fetchMessageDetails_();
+    if (this.labelIds_ === undefined)
+      throw staleThreadError;
     return this.labelIds_;
   }
 
   async getLabelNames() {
-    await this.fetchMessageDetails_();
+    if (this.labelNames_ === undefined)
+      throw staleThreadError;
     return this.labelNames_;
   }
 
   async getSubject() {
-    await this.fetchMessageDetails_();
+    if (this.processedMessages_ === undefined)
+      throw staleThreadError;
     return this.processedMessages_[0].subject || '(no subject)';
   }
 
   async getMessages() {
-    await this.fetchMessageDetails_();
+    if (this.processedMessages_ === undefined)
+      throw staleThreadError;
     return this.processedMessages_;
-  }
-
-  setQueue(queue: string) {
-    this.queue_ = queue;
   }
 
   async getDisplayableQueue() {
@@ -196,20 +232,20 @@ export class Thread {
   }
 
   async getQueue() {
-    // fetchThreads sets the queue as a performance optimization in some cases,
-    // so don't fetch message details if we don't need to.
-    if (!this.queue_)
-      await this.fetchMessageDetails_();
+    if (this.queue_ === undefined)
+      throw staleThreadError;
     return this.queue_;
   }
 
   async getPriority() {
-    await this.fetchMessageDetails_();
+    if (this.priority_ === undefined)
+      throw staleThreadError;
     return this.priority_;
   }
 
   async isMuted() {
-    await this.fetchMessageDetails_();
+    if (this.muted_ === undefined)
+      throw staleThreadError;
     return this.muted_;
   }
 
@@ -235,7 +271,7 @@ export class Thread {
     return `thread-${weekNumber}-${this.historyId}`;
   }
 
-  private async fetchMessageDetails_(forceNetwork?: boolean) {
+  async fetch(forceNetwork?: boolean) {
     if (this.hasMessageDetails_ && !forceNetwork)
       return null;
 
@@ -261,10 +297,6 @@ export class Thread {
       // TODO: Should we delete the old entry in IDB if the historyId changes or
       // just let gcLocalStorage delete it eventually?
       this.historyId = resp.result.historyId;
-      let lastMessage = messages[messages.length - 1];
-      // TODO: If this thread is rendered, we need to notify the View that it needs
-      // to update the snippet.
-      this.snippet = lastMessage.snippet;
 
       try {
         let key = this.getKey_(getCurrentWeekNumber());
@@ -278,7 +310,7 @@ export class Thread {
   }
 
   async update() {
-    return await this.fetchMessageDetails_(true);
+    return await this.fetch(true);
   }
 
   async sendReply(replyText: string, extraEmails: string[], shouldReplyAll: boolean) {

@@ -162,19 +162,23 @@ export abstract class AbstractThreadListView extends View {
     if (this.renderedRow_)
       await this.renderedRow_.update();
 
+    // Mark threads
     for (let group of this.groupedThreads_) {
       group.mark();
     }
 
+    // Fetch unmarks any threads still in the view.
     await this.fetch(true);
-    await this.renderThreadList_();
 
+    // Remove any marked threads from the model.
     for (let group of this.groupedThreads_) {
       let rows = group.getMarked();
       for (let row of rows) {
         await this.removeRow_(row);
       }
     }
+
+    await this.renderThreadList_();
   }
 
   async fetchLabels(labels: string[], shouldBatch?: boolean) {
@@ -662,6 +666,7 @@ export abstract class AbstractThreadListView extends View {
       await this.handleUndo(action.thread);
 
       await action.thread.modify(action.removed, action.added, true, action.messageIds);
+      await action.thread.update();
       await this.addThread(action.thread);
 
       if (this.renderedRow_) {

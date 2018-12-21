@@ -13,17 +13,22 @@ const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
 export class MailProcessor {
   settings: Settings;
-  private pushThread_: any;
+  private pushThreadOriginal_: any;
   private queuedLabelMap_: QueueSettings;
   private allLabels_: Labels;
   private updateTitle_: any;
 
   constructor(settings: Settings, pushThread: any, queuedLabelMap: QueueSettings, allLabels: Labels, updateTitle: any) {
     this.settings = settings;
-    this.pushThread_ = pushThread;
+    this.pushThreadOriginal_ = pushThread;
     this.queuedLabelMap_ = queuedLabelMap;
     this.allLabels_ = allLabels;
     this.updateTitle_ = updateTitle;
+  }
+
+  private async pushThread_(thread: Thread) {
+    await thread.update();
+    await this.pushThreadOriginal_(thread);
   }
 
   endsWithAddress(addresses: string[], filterAddress: string) {
