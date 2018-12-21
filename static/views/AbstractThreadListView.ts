@@ -352,7 +352,7 @@ export abstract class AbstractThreadListView extends View {
     }
   }
 
-  getRowFromRelativeOffset(row: ThreadRow, offset: number): ThreadRow | undefined {
+  getRowFromRelativeOffset(row: ThreadRow, offset: number): ThreadRow | null {
     if (offset != -1 && offset != 1)
       throw `getRowFromRelativeOffset called with offset of ${offset}`
 
@@ -366,7 +366,7 @@ export abstract class AbstractThreadListView extends View {
 
     const group = this.getGroupFromRelativeOffset(row.group, offset);
     if (!group)
-      return;
+      return null;
     if (offset > 0)
       return group.getFirstRow();
     else
@@ -605,13 +605,18 @@ export abstract class AbstractThreadListView extends View {
       // focusedEmail_ should end up null.
       const previouslyFocused = this.focusedEmail_;
       this.setFocus(null);
-      // TODO - this could easily be faster.
-      if (threads.selectedRows.indexOf(previouslyFocused) != -1) {
-        for (let row of threads.selectedRows) {
-          const nextRow = this.getNextRow(row);
-          if (nextRow && threads.selectedRows.indexOf(nextRow) == -1) {
-            this.setFocus(nextRow);
-            break;
+
+      // TODO: Should this throw if previouslyFocused is null? Are there
+      // cases where it can be null if a row is being triaged?
+      if (previouslyFocused) {
+        // TODO - this could easily be faster.
+        if (threads.selectedRows.indexOf(previouslyFocused) != -1) {
+          for (let row of threads.selectedRows) {
+            const nextRow = this.getNextRow(row);
+            if (nextRow && threads.selectedRows.indexOf(nextRow) == -1) {
+              this.setFocus(nextRow);
+              break;
+            }
           }
         }
       }
