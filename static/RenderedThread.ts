@@ -30,7 +30,7 @@ export class RenderedThread {
   }
 
   async update() {
-    await this.thread.updateMessageDetails(true);
+    await this.thread.update();
     await this.appendMessages_();
   }
 
@@ -212,4 +212,4 @@ export class RenderedThread {
 
     return date.toLocaleString(undefined, options);
   }
-} 
+}

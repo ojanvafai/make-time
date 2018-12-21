@@ -39,8 +39,8 @@ export class Thread {
     }
   }
 
-  resetState_() {
-    this.hasMessageDetails_ = true;
+  private resetState_() {
+    this.hasMessageDetails_ = false;
 
     this.labelIds_ = new Set();
     this.labelNames_ = new Set();
@@ -50,7 +50,7 @@ export class Thread {
     this.processedMessages_ = [];
   }
 
-  processLabels_(messages: any[]) {
+  private processLabels_(messages: any[]) {
     for (var message of messages) {
       for (let labelId of message.labelIds) {
         this.labelIds_.add(labelId);
@@ -78,7 +78,7 @@ export class Thread {
       this.setQueue('inbox');
   }
 
-  processMessages_(messages: any[]) {
+  private processMessages_(messages: any[]) {
     this.hasMessageDetails_ = false;
 
     this.processLabels_(messages);
@@ -102,7 +102,7 @@ export class Thread {
     // Almost always we will have alread fetched this since we're showing the
     // thread to the user already.
     if (!messageIds || !skipHasLabelsCheck)
-      await this.fetchMessageDetails();
+      await this.fetchMessageDetails_();
 
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
@@ -140,7 +140,7 @@ export class Thread {
     // Need the message details to get the list of current applied labels.
     // Almost always we will have alread fetched this since we're showing the
     // thread to the user already.
-    await this.fetchMessageDetails();
+    await this.fetchMessageDetails_();
 
     if (destination && this.labelNames_.has(destination))
       return null;
@@ -162,27 +162,27 @@ export class Thread {
   }
 
   async isInInbox() {
-    await this.fetchMessageDetails();
+    await this.fetchMessageDetails_();
     return this.labelIds_.has('INBOX');
   }
 
   async getLabelIds() {
-    await this.fetchMessageDetails();
+    await this.fetchMessageDetails_();
     return this.labelIds_;
   }
 
   async getLabelNames() {
-    await this.fetchMessageDetails();
+    await this.fetchMessageDetails_();
     return this.labelNames_;
   }
 
   async getSubject() {
-    await this.fetchMessageDetails();
+    await this.fetchMessageDetails_();
     return this.processedMessages_[0].subject || '(no subject)';
   }
 
   async getMessages() {
-    await this.fetchMessageDetails();
+    await this.fetchMessageDetails_();
     return this.processedMessages_;
   }
 
@@ -199,57 +199,58 @@ export class Thread {
     // fetchThreads sets the queue as a performance optimization in some cases,
     // so don't fetch message details if we don't need to.
     if (!this.queue_)
-      await this.fetchMessageDetails();
+      await this.fetchMessageDetails_();
     return this.queue_;
   }
 
   async getPriority() {
-    await this.fetchMessageDetails();
+    await this.fetchMessageDetails_();
     return this.priority_;
   }
 
   async isMuted() {
-    await this.fetchMessageDetails();
+    await this.fetchMessageDetails_();
     return this.muted_;
   }
 
-  async fetchMessageDetails_(forceNetwork?: boolean) {
+  private async fetchMessageDetails_(forceNetwork?: boolean) {
+    if (this.hasMessageDetails_ && !forceNetwork)
+      return null;
+
     let key = `thread-${getCurrentWeekNumber()}-${this.historyId}`;
+
+    let messages : any;
 
     if (!forceNetwork) {
       let localData = await IDBKeyVal.getDefault().get(key);
       if (localData)
-        return JSON.parse(localData);
+        messages = JSON.parse(localData);
     }
 
-    if (!this.fetchPromise_) {
-      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-      this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
-        userId: USER_ID,
-        id: this.id,
-      })
-    }
-    let resp = await this.fetchPromise_;
-    this.fetchPromise_ = null;
+    if (!messages) {
+      if (!this.fetchPromise_) {
+        // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
+        this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
+          userId: USER_ID,
+          id: this.id,
+        })
+      }
+      let resp = await this.fetchPromise_;
+      this.fetchPromise_ = null;
 
-    let messages = resp.result.messages;
-    try {
-      await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
-    } catch (e) {
-      console.log('Fail storing message details in IDB.', e);
+      messages = resp.result.messages;
+      try {
+        await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
+      } catch (e) {
+        console.log('Fail storing message details in IDB.', e);
+      }
     }
-    return messages;
-  }
 
-  async updateMessageDetails(forceNetwork?: boolean) {
-    let messages = await this.fetchMessageDetails_(forceNetwork);
     return this.processMessages_(messages);
   }
 
-  async fetchMessageDetails() {
-    if (!this.hasMessageDetails_)
-      return null;
-    return await this.updateMessageDetails();
+  async update() {
+    return await this.fetchMessageDetails_(true);
   }
 
   async sendReply(replyText: string, extraEmails: string[], shouldReplyAll: boolean) {
