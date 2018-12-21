@@ -297,11 +297,19 @@ async function gcLocalStorage() {
   }
 }
 
+let isUpdating_ = false;
+
 export async function update() {
+  if (isUpdating_)
+    return;
+  isUpdating_ = true;
+
   if (getView().update)
     await getView().update();
   await processMail();
   await gcLocalStorage();
+
+  isUpdating_ = false;
 }
 
 // Make sure links open in new tabs.
@@ -350,6 +358,11 @@ function isEditable(element: Element) {
 
   return false;
 }
+
+document.addEventListener("visibilitychange", function() {
+  if (document.visibilityState == 'visible')
+    update();
+});
 
 document.body.addEventListener('keydown', async (e) => {
   if (!getView())
