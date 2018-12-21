@@ -371,7 +371,7 @@ export abstract class AbstractThreadListView extends View {
     }
 
     // Satisfy TypeScript that returning undefined here is intentional.
-    return;
+    return null;
   }
 
   getNextRow(row: ThreadRow) {
@@ -391,8 +391,9 @@ export abstract class AbstractThreadListView extends View {
   async removeRow_(row: ThreadRow) {
     if (this.focusedEmail_ == row) {
       let nextRow = this.getNextRow(row);
-      if (nextRow)
-        this.setFocus(nextRow);
+      // Intentionally call even if nextRow is null to clear out the focused
+      // row if there's nothing left to focus.
+      this.setFocus(nextRow);
     }
 
     let shouldTransitionToThreadList = false;
