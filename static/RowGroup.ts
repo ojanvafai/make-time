@@ -52,6 +52,11 @@ export class RowGroup {
     return Object.values(this.rows_)[0];
   }
 
+  getLastRow() {
+    const rows = Object.values(this.rows_);
+    return rows[rows.length - 1];
+  }
+
   getRowFromRelativeOffset(row: ThreadRow, offset: number) {
     let rowToFind = this.getRow(row.thread);
     if (rowToFind != row)
