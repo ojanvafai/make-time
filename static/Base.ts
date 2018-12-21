@@ -1,11 +1,20 @@
 export let USER_ID = 'me';
 
 export function getCurrentWeekNumber() {
-  let today = new Date();
-  var januaryFirst = new Date(today.getFullYear(), 0, 1);
+  return getWeekNumber(new Date());
+}
+
+export function getPreviousWeekNumber() {
+  let date = new Date();
+  date.setDate(date.getDate() - 7);
+  return getWeekNumber(date);
+}
+
+function getWeekNumber(date: Date) {
+  var januaryFirst = new Date(date.getFullYear(), 0, 1);
   var msInDay = 86400000;
   // @ts-ignore TODO: Make subtracting date types from each other actually work.
-  return Math.ceil((((today - januaryFirst) / msInDay) + januaryFirst.getDay()) / 7);
+  return Math.ceil((((date - januaryFirst) / msInDay) + januaryFirst.getDay()) / 7);
 }
 
 export function showDialog(contents: HTMLElement) {

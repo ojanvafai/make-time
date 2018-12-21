@@ -3,7 +3,7 @@ import { IDBKeyVal } from './idb-keyval.js';
 import { Labels } from './Labels.js';
 import { send } from './Mail.js';
 import { Message } from './Message.js';
-import { USER_ID, getCurrentWeekNumber } from './Base.js';
+import { USER_ID, getCurrentWeekNumber, getPreviousWeekNumber } from './Base.js';
 
 export class Thread {
   id: string;
@@ -213,19 +213,35 @@ export class Thread {
     return this.muted_;
   }
 
+  private async getThreadDataFromDisk_() {
+    let currentKey = this.getKey_(getCurrentWeekNumber());
+    let localData = await IDBKeyVal.getDefault().get(currentKey);
+
+    if (!localData) {
+      let previousKey = this.getKey_(getPreviousWeekNumber());
+      localData = await IDBKeyVal.getDefault().get(previousKey);
+      if (localData) {
+        await IDBKeyVal.getDefault().set(currentKey, localData);
+        await IDBKeyVal.getDefault().del(previousKey);
+      }
+    }
+
+    if (localData)
+      return JSON.parse(localData);
+    return null;
+  }
+
+  private getKey_(weekNumber: number) {
+    return `thread-${weekNumber}-${this.historyId}`;
+  }
+
   private async fetchMessageDetails_(forceNetwork?: boolean) {
     if (this.hasMessageDetails_ && !forceNetwork)
       return null;
 
-    let key = `thread-${getCurrentWeekNumber()}-${this.historyId}`;
-
     let messages : any;
-
-    if (!forceNetwork) {
-      let localData = await IDBKeyVal.getDefault().get(key);
-      if (localData)
-        messages = JSON.parse(localData);
-    }
+    if (!forceNetwork)
+      messages = await this.getThreadDataFromDisk_();
 
     if (!messages) {
       if (!this.fetchPromise_) {
@@ -239,7 +255,19 @@ export class Thread {
       this.fetchPromise_ = null;
 
       messages = resp.result.messages;
+
+      // If modifications have come in since we first created this Thread instance
+      // then the historyId and the snippet may have changed.
+      // TODO: Should we delete the old entry in IDB if the historyId changes or
+      // just let gcLocalStorage delete it eventually?
+      this.historyId = resp.result.historyId;
+      let lastMessage = messages[messages.length - 1];
+      // TODO: If this thread is rendered, we need to notify the View that it needs
+      // to update the snippet.
+      this.snippet = lastMessage.snippet;
+
       try {
+        let key = this.getKey_(getCurrentWeekNumber());
         await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
       } catch (e) {
         console.log('Fail storing message details in IDB.', e);
