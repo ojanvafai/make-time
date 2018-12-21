@@ -355,7 +355,7 @@ export class MailProcessor {
         addLabelIds.push(await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
         removeLabelIds.push('INBOX');
         await thread.modify(addLabelIds, removeLabelIds);
-        if (thread.isInInbox())
+        if (await thread.isInInbox())
           this.logToStatsPage_(labelName, startTime);
         return;
       }
@@ -363,7 +363,7 @@ export class MailProcessor {
       let prefixedLabelName;
 
       // Don't queue if already in the inbox or triaged.
-      if (thread.isInInbox() ||
+      if (await thread.isInInbox() ||
           (await thread.getPriority()) ||
           this.queuedLabelMap_.get(labelName).queue == QueueSettings.IMMEDIATE) {
         prefixedLabelName = Labels.needsTriageLabel(labelName);

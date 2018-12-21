@@ -19,9 +19,7 @@ P1: Will try to do soonish.
 - add better UI for adding new filters, e.g. when viewing an email. For needs filter, could have it route through the filter immediately so you can see it work.
 - Add autocomplete of priorities in ComposeView after typing #.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
-- Add undo send?
 - Add manual sorting of triaged threads.
-- Keep track of labels that have had no threads for >1 month and auto delete them as a way of not having a ton of cruft build up.
 - Make back forward work for viewone and threadlist. Keep track of the last thread in viewone for forward navs instead of trying to put the thread into the history. This will make the back button on android do the right thing when in viewone.
 - Make header:foo the only syntax for rules with a bit of special casing for email rules to handle foo+bar@ syntax.
 - add the ability to do inline responses
@@ -29,6 +27,7 @@ P1: Will try to do soonish.
 - add ability to search for a set of threads and see which filter would match
 
 P2: Will only do if something makes these seem worth doing.
+- Add undo send?
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
 - Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.
 - Make swipe work on mobile
@@ -38,33 +37,20 @@ P2: Will only do if something makes these seem worth doing.
 - Grey out undo button when there's nothing to undo
 - Add a mode to default to view one
 - Add cc/bcc/body as closed by default sections
-- use requestIdleCallback for the rerendering of the threadlist to avoid potential n^2 slowness
 - Add drafts concept instead of one compose at a time. Right now two compose windows will mean one overrides the other in local storage.
-- Use TypeScript
-- make-time mode: store task durations for future data analysis. Need to split by action type.
 - Add a setting for how many weeks of email to keep in storage.
-- Use gapi.client.request without discovery docs https://developers.google.com/api-client-library/javascript/start/start-js
 - Linkify URLs in the plain text or html content
 - Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.
 - sort by date within a given queue, with a setting for sort order
-- Make filters and queues tabs in the setting spreadsheet instead of separate dialogs? Change save button to save+reload once a basic setting is changed.
-- modal dialog pops up every minute when there's a message that can't be processed for some reason
 - add ability to filter no subject emails
-- Allow sorting the threads within a priority bucket.
-- auto go into make time when having triaged all the items
-- Generalize tha ability to skip any of the modes. Curreently can only skip TriageView.
-- Lazy load things like views/Settings.js and ViewOne.js.
-- Fix eliding to group better
 - Add autocomplete for label names in the queues and filters views.
-- Removing a queue means the currently queued messages never get dequeued
+- Removing a queue means the currently queued messages never get dequeued. Maybe show any queues that are no longer daily/weekly/monthly in the triage view.
 - Have timer dialog have options to cancel timer and turnoff autostart.
-- Have filter UI do gmail search to show which things match?
 - Add to home screen support
 - Support renaming labels (updates the label name in all the filters and queues).
 - Add "||" to rule query language.
 - Add "-" or "!" for -foo@bar.com
 - Allow regexps with special regexp syntax, e.g. r'regexphere'.
-- Move queued_label fetching into the Settings class to consolidate all the spreadsheet settings fetching there.
 - Save back in the current format, but upgrade to the new format using the number of columns as the effective version number
 - group filter rules with the same label like headers in asana. For a given grouping of rules, sort the rules alphabetically
 - autocomplete the allowed filter fields in the rule editor
@@ -72,19 +58,12 @@ P2: Will only do if something makes these seem worth doing.
 - Include "XXX wrote" prefixes in quote eliding
 - elide quotes based off the "In-Reply-To" instead of whatever happens to be the previous message
 - List more names in the Vueue to see more of the dialog happening in the thread. Bold the names for more recent message.
-- Render messages in reverse order and return from render() when all the unread messages + 1 read message have been rendered (min 2 messages if all are unread). Then render the rest of the read messages async.
-- Make monthly queues easier. Maybe allow picking which day monthly queues are dequeued, or maybe better, allow skipping dequeueing them for N days at a time and have the "month" be a month after the last time you dequeued. That way, you can dequeue on a day when you know you have the time for it.
 - Give a way to show the email headers so that people can easily write filters based off the headers.
 - Have key handling code early return if a dialog is open.
-- updating the current thread seems to cut off a big chunk of the new message...but the quoted text is all there. Hard to reproduce. :(
-- "Re: Ping on get-originals?" thread is a good one for performance overhead of message processing. Half the time is base64 decoding and half is eliding quotes. Takes 1 second doing message processing, but rendering is very fast. Could render messages incrementally starting with the one right before the earliest unread one, then render all the remaining unread ones, then render the read ones. Mostly this is hidden by prefetching.
 - Put links for downloading attachments.
 - Show attachment blobs for gsuite docs like gmail does.
-- Fix stats to show count of archived threads
-- Once the triage is done, allow picking which of the TL;DR, replying or tasking queues to work though. Obviously, replying and tasking require composition and tasks integration.
 - When updating messages, update the unread state even for old messages since that might have changed.
 - disable title tags in emails. They currently update the title of make-time.
 - Google Assistant integration
-- Task tracker integration for the task button. To start with, the task button just puts it in the task tracker with no ability to customize.
 - Send replys from the recieving address for multiple email users. Using "From: ". Not quite sure how to figure out which email address to use. For mailing lists, could use Delivered-To, that might be good enough.
 - if the last message is vacation responder, and the message before that one is read, and it's not in a triager/auto queue, then auto archive

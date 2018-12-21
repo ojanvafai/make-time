@@ -96,7 +96,14 @@ export class Thread {
     return newProcessedMessages;
   }
 
-  async modify(addLabelIds: string[], removeLabelIds: string[], skipHasLabelsCheck?: boolean) {
+  async modify(addLabelIds: string[], removeLabelIds: string[], skipHasLabelsCheck?: boolean, messageIds?: string[]) {
+    // Need the message details to get the list of current applied labels,
+    // as well as the message IDs of all the messages to modify.
+    // Almost always we will have alread fetched this since we're showing the
+    // thread to the user already.
+    if (!messageIds || !skipHasLabelsCheck)
+      await this.fetchMessageDetails();
+
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
     // Make sure that any added labels are not also removed.
@@ -106,23 +113,26 @@ export class Thread {
     // like dequeueing, we want to be able to skip the labelIds_.has check.
     removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (skipHasLabelsCheck || this.labelIds_.has(item)));
 
+    if (!messageIds)
+      messageIds = this.processedMessages_.map((message) => message.id);
+
+    // Once a modify has happened the stored message details are stale.
+    this.resetState_();
+
     let request = {
       'userId': USER_ID,
-      'id': this.id,
+      'ids': messageIds,
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    let response = await gapiFetch(gapi.client.gmail.users.threads.modify, request);
+    let response = await gapiFetch(gapi.client.gmail.users.messages.batchModify, request);
     // TODO: Handle response.status != 200.
-
-    // Once a modify has happened the stored message details are stale.
-    this.resetState_;
-
     return {
       added: addLabelIds,
       removed: removeLabelIds,
       thread: this,
+      messageIds: messageIds,
     }
   }
 
@@ -151,7 +161,8 @@ export class Thread {
     return await this.modify(addLabelIds, removeLabelIds);
   }
 
-  isInInbox() {
+  async isInInbox() {
+    await this.fetchMessageDetails();
     return this.labelIds_.has('INBOX');
   }
 
@@ -185,6 +196,8 @@ export class Thread {
   }
 
   async getQueue() {
+    // fetchThreads sets the queue as a performance optimization in some cases,
+    // so don't fetch message details if we don't need to.
     if (!this.queue_)
       await this.fetchMessageDetails();
     return this.queue_;

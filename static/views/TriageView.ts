@@ -37,7 +37,7 @@ export class TriageView extends AbstractThreadListView {
 
     // Threads that have triage labels but aren't in the inbox were archived outside
     // of maketime and should have their triage labels removed.
-    if (!thread.isInInbox()) {
+    if (!(await thread.isInInbox())) {
       await thread.markTriaged(null);
       return;
     }
