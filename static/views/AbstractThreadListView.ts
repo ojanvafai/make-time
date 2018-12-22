@@ -13,7 +13,6 @@ import { EmailCompose } from '../EmailCompose.js';
 
 interface TriageResult {
   thread: Thread;
-  messageIds: string[];
   removed: string[];
   added: string[];
 }
@@ -665,7 +664,7 @@ export abstract class AbstractThreadListView extends View {
       let action = actions[i];
       await this.handleUndo(action.thread);
 
-      await action.thread.modify(action.removed, action.added, true, action.messageIds);
+      await action.thread.modify(action.removed, action.added);
       await action.thread.update();
       await this.addThread(action.thread);
 

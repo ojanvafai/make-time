@@ -194,7 +194,7 @@ async function onLoad() {
   // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   await fetchContacts(gapi.auth.getToken());
 
-  update();
+  await update();
   // Wait until we've fetched all the threads before trying to process updates regularly.
   setInterval(update, 1000 * 60);
 

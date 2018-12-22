@@ -445,7 +445,7 @@ export class MailProcessor {
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
       let removeLabelIds = [queuedLabel];
-      await thread.modify(addLabelIds, removeLabelIds, true);
+      await thread.modify(addLabelIds, removeLabelIds);
       await this.pushThread_(thread);
     }
     this.updateTitle_('dequeue');

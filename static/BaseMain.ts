@@ -184,7 +184,7 @@ async function fetchTheSettingsThings() {
 
 async function doLabelMigration(addLabelIds: string[], removeLabelIds: string[], query: string) {
   await fetchThreads(async (thread: Thread) => {
-    await thread.modify(addLabelIds, removeLabelIds, true);
+    await thread.modify(addLabelIds, removeLabelIds);
   }, {
     query: query,
   });

@@ -109,62 +109,55 @@ export class Thread {
     return newProcessedMessages;
   }
 
-  async modify(addLabelIds: string[], removeLabelIds: string[], skipFetching?: boolean, messageIds?: string[]) {
-    // Need the message details to get the list of current applied labels,
-    // as well as the message IDs of all the messages to modify.
-    // Almost always we will have alread fetched this since we're showing the
+  async modify(addLabelIds: string[], removeLabelIds: string[]) {
+    // Need the message details to get the list of currently applied labels.
+    // Almost always we will have already fetched this since we're showing the
     // thread to the user already or we'll all least have it on disk.
-    if (!skipFetching)
+    if (!this.hasMessageDetails_) {
       await this.fetch();
+    } else {
+      // There's a race condition where where new messages can come in after modify
+      // request, so the user won't have seen the new messages. Minimize this race
+      // by doing an update first to see if there are new messages and bailing.
+      // TODO: Figure out how to use batchModify. This would avoid the extra network
+      // fetch, but for some threads removing a label from all the messages in the
+      // thread doesn't actually remove the label from the thread.
+      let newMessages = await this.update();
+      if (newMessages && newMessages.length) {
+        let subject = await this.getSubject();
+        console.warn(`Skipping modify since new messages arrived after modify was called on thread with subject: ${subject}.`);
+        return;
+      }
+    }
 
-    // This undefined-check is to satisfy the typscript compiler that the this.labelIds_
-    // call below can't be undefined.
-    if (!skipFetching && this.labelIds_ === undefined)
+    if (this.labelIds_ === undefined)
       throw staleThreadError;
+    let currentLabelIds = this.labelIds_;
 
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
     // Make sure that any added labels are not also removed.
     // Gmail API will fail if you try to add and remove the same label.
     // Also, request will fail if the removeLabelIds list is too long (>100).
-    // However, for cases where we know we haven't fetch the labels for this thread,
-    // like dequeueing, we want to be able to skip the labelIds_.has check.
-    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (skipFetching || this.labelIds_!.has(item)));
-
-    if (!skipFetching && !messageIds) {
-      if (this.processedMessages_ === undefined)
-        throw staleThreadError;
-      messageIds = this.processedMessages_.map((message) => message.id);
-    }
+    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (currentLabelIds.has(item)));
 
     // Once a modify has happened the stored message details are stale.
     this.resetState();
 
     let request: any = {
       'userId': USER_ID,
+      'id': this.id,
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
-
-    if (skipFetching) {
-      request.id = this.id;
-      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-      await gapiFetch(gapi.client.gmail.users.threads.modify, request);
-      // Return value isn't used for any of the skipFetching codepaths, so make it
-      // error in case it is accidentaly used.
-      return null;
-    }
-
-    request.ids = messageIds;
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    await gapiFetch(gapi.client.gmail.users.messages.batchModify, request);
+    await gapiFetch(gapi.client.gmail.users.threads.modify, request);
     // TODO: Handle response.status != 200.
 
     return {
       added: addLabelIds,
       removed: removeLabelIds,
       thread: this,
-      messageIds: messageIds,
     }
   }
 
