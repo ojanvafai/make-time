@@ -148,7 +148,7 @@ export class Thread {
     if (skipFetching) {
       request.id = this.id;
       // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-      await gapiFetch(gapi.client.gmail.users.thread.modify, request);
+      await gapiFetch(gapi.client.gmail.users.threads.modify, request);
       // Return value isn't used for any of the skipFetching codepaths, so make it
       // error in case it is accidentaly used.
       return null;
