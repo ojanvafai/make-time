@@ -54,6 +54,7 @@ export class MakeTimeView extends AbstractThreadListView {
     // Setting priority adds the thread back into the triaged list at it's new priority.
     if (!destination || !Labels.isPriorityLabel(destination))
       return;
+    await thread.update();
     await this.addThread(thread);
   }
 
