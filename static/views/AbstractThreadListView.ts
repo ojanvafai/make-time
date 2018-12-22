@@ -283,25 +283,14 @@ export abstract class AbstractThreadListView extends View {
     }
 
     for (let group of this.groupedThreads_) {
-      let newIdToRow: any = {};
-      for (let row of group.getRows()) {
-        newIdToRow[row.thread.id] = row;
-      }
+      let rows = await group.getSortedRows();
 
       let existingRows = group.node.rows();
-      for (let row of existingRows) {
-        let threadId = row.thread.id;
-        let newRow = newIdToRow[threadId];
-        delete newIdToRow[threadId];
-        if (!newRow)
-          row.remove();
+      let rowsToRemove = existingRows.filter((item) => !rows.includes(item));
+      for (let row of rowsToRemove) {
+        row.remove();
       }
-
-      // Everything left in newIdToRow is now new threads.
-      let newRowsLeft: ThreadRow[] = Object.values(newIdToRow);
-      for (let row of newRowsLeft) {
-        group.node.push(row);
-      }
+      group.node.setRows(rows);
     }
   }
 
@@ -355,11 +344,11 @@ export abstract class AbstractThreadListView extends View {
     }
   }
 
-  getRowFromRelativeOffset(row: ThreadRow, offset: number): ThreadRow | null {
+  async getRowFromRelativeOffset(row: ThreadRow, offset: number): Promise<ThreadRow | null> {
     if (offset != -1 && offset != 1)
       throw `getRowFromRelativeOffset called with offset of ${offset}`
 
-    let nextRow = row.group.getRowFromRelativeOffset(row, offset);
+    let nextRow = await row.group.getRowFromRelativeOffset(row, offset);
     if (nextRow)
       return nextRow;
 
@@ -413,7 +402,7 @@ export abstract class AbstractThreadListView extends View {
 
   async removeRow_(row: ThreadRow) {
     if (this.focusedEmail_ == row) {
-      let nextRow = this.getNextRow(row);
+      let nextRow = await this.getNextRow(row);
       // Intentionally call even if nextRow is null to clear out the focused
       // row if there's nothing left to focus.
       this.setFocus(nextRow);
@@ -421,7 +410,7 @@ export abstract class AbstractThreadListView extends View {
 
     let shouldTransitionToThreadList = false;
     if (this.renderedRow_ == row) {
-      let nextRow = this.getNextRow(row);
+      let nextRow = await this.getNextRow(row);
       if (nextRow)
         await this.renderOne_(nextRow);
       else
@@ -449,25 +438,26 @@ export abstract class AbstractThreadListView extends View {
     this.focusedEmail_.scrollIntoView({"block":"nearest"});
   }
 
-  moveFocus(action: any) {
+  async moveFocus(action: any) {
     if(this.groupedThreads_.length == 0)
       return;
     if (this.focusedEmail_ == null) {
       switch(action) {
         case Actions.NEXT_EMAIL_ACTION:
         case Actions.NEXT_QUEUE_ACTION: {
-          this.setFocus(this.groupedThreads_[0].getRows()[0])
+          let rows = await this.groupedThreads_[0].getSortedRows();
+          this.setFocus(rows[0])
           break;
         }
         case Actions.PREVIOUS_EMAIL_ACTION: {
           const lastThreadGroupRows =
-            this.groupedThreads_[this.groupedThreads_.length - 1].getRows();
+            await this.groupedThreads_[this.groupedThreads_.length - 1].getSortedRows();
           this.setFocus(lastThreadGroupRows[lastThreadGroupRows.length - 1]);
           break;
         }
         case Actions.PREVIOUS_QUEUE_ACTION: {
           const lastThreadGroupRows =
-            this.groupedThreads_[this.groupedThreads_.length - 1].getRows();
+            await this.groupedThreads_[this.groupedThreads_.length - 1].getSortedRows();
           this.setFocus(lastThreadGroupRows[0]);
           break;
         }
@@ -476,13 +466,13 @@ export abstract class AbstractThreadListView extends View {
     }
     switch (action) {
       case Actions.NEXT_EMAIL_ACTION: {
-        const nextRow = this.getNextRow(this.focusedEmail_);
+        const nextRow = await this.getNextRow(this.focusedEmail_);
         if (nextRow)
           this.setFocus(nextRow);
         break;
       }
       case Actions.PREVIOUS_EMAIL_ACTION: {
-        const previousRow = this.getPreviousRow(this.focusedEmail_);
+        const previousRow = await this.getPreviousRow(this.focusedEmail_);
         if (previousRow)
           this.setFocus(previousRow);
         break;
@@ -490,13 +480,13 @@ export abstract class AbstractThreadListView extends View {
       case Actions.NEXT_QUEUE_ACTION: {
         const nextGroup = this.getNextGroup(this.focusedEmail_.group);
         if (nextGroup)
-          this.setFocus(nextGroup.getFirstRow());
+          this.setFocus(await nextGroup.getFirstRow());
         break;
       }
       case Actions.PREVIOUS_QUEUE_ACTION: {
         const previousGroup = this.getPreviousGroup(this.focusedEmail_.group);
         if (previousGroup)
-          this.setFocus(previousGroup.getFirstRow());
+          this.setFocus(await previousGroup.getFirstRow());
         break;
       }
     }
@@ -535,7 +525,8 @@ export abstract class AbstractThreadListView extends View {
         return;
       const checking = !this.focusedEmail_.checked;
 
-      for (let row of this.focusedEmail_.group.getRows()) {
+      let rows = await this.focusedEmail_.group.getSortedRows();
+      for (let row of rows) {
         row.checked = checking;
         row.updateHighlight_();
       }
@@ -615,7 +606,7 @@ export abstract class AbstractThreadListView extends View {
         // TODO - this could easily be faster.
         if (threads.selectedRows.indexOf(previouslyFocused) != -1) {
           for (let row of threads.selectedRows) {
-            const nextRow = this.getNextRow(row);
+            const nextRow = await this.getNextRow(row);
             if (nextRow && threads.selectedRows.indexOf(nextRow) == -1) {
               this.setFocus(nextRow);
               break;
@@ -671,7 +662,10 @@ export abstract class AbstractThreadListView extends View {
       if (this.renderedRow_) {
         let queue = await this.getDisplayableQueue(action.thread);
         let group = <RowGroup>this.getRowGroup_(queue);
-        this.renderOne_(group.getRow(action.thread));
+        let row = group.getRow(action.thread);
+        if (!row)
+          throw 'Undo did not create a row for the new thread.';
+        this.renderOne_(row);
       }
     }
 
@@ -739,7 +733,7 @@ export abstract class AbstractThreadListView extends View {
     if (!this.renderedRow_)
       return;
 
-    let nextRow = this.getNextRow(this.renderedRow_);
+    let nextRow = await this.getNextRow(this.renderedRow_);
     if (!nextRow)
       return;
 

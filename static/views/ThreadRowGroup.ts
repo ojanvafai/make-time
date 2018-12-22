@@ -42,15 +42,26 @@ export class ThreadRowGroup extends HTMLElement {
     return !!this.rowContainer_.childElementCount;
   }
 
-  rows() {
+  rows(): ThreadRow[] {
     return Array.prototype.slice.call(this.rowContainer_.children);
   }
 
-  push(row: ThreadRow, opt_nextSibling?: HTMLElement) {
-    if (opt_nextSibling && opt_nextSibling.parentNode == this.rowContainer_)
-      opt_nextSibling.before(row);
-    else
-      this.rowContainer_.append(row);
+  setRows(rows: ThreadRow[]) {
+    // Try to minimize DOM mutations. If the rows are exactly the same
+    // there should be no DOM mutations here.
+    for (var i = 0; i < rows.length; i++) {
+      let oldRow = this.rowContainer_.children[i];
+      if (!oldRow) {
+        let rowsLeft = rows.slice(i);
+        this.rowContainer_.append(...rowsLeft);
+        break;
+      }
+
+      let newRow = rows[i];
+      if (newRow != oldRow) {
+        oldRow.before(newRow);
+      }
+    }
   }
 
   createSelector_(textContent: string, callback: () => void) {

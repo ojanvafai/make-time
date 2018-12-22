@@ -6,7 +6,8 @@ import { ThreadRowGroup } from './views/ThreadRowGroup.js';
 export class RowGroup {
   queue: string;
   node: ThreadRowGroup;
-  private rows_: { [threadId: string]: ThreadRow; };
+  private rows_: ThreadRow[];
+  private sorted_: boolean;
 
   private static groups_: any = {};
 
@@ -19,50 +20,65 @@ export class RowGroup {
   constructor(queue: string) {
     this.queue = queue;
     this.node = new ThreadRowGroup(queue);
-    this.rows_ = {};
+    this.rows_ = [];
+    this.sorted_ = true;
   }
 
   push(thread: Thread) {
-    let currentRow = this.rows_[thread.id];
+    this.sorted_ = false;
+
+    let currentRow = this.getRow(thread);
     if (currentRow) {
       currentRow.mark = false;
       currentRow.setThread(thread);
       return;
     }
-    this.rows_[thread.id] = new ThreadRow(thread, this);
+
+    this.rows_.push(new ThreadRow(thread, this));
   }
 
   delete(row: ThreadRow) {
-    delete this.rows_[row.thread.id];
+    var index = this.rows_.indexOf(row);
+    if (index > -1)
+      this.rows_.splice(index, 1);
   }
 
   getRow(thread: Thread) {
-    return this.rows_[thread.id];
+    return this.rows_.find((item) => item.thread.id == thread.id);
   }
 
-  getRows() {
-    return Object.values(this.rows_);
+  async getSortedRows() {
+    if (!this.sorted_) {
+      let rowsWithDates = await Promise.all(this.rows_.map(async row => {
+        return {date: await row.thread.getDate(), row: row};
+      }));
+      rowsWithDates.sort((a, b) => -(a.date > b.date) || +(a.date < b.date));
+      this.rows_ = rowsWithDates.map(x => x.row);
+      this.sorted_ = true;
+    }
+    return this.rows_;
   }
 
   hasRows() {
-    return !!this.getRows().length;
+    return !!this.rows_.length;
   }
 
-  getFirstRow() {
-    return Object.values(this.rows_)[0];
+  async getFirstRow() {
+    let rows = await this.getSortedRows();
+    return rows[0];
   }
 
-  getLastRow() {
-    const rows = Object.values(this.rows_);
+  async getLastRow() {
+    let rows = await this.getSortedRows();
     return rows[rows.length - 1];
   }
 
-  getRowFromRelativeOffset(row: ThreadRow, offset: number) {
+  async getRowFromRelativeOffset(row: ThreadRow, offset: number) {
     let rowToFind = this.getRow(row.thread);
     if (rowToFind != row)
       ErrorLogger.log(`Warning: ThreadRows don't match. Something went wrong in bookkeeping.`);
-    let rows = Object.values(this.rows_);
-    let index = rows.indexOf(rowToFind);
+    let rows = await this.getSortedRows();
+    let index = rows.indexOf(row);
     if (index == -1)
       throw `Tried to get row via relative offset on a row that's not in the group.`;
     if (0 <= index + offset && index + offset < rows.length)
@@ -78,6 +94,6 @@ export class RowGroup {
   }
 
   getMarked() {
-    return Object.values(this.rows_).filter((row) => (<ThreadRow>row).mark);
+    return this.rows_.filter((row) => (<ThreadRow>row).mark);
   }
 }

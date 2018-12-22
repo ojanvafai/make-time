@@ -189,6 +189,13 @@ export class Thread {
     return await this.modify(addLabelIds, removeLabelIds);
   }
 
+  async getLastMessage() {
+    await this.fetch();
+    if (this.processedMessages_ === undefined)
+      throw staleAfterFetchError;
+    return this.processedMessages_[this.processedMessages_.length - 1];
+  }
+
   // TODO: make all these sync now that they don't fetch.
   async isInInbox() {
     await this.fetch();
@@ -209,6 +216,11 @@ export class Thread {
     if (this.labelNames_ === undefined)
       throw staleAfterFetchError;
     return this.labelNames_;
+  }
+
+  async getDate() {
+    let message = await this.getLastMessage();
+    return message.date;
   }
 
   async getSubject() {
