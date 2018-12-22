@@ -6,6 +6,7 @@ import { Message } from './Message.js';
 import { USER_ID, getCurrentWeekNumber, getPreviousWeekNumber } from './Base.js';
 
 let staleThreadError = 'Thread was modified before message details were fetched.';
+let staleAfterFetchError = 'Thread is still stale after fetch. This should never happen.';
 
 export class Thread {
   id: string;
@@ -197,32 +198,37 @@ export class Thread {
 
   // TODO: make all these sync now that they don't fetch.
   async isInInbox() {
+    await this.fetch();
     if (this.labelIds_ === undefined)
-      throw staleThreadError;
+      throw staleAfterFetchError;
     return this.labelIds_.has('INBOX');
   }
 
   async getLabelIds() {
+    await this.fetch();
     if (this.labelIds_ === undefined)
-      throw staleThreadError;
+      throw staleAfterFetchError;
     return this.labelIds_;
   }
 
   async getLabelNames() {
+    await this.fetch();
     if (this.labelNames_ === undefined)
-      throw staleThreadError;
+      throw staleAfterFetchError;
     return this.labelNames_;
   }
 
   async getSubject() {
+    await this.fetch();
     if (this.processedMessages_ === undefined)
-      throw staleThreadError;
+      throw staleAfterFetchError;
     return this.processedMessages_[0].subject || '(no subject)';
   }
 
   async getMessages() {
+    await this.fetch();
     if (this.processedMessages_ === undefined)
-      throw staleThreadError;
+      throw staleAfterFetchError;
     return this.processedMessages_;
   }
 
@@ -232,20 +238,23 @@ export class Thread {
   }
 
   async getQueue() {
+    await this.fetch();
     if (this.queue_ === undefined)
-      throw staleThreadError;
+      throw staleAfterFetchError;
     return this.queue_;
   }
 
   async getPriority() {
+    await this.fetch();
     if (this.priority_ === undefined)
-      throw staleThreadError;
+      throw staleAfterFetchError;
     return this.priority_;
   }
 
   async isMuted() {
+    await this.fetch();
     if (this.muted_ === undefined)
-      throw staleThreadError;
+      throw staleAfterFetchError;
     return this.muted_;
   }
 
