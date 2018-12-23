@@ -41,7 +41,6 @@ P2: Will only do if something makes these seem worth doing.
 - Add a setting for how many weeks of email to keep in storage.
 - Linkify URLs in the plain text or html content
 - Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.
-- sort by date within a given queue, with a setting for sort order
 - add ability to filter no subject emails
 - Add autocomplete for label names in the queues and filters views.
 - Removing a queue means the currently queued messages never get dequeued. Maybe show any queues that are no longer daily/weekly/monthly in the triage view.

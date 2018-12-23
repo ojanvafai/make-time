@@ -8,7 +8,6 @@
       "sizes": "240x240"
     }
   ],
-  "start_url": "/",
   "display": "standalone",
   "theme_color": "#000000"
 }
