@@ -10,7 +10,7 @@ const SEND = { name: 'Send', description: 'Send the mail.' };
 const HELP = { name: 'Help', description: 'Help tips.' };
 const ACTIONS = [ SEND, HELP ];
 const PRE_FILL_URL = '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
-const HELP_TEXT = `Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##not-urgent, ##delegate.
+const HELP_TEXT = `Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##backlog, ##delegate.
 
 URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;

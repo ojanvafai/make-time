@@ -14,7 +14,7 @@ Tasks UI:
 P1: Will try to do soonish.
 - Give more reply options: ability to forward, reply to a specific message, reply+!archive/reply+blocked/reply+priority?
 - Use SendAs gmail API to avoid adding yourself to the to line of threads you're not already on to avoid them popping back into your inbox when you send. Also would allow for changing sender in compose view.
-- make switching between compose/maketime/triage easier. Make the UI more prominent and add keyboard shortcuts.
+- make switching between compose/todo/triage easier. Make the UI more prominent and add keyboard shortcuts.
 - Add embedded composeView in the maketime/triage views for quick compose that's not replying to the current thread.
 - add better UI for adding new filters, e.g. when viewing an email. For needs filter, could have it route through the filter immediately so you can see it work.
 - Add autocomplete of priorities in ComposeView after typing #.

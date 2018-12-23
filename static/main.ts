@@ -7,7 +7,7 @@ import { getCurrentWeekNumber } from './Base.js';
 import { ServerStorage } from './ServerStorage.js';
 import { ComposeView } from './views/ComposeView.js';
 import { TriageView } from './views/TriageView.js';
-import { MakeTimeView } from './views/MakeTimeView.js';
+import { TodoView } from './views/TodoView.js';
 import { SettingsView } from './views/Settings.js';
 import { MailProcessor } from './MailProcessor.js';
 
@@ -32,7 +32,7 @@ router.add('/compose', async (params) => {
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
-router.add('/make-time', async (_params) => {
+router.add('/todo', async (_params) => {
   if (getView())
     getView().tearDown();
   await viewMakeTime();
@@ -130,7 +130,7 @@ async function viewMakeTime() {
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
   let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
   let vacation = settings.get(ServerStorage.KEYS.VACATION);
-  await setView(new MakeTimeView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+  await setView(new TodoView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
 }
 
 function getScroller() {
@@ -180,7 +180,7 @@ async function onLoad() {
     menuTitle,
     createMenuItem('Compose', {href: '/compose', nested: true}),
     createMenuItem('Triage', {href: '/triage', nested: true}),
-    createMenuItem('MakeTime', {href: '/make-time', nested: true}),
+    createMenuItem('Todo', {href: '/todo', nested: true}),
     settingsButton,
     helpButton);
 

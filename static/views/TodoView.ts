@@ -4,7 +4,7 @@ import { ThreadGroups } from '../ThreadGroups.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { Thread } from '../Thread.js';
 
-export class MakeTimeView extends AbstractThreadListView {
+export class TodoView extends AbstractThreadListView {
   private vacation_: string;
 
   constructor(threads: ThreadGroups, mailProcessor: MailProcessor, scrollContainer: HTMLElement, allLabels: Labels, vacation: string, updateTitleDelegate: any, setSubject: any, showBackArrow: any, allowedReplyLength: number, contacts: any, autoStartTimer: boolean, timerDuration: number) {
@@ -69,4 +69,4 @@ export class MakeTimeView extends AbstractThreadListView {
     return await thread.getPriority();
   }
 }
-window.customElements.define('mt-make-time-view', MakeTimeView);
+window.customElements.define('mt-todo-view', TodoView);

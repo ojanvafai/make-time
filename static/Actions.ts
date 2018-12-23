@@ -12,7 +12,7 @@ export class Actions extends HTMLElement {
   static MUTE_ACTION: any;
   static MUST_DO_ACTION: any;
   static URGENT_ACTION: any;
-  static NOT_URGENT_ACTION: any;
+  static BACKLOG_ACTION: any;
   static NEEDS_FILTER_ACTION: any;
   static QUICK_REPLY_ACTION: any;
   static NEXT_EMAIL_ACTION: any;
@@ -113,7 +113,7 @@ export class Actions extends HTMLElement {
 
     Actions.MUST_DO_ACTION.destination = Labels.MUST_DO_LABEL;
     Actions.URGENT_ACTION.destination = Labels.URGENT_LABEL;
-    Actions.NOT_URGENT_ACTION.destination = Labels.NOT_URGENT_LABEL;
+    Actions.BACKLOG_ACTION.destination = Labels.BACKLOG_LABEL;
     Actions.NEEDS_FILTER_ACTION.destination = Labels.NEEDS_FILTER_LABEL;
   }
 
@@ -281,8 +281,8 @@ Actions.URGENT_ACTION = {
   repeatable: false,
 }
 
-Actions.NOT_URGENT_ACTION = {
-  name: `3: Not Urgent`,
+Actions.BACKLOG_ACTION = {
+  name: `3: Backlog`,
   description: `Important for achieving my mission, but can be done at leisure. Aim to spend >60% of your time here.`,
   key: undefined,
   hidden: false,

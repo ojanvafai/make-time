@@ -51,7 +51,7 @@ export abstract class AbstractThreadListView extends View {
     Actions.MUTE_ACTION,
     Actions.MUST_DO_ACTION,
     Actions.URGENT_ACTION,
-    Actions.NOT_URGENT_ACTION,
+    Actions.BACKLOG_ACTION,
     Actions.NEEDS_FILTER_ACTION,
     Actions.UNDO_ACTION,
   ];

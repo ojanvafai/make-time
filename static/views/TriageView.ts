@@ -20,7 +20,7 @@ export class TriageView extends AbstractThreadListView {
     super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.OVERFLOW_ACTIONS_);
     this.vacation_ = vacation;
     this.queueSettings_ = queueSettings;
-    this.appendButton('/make-time', `It's make-time!`);
+    this.appendButton('/todo', `Go to todo list`);
   }
 
   handleUndo(_thread: Thread) {
