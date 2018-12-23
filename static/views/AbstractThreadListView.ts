@@ -1,5 +1,5 @@
 import { Actions } from '../Actions.js';
-import { addThread, fetchThreads } from '../BaseMain.js';
+import { addThread, getCachedThread, fetchThreads } from '../BaseMain.js';
 import { Labels } from '../Labels.js';
 import { ThreadRow } from './ThreadRow.js';
 import { Timer } from '../Timer.js';
@@ -10,11 +10,20 @@ import { Thread } from '../Thread.js';
 import { ThreadGroups } from '../ThreadGroups.js';
 import { View } from './View.js';
 import { EmailCompose } from '../EmailCompose.js';
+import { IDBKeyVal } from '../idb-keyval.js';
 
 interface TriageResult {
   thread: Thread;
   removed: string[];
   added: string[];
+}
+
+export class PlainThreadData {
+  constructor(public id: string, public historyId: string) {
+  }
+  equals(other: PlainThreadData) {
+    return this.id == other.id && this.historyId == other.historyId;
+  }
 }
 
 export abstract class AbstractThreadListView extends View {
@@ -30,10 +39,12 @@ export abstract class AbstractThreadListView extends View {
   private autoStartTimer_: boolean;
   private countDown_: boolean;
   private timerDuration_: number;
+  private serializationKey_: string;
   private overflowActions_: any[] | undefined;
     // TODO: Rename this to groupedRows_?
   private groupedThreads_: RowGroup[];
   private needsProcessingThreads_: Thread[];
+  private serializedThreads_: PlainThreadData[];
   private focusedEmail_: ThreadRow | null;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
@@ -71,7 +82,7 @@ export abstract class AbstractThreadListView extends View {
     Actions.VIEW_TRIAGE_ACTION,
   ].concat(AbstractThreadListView.ACTIONS_);
 
-  constructor(threads: ThreadGroups, allLabels: Labels, mailProcessor: MailProcessor, scrollContainer: HTMLElement, updateTitleDelegate: any, setSubject: any, showBackArrow: any, allowedReplyLength: number, contacts: any, autoStartTimer: boolean, countDown: boolean, timerDuration: number, opt_overflowActions?: any[]) {
+  constructor(threads: ThreadGroups, allLabels: Labels, mailProcessor: MailProcessor, scrollContainer: HTMLElement, updateTitleDelegate: any, setSubject: any, showBackArrow: any, allowedReplyLength: number, contacts: any, autoStartTimer: boolean, countDown: boolean, timerDuration: number, serializationKey: string, opt_overflowActions?: any[]) {
     super();
 
     this.style.cssText = `
@@ -91,11 +102,13 @@ export abstract class AbstractThreadListView extends View {
     this.autoStartTimer_ = autoStartTimer;
     this.countDown_ = countDown;
     this.timerDuration_ = timerDuration;
+    this.serializationKey_ = serializationKey;
     this.overflowActions_ = opt_overflowActions;
 
     // TODO: Rename this to groupedRows_?
     this.groupedThreads_ = [];
     this.needsProcessingThreads_ = [];
+    this.serializedThreads_ = [];
 
     this.focusedEmail_ = null;
 
@@ -180,17 +193,44 @@ export abstract class AbstractThreadListView extends View {
     await this.renderThreadList_();
   }
 
-  async fetchLabels(labels: string[], shouldBatch?: boolean) {
+  async renderFromDisk() {
+    let data = await IDBKeyVal.getDefault().get(this.serializationKey_);
+    if (!data)
+      return;
+    for (let threadData of data) {
+      let thread = await getCachedThread(threadData);
+      await this.addThread(thread);
+    }
+  }
+
+  serializeThreads(threadsToSerialize: PlainThreadData[]) {
+    let threadsChanged = threadsToSerialize.length != this.serializedThreads_.length;
+    if (!threadsChanged) {
+      for (var i = 0; i < threadsToSerialize.length; i++) {
+        if (!threadsToSerialize[i].equals(this.serializedThreads_[i])) {
+          threadsChanged = true;
+          break;
+        }
+      }
+    }
+
+    if (threadsChanged) {
+      this.serializedThreads_ = threadsToSerialize;
+      IDBKeyVal.getDefault().set(this.serializationKey_, threadsToSerialize);
+    }
+  }
+
+  async fetchLabels(forEachThread: (thread: Thread) => void, labels: string[], shouldBatch?: boolean) {
     if (!labels.length)
       return;
 
     if (shouldBatch) {
-      await fetchThreads(this.processThread.bind(this), {
+      await fetchThreads(forEachThread, {
         query: `in:${labels.join(' OR in:')}`,
       });
     } else {
       for (let label of labels) {
-        await fetchThreads(this.processThread.bind(this), {
+        await fetchThreads(forEachThread, {
           query: `in:${label}`,
         });
       }

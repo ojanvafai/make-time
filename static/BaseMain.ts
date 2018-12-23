@@ -148,6 +148,7 @@ export async function setView(view: View) {
   content.append(view);
 
   await login();
+  await view.renderFromDisk();
   await view.fetch();
 }
 
@@ -305,7 +306,7 @@ function updateTitleBase(stack: any[], node: HTMLElement, key: string, ...opt_ti
     node.append(...stack[stack.length - 1].title);
 }
 
-async function getCachedThread(response: any) {
+export async function getCachedThread(response: any) {
   if (!threadCache_)
     threadCache_ = new ThreadCache();
   return await threadCache_.get(response);

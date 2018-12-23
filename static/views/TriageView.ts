@@ -1,4 +1,4 @@
-import { AbstractThreadListView } from './AbstractThreadListView.js';
+import { AbstractThreadListView, PlainThreadData } from './AbstractThreadListView.js';
 import { Actions } from '../Actions.js';
 import { fetchThreads } from '../BaseMain.js';
 import { Labels } from '../Labels.js';
@@ -6,6 +6,8 @@ import { QueueSettings } from '../QueueSettings.js';
 import { Thread } from '../Thread.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ThreadGroups } from '../ThreadGroups.js';
+
+let serializationKey = 'triage-view';
 
 export class TriageView extends AbstractThreadListView {
   private vacation_ : string;
@@ -17,7 +19,7 @@ export class TriageView extends AbstractThreadListView {
 
   constructor(threads: ThreadGroups, mailProcessor: MailProcessor, scrollContainer: HTMLElement, allLabels: Labels, vacation: string, updateTitleDelegate: any, setSubject: any, showBackArrow: any, allowedReplyLength: number, contacts: any, autoStartTimer: boolean, timerDuration: number, queueSettings: QueueSettings) {
     let countDown = true;
-    super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, TriageView.OVERFLOW_ACTIONS_);
+    super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, serializationKey, TriageView.OVERFLOW_ACTIONS_);
     this.vacation_ = vacation;
     this.queueSettings_ = queueSettings;
     this.appendButton('/todo', `Go to todo list`);
@@ -62,13 +64,20 @@ export class TriageView extends AbstractThreadListView {
 
     let makeTimeLabels = this.allLabels.getMakeTimeLabelNames().filter((item) => item != Labels.PROCESSED_LABEL);
 
+    let threadsToSerialize: PlainThreadData[] = [];
+    let processThread = (thread: Thread) => {
+      threadsToSerialize.push(new PlainThreadData(thread.id, thread.historyId));
+      this.processThread(thread);
+    };
+
     // Put threads that are in the inbox with no make-time labels first. That way they always show up before
     // daily/weekly/monthly bundles for folks that don't want to filter 100% of their mail with make-time.
-    await fetchThreads(this.processThread.bind(this), {
+    await fetchThreads(processThread, {
       query: `in:inbox -(in:${makeTimeLabels.join(' OR in:')})`,
     });
+    await this.fetchLabels(processThread, labelsToFetch, shouldBatch);
+    await this.serializeThreads(threadsToSerialize);
 
-    await this.fetchLabels(labelsToFetch, shouldBatch);
     this.updateTitle('fetch');
   }
 

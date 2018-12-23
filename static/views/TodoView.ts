@@ -1,15 +1,17 @@
-import { AbstractThreadListView } from './AbstractThreadListView.js';
+import { AbstractThreadListView, PlainThreadData } from './AbstractThreadListView.js';
 import { Labels } from '../Labels.js';
 import { ThreadGroups } from '../ThreadGroups.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { Thread } from '../Thread.js';
+
+let serializationKey = 'todo-view';
 
 export class TodoView extends AbstractThreadListView {
   private vacation_: string;
 
   constructor(threads: ThreadGroups, mailProcessor: MailProcessor, scrollContainer: HTMLElement, allLabels: Labels, vacation: string, updateTitleDelegate: any, setSubject: any, showBackArrow: any, allowedReplyLength: number, contacts: any, autoStartTimer: boolean, timerDuration: number) {
     let countDown = false;
-    super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration);
+    super(threads, allLabels, mailProcessor, scrollContainer, updateTitleDelegate, setSubject, showBackArrow, allowedReplyLength, contacts, autoStartTimer, countDown, timerDuration, serializationKey);
     this.vacation_ = vacation;
     this.appendButton('/triage', 'Back to Triaging');
   }
@@ -41,7 +43,15 @@ export class TodoView extends AbstractThreadListView {
     let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
     labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
 
-    await this.fetchLabels(labelsToFetch, shouldBatch);
+    let threadsToSerialize: PlainThreadData[] = [];
+    let processThread = (thread: Thread) => {
+      threadsToSerialize.push(new PlainThreadData(thread.id, thread.historyId));
+      this.processThread(thread);
+    };
+
+    await this.fetchLabels(processThread, labelsToFetch, shouldBatch);
+    await this.serializeThreads(threadsToSerialize);
+
     this.updateTitle('fetch');
   }
 

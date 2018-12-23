@@ -58,8 +58,6 @@ export class ComposeView extends View {
       min-height: 50px;
     `;
 
-    this.prefill_();
-
     this.body_.addEventListener('email-added', this.handleUpdates_.bind(this));
     this.body_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
     this.append(this.body_);
@@ -67,7 +65,7 @@ export class ComposeView extends View {
     this.appendButtons_();
   }
 
-  async prefill_() {
+  async renderFromDisk() {
     let localData = await IDBKeyVal.getDefault().get(AUTO_SAVE_KEY);
     if (!localData)
       localData = this.params_;
