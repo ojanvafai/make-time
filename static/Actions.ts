@@ -1,11 +1,10 @@
 import { Labels } from './Labels.js';
-import { AbstractThreadListView } from './views/AbstractThreadListView.js';
+import { ThreadListView } from './views/ThreadListView.js';
 
 export class Actions extends HTMLElement {
-  private view_: AbstractThreadListView;
+  private view_: ThreadListView;
   // TODO: Give these proper types.
   private actions_: any[];
-  private overflowActions_: any[] | undefined;
   static ARCHIVE_ACTION: any;
   static BLOCKED_ACTION: any;
   static SPAM_ACTION: any;
@@ -25,40 +24,16 @@ export class Actions extends HTMLElement {
   static VIEW_TRIAGE_ACTION: any;
   static UNDO_ACTION: any;
 
-  constructor(view: AbstractThreadListView, actions: any[], opt_overflowActions?: any[]) {
+  constructor(view: ThreadListView, actions: any[]) {
     super();
     this.style.display = 'flex';
     this.style.flexWrap = 'wrap';
 
     this.view_ = view;
     this.actions_ = actions;
-    this.overflowActions_ = opt_overflowActions;
 
     this.setDestinations_();
     this.appendActions_(this, actions);
-
-    if (opt_overflowActions) {
-      let container = document.createElement('div');
-      container.style.cssText = `display: flex;`;
-      this.append(container);
-
-      let overflow = document.createElement('div');
-      overflow.style.display = 'none'
-
-      let expander = document.createElement('div');
-      expander.style.cssText = `
-        font-size: 36px;
-      `;
-      expander.textContent = '»';
-      expander.onclick = () => {
-        let wasHidden = overflow.style.display == 'none';
-        overflow.style.display = wasHidden ? 'flex' : 'none';
-        expander.textContent = wasHidden ? '«' : '»';
-      };
-
-      container.append(expander, overflow);
-      this.appendActions_(overflow, opt_overflowActions);
-    }
   }
 
   appendActions_(container: HTMLElement, actions: any[]) {
@@ -130,9 +105,6 @@ export class Actions extends HTMLElement {
     };
 
     let action = this.actions_.find(test);
-    if (!action && this.overflowActions_)
-      action = this.overflowActions_.find(test);
-
     if (action)
       this.takeAction(action, e);
   }

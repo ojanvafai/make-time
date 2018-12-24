@@ -8,7 +8,6 @@ import { Labels } from "./Labels.js";
 import { AsyncOnce } from "./AsyncOnce.js";
 import { Settings } from "./Settings.js";
 import { QueueSettings } from "./QueueSettings.js";
-import { ThreadGroups } from "./ThreadGroups.js";
 import { View } from "./views/View.js";
 import { ServerStorage } from "./ServerStorage.js";
 import { showDialog, USER_ID } from "./Base.js";
@@ -48,8 +47,6 @@ let titleStack_: any[] = [];
 let loaderTitleStack_: any[] = [];
 let threadCache_: ThreadCache;
 
-export let threads_ = new ThreadGroups();
-
 // Client ID and API key from the Developer Console
 let CLIENT_ID: string;
 let isGoogle = location.toString().includes(':5555/') || location.toString().includes('https://com-mktime');
@@ -69,62 +66,6 @@ let SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapi
 
 let isSignedIn_ = false;
 
-export async function addThread(thread: Thread) {
-  // Don't ever show best effort threads when on vacation.
-  let settings = await getSettings();
-  let vacation = settings.get(ServerStorage.KEYS.VACATION);
-
-  if (!vacation && threads_.getBestEffort() && await isBestEffortQueue(thread)) {
-    if (await isBankrupt(thread)) {
-      await bankruptThread(thread);
-      return;
-    } else if (threads_.getBestEffort()) {
-      // Check again that getBestEffort is non-null in case best effort threads started being
-      // triaged in the async time from the threads_.getBestEffort() call above.
-      threads_.pushBestEffort(thread);
-      return;
-    }
-  }
-
-  await currentView_.addThread(thread);
-}
-
-async function isBestEffortQueue(thread: Thread) {
-  let queue = await thread.getQueue();
-  let parts = queue.split('/');
-  let lastPart = parts[parts.length - 1];
-  let data = (await getQueuedLabelMap()).get(lastPart);
-  return data && data.goal == 'Best Effort';
-}
-
-// This function is all gross and hardcoded. Also, the constants themselves
-// aren't great. Would be best to know how long the email was actually in the
-// inbox rather than when the last email was sent, e.g. if someone was on vacation.
-// Could track the last N dequeue dates for each queue maybe?
-async function isBankrupt(thread: Thread) {
-  let messages = await thread.getMessages();
-  let date = messages[messages.length - 1].date;
-  let queue = await thread.getQueue();
-  let queueData = (await getQueuedLabelMap()).get(queue);
-
-  let numDays = 7;
-  if (queueData.queue == QueueSettings.WEEKLY)
-    numDays = 14;
-  else if (queueData.queue == QueueSettings.MONTHLY)
-    numDays = 42;
-
-  let oneDay = 24 * 60 * 60 * 1000;
-  let diffDays = (Date.now() - date.getTime()) / (oneDay);
-  return diffDays > numDays;
-}
-
-async function bankruptThread(thread: Thread) {
-  let queue = await thread.getQueue();
-  queue = Labels.removeNeedsTriagePrefix(queue);
-  let newLabel = Labels.addBankruptPrefix(queue);
-  await thread.markTriaged(newLabel);
-}
-
 export async function getLabels() {
   await fetchTheSettingsThings();
   return labels_;
@@ -140,7 +81,6 @@ export function getView() {
 }
 
 export async function setView(view: View) {
-  threads_.setListener(view);
   currentView_ = view;
 
   var content = <HTMLElement> document.getElementById('content');
@@ -149,7 +89,7 @@ export async function setView(view: View) {
 
   await login();
   await view.renderFromDisk();
-  await view.fetch();
+  await view.getModel().update();
 }
 
 let settingThingsFetcher_: AsyncOnce;

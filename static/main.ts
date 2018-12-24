@@ -2,17 +2,19 @@ import { ErrorLogger } from './ErrorLogger.js';
 import { Router } from './Router.js';
 import { IDBKeyVal } from './idb-keyval.js';
 // TODO: Clean up these dependencies to be less spaghetti.
-import { threads_, updateLoaderTitle, updateTitle, setView, getView, getSettings, getQueuedLabelMap, getLabels, addThread, showHelp } from './BaseMain.js';
+import { updateLoaderTitle, updateTitle, setView, getView, getSettings,
+         getQueuedLabelMap, getLabels, showHelp } from './BaseMain.js';
 import { getCurrentWeekNumber } from './Base.js';
 import { ServerStorage } from './ServerStorage.js';
 import { ComposeView } from './views/ComposeView.js';
-import { TriageView } from './views/TriageView.js';
-import { TodoView } from './views/TodoView.js';
 import { SettingsView } from './views/Settings.js';
-import { MailProcessor } from './MailProcessor.js';
+import { ComposeModel } from './models/ComposeModel.js';
+import { TriageModel } from './models/TriageModel.js';
+import { TodoModel } from './models/TodoModel.js';
+import { ThreadListView } from './views/ThreadListView.js';
+import { ThreadListModel } from './models/ThreadListModel.js';
 
 let contacts_: Contact[] = [];
-let isProcessingMail_ = false;
 let WEEKS_TO_STORE_ = 2;
 
 var router = new Router();
@@ -35,15 +37,12 @@ router.add('/triage', routeToTriage);
 router.add('/todo', async (_params) => {
   if (getView())
     getView().tearDown();
-  await viewMakeTime();
+  await viewTodo();
 });
 // TODO: best-effort should not be a URL since it's not a proper view.
 // or should it be a view instead?
 router.add('/best-effort', async (_params) => {
-  if (getView())
-    getView().tearDown();
-
-  threads_.processBestEffort();
+  (await getTriageModel()).triageBestEffort();
   await router.run('/triage');
 });
 
@@ -108,29 +107,55 @@ function toggleMenu() {
 })
 
 async function viewCompose(params: any) {
-  await setView(new ComposeView(contacts_, updateLoaderTitle, params));
+  let model = new ComposeModel(updateLoaderTitle);
+  await setView(new ComposeView(model, contacts_, params));
+}
+
+async function createThreadListView(model: ThreadListModel, countDown: boolean, bottomButtonUrl: string, bottomButtonText: string) {
+  let settings = await getSettings();
+  let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
+  let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
+  let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+
+  return new ThreadListView(model, await getLabels(), getScroller(),
+    updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer,
+    countDown, timerDuration, bottomButtonUrl, bottomButtonText);
 }
 
 async function viewTriage() {
   updateLoaderTitle('viewTriage', 'Fetching threads to triage...');
 
-  let settings = await getSettings();
-  let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
-  let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
-  let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  let vacation = settings.get(ServerStorage.KEYS.VACATION);
-  await setView(new TriageView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration, await getQueuedLabelMap()));
+  let countDown = true;
+  let view = await createThreadListView(await getTriageModel(), countDown, '/todo', 'Go to todo list');
+  await setView(view);
 
   updateLoaderTitle('viewTriage', '');
 }
 
-async function viewMakeTime() {
-  let settings = await getSettings();
-  let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
-  let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
-  let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-  let vacation = settings.get(ServerStorage.KEYS.VACATION);
-  await setView(new TodoView(threads_, await getMailProcessor(), getScroller(), await getLabels(), vacation, updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer, timerDuration));
+let triageModel_: TriageModel;
+async function getTriageModel() {
+  if (!triageModel_) {
+    let settings = await getSettings();
+    let vacation = settings.get(ServerStorage.KEYS.VACATION);
+    triageModel_ = new TriageModel(updateLoaderTitle, vacation, await getLabels(), settings, await getQueuedLabelMap());
+  }
+  return triageModel_;
+}
+
+let todoModel_: TodoModel;
+async function getTodoModel() {
+  if (!todoModel_) {
+    let settings = await getSettings();
+    let vacation = settings.get(ServerStorage.KEYS.VACATION);
+    todoModel_ = new TodoModel(updateLoaderTitle, vacation, await getLabels());
+  }
+  return todoModel_;
+}
+
+async function viewTodo() {
+  let countDown = true;
+  let view = await createThreadListView(await getTodoModel(), countDown, '/triage', 'Back to Triaging');
+  await setView(view);
 }
 
 function getScroller() {
@@ -258,25 +283,6 @@ async function fetchContacts(token: any) {
   await IDBKeyVal.getDefault().set(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
-async function getMailProcessor() {
-  return new MailProcessor(await getSettings(), addThread, await getQueuedLabelMap(), await getLabels(), updateLoaderTitle);
-}
-
-// TODO: Move this to a cron
-async function processMail() {
-  if (isProcessingMail_)
-    return;
-
-  isProcessingMail_ = true;
-
-  let mailProcessor = await getMailProcessor();
-  await mailProcessor.processUnprocessed();
-  await mailProcessor.processQueues();
-  await mailProcessor.collapseStats();
-
-  isProcessingMail_ = false;
-}
-
 async function gcLocalStorage() {
   let storage = new ServerStorage((await getSettings()).spreadsheetId);
   let lastGCTime = storage.get(ServerStorage.KEYS.LAST_GC_TIME);
@@ -304,9 +310,16 @@ export async function update() {
     return;
   isUpdating_ = true;
 
-  if (getView().update)
-    await getView().update();
-  await processMail();
+  // Do the todo model first since it doens't need to send anything through
+  // MailProcessor, so is relatively constant time.
+  let todoModel = await getTodoModel();
+  await todoModel.update();
+
+  let triageModel = await getTriageModel();
+  await triageModel.update();
+
+  await(await getView()).update();
+
   await gcLocalStorage();
 
   isUpdating_ = false;

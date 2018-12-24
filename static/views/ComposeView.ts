@@ -1,11 +1,8 @@
 import { EmailCompose } from '../EmailCompose.js';
-import { send } from '../Mail.js';
+import { ComposeModel } from '../models/ComposeModel.js';
 import { showDialog } from '../Base.js';
-import { IDBKeyVal } from '../idb-keyval.js';
-import { Thread } from '../Thread.js';
 import { View } from './View.js';
 
-const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 const SEND = { name: 'Send', description: 'Send the mail.' };
 const HELP = { name: 'Help', description: 'Help tips.' };
 const ACTIONS = [ SEND, HELP ];
@@ -15,23 +12,14 @@ const HELP_TEXT = `Put ## followed by a priority level in your email to automati
 URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
 
-interface EmailData {
-  to: string;
-  inlineTo: string;
-  subject: string;
-  body: string;
-}
-
 export class ComposeView extends View {
-  private updateTitle_: any;
   private params_: any;
   private to_: HTMLInputElement;
   private subject_: HTMLInputElement;
   private body_: EmailCompose;
   private inlineTo_: HTMLElement| undefined;
-  private sending_: boolean | undefined;
 
-  constructor(contacts: any, updateTitle: any, params: any) {
+  constructor(private model_: ComposeModel, contacts: any, params: any) {
     super();
 
     this.style.cssText = `
@@ -40,7 +28,6 @@ export class ComposeView extends View {
       height: 100%;
     `;
 
-    this.updateTitle_ = updateTitle;
     this.params_ = params || {};
 
     this.to_ = this.createInput_();
@@ -65,8 +52,12 @@ export class ComposeView extends View {
     this.appendButtons_();
   }
 
+  getModel() {
+    return this.model_;
+  }
+
   async renderFromDisk() {
-    let localData = await IDBKeyVal.getDefault().get(AUTO_SAVE_KEY);
+    let localData = await this.model_.loadFromDisk();
     if (!localData)
       localData = this.params_;
 
@@ -143,29 +134,11 @@ export class ComposeView extends View {
       this.clearInlineTo_();
     }
 
-    let data = <EmailData> {};
-    let hasData = false;
-    if (this.to_.value) {
-      data.to = this.to_.value;
-      hasData = true;
-    }
-    if (this.inlineTo_) {
-      data.inlineTo = this.inlineToText_();
-      hasData = true;
-    }
-    if (this.subject_.value) {
-      data.subject = this.subject_.value;
-      hasData = true;
-    }
-    if (this.body_.value) {
-      data.body = this.body_.value;
-      hasData = true;
-    }
-
-    if (hasData)
-      await IDBKeyVal.getDefault().set(AUTO_SAVE_KEY, data);
-    else
-     await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
+    this.model_.setTo(this.to_.value);
+    this.model_.setInlineTo(this.inlineToText_());
+    this.model_.setSubject(this.subject_.value);
+    this.model_.setBody(this.body_.value);
+    await this.model_.flush();
   }
 
   focusFirstEmpty_() {
@@ -230,41 +203,6 @@ export class ComposeView extends View {
     }
   }
 
-  async send_() {
-    let to = '';
-    if (this.to_.value)
-      to += this.to_.value + ',';
-    if (this.inlineTo_)
-      to += this.inlineToText_() + ',';
-
-    if (!to || !to.includes('@') || !to.includes('.')) {
-      alert(`To field does not include a valid email address: ${to}`);
-      return;
-    }
-
-    let subject = this.subject_.value;
-    if (!subject) {
-      alert(`Subject is empty.`);
-      return;
-    }
-
-    if (this.sending_)
-      return;
-    this.sending_ = true;
-
-    this.updateTitle_('sending', 'Sending...');
-    await send(this.body_.value, to, subject);
-    await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
-    this.updateTitle_('sending');
-
-    this.to_.value = this.params_.to || '';
-    this.clearInlineTo_();
-    this.subject_.value = this.params_.subject || '';
-    this.body_.value = this.params_.body || '';
-
-    this.sending_ = false;
-  }
-
   showHelp_() {
     let contents = document.createElement('div');
     contents.style.overflow = 'auto';
@@ -283,6 +221,15 @@ export class ComposeView extends View {
     `;
     closeButton.onclick = () => dialog.close();
     contents.prepend(closeButton);
+  }
+
+  async send_() {
+    await this.model_.send();
+
+    this.to_.value = this.params_.to || '';
+    this.clearInlineTo_();
+    this.subject_.value = this.params_.subject || '';
+    this.body_.value = this.params_.body || '';
   }
 
   async takeAction_(action: any) {
@@ -306,12 +253,6 @@ export class ComposeView extends View {
   }
 
   async update() {
-  }
-
-  async addThread(_thread: Thread) {
-  }
-
-  async fetch(_shouldBatch?: boolean) {
   }
 
   async dispatchShortcut(_e: KeyboardEvent) {
