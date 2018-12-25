@@ -10,16 +10,10 @@ interface FilterRule {
 }
 
 const CSV_FIELDS = ['from', 'to'];
-
-export class FiltersView extends HTMLElement {
-  private settings_: Settings;
-  private cursorSentinel_: string;
-  private cursorSentinelElement_: HTMLElement | undefined;
-  private dialog_: HTMLDialogElement | undefined;
-
-  private static DIRECTIVE_SEPARATOR_ = ':';
-  private static QUERY_SEPARATOR_ = '&&';
-  static HELP_TEXT = `<b>Help</b> <a>show more</a>
+const CURSOR_SENTINEL = '!!!!!!!!';
+const DIRECTIVE_SEPARATOR_ = ':';
+const QUERY_SEPARATOR_ = '&&';
+export const HELP_TEXT = `<b>Help</b> <a>show more</a>
 Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "archive" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
 
  - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
@@ -45,7 +39,11 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
 If there's a bug in the filtering code, emails should remain in the unprocessed label.
 `;
 
-  constructor(settings: Settings) {
+export class FiltersView extends HTMLElement {
+  private cursorSentinelElement_: HTMLElement | undefined;
+  private dialog_: HTMLDialogElement | undefined;
+
+  constructor(private settings_: Settings) {
     super();
     this.style.cssText = `
       display: flex;
@@ -53,8 +51,6 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
       width: 800px;
       max-width: 95vw;
     `;
-    this.settings_ = settings;
-    this.cursorSentinel_ = '!!!!!!!!';
     this.onkeydown = (e) => this.handleKeyDown_(e);
     this.render_();
   }
@@ -152,7 +148,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
       margin-top: 4px;
       font-size: 13px;
     `;
-    help.innerHTML = FiltersView.HELP_TEXT;
+    help.innerHTML = HELP_TEXT;
 
     let expander = <HTMLAnchorElement>help.querySelector('a');
     expander.onclick = () => {
@@ -288,7 +284,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
   }
 
   appendWithSentinel_(container: HTMLElement, text: string) {
-    let index = text.indexOf(this.cursorSentinel_);
+    let index = text.indexOf(CURSOR_SENTINEL);
     if (index == -1) {
       container.append(text);
       return;
@@ -296,7 +292,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
 
     container.append(text.substring(0, index));
     this.appendSentinelElement_(container);
-    container.append(text.substring(index + this.cursorSentinel_.length));
+    container.append(text.substring(index + CURSOR_SENTINEL.length));
   }
 
   appendSentinelElement_(container: HTMLElement) {
@@ -314,17 +310,17 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
       if (!isFirst) {
         if (!previousEndedInWhiteSpace)
           container.append(space);
-        container.append(FiltersView.QUERY_SEPARATOR_);
+        container.append(QUERY_SEPARATOR_);
         if (fieldText.charAt(0) == space) {
           container.append(space);
           fieldText = fieldText.substring(1);
-        } else if (field != this.cursorSentinel_) {
+        } else if (field != CURSOR_SENTINEL) {
           container.append(space);
         }
       }
       isFirst = false;
 
-      if (field == this.cursorSentinel_) {
+      if (field == CURSOR_SENTINEL) {
         container.append(queryParts[field]);
         this.appendSentinelElement_(container);
         continue;
@@ -339,7 +335,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
         border-radius: 3px;
       `;
 
-      let fieldTextWithoutSentinel = fieldText.replace(this.cursorSentinel_, '').trim();
+      let fieldTextWithoutSentinel = fieldText.replace(CURSOR_SENTINEL, '').trim();
       if (!Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
         fieldElement.classList.add('invalid-directive');
 
@@ -349,7 +345,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
       let value = queryParts[field];
       previousEndedInWhiteSpace = value && value.charAt(value.length - 1) == space;
       if (value) {
-        fieldElement.append(FiltersView.DIRECTIVE_SEPARATOR_);
+        fieldElement.append(DIRECTIVE_SEPARATOR_);
 
         if (CSV_FIELDS.includes(field)) {
           let values = value.split(',');
@@ -383,12 +379,12 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
   parseQuery_(query: string, trimWhitespace: boolean) {
     let queryParts = <FilterRule>{};
     query = query.replace(/[\n\r]/g, '');
-    let directives = query.split(FiltersView.QUERY_SEPARATOR_);
+    let directives = query.split(QUERY_SEPARATOR_);
     for (let directive of directives) {
       if (!directive)
         continue;
 
-      let colonIndex = directive.indexOf(FiltersView.DIRECTIVE_SEPARATOR_);
+      let colonIndex = directive.indexOf(DIRECTIVE_SEPARATOR_);
       let hasColon = colonIndex != -1;
       let field = hasColon ? directive.substring(0, colonIndex) : directive;
       let value = hasColon ? directive.substring(colonIndex + 1) : '';
@@ -399,7 +395,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
       }
 
       if (hasColon && !value)
-        field = field + FiltersView.DIRECTIVE_SEPARATOR_;
+        field = field + DIRECTIVE_SEPARATOR_;
       queryParts[field] = value;
     }
     return queryParts;
@@ -420,7 +416,7 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
 
   insertSentinelText_() {
     let range = window.getSelection().getRangeAt(0);
-    let node = document.createTextNode(this.cursorSentinel_);
+    let node = document.createTextNode(CURSOR_SENTINEL);
     range.insertNode(node);
     return node;
   }

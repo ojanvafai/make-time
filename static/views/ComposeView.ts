@@ -13,13 +13,12 @@ URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
 
 export class ComposeView extends View {
-  private params_: any;
   private to_: HTMLInputElement;
   private subject_: HTMLInputElement;
   private body_: EmailCompose;
   private inlineTo_: HTMLElement| undefined;
 
-  constructor(private model_: ComposeModel, contacts: any, params: any) {
+  constructor(private model_: ComposeModel, contacts: any, private params_: any = {}) {
     super();
 
     this.style.cssText = `
@@ -27,8 +26,6 @@ export class ComposeView extends View {
       flex-direction: column;
       height: 100%;
     `;
-
-    this.params_ = params || {};
 
     this.to_ = this.createInput_();
     this.appendLine_('To:\xa0', this.to_);

@@ -1,21 +1,18 @@
 import { ThreadRow } from "./ThreadRow";
 
 export class ThreadRowGroup extends HTMLElement {
-  private queue_: string;
   private rowContainer_: HTMLElement;
 
-  constructor(queue: string) {
+  constructor(private queue_: string) {
     super();
     this.style.display = 'block';
-
-    this.queue_ = queue;
 
     let queueContainer = document.createElement('span')
     queueContainer.style.cssText = `
       font-weight: bold;
       font-size: 18px;
     `;
-    queueContainer.append(queue);
+    queueContainer.append(queue_);
 
     let header = document.createElement('div');
     header.append(

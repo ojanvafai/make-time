@@ -6,22 +6,17 @@ import { showDialog } from '../Base.js';
 import { QueueSettings } from '../QueueSettings.js';
 
 export class SettingsView extends HTMLElement {
-  private settings_: Settings;
-  private queuedLabelData_: QueueSettings;
   private scrollable_: HTMLElement;
   private hadChanges_: boolean;
   private dialog_: HTMLDialogElement;
   private basicSettings_: HTMLElement;
 
-  constructor(settingsData: Settings, queuedLabelData: QueueSettings) {
+  constructor(private settings_: Settings, private queueSettings_: QueueSettings) {
     super();
     this.style.cssText = `
       display: flex;
       flex-direction: column;
     `;
-
-    this.settings_ = settingsData;
-    this.queuedLabelData_ = queuedLabelData;
 
     this.scrollable_ = document.createElement('div');
     this.scrollable_.style.cssText = `
@@ -112,7 +107,7 @@ export class SettingsView extends HTMLElement {
     queues.add(Labels.FALLBACK_LABEL);
     queues.add(Labels.BLOCKED_SUFFIX);
 
-    new QueuesView(queues, this.queuedLabelData_);
+    new QueuesView(queues, this.queueSettings_);
     this.cancel_();
   }
 

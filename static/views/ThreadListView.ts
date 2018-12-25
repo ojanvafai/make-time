@@ -9,17 +9,6 @@ import { EmailCompose } from '../EmailCompose.js';
 import { ThreadListModel, UndoEvent, ThreadRemovedEvent } from '../models/ThreadListModel.js';
 
 export class ThreadListView extends View {
-  updateTitle: any;
-  allLabels: Labels;
-  private scrollContainer_: HTMLElement;
-  private setSubject_: any;
-  private showBackArrow_: any;
-  private allowedReplyLength_: number;
-  private contacts_: any;
-  private autoStartTimer_: boolean;
-  private countDown_: boolean;
-  private timerDuration_: number;
-
   private focusedEmail_: ThreadRow | null;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
@@ -57,27 +46,17 @@ export class ThreadListView extends View {
     Actions.VIEW_TRIAGE_ACTION,
   ].concat(ThreadListView.ACTIONS_);
 
-  constructor(private model_: ThreadListModel, allLabels: Labels,
-      scrollContainer: HTMLElement, updateTitleDelegate: any, setSubject: any, showBackArrow: any,
-      allowedReplyLength: number, contacts: any, autoStartTimer: boolean, countDown: boolean,
-      timerDuration: number, bottomButtonUrl: string, bottomButtonText: string) {
+  constructor(private model_: ThreadListModel, public allLabels: Labels,
+      private scrollContainer_: HTMLElement, public updateTitle: any, private setSubject_: any,
+      private showBackArrow_: any, private allowedReplyLength_: number, private contacts_: any,
+      private autoStartTimer_: boolean, private countDown_: boolean,
+      private timerDuration_: number, bottomButtonUrl: string, bottomButtonText: string) {
     super();
 
     this.style.cssText = `
       display: flex;
       flex-direction: column;
     `;
-
-    this.allLabels = allLabels;
-    this.scrollContainer_ = scrollContainer;
-    this.updateTitle = updateTitleDelegate;
-    this.setSubject_ = setSubject;
-    this.showBackArrow_ = showBackArrow;
-    this.allowedReplyLength_ = allowedReplyLength;
-    this.contacts_ = contacts;
-    this.autoStartTimer_ = autoStartTimer;
-    this.countDown_ = countDown;
-    this.timerDuration_ = timerDuration;
 
     this.focusedEmail_ = null;
 

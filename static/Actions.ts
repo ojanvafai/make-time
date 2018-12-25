@@ -2,9 +2,7 @@ import { Labels } from './Labels.js';
 import { ThreadListView } from './views/ThreadListView.js';
 
 export class Actions extends HTMLElement {
-  private view_: ThreadListView;
   // TODO: Give these proper types.
-  private actions_: any[];
   static ARCHIVE_ACTION: any;
   static BLOCKED_ACTION: any;
   static SPAM_ACTION: any;
@@ -24,16 +22,13 @@ export class Actions extends HTMLElement {
   static VIEW_TRIAGE_ACTION: any;
   static UNDO_ACTION: any;
 
-  constructor(view: ThreadListView, actions: any[]) {
+  constructor(private view_: ThreadListView, private actions_: any[]) {
     super();
     this.style.display = 'flex';
     this.style.flexWrap = 'wrap';
 
-    this.view_ = view;
-    this.actions_ = actions;
-
     this.setDestinations_();
-    this.appendActions_(this, actions);
+    this.appendActions_(this, actions_);
   }
 
   appendActions_(container: HTMLElement, actions: any[]) {

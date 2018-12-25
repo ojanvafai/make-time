@@ -1,10 +1,8 @@
-import { FiltersView } from './Filters.js';
+import { HELP_TEXT } from './Filters.js';
 import { showDialog } from '../Base.js';
 import { QueueSettings } from '../QueueSettings.js';
 
 export class QueuesView extends HTMLElement {
-  private queueNames_: Set<string>;
-  private queuedLabelData_: QueueSettings;
   private immediate_: HTMLElement | undefined;
   private daily_: HTMLElement | undefined;
   private weekly_: HTMLElement | undefined;
@@ -19,7 +17,7 @@ export class QueuesView extends HTMLElement {
 
  Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
 
-  constructor(queueNames: Set<string>, queuedLabelData: QueueSettings) {
+  constructor(private queueNames_: Set<string>, private queuedLabelData_: QueueSettings) {
     super();
 
     this.style.cssText = `
@@ -29,9 +27,6 @@ export class QueuesView extends HTMLElement {
       max-width: 95vw;
       outline: 0;
     `;
-
-    this.queueNames_ = queueNames;
-    this.queuedLabelData_ = queuedLabelData;
 
     this.onkeydown = (e) => this.handleKeyDown_(e);
     this.render_();
@@ -155,7 +150,7 @@ export class QueuesView extends HTMLElement {
       overflow: hidden;
       margin-top: 4px;
     `;
-    help.innerHTML = FiltersView.HELP_TEXT;
+    help.innerHTML = HELP_TEXT;
 
     let expander = <HTMLAnchorElement> help.querySelector('a');
     expander.onclick = () => {

@@ -12,7 +12,6 @@ interface DateFormatOptions {
 }
 
 export class ThreadRow extends HTMLElement {
-  group: RowGroup;
   focused: boolean;
   rendered!: RenderedThread;
   mark: boolean | undefined;
@@ -20,11 +19,10 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private thread_!: Thread;
 
-  constructor(thread: Thread, group: RowGroup) {
+  constructor(thread: Thread, public group: RowGroup) {
     super();
     this.style.display = 'flex';
 
-    this.group = group;
     this.focused = false;
 
     let label = document.createElement('label');
