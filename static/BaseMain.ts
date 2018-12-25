@@ -21,6 +21,9 @@ class ThreadCache {
   }
 
   async get(threadData: any) {
+    // TODO: This cache grows indefinitely. It needs to be GC'ed, possibly after
+    // each update call? A simple step could be to delete the cache once a day.
+    // All the data is on disk, so it shouldn't be too expensive.
     let entry = this.cache_.get(threadData.id);
     if (entry) {
       if (entry.historyId != threadData.historyId) {

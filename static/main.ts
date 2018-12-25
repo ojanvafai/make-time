@@ -15,8 +15,6 @@ import { ThreadListView } from './views/ThreadListView.js';
 import { ThreadListModel } from './models/ThreadListModel.js';
 
 let contacts_: Contact[] = [];
-let WEEKS_TO_STORE_ = 2;
-
 var router = new Router();
 
 async function routeToCurrentLocation() {
@@ -295,8 +293,11 @@ async function gcLocalStorage() {
       if (!match)
         continue;
 
+      // At this point, any threads in the inbox still should have been updated
+      // to the current week. So anything in another week should be stale
+      // and can be deleted.
       let weekNumber = Number(match[1]);
-      if (weekNumber + WEEKS_TO_STORE_ < currentWeekNumber)
+      if (weekNumber != currentWeekNumber)
         await IDBKeyVal.getDefault().del(key);
     }
     await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_GC_TIME, value: Date.now()}]);

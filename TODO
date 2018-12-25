@@ -38,7 +38,6 @@ P2: Will only do if something makes these seem worth doing.
 - Add a mode to default to view one
 - Add cc/bcc/body as closed by default sections
 - Add drafts concept instead of one compose at a time. Right now two compose windows will mean one overrides the other in local storage.
-- Add a setting for how many weeks of email to keep in storage.
 - Linkify URLs in the plain text or html content
 - Show a spinner when clicking the save button in the settings dialog since that blocks on a a network fetch before reloading the page.
 - add ability to filter no subject emails
