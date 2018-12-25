@@ -9,6 +9,8 @@ interface FilterRule {
   [property: string]: string | boolean;
 }
 
+const CSV_FIELDS = ['from', 'to'];
+
 export class FiltersView extends HTMLElement {
   private settings_: Settings;
   private cursorSentinel_: string;
@@ -349,16 +351,33 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
       if (value) {
         fieldElement.append(FiltersView.DIRECTIVE_SEPARATOR_);
 
-        let valueElement = document.createElement('span');
-        valueElement.style.cssText = `
-          background-color: lightgrey;
-          padding: 1px 2px;
-          border-radius: 3px;
-        `;
-        this.appendWithSentinel_(valueElement, value);
-        container.append(valueElement);
+        if (CSV_FIELDS.includes(field)) {
+          let values = value.split(',');
+          for (var i = 0; i < values.length; i++) {
+            this.appendValue_(container, values[i]);
+            if (i + 1 < values.length) {
+              let comma = document.createElement('span');
+              comma.append(',');
+              comma.style.marginRight = '2px';
+              container.append(comma);
+            }
+          }
+        } else {
+          this.appendValue_(container, value);
+        }
       }
     }
+  }
+
+  appendValue_(container: HTMLElement, value: string) {
+    let valueElement = document.createElement('span');
+    valueElement.style.cssText = `
+      background-color: lightgrey;
+      padding: 1px 2px;
+      border-radius: 3px;
+    `;
+    this.appendWithSentinel_(valueElement, value);
+    container.append(valueElement);
   }
 
   parseQuery_(query: string, trimWhitespace: boolean) {
