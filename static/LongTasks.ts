@@ -6,13 +6,13 @@ export class LongTasks extends HTMLElement {
       for (let entry of list.getEntries()) {
         // TODO: Make the flashing threshold configurable.
         if (entry.duration > 200) {
-          console.log(entry)
+          console.log(entry);
           this.flash_();
           return;
         }
       }
     });
-    observer.observe({entryTypes: ["longtask"]});
+    observer.observe({entryTypes: ['longtask']});
   }
 
   connectedCallback() {
@@ -31,18 +31,15 @@ export class LongTasks extends HTMLElement {
 
   flash_() {
     let animation = [
-      { opacity: '0.6' },
-      { opacity: '0' },
+      {opacity: '0.6'},
+      {opacity: '0'},
     ];
 
     let timing = {
       duration: 1000,
     };
 
-    this.animate(
-      animation,
-      timing
-    );
+    this.animate(animation, timing);
   }
 }
 

@@ -1,12 +1,14 @@
-import { gapiFetch } from './Net.js';
-import { IDBKeyVal } from './idb-keyval.js';
-import { Labels } from './Labels.js';
-import { send } from './Mail.js';
-import { Message } from './Message.js';
-import { USER_ID, getCurrentWeekNumber, getPreviousWeekNumber } from './Base.js';
+import {getCurrentWeekNumber, getPreviousWeekNumber, USER_ID} from './Base.js';
+import {IDBKeyVal} from './idb-keyval.js';
+import {Labels} from './Labels.js';
+import {send} from './Mail.js';
+import {Message} from './Message.js';
+import {gapiFetch} from './Net.js';
 
-let staleThreadError = 'Thread was modified before message details were fetched.';
-let staleAfterFetchError = 'Thread is still stale after fetch. This should never happen.';
+let staleThreadError =
+    'Thread was modified before message details were fetched.';
+let staleAfterFetchError =
+    'Thread is still stale after fetch. This should never happen.';
 
 export class Thread {
   id: string;
@@ -18,16 +20,16 @@ export class Thread {
   // and they shouldn't be undefined because we fetch the thread details
   // immediately after constructing the Thread. Technically there's a race
   // there though since fetching the thread details involves a network fetch.
-  snippet: string | undefined;
-  private labelIds_: Set<string> | undefined;
-  private labelNames_: Set<string> | undefined;
-  private priority_: string | null | undefined;
-  private muted_: boolean | undefined;
-  private queue_: string | undefined;
-  private processedMessages_: Message[] | undefined;
+  snippet: string|undefined;
+  private labelIds_: Set<string>|undefined;
+  private labelNames_: Set<string>|undefined;
+  private priority_: string|null|undefined;
+  private muted_: boolean|undefined;
+  private queue_: string|undefined;
+  private processedMessages_: Message[]|undefined;
 
   // TODO: Give this a non-any value once we import gapi types.
-  private fetchPromise_: Promise<any> | null = null;
+  private fetchPromise_: Promise<any>|null = null;
 
   constructor(thread: any, allLabels: Labels) {
     this.id = thread.id;
@@ -101,7 +103,8 @@ export class Thread {
     for (let message of newMessages) {
       let previousMessage;
       if (this.processedMessages_.length)
-        previousMessage = this.processedMessages_[this.processedMessages_.length - 1];
+        previousMessage =
+            this.processedMessages_[this.processedMessages_.length - 1];
       let processed = new Message(message, previousMessage);
       this.processedMessages_.push(processed);
       newProcessedMessages.push(processed);
@@ -116,16 +119,20 @@ export class Thread {
     if (!this.hasMessageDetails_) {
       await this.fetch();
     } else {
-      // There's a race condition where where new messages can come in after modify
-      // request, so the user won't have seen the new messages. Minimize this race
-      // by doing an update first to see if there are new messages and bailing.
-      // TODO: Figure out how to use batchModify. This would avoid the extra network
-      // fetch, but for some threads removing a label from all the messages in the
-      // thread doesn't actually remove the label from the thread.
+      // There's a race condition where where new messages can come in after
+      // modify request, so the user won't have seen the new messages. Minimize
+      // this race by doing an update first to see if there are new messages and
+      // bailing.
+      // TODO: Figure out how to use batchModify. This would avoid the extra
+      // network fetch, but for some threads removing a label from all the
+      // messages in the thread doesn't actually remove the label from the
+      // thread.
       let newMessages = await this.update();
       if (newMessages && newMessages.length) {
         let subject = await this.getSubject();
-        console.warn(`Skipping modify since new messages arrived after modify was called on thread with subject: ${subject}.`);
+        console.warn(
+            `Skipping modify since new messages arrived after modify was called on thread with subject: ${
+                subject}.`);
         return;
       }
     }
@@ -139,7 +146,8 @@ export class Thread {
     // Make sure that any added labels are not also removed.
     // Gmail API will fail if you try to add and remove the same label.
     // Also, request will fail if the removeLabelIds list is too long (>100).
-    removeLabelIds = removeLabelIds.filter((item) => !addLabelIds.includes(item) && (currentLabelIds.has(item)));
+    removeLabelIds = removeLabelIds.filter(
+        (item) => !addLabelIds.includes(item) && (currentLabelIds.has(item)));
 
     // Once a modify has happened the stored message details are stale.
     this.resetState();
@@ -155,13 +163,11 @@ export class Thread {
     // TODO: Handle response.status != 200.
 
     return {
-      added: addLabelIds,
-      removed: removeLabelIds,
-      thread: this,
+      added: addLabelIds, removed: removeLabelIds, thread: this,
     }
   }
 
-  async markTriaged(destination: string | null) {
+  async markTriaged(destination: string|null) {
     // Need the message details to get the list of current applied labels.
     // Almost always we will have alread fetched this since we're showing the
     // thread to the user already.
@@ -289,13 +295,14 @@ export class Thread {
     if (this.hasMessageDetails_ && !forceNetwork)
       return null;
 
-    let messages : any;
+    let messages: any;
     if (!forceNetwork)
       messages = await this.getThreadDataFromDisk_();
 
     if (!messages) {
       if (!this.fetchPromise_) {
-        // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
+        // @ts-ignore TODO: Figure out how to get types for gapi client
+        // libraries.
         this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
           userId: USER_ID,
           id: this.id,
@@ -306,8 +313,8 @@ export class Thread {
 
       messages = resp.result.messages;
 
-      // If modifications have come in since we first created this Thread instance
-      // then the historyId and the snippet may have changed.
+      // If modifications have come in since we first created this Thread
+      // instance then the historyId and the snippet may have changed.
       // TODO: Should we delete the old entry in IDB if the historyId changes or
       // just let gcLocalStorage delete it eventually?
       this.historyId = resp.result.historyId;
@@ -327,7 +334,8 @@ export class Thread {
     return await this.fetch(true);
   }
 
-  async sendReply(replyText: string, extraEmails: string[], shouldReplyAll: boolean) {
+  async sendReply(
+      replyText: string, extraEmails: string[], shouldReplyAll: boolean) {
     let messages = await this.getMessages();
     let lastMessage = messages[messages.length - 1];
 

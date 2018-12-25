@@ -1,5 +1,5 @@
-import { gapiFetch } from './Net.js';
-import { USER_ID } from './Base.js';
+import {USER_ID} from './Base.js';
+import {gapiFetch} from './Net.js';
 
 interface LabelResource {
   name: string;
@@ -12,59 +12,59 @@ interface LabelResource {
 export class Labels {
   static isUserLabel = (id: string) => {
     return id.startsWith('Label_');
-  }
+  };
 
   static removeLabelPrefix = (labelName: string, prefix: string) => {
     return labelName.replace(new RegExp(`^${prefix}/`), '');
-  }
+  };
 
   static addMakeTimePrefix = (labelName: string) => {
     return Labels.MAKE_TIME_PREFIX + '/' + labelName;
-  }
+  };
 
   static removeMakeTimePrefix = (labelName: string) => {
     return Labels.removeLabelPrefix(labelName, Labels.MAKE_TIME_PREFIX);
-  }
+  };
 
   static isMakeTimeLabel = (labelName: string) => {
     return labelName.startsWith(Labels.MAKE_TIME_PREFIX + '/');
-  }
+  };
 
   static triagedLabel = (labelName: string) => {
     return `${Labels.TRIAGED_LABEL}/${labelName}`;
-  }
+  };
 
   static needsTriageLabel = (labelName: string) => {
     return `${Labels.NEEDS_TRIAGE_LABEL}/${labelName}`;
-  }
+  };
 
   static removeNeedsTriagePrefix = (labelName: string) => {
     return Labels.removeLabelPrefix(labelName, Labels.NEEDS_TRIAGE_LABEL);
-  }
+  };
 
   static isNeedsTriageLabel = (labelName: string) => {
     return labelName.startsWith(Labels.NEEDS_TRIAGE_LABEL + '/');
-  }
+  };
 
   static addQueuedPrefix = (labelName: string) => {
-    return Labels.QUEUED_LABEL + "/" + labelName;
-  }
+    return Labels.QUEUED_LABEL + '/' + labelName;
+  };
 
   static addPriorityPrefix = (labelName: string) => {
-    return Labels.PRIORITY_LABEL + "/" + labelName;
-  }
+    return Labels.PRIORITY_LABEL + '/' + labelName;
+  };
 
   static removePriorityPrefix = (labelName: string) => {
     return Labels.removeLabelPrefix(labelName, Labels.PRIORITY_LABEL);
-  }
+  };
 
   static isPriorityLabel = (labelName: string) => {
     return labelName.startsWith(Labels.PRIORITY_LABEL + '/');
-  }
+  };
 
   static addBankruptPrefix = (labelName: string) => {
-    return Labels.BANKRUPT_LABEL + "/" + labelName;
-  }
+    return Labels.BANKRUPT_LABEL + '/' + labelName;
+  };
 
   // TODO: This should be uppercase to match gmail.
   static INBOX_LABEL = 'inbox';
@@ -91,7 +91,8 @@ export class Labels {
   static BACKLOG = 'backlog';
   static NEEDS_FILTER = 'needs-filter';
 
-  static SORTED_PRIORITIES = [Labels.MUST_DO, Labels.URGENT, Labels.BACKLOG, Labels.NEEDS_FILTER];
+  static SORTED_PRIORITIES =
+      [Labels.MUST_DO, Labels.URGENT, Labels.BACKLOG, Labels.NEEDS_FILTER];
 
   static MUST_DO_LABEL = Labels.addPriorityPrefix(Labels.MUST_DO);
   static URGENT_LABEL = Labels.addPriorityPrefix(Labels.URGENT);
@@ -126,10 +127,10 @@ export class Labels {
   private priorityLabels_!: Set<string>;
 
   async fetch() {
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
-      'userId': USER_ID
-    });
+    var response = await gapiFetch(
+        // @ts-ignore TODO: Figure out how to get types for gapi client
+        // libraries.
+        gapi.client.gmail.users.labels.list, {'userId': USER_ID});
 
     this.labelToId_ = {};
     this.idToLabel_ = {};
@@ -186,7 +187,7 @@ export class Labels {
 
   labelResource_(name: string) {
     let isHidden = Labels.HIDDEN_LABELS.includes(name);
-    return <LabelResource> {
+    return <LabelResource>{
       name: name,
       messageListVisibility: isHidden ? 'hide' : 'show',
       labelListVisibility: isHidden ? 'labelHide' : 'labelShow',
@@ -197,21 +198,29 @@ export class Labels {
     let resource = this.labelResource_(name);
     resource.id = id;
     resource.userId = USER_ID;
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    let response = await gapiFetch(gapi.client.gmail.users.labels.update, resource);
+    let response =
+        // @ts-ignore TODO: Figure out how to get types for gapi client
+        // libraries.
+        await gapiFetch(gapi.client.gmail.users.labels.update, resource);
     return response.result;
   }
 
-  async migrateThreads(oldName: string, newName: string,
-      migrater: (addLabelIds: string[], removeLabelIds: string[], query: string) => {}) {
+  async migrateThreads(
+      oldName: string, newName: string,
+      migrater:
+          (addLabelIds: string[], removeLabelIds: string[],
+           query: string) => {}) {
     let addLabelIds = [this.labelToId_[newName]];
     let removeLabelIds = [this.labelToId_[oldName]];
     let query = `in:${oldName}`;
     migrater(addLabelIds, removeLabelIds, query);
   }
 
-  async rename(oldName: string, newName: string,
-      migrater: (addLabelIds: string[], removeLabelIds: string[], query: string) => {}) {
+  async rename(
+      oldName: string, newName: string,
+      migrater:
+          (addLabelIds: string[], removeLabelIds: string[],
+           query: string) => {}) {
     let id = this.labelToId_[oldName];
     if (id) {
       if (this.labelToId_[newName]) {
@@ -224,9 +233,11 @@ export class Labels {
           'userId': USER_ID,
           'id': id,
           'resource': resource,
-        }
-      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-      await gapiFetch(gapi.client.gmail.users.labels.update, body);
+        };
+
+        // @ts-ignore TODO: Figure out how to get types for gapi client
+        // libraries.
+        await gapiFetch(gapi.client.gmail.users.labels.update, body);
         this.removeLabel_(oldName);
         this.addLabel_(newName, id);
       }
@@ -294,7 +305,8 @@ export class Labels {
       labelSoFar += prefix + part;
       // creating a label 409's if the label already exists.
       // Technically we should handle the race if the label
-      // gets created in between the start of the create call and this line. Meh.
+      // gets created in between the start of the create call and this line.
+      // Meh.
       if (this.labelToId_[labelSoFar])
         continue;
 
@@ -329,7 +341,8 @@ export class Labels {
     for (let id in this.idToLabel_) {
       if (labelFilter(this.idToLabel_[id])) {
         addedAny = true;
-        // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
+        // @ts-ignore TODO: Figure out how to get types for gapi client
+        // libraries.
         batch.add(gapi.client.gmail.users.labels.get({
           userId: USER_ID,
           id: id,
@@ -340,7 +353,8 @@ export class Labels {
     let labelsWithThreads: {name: string, count: number}[] = [];
 
     // If this is a first run, there may be no labels that match the filter rule
-    // and gapi batching throws when you try to await a batch that has no entries.
+    // and gapi batching throws when you try to await a batch that has no
+    // entries.
     if (addedAny) {
       let labelDetails = await batch;
       for (let key in labelDetails.result) {

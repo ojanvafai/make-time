@@ -1,22 +1,22 @@
-import { ErrorLogger } from './ErrorLogger.js';
-import { fetchThreads } from './BaseMain.js';
-import { Labels } from './Labels.js';
-import { QueueSettings } from './QueueSettings.js';
-import { ServerStorage } from './ServerStorage.js';
-import { SpreadsheetUtils } from './SpreadsheetUtils.js';
-import { Settings } from './Settings.js';
-import { Thread } from './Thread.js';
-import { Message } from './Message.js';
-import { TriageModel } from './models/TriageModel.js';
+import {fetchThreads} from './BaseMain.js';
+import {ErrorLogger} from './ErrorLogger.js';
+import {Labels} from './Labels.js';
+import {Message} from './Message.js';
+import {TriageModel} from './models/TriageModel.js';
+import {QueueSettings} from './QueueSettings.js';
+import {ServerStorage} from './ServerStorage.js';
+import {Settings} from './Settings.js';
+import {SpreadsheetUtils} from './SpreadsheetUtils.js';
+import {Thread} from './Thread.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
 export class MailProcessor {
-  constructor(public settings: Settings, private triageModel_: TriageModel,
+  constructor(
+      public settings: Settings, private triageModel_: TriageModel,
       private queuedLabelMap_: QueueSettings, private allLabels_: Labels,
-      private updateTitle_: any) {
-  }
+      private updateTitle_: any) {}
 
   private async pushThread_(thread: Thread) {
     await thread.update();
@@ -51,31 +51,38 @@ export class MailProcessor {
     return false;
   }
 
-  containsAddress(addresses: string[] | undefined, filterAddressCsv: string) {
+  containsAddress(addresses: string[]|undefined, filterAddressCsv: string) {
     if (!addresses)
       return false;
 
-    var filterAddresses = filterAddressCsv.split(',').map((item) => item.trim());
+    var filterAddresses =
+        filterAddressCsv.split(',').map((item) => item.trim());
     for (var i = 0; i < filterAddresses.length; i++) {
       var filterAddress = filterAddresses[i];
       // If there's no @ symbol, we don't know if it's a username or a domain.
       // Try both.
-      if (filterAddress.includes("@")) {
+      if (filterAddress.includes('@')) {
         if (this.startsWithAddress(addresses, filterAddress))
           return true;
       } else {
-        if (this.startsWithAddress(addresses, filterAddress + "@"))
+        if (this.startsWithAddress(addresses, filterAddress + '@'))
           return true;
-        if (this.endsWithAddress(addresses, "@" + filterAddress))
+        if (this.endsWithAddress(addresses, '@' + filterAddress))
           return true;
       }
     }
     return false;
   }
 
-  async writeToStatsPage(timestamp: number, num_threads_processed: number, per_label_counts: any, time_taken: number) {
-    var data = [timestamp, num_threads_processed, time_taken, JSON.stringify(per_label_counts)];
-    await SpreadsheetUtils.appendToSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
+  async writeToStatsPage(
+      timestamp: number, num_threads_processed: number, per_label_counts: any,
+      time_taken: number) {
+    var data = [
+      timestamp, num_threads_processed, time_taken,
+      JSON.stringify(per_label_counts)
+    ];
+    await SpreadsheetUtils.appendToSheet(
+        this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
   }
 
   getYearMonthDay(timestamp: number) {
@@ -92,19 +99,23 @@ export class MailProcessor {
 
   async writeCollapsedStats(stats: any) {
     if (stats && stats.numInvocations)
-      await SpreadsheetUtils.appendToSheet(this.settings.spreadsheetId, DAILY_STATS_SHEET_NAME, [Object.values(stats)]);
+      await SpreadsheetUtils.appendToSheet(
+          this.settings.spreadsheetId, DAILY_STATS_SHEET_NAME,
+          [Object.values(stats)]);
   }
 
   async collapseStats() {
     let stats: any;
-    var rows = await SpreadsheetUtils.fetchSheet(this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
+    var rows = await SpreadsheetUtils.fetchSheet(
+        this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
     let todayYearMonthDay = this.getYearMonthDay(Date.now());
     let currentYearMonthDay;
 
     let lastRowProcessed = 0;
 
     for (var i = 1; i < rows.length; ++i) {
-      // timestamp, threads_processed, messages_processed, total_time, perLabelThreadCountJSON
+      // timestamp, threads_processed, messages_processed, total_time,
+      // perLabelThreadCountJSON
 
       let timestamp = Number(rows[i][0]);
       // Ignore empty rows
@@ -115,9 +126,11 @@ export class MailProcessor {
       let yearMonthDay = this.getYearMonthDay(timestamp);
 
       if (todayYearMonthDay < yearMonthDay)
-        throw `Something is wrong with the statistics spreadsheet. Some rows have dates in the future: ${yearMonthDay}`;
+        throw `Something is wrong with the statistics spreadsheet. Some rows have dates in the future: ${
+            yearMonthDay}`;
 
-      // Don't process any rows from today. Since the sheet is in date order, we can stop processing entirely.
+      // Don't process any rows from today. Since the sheet is in date order, we
+      // can stop processing entirely.
       if (todayYearMonthDay == yearMonthDay)
         break;
 
@@ -175,13 +188,16 @@ export class MailProcessor {
     await this.writeCollapsedStats(stats);
 
     if (lastRowProcessed)
-      await SpreadsheetUtils.deleteRows(this.settings.spreadsheetId, STATISTICS_SHEET_NAME, 1, lastRowProcessed + 1);
+      await SpreadsheetUtils.deleteRows(
+          this.settings.spreadsheetId, STATISTICS_SHEET_NAME, 1,
+          lastRowProcessed + 1);
   }
 
   matchesHeader_(message: Message, header: string) {
     let colonIndex = header.indexOf(':');
     if (colonIndex == -1) {
-      ErrorLogger.log(`Invalid header filter. Header filters must be of the form headername:filtervalue.`);
+      ErrorLogger.log(
+          `Invalid header filter. Header filters must be of the form headername:filtervalue.`);
       return false;
     }
     let name = header.substring(0, colonIndex).trim();
@@ -214,7 +230,7 @@ export class MailProcessor {
     if (rule.to) {
       if (!this.containsAddress(message.toEmails, rule.to) &&
           !this.containsAddress(message.ccEmails, rule.to) &&
-        !this.containsAddress(message.bccEmails, rule.to))
+          !this.containsAddress(message.bccEmails, rule.to))
         return false;
       matches = true;
     }
@@ -230,7 +246,8 @@ export class MailProcessor {
     }
     // TODO: only need to do this once per thread.
     if (rule.subject) {
-      if (!message.subject || !message.subject.toLowerCase().includes(rule.subject))
+      if (!message.subject ||
+          !message.subject.toLowerCase().includes(rule.subject))
         return false;
       matches = true;
     }
@@ -251,7 +268,8 @@ export class MailProcessor {
   async logMatchingRule_(thread: Thread, rule: any) {
     if (this.settings.get(ServerStorage.KEYS.LOG_MATCHING_RULES)) {
       let subject = await thread.getSubject();
-      console.log(`Thread with subject "${subject}" matched rule ${JSON.stringify(rule)}`);
+      console.log(`Thread with subject "${subject}" matched rule ${
+          JSON.stringify(rule)}`);
     }
   }
 
@@ -280,7 +298,8 @@ export class MailProcessor {
       }
     }
 
-    // Ensure there's always some label to make sure bugs don't cause emails to get lost silently.
+    // Ensure there's always some label to make sure bugs don't cause emails to
+    // get lost silently.
     return Labels.FALLBACK_LABEL;
   }
 
@@ -323,7 +342,8 @@ export class MailProcessor {
       let startTime = new Date();
 
       let removeLabelIds = this.allLabels_.getMakeTimeLabelIds().concat();
-      let processedLabelId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
+      let processedLabelId =
+          await this.allLabels_.getId(Labels.PROCESSED_LABEL);
       let addLabelIds = [processedLabelId];
 
       if (await thread.isMuted()) {
@@ -349,7 +369,8 @@ export class MailProcessor {
       let labelName = await this.getWinningLabel(thread, rulesSheet.rules);
 
       if (labelName == Labels.ARCHIVE_LABEL) {
-        addLabelIds.push(await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
+        addLabelIds.push(
+            await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
         removeLabelIds.push('INBOX');
         await thread.modify(addLabelIds, removeLabelIds);
         if (await thread.isInInbox())
@@ -360,9 +381,9 @@ export class MailProcessor {
       let prefixedLabelName;
 
       // Don't queue if already in the inbox or triaged.
-      if (await thread.isInInbox() ||
-          (await thread.getPriority()) ||
-          this.queuedLabelMap_.get(labelName).queue == QueueSettings.IMMEDIATE) {
+      if (await thread.isInInbox() || (await thread.getPriority()) ||
+          this.queuedLabelMap_.get(labelName).queue ==
+              QueueSettings.IMMEDIATE) {
         prefixedLabelName = Labels.needsTriageLabel(labelName);
         addLabelIds.push('INBOX');
       } else {
@@ -387,16 +408,20 @@ export class MailProcessor {
   }
 
   async logToStatsPage_(labelName: string, startTime: Date) {
-    // TODO: Simplify this now that we write the stats for each thread at a time.
+    // TODO: Simplify this now that we write the stats for each thread at a
+    // time.
     let perLabelCounts: any = {};
     perLabelCounts[labelName] = 1;
     await this.writeToStatsPage(
-      startTime.getTime(), 1, perLabelCounts, Date.now() - startTime.getTime());
+        startTime.getTime(), 1, perLabelCounts,
+        Date.now() - startTime.getTime());
   }
 
   async processThreads(threads: Thread[]) {
     for (var i = 0; i < threads.length; i++) {
-      this.updateTitle_('processUnprocessed', `Processing ${i + 1}/${threads.length} unprocessed threads...`);
+      this.updateTitle_(
+          'processUnprocessed',
+          `Processing ${i + 1}/${threads.length} unprocessed threads...`);
       await this.processThread_(threads[i]);
     }
     this.updateTitle_('processUnprocessed');
@@ -421,7 +446,8 @@ export class MailProcessor {
   async dequeue(labelName: string) {
     var queuedLabelName = Labels.addQueuedPrefix(labelName);
     var queuedLabel = await this.allLabels_.getId(queuedLabelName);
-    var autoLabel = await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
+    var autoLabel =
+        await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
 
     let threads: Thread[] = [];
     await fetchThreads((thread: Thread) => threads.push(thread), {
@@ -432,7 +458,9 @@ export class MailProcessor {
       return;
 
     for (var i = 0; i < threads.length; i++) {
-      this.updateTitle_('dequeue', `Dequeuing ${i + 1}/${threads.length} from ${labelName}...`);
+      this.updateTitle_(
+          'dequeue',
+          `Dequeuing ${i + 1}/${threads.length} from ${labelName}...`);
 
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
@@ -464,7 +492,8 @@ export class MailProcessor {
     var diffDays = (end - start) / (oneDay);
 
     if (diffDays >= 30)
-      return QueueSettings.WEEKDAYS.concat([QueueSettings.DAILY, QueueSettings.MONTHLY]);
+      return QueueSettings.WEEKDAYS.concat(
+          [QueueSettings.DAILY, QueueSettings.MONTHLY]);
     if (diffDays >= 7)
       return QueueSettings.WEEKDAYS.concat([QueueSettings.DAILY]);
 
@@ -507,6 +536,7 @@ export class MailProcessor {
       await this.processSingleQueue(category);
     }
 
-    await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_DEQUEUE_TIME, value: Date.now()}]);
+    await storage.writeUpdates(
+        [{key: ServerStorage.KEYS.LAST_DEQUEUE_TIME, value: Date.now()}]);
   }
 }

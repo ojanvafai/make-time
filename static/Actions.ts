@@ -1,5 +1,5 @@
-import { Labels } from './Labels.js';
-import { ThreadListView } from './views/ThreadListView.js';
+import {Labels} from './Labels.js';
+import {ThreadListView} from './views/ThreadListView.js';
 
 export class Actions extends HTMLElement {
   // TODO: Give these proper types.
@@ -59,16 +59,17 @@ export class Actions extends HTMLElement {
           width: 300px;
         `;
 
-        let tooltip = <string> button.getAttribute('tooltip');
+        let tooltip = <string>button.getAttribute('tooltip');
         text.append(tooltip);
         tooltipElement.append(text);
         this.append(tooltipElement);
-      }
+      };
       button.onmouseleave = () => {
         tooltipElement.remove();
-      }
+      };
       let name = action.name;
-      button.innerHTML = `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
+      button.innerHTML =
+          `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
       container.append(button);
     }
   }
@@ -89,9 +90,10 @@ export class Actions extends HTMLElement {
 
   dispatchShortcut(e: KeyboardEvent) {
     let test = (action: any) => {
-     // Don't allow certain actions to apply in rapid succession for each
-     // thread. This prevents accidents of archiving a lot of threads at once
-     // when your stupid keyboard gets stuck holding the archive key down. #sigh
+      // Don't allow certain actions to apply in rapid succession for each
+      // thread. This prevents accidents of archiving a lot of threads at once
+      // when your stupid keyboard gets stuck holding the archive key down.
+      // #sigh
       if (!action.repeatable && e.repeat)
         return false;
       if (action.key)
@@ -130,7 +132,8 @@ Actions.ARCHIVE_ACTION = {
 
 Actions.QUICK_REPLY_ACTION = {
   name: `Quick Reply`,
-  description: `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
+  description:
+      `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
   key: undefined,
   hidden: false,
   repeatable: false,
@@ -138,7 +141,8 @@ Actions.QUICK_REPLY_ACTION = {
 
 Actions.BLOCKED_ACTION = {
   name: `Blocked`,
-  description: `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
+  description:
+      `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
   key: undefined,
   hidden: false,
   repeatable: false,
@@ -154,7 +158,8 @@ Actions.SPAM_ACTION = {
 
 Actions.MUTE_ACTION = {
   name: `Mute`,
-  description: `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
+  description:
+      `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
   key: undefined,
   hidden: false,
   repeatable: false,
@@ -163,7 +168,7 @@ Actions.MUTE_ACTION = {
 Actions.NEXT_EMAIL_ACTION = {
   name: `NextEmail`,
   description: `Focus the next email.`,
-  key: "j",
+  key: 'j',
   hidden: true,
   repeatable: true,
 };
@@ -171,7 +176,7 @@ Actions.NEXT_EMAIL_ACTION = {
 Actions.PREVIOUS_EMAIL_ACTION = {
   name: `PreviousEmail`,
   description: `Focus the previous email.`,
-  key: "k",
+  key: 'k',
   hidden: true,
   repeatable: true,
 };
@@ -179,7 +184,7 @@ Actions.PREVIOUS_EMAIL_ACTION = {
 Actions.TOGGLE_FOCUSED_ACTION = {
   name: `ToggleFocused`,
   description: `Toggle whether or not the focused element is selected.`,
-  key: " ",
+  key: ' ',
   hidden: true,
   repeatable: false,
 };
@@ -187,7 +192,7 @@ Actions.TOGGLE_FOCUSED_ACTION = {
 Actions.VIEW_FOCUSED_ACTION = {
   name: `ViewFocused`,
   description: `View the focused email.`,
-  key: "Enter",
+  key: 'Enter',
   hidden: true,
   repeatable: false,
 };
@@ -195,7 +200,7 @@ Actions.VIEW_FOCUSED_ACTION = {
 Actions.NEXT_QUEUE_ACTION = {
   name: `NextQueue`,
   description: `Focus the first email of the next queue.`,
-  key: "n",
+  key: 'n',
   hidden: true,
   repeatable: true,
 };
@@ -203,7 +208,7 @@ Actions.NEXT_QUEUE_ACTION = {
 Actions.PREVIOUS_QUEUE_ACTION = {
   name: `PreviousQueue`,
   description: `Focus the first email of the previous queue.`,
-  key: "p",
+  key: 'p',
   hidden: true,
   repeatable: true,
 };
@@ -211,7 +216,7 @@ Actions.PREVIOUS_QUEUE_ACTION = {
 Actions.TOGGLE_QUEUE_ACTION = {
   name: `ToggleQueue`,
   description: `Toggle all items in the current queue.`,
-  key: "g",
+  key: 'g',
   hidden: true,
   repeatable: false,
 };
@@ -219,7 +224,7 @@ Actions.TOGGLE_QUEUE_ACTION = {
 Actions.VIEW_TRIAGE_ACTION = {
   name: `ViewTriage`,
   description: `Go to the triage view.`,
-  key: "Escape",
+  key: 'Escape',
   hidden: true,
   repeatable: false,
 };
@@ -238,7 +243,7 @@ Actions.MUST_DO_ACTION = {
   key: undefined,
   hidden: false,
   repeatable: false,
-}
+};
 
 Actions.URGENT_ACTION = {
   name: `2: Urgent`,
@@ -246,22 +251,24 @@ Actions.URGENT_ACTION = {
   key: undefined,
   hidden: false,
   repeatable: false,
-}
+};
 
 Actions.BACKLOG_ACTION = {
   name: `3: Backlog`,
-  description: `Important for achieving my mission, but can be done at leisure. Aim to spend >60% of your time here.`,
+  description:
+      `Important for achieving my mission, but can be done at leisure. Aim to spend >60% of your time here.`,
   key: undefined,
   hidden: false,
   repeatable: false,
-}
+};
 
 Actions.NEEDS_FILTER_ACTION = {
   name: `4: Needs Filter`,
-  description: `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
+  description:
+      `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   key: undefined,
   hidden: false,
   repeatable: false,
-}
+};
 
 window.customElements.define('mt-actions', Actions);

@@ -1,4 +1,4 @@
-import { AutoCompleteEntry, Compose } from './Compose.js';
+import {AutoCompleteEntry, Compose} from './Compose.js';
 
 export class EmailCompose extends Compose {
   constructor(contacts: any, opt_isMultiline?: boolean) {
@@ -16,7 +16,7 @@ export class EmailCompose extends Compose {
 
     // TODO: Only start auto complete at start of line or after a whitespace
     let cursor = this.cursor_();
-    let container = <CharacterData | Element>cursor.startContainer;
+    let container = <CharacterData|Element>cursor.startContainer;
     let offset = cursor.startOffset;
     let nextChar = container.textContent.substring(offset, offset + 1);
     if (!nextChar || nextChar == ' ') {

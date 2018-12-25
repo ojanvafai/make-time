@@ -3,26 +3,26 @@ type RequestIdleCallbackOptions = {
   timeout: number;
 };
 type RequestIdleCallbackDeadline = {
-  readonly didTimeout: boolean;
-  timeRemaining: (() => number);
+  readonly didTimeout: boolean; timeRemaining: (() => number);
 };
 
 declare global {
   interface Window {
-    requestIdleCallback: ((
-      callback: ((deadline: RequestIdleCallbackDeadline) => void),
-      opts?: RequestIdleCallbackOptions,
-    ) => RequestIdleCallbackHandle);
+    requestIdleCallback:
+        ((
+             callback: ((deadline: RequestIdleCallbackDeadline) => void),
+             opts?: RequestIdleCallbackOptions,
+             ) => RequestIdleCallbackHandle);
     cancelIdleCallback: ((handle: RequestIdleCallbackHandle) => void);
   }
 
   interface Node {
-    after: ((...nodes: Node[] | string[]) => void);
-    before: ((...nodes: Node[] | string[]) => void);
+    after: ((...nodes: Node[]|string[]) => void);
+    before: ((...nodes: Node[]|string[]) => void);
   }
 
   interface CharacterData {
-    // Technically textContent accepts null as a value in the setter, 
+    // Technically textContent accepts null as a value in the setter,
     // but that's not a feature we need and needing to null check every
     // use of the getter is a pain. See
     // https://github.com/Microsoft/TypeScript/issues/10315.
@@ -30,7 +30,7 @@ declare global {
   }
 
   interface Element {
-    // Technically textContent accepts null as a value in the setter, 
+    // Technically textContent accepts null as a value in the setter,
     // but that's not a feature we need and needing to null check every
     // use of the getter is a pain. See
     // https://github.com/Microsoft/TypeScript/issues/10315.
@@ -63,4 +63,4 @@ declare global {
   }
 }
 
-export { };
+export {};

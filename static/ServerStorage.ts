@@ -1,4 +1,4 @@
-import { SpreadsheetUtils } from './SpreadsheetUtils.js';
+import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export class ServerStorage {
   private spreadsheetId_: string;
@@ -14,7 +14,8 @@ export class ServerStorage {
     if (ServerStorage.backendValues_)
       return;
 
-    const rawBackendValues = await SpreadsheetUtils.fetch2ColumnSheet(this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_);
+    const rawBackendValues = await SpreadsheetUtils.fetch2ColumnSheet(
+        this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_);
 
     ServerStorage.backendValues_ = {};
     // Strip no longer supported backend keys.
@@ -27,7 +28,8 @@ export class ServerStorage {
 
   get(key: string) {
     if (!ServerStorage.backendValues_)
-      throw `Attempted to read out of storage before fetching from the network: ${key}.`;
+      throw `Attempted to read out of storage before fetching from the network: ${
+          key}.`;
     return ServerStorage.backendValues_[key];
   }
 
@@ -35,20 +37,22 @@ export class ServerStorage {
     for (let update of updates) {
       ServerStorage.backendValues_[update.key] = update.value;
     }
-    await SpreadsheetUtils.write2ColumnSheet(this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_, Object.entries(ServerStorage.backendValues_));
+    await SpreadsheetUtils.write2ColumnSheet(
+        this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_,
+        Object.entries(ServerStorage.backendValues_));
   }
 }
 
 interface KeyTypes {
-  HAS_SHOWN_FIRST_RUN: string,
-  LAST_DEQUEUE_TIME: string,
-  LAST_GC_TIME: string,
-  VACATION: string,
-  TIMER_DURATION: string,
-  AUTO_START_TIMER: string,
-  ALLOWED_REPLY_LENGTH: string,
-  DAYS_TO_SHOW: string,
-  LOG_MATCHING_RULES: string,
+  HAS_SHOWN_FIRST_RUN: string;
+  LAST_DEQUEUE_TIME: string;
+  LAST_GC_TIME: string;
+  VACATION: string;
+  TIMER_DURATION: string;
+  AUTO_START_TIMER: string;
+  ALLOWED_REPLY_LENGTH: string;
+  DAYS_TO_SHOW: string;
+  LOG_MATCHING_RULES: string;
 }
 
 let keys: KeyTypes = {

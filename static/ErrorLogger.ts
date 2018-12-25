@@ -48,7 +48,8 @@ class Logger extends HTMLElement {
       border-bottom: 1px solid black;
       padding: 3px;
     `;
-    container.append(`${this.messageContainer_.children.length + 1}: ${message}`);
+    container.append(
+        `${this.messageContainer_.children.length + 1}: ${message}`);
     this.messageContainer_.append(container);
   }
 

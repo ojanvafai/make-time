@@ -1,13 +1,14 @@
-import { HELP_TEXT } from './Filters.js';
-import { showDialog } from '../Base.js';
-import { QueueSettings } from '../QueueSettings.js';
+import {showDialog} from '../Base.js';
+import {QueueSettings} from '../QueueSettings.js';
+
+import {HELP_TEXT} from './Filters.js';
 
 export class QueuesView extends HTMLElement {
-  private immediate_: HTMLElement | undefined;
-  private daily_: HTMLElement | undefined;
-  private weekly_: HTMLElement | undefined;
-  private monthly_: HTMLElement | undefined;
-  private dialog_: HTMLDialogElement | undefined;
+  private immediate_: HTMLElement|undefined;
+  private daily_: HTMLElement|undefined;
+  private weekly_: HTMLElement|undefined;
+  private monthly_: HTMLElement|undefined;
+  private dialog_: HTMLDialogElement|undefined;
 
   static rowClassName_ = 'queue-row';
   static HELP_TEXT_ = `<b>Help</b> <a>show more</a>
@@ -17,7 +18,9 @@ export class QueuesView extends HTMLElement {
 
  Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
 
-  constructor(private queueNames_: Set<string>, private queuedLabelData_: QueueSettings) {
+  constructor(
+      private queueNames_: Set<string>,
+      private queuedLabelData_: QueueSettings) {
     super();
 
     this.style.cssText = `
@@ -39,23 +42,24 @@ export class QueuesView extends HTMLElement {
       return;
 
     switch (e.key) {
-    case 'ArrowUp':
-      this.moveRow_(e.key, e.shiftKey);
-      break;
+      case 'ArrowUp':
+        this.moveRow_(e.key, e.shiftKey);
+        break;
 
-    case 'ArrowDown':
-      this.moveRow_(e.key, e.shiftKey);
-      break;
+      case 'ArrowDown':
+        this.moveRow_(e.key, e.shiftKey);
+        break;
     }
   }
 
   isChecked_(row: HTMLElement) {
-    return (<HTMLInputElement> row.querySelector('input')).checked;
+    return (<HTMLInputElement>row.querySelector('input')).checked;
   }
 
   moveRow_(direction: string, move10: boolean) {
-    let rows = [].slice.call(this.querySelectorAll(`.${QueuesView.rowClassName_}`));
-    let row: HTMLElement | undefined;
+    let rows =
+        [].slice.call(this.querySelectorAll(`.${QueuesView.rowClassName_}`));
+    let row: HTMLElement|undefined;
     for (let currentRow of rows) {
       if (this.isChecked_(currentRow)) {
         row = currentRow;
@@ -76,13 +80,15 @@ export class QueuesView extends HTMLElement {
 
     if (direction == 'ArrowUp') {
       while (count--) {
-        // Switch to the next queue group. Skip over the title for the queue group.
-        if (!row.previousSibling || row.previousSibling.nodeType == Node.TEXT_NODE) {
+        // Switch to the next queue group. Skip over the title for the queue
+        // group.
+        if (!row.previousSibling ||
+            row.previousSibling.nodeType == Node.TEXT_NODE) {
           let parent = row.parentNode;
           if (!parent)
             throw 'Something went wrong. This should never happen';
           if (parent.previousSibling)
-            (<HTMLElement> parent.previousSibling).append(row);
+            (<HTMLElement>parent.previousSibling).append(row);
           else
             break;
         } else {
@@ -133,7 +139,8 @@ export class QueuesView extends HTMLElement {
     this.weekly_ = this.createRowGroup_(QueueSettings.WEEKLY);
     this.monthly_ = this.createRowGroup_(QueueSettings.MONTHLY);
 
-    scrollable.append(this.immediate_, this.daily_, this.weekly_, this.monthly_);
+    scrollable.append(
+        this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
     let queueDatas = this.queuedLabelData_.getSorted(this.queueNames_);
     for (let queueData of queueDatas) {
@@ -152,7 +159,7 @@ export class QueuesView extends HTMLElement {
     `;
     help.innerHTML = HELP_TEXT;
 
-    let expander = <HTMLAnchorElement> help.querySelector('a');
+    let expander = <HTMLAnchorElement>help.querySelector('a');
     expander.onclick = () => {
       let existing = window.getComputedStyle(help).webkitLineClamp;
       // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
@@ -181,22 +188,28 @@ export class QueuesView extends HTMLElement {
     this.dialog_ = showDialog(this);
   }
 
-  extractQueueData_(output: (string | number)[][], group: HTMLElement, queue: string) {
+  extractQueueData_(
+      output: (string|number)[][], group: HTMLElement, queue: string) {
     let selectors = group.querySelectorAll(`.${QueuesView.rowClassName_}`);
     for (let i = 0; i < selectors.length; i++) {
       let selector = selectors[i];
       let label = selector.querySelector('.label')!.textContent;
       if (queue == QueueSettings.WEEKLY)
-        queue = (<HTMLSelectElement> selector.querySelector('.day')!).selectedOptions[0].value;
-      let goal = (<HTMLSelectElement> selector.querySelector('.goal')!).selectedOptions[0].value;
+        queue = (<HTMLSelectElement>selector.querySelector('.day')!)
+                    .selectedOptions[0]
+                    .value;
+      let goal = (<HTMLSelectElement>selector.querySelector('.goal')!)
+                     .selectedOptions[0]
+                     .value;
       output.push([label, queue, goal, i + 1]);
     }
   }
 
   async save_() {
-    let newQueueData: (string | number)[][] = [];
+    let newQueueData: (string|number)[][] = [];
 
-    this.extractQueueData_(newQueueData, this.immediate_!, QueueSettings.IMMEDIATE);
+    this.extractQueueData_(
+        newQueueData, this.immediate_!, QueueSettings.IMMEDIATE);
     this.extractQueueData_(newQueueData, this.daily_!, QueueSettings.DAILY);
     this.extractQueueData_(newQueueData, this.weekly_!, QueueSettings.WEEKLY);
     this.extractQueueData_(newQueueData, this.monthly_!, QueueSettings.MONTHLY);
@@ -208,14 +221,14 @@ export class QueuesView extends HTMLElement {
     }
 
     if (!this.dialog_)
-      throw 'Something went wrong. This should never happen.'
+      throw 'Something went wrong. This should never happen.';
     this.dialog_.close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
     if (!this.dialog_)
-      throw 'Something went wrong. This should never happen.'
+      throw 'Something went wrong. This should never happen.';
     this.dialog_.close();
   }
 
@@ -230,7 +243,8 @@ export class QueuesView extends HTMLElement {
   }
 
   updateHighlights_() {
-    let rows = <NodeListOf<HTMLElement>>document.querySelectorAll(`.${QueuesView.rowClassName_}`);
+    let rows = <NodeListOf<HTMLElement>>document.querySelectorAll(
+        `.${QueuesView.rowClassName_}`);
     for (let row of rows) {
       row.style.backgroundColor = this.isChecked_(row) ? '#c2dbff' : 'white';
     }
@@ -270,7 +284,7 @@ export class QueuesView extends HTMLElement {
     let container = this.getRowContainer_(queue);
     if (!container)
       throw 'Something went wrong. This should never happen.'
-    container.append(row);
+      container.append(row);
   }
 
   getRowContainer_(queue: string) {

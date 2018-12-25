@@ -1,10 +1,10 @@
-import { Base64 } from './base64.js';
-import { QuoteElidedMessage } from './QuoteElidedMessage.js';
-import { USER_ID } from './Base.js';
+import {USER_ID} from './Base.js';
+import {Base64} from './base64.js';
+import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 
 interface AttachmentResult {
-  id: string,
-  name: string,
+  id: string;
+  name: string;
   contentType: string;
   contentId: string;
 }
@@ -12,30 +12,30 @@ interface AttachmentResult {
 export class Message {
   static base64_ = new Base64();
   private rawMessage_: any;
-  private previousMessage_: Message | undefined;
-  private plain_: string | undefined;
-  private plainedHtml_: string | undefined;
-  private html_: string | undefined;
-  private quoteElidedMessage_: QuoteElidedMessage | undefined;
+  private previousMessage_: Message|undefined;
+  private plain_: string|undefined;
+  private plainedHtml_: string|undefined;
+  private html_: string|undefined;
+  private quoteElidedMessage_: QuoteElidedMessage|undefined;
 
   id: string;
   attachments_: any[];
-  subject: string | undefined;
+  subject: string|undefined;
   date!: Date;
-  from: string | undefined;
-  fromEmails: string[] | undefined;
-  fromName: string | undefined;
-  to: string | undefined;
-  toEmails: string[] | undefined;
-  toName: string | undefined;
-  cc: string | undefined;
-  ccEmails: string[] | undefined;
-  ccName: string | undefined;
-  bcc: string | undefined;
-  bccEmails: string[] | undefined;
-  bccName: string | undefined;
-  messageId: string | undefined;
-  listId: string | undefined;
+  from: string|undefined;
+  fromEmails: string[]|undefined;
+  fromName: string|undefined;
+  to: string|undefined;
+  toEmails: string[]|undefined;
+  toName: string|undefined;
+  cc: string|undefined;
+  ccEmails: string[]|undefined;
+  ccName: string|undefined;
+  bcc: string|undefined;
+  bccEmails: string[]|undefined;
+  bccName: string|undefined;
+  messageId: string|undefined;
+  listId: string|undefined;
   isUnread: boolean;
   isDraft: boolean;
 
@@ -49,39 +49,39 @@ export class Message {
     let hasDate = false;
 
     for (var header of message.payload.headers) {
-    // Some mail users lower case header names (probably just spam).
-    switch (header.name.toLowerCase()) {
-      case 'subject':
-        this.subject = header.value;
-        break;
-      case 'date':
-        hasDate = true;
-        this.date = new Date(header.value);
-        break;
-      case 'from':
-        this.from = this.cleanseAddresses_(header.value);
-        this.fromEmails = this.extractEmails_(this.from);
-        this.fromName = this.extractName_(this.from);
-        break;
-      case 'to':
-        this.to = this.cleanseAddresses_(header.value);
-        this.toEmails = this.extractEmails_(this.to);
-        break;
-      case 'cc':
-        this.cc = this.cleanseAddresses_(header.value);
-        this.ccEmails = this.extractEmails_(this.cc);
-        break;
-      case 'bcc':
-        this.bcc = this.cleanseAddresses_(header.value);
-        this.bccEmails = this.extractEmails_(this.bcc);
-        break;
-      case 'message-id':
-        this.messageId = header.value;
-        break;
-      case 'list-id':
-        this.listId = header.value;
-        break;
-    }
+      // Some mail users lower case header names (probably just spam).
+      switch (header.name.toLowerCase()) {
+        case 'subject':
+          this.subject = header.value;
+          break;
+        case 'date':
+          hasDate = true;
+          this.date = new Date(header.value);
+          break;
+        case 'from':
+          this.from = this.cleanseAddresses_(header.value);
+          this.fromEmails = this.extractEmails_(this.from);
+          this.fromName = this.extractName_(this.from);
+          break;
+        case 'to':
+          this.to = this.cleanseAddresses_(header.value);
+          this.toEmails = this.extractEmails_(this.to);
+          break;
+        case 'cc':
+          this.cc = this.cleanseAddresses_(header.value);
+          this.ccEmails = this.extractEmails_(this.cc);
+          break;
+        case 'bcc':
+          this.bcc = this.cleanseAddresses_(header.value);
+          this.bccEmails = this.extractEmails_(this.bcc);
+          break;
+        case 'message-id':
+          this.messageId = header.value;
+          break;
+        case 'list-id':
+          this.listId = header.value;
+          break;
+      }
     }
 
     // Things like chats don't have a date header. Use internalDate as per
@@ -148,14 +148,17 @@ export class Message {
     // That way the eliding logic that operates on elements doesn't need any
     // special handling for plain text emails.
     //
-    // Also, wrap the plain text in white-space:pre-wrap to make it render nicely.
+    // Also, wrap the plain text in white-space:pre-wrap to make it render
+    // nicely.
     if (this.plain_ === undefined)
       throw 'Something went wrong. This should never happen.';
     let escaped = this.htmlEscape_(this.plain_);
 
     // Normalize newlines to simplify the logic.
-    let paragraphs = escaped.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-    let html = `<div style="white-space:pre-wrap"><div>${paragraphs.join('</div><div>')}</div></div>`;
+    let paragraphs =
+        escaped.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    let html = `<div style="white-space:pre-wrap"><div>${
+        paragraphs.join('</div><div>')}</div></div>`;
 
     // For multiple newlines in a row, put <br>s since empty divs don't render.
     return html.replace(/<div><\/div>/g, '<br>');
@@ -171,8 +174,9 @@ export class Message {
     if (this.rawMessage_.payload.parts) {
       this.getMessageBody_(this.rawMessage_.payload.parts);
     } else {
-      let messageText = Message.base64_.decode(this.rawMessage_.payload.body.data);;
-      if (this.rawMessage_.payload.mimeType == "text/html")
+      let messageText =
+          Message.base64_.decode(this.rawMessage_.payload.body.data);
+      if (this.rawMessage_.payload.mimeType == 'text/html')
         this.html_ = messageText;
       else
         this.plain_ = messageText;
@@ -182,13 +186,14 @@ export class Message {
   getQuoteElidedMessage() {
     if (!this.quoteElidedMessage_) {
       let html = this.getHtmlOrHtmlWrappedPlain();
-      this.quoteElidedMessage_ = new QuoteElidedMessage(html, this.previousMessage_);
+      this.quoteElidedMessage_ =
+          new QuoteElidedMessage(html, this.previousMessage_);
       let dom = this.quoteElidedMessage_.getDom();
       this.disableStyleSheets_(dom);
       this.fetchInlineImages_(dom);
       this.appendAttachments_(dom);
     }
-    return <QuoteElidedMessage> this.quoteElidedMessage_;
+    return <QuoteElidedMessage>this.quoteElidedMessage_;
   }
 
   findAttachment_(contentId: string) {
@@ -215,13 +220,14 @@ export class Message {
   }
 
   async fetchInlineImages_(dom: HTMLElement) {
-    let inlineImages = <NodeListOf<HTMLImageElement>> dom.querySelectorAll('img[src^=cid]');
+    let inlineImages =
+        <NodeListOf<HTMLImageElement>>dom.querySelectorAll('img[src^=cid]');
     for (let image of inlineImages) {
-      let match = <any> image.src.match(/^cid:([^>]*)$/);
+      let match = <any>image.src.match(/^cid:([^>]*)$/);
       let contentId = `<${match[1]}>`;
       let attachment = await this.findAttachment_(contentId);
-      // There can be images from quoted sections that no longer have the attachments.
-      // So handle them gracefully.
+      // There can be images from quoted sections that no longer have the
+      // attachments. So handle them gracefully.
       if (!attachment)
         continue;
       // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
@@ -235,7 +241,8 @@ export class Message {
     }
   }
 
-  // TODO: Restructure so people can search over the plain text of the emails as well.
+  // TODO: Restructure so people can search over the plain text of the emails as
+  // well.
   extractEmails_(str: string) {
     var regex = new RegExp('<(.*?)>|(\\S*?@\\S*)', 'g');
     str = str.toLowerCase();
@@ -259,19 +266,19 @@ export class Message {
   }
 
   parseAttachment_(attachment: any) {
-    let result = <AttachmentResult> {
+    let result = <AttachmentResult>{
       id: attachment.body.attachmentId,
       name: attachment.filename,
     };
     for (let header of attachment.headers) {
       switch (header.name.toLowerCase()) {
-      case 'content-type':
-        result.contentType = header.value.split(';')[0];
-        break;
+        case 'content-type':
+          result.contentType = header.value.split(';')[0];
+          break;
 
-      case 'content-id':
-        result.contentId = header.value;
-        break;
+        case 'content-id':
+          result.contentId = header.value;
+          break;
       }
     }
     return result;

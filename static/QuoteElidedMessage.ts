@@ -1,4 +1,4 @@
-import { Message } from "./Message";
+import {Message} from './Message';
 
 // Rolling hash taken from https://gist.github.com/i-e-b/b892d95ac7c0cf4b70e4.
 let MINIMUM_HASH_LENGTH = 10;
@@ -7,11 +7,12 @@ let TOGGLER: HTMLElement;
 let strippedTextMap = new WeakMap();
 
 export class QuoteElidedMessage {
-  // These are initialized in computeHashes_, which is always called from the constructor.
+  // These are initialized in computeHashes_, which is always called from the
+  // constructor.
   private hashes_!: Map<string, Element[]>;
   private dom_!: HTMLElement;
 
-  constructor(currentMessage: string, previousMessage: Message | undefined) {
+  constructor(currentMessage: string, previousMessage: Message|undefined) {
     this.computeHashes_(currentMessage);
     if (!previousMessage)
       return;
@@ -34,25 +35,28 @@ export class QuoteElidedMessage {
     }
   }
 
-  hasEmptyTextContent_(node: ChildNode | null) {
+  hasEmptyTextContent_(node: ChildNode|null) {
     return node && !this.quoteStrippedText_(node);
   }
 
   expandToNonTextSiblings_() {
     for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
-      let previous = <ChildNode> match;
+      let previous = <ChildNode>match;
       // TODO: Include "XXX wrote" prefixes here as well.
       // TODO: Hash the outerHTML of the element to make sure it has at least
-      // a corresponding thing in the previous message. Or maybe just exclude images?
-      while (previous.previousSibling && this.hasEmptyTextContent_(<ChildNode> previous.previousSibling)) {
-        setElidedState(<ChildNode> previous.previousSibling, 'hidden');
-        previous = <ChildNode> previous.previousSibling;
+      // a corresponding thing in the previous message. Or maybe just exclude
+      // images?
+      while (previous.previousSibling &&
+             this.hasEmptyTextContent_(<ChildNode>previous.previousSibling)) {
+        setElidedState(<ChildNode>previous.previousSibling, 'hidden');
+        previous = <ChildNode>previous.previousSibling;
       }
 
-      let next = <ChildNode> match;
-      while (next.nextSibling && this.hasEmptyTextContent_(<ChildNode> next.nextSibling)) {
-        setElidedState(<ChildNode> next.nextSibling, 'hidden');
-        next = <ChildNode> next.nextSibling;
+      let next = <ChildNode>match;
+      while (next.nextSibling &&
+             this.hasEmptyTextContent_(<ChildNode>next.nextSibling)) {
+        setElidedState(<ChildNode>next.nextSibling, 'hidden');
+        next = <ChildNode>next.nextSibling;
       }
     }
   }
@@ -70,7 +74,7 @@ export class QuoteElidedMessage {
     }
   }
 
-  elidesHaveMinimumLength_(element: Element | null) {
+  elidesHaveMinimumLength_(element: Element|null) {
     let length = 0;
     while (length < MINIMUM_ELIDE_LENGTH && element) {
       if (!element.hasAttribute('mk-elide'))
@@ -82,9 +86,10 @@ export class QuoteElidedMessage {
     return length >= MINIMUM_ELIDE_LENGTH;
   }
 
-  removeAdjacentElides_(element: Element | null) {
+  removeAdjacentElides_(element: Element|null) {
     // TODO: move the attribute name into a constant.
-    while (element && element.nodeType == Node.ELEMENT_NODE && element.hasAttribute('mk-elide')) {
+    while (element && element.nodeType == Node.ELEMENT_NODE &&
+           element.hasAttribute('mk-elide')) {
       element.removeAttribute('mk-elide');
       // TODO: Is skipping text nodes correct?
       element = element.nextElementSibling;
@@ -105,7 +110,7 @@ export class QuoteElidedMessage {
 
   updateAllStyling_() {
     for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
-      updateStyling(<HTMLElement> match);
+      updateStyling(<HTMLElement>match);
     }
   }
 
@@ -114,12 +119,13 @@ export class QuoteElidedMessage {
       TOGGLER = document.createElement('div');
       // Gross hack to render centered-ish elipsis without using an image.
       TOGGLER.style.overflow = 'hidden';
-      TOGGLER.innerHTML = `<div style="margin-top:-7px"><div class="toggler">...</div></div>`;
+      TOGGLER.innerHTML =
+          `<div style="margin-top:-7px"><div class="toggler">...</div></div>`;
     }
-    let toggler = <HTMLElement> TOGGLER.cloneNode(true);
-    let toggleButton = <HTMLElement> toggler.querySelector('.toggler');
+    let toggler = <HTMLElement>TOGGLER.cloneNode(true);
+    let toggleButton = <HTMLElement>toggler.querySelector('.toggler');
     toggleButton.onclick = function(e) {
-      toggleElided(e, <HTMLElement> this);
+      toggleElided(e, <HTMLElement>this);
     };
     return toggler;
   }
@@ -137,8 +143,9 @@ export class QuoteElidedMessage {
   }
 
   computeHashes_(message: string) {
-    // Store diff hashes on the message as a performance optimization since we need to compute once
-    // for the current message and once for the previous message == 2x for almost every message.
+    // Store diff hashes on the message as a performance optimization since we
+    // need to compute once for the current message and once for the previous
+    // message == 2x for almost every message.
     this.dom_ = document.createElement('div');
     this.dom_.innerHTML = message;
     let elements = this.dom_.querySelectorAll('*');
@@ -146,7 +153,7 @@ export class QuoteElidedMessage {
     for (let element of elements) {
       let text = this.quoteStrippedText_(element);
       if (text.length > MINIMUM_HASH_LENGTH) {
-        let list: Element[] | undefined = this.hashes_.get(text);
+        let list: Element[]|undefined = this.hashes_.get(text);
         if (!list) {
           list = [];
           this.hashes_.set(text, list);
@@ -158,24 +165,25 @@ export class QuoteElidedMessage {
 
   isQuoteCharacter_(char: string) {
     switch (char) {
-    case '[':
-    case '>':
-    case '<':
-    case ']':
-    case '"':
-    case ' ':
-      return true;
-    default:
-      return false;
+      case '[':
+      case '>':
+      case '<':
+      case ']':
+      case '"':
+      case ' ':
+        return true;
+      default:
+        return false;
     }
   }
 
-  quoteStrippedText_(node: ChildNode | CharacterData) {
+  quoteStrippedText_(node: ChildNode|CharacterData) {
     let result = strippedTextMap.get(node);
     if (!result) {
       let nonQuoteIndex = 0;
       let text = node.textContent || '';
-      while (nonQuoteIndex < text.length && this.isQuoteCharacter_(text.charAt(nonQuoteIndex))) {
+      while (nonQuoteIndex < text.length &&
+             this.isQuoteCharacter_(text.charAt(nonQuoteIndex))) {
         nonQuoteIndex++;
       }
       result = text.substring(nonQuoteIndex);
@@ -184,22 +192,24 @@ export class QuoteElidedMessage {
     return result;
   }
 
-  isElided_(element: Element | null) {
+  isElided_(element: Element|null) {
     return element && element.hasAttribute && element.hasAttribute('mk-elide');
   }
 }
 
 function updateStyling(element: HTMLElement) {
-  // Ideally we'd use clipping instead of display:none so that the toggler doesn't jump around
-  // when the contents of the elided region are shown, but for threads with a lot of eliding,
-  // display none is considerably faster at recalc and layout since we skip whole subtrees.
-  element.style.display = element.getAttribute('mk-elide') == 'hidden' ? 'none' : '';
+  // Ideally we'd use clipping instead of display:none so that the toggler
+  // doesn't jump around when the contents of the elided region are shown, but
+  // for threads with a lot of eliding, display none is considerably faster at
+  // recalc and layout since we skip whole subtrees.
+  element.style.display =
+      element.getAttribute('mk-elide') == 'hidden' ? 'none' : '';
 }
 
 function setElidedState(node: ChildNode, state: string) {
   let element;
   if (node.nodeType == Node.ELEMENT_NODE) {
-    element = <Element> node;
+    element = <Element>node;
   } else {
     // Need to wrap text nodes in a span so we can toggle their display.
     element = document.createElement('span');
@@ -212,14 +222,17 @@ function setElidedState(node: ChildNode, state: string) {
 function toggleElided(e: Event, element: Element) {
   e.preventDefault();
 
-  while (!element.nextElementSibling || !element.nextElementSibling.hasAttribute('mk-elide')) {
-    element = <HTMLElement> element.parentNode;
+  while (!element.nextElementSibling ||
+         !element.nextElementSibling.hasAttribute('mk-elide')) {
+    element = <HTMLElement>element.parentNode;
   }
 
-  while (element.nextElementSibling && element.nextElementSibling.hasAttribute('mk-elide')) {
+  while (element.nextElementSibling &&
+         element.nextElementSibling.hasAttribute('mk-elide')) {
     element = element.nextElementSibling;
-    let newState = element.getAttribute('mk-elide') == 'visible' ? 'hidden' : 'visible';
+    let newState =
+        element.getAttribute('mk-elide') == 'visible' ? 'hidden' : 'visible';
     setElidedState(element, newState);
-    updateStyling(<HTMLElement> element);
+    updateStyling(<HTMLElement>element);
   }
 }

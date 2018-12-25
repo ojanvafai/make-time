@@ -1,6 +1,7 @@
-import { IDBKeyVal } from '../idb-keyval.js';
-import { Model } from "./Model.js";
-import { send } from '../Mail.js';
+import {IDBKeyVal} from '../idb-keyval.js';
+import {send} from '../Mail.js';
+
+import {Model} from './Model.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 
@@ -21,8 +22,7 @@ export class ComposeModel extends Model {
     this.body_ = '';
   }
 
-  async update() {
-  }
+  async update() {}
 
   setTo(value: string) {
     this.to_ = value;

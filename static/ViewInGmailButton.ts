@@ -1,5 +1,5 @@
 export class ViewInGmailButton extends HTMLElement {
-  messageId_: string | undefined;
+  messageId_: string|undefined;
 
   constructor() {
     super();
@@ -28,12 +28,12 @@ export class ViewInGmailButton extends HTMLElement {
   }
 
   setMessageId(messageId: string) {
-    // In theory, linking to the threadId should work, but it doesn't for some threads.
-    // Linking to the messageId seems to work reliably. The message ID listed will be expanded
-    // in the gmail UI, so link to the last one since that one is definitionally always expanded.
+    // In theory, linking to the threadId should work, but it doesn't for some
+    // threads. Linking to the messageId seems to work reliably. The message ID
+    // listed will be expanded in the gmail UI, so link to the last one since
+    // that one is definitionally always expanded.
     this.messageId_ = messageId;
   }
 }
 
 window.customElements.define('mt-view-in-gmail-button', ViewInGmailButton);
-

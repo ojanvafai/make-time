@@ -1,13 +1,22 @@
-import { EmailCompose } from '../EmailCompose.js';
-import { ComposeModel } from '../models/ComposeModel.js';
-import { showDialog } from '../Base.js';
-import { View } from './View.js';
+import {showDialog} from '../Base.js';
+import {EmailCompose} from '../EmailCompose.js';
+import {ComposeModel} from '../models/ComposeModel.js';
 
-const SEND = { name: 'Send', description: 'Send the mail.' };
-const HELP = { name: 'Help', description: 'Help tips.' };
-const ACTIONS = [ SEND, HELP ];
-const PRE_FILL_URL = '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
-const HELP_TEXT = `Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##backlog, ##delegate.
+import {View} from './View.js';
+
+const SEND = {
+  name: 'Send',
+  description: 'Send the mail.'
+};
+const HELP = {
+  name: 'Help',
+  description: 'Help tips.'
+};
+const ACTIONS = [SEND, HELP];
+const PRE_FILL_URL =
+    '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
+const HELP_TEXT =
+    `Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##backlog, ##delegate.
 
 URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
@@ -16,9 +25,10 @@ export class ComposeView extends View {
   private to_: HTMLInputElement;
   private subject_: HTMLInputElement;
   private body_: EmailCompose;
-  private inlineTo_: HTMLElement| undefined;
+  private inlineTo_: HTMLElement|undefined;
 
-  constructor(private model_: ComposeModel, contacts: any, private params_: any = {}) {
+  constructor(
+      private model_: ComposeModel, contacts: any, private params_: any = {}) {
     super();
 
     this.style.cssText = `
@@ -43,7 +53,8 @@ export class ComposeView extends View {
     `;
 
     this.body_.addEventListener('email-added', this.handleUpdates_.bind(this));
-    this.body_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
+    this.body_.addEventListener(
+        'input', this.debounceHandleUpdates_.bind(this));
     this.append(this.body_);
 
     this.appendButtons_();
@@ -82,12 +93,12 @@ export class ComposeView extends View {
     return input;
   }
 
-  appendLine_(...children: (string | Node)[]) {
+  appendLine_(...children: (string|Node)[]) {
     let line = this.createLine_(...children);
     this.append(line);
   }
 
-  createLine_(...children: (string | Node)[]) {
+  createLine_(...children: (string|Node)[]) {
     let line = document.createElement('div');
     line.style.cssText = `
       display: flex;
@@ -108,7 +119,7 @@ export class ComposeView extends View {
     if (!this.inlineTo_) {
       this.inlineTo_ = document.createElement('div');
       let line = this.createLine_('Inline to:\xa0', this.inlineTo_);
-      let parent = <HTMLElement> this.to_.parentNode;
+      let parent = <HTMLElement>this.to_.parentNode;
       parent.after(line);
     }
     return this.inlineTo_;
@@ -190,10 +201,12 @@ export class ComposeView extends View {
         text.append(<string>button.getAttribute('tooltip'));
         tooltipElement.append(text);
         container.append(tooltipElement);
-      }
+      };
+
       button.onmouseleave = () => {
         tooltipElement.remove();
-      }
+      };
+
       let name = action.name;
       button.textContent = name;
       container.append(button);
@@ -243,20 +256,15 @@ export class ComposeView extends View {
     throw `Invalid action: ${JSON.stringify(action)}`;
   }
 
-  tearDown() {
-  }
+  tearDown() {}
 
-  async goBack() {
-  }
+  async goBack() {}
 
-  async update() {
-  }
+  async update() {}
 
-  async dispatchShortcut(_e: KeyboardEvent) {
-  }
+  async dispatchShortcut(_e: KeyboardEvent) {}
 
-  pushBestEffort() {
-  }
+  pushBestEffort() {}
 }
 
 window.customElements.define('mt-compose-view', ComposeView);

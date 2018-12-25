@@ -1,23 +1,24 @@
-import { Actions } from '../Actions.js';
-import { Labels } from '../Labels.js';
-import { ThreadRow } from './ThreadRow.js';
-import { Timer } from '../Timer.js';
-import { ViewInGmailButton } from '../ViewInGmailButton.js';
-import { Thread } from '../Thread.js';
-import { View } from './View.js';
-import { EmailCompose } from '../EmailCompose.js';
-import { ThreadListModel, UndoEvent, ThreadRemovedEvent } from '../models/ThreadListModel.js';
+import {Actions} from '../Actions.js';
+import {EmailCompose} from '../EmailCompose.js';
+import {Labels} from '../Labels.js';
+import {ThreadListModel, ThreadRemovedEvent, UndoEvent} from '../models/ThreadListModel.js';
+import {Thread} from '../Thread.js';
+import {Timer} from '../Timer.js';
+import {ViewInGmailButton} from '../ViewInGmailButton.js';
+
+import {ThreadRow} from './ThreadRow.js';
+import {View} from './View.js';
 
 export class ThreadListView extends View {
-  private focusedEmail_: ThreadRow | null;
+  private focusedEmail_: ThreadRow|null;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private bestEffortButton_: HTMLElement;
-  private actions_: Actions | null = null;
-  private tornDown_: boolean | undefined;
-  private renderedRow_: ThreadRow | undefined;
-  private scrollOffset_: number | undefined;
-  private isSending_: boolean | undefined;
+  private actions_: Actions|null = null;
+  private tornDown_: boolean|undefined;
+  private renderedRow_: ThreadRow|undefined;
+  private scrollOffset_: number|undefined;
+  private isSending_: boolean|undefined;
 
   static ACTIONS_ = [
     Actions.ARCHIVE_ACTION,
@@ -46,11 +47,14 @@ export class ThreadListView extends View {
     Actions.VIEW_TRIAGE_ACTION,
   ].concat(ThreadListView.ACTIONS_);
 
-  constructor(private model_: ThreadListModel, public allLabels: Labels,
-      private scrollContainer_: HTMLElement, public updateTitle: any, private setSubject_: any,
-      private showBackArrow_: any, private allowedReplyLength_: number, private contacts_: any,
+  constructor(
+      private model_: ThreadListModel, public allLabels: Labels,
+      private scrollContainer_: HTMLElement, public updateTitle: any,
+      private setSubject_: any, private showBackArrow_: any,
+      private allowedReplyLength_: number, private contacts_: any,
       private autoStartTimer_: boolean, private countDown_: boolean,
-      private timerDuration_: number, bottomButtonUrl: string, bottomButtonText: string) {
+      private timerDuration_: number, bottomButtonUrl: string,
+      bottomButtonText: string) {
     super();
 
     this.style.cssText = `
@@ -68,8 +72,8 @@ export class ThreadListView extends View {
     this.append(this.rowGroupContainer_);
 
     this.rowGroupContainer_.addEventListener('renderThread', (e: Event) => {
-      this.renderOne_(<ThreadRow> e.target);
-    })
+      this.renderOne_(<ThreadRow>e.target);
+    });
 
     this.singleThreadContainer_ = document.createElement('div');
     this.singleThreadContainer_.style.cssText = `
@@ -84,14 +88,17 @@ export class ThreadListView extends View {
     this.appendButton(bottomButtonUrl, bottomButtonText);
     this.updateActions_();
 
-    this.model_.addEventListener('thread-list-changed', this.handleThreadListChanged_.bind(this));
-    this.model_.addEventListener('best-effort-changed', this.handleBestEffortChanged_.bind(this));
+    this.model_.addEventListener(
+        'thread-list-changed', this.handleThreadListChanged_.bind(this));
+    this.model_.addEventListener(
+        'best-effort-changed', this.handleBestEffortChanged_.bind(this));
     this.model_.addEventListener('thread-removed', (e: Event) => {
-      let threadRemovedEvent = <ThreadRemovedEvent> e;
-      this.handleThreadRemoved_(threadRemovedEvent.row, threadRemovedEvent.nextRow);
+      let threadRemovedEvent = <ThreadRemovedEvent>e;
+      this.handleThreadRemoved_(
+          threadRemovedEvent.row, threadRemovedEvent.nextRow);
     });
     this.model_.addEventListener('undo', (e: Event) => {
-      let undoEvent = <UndoEvent> e;
+      let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread);
     });
   }
@@ -107,7 +114,7 @@ export class ThreadListView extends View {
     await this.renderThreadList_();
   }
 
-  private async handleThreadRemoved_(row: ThreadRow, nextRow: ThreadRow | null) {
+  private async handleThreadRemoved_(row: ThreadRow, nextRow: ThreadRow|null) {
     if (this.focusedEmail_ == row) {
       // Intentionally call even if nextRow is null to clear out the focused
       // row if there's nothing left to focus.
@@ -171,11 +178,14 @@ export class ThreadListView extends View {
   updateActions_() {
     let footer = <HTMLElement>document.getElementById('footer');
     footer.textContent = '';
-    let actions = this.renderedRow_ ? ThreadListView.RENDER_ONE_ACTIONS_ : ThreadListView.RENDER_ALL_ACTIONS_;
+    let actions = this.renderedRow_ ? ThreadListView.RENDER_ONE_ACTIONS_ :
+                                      ThreadListView.RENDER_ALL_ACTIONS_;
     this.actions_ = new Actions(this, actions);
     footer.append(this.actions_);
     if (this.renderedRow_) {
-      let timer = new Timer(this.autoStartTimer_, this.countDown_, this.timerDuration_, this.singleThreadContainer_);
+      let timer = new Timer(
+          this.autoStartTimer_, this.countDown_, this.timerDuration_,
+          this.singleThreadContainer_);
       footer.append(timer);
     }
   }
@@ -241,31 +251,31 @@ export class ThreadListView extends View {
   getThreads() {
     let selected: ThreadRow[] = [];
     let all: Thread[] = [];
-    let rows = <NodeListOf<ThreadRow>> this.rowGroupContainer_.querySelectorAll('mt-thread-row');
+    let rows = <NodeListOf<ThreadRow>>this.rowGroupContainer_.querySelectorAll(
+        'mt-thread-row');
     for (let child of rows) {
       if (child.checked)
         selected.push(child);
       all.push(child.thread);
     }
     return {
-      selectedRows: selected,
-      allThreads: all,
+      selectedRows: selected, allThreads: all,
     }
   }
 
-  setFocus(email: ThreadRow | null) {
+  setFocus(email: ThreadRow|null) {
     if (this.focusedEmail_) {
       this.focusedEmail_.focused = false;
       this.focusedEmail_.updateHighlight_();
     }
 
     this.focusedEmail_ = email;
-    if(!this.focusedEmail_)
+    if (!this.focusedEmail_)
       return;
 
     this.focusedEmail_.focused = true;
     this.focusedEmail_.updateHighlight_();
-    this.focusedEmail_.scrollIntoView({"block":"nearest"});
+    this.focusedEmail_.scrollIntoView({'block': 'nearest'});
   }
 
   async moveFocus(action: any) {
@@ -274,7 +284,7 @@ export class ThreadListView extends View {
       return;
 
     if (this.focusedEmail_ == null) {
-      switch(action) {
+      switch (action) {
         case Actions.NEXT_EMAIL_ACTION:
         case Actions.NEXT_QUEUE_ACTION: {
           let rows = await firstGroup.getSortedRows();
@@ -282,12 +292,14 @@ export class ThreadListView extends View {
           break;
         }
         case Actions.PREVIOUS_EMAIL_ACTION: {
-          const lastThreadGroupRows = await this.model_.getLastGroup().getSortedRows();
+          const lastThreadGroupRows =
+              await this.model_.getLastGroup().getSortedRows();
           this.setFocus(lastThreadGroupRows[lastThreadGroupRows.length - 1]);
           break;
         }
         case Actions.PREVIOUS_QUEUE_ACTION: {
-          const lastThreadGroupRows = await this.model_.getLastGroup().getSortedRows();
+          const lastThreadGroupRows =
+              await this.model_.getLastGroup().getSortedRows();
           this.setFocus(lastThreadGroupRows[0]);
           break;
         }
@@ -302,7 +314,8 @@ export class ThreadListView extends View {
         break;
       }
       case Actions.PREVIOUS_EMAIL_ACTION: {
-        const previousRow = await this.model_.getPreviousRow(this.focusedEmail_);
+        const previousRow =
+            await this.model_.getPreviousRow(this.focusedEmail_);
         if (previousRow)
           this.setFocus(previousRow);
         break;
@@ -314,7 +327,8 @@ export class ThreadListView extends View {
         break;
       }
       case Actions.PREVIOUS_QUEUE_ACTION: {
-        const previousGroup = this.model_.getPreviousGroup(this.focusedEmail_.group);
+        const previousGroup =
+            this.model_.getPreviousGroup(this.focusedEmail_.group);
         if (previousGroup)
           this.setFocus(await previousGroup.getFirstRow());
         break;
@@ -338,7 +352,7 @@ export class ThreadListView extends View {
     }
     if (action == Actions.TOGGLE_FOCUSED_ACTION) {
       // If nothing is focused, pretend the first email was focused.
-      if(!this.focusedEmail_)
+      if (!this.focusedEmail_)
         this.moveFocus(Actions.NEXT_EMAIL_ACTION);
       if (!this.focusedEmail_)
         return;
@@ -349,7 +363,7 @@ export class ThreadListView extends View {
     }
     if (action == Actions.TOGGLE_QUEUE_ACTION) {
       // If nothing is focused, pretend the first email was focused.
-      if(!this.focusedEmail_)
+      if (!this.focusedEmail_)
         this.moveFocus(Actions.NEXT_EMAIL_ACTION);
       if (!this.focusedEmail_)
         return;
@@ -408,13 +422,14 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.style.display = 'none';
   }
 
-  async markTriaged(destination: string | null) {
+  async markTriaged(destination: string|null) {
     if (this.renderedRow_) {
       this.model_.markSingleThreadTriaged(this.renderedRow_, destination);
     } else {
       // Update the UI first and then archive one at a time.
       let threads = this.getThreads();
-      this.updateTitle('archiving', `Archiving ${threads.selectedRows.length} threads...`);
+      this.updateTitle(
+          'archiving', `Archiving ${threads.selectedRows.length} threads...`);
 
       // Move focus to the first unselected email.
       // If we aren't able to find an unselected email,
@@ -467,7 +482,7 @@ export class ThreadListView extends View {
     this.setSubject_(subjectText, queue);
 
     if (!this.renderedRow_)
-      throw 'Something went wrong. This should never happen.'
+      throw 'Something went wrong. This should never happen.';
 
     let dom = await this.renderedRow_.render(this.singleThreadContainer_);
     // If previously prerendered offscreen, move it on screen.
@@ -483,13 +498,14 @@ export class ThreadListView extends View {
     }
 
     elementToScrollTo.scrollIntoView();
-    // Make sure that there's at least 50px of space above for showing that there's a
-    // previous message.
+    // Make sure that there's at least 50px of space above for showing that
+    // there's a previous message.
     let y = elementToScrollTo.getBoundingClientRect().top;
     if (y < 70)
       document.documentElement!.scrollTop -= 70 - y;
 
-    // Check if new messages have come in since we last fetched from the network.
+    // Check if new messages have come in since we last fetched from the
+    // network.
     await this.renderedRow_.update();
 
     // Intentionally don't await this so other work can proceed.
@@ -497,8 +513,8 @@ export class ThreadListView extends View {
   }
 
   async prerenderNext() {
-    // Since the call to prerender is async, the page can go back to the threadlist
-    // before this is called.
+    // Since the call to prerender is async, the page can go back to the
+    // threadlist before this is called.
     if (!this.renderedRow_)
       return;
 
@@ -579,7 +595,8 @@ export class ThreadListView extends View {
         return;
 
       if (textLength > this.allowedReplyLength_) {
-        alert(`Email is longer than the allowed length of ${this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
+        alert(`Email is longer than the allowed length of ${
+            this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
         return;
       }
 
@@ -591,8 +608,10 @@ export class ThreadListView extends View {
       if (!this.renderedRow_)
         throw 'Something went wrong. This should never happen.';
 
-      // TODO: Handle if sending fails in such a way that the user can at least save their message text.
-      await this.renderedRow_.thread.sendReply(compose.value, compose.getEmails(), replyAll.checked);
+      // TODO: Handle if sending fails in such a way that the user can at least
+      // save their message text.
+      await this.renderedRow_.thread.sendReply(
+          compose.value, compose.getEmails(), replyAll.checked);
       this.updateActions_();
       await this.markTriaged(Actions.ARCHIVE_ACTION.destination);
 

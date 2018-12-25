@@ -13,8 +13,10 @@ export function getPreviousWeekNumber() {
 function getWeekNumber(date: Date) {
   var januaryFirst = new Date(date.getFullYear(), 0, 1);
   var msInDay = 86400000;
-  // @ts-ignore TODO: Make subtracting date types from each other actually work.
-  return Math.ceil((((date - januaryFirst) / msInDay) + januaryFirst.getDay()) / 7);
+  return Math.ceil(
+      // @ts-ignore TODO: Make subtracting date types from each other actually
+      // work.
+      (((date - januaryFirst) / msInDay) + januaryFirst.getDay()) / 7);
 }
 
 export function showDialog(contents: HTMLElement) {

@@ -1,12 +1,12 @@
-import { Settings } from '../Settings.js';
-import { showDialog } from '../Base.js';
+import {showDialog} from '../Base.js';
+import {Settings} from '../Settings.js';
 
 interface FilterRule {
   label: string;
   matchallmessages: string;
   nolistid: boolean;
   nocc: boolean;
-  [property: string]: string | boolean;
+  [property: string]: string|boolean;
 }
 
 const CSV_FIELDS = ['from', 'to'];
@@ -40,8 +40,8 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
 `;
 
 export class FiltersView extends HTMLElement {
-  private cursorSentinelElement_: HTMLElement | undefined;
-  private dialog_: HTMLDialogElement | undefined;
+  private cursorSentinelElement_: HTMLElement|undefined;
+  private dialog_: HTMLDialogElement|undefined;
 
   constructor(private settings_: Settings) {
     super();
@@ -62,19 +62,19 @@ export class FiltersView extends HTMLElement {
       return;
 
     switch (e.key) {
-    case 'ArrowUp':
-      this.moveRow_(e.key, e.shiftKey);
-      break;
+      case 'ArrowUp':
+        this.moveRow_(e.key, e.shiftKey);
+        break;
 
-    case 'ArrowDown':
-      this.moveRow_(e.key, e.shiftKey);
-      break;
+      case 'ArrowDown':
+        this.moveRow_(e.key, e.shiftKey);
+        break;
     }
   }
 
   moveRow_(direction: string, move10: boolean) {
     // TODO: Put a proper type on this.
-    let focused = <any> document.activeElement;
+    let focused = <any>document.activeElement;
 
     let row = focused.parentElement;
     while (row && row.tagName != 'TR') {
@@ -115,7 +115,8 @@ export class FiltersView extends HTMLElement {
     container.style.cssText = `font-size: 13px;`;
 
     let header = document.createElement('thead');
-    header.innerHTML = `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th><th>No List-ID</th><th>No CCs</th>`;
+    header.innerHTML =
+        `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th><th>No List-ID</th><th>No CCs</th>`;
     container.append(header);
 
     let body = document.createElement('tbody');
@@ -123,7 +124,8 @@ export class FiltersView extends HTMLElement {
       body.append(this.createRule_(rule));
     }
 
-    // Ensure there's at least one row since there's no other way to add the first row.
+    // Ensure there's at least one row since there's no other way to add the
+    // first row.
     if (!rules.length)
       body.append(this.createRule_({}));
 
@@ -193,11 +195,11 @@ export class FiltersView extends HTMLElement {
       if (matchAll.checked)
         rule.matchallmessages = 'yes';
 
-      let noListId = <HTMLInputElement>row.querySelector('.nolistid')
+      let noListId = <HTMLInputElement>row.querySelector('.nolistid');
       if (noListId.checked)
         rule.nolistid = true;
 
-      let noCc = <HTMLInputElement>row.querySelector('.nocc')
+      let noCc = <HTMLInputElement>row.querySelector('.nocc');
       if (noCc.checked)
         rule.nocc = true;
 
@@ -206,14 +208,14 @@ export class FiltersView extends HTMLElement {
     await this.settings_.writeFilters(rules);
 
     if (!this.dialog_)
-      throw 'Something went wrong. This should never happen.'
+      throw 'Something went wrong. This should never happen.';
     this.dialog_.close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
     if (!this.dialog_)
-      throw 'Something went wrong. This should never happen.'
+      throw 'Something went wrong. This should never happen.';
     this.dialog_.close();
   }
 
@@ -246,7 +248,9 @@ export class FiltersView extends HTMLElement {
     let minusButton = document.createElement('span');
     minusButton.append('-');
     minusButton.classList.add('row-button');
-    minusButton.onclick = () => { container.remove(); };
+    minusButton.onclick = () => {
+      container.remove();
+    };
     buttons.append(minusButton);
 
     let label = document.createElement('input');
@@ -335,7 +339,8 @@ export class FiltersView extends HTMLElement {
         border-radius: 3px;
       `;
 
-      let fieldTextWithoutSentinel = fieldText.replace(CURSOR_SENTINEL, '').trim();
+      let fieldTextWithoutSentinel =
+          fieldText.replace(CURSOR_SENTINEL, '').trim();
       if (!Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
         fieldElement.classList.add('invalid-directive');
 
@@ -343,7 +348,8 @@ export class FiltersView extends HTMLElement {
       container.append(fieldElement);
 
       let value = queryParts[field];
-      previousEndedInWhiteSpace = value && value.charAt(value.length - 1) == space;
+      previousEndedInWhiteSpace =
+          value && value.charAt(value.length - 1) == space;
       if (value) {
         fieldElement.append(DIRECTIVE_SEPARATOR_);
 

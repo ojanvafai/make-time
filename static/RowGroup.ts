@@ -1,7 +1,7 @@
-import { ErrorLogger } from './ErrorLogger.js';
-import { Thread } from './Thread.js';
-import { ThreadRow } from './views/ThreadRow.js';
-import { ThreadRowGroup } from './views/ThreadRowGroup.js';
+import {ErrorLogger} from './ErrorLogger.js';
+import {Thread} from './Thread.js';
+import {ThreadRow} from './views/ThreadRow.js';
+import {ThreadRowGroup} from './views/ThreadRowGroup.js';
 
 export class RowGroup {
   queue: string;
@@ -14,7 +14,7 @@ export class RowGroup {
   static create(queue: string) {
     if (!RowGroup.groups_[queue])
       RowGroup.groups_[queue] = new RowGroup(queue);
-    return <RowGroup> RowGroup.groups_[queue];
+    return <RowGroup>RowGroup.groups_[queue];
   }
 
   constructor(queue: string) {
@@ -76,7 +76,8 @@ export class RowGroup {
   async getRowFromRelativeOffset(row: ThreadRow, offset: number) {
     let rowToFind = this.getRow(row.thread);
     if (rowToFind != row)
-      ErrorLogger.log(`Warning: ThreadRows don't match. Something went wrong in bookkeeping.`);
+      ErrorLogger.log(
+          `Warning: ThreadRows don't match. Something went wrong in bookkeeping.`);
     let rows = await this.getSortedRows();
     let index = rows.indexOf(row);
     if (index == -1)

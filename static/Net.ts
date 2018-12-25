@@ -1,4 +1,4 @@
-let queuedRequests_: ((value?: {} | PromiseLike<{}> | undefined) => void)[] = [];
+let queuedRequests_: ((value?: {}|PromiseLike<{}>|undefined) => void)[] = [];
 let TEN_SECONDS = 10 * 1000;
 
 function backOnline() {
@@ -16,7 +16,8 @@ window.addEventListener('online', (_e) => {
   queuedRequests_ = [];
 });
 
-export async function gapiFetch(method: any, requestParams: any, opt_requestBody?: any) {
+export async function gapiFetch(
+    method: any, requestParams: any, opt_requestBody?: any) {
   let numRetries = 3;
   for (var i = 0; i < numRetries; i++) {
     try {

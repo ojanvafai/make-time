@@ -1,14 +1,14 @@
-import { Model } from "./Model.js";
-import { Thread } from "../Thread.js";
-import { Labels } from "../Labels.js";
-import { IDBKeyVal } from "../idb-keyval.js";
-import { getCachedThread, fetchThreads } from '../BaseMain.js';
-import { RowGroup } from "../RowGroup.js";
-import { ThreadRow } from "../views/ThreadRow.js";
+import {fetchThreads, getCachedThread} from '../BaseMain.js';
+import {IDBKeyVal} from '../idb-keyval.js';
+import {Labels} from '../Labels.js';
+import {RowGroup} from '../RowGroup.js';
+import {Thread} from '../Thread.js';
+import {ThreadRow} from '../views/ThreadRow.js';
+
+import {Model} from './Model.js';
 
 export class PlainThreadData {
-  constructor(public id: string, public historyId: string) {
-  }
+  constructor(public id: string, public historyId: string) {}
   equals(other: PlainThreadData) {
     return this.id == other.id && this.historyId == other.historyId;
   }
@@ -27,7 +27,7 @@ export class UndoEvent extends Event {
 }
 
 export class ThreadRemovedEvent extends Event {
-  constructor(public row: ThreadRow, public nextRow: ThreadRow | null) {
+  constructor(public row: ThreadRow, public nextRow: ThreadRow|null) {
     super('thread-removed');
   }
 }
@@ -38,7 +38,9 @@ export abstract class ThreadListModel extends Model {
   // TODO: Rename this to groupedRows_?
   private groupedThreads_: RowGroup[];
 
-  constructor(updateTitle: any, protected labels: Labels, private serializationKey_: string) {
+  constructor(
+      updateTitle: any, protected labels: Labels,
+      private serializationKey_: string) {
     super(updateTitle);
 
     this.serializedThreads_ = [];
@@ -49,7 +51,7 @@ export abstract class ThreadListModel extends Model {
   }
 
   abstract handleUndo(thread: Thread): void;
-  abstract handleTriaged(destination: string | null, thread: Thread): void;
+  abstract handleTriaged(destination: string|null, thread: Thread): void;
   abstract async fetch(): Promise<void>;
   abstract compareRowGroups(a: any, b: any): number;
   abstract async getDisplayableQueue(thread: Thread): Promise<string>;
@@ -92,11 +94,12 @@ export abstract class ThreadListModel extends Model {
     });
   }
 
-  async getRowFromRelativeOffset(row: ThreadRow, offset: number): Promise<ThreadRow | null> {
+  async getRowFromRelativeOffset(row: ThreadRow, offset: number):
+      Promise<ThreadRow|null> {
     if (offset != -1 && offset != 1)
       throw `getRowFromRelativeOffset called with offset of ${offset}`
 
-    let nextRow = await row.group.getRowFromRelativeOffset(row, offset);
+      let nextRow = await row.group.getRowFromRelativeOffset(row, offset);
     if (nextRow)
       return nextRow;
 
@@ -121,21 +124,23 @@ export abstract class ThreadListModel extends Model {
     return this.getRowFromRelativeOffset(row, -1);
   }
 
-  getGroupFromRelativeOffset(rowGroup:RowGroup, offset : number) : RowGroup | null {
+  getGroupFromRelativeOffset(rowGroup: RowGroup, offset: number): RowGroup
+      |null {
     let groupIndex = this.groupedThreads_.indexOf(rowGroup);
     if (groupIndex == -1)
       throw `Tried to get row via relative offset on a group that's not in the tree.`;
-    if (0 <= groupIndex + offset && groupIndex + offset < this.groupedThreads_.length) {
+    if (0 <= groupIndex + offset &&
+        groupIndex + offset < this.groupedThreads_.length) {
       return this.groupedThreads_[groupIndex + offset];
     }
     return null;
   }
 
-  getNextGroup(rowGroup: RowGroup) : RowGroup | null {
+  getNextGroup(rowGroup: RowGroup): RowGroup|null {
     return this.getGroupFromRelativeOffset(rowGroup, 1);
   }
 
-  getPreviousGroup(rowGroup: RowGroup) : RowGroup | null {
+  getPreviousGroup(rowGroup: RowGroup): RowGroup|null {
     return this.getGroupFromRelativeOffset(rowGroup, -1);
   }
 
@@ -148,7 +153,7 @@ export abstract class ThreadListModel extends Model {
   }
 
   getRowGroups() {
-   return this.groupedThreads_;
+    return this.groupedThreads_;
   }
 
   getRowGroup_(queue: string) {
@@ -168,7 +173,8 @@ export abstract class ThreadListModel extends Model {
   }
 
   serializeThreads(threadsToSerialize: PlainThreadData[]) {
-    let threadsChanged = threadsToSerialize.length != this.serializedThreads_.length;
+    let threadsChanged =
+        threadsToSerialize.length != this.serializedThreads_.length;
     if (!threadsChanged) {
       for (var i = 0; i < threadsToSerialize.length; i++) {
         if (!threadsToSerialize[i].equals(this.serializedThreads_[i])) {
@@ -208,20 +214,20 @@ export abstract class ThreadListModel extends Model {
     this.dispatchEvent(new ThreadRemovedEvent(row, nextRow));
   }
 
-  private async markTriagedInternal_(thread: Thread, destination: string | null) {
+  private async markTriagedInternal_(thread: Thread, destination: string|null) {
     let triageResult = <TriageResult>(await thread.markTriaged(destination));
     if (triageResult)
       this.undoableActions_.push(triageResult);
     await this.handleTriaged(destination, thread);
   }
 
-  async markSingleThreadTriaged(row: ThreadRow, destination: string | null) {
+  async markSingleThreadTriaged(row: ThreadRow, destination: string|null) {
     this.resetUndoableActions_();
     await this.removeRow_(row);
     this.markTriagedInternal_(row.thread, destination);
   }
 
-  async markThreadsTriaged(rows: ThreadRow[], destination: string | null) {
+  async markThreadsTriaged(rows: ThreadRow[], destination: string|null) {
     this.resetUndoableActions_();
 
     this.updateTitle('archiving', `Archiving ${rows.length} threads...`);
@@ -232,7 +238,8 @@ export abstract class ThreadListModel extends Model {
     await this.dispatchEvent(new Event('thread-list-changed'));
 
     for (let i = 0; i < rows.length; i++) {
-      this.updateTitle('archiving', `Archiving ${i + 1}/${rows.length} threads...`);
+      this.updateTitle(
+          'archiving', `Archiving ${i + 1}/${rows.length} threads...`);
       let row = rows[i];
       await this.markTriagedInternal_(row.thread, destination);
     }
@@ -250,7 +257,8 @@ export abstract class ThreadListModel extends Model {
     this.resetUndoableActions_();
 
     for (let i = 0; i < actions.length; i++) {
-      this.updateTitle('undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
+      this.updateTitle(
+          'undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
 
       let action = actions[i];
       await this.handleUndo(action.thread);

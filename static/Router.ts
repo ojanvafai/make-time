@@ -14,7 +14,7 @@ export class Router {
     if (rule.parts.length < pathParts.length)
       return false;
 
-    for (let i = 0; i < pathParts.length; i++){
+    for (let i = 0; i < pathParts.length; i++) {
       var rulePart = rule.parts[i];
       var part = pathParts[i];
 
@@ -47,10 +47,7 @@ export class Router {
   }
 
   add(route: any, handler: (params: any) => void) {
-    this.rules_.push({
-      parts: this.parsePath_(route),
-      handler: handler
-    });
+    this.rules_.push({parts: this.parsePath_(route), handler: handler});
   }
 
   parsePath_(path: string) {
@@ -60,24 +57,29 @@ export class Router {
     return path.substring(1).split('/');
   }
 
-  // Ewww...this can't be async because want to return a promise only in the case where
-  // the router handles this location so that the click handler for links can preventDefault
-  // synchronously.
-  run(location: Location | HTMLAnchorElement | string, excludeFromHistory?: boolean) {
+  // Ewww...this can't be async because want to return a promise only in the
+  // case where the router handles this location so that the click handler for
+  // links can preventDefault synchronously.
+  run(location: Location|HTMLAnchorElement|string,
+      excludeFromHistory?: boolean) {
     // TODO: Don't allow strings as an argument. Allow Node or Location only.
     let isString = typeof location == 'string';
-    let path = isString ? <string> location : (<Location | HTMLAnchorElement> location).pathname;
+    let path = isString ? <string>location :
+                          (<Location|HTMLAnchorElement>location).pathname;
     if (!path)
       return null;
 
     // Don't route cross origin links.
-    if (!isString && window.location.origin != (<Location | HTMLAnchorElement> location).origin)
+    if (!isString &&
+        window.location.origin != (<Location|HTMLAnchorElement>location).origin)
       return null;
 
     let pathParts = this.parsePath_(path);
     // TODO: Allow including query parameters in the string version.
     // Strip the leading '?'.
-    let queryParts = isString ? [] : (<Location | HTMLAnchorElement> location).search.substring(1).split('&');
+    let queryParts = isString ?
+        [] :
+        (<Location|HTMLAnchorElement>location).search.substring(1).split('&');
 
     for (let rule of this.rules_) {
       var params = this.getParams_(rule, pathParts, queryParts);

@@ -19,17 +19,23 @@ export class IDBKeyVal {
   }
   _withIDBStore(type: any, callback: any) {
     return this._dbp.then(db => new Promise((resolve, reject) => {
-      const transaction = db.transaction(this.storeName, type);
-      transaction.oncomplete = () => resolve();
-      transaction.onabort = transaction.onerror = () => reject(transaction.error);
-      callback(transaction.objectStore(this.storeName));
-    }));
+                            const transaction =
+                                db.transaction(this.storeName, type);
+                            transaction.oncomplete = () => resolve();
+                            transaction.onabort = transaction.onerror = () =>
+                                reject(transaction.error);
+                            callback(transaction.objectStore(this.storeName));
+                          }));
   }
   get(key: string) {
     let req: any;
-    return this._withIDBStore('readonly', (store: any) => {
-      req = store.get(key);
-    }).then(() => req.result);
+    return this
+        ._withIDBStore(
+            'readonly',
+            (store: any) => {
+              req = store.get(key);
+            })
+        .then(() => req.result);
   }
   set(key: string, value: any) {
     return this._withIDBStore('readwrite', (store: any) => {
@@ -48,9 +54,13 @@ export class IDBKeyVal {
   }
   keys() {
     let req: any;
-    return this._withIDBStore('readonly', (store: any) => {
-      req = store.getAllKeys();
-    }).then(() => req.result);
+    return this
+        ._withIDBStore(
+            'readonly',
+            (store: any) => {
+              req = store.getAllKeys();
+            })
+        .then(() => req.result);
   }
 }
 

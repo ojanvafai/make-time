@@ -1,17 +1,17 @@
-// TODO: This file probably shouldn't exist. It's a holdover from early spaghetti
-// code that was extracted out to remove circular dependencies between modules.
-// It's not trivial to detangle though. It's mostly reused functions that have
-// to know about Threads and things like that.
+// TODO: This file probably shouldn't exist. It's a holdover from early
+// spaghetti code that was extracted out to remove circular dependencies between
+// modules. It's not trivial to detangle though. It's mostly reused functions
+// that have to know about Threads and things like that.
 
-import { Thread } from "./Thread.js";
-import { Labels } from "./Labels.js";
-import { AsyncOnce } from "./AsyncOnce.js";
-import { Settings } from "./Settings.js";
-import { QueueSettings } from "./QueueSettings.js";
-import { View } from "./views/View.js";
-import { ServerStorage } from "./ServerStorage.js";
-import { showDialog, USER_ID } from "./Base.js";
-import { gapiFetch } from './Net.js';
+import {AsyncOnce} from './AsyncOnce.js';
+import {showDialog, USER_ID} from './Base.js';
+import {Labels} from './Labels.js';
+import {gapiFetch} from './Net.js';
+import {QueueSettings} from './QueueSettings.js';
+import {ServerStorage} from './ServerStorage.js';
+import {Settings} from './Settings.js';
+import {Thread} from './Thread.js';
+import {View} from './views/View.js';
 
 class ThreadCache {
   cache_: Map<Number, Thread>;
@@ -52,20 +52,26 @@ let threadCache_: ThreadCache;
 
 // Client ID and API key from the Developer Console
 let CLIENT_ID: string;
-let isGoogle = location.toString().includes(':5555/') || location.toString().includes('https://com-mktime');
+let isGoogle = location.toString().includes(':5555/') ||
+    location.toString().includes('https://com-mktime');
 if (isGoogle)
-  CLIENT_ID = '800053010416-p1p6n47o6ovdm04329v9p8mskl618kuj.apps.googleusercontent.com';
+  CLIENT_ID =
+      '800053010416-p1p6n47o6ovdm04329v9p8mskl618kuj.apps.googleusercontent.com';
 else
-  CLIENT_ID = '475495334695-0i3hbt50i5lj8blad3j7bj8j4fco8edo.apps.googleusercontent.com';
+  CLIENT_ID =
+      '475495334695-0i3hbt50i5lj8blad3j7bj8j4fco8edo.apps.googleusercontent.com';
 
 // Array of API discovery doc URLs for APIs used by the quickstart
-let DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest",
-    "https://sheets.googleapis.com/$discovery/rest?version=v4",
-    "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+let DISCOVERY_DOCS = [
+  'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest',
+  'https://sheets.googleapis.com/$discovery/rest?version=v4',
+  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+];
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
-let SCOPES = 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly';
+let SCOPES =
+    'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly';
 
 let isSignedIn_ = false;
 
@@ -86,7 +92,7 @@ export function getView() {
 export async function setView(view: View) {
   currentView_ = view;
 
-  var content = <HTMLElement> document.getElementById('content');
+  var content = <HTMLElement>document.getElementById('content');
   content.textContent = '';
   content.append(view);
 
@@ -115,7 +121,8 @@ async function fetchTheSettingsThings() {
       let storage = new ServerStorage(settings_.spreadsheetId);
       if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
         await showHelp();
-        storage.writeUpdates([{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
+        storage.writeUpdates(
+            [{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
       }
 
       await labelsPromise;
@@ -126,7 +133,8 @@ async function fetchTheSettingsThings() {
 }
 
 
-async function doLabelMigration(addLabelIds: string[], removeLabelIds: string[], query: string) {
+async function doLabelMigration(
+    addLabelIds: string[], removeLabelIds: string[], query: string) {
   await fetchThreads(async (thread: Thread) => {
     await thread.modify(addLabelIds, removeLabelIds);
   }, {
@@ -136,14 +144,22 @@ async function doLabelMigration(addLabelIds: string[], removeLabelIds: string[],
 
 async function migrateLabels(labels: Labels) {
   // Rename parent labesl before sublabels.
-  await labels.rename(Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX, doLabelMigration);
-  await labels.rename(Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL, doLabelMigration);
-  await labels.rename(Labels.OLD_QUEUED_LABEL, Labels.QUEUED_LABEL, doLabelMigration);
+  await labels.rename(
+      Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX, doLabelMigration);
+  await labels.rename(
+      Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL, doLabelMigration);
+  await labels.rename(
+      Labels.OLD_QUEUED_LABEL, Labels.QUEUED_LABEL, doLabelMigration);
 
-  await labels.rename(Labels.OLD_PRIORITY_LABEL, Labels.PRIORITY_LABEL, doLabelMigration);
-  await labels.rename(Labels.OLD_NEEDS_TRIAGE_LABEL, Labels.NEEDS_TRIAGE_LABEL, doLabelMigration);
-  await labels.rename(Labels.OLD_PROCESSED_LABEL, Labels.PROCESSED_LABEL, doLabelMigration);
-  await labels.rename(Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL, doLabelMigration);
+  await labels.rename(
+      Labels.OLD_PRIORITY_LABEL, Labels.PRIORITY_LABEL, doLabelMigration);
+  await labels.rename(
+      Labels.OLD_NEEDS_TRIAGE_LABEL, Labels.NEEDS_TRIAGE_LABEL,
+      doLabelMigration);
+  await labels.rename(
+      Labels.OLD_PROCESSED_LABEL, Labels.PROCESSED_LABEL, doLabelMigration);
+  await labels.rename(
+      Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL, doLabelMigration);
 }
 
 let queueSettingsFetcher_: AsyncOnce;
@@ -165,7 +181,7 @@ function loadGapi() {
   });
 };
 
-let queuedLogin_: ((value?: {} | PromiseLike<{}> | undefined) => void);
+let queuedLogin_: ((value?: {}|PromiseLike<{}>|undefined) => void);
 
 async function login() {
   if (isSignedIn_)
@@ -175,11 +191,8 @@ async function login() {
 
   await loadGapi();
   // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-  await gapi.client.init({
-    discoveryDocs: DISCOVERY_DOCS,
-    clientId: CLIENT_ID,
-    scope: SCOPES
-  });
+  await gapi.client.init(
+      {discoveryDocs: DISCOVERY_DOCS, clientId: CLIENT_ID, scope: SCOPES});
   // Listen for sign-in state changes.
   // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
@@ -191,7 +204,7 @@ async function login() {
   if (!isSignedIn) {
     await new Promise((resolve) => {
       if (queuedLogin_)
-        throw 'login() was called twice while waiting for login to finish.'
+        throw 'login() was called twice while waiting for login to finish.';
       queuedLogin_ = resolve;
     });
   }
@@ -225,11 +238,12 @@ export function updateLoaderTitle(key: string, ...opt_title: string[]) {
   let node = document.getElementById('loader-title');
   updateTitleBase(loaderTitleStack_, node!, key, ...opt_title);
 
-  let titleContainer = <HTMLElement> document.getElementById('loader');
+  let titleContainer = <HTMLElement>document.getElementById('loader');
   titleContainer.style.display = loaderTitleStack_.length ? '' : 'none';
 }
 
-function updateTitleBase(stack: any[], node: HTMLElement, key: string, ...opt_title: string[]) {
+function updateTitleBase(
+    stack: any[], node: HTMLElement, key: string, ...opt_title: string[]) {
   let index = stack.findIndex((item) => item.key == key);
   if (!opt_title[0]) {
     if (index != -1)
@@ -261,19 +275,20 @@ interface FetchRequestParameters {
   pageToken: string;
 }
 
-export async function fetchThreads(forEachThread: (thread: Thread) => void, options: any) {
+export async function fetchThreads(
+    forEachThread: (thread: Thread) => void, options: any) {
   // Chats don't expose their bodies in the gmail API, so just skip them.
   let query = '-in:chats ';
 
   if (options.query)
     query += ' ' + options.query;
 
-  // let daysToShow = (await getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW);
-  // if (daysToShow)
+  // let daysToShow = (await
+  // getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW); if (daysToShow)
   //   query += ` newer_than:${daysToShow}d`;
 
   let getPageOfThreads = async (opt_pageToken?: string) => {
-    let requestParams = <FetchRequestParameters> {
+    let requestParams = <FetchRequestParameters>{
       'userId': USER_ID,
       'q': query,
     };
@@ -281,8 +296,10 @@ export async function fetchThreads(forEachThread: (thread: Thread) => void, opti
     if (opt_pageToken)
       requestParams.pageToken = opt_pageToken;
 
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    let resp = await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
+    let resp =
+        // @ts-ignore TODO: Figure out how to get types for gapi client
+        // libraries.
+        await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
       let thread = await getCachedThread(rawThread);
@@ -327,7 +344,8 @@ function helpText() {
   if (helpHtml_)
     return helpHtml_;
 
-  helpHtml_ = `make-time is an opinionated way of handling unreasonable amounts of email.
+  helpHtml_ =
+      `make-time is an opinionated way of handling unreasonable amounts of email.
 
 <b style="font-size:120%">Disclaimers</b>
 Patches welcome, but otherwise, I built it for my needs. :) Feature requests are very welcome though. Often you'll think of something I want that I don't have and I'll build it. Contact ojan@ or file issues at https://github.com/ojanvafai/make-time if you want to contribute, give feedback, etc.

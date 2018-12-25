@@ -1,5 +1,5 @@
 export class Timer extends HTMLElement {
-  static autoStart_: boolean | undefined;
+  static autoStart_: boolean|undefined;
   static activeTimers_: Timer[];
   paused_: boolean = false;
   countDown_: boolean;
@@ -7,11 +7,13 @@ export class Timer extends HTMLElement {
   overlayContainer_: HTMLElement;
   timeDisplay_: HTMLElement;
   timerButton_: HTMLElement;
-  timerKey_: number | null = null;
+  timerKey_: number|null = null;
   timeLeft_: number = 0;
-  overlay_: HTMLElement | null = null;
+  overlay_: HTMLElement|null = null;
 
-  constructor(autoStart: boolean, countDown: boolean, duration: number, overlayContainer: HTMLElement) {
+  constructor(
+      autoStart: boolean, countDown: boolean, duration: number,
+      overlayContainer: HTMLElement) {
     super();
 
     this.style.cssText = `
@@ -129,7 +131,8 @@ export class Timer extends HTMLElement {
       opacity: 0.5;
     `;
     let text = document.createElement('div');
-    text.innerHTML = 'Out of time. Take an action!<br><br>The timer duration and whether it autostarts can be configured in the settings dialogs.';
+    text.innerHTML =
+        'Out of time. Take an action!<br><br>The timer duration and whether it autostarts can be configured in the settings dialogs.';
     text.style.cssText = `
       position: absolute;
       padding: 5px;

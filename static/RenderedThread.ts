@@ -1,10 +1,10 @@
-import { Thread } from './Thread.js';
-import { Message } from './Message.js';
+import {Message} from './Message.js';
+import {Thread} from './Thread.js';
 
 export class RenderedThread {
   thread: Thread;
-  private dom_: HTMLElement | null;
-  private queued_: ((value?: {} | PromiseLike<{}>) => void)[];
+  private dom_: HTMLElement|null;
+  private queued_: ((value?: {}|PromiseLike<{}>) => void)[];
   private isFetching_: boolean = false;
 
   constructor(thread: Thread) {
@@ -58,7 +58,8 @@ export class RenderedThread {
   }
 
   async render(newContainer: HTMLElement) {
-    // No need to block on fetching messages if we've already rendering some of them.
+    // No need to block on fetching messages if we've already rendering some of
+    // them.
     if (this.dom_) {
       // Intentionally don't await this so the messages are rendered ASAP.
       this.update();
@@ -74,9 +75,9 @@ export class RenderedThread {
   }
 
   async fetchAndAppendMessages_() {
-    // If we're in the middle of rendering this thread, then queue up rendering requests
-    // to be processed when we finish instead of kicking off another set of network requests
-    // to render this thread.
+    // If we're in the middle of rendering this thread, then queue up rendering
+    // requests to be processed when we finish instead of kicking off another
+    // set of network requests to render this thread.
     if (this.isFetching_) {
       await this.queueTillRendered_();
       return;
@@ -122,8 +123,8 @@ export class RenderedThread {
     if (processedMessage.from) {
       if (processedMessage.from.includes('<')) {
         let b = document.createElement('b');
-        b.append(<string> processedMessage.fromName);
-        from.append(b, ' <', (<string[]> processedMessage.fromEmails)[0], '>');
+        b.append(<string>processedMessage.fromName);
+        from.append(b, ' <', (<string[]>processedMessage.fromEmails)[0], '>');
       } else {
         from.append(processedMessage.from);
       }
@@ -196,7 +197,7 @@ export class RenderedThread {
   }
 
   dateString_(date: Date) {
-    let options: { [property: string]: string } = {
+    let options: {[property: string]: string} = {
       hour: 'numeric',
       minute: 'numeric',
     };
@@ -205,7 +206,8 @@ export class RenderedThread {
     if (today.getFullYear() != date.getFullYear())
       options.year = 'numeric';
 
-    if (today.getMonth() != date.getMonth() || today.getDate() != date.getDate()) {
+    if (today.getMonth() != date.getMonth() ||
+        today.getDate() != date.getDate()) {
       options.month = 'short';
       options.day = 'numeric';
     }

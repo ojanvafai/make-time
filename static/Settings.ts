@@ -1,13 +1,13 @@
-import { AsyncOnce } from './AsyncOnce.js';
-import { ErrorLogger } from './ErrorLogger.js';
-import { ServerStorage } from './ServerStorage.js';
-import { SpreadsheetUtils } from './SpreadsheetUtils.js';
-import { showDialog } from './Base.js';
+import {AsyncOnce} from './AsyncOnce.js';
+import {showDialog} from './Base.js';
+import {ErrorLogger} from './ErrorLogger.js';
+import {ServerStorage} from './ServerStorage.js';
+import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export class Settings {
   private fetcher_: AsyncOnce;
-  // TODO: Fix these to not assert non-null since they could realistically be null if
-  // fetch() isn't completed.
+  // TODO: Fix these to not assert non-null since they could realistically be
+  // null if fetch() isn't completed.
   spreadsheetId!: string;
   private storage_!: ServerStorage;
   private filters_: any;
@@ -15,8 +15,10 @@ export class Settings {
   static QUEUED_LABELS_SHEET_NAME = 'queued_labels';
   static QUEUED_LABELS_SHEET_COLUMNS = ['label', 'queue', 'goal', 'index'];
   static FILTERS_SHEET_NAME_ = 'filters';
-  static FILTERS_RULE_DIRECTIVES = ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
-  static FILTERS_SHEET_COLUMNS_ = ['label'].concat(Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
+  static FILTERS_RULE_DIRECTIVES =
+      ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
+  static FILTERS_SHEET_COLUMNS_ = ['label'].concat(
+      Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
 
   static sheetData_ = [
     {
@@ -29,11 +31,18 @@ export class Settings {
     },
     {
       name: 'statistics',
-      initialData: [['timestamp', 'num_threads_labelled', 'total_time', 'per_label_counts']],
+      initialData: [[
+        'timestamp', 'num_threads_labelled', 'total_time', 'per_label_counts'
+      ]],
     },
     {
       name: 'daily_stats',
-      initialData: [['date', 'total_threads', 'archived_threads_count', 'non_archived_threads_count', 'immediate_count', 'daily_count', 'weekly_count', 'monthly_count', 'num_invocations', 'total_running_time', 'min_running_time', 'max_running_time']],
+      initialData: [[
+        'date', 'total_threads', 'archived_threads_count',
+        'non_archived_threads_count', 'immediate_count', 'daily_count',
+        'weekly_count', 'monthly_count', 'num_invocations',
+        'total_running_time', 'min_running_time', 'max_running_time'
+      ]],
     },
     {
       name: 'backend-do-not-modify',
@@ -44,39 +53,45 @@ export class Settings {
     {
       key: ServerStorage.KEYS.VACATION,
       name: 'Vacation',
-      description: `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail. Cannot be a Best Effort queue.`,
+      description:
+          `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail. Cannot be a Best Effort queue.`,
     },
     {
       key: ServerStorage.KEYS.TIMER_DURATION,
       name: 'Triage countdown timer',
-      description: `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
+      description:
+          `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
       default: 60,
       type: 'number',
     },
     {
       key: ServerStorage.KEYS.AUTO_START_TIMER,
       name: 'Auto start timer',
-      description: `Timer automatically starts after triaging the first thread.`,
+      description:
+          `Timer automatically starts after triaging the first thread.`,
       default: true,
       type: 'checkbox',
     },
     {
       key: ServerStorage.KEYS.ALLOWED_REPLY_LENGTH,
       name: 'Allowed quick reply length',
-      description: `Allowed length of quick replies. Longer messages will refuse to send.`,
+      description:
+          `Allowed length of quick replies. Longer messages will refuse to send.`,
       default: 280,
       type: 'number',
     },
     {
       key: ServerStorage.KEYS.DAYS_TO_SHOW,
       name: 'Wicked witch count',
-      description: `For times when you're melting, only show emails from the past N days.`,
+      description:
+          `For times when you're melting, only show emails from the past N days.`,
       type: 'number',
     },
     {
       key: ServerStorage.KEYS.LOG_MATCHING_RULES,
       name: 'Log matching rules',
-      description: `Log the matching filter rule to the chrome developer console.`,
+      description:
+          `Log the matching filter rule to the chrome developer console.`,
       default: false,
       type: 'checkbox',
     },
@@ -99,7 +114,7 @@ export class Settings {
   async getSpreadsheetId_() {
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let response = await gapi.client.drive.files.list({
-      q: "trashed=false and name='make-time backend (do not rename!)'",
+      q: 'trashed=false and name=\'make-time backend (do not rename!)\'',
       spaces: 'drive',
     });
 
@@ -111,17 +126,23 @@ export class Settings {
   async showSetupDialog_() {
     return new Promise(() => {
       let generateBackendLink = document.createElement('a');
-      generateBackendLink.append('Click here to generate a backend spreadsheet');
+      generateBackendLink.append(
+          'Click here to generate a backend spreadsheet');
       generateBackendLink.onclick = async () => {
         generateBackendLink.textContent = 'generating...';
-        setTimeout(() => ErrorLogger.log('Hmmm...this is taking a while, something might have gone wrong. Keep waiting a bit or reload to try again.'), 30000);
+        setTimeout(
+            () => ErrorLogger.log(
+                'Hmmm...this is taking a while, something might have gone wrong. Keep waiting a bit or reload to try again.'),
+            30000);
         await this.generateSpreadsheet();
         window.location.reload();
       };
 
       let contents = document.createElement('div');
       contents.style.overflow = 'auto';
-      contents.append(`make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage.\n\n`, generateBackendLink);
+      contents.append(
+          `make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage.\n\n`,
+          generateBackendLink);
 
       let dialog = showDialog(contents);
       dialog.style.whiteSpace = 'pre-wrap';
@@ -134,9 +155,8 @@ export class Settings {
 
   async generateSpreadsheet() {
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    let response = await gapi.client.sheets.spreadsheets.create({},
-      {"properties": {"title": 'make-time backend (do not rename!)'}
-    });
+    let response = await gapi.client.sheets.spreadsheets.create(
+        {}, {'properties': {'title': 'make-time backend (do not rename!)'}});
     let spreadsheetId = response.result.spreadsheetId;
 
     let addSheetRequests: {}[] = [];
@@ -171,46 +191,38 @@ export class Settings {
 
       let values = data.initialData;
       // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-      let addDataResponse = await gapi.client.sheets.spreadsheets.values.update({
-        spreadsheetId: spreadsheetId,
-        range: SpreadsheetUtils.a1Notation(data.name, 0, values[0].length),
-        valueInputOption: 'USER_ENTERED',
-      }, {
-        majorDimension: 'ROWS',
-        values: values,
-      });
+      let addDataResponse = await gapi.client.sheets.spreadsheets.values.update(
+          {
+            spreadsheetId: spreadsheetId,
+            range: SpreadsheetUtils.a1Notation(data.name, 0, values[0].length),
+            valueInputOption: 'USER_ENTERED',
+          },
+          {
+            majorDimension: 'ROWS',
+            values: values,
+          });
 
       let sheetId = sheetNameToId[data.name];
 
       // Bold first row
       formatSheetRequests.push({
-        "repeatCell": {
-          "range": {
-            "sheetId": sheetId,
-            "startRowIndex": 0,
-            "endRowIndex": 1
-          },
-          "cell": {
-            "userEnteredFormat": {
-              "textFormat": {
-                "bold": true
-              }
-            }
-          },
-          "fields": "userEnteredFormat(textFormat)",
+        'repeatCell': {
+          'range': {'sheetId': sheetId, 'startRowIndex': 0, 'endRowIndex': 1},
+          'cell': {'userEnteredFormat': {'textFormat': {'bold': true}}},
+          'fields': 'userEnteredFormat(textFormat)',
         }
       });
 
       // Freeze first row
       formatSheetRequests.push({
-        "updateSheetProperties": {
-          "properties": {
-            "sheetId": sheetId,
-            "gridProperties": {
-              "frozenRowCount": 1,
+        'updateSheetProperties': {
+          'properties': {
+            'sheetId': sheetId,
+            'gridProperties': {
+              'frozenRowCount': 1,
             }
           },
-          "fields": "gridProperties.frozenRowCount"
+          'fields': 'gridProperties.frozenRowCount'
         }
       });
 
@@ -218,8 +230,9 @@ export class Settings {
         this.addDailyStatsCharts_(sheetId, formatSheetRequests);
     }
 
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-    let formatSheetsResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
+    // @ts-ignore TODO: Figure out how to get types for gapi client
+    // libraries.
+    await gapi.client.sheets.spreadsheets.batchUpdate({
       spreadsheetId: spreadsheetId,
       resource: {requests: formatSheetRequests},
     });
@@ -229,91 +242,79 @@ export class Settings {
 
   addDailyStatsCharts_(sheetId: string, requests: any[]) {
     requests.push({
-      "addChart": {
-        "chart": {
-          "position": { "newSheet": true },
-          "spec": {
-            "basicChart": {
-              "chartType": "AREA",
-              "stackedType": "STACKED",
-              "legendPosition": "TOP_LEGEND",
-              "headerCount": 1,
-              "domains": [
-                {
-                  "domain": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
-                          "startColumnIndex": 0,
-                          "endColumnIndex": 1
-                        }
-                      ]
-                    }
+      'addChart': {
+        'chart': {
+          'position': {'newSheet': true},
+          'spec': {
+            'basicChart': {
+              'chartType': 'AREA',
+              'stackedType': 'STACKED',
+              'legendPosition': 'TOP_LEGEND',
+              'headerCount': 1,
+              'domains': [{
+                'domain': {
+                  'sourceRange': {
+                    'sources': [{
+                      'sheetId': sheetId,
+                      'startRowIndex': 0,
+                      'startColumnIndex': 0,
+                      'endColumnIndex': 1
+                    }]
                   }
                 }
-              ],
-              "series": [
+              }],
+              'series': [
                 {
-                  "series": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
-                          "startColumnIndex": 4,
-                          "endColumnIndex": 5
-                        }
-                      ]
+                  'series': {
+                    'sourceRange': {
+                      'sources': [{
+                        'sheetId': sheetId,
+                        'startRowIndex': 0,
+                        'startColumnIndex': 4,
+                        'endColumnIndex': 5
+                      }]
                     }
                   },
-                  "targetAxis": "LEFT_AXIS"
+                  'targetAxis': 'LEFT_AXIS'
                 },
                 {
-                  "series": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
-                          "startColumnIndex": 5,
-                          "endColumnIndex": 6
-                        }
-                      ]
+                  'series': {
+                    'sourceRange': {
+                      'sources': [{
+                        'sheetId': sheetId,
+                        'startRowIndex': 0,
+                        'startColumnIndex': 5,
+                        'endColumnIndex': 6
+                      }]
                     }
                   },
-                  "targetAxis": "LEFT_AXIS"
+                  'targetAxis': 'LEFT_AXIS'
                 },
                 {
-                  "series": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
-                          "startColumnIndex": 6,
-                          "endColumnIndex": 7
-                        }
-                      ]
+                  'series': {
+                    'sourceRange': {
+                      'sources': [{
+                        'sheetId': sheetId,
+                        'startRowIndex': 0,
+                        'startColumnIndex': 6,
+                        'endColumnIndex': 7
+                      }]
                     }
                   },
-                  "targetAxis": "LEFT_AXIS"
+                  'targetAxis': 'LEFT_AXIS'
                 },
                 {
-                  "series": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
-                          "startColumnIndex": 7,
-                          "endColumnIndex": 8
-                        }
-                      ]
+                  'series': {
+                    'sourceRange': {
+                      'sources': [{
+                        'sheetId': sheetId,
+                        'startRowIndex': 0,
+                        'startColumnIndex': 7,
+                        'endColumnIndex': 8
+                      }]
                     }
                   },
-                  "targetAxis": "LEFT_AXIS"
+                  'targetAxis': 'LEFT_AXIS'
                 },
               ],
             }
@@ -323,61 +324,53 @@ export class Settings {
     });
 
     requests.push({
-      "addChart": {
-        "chart": {
-          "position": { "newSheet": true },
-          "spec": {
-            "basicChart": {
-              "chartType": "AREA",
-              "stackedType": "STACKED",
-              "legendPosition": "TOP_LEGEND",
-              "headerCount": 1,
-              "domains": [
-                {
-                  "domain": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
-                          "startColumnIndex": 0,
-                          "endColumnIndex": 1
-                        }
-                      ]
-                    }
+      'addChart': {
+        'chart': {
+          'position': {'newSheet': true},
+          'spec': {
+            'basicChart': {
+              'chartType': 'AREA',
+              'stackedType': 'STACKED',
+              'legendPosition': 'TOP_LEGEND',
+              'headerCount': 1,
+              'domains': [{
+                'domain': {
+                  'sourceRange': {
+                    'sources': [{
+                      'sheetId': sheetId,
+                      'startRowIndex': 0,
+                      'startColumnIndex': 0,
+                      'endColumnIndex': 1
+                    }]
                   }
                 }
-              ],
-              "series": [
+              }],
+              'series': [
                 {
-                  "series": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
-                          "startColumnIndex": 2,
-                          "endColumnIndex": 3
-                        }
-                      ]
+                  'series': {
+                    'sourceRange': {
+                      'sources': [{
+                        'sheetId': sheetId,
+                        'startRowIndex': 0,
+                        'startColumnIndex': 2,
+                        'endColumnIndex': 3
+                      }]
                     }
                   },
-                  "targetAxis": "LEFT_AXIS"
+                  'targetAxis': 'LEFT_AXIS'
                 },
                 {
-                  "series": {
-                    "sourceRange": {
-                      "sources": [
-                        {
-                          "sheetId": sheetId,
-                          "startRowIndex": 0,
-                          "startColumnIndex": 3,
-                          "endColumnIndex": 4
-                        }
-                      ]
+                  'series': {
+                    'sourceRange': {
+                      'sources': [{
+                        'sheetId': sheetId,
+                        'startRowIndex': 0,
+                        'startColumnIndex': 3,
+                        'endColumnIndex': 4
+                      }]
                     }
                   },
-                  "targetAxis": "LEFT_AXIS"
+                  'targetAxis': 'LEFT_AXIS'
                 },
               ],
             }
@@ -418,12 +411,14 @@ export class Settings {
     if (this.filters_)
       return this.filters_;
 
-    let rawRules = await SpreadsheetUtils.fetchSheet(this.spreadsheetId, Settings.FILTERS_SHEET_NAME_);
+    let rawRules = await SpreadsheetUtils.fetchSheet(
+        this.spreadsheetId, Settings.FILTERS_SHEET_NAME_);
     let rules: {}[] = [];
     let labels: any = {};
     this.filters_ = {
       rules: rules,
-    }
+    };
+
     let ruleNames = rawRules[0];
     let labelColumn = ruleNames.indexOf('label');
 
@@ -462,11 +457,14 @@ export class Settings {
     }
 
     let originalFilterSheetRowCount = this.filters_.rules.length + 1;
-    await SpreadsheetUtils.writeSheet(this.spreadsheetId, Settings.FILTERS_SHEET_NAME_, rows, originalFilterSheetRowCount);
+    await SpreadsheetUtils.writeSheet(
+        this.spreadsheetId, Settings.FILTERS_SHEET_NAME_, rows,
+        originalFilterSheetRowCount);
 
-    // Null out the filters so they get refetched. In theory could avoid the network request
-    // and populate the filters from the rules argument to writeFilters, but doesn't seem
-    // worth the potential extra code that needs to have the rules be in the right format.
+    // Null out the filters so they get refetched. In theory could avoid the
+    // network request and populate the filters from the rules argument to
+    // writeFilters, but doesn't seem worth the potential extra code that needs
+    // to have the rules be in the right format.
     this.filters_ = null;
   }
 }

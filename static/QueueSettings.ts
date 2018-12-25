@@ -1,13 +1,13 @@
-import { AsyncOnce } from './AsyncOnce.js';
-import { Labels } from './Labels.js';
-import { Settings } from './Settings.js';
-import { SpreadsheetUtils } from './SpreadsheetUtils.js';
+import {AsyncOnce} from './AsyncOnce.js';
+import {Labels} from './Labels.js';
+import {Settings} from './Settings.js';
+import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export class QueueSettings {
   private spreadsheetId_: string;
   private fetcher_: AsyncOnce;
-  // TODO: Fix these to not assert non-null since they could realistically be null if
-  // fetch() isn't completed.
+  // TODO: Fix these to not assert non-null since they could realistically be
+  // null if fetch() isn't completed.
   private map_!: any;
 
   private static BUFFER_ = 10000;
@@ -15,7 +15,9 @@ export class QueueSettings {
   static WEEKLY = 'Weekly';
   static DAILY = 'Daily';
   static IMMEDIATE = 'Immediate';
-  static WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  static WEEKDAYS = [
+    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+  ];
   static goals = ['Inbox Zero', 'Best Effort']
 
   constructor(spreadsheetId: string) {
@@ -28,7 +30,8 @@ export class QueueSettings {
   }
 
   async fetch_() {
-    let values = await SpreadsheetUtils.fetchSheet(this.spreadsheetId_, `${Settings.QUEUED_LABELS_SHEET_NAME}!A2:D`);
+    let values = await SpreadsheetUtils.fetchSheet(
+        this.spreadsheetId_, `${Settings.QUEUED_LABELS_SHEET_NAME}!A2:D`);
     this.populateMap_(values);
   }
 
@@ -44,12 +47,15 @@ export class QueueSettings {
   async write(newData: any[]) {
     let originalQueueCount = Object.keys(this.map_).length;
     let dataToWrite = [Settings.QUEUED_LABELS_SHEET_COLUMNS].concat(newData);
-    await SpreadsheetUtils.writeSheet(this.spreadsheetId_, Settings.QUEUED_LABELS_SHEET_NAME, dataToWrite, originalQueueCount);
+    await SpreadsheetUtils.writeSheet(
+        this.spreadsheetId_, Settings.QUEUED_LABELS_SHEET_NAME, dataToWrite,
+        originalQueueCount);
     this.populateMap_(newData);
   }
 
-  get(labelSuffix: string ) {
-    return this.map_[labelSuffix.toLowerCase()] || this.queueData_();;
+  get(labelSuffix: string) {
+    return this.map_[labelSuffix.toLowerCase()] || this.queueData_();
+    ;
   }
 
   queueComparator_(a: any, b: any) {
@@ -71,9 +77,9 @@ export class QueueSettings {
   queueData_(opt_queue?: string, opt_goal?: string, opt_index?: number) {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
-      goal: opt_goal || QueueSettings.goals[0],
-      // For unknown queues, put them first.
-      index: opt_index || 0,
+          goal: opt_goal || QueueSettings.goals[0],
+          // For unknown queues, put them first.
+          index: opt_index || 0,
     }
   }
 
@@ -108,7 +114,8 @@ export class QueueSettings {
     else if (QueueSettings.WEEKDAYS.includes(queue))
       multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
     else if (queue == QueueSettings.MONTHLY)
-      multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
+      multiplier *=
+          QueueSettings.BUFFER_ * QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
 
     return queueData.index * multiplier;
   }

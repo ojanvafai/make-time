@@ -1,18 +1,17 @@
-import { ErrorLogger } from './ErrorLogger.js';
-import { Router } from './Router.js';
-import { IDBKeyVal } from './idb-keyval.js';
+import {getCurrentWeekNumber} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
-import { updateLoaderTitle, updateTitle, setView, getView, getSettings,
-         getQueuedLabelMap, getLabels, showHelp } from './BaseMain.js';
-import { getCurrentWeekNumber } from './Base.js';
-import { ServerStorage } from './ServerStorage.js';
-import { ComposeView } from './views/ComposeView.js';
-import { SettingsView } from './views/Settings.js';
-import { ComposeModel } from './models/ComposeModel.js';
-import { TriageModel } from './models/TriageModel.js';
-import { TodoModel } from './models/TodoModel.js';
-import { ThreadListView } from './views/ThreadListView.js';
-import { ThreadListModel } from './models/ThreadListModel.js';
+import {getLabels, getQueuedLabelMap, getSettings, getView, setView, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {ErrorLogger} from './ErrorLogger.js';
+import {IDBKeyVal} from './idb-keyval.js';
+import {ComposeModel} from './models/ComposeModel.js';
+import {ThreadListModel} from './models/ThreadListModel.js';
+import {TodoModel} from './models/TodoModel.js';
+import {TriageModel} from './models/TriageModel.js';
+import {Router} from './Router.js';
+import {ServerStorage} from './ServerStorage.js';
+import {ComposeView} from './views/ComposeView.js';
+import {SettingsView} from './views/Settings.js';
+import {ThreadListView} from './views/ThreadListView.js';
 
 let contacts_: Contact[] = [];
 var router = new Router();
@@ -23,7 +22,7 @@ async function routeToCurrentLocation() {
 
 window.onpopstate = () => {
   routeToCurrentLocation();
-}
+};
 
 router.add('/compose', async (params) => {
   if (getView())
@@ -54,13 +53,16 @@ let DRAWER_OPEN = 'drawer-open';
 let CURRENT_PAGE_CLASS = 'current-page';
 
 function showBackArrow(show: boolean) {
-  (<HTMLElement> document.getElementById('hambuger-menu-toggle')).style.display = show ? 'none' : '';
-  (<HTMLElement> document.getElementById('back-arrow')).style.display = show ? '' : 'none';
+  (<HTMLElement>document.getElementById('hambuger-menu-toggle')).style.display =
+      show ? 'none' : '';
+  (<HTMLElement>document.getElementById('back-arrow')).style.display =
+      show ? '' : 'none';
 }
 
 function openMenu() {
-  let drawer = <HTMLElement> document.getElementById('drawer');
-  let menuItems = <NodeListOf<HTMLAnchorElement>> drawer.querySelectorAll('a.item');
+  let drawer = <HTMLElement>document.getElementById('drawer');
+  let menuItems =
+      <NodeListOf<HTMLAnchorElement>>drawer.querySelectorAll('a.item');
   for (let item of menuItems) {
     if (item.pathname == location.pathname) {
       item.classList.add(CURRENT_PAGE_CLASS);
@@ -69,62 +71,70 @@ function openMenu() {
     }
   }
 
-  let mainContent = <HTMLElement> document.getElementById('main-content');
+  let mainContent = <HTMLElement>document.getElementById('main-content');
   mainContent.classList.add(DRAWER_OPEN);
 }
 
 function closeMenu() {
-  let mainContent = <HTMLElement> document.getElementById('main-content');
+  let mainContent = <HTMLElement>document.getElementById('main-content');
   mainContent.classList.remove(DRAWER_OPEN);
 }
 
 function toggleMenu() {
-  let mainContent = <HTMLElement> document.getElementById('main-content');
+  let mainContent = <HTMLElement>document.getElementById('main-content');
   if (mainContent.classList.contains(DRAWER_OPEN))
     closeMenu();
   else
     openMenu();
 }
 
-(<HTMLElement> document.getElementById('back-arrow')).addEventListener('click', async () => {
-  if (getView().goBack)
-    await getView().goBack();
-});
+(<HTMLElement>document.getElementById('back-arrow'))
+    .addEventListener('click', async () => {
+      if (getView().goBack)
+        await getView().goBack();
+    });
 
-(<HTMLElement> document.getElementById('hambuger-menu-toggle')).addEventListener('click', (e) => {
-  e.stopPropagation();
-  toggleMenu();
-});
+(<HTMLElement>document.getElementById('hambuger-menu-toggle'))
+    .addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu();
+    });
 
-(<HTMLElement> document.getElementById('main-content')).addEventListener('click', (e) => {
-  let mainContent = <HTMLElement> document.getElementById('main-content');
-  if (mainContent.classList.contains(DRAWER_OPEN)) {
-    e.preventDefault();
-    closeMenu();
-  }
-})
+(<HTMLElement>document.getElementById('main-content'))
+    .addEventListener('click', (e) => {
+      let mainContent = <HTMLElement>document.getElementById('main-content');
+      if (mainContent.classList.contains(DRAWER_OPEN)) {
+        e.preventDefault();
+        closeMenu();
+      }
+    })
 
 async function viewCompose(params: any) {
   let model = new ComposeModel(updateLoaderTitle);
   await setView(new ComposeView(model, contacts_, params));
 }
 
-async function createThreadListView(model: ThreadListModel, countDown: boolean, bottomButtonUrl: string, bottomButtonText: string) {
+async function createThreadListView(
+    model: ThreadListModel, countDown: boolean, bottomButtonUrl: string,
+    bottomButtonText: string) {
   let settings = await getSettings();
   let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
   let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
-  let allowedReplyLength =  settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+  let allowedReplyLength =
+      settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
-  return new ThreadListView(model, await getLabels(), getScroller(),
-    updateLoaderTitle, setSubject, showBackArrow, allowedReplyLength, contacts_, autoStartTimer,
-    countDown, timerDuration, bottomButtonUrl, bottomButtonText);
+  return new ThreadListView(
+      model, await getLabels(), getScroller(), updateLoaderTitle, setSubject,
+      showBackArrow, allowedReplyLength, contacts_, autoStartTimer, countDown,
+      timerDuration, bottomButtonUrl, bottomButtonText);
 }
 
 async function viewTriage() {
   updateLoaderTitle('viewTriage', 'Fetching threads to triage...');
 
   let countDown = true;
-  let view = await createThreadListView(await getTriageModel(), countDown, '/todo', 'Go to todo list');
+  let view = await createThreadListView(
+      await getTriageModel(), countDown, '/todo', 'Go to todo list');
   await setView(view);
 
   updateLoaderTitle('viewTriage', '');
@@ -135,7 +145,9 @@ async function getTriageModel() {
   if (!triageModel_) {
     let settings = await getSettings();
     let vacation = settings.get(ServerStorage.KEYS.VACATION);
-    triageModel_ = new TriageModel(updateLoaderTitle, vacation, await getLabels(), settings, await getQueuedLabelMap());
+    triageModel_ = new TriageModel(
+        updateLoaderTitle, vacation, await getLabels(), settings,
+        await getQueuedLabelMap());
   }
   return triageModel_;
 }
@@ -152,16 +164,17 @@ async function getTodoModel() {
 
 async function viewTodo() {
   let countDown = true;
-  let view = await createThreadListView(await getTodoModel(), countDown, '/triage', 'Back to Triaging');
+  let view = await createThreadListView(
+      await getTodoModel(), countDown, '/triage', 'Back to Triaging');
   await setView(view);
 }
 
 function getScroller() {
-  return <HTMLElement> document.getElementById('content');
+  return <HTMLElement>document.getElementById('content');
 }
 
-function setSubject(...items: (string | Node)[]) {
-  let subject = <HTMLElement> document.getElementById('subject');
+function setSubject(...items: (string|Node)[]) {
+  let subject = <HTMLElement>document.getElementById('subject');
   subject.textContent = '';
   subject.append(...items);
 }
@@ -199,26 +212,28 @@ async function onLoad() {
   let menuTitle = document.createElement('div');
   menuTitle.append('MakeTime phases');
 
-  (<HTMLElement>document.getElementById('drawer')).append(
-    menuTitle,
-    createMenuItem('Compose', {href: '/compose', nested: true}),
-    createMenuItem('Triage', {href: '/triage', nested: true}),
-    createMenuItem('Todo', {href: '/todo', nested: true}),
-    settingsButton,
-    helpButton);
+  (<HTMLElement>document.getElementById('drawer'))
+      .append(
+          menuTitle,
+          createMenuItem('Compose', {href: '/compose', nested: true}),
+          createMenuItem('Triage', {href: '/triage', nested: true}),
+          createMenuItem('Todo', {href: '/todo', nested: true}), settingsButton,
+          helpButton);
 
   await routeToCurrentLocation();
 
-  // Don't want to show the earlier title, but still want to indicate loading is happening.
-  // since we're going to processMail still. It's a less jarring experience if the loading
-  // spinner doesn't go away and then come back when conteacts are done being fetched.
+  // Don't want to show the earlier title, but still want to indicate loading is
+  // happening. since we're going to processMail still. It's a less jarring
+  // experience if the loading spinner doesn't go away and then come back when
+  // conteacts are done being fetched.
   updateLoaderTitle('onLoad', '\xa0');
 
   // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   await fetchContacts(gapi.auth.getToken());
 
   await update();
-  // Wait until we've fetched all the threads before trying to process updates regularly.
+  // Wait until we've fetched all the threads before trying to process updates
+  // regularly.
   setInterval(update, 1000 * 60);
 
   updateLoaderTitle('onLoad');
@@ -237,13 +252,16 @@ async function fetchContacts(token: any) {
   if (contacts_.length)
     return;
 
-  // This is 450kb! Either cache this and fetch infrequently, or find a way of getting the API to not send
-  // the data we don't need.
+  // This is 450kb! Either cache this and fetch infrequently, or find a way of
+  // getting the API to not send the data we don't need.
   let response;
   try {
-    response = await fetch("https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=" + token.access_token + "&max-results=20000&v=3.0");
-  } catch(e) {
-    let message = `Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`;
+    response = await fetch(
+        'https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=' +
+        token.access_token + '&max-results=20000&v=3.0');
+  } catch (e) {
+    let message =
+        `Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`;
 
     let contacts = await IDBKeyVal.getDefault().get(CONTACT_STORAGE_KEY_);
     if (!contacts) {
@@ -253,8 +271,8 @@ async function fetchContacts(token: any) {
 
     ErrorLogger.log(`Using locally stored version of contacts. ${message}`);
 
-    // Manually copy each contact instead of just assigning because contacts_ is passed
-    // around and stored.
+    // Manually copy each contact instead of just assigning because contacts_ is
+    // passed around and stored.
     let parsed = JSON.parse(contacts);
     for (let contact of parsed) {
       contacts_.push(contact);
@@ -266,7 +284,7 @@ async function fetchContacts(token: any) {
   for (let entry of json.feed.entry) {
     if (!entry.gd$email)
       continue;
-    let contact = <Contact> {};
+    let contact = <Contact>{};
     if (entry.title.$t)
       contact.name = entry.title.$t;
     contact.emails = [];
@@ -276,9 +294,11 @@ async function fetchContacts(token: any) {
     contacts_.push(contact);
   }
 
-  // Store the final contacts object instead of the data fetched off the network since the latter
-  // can is order of magnitude larger and can exceed the allowed localStorage quota.
-  await IDBKeyVal.getDefault().set(CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
+  // Store the final contacts object instead of the data fetched off the network
+  // since the latter can is order of magnitude larger and can exceed the
+  // allowed localStorage quota.
+  await IDBKeyVal.getDefault().set(
+      CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
 }
 
 async function gcLocalStorage() {
@@ -300,7 +320,8 @@ async function gcLocalStorage() {
       if (weekNumber != currentWeekNumber)
         await IDBKeyVal.getDefault().del(key);
     }
-    await storage.writeUpdates([{key: ServerStorage.KEYS.LAST_GC_TIME, value: Date.now()}]);
+    await storage.writeUpdates(
+        [{key: ServerStorage.KEYS.LAST_GC_TIME, value: Date.now()}]);
   }
 }
 
@@ -319,7 +340,7 @@ export async function update() {
   let triageModel = await getTriageModel();
   await triageModel.update();
 
-  await(await getView()).update();
+  await (await getView()).update();
 
   await gcLocalStorage();
 
@@ -330,7 +351,7 @@ export async function update() {
 document.body.addEventListener('click', async (e) => {
   for (let node of e.path) {
     if (node.tagName == 'A') {
-      let anchor = <HTMLAnchorElement> node;
+      let anchor = <HTMLAnchorElement>node;
       let willHandlePromise = router.run(anchor);
       if (willHandlePromise) {
         // Need to preventDefault before the await, otherwise the browsers
@@ -356,13 +377,14 @@ let NON_TEXT_INPUT_TYPES = [
 ];
 
 function isEditable(element: Element) {
-  if (element.tagName == 'INPUT' && !NON_TEXT_INPUT_TYPES.includes((<HTMLInputElement>element).type))
+  if (element.tagName == 'INPUT' &&
+      !NON_TEXT_INPUT_TYPES.includes((<HTMLInputElement>element).type))
     return true;
 
   if (element.tagName == 'TEXTAREA')
     return true;
 
-  let parent: Element | null = element;
+  let parent: Element|null = element;
   while (parent) {
     let userModify = getComputedStyle(parent).webkitUserModify;
     if (userModify && userModify.startsWith('read-write'))
@@ -373,7 +395,7 @@ function isEditable(element: Element) {
   return false;
 }
 
-document.addEventListener("visibilitychange", function() {
+document.addEventListener('visibilitychange', function() {
   if (document.visibilityState == 'visible')
     update();
 });
@@ -390,7 +412,8 @@ document.body.addEventListener('keydown', async (e) => {
     return;
   }
 
-  if (getView().dispatchShortcut && !e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey)
+  if (getView().dispatchShortcut && !e.ctrlKey && !e.shiftKey && !e.altKey &&
+      !e.metaKey)
     await getView().dispatchShortcut(e);
 });
 

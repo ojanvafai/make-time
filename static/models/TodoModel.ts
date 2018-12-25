@@ -1,6 +1,7 @@
-import { ThreadListModel, PlainThreadData } from "./ThreadListModel.js";
-import { Labels } from "../Labels.js";
-import { Thread } from "../Thread.js";
+import {Labels} from '../Labels.js';
+import {Thread} from '../Thread.js';
+
+import {PlainThreadData, ThreadListModel} from './ThreadListModel.js';
 
 let serializationKey = 'todo-view';
 
@@ -15,7 +16,8 @@ export class TodoModel extends ThreadListModel {
   }
 
   async handleTriaged(destination: string, thread: Thread) {
-    // Setting priority adds the thread back into the triaged list at it's new priority.
+    // Setting priority adds the thread back into the triaged list at it's new
+    // priority.
     if (!destination || !Labels.isPriorityLabel(destination))
       return;
     await thread.update();
@@ -51,10 +53,14 @@ export class TodoModel extends ThreadListModel {
     this.updateTitle('fetch', ' ');
 
     let labels = await this.labels.getThreadCountForLabels((label: string) => {
-      return this.vacation_ ? label == Labels.MUST_DO_LABEL : Labels.isPriorityLabel(label);
+      return this.vacation_ ? label == Labels.MUST_DO_LABEL :
+                              Labels.isPriorityLabel(label);
     });
-    let labelsToFetch = labels.filter(data => data.count).map(data => data.name);
-    labelsToFetch.sort((a, b) => this.comparePriorities_(Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
+    let labelsToFetch =
+        labels.filter(data => data.count).map(data => data.name);
+    labelsToFetch.sort(
+        (a, b) => this.comparePriorities_(
+            Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
 
     let threadsToSerialize: PlainThreadData[] = [];
     let processThread = (thread: Thread) => {

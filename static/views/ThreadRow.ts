@@ -1,7 +1,7 @@
-import { RenderedThread } from '../RenderedThread.js';
-import { RowGroup } from '../RowGroup.js';
-import { ViewInGmailButton } from '../ViewInGmailButton.js';
-import { Thread } from '../Thread.js';
+import {RenderedThread} from '../RenderedThread.js';
+import {RowGroup} from '../RowGroup.js';
+import {Thread} from '../Thread.js';
+import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 interface DateFormatOptions {
   year: string;
@@ -14,7 +14,7 @@ interface DateFormatOptions {
 export class ThreadRow extends HTMLElement {
   focused: boolean;
   rendered!: RenderedThread;
-  mark: boolean | undefined;
+  mark: boolean|undefined;
   private checkBox_: HTMLInputElement;
   private messageDetails_: HTMLElement;
   private thread_!: Thread;
@@ -79,13 +79,11 @@ export class ThreadRow extends HTMLElement {
     this.thread_ = thread;
     this.rendered = new RenderedThread(thread);
 
-    this.thread_.getSubject()
-    .then(subject => {
+    this.thread_.getSubject().then(subject => {
       if (!this.thread_)
         throw 'This should never happen. this.thread_ got nulled out.';
 
-      this.thread_.getMessages()
-      .then(messages => {
+      this.thread_.getMessages().then(messages => {
         if (!this.thread_)
           throw 'This should never happen. this.thread_ got nulled out.';
 
@@ -158,7 +156,7 @@ export class ThreadRow extends HTMLElement {
 
   updateHighlight_() {
     if (this.focused)
-      this.style.backgroundColor = "#ccc";
+      this.style.backgroundColor = '#ccc';
     else if (this.checkBox_.checked)
       this.style.backgroundColor = '#c2dbff';
     else
@@ -171,7 +169,8 @@ export class ThreadRow extends HTMLElement {
     if (today.getFullYear() != date.getFullYear())
       options.year = 'numeric';
 
-    if (today.getMonth() != date.getMonth() || today.getDate() != date.getDate()) {
+    if (today.getMonth() != date.getMonth() ||
+        today.getDate() != date.getDate()) {
       options.month = 'short';
       options.day = 'numeric';
     } else {
@@ -183,7 +182,8 @@ export class ThreadRow extends HTMLElement {
   }
 
   get checked() {
-    // If we're mid construction of the row, then the checkbox may not exist yet.
+    // If we're mid construction of the row, then the checkbox may not exist
+    // yet.
     return this.checkBox_ && this.checkBox_.checked;
   }
 

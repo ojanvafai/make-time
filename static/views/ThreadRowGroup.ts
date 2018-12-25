@@ -1,4 +1,4 @@
-import { ThreadRow } from "./ThreadRow";
+import {ThreadRow} from './ThreadRow';
 
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
@@ -16,11 +16,9 @@ export class ThreadRowGroup extends HTMLElement {
 
     let header = document.createElement('div');
     header.append(
-      queueContainer,
-      ' select ',
-      this.createSelector_('all', this.selectAll_),
-      this.createSelector_('none', this.selectNone_)
-    );
+        queueContainer, ' select ',
+        this.createSelector_('all', this.selectAll_),
+        this.createSelector_('none', this.selectNone_));
 
     header.style.cssText = `
       margin-left: 5px;
@@ -91,4 +89,3 @@ export class ThreadRowGroup extends HTMLElement {
   }
 }
 window.customElements.define('mt-thread-row-group', ThreadRowGroup);
-

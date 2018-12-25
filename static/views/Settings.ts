@@ -1,9 +1,10 @@
-import { FiltersView } from './Filters.js';
-import { Labels } from '../Labels.js';
-import { QueuesView } from './Queues.js';
-import { Settings } from '../Settings.js';
-import { showDialog } from '../Base.js';
-import { QueueSettings } from '../QueueSettings.js';
+import {showDialog} from '../Base.js';
+import {Labels} from '../Labels.js';
+import {QueueSettings} from '../QueueSettings.js';
+import {Settings} from '../Settings.js';
+
+import {FiltersView} from './Filters.js';
+import {QueuesView} from './Queues.js';
 
 export class SettingsView extends HTMLElement {
   private scrollable_: HTMLElement;
@@ -11,7 +12,8 @@ export class SettingsView extends HTMLElement {
   private dialog_: HTMLDialogElement;
   private basicSettings_: HTMLElement;
 
-  constructor(private settings_: Settings, private queueSettings_: QueueSettings) {
+  constructor(
+      private settings_: Settings, private queueSettings_: QueueSettings) {
     super();
     this.style.cssText = `
       display: flex;
@@ -56,10 +58,13 @@ export class SettingsView extends HTMLElement {
     this.basicSettings_ = document.createElement('div');
     this.populateSettings_(this.basicSettings_);
 
-    let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${this.settings_.spreadsheetId}/edit`;
+    let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${
+        this.settings_.spreadsheetId}/edit`;
     let clearBackendInstructions = document.createElement('div');
     clearBackendInstructions.style.cssText = `margin: 16px 0;`;
-    clearBackendInstructions.innerHTML = `To disconnect backend spreadsheet completely, delete or rename <a href=${spreadsheetUrl}>the spreadsheet itself</a>.`;
+    clearBackendInstructions.innerHTML =
+        `To disconnect backend spreadsheet completely, delete or rename <a href=${
+            spreadsheetUrl}>the spreadsheet itself</a>.`;
     this.scrollable_.append(clearBackendInstructions);
 
     let save = document.createElement('button');
@@ -84,7 +89,8 @@ export class SettingsView extends HTMLElement {
 
   showFilterDialog_() {
     if (this.hadChanges_) {
-      alert("You have changed some settings in this dialog. Please save or cancel first.");
+      alert(
+          'You have changed some settings in this dialog. Please save or cancel first.');
       return;
     }
     new FiltersView(this.settings_);
@@ -93,7 +99,8 @@ export class SettingsView extends HTMLElement {
 
   async showQueuesDialog_() {
     if (this.hadChanges_) {
-      alert("You have changed some settings in this dialog. Please save or cancel first.");
+      alert(
+          'You have changed some settings in this dialog. Please save or cancel first.');
       return;
     }
 
@@ -143,12 +150,13 @@ export class SettingsView extends HTMLElement {
           z-index: 100;
         `;
 
-        tooltipElement.append(<string> helpButton.getAttribute('tooltip'));
+        tooltipElement.append(<string>helpButton.getAttribute('tooltip'));
         helpButton.after(tooltipElement);
-      }
+      };
+
       helpButton.onmouseleave = () => {
         tooltipElement.remove();
-      }
+      };
 
       let input = document.createElement('input');
       input.style.cssText = `
@@ -182,7 +190,7 @@ export class SettingsView extends HTMLElement {
       return;
     }
 
-    let updates: {key: string | null, value?: string | boolean}[] = [];
+    let updates: {key: string|null, value?: string|boolean}[] = [];
     let inputs = this.basicSettings_.querySelectorAll('input');
     for (let input of inputs) {
       let value = input.type == 'checkbox' ? input.checked : input.value;
