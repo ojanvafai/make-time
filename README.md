@@ -61,8 +61,13 @@ $ ./node_modules/gulp/bin/gulp.js
 If you use VS Code you can get autoformatting of TS code on save with:
 
 1. Install the clang-format extension: https://marketplace.visualstudio.com/items?itemName=xaver.clang-format
-2. Set the Clang-format: Executable setting in VSCode to: ${workspaceRoot}/node_modules/clang-format/bin/linux_x64/clang-format
-3. Enable editor.formatOnSave
+2. Added the following to your VSCode settings:
+  "clang-format.executable": "${workspaceRoot}/node_modules/clang-format/bin/linux_x64/clang-format",
+  "[typescript]": {
+      "editor.formatOnSave": true,
+      "editor.formatOnPaste": true,
+      "editor.formatOnType": true
+  }
 
 
 ## Navigating the code
