@@ -13,7 +13,6 @@ let staleAfterFetchError =
 export class Thread {
   id: string;
   historyId: string;
-  private allLabels_: Labels;
   private hasMessageDetails_: boolean = false;
 
   // These are all set in resetState, which is called from the constructor.
@@ -31,10 +30,9 @@ export class Thread {
   // TODO: Give this a non-any value once we import gapi types.
   private fetchPromise_: Promise<any>|null = null;
 
-  constructor(thread: any, allLabels: Labels) {
+  constructor(thread: any, private allLabels_: Labels) {
     this.id = thread.id;
     this.historyId = thread.historyId;
-    this.allLabels_ = allLabels;
 
     this.resetState();
 

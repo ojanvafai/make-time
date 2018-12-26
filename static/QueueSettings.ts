@@ -4,7 +4,6 @@ import {Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export class QueueSettings {
-  private spreadsheetId_: string;
   private fetcher_: AsyncOnce;
   // TODO: Fix these to not assert non-null since they could realistically be
   // null if fetch() isn't completed.
@@ -20,8 +19,7 @@ export class QueueSettings {
   ];
   static goals = ['Inbox Zero', 'Best Effort']
 
-  constructor(spreadsheetId: string) {
-    this.spreadsheetId_ = spreadsheetId;
+  constructor(private spreadsheetId_: string) {
     this.fetcher_ = new AsyncOnce(this.fetch_.bind(this))
   }
 

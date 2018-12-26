@@ -3,7 +3,8 @@ import {Base64} from './base64.js';
 import {gapiFetch} from './Net.js';
 
 interface Resource {
-  raw: string, threadId?: string,
+  raw: string;
+  threadId?: string;
 }
 
 export async function send(

@@ -11,7 +11,6 @@ export class AutoCompleteEntry extends HTMLElement {
 window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
 
 export abstract class Compose extends HTMLElement {
-  private contacts_: any;
   separator: string;
   private content_: HTMLElement;
   private placeholder_: string|undefined;
@@ -24,12 +23,10 @@ export abstract class Compose extends HTMLElement {
   abstract isStillAutoCompleting(): boolean|null;
   abstract selectedEntry(selectedItem: any): any;
 
-  constructor(contacts: any, opt_isMultiline?: boolean) {
+  constructor(private contacts_: any, opt_isMultiline?: boolean) {
     super();
 
     this.style.display = 'flex';
-
-    this.contacts_ = contacts;
     this.separator = '';
 
     this.content_ = document.createElement('div');

@@ -1,14 +1,11 @@
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export class ServerStorage {
-  private spreadsheetId_: string;
   private static backendValues_: any;
   static BACKEND_SHEET_NAME_: string;
   static KEYS: KeyTypes;
 
-  constructor(spreadsheetId: string) {
-    this.spreadsheetId_ = spreadsheetId;
-  }
+  constructor(private spreadsheetId_: string) {}
 
   async fetch() {
     if (ServerStorage.backendValues_)

@@ -2,13 +2,11 @@ import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 
 export class RenderedThread {
-  thread: Thread;
   private dom_: HTMLElement|null;
   private queued_: ((value?: {}|PromiseLike<{}>) => void)[];
   private isFetching_: boolean = false;
 
-  constructor(thread: Thread) {
-    this.thread = thread;
+  constructor(public thread: Thread) {
     this.dom_ = null;
     this.queued_ = [];
   }

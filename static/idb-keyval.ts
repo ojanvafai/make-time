@@ -1,30 +1,28 @@
 // Modified version of https://github.com/jakearchibald/idb-keyval.
 export class IDBKeyVal {
-  storeName: string;
   _dbp: Promise<any>;
   static store_: IDBKeyVal;
   static getDefault: () => IDBKeyVal;
 
-  constructor(dbName = 'keyval-store', storeName = 'keyval') {
-    this.storeName = storeName;
+  constructor(dbName = 'keyval-store', private storeName_ = 'keyval') {
     this._dbp = new Promise((resolve, reject) => {
       const openreq = indexedDB.open(dbName, 1);
       openreq.onerror = () => reject(openreq.error);
       openreq.onsuccess = () => resolve(openreq.result);
       // First time setup: create an empty object store
       openreq.onupgradeneeded = () => {
-        openreq.result.createObjectStore(storeName);
+        openreq.result.createObjectStore(storeName_);
       };
     });
   }
   _withIDBStore(type: any, callback: any) {
     return this._dbp.then(db => new Promise((resolve, reject) => {
                             const transaction =
-                                db.transaction(this.storeName, type);
+                                db.transaction(this.storeName_, type);
                             transaction.oncomplete = () => resolve();
                             transaction.onabort = transaction.onerror = () =>
                                 reject(transaction.error);
-                            callback(transaction.objectStore(this.storeName));
+                            callback(transaction.objectStore(this.storeName_));
                           }));
   }
   get(key: string) {

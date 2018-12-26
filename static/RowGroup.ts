@@ -4,7 +4,6 @@ import {ThreadRow} from './views/ThreadRow.js';
 import {ThreadRowGroup} from './views/ThreadRowGroup.js';
 
 export class RowGroup {
-  queue: string;
   node: ThreadRowGroup;
   private rows_: ThreadRow[];
   private sorted_: boolean;
@@ -17,8 +16,7 @@ export class RowGroup {
     return <RowGroup>RowGroup.groups_[queue];
   }
 
-  constructor(queue: string) {
-    this.queue = queue;
+  constructor(public queue: string) {
     this.node = new ThreadRowGroup(queue);
     this.rows_ = [];
     this.sorted_ = true;

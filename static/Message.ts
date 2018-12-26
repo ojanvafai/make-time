@@ -11,8 +11,6 @@ interface AttachmentResult {
 
 export class Message {
   static base64_ = new Base64();
-  private rawMessage_: any;
-  private previousMessage_: Message|undefined;
   private plain_: string|undefined;
   private plainedHtml_: string|undefined;
   private html_: string|undefined;
@@ -39,16 +37,14 @@ export class Message {
   isUnread: boolean;
   isDraft: boolean;
 
-  constructor(message: any, previousMessage?: Message) {
-    this.rawMessage_ = message;
-    this.previousMessage_ = previousMessage;
-    this.id = message.id;
+  constructor(private rawMessage_: any, private previousMessage_?: Message) {
+    this.id = rawMessage_.id;
 
     this.attachments_ = [];
 
     let hasDate = false;
 
-    for (var header of message.payload.headers) {
+    for (var header of rawMessage_.payload.headers) {
       // Some mail users lower case header names (probably just spam).
       switch (header.name.toLowerCase()) {
         case 'subject':
@@ -87,10 +83,10 @@ export class Message {
     // Things like chats don't have a date header. Use internalDate as per
     // https://developers.google.com/gmail/api/release-notes#2015-06-18.
     if (!hasDate)
-      this.date = new Date(Number(message.internalDate));
+      this.date = new Date(Number(rawMessage_.internalDate));
 
-    this.isUnread = message.labelIds.includes('UNREAD');
-    this.isDraft = message.labelIds.includes('DRAFT');
+    this.isUnread = rawMessage_.labelIds.includes('UNREAD');
+    this.isDraft = rawMessage_.labelIds.includes('DRAFT');
   }
 
   getHeaderValue(name: string) {
