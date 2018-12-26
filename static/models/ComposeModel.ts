@@ -12,7 +12,7 @@ export class ComposeModel extends Model {
   private subject_: string;
   private body_: string;
 
-  constructor(updateTitle: any) {
+  constructor(updateTitle: (key: string, ...title: string[]) => void) {
     super(updateTitle);
 
     this.sending_ = false;

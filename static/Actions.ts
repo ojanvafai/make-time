@@ -1,28 +1,36 @@
 import {Labels} from './Labels.js';
 import {ThreadListView} from './views/ThreadListView.js';
 
-export class Actions extends HTMLElement {
-  // TODO: Give these proper types.
-  static ARCHIVE_ACTION: any;
-  static BLOCKED_ACTION: any;
-  static SPAM_ACTION: any;
-  static MUTE_ACTION: any;
-  static MUST_DO_ACTION: any;
-  static URGENT_ACTION: any;
-  static BACKLOG_ACTION: any;
-  static NEEDS_FILTER_ACTION: any;
-  static QUICK_REPLY_ACTION: any;
-  static NEXT_EMAIL_ACTION: any;
-  static PREVIOUS_EMAIL_ACTION: any;
-  static TOGGLE_FOCUSED_ACTION: any;
-  static VIEW_FOCUSED_ACTION: any;
-  static NEXT_QUEUE_ACTION: any;
-  static PREVIOUS_QUEUE_ACTION: any;
-  static TOGGLE_QUEUE_ACTION: any;
-  static VIEW_TRIAGE_ACTION: any;
-  static UNDO_ACTION: any;
+interface Action {
+  name: string;
+  description: string;
+  key?: string;
+  hidden: boolean;
+  repeatable: boolean;
+  destination?: string|null;
+}
 
-  constructor(private view_: ThreadListView, private actions_: any[]) {
+export class Actions extends HTMLElement {
+  static ARCHIVE_ACTION: Action;
+  static BLOCKED_ACTION: Action;
+  static SPAM_ACTION: Action;
+  static MUTE_ACTION: Action;
+  static MUST_DO_ACTION: Action;
+  static URGENT_ACTION: Action;
+  static BACKLOG_ACTION: Action;
+  static NEEDS_FILTER_ACTION: Action;
+  static QUICK_REPLY_ACTION: Action;
+  static NEXT_EMAIL_ACTION: Action;
+  static PREVIOUS_EMAIL_ACTION: Action;
+  static TOGGLE_FOCUSED_ACTION: Action;
+  static VIEW_FOCUSED_ACTION: Action;
+  static NEXT_QUEUE_ACTION: Action;
+  static PREVIOUS_QUEUE_ACTION: Action;
+  static TOGGLE_QUEUE_ACTION: Action;
+  static VIEW_TRIAGE_ACTION: Action;
+  static UNDO_ACTION: Action;
+
+  constructor(private view_: ThreadListView, private actions_: Action[]) {
     super();
     this.style.display = 'flex';
     this.style.flexWrap = 'wrap';
@@ -31,7 +39,7 @@ export class Actions extends HTMLElement {
     this.appendActions_(this, actions_);
   }
 
-  appendActions_(container: HTMLElement, actions: any[]) {
+  appendActions_(container: HTMLElement, actions: Action[]) {
     for (let action of actions) {
       if (action.hidden)
         continue;
@@ -76,10 +84,7 @@ export class Actions extends HTMLElement {
 
   // Do this in the constructor since it depends on Labels.js
   setDestinations_() {
-    // Done is removing all labels. Use null as a sentinel for that.
-    Actions.ARCHIVE_ACTION.destination = null;
     Actions.BLOCKED_ACTION.destination = Labels.BLOCKED_LABEL;
-    Actions.SPAM_ACTION.destination = 'SPAM';
     Actions.MUTE_ACTION.destination = Labels.MUTED_LABEL;
 
     Actions.MUST_DO_ACTION.destination = Labels.MUST_DO_LABEL;
@@ -89,7 +94,7 @@ export class Actions extends HTMLElement {
   }
 
   dispatchShortcut(e: KeyboardEvent) {
-    let test = (action: any) => {
+    let test = (action: Action) => {
       // Don't allow certain actions to apply in rapid succession for each
       // thread. This prevents accidents of archiving a lot of threads at once
       // when your stupid keyboard gets stuck holding the archive key down.
@@ -106,7 +111,7 @@ export class Actions extends HTMLElement {
       this.takeAction(action, e);
   }
 
-  async takeAction(action: any, opt_e?: KeyboardEvent) {
+  async takeAction(action: Action, opt_e?: KeyboardEvent) {
     if (this.view_.shouldSuppressActions())
       return;
 
@@ -128,6 +133,8 @@ Actions.ARCHIVE_ACTION = {
   key: undefined,
   hidden: false,
   repeatable: false,
+  // Done is removing all labels. Use null as a sentinel for that.
+  destination: null,
 };
 
 Actions.QUICK_REPLY_ACTION = {
@@ -154,6 +161,7 @@ Actions.SPAM_ACTION = {
   key: undefined,
   hidden: false,
   repeatable: false,
+  destination: 'SPAM',
 };
 
 Actions.MUTE_ACTION = {

@@ -13,14 +13,24 @@ import {Settings} from './Settings.js';
 import {Thread} from './Thread.js';
 import {View} from './views/View.js';
 
+interface ThreadData {
+  id: string;
+  historyId: string;
+}
+
+interface TitleEntry {
+  key: string;
+  title: string[];
+}
+
 class ThreadCache {
-  cache_: Map<Number, Thread>;
+  cache_: Map<string, Thread>;
 
   constructor() {
     this.cache_ = new Map();
   }
 
-  async get(threadData: any) {
+  async get(threadData: ThreadData) {
     // TODO: This cache grows indefinitely. It needs to be GC'ed, possibly after
     // each update call? A simple step could be to delete the cache once a day.
     // All the data is on disk, so it shouldn't be too expensive.
@@ -46,8 +56,8 @@ let labels_: Labels;
 let queuedLabelMap_: QueueSettings;
 let loginDialog_: HTMLDialogElement;
 let currentView_: View;
-let titleStack_: any[] = [];
-let loaderTitleStack_: any[] = [];
+let titleStack_: TitleEntry[] = [];
+let loaderTitleStack_: TitleEntry[] = [];
 let threadCache_: ThreadCache;
 
 // Client ID and API key from the Developer Console
@@ -137,9 +147,7 @@ async function doLabelMigration(
     addLabelIds: string[], removeLabelIds: string[], query: string) {
   await fetchThreads(async (thread: Thread) => {
     await thread.modify(addLabelIds, removeLabelIds);
-  }, {
-    query: query,
-  });
+  }, query);
 }
 
 async function migrateLabels(labels: Labels) {
@@ -243,7 +251,8 @@ export function updateLoaderTitle(key: string, ...opt_title: string[]) {
 }
 
 function updateTitleBase(
-    stack: any[], node: HTMLElement, key: string, ...opt_title: string[]) {
+    stack: TitleEntry[], node: HTMLElement, key: string,
+    ...opt_title: string[]) {
   let index = stack.findIndex((item) => item.key == key);
   if (!opt_title[0]) {
     if (index != -1)
@@ -263,7 +272,7 @@ function updateTitleBase(
     node.append(...stack[stack.length - 1].title);
 }
 
-export async function getCachedThread(response: any) {
+export async function getCachedThread(response: ThreadData) {
   if (!threadCache_)
     threadCache_ = new ThreadCache();
   return await threadCache_.get(response);
@@ -276,12 +285,10 @@ interface FetchRequestParameters {
 }
 
 export async function fetchThreads(
-    forEachThread: (thread: Thread) => void, options: any) {
+    forEachThread: (thread: Thread) => void, query?: string) {
+  query = query || '';
   // Chats don't expose their bodies in the gmail API, so just skip them.
-  let query = '-in:chats ';
-
-  if (options.query)
-    query += ' ' + options.query;
+  query += ' -in:chats ';
 
   // let daysToShow = (await
   // getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW); if (daysToShow)

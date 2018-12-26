@@ -119,8 +119,8 @@ export class Labels {
 
   // TODO: These can be undefined if fetch hasn't finished. Make the code
   // robust to that and remove the !'s
-  private labelToId_!: any;
-  private idToLabel_!: any;
+  private labelToId_!: Map<string, string>;
+  private idToLabel_!: Map<string, string>;
   private makeTimeLabelIds_!: Set<string>;
   private makeTimeLabelNames_!: Set<string>;
   private needsTriageLabelNames_!: Set<string>;
@@ -132,8 +132,8 @@ export class Labels {
         // libraries.
         gapi.client.gmail.users.labels.list, {'userId': USER_ID});
 
-    this.labelToId_ = {};
-    this.idToLabel_ = {};
+    this.labelToId_ = new Map();
+    this.idToLabel_ = new Map();
     this.makeTimeLabelIds_ = new Set();
     this.makeTimeLabelNames_ = new Set();
     this.needsTriageLabelNames_ = new Set();
@@ -150,8 +150,8 @@ export class Labels {
   }
 
   addLabel_(name: string, id: string) {
-    this.labelToId_[name] = id;
-    this.idToLabel_[id] = name;
+    this.labelToId_.set(name, id);
+    this.idToLabel_.set(id, name);
     if (Labels.isMakeTimeLabel(name)) {
       this.makeTimeLabelIds_.add(id);
       this.makeTimeLabelNames_.add(name);
@@ -163,17 +163,19 @@ export class Labels {
   }
 
   removeLabel_(name: string) {
-    let id = this.labelToId_[name];
-    delete this.labelToId_[name];
-    delete this.idToLabel_[id];
-    this.makeTimeLabelIds_.delete(id);
+    let id = this.labelToId_.get(name);
+    if (id) {
+      this.labelToId_.delete(name);
+      this.idToLabel_.delete(id);
+      this.makeTimeLabelIds_.delete(id);
+    }
     this.makeTimeLabelNames_.delete(name);
     this.needsTriageLabelNames_.delete(name);
     this.priorityLabels_.delete(name);
   }
 
   getName(id: string) {
-    return this.idToLabel_[id];
+    return this.idToLabel_.get(id);
   }
 
   isParentLabel(name: string) {
@@ -210,8 +212,8 @@ export class Labels {
       migrater:
           (addLabelIds: string[], removeLabelIds: string[],
            query: string) => {}) {
-    let addLabelIds = [this.labelToId_[newName]];
-    let removeLabelIds = [this.labelToId_[oldName]];
+    let addLabelIds = [this.labelToId_.get(newName)!];
+    let removeLabelIds = [this.labelToId_.get(oldName)!];
     let query = `in:${oldName}`;
     migrater(addLabelIds, removeLabelIds, query);
   }
@@ -221,9 +223,9 @@ export class Labels {
       migrater:
           (addLabelIds: string[], removeLabelIds: string[],
            query: string) => {}) {
-    let id = this.labelToId_[oldName];
+    let id = this.labelToId_.get(oldName);
     if (id) {
-      if (this.labelToId_[newName]) {
+      if (this.labelToId_.get(newName)) {
         await this.migrateThreads(oldName, newName, migrater);
         this.delete(oldName);
       } else {
@@ -255,7 +257,7 @@ export class Labels {
   }
 
   async delete(name: string, opt_includeNested?: boolean) {
-    let id = this.labelToId_[name];
+    let id = this.labelToId_.get(name);
     if (id) {
       // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
       await gapiFetch(gapi.client.gmail.users.labels.delete, {
@@ -286,17 +288,18 @@ export class Labels {
     return await Promise.all(names.map(async (name) => await this.getId(name)));
   }
 
-  async getId(labelName: string) {
-    if (this.labelToId_[labelName])
-      return this.labelToId_[labelName];
+  async getId(name: string): Promise<string> {
+    let id = this.labelToId_.get(name);
+    if (id)
+      return id;
 
     // For built-in labels, both the ID and the name are uppercased.
-    let uppercase = labelName.toUpperCase();
-    if (this.labelToId_[uppercase])
-      return this.labelToId_[uppercase];
+    id = this.labelToId_.get(name.toUpperCase());
+    if (id)
+      return id;
 
     await this.fetch();
-    var parts = labelName.split('/');
+    var parts = name.split('/');
 
     // Create all the parent labels as well as the final label.
     var labelSoFar = '';
@@ -307,14 +310,17 @@ export class Labels {
       // Technically we should handle the race if the label
       // gets created in between the start of the create call and this line.
       // Meh.
-      if (this.labelToId_[labelSoFar])
+      if (this.labelToId_.get(labelSoFar))
         continue;
 
       var result = await this.createLabel_(labelSoFar);
       this.addLabel_(labelSoFar, result.id);
     }
 
-    return this.labelToId_[labelName];
+    id = this.labelToId_.get(name);
+    if (!id)
+      throw `Something went wrong creating label: ${name}`;
+    return id;
   }
 
   getMakeTimeLabelIds() {
@@ -333,19 +339,19 @@ export class Labels {
     return Array.from(this.priorityLabels_);
   }
 
-  async getThreadCountForLabels(labelFilter: any) {
+  async getThreadCountForLabels(labelFilter: (label: string) => boolean) {
     // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let batch = gapi.client.newBatch();
 
     let addedAny = false;
-    for (let id in this.idToLabel_) {
-      if (labelFilter(this.idToLabel_[id])) {
+    for (let entry of this.idToLabel_) {
+      if (labelFilter(entry[1])) {
         addedAny = true;
         // @ts-ignore TODO: Figure out how to get types for gapi client
         // libraries.
         batch.add(gapi.client.gmail.users.labels.get({
           userId: USER_ID,
-          id: id,
+          id: entry[0],
         }));
       }
     }

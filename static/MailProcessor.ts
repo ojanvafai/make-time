@@ -12,11 +12,26 @@ import {Thread} from './Thread.js';
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
 
+interface Stats {
+  yearMonthDay: string;
+  totalThreads: number;
+  ignoredThreads: number;
+  nonIgnoredThreads: number;
+  immediateCount: number;
+  dailyCount: number;
+  weeklyCount: number;
+  monthlyCount: number;
+  numInvocations: number;
+  totalTime: number;
+  minTime: number;
+  maxTime: number;
+}
+
 export class MailProcessor {
   constructor(
       public settings: Settings, private triageModel_: TriageModel,
       private queuedLabelMap_: QueueSettings, private allLabels_: Labels,
-      private updateTitle_: any) {}
+      private updateTitle_: (key: string, ...title: string[]) => void) {}
 
   private async pushThread_(thread: Thread) {
     await thread.update();
@@ -74,17 +89,6 @@ export class MailProcessor {
     return false;
   }
 
-  async writeToStatsPage(
-      timestamp: number, num_threads_processed: number, per_label_counts: any,
-      time_taken: number) {
-    var data = [
-      timestamp, num_threads_processed, time_taken,
-      JSON.stringify(per_label_counts)
-    ];
-    await SpreadsheetUtils.appendToSheet(
-        this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
-  }
-
   getYearMonthDay(timestamp: number) {
     let date = new Date(timestamp);
 
@@ -97,15 +101,16 @@ export class MailProcessor {
     return date.getFullYear() + '/' + paddedMonth + '/' + paddedDay;
   }
 
-  async writeCollapsedStats(stats: any) {
-    if (stats && stats.numInvocations)
-      await SpreadsheetUtils.appendToSheet(
-          this.settings.spreadsheetId, DAILY_STATS_SHEET_NAME,
-          [Object.values(stats)]);
+  async writeCollapsedStats(stats: Stats) {
+    if (!stats.numInvocations)
+      return;
+    await SpreadsheetUtils.appendToSheet(
+        this.settings.spreadsheetId, DAILY_STATS_SHEET_NAME,
+        [Object.values(stats)]);
   }
 
   async collapseStats() {
-    let stats: any;
+    let stats: Stats|null = null;
     var rows = await SpreadsheetUtils.fetchSheet(
         this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
     let todayYearMonthDay = this.getYearMonthDay(Date.now());
@@ -135,7 +140,8 @@ export class MailProcessor {
         break;
 
       if (currentYearMonthDay != yearMonthDay) {
-        await this.writeCollapsedStats(stats);
+        if (stats)
+          await this.writeCollapsedStats(stats);
         currentYearMonthDay = yearMonthDay;
         stats = {
           yearMonthDay: currentYearMonthDay,
@@ -152,6 +158,9 @@ export class MailProcessor {
           maxTime: 0,
         };
       }
+
+      if (!stats)
+        throw 'Something went wrong computing stats.';
 
       lastRowProcessed = i;
 
@@ -185,7 +194,8 @@ export class MailProcessor {
       }
     }
 
-    await this.writeCollapsedStats(stats);
+    if (stats)
+      await this.writeCollapsedStats(stats);
 
     if (lastRowProcessed)
       await SpreadsheetUtils.deleteRows(
@@ -410,11 +420,14 @@ export class MailProcessor {
   async logToStatsPage_(labelName: string, startTime: Date) {
     // TODO: Simplify this now that we write the stats for each thread at a
     // time.
-    let perLabelCounts: any = {};
+    let perLabelCounts: {[property: string]: number} = {};
     perLabelCounts[labelName] = 1;
-    await this.writeToStatsPage(
-        startTime.getTime(), 1, perLabelCounts,
-        Date.now() - startTime.getTime());
+    var data = [
+      startTime.getTime(), 1, Date.now() - startTime.getTime(),
+      JSON.stringify(perLabelCounts)
+    ];
+    await SpreadsheetUtils.appendToSheet(
+        this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
   }
 
   async processThreads(threads: Thread[]) {
@@ -429,13 +442,12 @@ export class MailProcessor {
 
   async processUnprocessed() {
     let threads: Thread[] = [];
-    await fetchThreads((thread: Thread) => threads.push(thread), {
-      query: `in:${Labels.UNPROCESSED_LABEL}`,
-    });
-
-    await fetchThreads((thread: Thread) => threads.push(thread), {
-      query: `in:inbox -in:${Labels.PROCESSED_LABEL}`,
-    });
+    await fetchThreads(
+        (thread: Thread) => threads.push(thread),
+        `in:${Labels.UNPROCESSED_LABEL}`);
+    await fetchThreads(
+        (thread: Thread) => threads.push(thread),
+        `in:inbox -in:${Labels.PROCESSED_LABEL}`);
 
     if (!threads.length)
       return;
@@ -450,9 +462,8 @@ export class MailProcessor {
         await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
 
     let threads: Thread[] = [];
-    await fetchThreads((thread: Thread) => threads.push(thread), {
-      query: `in:${queuedLabelName}`,
-    });
+    await fetchThreads(
+        (thread: Thread) => threads.push(thread), `in:${queuedLabelName}`);
 
     if (!threads.length)
       return;

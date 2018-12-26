@@ -1,5 +1,6 @@
 export abstract class Model extends EventTarget {
-  constructor(protected updateTitle: any) {
+  constructor(
+      protected updateTitle: (key: string, ...title: string[]) => void) {
     super();
   }
   abstract async loadFromDisk(): Promise<any>;

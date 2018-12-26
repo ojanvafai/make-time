@@ -16,7 +16,7 @@ export class TriageModel extends ThreadListModel {
   private mailProcessor_: MailProcessor;
 
   constructor(
-      updateTitle: any, private vacation_: string, labels: Labels,
+      updateTitle: (key: string, ...title: string[]) => void, private vacation_: string, labels: Labels,
       settings_: Settings, private queueSettings_: QueueSettings) {
     super(updateTitle, labels, serializationKey);
 
@@ -158,9 +158,8 @@ export class TriageModel extends ThreadListModel {
     // Put threads that are in the inbox with no make-time labels first. That
     // way they always show up before daily/weekly/monthly bundles for folks
     // that don't want to filter 100% of their mail with make-time.
-    await fetchThreads(processThread, {
-      query: `in:inbox -(in:${makeTimeLabels.join(' OR in:')})`,
-    });
+    await fetchThreads(
+        processThread, `in:inbox -(in:${makeTimeLabels.join(' OR in:')})`);
     await this.fetchLabels(processThread, labelsToFetch);
 
     let threads = this.needsProcessingThreads_.concat();

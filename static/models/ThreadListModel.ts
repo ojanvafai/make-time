@@ -39,8 +39,8 @@ export abstract class ThreadListModel extends Model {
   private groupedThreads_: RowGroup[];
 
   constructor(
-      updateTitle: any, protected labels: Labels,
-      private serializationKey_: string) {
+      updateTitle: (key: string, ...title: string[]) => void,
+      protected labels: Labels, private serializationKey_: string) {
     super(updateTitle);
 
     this.serializedThreads_ = [];
@@ -89,9 +89,7 @@ export abstract class ThreadListModel extends Model {
   async fetchLabels(forEachThread: (thread: Thread) => void, labels: string[]) {
     if (!labels.length)
       return;
-    await fetchThreads(forEachThread, {
-      query: `in:${labels.join(' OR in:')}`,
-    });
+    await fetchThreads(forEachThread, `in:${labels.join(' OR in:')}`);
   }
 
   async getRowFromRelativeOffset(row: ThreadRow, offset: number):

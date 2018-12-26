@@ -6,7 +6,9 @@ import {PlainThreadData, ThreadListModel} from './ThreadListModel.js';
 let serializationKey = 'todo-view';
 
 export class TodoModel extends ThreadListModel {
-  constructor(updateTitle: any, private vacation_: string, labels: Labels) {
+  constructor(
+      updateTitle: (key: string, ...title: string[]) => void,
+      private vacation_: string, labels: Labels) {
     super(updateTitle, labels, serializationKey);
   }
 

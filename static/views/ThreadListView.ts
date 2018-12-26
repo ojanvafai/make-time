@@ -613,6 +613,9 @@ export class ThreadListView extends View {
       await this.renderedRow_.thread.sendReply(
           compose.value, compose.getEmails(), replyAll.checked);
       this.updateActions_();
+
+      if (Actions.ARCHIVE_ACTION.destination !== null)
+        throw 'This should never happen.';
       await this.markTriaged(Actions.ARCHIVE_ACTION.destination);
 
       this.updateTitle('sendReply');
