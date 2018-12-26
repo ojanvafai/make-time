@@ -228,7 +228,6 @@ async function onLoad() {
   // conteacts are done being fetched.
   updateLoaderTitle('onLoad', '\xa0');
 
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   await fetchContacts(gapi.auth.getToken());
 
   await update();

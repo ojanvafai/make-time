@@ -184,7 +184,6 @@ export async function getQueuedLabelMap() {
 
 function loadGapi() {
   return new Promise((resolve) => {
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     gapi.load('client:auth2', () => resolve());
   });
 };
@@ -198,14 +197,11 @@ async function login() {
   updateLoaderTitle('login', 'Logging in...');
 
   await loadGapi();
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   await gapi.client.init(
       {discoveryDocs: DISCOVERY_DOCS, clientId: CLIENT_ID, scope: SCOPES});
   // Listen for sign-in state changes.
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
   // Handle the initial sign-in state.
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
   updateSigninStatus(isSignedIn);
 
@@ -231,7 +227,6 @@ async function updateSigninStatus(isSignedIn: boolean) {
     let loginButton = document.createElement('button');
     loginButton.style.cssText = `font-size: 40px;`;
     loginButton.textContent = 'Log In';
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     loginButton.onclick = () => gapi.auth2.getAuthInstance().signIn();
     loginDialog_ = showDialog(loginButton);
   }

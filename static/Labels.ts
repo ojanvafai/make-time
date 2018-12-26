@@ -340,7 +340,6 @@ export class Labels {
   }
 
   async getThreadCountForLabels(labelFilter: (label: string) => boolean) {
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let batch = gapi.client.newBatch();
 
     let addedAny = false;
@@ -364,7 +363,7 @@ export class Labels {
     if (addedAny) {
       let labelDetails = await batch;
       for (let key in labelDetails.result) {
-        let details = labelDetails.result[key].result;
+        let details: any = labelDetails.result[key].result;
         labelsWithThreads.push({
           name: details.name,
           count: details.threadsTotal,

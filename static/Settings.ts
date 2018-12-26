@@ -112,15 +112,20 @@ export class Settings {
   }
 
   async getSpreadsheetId_() {
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let response = await gapi.client.drive.files.list({
       q: 'trashed=false and name=\'make-time backend (do not rename!)\'',
       spaces: 'drive',
     });
 
+    if (!response || !response.result || !response.result.files)
+      throw `Couldn't fetch settings spreadsheet.`;
+
     if (!response.result.files.length)
       await this.showSetupDialog_();
-    return response.result.files[0].id;
+    let id = response.result.files[0].id;
+    if (!id)
+      throw 'Fetched spreadsheet file, but has no spreadsheetId';
+    return id;
   }
 
   async showSetupDialog_() {
