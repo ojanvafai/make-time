@@ -156,7 +156,6 @@ export class Thread {
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     await gapiFetch(gapi.client.gmail.users.threads.modify, request);
     // TODO: Handle response.status != 200.
 
@@ -299,8 +298,6 @@ export class Thread {
 
     if (!messages) {
       if (!this.fetchPromise_) {
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
           userId: USER_ID,
           id: this.id,

@@ -226,13 +226,12 @@ export class Message {
       // attachments. So handle them gracefully.
       if (!attachment)
         continue;
-      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
       let fetched = await gapi.client.gmail.users.messages.attachments.get({
         'id': attachment.id,
         'messageId': this.id,
         'userId': USER_ID,
       });
-      let data = Message.base64_.base64decode(fetched.result.data);
+      let data = Message.base64_.base64decode(fetched.result.data || '');
       image.src = `data:${attachment.contentType},${data}`;
     }
   }

@@ -128,8 +128,6 @@ export class Labels {
 
   async fetch() {
     var response = await gapiFetch(
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         gapi.client.gmail.users.labels.list, {'userId': USER_ID});
 
     this.labelToId_ = new Map();
@@ -201,8 +199,6 @@ export class Labels {
     resource.id = id;
     resource.userId = USER_ID;
     let response =
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         await gapiFetch(gapi.client.gmail.users.labels.update, resource);
     return response.result;
   }
@@ -237,8 +233,6 @@ export class Labels {
           'resource': resource,
         };
 
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         await gapiFetch(gapi.client.gmail.users.labels.update, body);
         this.removeLabel_(oldName);
         this.addLabel_(newName, id);
@@ -259,7 +253,6 @@ export class Labels {
   async delete(name: string, opt_includeNested?: boolean) {
     let id = this.labelToId_.get(name);
     if (id) {
-      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
       await gapiFetch(gapi.client.gmail.users.labels.delete, {
         'userId': USER_ID,
         'id': id,
@@ -279,7 +272,6 @@ export class Labels {
   async createLabel_(name: string) {
     let resource = this.labelResource_(name);
     resource.userId = USER_ID;
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let resp = await gapiFetch(gapi.client.gmail.users.labels.create, resource);
     return resp.result;
   }
@@ -346,8 +338,6 @@ export class Labels {
     for (let entry of this.idToLabel_) {
       if (labelFilter(entry[1])) {
         addedAny = true;
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         batch.add(gapi.client.gmail.users.labels.get({
           userId: USER_ID,
           id: entry[0],

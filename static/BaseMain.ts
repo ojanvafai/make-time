@@ -299,8 +299,6 @@ export async function fetchThreads(
       requestParams.pageToken = opt_pageToken;
 
     let resp =
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {

@@ -2,7 +2,6 @@ import {gapiFetch} from './Net.js';
 
 async function getSheetId(
     spreadsheetId: string, sheetName: string): Promise<any> {
-  // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.get, {
     spreadsheetId: spreadsheetId,
     ranges: [sheetName],
@@ -20,7 +19,6 @@ export class SpreadsheetUtils {
       }
 
   static fetchSheet = async (spreadsheetId: string, range: string) => {
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let response = await gapiFetch(gapi.client.sheets.spreadsheets.values.get, {
       spreadsheetId: spreadsheetId,
       range: range,
@@ -42,8 +40,6 @@ export class SpreadsheetUtils {
       values: rows,
     };
     let response = await gapiFetch(
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         gapi.client.sheets.spreadsheets.values.update, requestParams,
         requestBody);
     // TODO: Handle if response.status != 200.
@@ -59,7 +55,6 @@ export class SpreadsheetUtils {
         range: `${sheetName}!A${startRow}:ZZ${finalRow}`,
       }
       await gapiFetch(
-      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
           gapi.client.sheets.spreadsheets.values.clear, requestParams, {});
     }
   }
@@ -93,8 +88,6 @@ export class SpreadsheetUtils {
       values: rows,
     };
     let response = await gapiFetch(
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         gapi.client.sheets.spreadsheets.values.update, requestParams,
         requestBody);
     // TODO: Handle if response.status != 200.
@@ -109,7 +102,6 @@ export class SpreadsheetUtils {
         range: `${sheetName}!A${startRow}:B${finalRow}`,
       }
       await gapiFetch(
-      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
           gapi.client.sheets.spreadsheets.values.clear, requestParams, {});
     }
   }
@@ -128,8 +120,6 @@ export class SpreadsheetUtils {
       values: rows,
     };
     await gapiFetch(
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         gapi.client.sheets.spreadsheets.values.append, requestParams,
         requestBody);
     // TODO: Handle if response.status != 200.
@@ -162,8 +152,6 @@ export class SpreadsheetUtils {
     };
 
     await gapiFetch(
-        // @ts-ignore TODO: Figure out how to get types for gapi client
-        // libraries.
         gapi.client.sheets.spreadsheets.batchUpdate, params,
         batchUpdateSpreadsheetRequestBody);
     // TODO: Handle response.status != 200.

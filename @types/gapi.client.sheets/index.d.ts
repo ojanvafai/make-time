@@ -16,9 +16,9 @@ declare namespace gapi.client {
     function load(name: "sheets", version: "v4"): PromiseLike<void>;
     function load(name: "sheets", version: "v4", callback: () => any): void;
 
-    const spreadsheets: sheets.SpreadsheetsResource;
-
     namespace sheets {
+        const spreadsheets: sheets.SpreadsheetsResource;
+
         interface AddBandingRequest {
             /**
              * The banded range to add. The bandedRangeId
@@ -387,6 +387,8 @@ declare namespace gapi.client {
             valueRanges?: ValueRange[];
         }
         interface BatchUpdateSpreadsheetRequest {
+            /** The ID of the spreadsheet the data was retrieved from. */
+            spreadsheetId?: string;
             /**
              * Determines if the update response should include the spreadsheet
              * resource.
@@ -397,7 +399,9 @@ declare namespace gapi.client {
              * Requests will be applied in the order they are specified.
              * If any request is not valid, no requests will be applied.
              */
-            requests?: Request[];
+            resource: {
+                requests?: Request[],
+            }
             /**
              * True if grid data should be returned. Meaningful only if
              * if include_spreadsheet_response is 'true'.
@@ -3105,7 +3109,7 @@ declare namespace gapi.client {
                 upload_protocol?: string;
                 /** How the input data should be interpreted. */
                 valueInputOption?: string;
-            }): client.Request<UpdateValuesResponse>;
+            }, range: ValueRange): client.Request<UpdateValuesResponse>;
         }
         interface SpreadsheetsResource {
             /**
@@ -3129,36 +3133,7 @@ declare namespace gapi.client {
              * collaborator changes. If there are no collaborators, the spreadsheet
              * should reflect your changes.
              */
-            batchUpdate(request: {
-                /** V1 error format. */
-                "$.xgafv"?: string;
-                /** OAuth access token. */
-                access_token?: string;
-                /** Data format for response. */
-                alt?: string;
-                /** OAuth bearer token. */
-                bearer_token?: string;
-                /** JSONP */
-                callback?: string;
-                /** Selector specifying which fields to include in a partial response. */
-                fields?: string;
-                /** API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token. */
-                key?: string;
-                /** OAuth 2.0 token for the current user. */
-                oauth_token?: string;
-                /** Pretty-print response. */
-                pp?: boolean;
-                /** Returns response with indentations and line breaks. */
-                prettyPrint?: boolean;
-                /** Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters. */
-                quotaUser?: string;
-                /** The spreadsheet to apply the updates to. */
-                spreadsheetId: string;
-                /** Legacy upload protocol for media (e.g. "media", "multipart"). */
-                uploadType?: string;
-                /** Upload protocol for media (e.g. "raw", "multipart"). */
-                upload_protocol?: string;
-            }): client.Request<BatchUpdateSpreadsheetResponse>;
+            batchUpdate(request: BatchUpdateSpreadsheetRequest): client.Request<BatchUpdateSpreadsheetResponse>;
             /** Creates a spreadsheet, returning the newly created spreadsheet. */
             create(request: {
                 /** V1 error format. */
@@ -3187,7 +3162,7 @@ declare namespace gapi.client {
                 uploadType?: string;
                 /** Upload protocol for media (e.g. "raw", "multipart"). */
                 upload_protocol?: string;
-            }): client.Request<Spreadsheet>;
+            }, body: Spreadsheet): client.Request<Spreadsheet>;
             /**
              * Returns the spreadsheet at the given ID.
              * The caller must specify the spreadsheet ID.

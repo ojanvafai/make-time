@@ -159,10 +159,11 @@ export class Settings {
   }
 
   async generateSpreadsheet() {
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let response = await gapi.client.sheets.spreadsheets.create(
         {}, {'properties': {'title': 'make-time backend (do not rename!)'}});
     let spreadsheetId = response.result.spreadsheetId;
+    if (!spreadsheetId)
+      throw 'Something went wrong generating the spreadsheet.';
 
     let addSheetRequests: {}[] = [];
     for (let i = 0; i < Settings.sheetData_.length; i++) {
@@ -171,7 +172,6 @@ export class Settings {
     }
     addSheetRequests.push({deleteSheet: {sheetId: 0}});
 
-    // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
     let addSheetsResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
       spreadsheetId: spreadsheetId,
       resource: {requests: addSheetRequests},
@@ -179,10 +179,16 @@ export class Settings {
 
     let sheetNameToId: any = {};
 
+    if (!addSheetsResponse.result.replies)
+      throw 'Generating spreadsheet failed.';
+
     for (let reply of addSheetsResponse.result.replies) {
       if (!reply.addSheet)
         continue;
       let properties = reply.addSheet.properties;
+      if (!properties || !properties.title)
+        throw 'Generating spreadsheet failed.';
+
       sheetNameToId[properties.title] = properties.sheetId;
     }
 
@@ -195,8 +201,7 @@ export class Settings {
         continue;
 
       let values = data.initialData;
-      // @ts-ignore TODO: Figure out how to get types for gapi client libraries.
-      let addDataResponse = await gapi.client.sheets.spreadsheets.values.update(
+      await gapi.client.sheets.spreadsheets.values.update(
           {
             spreadsheetId: spreadsheetId,
             range: SpreadsheetUtils.a1Notation(data.name, 0, values[0].length),
@@ -235,8 +240,6 @@ export class Settings {
         this.addDailyStatsCharts_(sheetId, formatSheetRequests);
     }
 
-    // @ts-ignore TODO: Figure out how to get types for gapi client
-    // libraries.
     await gapi.client.sheets.spreadsheets.batchUpdate({
       spreadsheetId: spreadsheetId,
       resource: {requests: formatSheetRequests},
