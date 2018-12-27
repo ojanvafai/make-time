@@ -1,4 +1,7 @@
-TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
+- Fix issues with the thread disappearing after having been saved in localstorage but then removed on update...race condition where it can't be found when trying to renderOne?
+- Minimize the number of fetches when a thread is modified. Can use the modify response to update message details, but then don't get the new historyID. Maybe find some way to have a concept of a thread with no historyId? Try to infer the history ID from the messages (the largest one) and hope that's good enough?
+
+- TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
 
 - Autocomplete to field: Create AddressCompose that opens autocomplete for every non-comma input and autocompletes whatever is between the two commas and stops autocomplete when the cursor passes over a commn. Need to normalize whitespace outside of <>'s.
 - Give progress indicator for threads left to load in make-time/triage views.

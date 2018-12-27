@@ -64,7 +64,8 @@ If you use VS Code you can get autoformatting of TS code on save with:
 2. Added the following to your VSCode settings:
   "clang-format.executable": "${workspaceRoot}/node_modules/clang-format/bin/linux_x64/clang-format",
   "[typescript]": {
-      "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true
   }
 
 

@@ -13,9 +13,11 @@ import {Settings} from './Settings.js';
 import {Thread} from './Thread.js';
 import {View} from './views/View.js';
 
-interface ThreadData {
-  id: string;
-  historyId: string;
+export class ThreadData {
+  constructor(public id: string, public historyId: string) {}
+  equals(other: ThreadData) {
+    return this.id == other.id && this.historyId == other.historyId;
+  }
 }
 
 interface TitleEntry {
@@ -30,23 +32,21 @@ class ThreadCache {
     this.cache_ = new Map();
   }
 
-  async get(threadData: ThreadData) {
+  async get(threadData: ThreadData, onlyFetchThreadsFromDisk?: boolean) {
     // TODO: This cache grows indefinitely. It needs to be GC'ed, possibly after
     // each update call? A simple step could be to delete the cache once a day.
     // All the data is on disk, so it shouldn't be too expensive.
     let entry = this.cache_.get(threadData.id);
     if (entry) {
-      if (entry.historyId != threadData.historyId) {
-        entry.resetState();
+      if (entry.historyId != threadData.historyId)
         await entry.update();
-      }
       return entry;
     }
 
     let thread = new Thread(threadData, await getLabels());
     this.cache_.set(threadData.id, thread);
 
-    await thread.fetch();
+    await thread.fetch(false, onlyFetchThreadsFromDisk);
     return thread;
   }
 }
@@ -268,10 +268,10 @@ function updateTitleBase(
     node.append(...stack[stack.length - 1].title);
 }
 
-export async function getCachedThread(response: ThreadData) {
+export async function getCachedThread(response: ThreadData, onlyFetchThreadsFromDisk?: boolean) {
   if (!threadCache_)
     threadCache_ = new ThreadCache();
-  return await threadCache_.get(response);
+  return await threadCache_.get(response, onlyFetchThreadsFromDisk);
 }
 
 interface FetchRequestParameters {
@@ -281,10 +281,9 @@ interface FetchRequestParameters {
 }
 
 export async function fetchThreads(
-    forEachThread: (thread: Thread) => void, query?: string) {
-  query = query || '';
+    forEachThread: (thread: Thread) => void, query: string, onlyFetchThreadsFromDisk?: boolean) {
   // Chats don't expose their bodies in the gmail API, so just skip them.
-  query += ' -in:chats ';
+  query = `(${query}) AND -in:chats`;
 
   // let daysToShow = (await
   // getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW); if (daysToShow)
@@ -303,7 +302,7 @@ export async function fetchThreads(
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      let thread = await getCachedThread(rawThread);
+      let thread = await getCachedThread(rawThread, onlyFetchThreadsFromDisk);
       await forEachThread(thread);
     }
 

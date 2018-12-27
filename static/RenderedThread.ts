@@ -3,23 +3,9 @@ import {Thread} from './Thread.js';
 
 export class RenderedThread {
   private dom_: HTMLElement|null;
-  private queued_: ((value?: {}|PromiseLike<{}>) => void)[];
-  private isFetching_: boolean = false;
 
   constructor(public thread: Thread) {
     this.dom_ = null;
-    this.queued_ = [];
-  }
-
-  queueTillRendered_() {
-    return new Promise(resolve => this.queued_.push(resolve));
-  }
-
-  processRenderingQueue_() {
-    for (let request of this.queued_) {
-      request();
-    }
-    this.queued_ = [];
   }
 
   remove() {
@@ -29,10 +15,10 @@ export class RenderedThread {
 
   async update() {
     await this.thread.update();
-    await this.appendMessages_();
+    this.appendMessages_();
   }
 
-  async appendMessages_() {
+  appendMessages_() {
     if (!this.dom_) {
       this.dom_ = document.createElement('div');
       this.dom_.style.cssText = `
@@ -44,7 +30,7 @@ export class RenderedThread {
       `;
     }
 
-    let messages = await this.thread.getMessages();
+    let messages = this.thread.getMessagesSync();
     // Only append new messages.
     messages = messages.slice(this.dom_.childElementCount);
     for (let message of messages) {
@@ -55,37 +41,19 @@ export class RenderedThread {
     }
   }
 
-  async render(newContainer: HTMLElement) {
-    // No need to block on fetching messages if we've already rendering some of
-    // them.
+  render(newContainer: HTMLElement) {
     if (this.dom_) {
-      // Intentionally don't await this so the messages are rendered ASAP.
+      // Intentionally don't await this so the messages are rendered ASAP and so
+      // render can stay sync.
       this.update();
     } else {
-      await this.fetchAndAppendMessages_();
+      this.appendMessages_();
     }
 
     let dom = <HTMLElement>this.dom_;
     if (dom.parentNode != newContainer)
       newContainer.append(dom);
-
     return dom;
-  }
-
-  async fetchAndAppendMessages_() {
-    // If we're in the middle of rendering this thread, then queue up rendering
-    // requests to be processed when we finish instead of kicking off another
-    // set of network requests to render this thread.
-    if (this.isFetching_) {
-      await this.queueTillRendered_();
-      return;
-    }
-
-    this.isFetching_ = true;
-    await this.appendMessages_();
-    this.isFetching_ = false;
-
-    this.processRenderingQueue_();
   }
 
   renderMessage_(processedMessage: Message) {

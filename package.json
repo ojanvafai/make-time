@@ -27,7 +27,7 @@
     "@types/gapi.client.drive": "^3.0.1",
     "clang-format": "^1.2.4",
     "concurrently": "^4.1.0",
-    "firebase-tools": "^6.1.2",
+    "firebase-tools": "^6.2.2",
     "gulp": "^4.0.0",
     "gulp-better-rollup": "^3.4.0",
     "gulp-if": "^2.0.2",
@@ -39,9 +39,9 @@
     "gulp-uglify-es": "^1.0.4",
     "md5": "^2.2.1",
     "rimraf": "^2.6.2",
-    "rollup": "^0.68.0",
+    "rollup": "^0.68.2",
     "strip-json-comments": "^2.0.1",
-    "typescript": "^3.2.1"
+    "typescript": "^3.2.2"
   },
   "dependencies": {}
 }

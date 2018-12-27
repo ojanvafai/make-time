@@ -1,7 +1,7 @@
 import {RenderedThread} from '../RenderedThread.js';
-import {RowGroup} from '../RowGroup.js';
 import {Thread} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
+import {ThreadRowGroup} from './ThreadRowGroup.js';
 
 interface DateFormatOptions {
   year: string;
@@ -19,7 +19,7 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private thread_!: Thread;
 
-  constructor(thread: Thread, public group: RowGroup) {
+  constructor(thread: Thread) {
     super();
     this.style.display = 'flex';
 
@@ -60,6 +60,16 @@ export class ThreadRow extends HTMLElement {
     this.setThread(thread);
   }
 
+  getGroup() {
+    let parent = this.parentElement;
+    while (parent && !(parent instanceof ThreadRowGroup)) {
+      parent = parent.parentElement
+    }
+    if (!parent)
+      throw 'Attempted to get the parent group of a ThreadRow not in a group.';
+    return parent;
+  }
+
   removeRendered() {
     this.rendered.remove();
   }
@@ -68,8 +78,8 @@ export class ThreadRow extends HTMLElement {
     this.rendered.update();
   }
 
-  async render(container: HTMLElement) {
-    return await this.rendered.render(container);
+  render(container: HTMLElement) {
+    return this.rendered.render(container);
   }
 
   setThread(thread: Thread) {
@@ -79,79 +89,72 @@ export class ThreadRow extends HTMLElement {
     this.thread_ = thread;
     this.rendered = new RenderedThread(thread);
 
-    this.thread_.getSubject().then(subject => {
-      if (!this.thread_)
-        throw 'This should never happen. this.thread_ got nulled out.';
+    let subject = this.thread_.getSubjectSync();
+    let messages = this.thread_.getMessagesSync();
 
-      this.thread_.getMessages().then(messages => {
-        if (!this.thread_)
-          throw 'This should never happen. this.thread_ got nulled out.';
+    let lastMessage = messages[messages.length - 1];
 
-        let lastMessage = messages[messages.length - 1];
+    let fromContainer = document.createElement('div');
+    fromContainer.style.cssText = `
+      width: 150px;
+      margin-right: 25px;
+      padding-left: 5px;
+      display: flex;
+      align-items: baseline;
+    `;
 
-        let fromContainer = document.createElement('div');
-        fromContainer.style.cssText = `
-          width: 150px;
-          margin-right: 25px;
-          padding-left: 5px;
-          display: flex;
-          align-items: baseline;
-        `;
+    let from = document.createElement('div');
+    from.style.cssText = `
+      overflow: hidden;
+    `;
+    from.textContent = lastMessage.fromName || '';
 
-        let from = document.createElement('div');
-        from.style.cssText = `
-          overflow: hidden;
-        `;
-        from.textContent = lastMessage.fromName || '';
+    let count = document.createElement('div');
+    count.style.cssText = `
+      font-size: 80%;
+      margin-left: 4px;
+      color: grey;
+    `;
+    if (messages.length > 1)
+      count.textContent = String(messages.length);
 
-        let count = document.createElement('div');
-        count.style.cssText = `
-          font-size: 80%;
-          margin-left: 4px;
-          color: grey;
-        `;
-        if (messages.length > 1)
-          count.textContent = String(messages.length);
+    fromContainer.append(from, count);
 
-        fromContainer.append(from, count);
+    let snippet = document.createElement('span');
+    snippet.style.color = '#666';
+    // Snippet as returned by the gmail API is html escaped.
+    snippet.innerHTML = ` - ${this.thread_.snippet}`;
 
-        let snippet = document.createElement('span');
-        snippet.style.color = '#666';
-        // Snippet as returned by the gmail API is html escaped.
-        snippet.innerHTML = ` - ${this.thread_.snippet}`;
+    let title = document.createElement('div');
+    title.append(subject, snippet);
+    title.style.cssText = `
+      overflow: hidden;
+      margin-right: 25px;
+      flex: 1;
+    `;
 
-        let title = document.createElement('div');
-        title.append(subject, snippet);
-        title.style.cssText = `
-          overflow: hidden;
-          margin-right: 25px;
-          flex: 1;
-        `;
+    let date = document.createElement('div');
+    date.textContent = this.dateString_(lastMessage.date);
 
-        let date = document.createElement('div');
-        date.textContent = this.dateString_(lastMessage.date);
+    let popoutButton = new ViewInGmailButton();
+    popoutButton.setMessageId(messages[messages.length - 1].id);
+    popoutButton.style.marginLeft = '4px';
+    popoutButton.style.marginRight = '4px';
 
-        let popoutButton = new ViewInGmailButton();
-        popoutButton.setMessageId(messages[messages.length - 1].id);
-        popoutButton.style.marginLeft = '4px';
-        popoutButton.style.marginRight = '4px';
+    this.messageDetails_.textContent = '';
+    if (window.innerWidth < 600) {
+      let topRow = document.createElement('div');
+      topRow.style.display = 'flex';
+      topRow.append(fromContainer, date, popoutButton);
+      this.messageDetails_.append(topRow, title);
 
-        this.messageDetails_.textContent = '';
-        if (window.innerWidth < 600) {
-          let topRow = document.createElement('div');
-          topRow.style.display = 'flex';
-          topRow.append(fromContainer, date, popoutButton);
-          this.messageDetails_.append(topRow, title);
-
-          this.messageDetails_.style.flexDirection = 'column';
-          fromContainer.style.flex = '1';
-          title.style.fontSize = '12px';
-          title.style.margin = '5px 5px 0 5px';
-        } else {
-          this.messageDetails_.append(fromContainer, title, date, popoutButton);
-        }
-      });
-    });
+      this.messageDetails_.style.flexDirection = 'column';
+      fromContainer.style.flex = '1';
+      title.style.fontSize = '12px';
+      title.style.margin = '5px 5px 0 5px';
+    } else {
+      this.messageDetails_.append(fromContainer, title, date, popoutButton);
+    }
   }
 
   updateHighlight_() {

@@ -1,20 +1,26 @@
+import {fetchThreads} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {Thread} from '../Thread.js';
 
-import {PlainThreadData, ThreadListModel} from './ThreadListModel.js';
+import {ThreadListModel} from './ThreadListModel.js';
 
 let serializationKey = 'todo-view';
 
 export class TodoModel extends ThreadListModel {
+  private pendingThreads_: Thread[];
+  private needsMessageDetailsThreads_: Thread[];
+
   constructor(
       updateTitle: (key: string, ...title: string[]) => void,
       private vacation_: string, labels: Labels) {
     super(updateTitle, labels, serializationKey);
+    this.pendingThreads_ = [];
+    this.needsMessageDetailsThreads_ = [];
   }
 
-  async handleUndo(thread: Thread) {
+  handleUndo(thread: Thread) {
     if (thread)
-      await this.removeThread(thread);
+      this.removeThread(thread);
   }
 
   async handleTriaged(destination: string, thread: Thread) {
@@ -31,27 +37,36 @@ export class TodoModel extends ThreadListModel {
     // Only threads with a priority should be added and
     // only show MUST_DO_LABEL when on vacation.
     if (priority && (!this.vacation_ || priority == Labels.MUST_DO_LABEL))
-      super.addThread(thread);
+      await super.addThread(thread);
   }
 
-  async getDisplayableQueue(thread: Thread) {
-    let priority = await thread.getPriority();
+  getGroupName(thread: Thread) {
+    let priority = thread.getPrioritySync();
     if (priority)
       return Labels.removePriorityPrefix(priority);
-    return Labels.MUST_DO_LABEL;
+    // This can happen when we rename or remove a priority from make-time.
+    return Labels.MUST_DO;
   }
 
-  compareRowGroups(a: any, b: any) {
-    return this.comparePriorities_(a.queue, b.queue);
+  protected compareThreads(a: Thread, b: Thread) {
+    let aPriority = this.getGroupName(a);
+    let bPriority = this.getGroupName(b);
+
+    // Sort by priority, then by date.
+    if (aPriority == bPriority)
+      return this.compareDates(a, b);
+    return this.comparePriorities_(aPriority, bPriority);
   }
 
-  comparePriorities_(a: any, b: any) {
-    let aOrder = Labels.SORTED_PRIORITIES.indexOf(a);
-    let bOrder = Labels.SORTED_PRIORITIES.indexOf(b);
+  comparePriorities_(a: string, b: string) {
+    let aOrder =
+        Labels.SORTED_PRIORITIES.indexOf(Labels.removePriorityPrefix(a));
+    let bOrder =
+        Labels.SORTED_PRIORITIES.indexOf(Labels.removePriorityPrefix(b));
     return aOrder - bOrder;
   }
 
-  async fetch() {
+  protected async fetch() {
     this.updateTitle('fetch', ' ');
 
     let labels = await this.labels.getThreadCountForLabels((label: string) => {
@@ -60,18 +75,32 @@ export class TodoModel extends ThreadListModel {
     });
     let labelsToFetch =
         labels.filter(data => data.count).map(data => data.name);
-    labelsToFetch.sort(
-        (a, b) => this.comparePriorities_(
-            Labels.removePriorityPrefix(a), Labels.removePriorityPrefix(b)));
+    labelsToFetch.sort(this.comparePriorities_);
 
-    let threadsToSerialize: PlainThreadData[] = [];
-    let processThread = (thread: Thread) => {
-      threadsToSerialize.push(new PlainThreadData(thread.id, thread.historyId));
-      this.addThread(thread);
-    };
+    // Fetch the list of threads, and then only populate the ones that are in
+    // the disk storage so as to show the user an update as soon as possible.
+    // Then process all the threads that need network of some sort one at a
+    // time, showing the user an update after each of the network-bound threads
+    // is processed.
+    let hasPriorityLabel =
+        labelsToFetch.length ? `in:${labelsToFetch.join(' OR in:')}` : '';
+    let skipNetwork = true;
+    await fetchThreads((thread: Thread) => {
+      if (thread.hasMessageDetails)
+        this.pendingThreads_.push(thread);
+      else
+        this.needsMessageDetailsThreads_.push(thread);
+    }, hasPriorityLabel, skipNetwork);
 
-    await this.fetchLabels(processThread, labelsToFetch);
-    await this.serializeThreads(threadsToSerialize);
+    this.setThreads(this.pendingThreads_);
+    this.pendingThreads_ = [];
+
+    let needsMessageDetailsThreads = this.needsMessageDetailsThreads_.concat();
+    this.needsMessageDetailsThreads_ = [];
+    for (let thread of needsMessageDetailsThreads) {
+      await thread.fetch();
+      await this.addThread(thread);
+    }
 
     this.updateTitle('fetch');
   }

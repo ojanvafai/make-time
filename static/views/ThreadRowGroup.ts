@@ -3,20 +3,20 @@ import {ThreadRow} from './ThreadRow';
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
 
-  constructor(private queue_: string) {
+  constructor(private groupName_: string) {
     super();
     this.style.display = 'block';
 
-    let queueContainer = document.createElement('span')
-    queueContainer.style.cssText = `
+    let groupNameContainer = document.createElement('span')
+    groupNameContainer.style.cssText = `
       font-weight: bold;
       font-size: 18px;
     `;
-    queueContainer.append(queue_);
+    groupNameContainer.append(groupName_);
 
     let header = document.createElement('div');
     header.append(
-        queueContainer, ' select ',
+        groupNameContainer, ' select ',
         this.createSelector_('all', this.selectAll_),
         this.createSelector_('none', this.selectNone_));
 
@@ -29,8 +29,8 @@ export class ThreadRowGroup extends HTMLElement {
     this.append(header, this.rowContainer_);
   }
 
-  removeChildren() {
-    this.rowContainer_.textContent = '';
+  getRows() {
+    return <NodeListOf<ThreadRow>>this.querySelectorAll('mt-thread-row');
   }
 
   hasRows() {
@@ -41,22 +41,8 @@ export class ThreadRowGroup extends HTMLElement {
     return Array.prototype.slice.call(this.rowContainer_.children);
   }
 
-  setRows(rows: ThreadRow[]) {
-    // Try to minimize DOM mutations. If the rows are exactly the same
-    // there should be no DOM mutations here.
-    for (var i = 0; i < rows.length; i++) {
-      let oldRow = this.rowContainer_.children[i];
-      if (!oldRow) {
-        let rowsLeft = rows.slice(i);
-        this.rowContainer_.append(...rowsLeft);
-        break;
-      }
-
-      let newRow = rows[i];
-      if (newRow != oldRow) {
-        oldRow.before(newRow);
-      }
-    }
+  push(row: ThreadRow) {
+    this.rowContainer_.append(row);
   }
 
   createSelector_(textContent: string, callback: () => void) {
@@ -84,8 +70,8 @@ export class ThreadRowGroup extends HTMLElement {
     }
   }
 
-  get queue() {
-    return this.queue_;
+  get name() {
+    return this.groupName_;
   }
 }
 window.customElements.define('mt-thread-row-group', ThreadRowGroup);

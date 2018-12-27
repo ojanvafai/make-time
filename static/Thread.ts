@@ -13,12 +13,8 @@ let staleAfterFetchError =
 export class Thread {
   id: string;
   historyId: string;
-  private hasMessageDetails_: boolean = false;
+  hasMessageDetails: boolean = false;
 
-  // These are all set in resetState, which is called from the constructor.
-  // and they shouldn't be undefined because we fetch the thread details
-  // immediately after constructing the Thread. Technically there's a race
-  // there though since fetching the thread details involves a network fetch.
   snippet: string|undefined;
   private labelIds_: Set<string>|undefined;
   private labelNames_: Set<string>|undefined;
@@ -34,24 +30,12 @@ export class Thread {
     this.id = thread.id;
     this.historyId = thread.historyId;
 
-    this.resetState();
-
     if (thread.messages)
       this.processMessages_(thread.messages);
   }
 
-  resetState() {
-    this.hasMessageDetails_ = false;
-    // Set these to undefined so we can be sure to never read uninitialized
-    // values. processLabels_ will set some of these to null to indicated
-    // that it's initialized but null.
-    this.snippet = undefined;
-    this.labelIds_ = undefined;
-    this.labelNames_ = undefined;
-    this.priority_ = undefined;
-    this.muted_ = undefined;
-    this.queue_ = undefined;
-    this.processedMessages_ = undefined;
+  equals(other: Thread) {
+    return this.id == other.id && this.historyId == other.historyId;
   }
 
   private processLabels_(messages: any[]) {
@@ -88,25 +72,39 @@ export class Thread {
   }
 
   private processMessages_(messages: any[]) {
-    this.hasMessageDetails_ = true;
+    this.hasMessageDetails = true;
     if (this.processedMessages_ === undefined)
       this.processedMessages_ = [];
 
     this.snippet = messages[messages.length - 1].snippet;
 
     this.processLabels_(messages);
-    let newMessages = messages.slice(this.processedMessages_.length);
-    // Only process new messages.
+
+    let oldMessageCount = this.processedMessages_.length;
     let newProcessedMessages: Message[] = [];
-    for (let message of newMessages) {
+
+    for (let i = 0; i < messages.length; i++) {
+      let message = messages[i];
+
+      // In theory, the only thing that can change on old messages is the
+      // labels, which are only stored in the rawMessage_ field of Message. To
+      // avoid recomputing the message body and quote diffs, just set the raw
+      // message instead of fully reprocessing.
+      if (i < oldMessageCount) {
+        this.processedMessages_[i].setRawMessage(message);
+        continue;
+      }
+
       let previousMessage;
       if (this.processedMessages_.length)
         previousMessage =
             this.processedMessages_[this.processedMessages_.length - 1];
+
       let processed = new Message(message, previousMessage);
       this.processedMessages_.push(processed);
       newProcessedMessages.push(processed);
     }
+
     return newProcessedMessages;
   }
 
@@ -114,7 +112,7 @@ export class Thread {
     // Need the message details to get the list of currently applied labels.
     // Almost always we will have already fetched this since we're showing the
     // thread to the user already or we'll all least have it on disk.
-    if (!this.hasMessageDetails_) {
+    if (!this.hasMessageDetails) {
       await this.fetch();
     } else {
       // There's a race condition where where new messages can come in after
@@ -147,17 +145,21 @@ export class Thread {
     removeLabelIds = removeLabelIds.filter(
         (item) => !addLabelIds.includes(item) && (currentLabelIds.has(item)));
 
-    // Once a modify has happened the stored message details are stale.
-    this.resetState();
-
     let request: any = {
       'userId': USER_ID,
       'id': this.id,
       'addLabelIds': addLabelIds,
       'removeLabelIds': removeLabelIds,
     };
-    await gapiFetch(gapi.client.gmail.users.threads.modify, request);
+    let response =
+        await gapiFetch(gapi.client.gmail.users.threads.modify, request);
+    console.log(response);
     // TODO: Handle response.status != 200.
+
+    // Ensure this Thread is up to date for future users of it.
+    // Doing this extra network request is kind of slow, but it also has the
+    // benefit of sticking the thread in the disk cache.
+    await this.update();
 
     return {
       added: addLabelIds, removed: removeLabelIds, thread: this,
@@ -222,12 +224,24 @@ export class Thread {
   }
 
   async getDate() {
-    let message = await this.getLastMessage();
-    return message.date;
+    await this.fetch();
+    return this.getDateSync();
+  }
+
+  getDateSync() {
+    if (this.processedMessages_ === undefined)
+      throw staleAfterFetchError;
+    let lastMessage =
+        this.processedMessages_[this.processedMessages_.length - 1];
+    return lastMessage.date;
   }
 
   async getSubject() {
     await this.fetch();
+    return this.getSubjectSync();
+  }
+
+  getSubjectSync() {
     if (this.processedMessages_ === undefined)
       throw staleAfterFetchError;
     return this.processedMessages_[0].subject || '(no subject)';
@@ -235,6 +249,10 @@ export class Thread {
 
   async getMessages() {
     await this.fetch();
+    return this.getMessagesSync();
+  }
+
+  getMessagesSync() {
     if (this.processedMessages_ === undefined)
       throw staleAfterFetchError;
     return this.processedMessages_;
@@ -242,11 +260,24 @@ export class Thread {
 
   async getDisplayableQueue() {
     let queue = await this.getQueue();
+    return this.getDisplayableQueueInternal_(queue);
+  }
+
+  getDisplayableQueueSync() {
+    let queue = this.getQueueSync();
+    return this.getDisplayableQueueInternal_(queue);
+  }
+
+  getDisplayableQueueInternal_(queue: string) {
     return Labels.removeNeedsTriagePrefix(queue);
   }
 
   async getQueue() {
     await this.fetch();
+    return this.getQueueSync();
+  }
+
+  getQueueSync() {
     if (this.queue_ === undefined)
       throw staleAfterFetchError;
     return this.queue_;
@@ -254,6 +285,10 @@ export class Thread {
 
   async getPriority() {
     await this.fetch();
+    return this.getPrioritySync();
+  }
+
+  getPrioritySync() {
     if (this.priority_ === undefined)
       throw staleAfterFetchError;
     return this.priority_;
@@ -288,8 +323,11 @@ export class Thread {
     return `thread-${weekNumber}-${this.historyId}`;
   }
 
-  async fetch(forceNetwork?: boolean) {
-    if (this.hasMessageDetails_ && !forceNetwork)
+  async fetch(forceNetwork?: boolean, skipNetwork?: boolean) {
+    if (forceNetwork && skipNetwork)
+      throw 'Cannot both force and skip network.';
+
+    if (this.hasMessageDetails && !forceNetwork)
       return null;
 
     let messages: any;
@@ -297,6 +335,9 @@ export class Thread {
       messages = await this.getThreadDataFromDisk_();
 
     if (!messages) {
+      if (skipNetwork)
+        return;
+
       if (!this.fetchPromise_) {
         this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
           userId: USER_ID,

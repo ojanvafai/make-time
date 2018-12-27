@@ -89,6 +89,10 @@ export class Message {
     this.isDraft = rawMessage_.labelIds.includes('DRAFT');
   }
 
+  setRawMessage(rawMessage: any) {
+    this.rawMessage_ = rawMessage;
+  }
+
   getHeaderValue(name: string) {
     name = name.toLowerCase();
     for (var header of this.rawMessage_.payload.headers) {

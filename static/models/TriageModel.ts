@@ -5,24 +5,29 @@ import {QueueSettings} from '../QueueSettings.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
 
-import {PlainThreadData, ThreadListModel} from './ThreadListModel.js';
+import {ThreadListModel} from './ThreadListModel.js';
 
 let serializationKey = 'triage-view';
 
 export class TriageModel extends ThreadListModel {
   private bestEffortThreads_: Thread[]|null;
   private needsProcessingThreads_: Thread[];
-  private threadsToSerialize_: PlainThreadData[];
+  private needsMessageDetailsThreads_: Thread[];
+  private needsArchivingThreads_: Thread[];
+  private pendingThreads_: Thread[];
   private mailProcessor_: MailProcessor;
 
   constructor(
-      updateTitle: (key: string, ...title: string[]) => void, private vacation_: string, labels: Labels,
-      settings_: Settings, private queueSettings_: QueueSettings) {
+      updateTitle: (key: string, ...title: string[]) => void,
+      private vacation_: string, labels: Labels, settings_: Settings,
+      private queueSettings_: QueueSettings) {
     super(updateTitle, labels, serializationKey);
 
     this.bestEffortThreads_ = [];
     this.needsProcessingThreads_ = [];
-    this.threadsToSerialize_ = [];
+    this.needsMessageDetailsThreads_ = [];
+    this.needsArchivingThreads_ = [];
+    this.pendingThreads_ = [];
     this.mailProcessor_ =
         new MailProcessor(settings_, this, queueSettings_, labels, updateTitle);
   }
@@ -76,9 +81,6 @@ export class TriageModel extends ThreadListModel {
         (this.vacation_ !== (await thread.getDisplayableQueue())))
       return;
 
-    this.threadsToSerialize_.push(
-        new PlainThreadData(thread.id, thread.historyId));
-
     if (!this.vacation_ && await this.isBestEffortQueue(thread)) {
       if (await this.isBankrupt(thread)) {
         await this.bankruptThread(thread);
@@ -95,22 +97,21 @@ export class TriageModel extends ThreadListModel {
     super.addThread(thread);
   }
 
-  async getDisplayableQueue(thread: Thread) {
-    return await thread.getDisplayableQueue();
+  getGroupName(thread: Thread) {
+    return thread.getDisplayableQueueSync();
   }
 
-  compareRowGroups(a: any, b: any) {
-    return this.queueSettings_.queueNameComparator(a.queue, b.queue);
+  protected compareThreads(a: Thread, b: Thread) {
+    // Sort by queue, then by date.
+    if (a.getQueueSync() == b.getQueueSync())
+      return this.compareDates(a, b);
+    return this.queueSettings_.queueNameComparator(
+        a.getQueueSync(), b.getQueueSync());
   }
 
   hasBestEffortThreads() {
     return Boolean(
         this.bestEffortThreads_ && this.bestEffortThreads_.length !== 0);
-  }
-
-  resetBestEffort() {
-    if (this.bestEffortThreads_)
-      this.bestEffortThreads_ = [];
   }
 
   triageBestEffort() {
@@ -127,7 +128,7 @@ export class TriageModel extends ThreadListModel {
   }
 
   // TODO: Store the list of threads in localStorage and update asynchronously.
-  async fetch() {
+  protected async fetch() {
     this.updateTitle('fetch', ' ');
 
     let labels = await this.labels.getThreadCountForLabels((label: string) => {
@@ -139,58 +140,97 @@ export class TriageModel extends ThreadListModel {
     labelsToFetch =
         this.queueSettings_.getSorted(labelsToFetch).map((item) => item[0]);
 
-    this.resetBestEffort();
+    if (this.bestEffortThreads_)
+      this.bestEffortThreads_ = [];
+    this.pendingThreads_ = [];
 
     let makeTimeLabels = this.labels.getMakeTimeLabelNames().filter(
         (item) => item != Labels.PROCESSED_LABEL);
+    let inInboxNoMakeTimeLabel =
+        `in:inbox -(in:${makeTimeLabels.join(' OR in:')})`;
+    let hasNeedsTriageLabel =
+        labelsToFetch.length ? `in:${labelsToFetch.join(' OR in:')}` : '';
+    let inUnprocessed = `in:${Labels.UNPROCESSED_LABEL}`;
 
-    this.threadsToSerialize_ = [];
-    let processThread = async (thread: Thread) => {
-      // Threads that have triage labels but aren't in the inbox were archived
-      // outside of maketime and should have their triage labels removed.
-      if (!(await thread.isInInbox())) {
-        await thread.markTriaged(null);
-        return;
-      }
-      this.processThread(thread);
-    };
-
-    // Put threads that are in the inbox with no make-time labels first. That
-    // way they always show up before daily/weekly/monthly bundles for folks
-    // that don't want to filter 100% of their mail with make-time.
+    // Fetch the list of threads, and then only populate the ones that are in
+    // the disk storage so as to show the user an update as soon as possible.
+    // Then process all the threads that need network of some sort one at a
+    // time, showing the user an update after each of the network-bound threads
+    // is processed.
+    let skipNetwork = true;
     await fetchThreads(
-        processThread, `in:inbox -(in:${makeTimeLabels.join(' OR in:')})`);
-    await this.fetchLabels(processThread, labelsToFetch);
+        this.processThread_.bind(this),
+        `(${inInboxNoMakeTimeLabel}) OR (${hasNeedsTriageLabel}) OR (${
+            inUnprocessed})`,
+        skipNetwork);
 
-    let threads = this.needsProcessingThreads_.concat();
+    this.setThreads(this.pendingThreads_);
+    this.pendingThreads_ = [];
+
+    let needsMessageDetailsThreads = this.needsMessageDetailsThreads_.concat();
+    this.needsMessageDetailsThreads_ = [];
+    for (let thread of needsMessageDetailsThreads) {
+      await thread.fetch();
+      await this.processThread_(thread, true);
+    }
+
+    let threadToProcess = this.needsProcessingThreads_.concat();
     this.needsProcessingThreads_ = [];
-    await this.mailProcessor_.processThreads(threads);
-
-    await this.mailProcessor_.processUnprocessed();
+    await this.mailProcessor_.processThreads(threadToProcess);
     await this.mailProcessor_.processQueues();
     await this.mailProcessor_.collapseStats();
 
-    await this.serializeThreads(this.threadsToSerialize_);
+    // Do these threads last since they are threads that have been archived
+    // outside of maketime and just need to have their maketime labels removed,
+    // so we don't need to block user visible thigns like processeing
+    // unprocessed threads on it.
+    let threadsToArchive = this.needsArchivingThreads_.concat();
+    this.needsArchivingThreads_ = [];
+    for (let thread of threadsToArchive) {
+      await thread.markTriaged(null);
+    }
 
     this.updateTitle('fetch');
   }
 
-  async processThread(thread: Thread) {
+  private async processThread_(thread: Thread, addDirectly?: boolean) {
+    if (!thread.hasMessageDetails) {
+      // addDirectly should only ever be called for threads that have had their
+      // message details fetched.
+      if (addDirectly)
+        throw 'Attempted to add a thread that lacked message details';
+      this.needsMessageDetailsThreads_.push(thread);
+      return;
+    }
+
     let processedId = await this.labels.getId(Labels.PROCESSED_LABEL);
     let messages = await thread.getMessages();
     let lastMessage = messages[messages.length - 1];
+    let isInInbox = await thread.isInInbox();
+    let hasUnprocessedLabel =
+        (await thread.getLabelNames()).has(Labels.UNPROCESSED_LABEL);
 
     // Since processing threads is destructive (e.g. it removes priority
     // labels), only process threads in the inbox or with the unprocessed label.
     // Otherwise, they might be threads that are prioritized, but lack the
     // processed label for some reason.
     if (!lastMessage.getLabelIds().includes(processedId) &&
-        ((await thread.isInInbox()) ||
-         (await thread.getLabelNames()).has(Labels.UNPROCESSED_LABEL))) {
+        (isInInbox || hasUnprocessedLabel)) {
       this.needsProcessingThreads_.push(thread);
       return;
     }
 
-    this.addThread(thread);
+    // Threads that have triage labels but aren't in the inbox were
+    // archived outside of maketime and should have their triage labels
+    // removed.
+    if (!isInInbox) {
+      this.needsArchivingThreads_.push(thread);
+      return;
+    }
+
+    if (addDirectly)
+      this.addThread(thread);
+    else
+      this.pendingThreads_.push(thread);
   }
 }

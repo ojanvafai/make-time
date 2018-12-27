@@ -34,7 +34,6 @@ export class MailProcessor {
       private updateTitle_: (key: string, ...title: string[]) => void) {}
 
   private async pushThread_(thread: Thread) {
-    await thread.update();
     await this.triageModel_.addThread(thread);
   }
 
@@ -438,21 +437,6 @@ export class MailProcessor {
       await this.processThread_(threads[i]);
     }
     this.updateTitle_('processUnprocessed');
-  }
-
-  async processUnprocessed() {
-    let threads: Thread[] = [];
-    await fetchThreads(
-        (thread: Thread) => threads.push(thread),
-        `in:${Labels.UNPROCESSED_LABEL}`);
-    await fetchThreads(
-        (thread: Thread) => threads.push(thread),
-        `in:inbox -in:${Labels.PROCESSED_LABEL}`);
-
-    if (!threads.length)
-      return;
-
-    this.processThreads(threads);
   }
 
   async dequeue(labelName: string) {
