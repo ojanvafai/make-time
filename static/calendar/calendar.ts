@@ -224,8 +224,9 @@ export class Calendar {
         maxResults: 500,  // Max is 2500.
         orderBy: 'startTime' as 'startTime',
         pageToken: undefined as string | undefined,
-      } if (pageToken)
-      request.pageToken = pageToken;
+      };
+      if (pageToken)
+        request.pageToken = pageToken;
 
       let response = await gapi.client.calendar.events.list(request);
 

@@ -34,12 +34,12 @@ class Main {
 
     let authorizeButtonNullable = document.getElementById('authorize_button');
     if (authorizeButtonNullable == null)
-      throw ('No authorize button found.') this.authorizeButton =
-          authorizeButtonNullable;
+      throw ('No authorize button found.');
+    this.authorizeButton = authorizeButtonNullable;
     let signoutButtonNullable = document.getElementById('signout_button');
     if (signoutButtonNullable == null)
-      throw ('No signout button found.') this.signoutButton =
-          signoutButtonNullable;
+      throw ('No signout button found.');
+    this.signoutButton = signoutButtonNullable;
   }
 
   /**
