@@ -1,17 +1,4 @@
-import {
-  TYPE_MEETING_RECURRING,
-  TYPE_MEETING_NON_RECURRING,
-  TYPE_ONE_ON_ONE_RECURRING,
-  TYPE_ONE_ON_ONE_NON_RECURRING,
-  TYPE_FOCUS_RECURRING,
-  TYPE_FOCUS_NON_RECURRING,
-  TYPE_OOO,
-  TYPES,
-  CALENDAR_ID,
-  TYPE_EMAIL,
-  TYPE_INTERVIEW,
-  TYPE_UNBOOKED,
-} from "./constants.js";
+import {CALENDAR_ID, TYPE_EMAIL, TYPE_FOCUS_NON_RECURRING, TYPE_FOCUS_RECURRING, TYPE_INTERVIEW, TYPE_MEETING_NON_RECURRING, TYPE_MEETING_RECURRING, TYPE_ONE_ON_ONE_NON_RECURRING, TYPE_ONE_ON_ONE_RECURRING, TYPE_OOO, TYPE_UNBOOKED, TYPES,} from './constants.js';
 
 const OOO_REGEX = /.*(OOO|Holiday).*/;
 const EMAIL_REGEX = /.*(Email).*/;
@@ -40,7 +27,7 @@ export class CalendarEvent {
   getTargetColorId(): number {
     const targetColorId = TYPES.get(this.type)
     if (targetColorId === undefined)
-      throw ("No color id found for type.")
+    throw ('No color id found for type.')
     return targetColorId;
   }
 
@@ -63,22 +50,19 @@ export class CalendarEvent {
     this.colorId = gcalEvent.colorId;
     this.summary = gcalEvent.summary;
     this.recurringEventId = gcalEvent.recurringEventId;
-    this.shouldIgnore =
-      gcalEvent.transparency === "transparent" ||
-      gcalEvent.guestsCanSeeOtherGuests === false ||
-      !gcalEvent.summary;
+    this.shouldIgnore = gcalEvent.transparency === 'transparent' ||
+        gcalEvent.guestsCanSeeOtherGuests === false || !gcalEvent.summary;
 
     let attendees = gcalEvent.attendees;
 
     if (!attendees)
       attendees = [];
 
-    attendees = attendees.filter(
-      (attendee: any) =>
-        !attendee.resource &&
-        !attendee.self)
+    attendees =
+        attendees
+            .filter((attendee: any) => !attendee.resource && !attendee.self)
 
-    this.attendeeCount = attendees.length;
+                this.attendeeCount = attendees.length;
 
     if (gcalEvent.attendeesOmitted)
       this.attendeeCount = Infinity;
@@ -103,9 +87,9 @@ export class CalendarEvent {
     // Other people scheduling me 1:1's appears to
     // always be interviews, or weird bugs in the calendar API.
     if (!gcalEvent.creator.self &&
-      this.summary.match(INTERVIEW_REGEX) === null &&
-      this.attendeeCount == 0) {
-      console.log("IGNORING USELESS LOOKING EVENT");
+        this.summary.match(INTERVIEW_REGEX) === null &&
+        this.attendeeCount == 0) {
+      console.log('IGNORING USELESS LOOKING EVENT');
       console.log(gcalEvent);
       this.shouldIgnore = true;
       return;
@@ -122,8 +106,7 @@ export class CalendarEvent {
         this.type = TYPE_FOCUS_RECURRING;
       else
         this.type = TYPE_FOCUS_NON_RECURRING;
-    }
-    else if (this.attendeeCount == 1) {
+    } else if (this.attendeeCount == 1) {
       if (gcalEvent.recurringEventId !== undefined)
         this.type = TYPE_ONE_ON_ONE_RECURRING;
       else
@@ -151,7 +134,7 @@ export class CalendarEvent {
         }
       });
     } catch (e) {
-      console.log("FAILED TO PATCH " + this.eventId);
+      console.log('FAILED TO PATCH ' + this.eventId);
       console.log(this);
     }
   }
