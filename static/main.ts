@@ -53,8 +53,8 @@ let DRAWER_OPEN = 'drawer-open';
 let CURRENT_PAGE_CLASS = 'current-page';
 
 function showBackArrow(show: boolean) {
-  (<HTMLElement>document.getElementById('hambuger-menu-toggle')).style.display =
-      show ? 'none' : '';
+  (<HTMLElement>document.getElementById('hamburger-menu-toggle'))
+      .style.display = show ? 'none' : '';
   (<HTMLElement>document.getElementById('back-arrow')).style.display =
       show ? '' : 'none';
 }
@@ -94,7 +94,7 @@ function toggleMenu() {
         await getView().goBack();
     });
 
-(<HTMLElement>document.getElementById('hambuger-menu-toggle'))
+(<HTMLElement>document.getElementById('hamburger-menu-toggle'))
     .addEventListener('click', (e) => {
       e.stopPropagation();
       toggleMenu();
