@@ -16,6 +16,7 @@ class CalendarModel extends Model {
 export class CalendarView extends View {
   private dayPlot: HTMLElement;
   private weekPlot: HTMLElement;
+  private colorizeButton: HTMLElement;
   private calendar: Calendar = new Calendar();
 
   private model: Model = new CalendarModel(title => {
@@ -39,6 +40,13 @@ export class CalendarView extends View {
       display: flex;
       flex-direction: column;
     `;
+
+    this.colorizeButton = document.createElement('button');
+    this.colorizeButton.innerText = 'Colorize Events';
+    this.colorizeButton.addEventListener('click', () => {
+      this.calendar.colorizeEvents();
+    });
+    this.append(this.colorizeButton);
 
     this.dayPlot = document.createElement('div');
     this.dayPlot.id = 'day_plot';
