@@ -9,6 +9,7 @@ import {TodoModel} from './models/TodoModel.js';
 import {TriageModel} from './models/TriageModel.js';
 import {Router} from './Router.js';
 import {ServerStorage} from './ServerStorage.js';
+import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
 import {SettingsView} from './views/Settings.js';
 import {ThreadListView} from './views/ThreadListView.js';
@@ -41,6 +42,12 @@ router.add('/todo', async (_params) => {
 router.add('/best-effort', async (_params) => {
   (await getTriageModel()).triageBestEffort();
   await router.run('/triage');
+});
+
+router.add('/calendar', async (_parans) => {
+  if (getView())
+    getView().tearDown();
+  await viewCalendar();
 });
 
 async function routeToTriage() {
@@ -169,6 +176,12 @@ async function viewTodo() {
   await setView(view);
 }
 
+async function viewCalendar() {
+  let view = new CalendarView();
+  await setView(view);
+  view.init();
+}
+
 function getScroller() {
   return <HTMLElement>document.getElementById('content');
 }
@@ -217,7 +230,8 @@ async function onLoad() {
           menuTitle,
           createMenuItem('Compose', {href: '/compose', nested: true}),
           createMenuItem('Triage', {href: '/triage', nested: true}),
-          createMenuItem('Todo', {href: '/todo', nested: true}), settingsButton,
+          createMenuItem('Todo', {href: '/todo', nested: true}),
+          createMenuItem('Calendar', {href: '/calendar'}), settingsButton,
           helpButton);
 
   await routeToCurrentLocation();

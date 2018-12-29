@@ -75,13 +75,14 @@ else
 let DISCOVERY_DOCS = [
   'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest',
   'https://sheets.googleapis.com/$discovery/rest?version=v4',
-  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
+  'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 ];
 
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
 let SCOPES =
-    'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly';
+    'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/calendar.readonly';
 
 let isSignedIn_ = false;
 

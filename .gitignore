@@ -3,4 +3,4 @@
 .vscode
 firebase-debug.log
 public/gen/
-out
+node_modules/

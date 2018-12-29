@@ -111,8 +111,6 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   let minutesPerType: Map<string, number> = new Map();
 
   for (let eventChange of eventChanges) {
-    // if (day.toString() == new Date(2018,7,20).toString())
-    //    debugger;
     let primaryInProgressEvents = Array.from(inProgressEvents);
     // OOO events take priority.
     const ooo = primaryInProgressEvents.filter(e => e.isOOOEvent());
