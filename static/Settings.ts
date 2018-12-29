@@ -5,7 +5,7 @@ import {ServerStorage} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export class Settings {
-  private fetcher_: AsyncOnce;
+  private fetcher_: AsyncOnce<void>;
   // TODO: Fix these to not assert non-null since they could realistically be
   // null if fetch() isn't completed.
   spreadsheetId!: string;
@@ -98,7 +98,7 @@ export class Settings {
   ];
 
   constructor() {
-    this.fetcher_ = new AsyncOnce(this.fetch_.bind(this))
+    this.fetcher_ = new AsyncOnce<void>(this.fetch_.bind(this))
   }
 
   async fetch() {

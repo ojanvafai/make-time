@@ -26,7 +26,6 @@ export class CalendarView extends View {
   async init() {
     this.calendar.init();
     const charter = new Charter();
-    await charter.init();
     const days = await this.calendar.getDayAggregates();
     const weeks = await this.calendar.getWeekAggregates();
     charter.chartData(days, this.dayPlot.id);
@@ -69,9 +68,7 @@ export class CalendarView extends View {
 
   async goBack() {}
 
-  async update() {
-    console.log('UPDATE');
-  }
+  async update() {}
 
   getModel() {
     return this.model;

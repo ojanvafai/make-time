@@ -112,10 +112,10 @@ export async function setView(view: View) {
   await view.getModel().update();
 }
 
-let settingThingsFetcher_: AsyncOnce;
+let settingThingsFetcher_: AsyncOnce<void>;
 async function fetchTheSettingsThings() {
   if (!settingThingsFetcher_) {
-    settingThingsFetcher_ = new AsyncOnce(async () => {
+    settingThingsFetcher_ = new AsyncOnce<void>(async () => {
       if (settings_ || labels_)
         throw 'Tried to fetch settings or labels twice.';
 
@@ -171,10 +171,10 @@ async function migrateLabels(labels: Labels) {
       Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL, doLabelMigration);
 }
 
-let queueSettingsFetcher_: AsyncOnce;
+let queueSettingsFetcher_: AsyncOnce<void>;
 export async function getQueuedLabelMap() {
   if (!queueSettingsFetcher_) {
-    queueSettingsFetcher_ = new AsyncOnce(async () => {
+    queueSettingsFetcher_ = new AsyncOnce<void>(async () => {
       queuedLabelMap_ = new QueueSettings((await getSettings()).spreadsheetId);
       await queuedLabelMap_.fetch();
     });
