@@ -1,4 +1,4 @@
-import {TYPE_UNBOOKED} from './constants.js';
+import {TYPE_UNBOOKED} from './Constants.js';
 
 export class Aggregate {
   start: Date;

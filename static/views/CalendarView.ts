@@ -1,5 +1,5 @@
-import {Calendar} from '../calendar/calendar.js';
-import {Charter} from '../calendar/charter.js';
+import {Calendar} from '../calendar/Calendar.js';
+import {Charter} from '../calendar/Charter.js';
 import {Model} from '../models/Model.js';
 
 import {View} from './View.js'

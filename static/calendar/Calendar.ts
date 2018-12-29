@@ -1,7 +1,7 @@
-import {Aggregate} from './aggregate.js'
-import {CalendarEvent} from './calendar_event.js'
-import {CALENDAR_ID, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './constants.js'
-import {TaskQueue} from './task_queue.js'
+import {Aggregate} from './Aggregate.js'
+import {CalendarEvent} from './CalendarEvent.js'
+import {CALENDAR_ID, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+import {TaskQueue} from './TaskQueue.js'
 
 function getStartOfWeek(date: Date): Date {
   const x = new Date(date);

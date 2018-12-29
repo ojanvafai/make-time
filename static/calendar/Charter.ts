@@ -1,7 +1,7 @@
 import {AsyncOnce} from '../AsyncOnce.js';
 
-import {Aggregate} from './aggregate.js'
-import {CALENDAR_ID, TYPES} from './constants.js'
+import {Aggregate} from './Aggregate.js'
+import {CALENDAR_ID, TYPES} from './Constants.js'
 
 function hexToRGB(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
