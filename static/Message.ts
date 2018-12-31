@@ -37,14 +37,14 @@ export class Message {
   isUnread: boolean;
   isDraft: boolean;
 
-  constructor(private rawMessage_: any, private previousMessage_?: Message) {
-    this.id = rawMessage_.id;
+  constructor(public rawMessage: any, private previousMessage_?: Message) {
+    this.id = rawMessage.id;
 
     this.attachments_ = [];
 
     let hasDate = false;
 
-    for (var header of rawMessage_.payload.headers) {
+    for (var header of rawMessage.payload.headers) {
       // Some mail users lower case header names (probably just spam).
       switch (header.name.toLowerCase()) {
         case 'subject':
@@ -83,19 +83,19 @@ export class Message {
     // Things like chats don't have a date header. Use internalDate as per
     // https://developers.google.com/gmail/api/release-notes#2015-06-18.
     if (!hasDate)
-      this.date = new Date(Number(rawMessage_.internalDate));
+      this.date = new Date(Number(rawMessage.internalDate));
 
-    this.isUnread = rawMessage_.labelIds.includes('UNREAD');
-    this.isDraft = rawMessage_.labelIds.includes('DRAFT');
+    this.isUnread = rawMessage.labelIds.includes('UNREAD');
+    this.isDraft = rawMessage.labelIds.includes('DRAFT');
   }
 
-  setRawMessage(rawMessage: any) {
-    this.rawMessage_ = rawMessage;
+  updateLabels(labelIds: string[]) {
+    this.rawMessage.labelIds = labelIds;
   }
 
   getHeaderValue(name: string) {
     name = name.toLowerCase();
-    for (var header of this.rawMessage_.payload.headers) {
+    for (var header of this.rawMessage.payload.headers) {
       if (header.name.toLowerCase().includes(name))
         return header.value;
     }
@@ -107,7 +107,7 @@ export class Message {
   }
 
   getLabelIds() {
-    return this.rawMessage_.labelIds;
+    return this.rawMessage.labelIds;
   }
 
   getPlain() {
@@ -171,12 +171,12 @@ export class Message {
     // If a message has no body at all, fallback to empty string.
     this.plain_ = '';
 
-    if (this.rawMessage_.payload.parts) {
-      this.getMessageBody_(this.rawMessage_.payload.parts);
+    if (this.rawMessage.payload.parts) {
+      this.getMessageBody_(this.rawMessage.payload.parts);
     } else {
       let messageText =
-          Message.base64_.decode(this.rawMessage_.payload.body.data);
-      if (this.rawMessage_.payload.mimeType == 'text/html')
+          Message.base64_.decode(this.rawMessage.payload.body.data);
+      if (this.rawMessage.payload.mimeType == 'text/html')
         this.html_ = messageText;
       else
         this.plain_ = messageText;

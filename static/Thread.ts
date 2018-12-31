@@ -5,6 +5,8 @@ import {send} from './Mail.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 
+let noMessagesError =
+    'Attempted to operate on messages before they were fetched';
 let staleThreadError =
     'Thread was modified before message details were fetched.';
 let staleAfterFetchError =
@@ -12,7 +14,7 @@ let staleAfterFetchError =
 
 export class Thread {
   id: string;
-  historyId: string;
+  historyId: string|null;
   hasMessageDetails: boolean = false;
 
   snippet: string|undefined;
@@ -38,17 +40,16 @@ export class Thread {
     return this.id == other.id && this.historyId == other.historyId;
   }
 
-  private processLabels_(messages: any[]) {
-    this.labelIds_ = new Set();
+  private processLabels_() {
+    if (!this.processedMessages_)
+      throw noMessagesError;
+
+    this.labelIds_ =
+        new Set(this.processedMessages_.flatMap(x => x.getLabelIds()));
+
     this.labelNames_ = new Set();
     this.priority_ = null;
     this.muted_ = false;
-
-    for (var message of messages) {
-      for (let labelId of message.labelIds) {
-        this.labelIds_.add(labelId);
-      }
-    }
 
     for (let id of this.labelIds_) {
       let name = this.allLabels_.getName(id);
@@ -78,8 +79,6 @@ export class Thread {
 
     this.snippet = messages[messages.length - 1].snippet;
 
-    this.processLabels_(messages);
-
     let oldMessageCount = this.processedMessages_.length;
     let newProcessedMessages: Message[] = [];
 
@@ -91,7 +90,7 @@ export class Thread {
       // avoid recomputing the message body and quote diffs, just set the raw
       // message instead of fully reprocessing.
       if (i < oldMessageCount) {
-        this.processedMessages_[i].setRawMessage(message);
+        this.processedMessages_[i].rawMessage = message;
         continue;
       }
 
@@ -105,6 +104,7 @@ export class Thread {
       newProcessedMessages.push(processed);
     }
 
+    this.processLabels_();
     return newProcessedMessages;
   }
 
@@ -123,7 +123,7 @@ export class Thread {
       // network fetch, but for some threads removing a label from all the
       // messages in the thread doesn't actually remove the label from the
       // thread.
-      let newMessages = await this.update();
+      let newMessages = await this.fetchMetadataOnly_();
       if (newMessages && newMessages.length) {
         let subject = await this.getSubject();
         console.warn(
@@ -145,6 +145,16 @@ export class Thread {
     removeLabelIds = removeLabelIds.filter(
         (item) => !addLabelIds.includes(item) && (currentLabelIds.has(item)));
 
+    // In theory this can happen legitimately due to race conditions, but
+    // usually represents a bug, so log a warning to the console instead of
+    // something user visible.
+    if (!removeLabelIds.length && !addLabelIds.length) {
+      console.warn(
+          `Modify call didn't remove or add any Labels for thread with subject: ${
+              this.getSubjectSync()}`)
+      return;
+    }
+
     let request: any = {
       'userId': USER_ID,
       'id': this.id,
@@ -153,13 +163,15 @@ export class Thread {
     };
     let response =
         await gapiFetch(gapi.client.gmail.users.threads.modify, request);
-    console.log(response);
-    // TODO: Handle response.status != 200.
 
-    // Ensure this Thread is up to date for future users of it.
-    // Doing this extra network request is kind of slow, but it also has the
-    // benefit of sticking the thread in the disk cache.
-    await this.update();
+    this.updateMetadata_(response.result.messages);
+    this.historyId = null;
+
+    // The response to modify doesn't include historyIds, so we need to do a
+    // fetch to get the new historyId. While doing so, we also fetch the new
+    // labels in the very rare case when something else may also have modified
+    // the labels on this thread.
+    await this.fetchMetadataOnly_();
 
     return {
       added: addLabelIds, removed: removeLabelIds, thread: this,
@@ -320,7 +332,57 @@ export class Thread {
   }
 
   private getKey_(weekNumber: number) {
+    if (!this.historyId)
+      throw 'Attempted to serialize thread with invalid historyId';
     return `thread-${weekNumber}-${this.historyId}`;
+  }
+
+  private async fetchMetadataOnly_() {
+    if (!this.processedMessages_)
+      throw noMessagesError;
+
+    let resp = await gapiFetch(gapi.client.gmail.users.threads.get, {
+      userId: USER_ID,
+      id: this.id,
+      format: 'minimal',
+      fields: 'historyId,messages(labelIds)',
+    });
+
+    let messages = resp.result.messages;
+
+    // If there are new messages we need to do a full update. This
+    // should be exceedingly rare though.
+    if (this.processedMessages_.length != messages.length)
+      return await this.update();
+
+    this.historyId = resp.result.historyId;
+    this.updateMetadata_(messages);
+
+    this.serializeMessageData_();
+    return null;
+  }
+
+  private updateMetadata_(messages: any[]) {
+    if (!this.processedMessages_)
+      throw noMessagesError;
+
+    for (let i = 0; i < messages.length; i++) {
+      this.processedMessages_[i].updateLabels(messages[i].labelIds);
+    }
+    this.processLabels_();
+  }
+
+  private async serializeMessageData_() {
+    if (!this.processedMessages_)
+      throw noMessagesError;
+
+    let messages = this.processedMessages_.map(x => x.rawMessage);
+    let key = this.getKey_(getCurrentWeekNumber());
+    try {
+      await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
+    } catch (e) {
+      console.log('Fail storing message details in IDB.', e);
+    }
   }
 
   async fetch(forceNetwork?: boolean, skipNetwork?: boolean) {
@@ -350,20 +412,13 @@ export class Thread {
       messages = resp.result.messages;
 
       // If modifications have come in since we first created this Thread
-      // instance then the historyId and the snippet may have changed.
-      // TODO: Should we delete the old entry in IDB if the historyId changes or
-      // just let gcLocalStorage delete it eventually?
+      // instance then the historyId will have changed.
       this.historyId = resp.result.historyId;
-
-      try {
-        let key = this.getKey_(getCurrentWeekNumber());
-        await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
-      } catch (e) {
-        console.log('Fail storing message details in IDB.', e);
-      }
     }
 
-    return this.processMessages_(messages);
+    let newMessages = this.processMessages_(messages);
+    this.serializeMessageData_();
+    return newMessages;
   }
 
   async update() {

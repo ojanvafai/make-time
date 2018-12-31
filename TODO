@@ -1,3 +1,5 @@
+- Sometime archived threads don't seem to go away from the thread list.
+- Sometimes single-thread-view goes back to the threadlist when there's more threads. When this happens there are somehow two ThreadListViews fighting it seems like and every thread after does this until reload.
 - Fix issues with the thread disappearing after having been saved in localstorage but then removed on update...race condition where it can't be found when trying to renderOne?
 - Minimize the number of fetches when a thread is modified. Can use the modify response to update message details, but then don't get the new historyID. Maybe find some way to have a concept of a thread with no historyId? Try to infer the history ID from the messages (the largest one) and hope that's good enough?
 
