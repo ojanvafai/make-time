@@ -171,7 +171,11 @@ export class Thread {
     // fetch to get the new historyId. While doing so, we also fetch the new
     // labels in the very rare case when something else may also have modified
     // the labels on this thread.
-    await this.fetchMetadataOnly_();
+    //
+    // Don't await this since in theory we have all the updated label and
+    // message data already from the response from the modify call and there may
+    // be other messages waiting to be processed.
+    this.fetchMetadataOnly_();
 
     return {
       added: addLabelIds, removed: removeLabelIds, thread: this,
