@@ -1,6 +1,7 @@
 import {getCachedThread, ThreadData} from '../BaseMain.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {Labels} from '../Labels.js';
+import {TaskQueue} from '../TaskQueue.js';
 import {Thread} from '../Thread.js';
 
 import {Model} from './Model.js';
@@ -135,31 +136,41 @@ export abstract class ThreadListModel extends Model {
     this.threadListChanged_();
   }
 
-  private async markTriagedInternal_(thread: Thread, destination: string|null) {
-    let triageResult = <TriageResult>(await thread.markTriaged(destination));
+  private async markTriagedInternal_(
+      thread: Thread, destination: string|null,
+      expectedNewMessageCount?: number) {
+    let triageResult = <TriageResult>(
+        await thread.markTriaged(destination, expectedNewMessageCount));
     if (triageResult)
       this.undoableActions_.push(triageResult);
     await this.handleTriaged(destination, thread);
   }
 
-  async markSingleThreadTriaged(thread: Thread, destination: string|null) {
+  async markSingleThreadTriaged(
+      thread: Thread, destination: string|null,
+      expectedNewMessageCount?: number) {
     this.resetUndoableActions_();
     this.removeThread(thread);
-    await this.markTriagedInternal_(thread, destination);
+    await this.markTriagedInternal_(
+        thread, destination, expectedNewMessageCount);
   }
 
-  async markThreadsTriaged(threads: Thread[], destination: string|null) {
+  async markThreadsTriaged(
+      threads: Thread[], destination: string|null,
+      expectedNewMessageCount?: number) {
     this.resetUndoableActions_();
 
-    this.updateTitle('archiving', `Archiving ${threads.length} threads...`);
+    this.updateTitle('archiving', `Modifying ${threads.length} threads...`);
 
     this.removeThreads_(threads);
 
-    for (let i = 0; i < threads.length; i++) {
-      this.updateTitle(
-          'archiving', `Archiving ${i + 1}/${threads.length} threads...`);
-      await this.markTriagedInternal_(threads[i], destination);
-    }
+    const taskQueue = new TaskQueue(3);
+    for (let thread of threads) {
+      taskQueue.queueTask(
+          () => this.markTriagedInternal_(
+              thread, destination, expectedNewMessageCount));
+    };
+    await taskQueue.flush();
 
     this.updateTitle('archiving');
   }

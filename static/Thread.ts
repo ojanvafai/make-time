@@ -14,7 +14,7 @@ let staleAfterFetchError =
 
 export class Thread {
   id: string;
-  historyId: string|null;
+  historyId: string;
   hasMessageDetails: boolean = false;
 
   snippet: string|undefined;
@@ -108,7 +108,9 @@ export class Thread {
     return newProcessedMessages;
   }
 
-  async modify(addLabelIds: string[], removeLabelIds: string[]) {
+  async modify(
+      addLabelIds: string[], removeLabelIds: string[],
+      expectedNewMessageCount: number = 0) {
     // Need the message details to get the list of currently applied labels.
     // Almost always we will have already fetched this since we're showing the
     // thread to the user already or we'll all least have it on disk.
@@ -124,7 +126,7 @@ export class Thread {
       // messages in the thread doesn't actually remove the label from the
       // thread.
       let newMessages = await this.fetchMetadataOnly_();
-      if (newMessages && newMessages.length) {
+      if (newMessages && newMessages.length > expectedNewMessageCount) {
         let subject = await this.getSubject();
         console.warn(
             `Skipping modify since new messages arrived after modify was called on thread with subject: ${
@@ -165,24 +167,24 @@ export class Thread {
         await gapiFetch(gapi.client.gmail.users.threads.modify, request);
 
     this.updateMetadata_(response.result.messages);
-    this.historyId = null;
 
     // The response to modify doesn't include historyIds, so we need to do a
     // fetch to get the new historyId. While doing so, we also fetch the new
     // labels in the very rare case when something else may also have modified
     // the labels on this thread.
     //
-    // Don't await this since in theory we have all the updated label and
-    // message data already from the response from the modify call and there may
-    // be other messages waiting to be processed.
-    this.fetchMetadataOnly_();
+    // It's frustrating to wait on this network roundtrip before proceeding, but
+    // better to have updated historyIds before we do anything like serializing
+    // to disk than to get in an inconsistent state.
+    await this.fetchMetadataOnly_();
 
     return {
       added: addLabelIds, removed: removeLabelIds, thread: this,
     }
   }
 
-  async markTriaged(destination: string|null) {
+  async markTriaged(
+      destination: string|null, expectedNewMessageCount?: number) {
     // Need the message details to get the list of current applied labels.
     // Almost always we will have alread fetched this since we're showing the
     // thread to the user already.
@@ -207,7 +209,8 @@ export class Thread {
     });
     removeLabelIds = removeLabelIds.concat(makeTimeIds);
 
-    return await this.modify(addLabelIds, removeLabelIds);
+    return await this.modify(
+        addLabelIds, removeLabelIds, expectedNewMessageCount);
   }
 
   async getLastMessage() {
@@ -336,8 +339,6 @@ export class Thread {
   }
 
   private getKey_(weekNumber: number) {
-    if (!this.historyId)
-      throw 'Attempted to serialize thread with invalid historyId';
     return `thread-${weekNumber}-${this.historyId}`;
   }
 

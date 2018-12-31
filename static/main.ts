@@ -348,12 +348,9 @@ export async function update() {
   // Do the todo model first since it doens't need to send anything through
   // MailProcessor, so is relatively constant time.
   let todoModel = await getTodoModel();
-  await todoModel.update();
-
   let triageModel = await getTriageModel();
-  await triageModel.update();
-
-  await (await getView()).update();
+  let view = await getView();
+  await Promise.all([todoModel.update(), triageModel.update(), view.update()]);
 
   await gcLocalStorage();
 

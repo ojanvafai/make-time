@@ -1,4 +1,5 @@
 import {fetchThreads} from './BaseMain.js';
+import {TaskQueue} from './TaskQueue.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -430,12 +431,16 @@ export class MailProcessor {
   }
 
   async processThreads(threads: Thread[]) {
-    for (var i = 0; i < threads.length; i++) {
-      this.updateTitle_(
-          'processUnprocessed',
-          `Processing ${i + 1}/${threads.length} unprocessed threads...`);
-      await this.processThread_(threads[i]);
-    }
+    this.updateTitle_(
+        'processUnprocessed',
+        `Processing ${threads.length} unprocessed threads...`);
+
+    const taskQueue = new TaskQueue(3);
+    for (let thread of threads) {
+      taskQueue.queueTask(() => this.processThread_(thread));
+    };
+    await taskQueue.flush();
+
     this.updateTitle_('processUnprocessed');
   }
 

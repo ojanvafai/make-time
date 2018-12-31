@@ -10,7 +10,7 @@ export class TaskQueue {
     this.maxTasks = maxTasks;
   }
 
-  public async doTasks() {
+  public doTasks() {
     if (this.inProgressTaskCount >= this.maxTasks)
       return;
     let task = this.tasks.pop();
@@ -28,7 +28,7 @@ export class TaskQueue {
     this.doTasks();
   }
 
-  public async queueTask(task: Task) {
+  public queueTask(task: Task) {
     const shouldStart = this.tasks.length == 0;
     this.tasks.push(task);
     if (shouldStart)
@@ -37,6 +37,8 @@ export class TaskQueue {
 
   public flush() {
     return new Promise(resolve => {
+      if (!this.tasks.length && this.inProgressTaskCount == 0)
+        resolve();
       this.resolves.push(resolve);
     });
   }

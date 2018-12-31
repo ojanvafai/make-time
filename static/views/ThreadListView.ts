@@ -439,10 +439,11 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.style.display = 'none';
   }
 
-  async markTriaged(destination: string|null) {
+  async markTriaged(
+      destination: string|null, expectedNewMessageCount?: number) {
     if (this.renderedRow_) {
       this.model_.markSingleThreadTriaged(
-          this.renderedRow_.thread, destination);
+          this.renderedRow_.thread, destination, expectedNewMessageCount);
     } else {
       // Update the UI first and then archive one at a time.
       let threads = this.getSelectedThreads_();
@@ -455,7 +456,8 @@ export class ThreadListView extends View {
       if (this.focusedRow_ &&
           threads.selected.includes(this.focusedRow_.thread))
         this.setFocus(threads.firstUnselectedRowAfterSelected);
-      this.model_.markThreadsTriaged(threads.selected, destination);
+      this.model_.markThreadsTriaged(
+          threads.selected, destination, expectedNewMessageCount);
     }
   }
 
@@ -621,7 +623,9 @@ export class ThreadListView extends View {
 
       if (Actions.ARCHIVE_ACTION.destination !== null)
         throw 'This should never happen.';
-      await this.markTriaged(Actions.ARCHIVE_ACTION.destination);
+      let expectedNewMessageCount = 1;
+      await this.markTriaged(
+          Actions.ARCHIVE_ACTION.destination, expectedNewMessageCount);
 
       this.updateTitle('sendReply');
       this.isSending_ = false;
