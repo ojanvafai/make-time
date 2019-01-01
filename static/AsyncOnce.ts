@@ -2,19 +2,22 @@
 // multiple locations with async yields in the middle.
 export class AsyncOnce<T> {
   private queued_: ((value?: T|PromiseLike<T>) => void)[];
-  private asyncAction_: ((value?: T|PromiseLike<T>) => T)|null;
+  private asyncAction_: (() => PromiseLike<T>)|null;
   private hasValue_: boolean = false;
   private value_: T|undefined;
   private isDoing_: boolean = false;
 
-  constructor(asyncAction: ((value?: {}|PromiseLike<T>) => T)) {
+  constructor(asyncAction: ((value?: {}|PromiseLike<T>) => PromiseLike<T>)) {
     this.queued_ = [];
     this.asyncAction_ = asyncAction;
   }
 
-  async do(): Promise<T|undefined> {
-    if (this.hasValue_)
-      return this.value_;
+  async do(): Promise<T> {
+    if (this.hasValue_) {
+      if (this.value_ === undefined)
+        throw ('Something went wrong. This should never happen.')
+        return this.value_;
+    }
 
     if (this.isDoing_)
       return new Promise(resolve => this.queued_.push(resolve));

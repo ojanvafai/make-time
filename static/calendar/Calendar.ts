@@ -1,3 +1,5 @@
+import {AsyncOnce} from '../AsyncOnce.js';
+
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
 import {CALENDAR_ID, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
@@ -166,30 +168,37 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
 
 export class Calendar {
   private events: CalendarEvent[] = [];
-  private dayAggregates: Aggregate[]|null = null;
-  private weekAggregates: Aggregate[]|null = null;
+  private dayAggregates: AsyncOnce<Aggregate[]>;
+  private weekAggregates: AsyncOnce<Aggregate[]>;
 
   private fetchingEvents: boolean = true;
   private onReceiveEventsChunkResolves: ((cs: CalendarEvent[]) => void)[] = [];
-  private dayAggregateResolves: ((as: Aggregate[]) => void)[] = [];
-  private weekAggregateResolves: ((as: Aggregate[]) => void)[] = [];
+
+  constructor() {
+    this.dayAggregates = new AsyncOnce<Aggregate[]>(async () => {
+      const events = [];
+      // TODO - is there any easier way to convert an async iterable into an
+      // array?
+      for await (let event of this.getEvents())
+        events.push(event);
+      return eventsToAggregates(events);
+    });
+    this.weekAggregates = new AsyncOnce<Aggregate[]>(async () => {
+      let dayAggregates = await this.dayAggregates.do();
+      return aggregateByWeek(dayAggregates);
+    });
+  }
 
   getDayAggregates(): Promise<Aggregate[]> {
-    if (this.dayAggregates !== null) {
-      return new Promise(resolve => resolve(this.dayAggregates!));
-    }
-    return new Promise(resolve => {
-      this.dayAggregateResolves.push(resolve);
-    })
+    if (this.dayAggregates === null)
+      throw ('dayAggregates should never be null');
+    return new Promise(resolve => resolve(this.dayAggregates.do()));
   }
 
   getWeekAggregates(): Promise<Aggregate[]> {
-    if (this.weekAggregates !== null) {
-      return new Promise(resolve => resolve(this.weekAggregates!));
-    }
-    return new Promise(resolve => {
-      this.weekAggregateResolves.push(resolve);
-    })
+    if (this.weekAggregates === null)
+      throw ('weekAggregates should never be null');
+    return new Promise(resolve => resolve(this.weekAggregates.do()));
   }
 
   gotEventsChunk(events: CalendarEvent[]) {
@@ -250,12 +259,6 @@ export class Calendar {
 
   async init() {
     await this.fetchEvents();
-    this.dayAggregates = eventsToAggregates(this.events);
-    this.weekAggregates = aggregateByWeek(this.dayAggregates);
-    for (const resolve of this.dayAggregateResolves)
-      resolve(this.dayAggregates);
-    for (const resolve of this.weekAggregateResolves)
-      resolve(this.weekAggregates);
   }
 
   async * getEvents() {
