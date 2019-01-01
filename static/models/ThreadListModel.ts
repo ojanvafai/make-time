@@ -27,6 +27,7 @@ export class ThreadListChangedEvent extends Event {
 export abstract class ThreadListModel extends Model {
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
+  private queuedRemoves_: Thread[];
   private isUpdating_: boolean;
 
   constructor(
@@ -36,6 +37,7 @@ export abstract class ThreadListModel extends Model {
 
     this.resetUndoableActions_();
     this.threads_ = [];
+    this.queuedRemoves_ = [];
     this.isUpdating_ = false;
   }
 
@@ -79,7 +81,10 @@ export abstract class ThreadListModel extends Model {
   async setThreads(threads: Thread[], skipSerialization?: boolean) {
     let oldThreads = this.threads_.concat();
 
-    this.threads_ = threads.concat();
+    let queuedRemoves = this.queuedRemoves_;
+    this.queuedRemoves_ = [];
+
+    this.threads_ = threads.filter(x => !queuedRemoves.includes(x));
     this.threads_.sort(this.compareThreads.bind(this));
 
     let changed = oldThreads.length != this.threads_.length;
@@ -118,6 +123,10 @@ export abstract class ThreadListModel extends Model {
   }
 
   private removeThreadInternal_(thread: Thread) {
+    // If an update is in progress, we need to make sure to apply this remove to
+    // that update as well as the current working thread list.
+    if (this.queuedRemoves_)
+      this.queuedRemoves_.push(thread);
     var index = this.threads_.indexOf(thread);
     if (index == -1)
       throw 'Attempted to remove thread not in the model.';
