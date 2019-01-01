@@ -35,11 +35,12 @@
     "gulp-shell": "^0.6.5",
     "gulp-sourcemaps": "^2.6.4",
     "gulp-string-replace": "^1.1.2",
+    "gulp-terser": "^1.1.6",
     "gulp-typescript": "^5.0.0",
     "gulp-uglify-es": "^1.0.4",
     "md5": "^2.2.1",
     "rimraf": "^2.6.2",
-    "rollup": "^0.68.2",
+    "rollup": "^1.0.0",
     "strip-json-comments": "^2.0.1",
     "typescript": "^3.2.2"
   },

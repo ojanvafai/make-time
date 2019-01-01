@@ -9,7 +9,7 @@ let shell = require('gulp-shell')
 let sourcemaps = require('gulp-sourcemaps');
 let stripJsonComments = require('strip-json-comments');
 let typescript = require('gulp-typescript');
-let uglify = require('gulp-uglify-es').default;
+let terser = require('gulp-terser');
 
 let tsConfig = JSON.parse(stripJsonComments(fs.readFileSync('./tsconfig.json', 'utf8')));
 let outDir = tsConfig.compilerOptions.outDir;
@@ -41,7 +41,7 @@ gulp.task('bundle', () => {
   return gulp.src(outDir + mainFilename)
     .pipe(sourcemaps.init({loadMaps: true}))
     .pipe(rollup({}, 'esm'))
-    .pipe(uglify())
+    .pipe(terser())
     // save sourcemap as separate file (in the same folder)
     .pipe(sourcemaps.write(''))
     .pipe(gulp.dest(outDir + bundleDir));
