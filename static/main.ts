@@ -341,7 +341,10 @@ async function gcLocalStorage() {
 let isUpdating_ = false;
 
 export async function update() {
-  if (isUpdating_)
+  // update can get called before any views are setup due to visibilitychange
+  // and online handlers
+  let view = await getView();
+  if (!view || isUpdating_)
     return;
   isUpdating_ = true;
 
@@ -349,7 +352,6 @@ export async function update() {
   // MailProcessor, so is relatively constant time.
   let todoModel = await getTodoModel();
   let triageModel = await getTriageModel();
-  let view = await getView();
   await Promise.all([todoModel.update(), triageModel.update(), view.update()]);
 
   await gcLocalStorage();
