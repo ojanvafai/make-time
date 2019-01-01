@@ -114,26 +114,8 @@ export class Thread {
     // Need the message details to get the list of currently applied labels.
     // Almost always we will have already fetched this since we're showing the
     // thread to the user already or we'll all least have it on disk.
-    if (!this.hasMessageDetails) {
+    if (!this.hasMessageDetails)
       await this.fetch();
-    } else {
-      // There's a race condition where where new messages can come in after
-      // modify request, so the user won't have seen the new messages. Minimize
-      // this race by doing an update first to see if there are new messages and
-      // bailing.
-      // TODO: Figure out how to use batchModify. This would avoid the extra
-      // network fetch, but for some threads removing a label from all the
-      // messages in the thread doesn't actually remove the label from the
-      // thread.
-      let newMessages = await this.fetchMetadataOnly_();
-      if (newMessages && newMessages.length > expectedNewMessageCount) {
-        let subject = await this.getSubject();
-        console.warn(
-            `Skipping modify since new messages arrived after modify was called on thread with subject: ${
-                subject}.`);
-        return;
-      }
-    }
 
     if (this.labelIds_ === undefined)
       throw staleThreadError;
@@ -166,7 +148,21 @@ export class Thread {
     let response =
         await gapiFetch(gapi.client.gmail.users.threads.modify, request);
 
-    this.updateMetadata_(response.result.messages);
+    if (this.processedMessages_ === undefined)
+      throw staleThreadError;
+
+    // If the number of messages has changed from when we got the message
+    // details for this thread and when we did the modify call, that can be one
+    // of two causes:
+    //   1. The thread got a new messages in the interim and we need to mark the
+    // thread to be processed.
+    //   2. We are hitting a gmail bug, and should just ignore it. See
+    // https://issuetracker.google.com/issues/122167541. If not for this bug, we
+    // could just use messages.batchModify to only modify the messages we know
+    // about and avoid the race condition for cause #1 entirely.
+    let newMessageMetadata = response.result.messages;
+    let hasUnexpectedNewMessages = newMessageMetadata.length >
+        this.processedMessages_.length + expectedNewMessageCount;
 
     // The response to modify doesn't include historyIds, so we need to do a
     // fetch to get the new historyId. While doing so, we also fetch the new
@@ -175,8 +171,24 @@ export class Thread {
     //
     // It's frustrating to wait on this network roundtrip before proceeding, but
     // better to have updated historyIds before we do anything like serializing
-    // to disk than to get in an inconsistent state.
+    // to disk than to get in an inconsistent state and see need the count of
+    // new messages to identify if we're in the gmail bug case mentioned above.
     await this.fetchMetadataOnly_();
+
+    // In the bug case, there will be more messages in the response from the
+    // modify call than in the response to the fetchMetadataOnly_ call. If we
+    // wanted to be 100% sure we could fetch the individual messages that are
+    // new and see that they 404, but that seems like overkill.
+    if (hasUnexpectedNewMessages &&
+        newMessageMetadata.length <= this.processedMessages_.length) {
+      // TODO: Handle the case where this network request fails.
+      await gapiFetch(gapi.client.gmail.users.threads.modify, {
+        'userId': USER_ID,
+        'id': this.id,
+        'addLabelIds': ['INBOX'],
+        'removeLabelIds': [await this.allLabels_.getId(Labels.PROCESSED_LABEL)],
+      });
+    }
 
     return {
       added: addLabelIds, removed: removeLabelIds, thread: this,
@@ -361,20 +373,14 @@ export class Thread {
       return await this.update();
 
     this.historyId = resp.result.historyId;
-    this.updateMetadata_(messages);
-
-    this.serializeMessageData_();
-    return null;
-  }
-
-  private updateMetadata_(messages: any[]) {
-    if (!this.processedMessages_)
-      throw noMessagesError;
 
     for (let i = 0; i < messages.length; i++) {
       this.processedMessages_[i].updateLabels(messages[i].labelIds);
     }
     this.processLabels_();
+
+    this.serializeMessageData_();
+    return null;
   }
 
   private async serializeMessageData_() {
