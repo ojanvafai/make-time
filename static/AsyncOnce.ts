@@ -15,8 +15,8 @@ export class AsyncOnce<T> {
   async do(): Promise<T> {
     if (this.hasValue_) {
       if (this.value_ === undefined)
-        throw ('Something went wrong. This should never happen.')
-        return this.value_;
+        throw ('Something went wrong. This should never happen.');
+      return this.value_;
     }
 
     if (this.isDoing_)
