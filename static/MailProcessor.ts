@@ -1,5 +1,4 @@
 import {fetchThreads} from './BaseMain.js';
-import {TaskQueue} from './TaskQueue.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -8,7 +7,8 @@ import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
-import {Thread} from './Thread.js';
+import {TaskQueue} from './TaskQueue.js';
+import {DEFAULT_QUEUE, Thread} from './Thread.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
@@ -390,8 +390,10 @@ export class MailProcessor {
 
       let prefixedLabelName;
 
-      // Don't queue if already in the inbox or triaged.
-      if (await thread.isInInbox() || (await thread.getPriority()) ||
+      // Don't queue if already triaged or dequeued (i.e. in the inbox with a
+      // needs triage label).
+      if ((await thread.getPriority()) ||
+          (await thread.isInInbox() && (await thread.getQueue() == DEFAULT_QUEUE)) ||
           this.queuedLabelMap_.get(labelName).queue ==
               QueueSettings.IMMEDIATE) {
         prefixedLabelName = Labels.needsTriageLabel(labelName);

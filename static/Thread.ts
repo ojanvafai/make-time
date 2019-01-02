@@ -12,6 +12,8 @@ let staleThreadError =
 let staleAfterFetchError =
     'Thread is still stale after fetch. This should never happen.';
 
+export let DEFAULT_QUEUE = 'inbox';
+
 export class Thread {
   id: string;
   historyId: string;
@@ -66,7 +68,7 @@ export class Thread {
     }
 
     if (this.queue_ === undefined)
-      this.queue_ = 'inbox';
+      this.queue_ = DEFAULT_QUEUE;
   }
 
   private async processMessages_(messages: any[]) {
