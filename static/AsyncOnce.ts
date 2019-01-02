@@ -4,17 +4,22 @@ export class AsyncOnce<T> {
   private queued_: ((value?: T|PromiseLike<T>) => void)[];
   private asyncAction_: (() => PromiseLike<T>)|null;
   private hasValue_: boolean = false;
-  private value_: T|undefined;
+  private value_: T|null;
   private isDoing_: boolean = false;
 
   constructor(asyncAction: ((value?: {}|PromiseLike<T>) => PromiseLike<T>)) {
     this.queued_ = [];
     this.asyncAction_ = asyncAction;
+    this.value_ = null;
   }
 
   async do(): Promise<T> {
     if (this.hasValue_) {
-      if (this.value_ === undefined)
+      // TODO: Find a better way to have the type system allow for controlling
+      // the uninitialized value of this.value_. This is kind of gross as it
+      // doesn't allow for async functions that return null, but at least it
+      // allows void functions.
+      if (this.value_ === null)
         throw ('Something went wrong. This should never happen.');
       return this.value_;
     }

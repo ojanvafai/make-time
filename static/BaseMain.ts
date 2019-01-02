@@ -112,10 +112,10 @@ export async function setView(view: View) {
   await view.getModel().update();
 }
 
-let settingThingsFetcher_: AsyncOnce<boolean>;
+let settingThingsFetcher_: AsyncOnce<void>;
 async function fetchTheSettingsThings() {
   if (!settingThingsFetcher_) {
-    settingThingsFetcher_ = new AsyncOnce<boolean>(async () => {
+    settingThingsFetcher_ = new AsyncOnce<void>(async () => {
       if (settings_ || labels_)
         throw 'Tried to fetch settings or labels twice.';
 
@@ -138,9 +138,6 @@ async function fetchTheSettingsThings() {
 
       await labelsPromise;
       await migrateLabels(labels_);
-
-      // Temporary fix since AsyncOnce doesn't currently support void functions.
-      return true;
     });
   }
   await settingThingsFetcher_.do();
