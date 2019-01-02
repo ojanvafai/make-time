@@ -249,6 +249,9 @@ export class ThreadListView extends View {
         this.setFocus(nextRow);
       }
     }
+
+    // Always prerender the row that would get rendered if the user hits enter.
+    this.prerenderRow_(this.focusedRow_ || newRows[0]);
   }
 
   handleBestEffortChanged_() {
@@ -526,10 +529,12 @@ export class ThreadListView extends View {
 
     let rows = this.getRows_();
     const nextRow = rowAtOffset(rows, this.renderedRow_, 1);
-    if (!nextRow)
-      return;
+    if (nextRow)
+      this.prerenderRow_(nextRow);
+  }
 
-    let dom = nextRow.render(this.singleThreadContainer_);
+  private prerenderRow_(row: ThreadRow) {
+    let dom = row.render(this.singleThreadContainer_);
     dom.style.bottom = '0';
     dom.style.visibility = 'hidden';
   }

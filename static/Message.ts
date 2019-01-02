@@ -9,6 +9,11 @@ interface AttachmentResult {
   contentId: string;
 }
 
+interface ImageAttachmentData {
+  image: HTMLImageElement;
+  attachment: AttachmentResult;
+}
+
 export class Message {
   static base64_ = new Base64();
   private plain_: string|undefined;
@@ -190,7 +195,10 @@ export class Message {
           new QuoteElidedMessage(html, this.previousMessage_);
       let dom = this.quoteElidedMessage_.getDom();
       this.disableStyleSheets_(dom);
-      this.fetchInlineImages_(dom);
+      let attachments = this.rewriteInlineImages_(dom);
+      // Intentionally don't await this so we show the thread without waiting
+      // for attachement image fetches.
+      this.fetchInlineImages_(attachments);
       this.appendAttachments_(dom);
     }
     return <QuoteElidedMessage>this.quoteElidedMessage_;
@@ -219,24 +227,44 @@ export class Message {
     }
   }
 
-  async fetchInlineImages_(dom: HTMLElement) {
+  rewriteInlineImages_(dom: HTMLElement) {
+    let imageData: ImageAttachmentData[] = [];
     let inlineImages =
         <NodeListOf<HTMLImageElement>>dom.querySelectorAll('img[src^=cid]');
     for (let image of inlineImages) {
       let match = <any>image.src.match(/^cid:([^>]*)$/);
       let contentId = `<${match[1]}>`;
-      let attachment = await this.findAttachment_(contentId);
+      let attachment = this.findAttachment_(contentId);
+
+      // Clear out the image src until we have the actual attachment data to put
+      // in a data URL. This way we avoid console and mixed content warnings
+      // with trying to fetch cid: URLs.
+      image.src = 'about:blank';
+
       // There can be images from quoted sections that no longer have the
       // attachments. So handle them gracefully.
-      if (!attachment)
+      if (!attachment) {
         continue;
+      }
+
+      imageData.push({
+        image: image,
+        attachment: attachment,
+      });
+    }
+    return imageData;
+  }
+
+  async fetchInlineImages_(attachments: ImageAttachmentData[]) {
+    for (let attachmentData of attachments) {
       let fetched = await gapi.client.gmail.users.messages.attachments.get({
-        'id': attachment.id,
+        'id': attachmentData.attachment.id,
         'messageId': this.id,
         'userId': USER_ID,
       });
       let data = Message.base64_.base64decode(fetched.result.data || '');
-      image.src = `data:${attachment.contentType},${data}`;
+      attachmentData.image.src =
+          `data:${attachmentData.attachment.contentType},${data}`;
     }
   }
 
