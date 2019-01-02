@@ -64,7 +64,6 @@ P2: Will only do if something makes these seem worth doing.
 - Put links for downloading attachments.
 - Show attachment blobs for gsuite docs like gmail does.
 - When updating messages, update the unread state even for old messages since that might have changed.
-- disable title tags in emails. They currently update the title of make-time.
 - Google Assistant integration
 - Send replys from the recieving address for multiple email users. Using "From: ". Not quite sure how to figure out which email address to use. For mailing lists, could use Delivered-To, that might be good enough.
 - if the last message is vacation responder, and the message before that one is read, and it's not in a triager/auto queue, then auto archive

@@ -13,7 +13,11 @@ export class QuoteElidedMessage {
   private dom_!: HTMLElement;
 
   constructor(currentMessage: string, previousMessage: Message|undefined) {
-    this.computeHashes_(currentMessage);
+    this.dom_ = document.createElement('div');
+    this.dom_.innerHTML = currentMessage;
+    this.removeDisallowedElements_();
+
+    this.computeHashes_();
     if (!previousMessage)
       return;
 
@@ -114,6 +118,20 @@ export class QuoteElidedMessage {
     }
   }
 
+  // This removes elements that break make-time rendering. This is not a
+  // security feature.
+  removeDisallowedElements_() {
+    // Behaviors to disallow:
+    // - Meta can mess with the viewport and other things.
+    // - Title will update the tab title for make time.
+    let tagNames = ['meta', 'title'];
+    for (let tagName of tagNames) {
+      for (let node of this.dom_.querySelectorAll(tagName)) {
+        node.remove();
+      }
+    }
+  }
+
   getToggler_() {
     if (!TOGGLER) {
       TOGGLER = document.createElement('div');
@@ -142,12 +160,10 @@ export class QuoteElidedMessage {
     return this.dom_;
   }
 
-  computeHashes_(message: string) {
+  computeHashes_() {
     // Store diff hashes on the message as a performance optimization since we
     // need to compute once for the current message and once for the previous
     // message == 2x for almost every message.
-    this.dom_ = document.createElement('div');
-    this.dom_.innerHTML = message;
     let elements = this.dom_.querySelectorAll('*');
     this.hashes_ = new Map();
     for (let element of elements) {
