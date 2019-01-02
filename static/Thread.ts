@@ -31,16 +31,13 @@ export class Thread {
   constructor(thread: any, private allLabels_: Labels) {
     this.id = thread.id;
     this.historyId = thread.historyId;
-
-    if (thread.messages)
-      this.processMessages_(thread.messages);
   }
 
   equals(other: Thread) {
     return this.id == other.id && this.historyId == other.historyId;
   }
 
-  private processLabels_() {
+  private async processLabels_() {
     if (!this.processedMessages_)
       throw noMessagesError;
 
@@ -52,7 +49,7 @@ export class Thread {
     this.muted_ = false;
 
     for (let id of this.labelIds_) {
-      let name = this.allLabels_.getName(id);
+      let name = await this.allLabels_.getName(id);
       if (!name) {
         console.log(`Label id does not exist. WTF. ${id}`);
         continue;
@@ -72,7 +69,7 @@ export class Thread {
       this.queue_ = 'inbox';
   }
 
-  private processMessages_(messages: any[]) {
+  private async processMessages_(messages: any[]) {
     this.hasMessageDetails = true;
     if (this.processedMessages_ === undefined)
       this.processedMessages_ = [];
@@ -104,7 +101,7 @@ export class Thread {
       newProcessedMessages.push(processed);
     }
 
-    this.processLabels_();
+    await this.processLabels_();
     return newProcessedMessages;
   }
 
@@ -377,7 +374,7 @@ export class Thread {
     for (let i = 0; i < messages.length; i++) {
       this.processedMessages_[i].updateLabels(messages[i].labelIds);
     }
-    this.processLabels_();
+    await this.processLabels_();
 
     this.serializeMessageData_();
     return null;
@@ -427,7 +424,7 @@ export class Thread {
       this.historyId = resp.result.historyId;
     }
 
-    let newMessages = this.processMessages_(messages);
+    let newMessages = await this.processMessages_(messages);
     this.serializeMessageData_();
     return newMessages;
   }

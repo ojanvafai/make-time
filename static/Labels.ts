@@ -129,7 +129,13 @@ export class Labels {
   async fetch() {
     var response = await gapiFetch(
         gapi.client.gmail.users.labels.list, {'userId': USER_ID});
+    await this.updateLabelVisibility_(response.result.labels);
+    this.updateLabelLists_(response.result.labels);
+  }
 
+  // Make sure do to all the operations below synchronously to avoid exposing
+  // an intermediary state to other code that's running.
+  updateLabelLists_(labels: any) {
     this.labelToId_ = new Map();
     this.idToLabel_ = new Map();
     this.makeTimeLabelIds_ = new Set();
@@ -137,13 +143,18 @@ export class Labels {
     this.needsTriageLabelNames_ = new Set();
     this.priorityLabels_ = new Set();
 
-    for (let label of response.result.labels) {
-      if (Labels.isUserLabel(label.id)) {
-        let shouldBeHidden = Labels.HIDDEN_LABELS.includes(label.name);
-        if (shouldBeHidden !== (label.messageListVisibility == 'hide'))
-          label = await this.updateVisibility_(label.name, label.id);
-      }
+    for (let label of labels) {
       this.addLabel_(label.name, label.id);
+    }
+  }
+
+  async updateLabelVisibility_(labels: any) {
+    for (let label of labels) {
+      if (!Labels.isUserLabel(label.id))
+        continue;
+      let shouldBeHidden = Labels.HIDDEN_LABELS.includes(label.name);
+      if (shouldBeHidden !== (label.messageListVisibility == 'hide'))
+        label = await this.updateVisibility_(label.name, label.id);
     }
   }
 
@@ -172,8 +183,17 @@ export class Labels {
     this.priorityLabels_.delete(name);
   }
 
-  getName(id: string) {
-    return this.idToLabel_.get(id);
+  async getName(id: string) {
+    let name = this.idToLabel_.get(id);
+
+    // A label may have been created since we last fetched the list of labels.
+    // Refetch to make sure we have an up to date label list.
+    if (!name) {
+      await this.fetch();
+      name = this.idToLabel_.get(id);
+    }
+
+    return name;
   }
 
   isParentLabel(name: string) {
