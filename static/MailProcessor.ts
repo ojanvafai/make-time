@@ -400,6 +400,7 @@ export class MailProcessor {
         addLabelIds.push('INBOX');
       } else {
         prefixedLabelName = Labels.addQueuedPrefix(labelName);
+        removeLabelIds.push('INBOX');
       }
 
       let prefixedLabelId = await this.allLabels_.getId(prefixedLabelName);
