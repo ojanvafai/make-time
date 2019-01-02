@@ -141,6 +141,15 @@ export abstract class Compose extends HTMLElement {
 
     let candidates = this.getAutocompleteCandidates_();
 
+    // If there's only one candidate, that means there were no matches in
+    // contacts as we always add a single fallback. If that candidate includes a
+    // space, then we know the user isn't typing an email address and we should
+    // cancel the autocomplete entirely.
+    if (candidates.length == 1 && candidates[0].email.includes(' ')) {
+      this.cancelAutocomplete_();
+      return;
+    }
+
     this.autocompleteContainer_.textContent = '';
     for (let candidate of candidates) {
       let entry = new AutoCompleteEntry();
@@ -176,7 +185,7 @@ export abstract class Compose extends HTMLElement {
   }
 
   adjustAutocompleteIndex(adjustment: number) {
-    if (!this.autocompleteIndex_)
+    if (this.autocompleteIndex_ === undefined)
       throw 'Something went wrong. This should never happen.';
 
     let container = <HTMLElement>this.autocompleteContainer_;
@@ -245,7 +254,7 @@ export abstract class Compose extends HTMLElement {
   }
 
   submitAutocomplete_(opt_selectedItem?: HTMLElement) {
-    if (!this.autocompleteIndex_) {
+    if (this.autocompleteIndex_ === undefined) {
       throw 'Attempted to submit autocomplete without a selected entry.';
       return;
     }
