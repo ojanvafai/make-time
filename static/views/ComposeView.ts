@@ -1,3 +1,4 @@
+import {AddressCompose} from '../AddressCompose.js';
 import {showDialog} from '../Base.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
@@ -22,7 +23,7 @@ URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
 
 export class ComposeView extends View {
-  private to_: HTMLInputElement;
+  private to_: AddressCompose;
   private subject_: HTMLInputElement;
   private body_: EmailCompose;
   private inlineTo_: HTMLElement|undefined;
@@ -37,10 +38,24 @@ export class ComposeView extends View {
       height: 100%;
     `;
 
-    this.to_ = this.createInput_();
+    this.to_ = new AddressCompose(contacts, false);
+    this.to_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
+    this.to_.style.cssText = `
+      flex: 1;
+      line-height: 1em;
+    `;
     this.appendLine_('To:\xa0', this.to_);
 
-    this.subject_ = this.createInput_();
+    this.subject_ = document.createElement('input');
+    ;
+    this.subject_.addEventListener(
+        'input', this.debounceHandleUpdates_.bind(this));
+    this.subject_.style.cssText = `
+      border: 1px solid;
+      flex: 1;
+      outline: none;
+      padding: 4px;
+    `;
     this.appendLine_('Subject:\xa0', this.subject_);
 
     this.body_ = new EmailCompose(contacts, true);
@@ -79,18 +94,6 @@ export class ComposeView extends View {
       this.body_.value = localData.body;
 
     this.focusFirstEmpty_();
-  }
-
-  createInput_() {
-    let input = document.createElement('input');
-    input.addEventListener('input', this.debounceHandleUpdates_.bind(this));
-    input.style.cssText = `
-      border: 1px solid;
-      flex: 1;
-      outline: none;
-      padding: 4px;
-    `;
-    return input;
   }
 
   appendLine_(...children: (string|Node)[]) {

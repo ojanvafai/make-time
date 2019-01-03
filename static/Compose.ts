@@ -11,44 +11,47 @@ export class AutoCompleteEntry extends HTMLElement {
 window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
 
 export abstract class Compose extends HTMLElement {
-  separator: string;
-  private content_: HTMLElement;
+  protected content: HTMLElement;
   private placeholder_: string|undefined;
-  autocompleteRange: Range|null = null;
   private autocompleteContainer_: HTMLElement|null = null;
   private autocompleteIndex_: number|undefined;
   static EMAIL_CLASS_NAME: string;
 
-  abstract prepareAutocomplete(e: Event): void;
   abstract isStillAutoCompleting(): boolean|null;
+  abstract autocompleteText(): string;
   abstract selectedEntry(selectedItem: any): any;
+  protected abstract getAutocompleteRange(): Range|null;
+  protected abstract clearAutocompleteRange(): void;
+  protected abstract insertAddress(selectedItem: AutoCompleteEntry): void;
+  protected abstract handleInput(e: InputEvent): void;
 
-  constructor(private contacts_: any, opt_isMultiline?: boolean) {
+  constructor(
+      private contacts_: any, isMultiline?: boolean,
+      private putMenuAbove_?: boolean) {
     super();
 
     this.style.display = 'flex';
-    this.separator = '';
 
-    this.content_ = document.createElement('div');
-    this.content_.style.cssText = `
+    this.content = document.createElement('div');
+    this.content.style.cssText = `
       flex: 1;
       overflow: auto;
       border: 1px solid;
-      padding: 8px;
       outline: none;
+      background-color: white;
 
       /* Match gmail default style of tiny text in compose to avoid different sizes on copy-paste. */
       font-family: Arial, Helvetica, sans-serif;
       font-size: small;
     `;
-    this.content_.contentEditable = opt_isMultiline ? 'true' : 'plaintext-only';
-    this.content_.addEventListener('blur', this.cancelAutocomplete_.bind(this));
-    this.append(this.content_);
+    this.content.contentEditable = isMultiline ? 'true' : 'plaintext-only';
+    this.content.addEventListener('blur', this.cancelAutocomplete_.bind(this));
+    this.append(this.content);
 
     this.addEventListener('keydown', async (e) => {
       switch (e.key) {
         case 'Escape':
-          if (this.updateIsAutocompleting_())
+          if (this.updateIsAutocompleting())
             this.cancelAutocomplete_();
           else
             this.dispatchEvent(new Event('cancel'));
@@ -58,43 +61,44 @@ export abstract class Compose extends HTMLElement {
           if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey)
             return;
 
-          if (this.updateIsAutocompleting_()) {
+          if (this.updateIsAutocompleting()) {
             this.submitAutocomplete_();
             e.preventDefault();
-          } else if (!opt_isMultiline) {
+          } else if (!isMultiline) {
             this.dispatchEvent(new Event('submit'));
             e.preventDefault();
           }
           return;
 
         case 'ArrowUp':
-          if (this.updateIsAutocompleting_()) {
+          if (this.updateIsAutocompleting()) {
             e.preventDefault();
             this.adjustAutocompleteIndex(-1);
           }
           return;
 
         case 'ArrowDown':
-          if (this.updateIsAutocompleting_()) {
+          if (this.updateIsAutocompleting()) {
             e.preventDefault();
             this.adjustAutocompleteIndex(1);
           }
           return;
+
+        case 'ArrowLeft':
+        case 'ArrowRight':
+          this.cancelAutocomplete_();
+          return;
       }
     });
 
-    this.addEventListener('input', async (e) => {
-      if (this.updateIsAutocompleting_()) {
-        this.renderAutocomplete_();
-      } else {
-        this.prepareAutocomplete(e);
-      }
+    this.addEventListener('input', async (e: Event) => {
+      this.handleInput(<InputEvent>e);
       this.updatePlaceholder_();
     });
   }
 
   updatePlaceholder_() {
-    let content = this.content_;
+    let content = this.content;
     if (content.textContent.length) {
       content.removeAttribute('placeholder');
       content.style.color = '';
@@ -104,25 +108,18 @@ export abstract class Compose extends HTMLElement {
     }
   }
 
-  updateIsAutocompleting_() {
+  protected updateIsAutocompleting() {
     let isAutoCompleting = this.isStillAutoCompleting();
     if (!isAutoCompleting)
       this.cancelAutocomplete_();
     return isAutoCompleting;
   }
 
-  cursor_() {
+  protected cursor() {
     return window.getSelection().getRangeAt(0).cloneRange();
   }
 
-  autocompleteText_() {
-    let cursor = this.cursor_();
-    let range = <Range>this.autocompleteRange;
-    cursor.setStart(range.endContainer, range.endOffset);
-    return cursor.toString();
-  }
-
-  renderAutocomplete_() {
+  protected renderAutocomplete() {
     if (!this.autocompleteContainer_) {
       this.autocompleteContainer_ = document.createElement('div');
       this.autocompleteContainer_.style.cssText = `
@@ -131,6 +128,7 @@ export abstract class Compose extends HTMLElement {
         border: 1px solid;
         box-shadow: 2px -2px 10px 1px lightgrey;
       `;
+      // Fix box shadow to respect menu position
       this.append(this.autocompleteContainer_);
     }
 
@@ -177,11 +175,17 @@ export abstract class Compose extends HTMLElement {
 
     this.selectAutocompleteItem_(0);
 
-    let range = <Range>this.autocompleteRange;
+    let range = this.getAutocompleteRange();
+    if (!range)
+      throw 'This should never happen.';
     let rect = range.getBoundingClientRect();
     this.autocompleteContainer_.style.left = `${rect.left}px`;
-    this.autocompleteContainer_.style.bottom =
-        `${document.documentElement.offsetHeight - rect.top}px`;
+    if (this.putMenuAbove_) {
+      this.autocompleteContainer_.style.bottom =
+          `${document.documentElement.offsetHeight - rect.top}px`;
+    } else {
+      this.autocompleteContainer_.style.top = `${rect.bottom + 4}px`;
+    }
   }
 
   adjustAutocompleteIndex(adjustment: number) {
@@ -210,7 +214,7 @@ export abstract class Compose extends HTMLElement {
   getAutocompleteCandidates_() {
     let results: {name: string, email: string}[] = [];
 
-    let search = this.autocompleteText_();
+    let search = this.autocompleteText();
     if (!search)
       return results;
 
@@ -249,40 +253,28 @@ export abstract class Compose extends HTMLElement {
   }
 
   cancelAutocomplete_() {
-    this.autocompleteRange = null;
+    this.clearAutocompleteRange();
     this.hideAutocompleteMenu_();
   }
 
-  submitAutocomplete_(opt_selectedItem?: HTMLElement) {
-    if (this.autocompleteIndex_ === undefined) {
+  submitAutocomplete_(selectedItem?: AutoCompleteEntry) {
+    if (this.autocompleteIndex_ === undefined)
       throw 'Attempted to submit autocomplete without a selected entry.';
-      return;
+    if (!this.autocompleteContainer_)
+      throw 'This should never happen';
+
+    if (!selectedItem) {
+      selectedItem = <AutoCompleteEntry>this.autocompleteContainer_
+                         .children[this.autocompleteIndex_];
     }
-
-    let container = <HTMLElement>this.autocompleteContainer_;
-    let range = <Range>this.autocompleteRange;
-
-    let selectedItem =
-        opt_selectedItem || container.children[this.autocompleteIndex_];
-
-    let cursor = this.cursor_();
-    cursor.setStart(range.startContainer, range.startOffset);
-    cursor.deleteContents();
-
-    let selectedEntry = this.selectedEntry(selectedItem);
-    cursor.insertNode(selectedEntry);
-
-    let separator = document.createTextNode(this.separator);
-    cursor.collapse();
-    cursor.insertNode(separator);
-    window.getSelection().collapse(separator, separator.length);
+    this.insertAddress(selectedItem);
 
     this.cancelAutocomplete_();
     this.dispatchEvent(new Event('email-added'));
   }
 
   getEmails() {
-    let links = <NodeListOf<HTMLLinkElement>>this.content_.querySelectorAll(
+    let links = <NodeListOf<HTMLLinkElement>>this.content.querySelectorAll(
         `a.${Compose.EMAIL_CLASS_NAME}`);
     let results: string[] = [];
     for (let link of links) {
@@ -296,11 +288,11 @@ export abstract class Compose extends HTMLElement {
   }
 
   get plainText() {
-    return this.content_.textContent;
+    return this.content.textContent;
   }
 
   get value() {
-    let cloned = <HTMLElement>this.content_.cloneNode(true);
+    let cloned = <HTMLElement>this.content.cloneNode(true);
     let emails = cloned.querySelectorAll(`a.${Compose.EMAIL_CLASS_NAME}`);
     for (let email of emails) {
       email.removeAttribute('class');
@@ -311,7 +303,7 @@ export abstract class Compose extends HTMLElement {
   }
 
   set value(html) {
-    this.content_.innerHTML = html;
+    this.content.innerHTML = html;
   }
 
   get placeholder() {
@@ -324,7 +316,7 @@ export abstract class Compose extends HTMLElement {
   }
 
   focus() {
-    return this.content_.focus();
+    return this.content.focus();
   }
 }
 

@@ -40,6 +40,8 @@ If there's a bug in the filtering code, emails should remain in the unprocessed 
 `;
 
 export class FiltersView extends HTMLElement {
+  // TODO: Stop using an element for maintaining cursor position. Do what
+  // AddressCompose does with Ranges instead.
   private cursorSentinelElement_: HTMLElement|undefined;
   private dialog_: HTMLDialogElement|undefined;
 
@@ -422,7 +424,7 @@ export class FiltersView extends HTMLElement {
 
   insertSentinelText_() {
     let range = window.getSelection().getRangeAt(0);
-    let node = document.createTextNode(CURSOR_SENTINEL);
+    let node = new Text(CURSOR_SENTINEL);
     range.insertNode(node);
     return node;
   }
