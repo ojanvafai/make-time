@@ -252,7 +252,7 @@ export class ThreadListView extends View {
 
     // Always prerender the row that would get rendered if the user hits enter.
     let rowToPrerender = this.focusedRow_ || newRows[0];
-    if (rowToPrerender)
+    if (rowToPrerender && rowToPrerender != this.renderedRow_)
       this.prerenderRow_(rowToPrerender);
   }
 
@@ -536,6 +536,8 @@ export class ThreadListView extends View {
   }
 
   private prerenderRow_(row: ThreadRow) {
+    if (row == this.renderedRow_)
+      throw 'Cannot prerender the currently rendered row.';
     let dom = row.render(this.singleThreadContainer_);
     dom.style.bottom = '0';
     dom.style.visibility = 'hidden';
