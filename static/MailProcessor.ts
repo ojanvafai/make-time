@@ -393,7 +393,8 @@ export class MailProcessor {
       // Don't queue if already triaged or dequeued (i.e. in the inbox with a
       // needs triage label).
       if ((await thread.getPriority()) ||
-          (await thread.isInInbox() && (await thread.getQueue() == DEFAULT_QUEUE)) ||
+          (await thread.isInInbox() &&
+           (await thread.getQueue() == DEFAULT_QUEUE)) ||
           this.queuedLabelMap_.get(labelName).queue ==
               QueueSettings.IMMEDIATE) {
         prefixedLabelName = Labels.needsTriageLabel(labelName);
@@ -431,6 +432,12 @@ export class MailProcessor {
     ];
     await SpreadsheetUtils.appendToSheet(
         this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
+  }
+
+  async process(threads: Thread[]) {
+    await this.processThreads(threads);
+    await this.processQueues();
+    await this.collapseStats();
   }
 
   async processThreads(threads: Thread[]) {

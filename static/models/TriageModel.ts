@@ -144,10 +144,11 @@ export class TriageModel extends ThreadListModel {
       this.bestEffortThreads_ = [];
     this.pendingThreads_ = [];
 
-    let makeTimeLabels = this.labels.getMakeTimeLabelNames().filter(
-        (item) => item != Labels.PROCESSED_LABEL);
-    let inInboxNoMakeTimeLabel =
-        `in:inbox -(in:${makeTimeLabels.join(' OR in:')})`;
+    let needsTriageLabels = this.labels.getNeedsTriageLabelNames();
+    let notInNeedsTriageLabels = needsTriageLabels.length ?
+        `-(in:${needsTriageLabels.join(' OR in:')})` :
+        '';
+    let inInboxNoNeedsTriageLabel = `in:inbox ${notInNeedsTriageLabels}`;
     let hasNeedsTriageLabel =
         labelsToFetch.length ? `in:${labelsToFetch.join(' OR in:')}` : '';
     let inUnprocessed = `in:${Labels.UNPROCESSED_LABEL}`;
@@ -160,7 +161,7 @@ export class TriageModel extends ThreadListModel {
     let skipNetwork = true;
     await fetchThreads(
         this.processThread_.bind(this),
-        `(${inInboxNoMakeTimeLabel}) OR (${hasNeedsTriageLabel}) OR (${
+        `(${inInboxNoNeedsTriageLabel}) OR (${hasNeedsTriageLabel}) OR (${
             inUnprocessed})`,
         skipNetwork);
 
@@ -174,11 +175,9 @@ export class TriageModel extends ThreadListModel {
       await this.processThread_(thread, true);
     }
 
-    let threadToProcess = this.needsProcessingThreads_.concat();
+    let threadsToProcess = this.needsProcessingThreads_.concat();
     this.needsProcessingThreads_ = [];
-    await this.mailProcessor_.processThreads(threadToProcess);
-    await this.mailProcessor_.processQueues();
-    await this.mailProcessor_.collapseStats();
+    await this.mailProcessor_.process(threadsToProcess);
 
     // Do these threads last since they are threads that have been archived
     // outside of maketime and just need to have their maketime labels removed,
