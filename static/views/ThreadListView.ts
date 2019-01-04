@@ -34,8 +34,12 @@ let rowAtOffset = (rows: ThreadRow[], thread: ThreadRow, offset: number):
       return null;
     }
 
+interface ListenerData {
+  name: string, handler: (e: Event) => void,
+}
 
 export class ThreadListView extends View {
+  private modelListeners_: ListenerData[];
   private focusedRow_: ThreadRow|null;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
@@ -88,6 +92,7 @@ export class ThreadListView extends View {
       flex-direction: column;
     `;
 
+    this.modelListeners_ = [];
     this.focusedRow_ = null;
     this.renderedRow_ = null;
     this.hasQueuedFrame_ = false;
@@ -116,14 +121,22 @@ export class ThreadListView extends View {
     this.appendButton(bottomButtonUrl, bottomButtonText);
     this.updateActions_();
 
-    this.model_.addEventListener(
+    this.addListenerToModel(
         'thread-list-changed', this.renderThreadList_.bind(this));
-    this.model_.addEventListener(
+    this.addListenerToModel(
         'best-effort-changed', this.handleBestEffortChanged_.bind(this));
-    this.model_.addEventListener('undo', (e: Event) => {
+    this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread);
     });
+  }
+
+  addListenerToModel(eventName: string, handler: (e: Event) => void) {
+    this.modelListeners_.push({
+      name: eventName,
+      handler: handler,
+    });
+    this.model_.addEventListener(eventName, handler);
   }
 
   getModel() {
@@ -152,6 +165,9 @@ export class ThreadListView extends View {
   }
 
   tearDown() {
+    for (let listener of this.modelListeners_) {
+      this.model_.removeEventListener(listener.name, listener.handler);
+    }
     this.setSubject_('');
     this.showBackArrow_(false);
   }
