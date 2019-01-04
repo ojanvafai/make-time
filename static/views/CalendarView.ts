@@ -66,23 +66,9 @@ export class CalendarView extends View {
     footer.append(dom);
   }
 
-  async goBack() {}
-
-  async update() {}
-
   getModel() {
     return this.model;
   }
-
-  tearDown() {}
-
-  async renderFromDisk(): Promise<void> {
-    return new Promise(resolve => resolve());
-  }
-
-  async dispatchShortcut(e: KeyboardEvent) {
-    console.log(e)
-  };
 }
 
 window.customElements.define('mt-calendar-view', CalendarView);

@@ -258,16 +258,6 @@ export class ComposeView extends View {
 
     throw `Invalid action: ${JSON.stringify(action)}`;
   }
-
-  tearDown() {}
-
-  async goBack() {}
-
-  async update() {}
-
-  async dispatchShortcut(_e: KeyboardEvent) {}
-
-  pushBestEffort() {}
 }
 
 window.customElements.define('mt-compose-view', ComposeView);
