@@ -49,7 +49,6 @@ export async function getMyEmail() {
     let response = await gapiFetch(gapi.client.gmail.users.getProfile, {
       'userId': USER_ID,
     });
-    console.log(response);
     myEmail_ = response.result.emailAddress;
   }
   return myEmail_;
