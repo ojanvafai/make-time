@@ -128,11 +128,9 @@ export class AddressCompose extends Compose {
 
   // Parse "user@foo.com" and "User Name <user@foo.com>".
   parseAddress_(address: string, keepSentinelText?: boolean) {
-    let trimmed = address.trim();
-
-    let selected = trimmed.includes(CURSOR_SENTINEL);
+    let selected = address.includes(CURSOR_SENTINEL);
     if (!keepSentinelText && selected)
-      trimmed = trimmed.replace(CURSOR_SENTINEL, '');
+      address = address.replace(CURSOR_SENTINEL, '');
 
     let out: SelectableParsedAddress = parseAddress(address);
     out.selected = selected;
