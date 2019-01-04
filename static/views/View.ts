@@ -7,8 +7,8 @@ export abstract class View extends HTMLElement {
 
   abstract getModel(): Model;
   tearDown() {}
-  async goBack(){ }
-  async renderFromDisk() { };
-  async update() { }
-  async dispatchShortcut(_e: KeyboardEvent) { };
+  async init() {};
+  async goBack() {}
+  async update() {}
+  async dispatchShortcut(_e: KeyboardEvent) {};
 }

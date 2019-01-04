@@ -1,9 +1,10 @@
 import {AsyncOnce} from '../AsyncOnce.js';
+import {login} from '../BaseMain.js';
+import {TaskQueue} from '../TaskQueue.js'
 
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
 import {CALENDAR_ID, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
-import {TaskQueue} from '../TaskQueue.js'
 
 function getStartOfWeek(date: Date): Date {
   const x = new Date(date);
@@ -258,6 +259,7 @@ export class Calendar {
   }
 
   async init() {
+    await login();
     await this.fetchEvents();
   }
 

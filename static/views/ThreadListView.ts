@@ -1,4 +1,5 @@
 import {Actions} from '../Actions.js';
+import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
@@ -155,6 +156,12 @@ export class ThreadListView extends View {
     this.showBackArrow_(false);
   }
 
+  async init() {
+    await login();
+    await this.model_.loadFromDisk();
+    await this.getModel().update();
+  }
+
   async goBack() {
     this.transitionToThreadList_(this.renderedRow_);
   }
@@ -162,10 +169,6 @@ export class ThreadListView extends View {
   async update() {
     if (this.renderedRow_)
       await this.renderedRow_.update();
-  }
-
-  async renderFromDisk() {
-    await this.model_.loadFromDisk();
   }
 
   updateActions_() {

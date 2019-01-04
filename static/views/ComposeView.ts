@@ -1,5 +1,6 @@
 import {AddressCompose} from '../AddressCompose.js';
 import {showDialog} from '../Base.js';
+import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 
@@ -79,7 +80,7 @@ export class ComposeView extends View {
     return this.model_;
   }
 
-  async renderFromDisk() {
+  async init() {
     let localData = await this.model_.loadFromDisk();
     if (!localData)
       localData = this.params_;
@@ -94,6 +95,8 @@ export class ComposeView extends View {
       this.body_.value = localData.body;
 
     this.focusFirstEmpty_();
+
+    await login();
   }
 
   appendLine_(...children: (string|Node)[]) {

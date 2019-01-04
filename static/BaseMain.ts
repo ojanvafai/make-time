@@ -11,7 +11,6 @@ import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {Thread} from './Thread.js';
-import {View} from './views/View.js';
 
 export class ThreadData {
   constructor(public id: string, public historyId: string) {}
@@ -55,7 +54,6 @@ let settings_: Settings;
 let labels_: Labels;
 let queuedLabelMap_: QueueSettings;
 let loginDialog_: HTMLDialogElement;
-let currentView_: View;
 let titleStack_: TitleEntry[] = [];
 let loaderTitleStack_: TitleEntry[] = [];
 let threadCache_: ThreadCache;
@@ -94,22 +92,6 @@ export async function getLabels() {
 export async function getSettings() {
   await fetchTheSettingsThings();
   return settings_;
-}
-
-export function getView() {
-  return currentView_;
-}
-
-export async function setView(view: View) {
-  currentView_ = view;
-
-  var content = <HTMLElement>document.getElementById('content');
-  content.textContent = '';
-  content.append(view);
-
-  await login();
-  await view.renderFromDisk();
-  await view.getModel().update();
 }
 
 let settingThingsFetcher_: AsyncOnce<void>;
@@ -191,7 +173,7 @@ function loadGapi() {
 
 let queuedLogin_: ((value?: {}|PromiseLike<{}>|undefined) => void);
 
-async function login() {
+export async function login() {
   if (isSignedIn_)
     return;
 
@@ -239,6 +221,8 @@ export function updateTitle(key: string, ...opt_title: string[]) {
 }
 
 export function updateLoaderTitle(key: string, ...opt_title: string[]) {
+  // console.log(key, opt_title);
+  // console.trace();
   let node = document.getElementById('loader-title');
   updateTitleBase(loaderTitleStack_, node!, key, ...opt_title);
 

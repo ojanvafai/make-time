@@ -1,6 +1,6 @@
 import {getCurrentWeekNumber} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
-import {getLabels, getQueuedLabelMap, getSettings, getView, setView, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {getLabels, getQueuedLabelMap, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {ComposeModel} from './models/ComposeModel.js';
@@ -13,9 +13,18 @@ import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
 import {SettingsView} from './views/Settings.js';
 import {ThreadListView} from './views/ThreadListView.js';
+import {View} from './views/View.js';
 
 let contacts_: Contact[] = [];
 var router = new Router();
+let currentView_: View;
+
+enum VIEW {
+  Calendar,
+  Compose,
+  Todo,
+  Triage,
+}
 
 async function routeToCurrentLocation() {
   await router.run(window.location, true);
@@ -26,16 +35,12 @@ window.onpopstate = () => {
 };
 
 router.add('/compose', async (params) => {
-  if (getView())
-    getView().tearDown();
-  await viewCompose(params);
+  await setView(VIEW.Compose, params);
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
 router.add('/todo', async (_params) => {
-  if (getView())
-    getView().tearDown();
-  await viewTodo();
+  await setView(VIEW.Todo);
 });
 // TODO: best-effort should not be a URL since it's not a proper view.
 // or should it be a view instead?
@@ -45,15 +50,50 @@ router.add('/best-effort', async (_params) => {
 });
 
 router.add('/calendar', async (_parans) => {
-  if (getView())
-    getView().tearDown();
-  await viewCalendar();
+  await setView(VIEW.Calendar);
 });
 
 async function routeToTriage() {
-  if (getView())
-    getView().tearDown();
-  await viewTriage();
+  await setView(VIEW.Triage);
+}
+
+function getView() {
+  return currentView_;
+}
+
+async function createView(viewType: VIEW, params?: any) {
+  switch (viewType) {
+    case VIEW.Calendar:
+      return new CalendarView();
+
+    case VIEW.Compose:
+      let model = new ComposeModel(updateLoaderTitle);
+      return new ComposeView(model, contacts_, params);
+
+    case VIEW.Todo:
+      return await createThreadListView(
+          await getTodoModel(), false, '/triage', 'Back to Triaging');
+
+    case VIEW.Triage:
+      return await createThreadListView(
+          await getTriageModel(), true, '/todo', 'Go to todo list');
+
+    default:
+      throw 'This should never happen.';
+  }
+}
+
+async function setView(viewType: VIEW, params?: any) {
+  if (currentView_)
+    currentView_.tearDown();
+
+  currentView_ = await createView(viewType, params);
+
+  var content = <HTMLElement>document.getElementById('content');
+  content.textContent = '';
+  content.append(currentView_);
+
+  await currentView_.init();
 }
 
 let DRAWER_OPEN = 'drawer-open';
@@ -116,11 +156,6 @@ function toggleMenu() {
       }
     })
 
-async function viewCompose(params: any) {
-  let model = new ComposeModel(updateLoaderTitle);
-  await setView(new ComposeView(model, contacts_, params));
-}
-
 async function createThreadListView(
     model: ThreadListModel, countDown: boolean, bottomButtonUrl: string,
     bottomButtonText: string) {
@@ -134,17 +169,6 @@ async function createThreadListView(
       model, await getLabels(), getScroller(), updateLoaderTitle, setSubject,
       showBackArrow, allowedReplyLength, contacts_, autoStartTimer, countDown,
       timerDuration, bottomButtonUrl, bottomButtonText);
-}
-
-async function viewTriage() {
-  updateLoaderTitle('viewTriage', 'Fetching threads to triage...');
-
-  let countDown = true;
-  let view = await createThreadListView(
-      await getTriageModel(), countDown, '/todo', 'Go to todo list');
-  await setView(view);
-
-  updateLoaderTitle('viewTriage', '');
 }
 
 let triageModel_: TriageModel;
@@ -167,19 +191,6 @@ async function getTodoModel() {
     todoModel_ = new TodoModel(updateLoaderTitle, vacation, await getLabels());
   }
   return todoModel_;
-}
-
-async function viewTodo() {
-  let countDown = true;
-  let view = await createThreadListView(
-      await getTodoModel(), countDown, '/triage', 'Back to Triaging');
-  await setView(view);
-}
-
-async function viewCalendar() {
-  let view = new CalendarView();
-  await setView(view);
-  view.init();
 }
 
 function getScroller() {
