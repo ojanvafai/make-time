@@ -304,6 +304,7 @@ export abstract class Compose extends HTMLElement {
 
   set value(html) {
     this.content.innerHTML = html;
+    this.updatePlaceholder_();
   }
 
   get placeholder() {
