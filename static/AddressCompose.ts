@@ -17,6 +17,7 @@ export class AddressCompose extends Compose {
   constructor(contacts: any) {
     super(contacts);
     this.content.style.padding = '4px';
+    this.content.setAttribute('inputmode', 'email');
     // Need to always have some text in the field for the flexbox
     // baseline computation to work right. #sigh.
     this.placeholder = '\xa0';
