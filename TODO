@@ -1,10 +1,4 @@
-- Sometimes single-thread-view goes back to the threadlist when there's more threads. When this happens there are somehow two ThreadListViews fighting it seems like and every thread after does this until reload.
-- Fix issues with the thread disappearing after having been saved in localstorage but then removed on update...race condition where it can't be found when trying to renderOne?
-
 - TODO: Make this file just be codebase cleanups and move all bugs/feature requests to https://github.com/ojanvafai/make-time/issues
-
-- Autocomplete to field: Create AddressCompose that opens autocomplete for every non-comma input and autocompletes whatever is between the two commas and stops autocomplete when the cursor passes over a commn. Need to normalize whitespace outside of <>'s.
-- Give progress indicator for threads left to load in make-time/triage views.
 
 Tasks UI:
 - need ui for changing task state even if there is rich text tags for setting all of it initially
@@ -16,20 +10,20 @@ Tasks UI:
 
 P1: Will try to do soonish.
 - Give more reply options: ability to forward, reply to a specific message, reply+!archive/reply+blocked/reply+priority?
-- Use SendAs gmail API to avoid adding yourself to the to line of threads you're not already on to avoid them popping back into your inbox when you send. Also would allow for changing sender in compose view.
 - make switching between compose/todo/triage easier. Make the UI more prominent and add keyboard shortcuts.
 - Add embedded composeView in the maketime/triage views for quick compose that's not replying to the current thread.
-- add better UI for adding new filters, e.g. when viewing an email. For needs filter, could have it route through the filter immediately so you can see it work.
-- Add autocomplete of priorities in ComposeView after typing #.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
 - Add manual sorting of triaged threads.
-- Make back forward work for viewone and threadlist. Keep track of the last thread in viewone for forward navs instead of trying to put the thread into the history. This will make the back button on android do the right thing when in viewone.
 - Make header:foo the only syntax for rules with a bit of special casing for email rules to handle foo+bar@ syntax.
 - add the ability to do inline responses
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
 - add ability to search for a set of threads and see which filter would match
+- add better UI for adding new filters, e.g. when viewing an email. For needs filter, could have it route through the filter immediately so you can see it work.
 
 P2: Will only do if something makes these seem worth doing.
+- Make back forward work for viewone and threadlist. Keep track of the last thread in viewone for forward navs instead of trying to put the thread into the history. This will make the back button on android do the right thing when in viewone.
+- Add autocomplete of priorities in ComposeView after typing #.
+- Use SendAs gmail API to allow for changing sender in compose view.
 - Add undo send?
 - Wicked witch mode: Show in MakeTime the count of threads that are not being shown and an option to load them (for this session?)
 - Wicked witch mode: count not shown by doing a search without the date and a search with the date and counting the diff.

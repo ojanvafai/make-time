@@ -5,8 +5,8 @@ const SEPARATOR = ' ';
 export class EmailCompose extends Compose {
   private autocompleteRange_: Range|null;
 
-  constructor(contacts: any, isMultiline?: boolean, putMenuAbove?: boolean) {
-    super(contacts, isMultiline, putMenuAbove);
+  constructor(contacts: any, isSingleline?: boolean, putMenuAbove?: boolean) {
+    super(contacts, isSingleline, putMenuAbove);
     this.autocompleteRange_ = null;
     this.content.style.padding = '8px';
   }

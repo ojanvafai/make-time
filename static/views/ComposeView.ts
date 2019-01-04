@@ -39,11 +39,12 @@ export class ComposeView extends View {
       height: 100%;
     `;
 
-    this.to_ = new AddressCompose(contacts, false);
+    this.to_ = new AddressCompose(contacts);
     this.to_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
     this.to_.style.cssText = `
       flex: 1;
       line-height: 1em;
+      word-break: break-word;
     `;
     this.appendLine_('To:\xa0', this.to_);
 
@@ -59,7 +60,7 @@ export class ComposeView extends View {
     `;
     this.appendLine_('Subject:\xa0', this.subject_);
 
-    this.body_ = new EmailCompose(contacts, true);
+    this.body_ = new EmailCompose(contacts);
     this.body_.style.cssText = `
       flex: 1 1 0;
       margin: 4px;

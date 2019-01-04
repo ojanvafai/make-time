@@ -1,10 +1,11 @@
+import {parseAddress, ParsedAddress, serializeAddress} from './Base.js';
 import {AutoCompleteEntry, Compose} from './Compose.js';
 
 const SEPARATOR = ',';
 const CURSOR_SENTINEL = '!!!!!!!!';
 
-interface ParsedAddress {
-  name?: string, email: string, selected?: boolean
+interface SelectableParsedAddress extends ParsedAddress {
+  selected?: boolean
 }
 
 // TODO: This code and the Filters rich text code have too much code
@@ -13,8 +14,8 @@ export class AddressCompose extends Compose {
   private autocompleteStartRange_: Range|undefined;
   private autocompleteCursorRange_: Range|undefined;
 
-  constructor(contacts: any, opt_isMultiline?: boolean) {
-    super(contacts, opt_isMultiline);
+  constructor(contacts: any) {
+    super(contacts);
     this.content.style.padding = '4px';
     // Need to always have some text in the field for the flexbox
     // baseline computation to work right. #sigh.
@@ -83,12 +84,6 @@ export class AddressCompose extends Compose {
     container.append(endNode);
   }
 
-  serializeAddress_(address: ParsedAddress|AutoCompleteEntry) {
-    if (address.name)
-      return `${address.name} <${address.email}>`;
-    return address.email;
-  }
-
   setTextAndSelectSentinel_(selectedItem?: AutoCompleteEntry) {
     let addresses = this.parse_(true);
 
@@ -101,9 +96,9 @@ export class AddressCompose extends Compose {
       let serialized;
       if (selectedItem && address.selected) {
         serialized =
-            this.serializeAddress_(selectedItem) + separator + CURSOR_SENTINEL;
+            serializeAddress(selectedItem) + separator + CURSOR_SENTINEL;
       } else {
-        serialized = this.serializeAddress_(address);
+        serialized = serializeAddress(address);
         if (i != (addresses.length - 1))
           serialized += separator;
       }
@@ -123,7 +118,7 @@ export class AddressCompose extends Compose {
     let parts = this.content.textContent.split(SEPARATOR);
     sentinel.remove();
 
-    let out: ParsedAddress[] = [];
+    let out: SelectableParsedAddress[] = [];
     for (let part of parts) {
       out.push(this.parseAddress_(part, keepSentinelText));
     }
@@ -138,26 +133,8 @@ export class AddressCompose extends Compose {
     if (!keepSentinelText && selected)
       trimmed = trimmed.replace(CURSOR_SENTINEL, '');
 
-    let out: ParsedAddress = {
-      selected: selected,
-      email: trimmed,
-    }
-
-    let split = trimmed.split('<');
-    if (split.length == 1)
-      return out;
-
-    let email = split.pop();
-    if (email === undefined)
-      throw 'This should never happen';
-    // Strip the trailing '>'.
-    if (email.charAt(email.length - 1) == '>')
-      email = email.substring(0, email.length - 1);
-    out.email = email.trim();
-
-    // Can there be multiple '<' in an email address, e.g. can there be a '<' in
-    // the name?
-    out.name = split.join('<').trim();
+    let out: SelectableParsedAddress = parseAddress(address);
+    out.selected = selected;
     return out;
   }
 
@@ -170,7 +147,7 @@ export class AddressCompose extends Compose {
   }
 
   selectedEntry(selectedItem: AutoCompleteEntry) {
-    return new Text(this.serializeAddress_(selectedItem));
+    return new Text(serializeAddress(selectedItem));
   }
 
   insertAddress(selectedItem: AutoCompleteEntry) {

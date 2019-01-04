@@ -26,7 +26,7 @@ export abstract class Compose extends HTMLElement {
   protected abstract handleInput(e: InputEvent): void;
 
   constructor(
-      private contacts_: any, isMultiline?: boolean,
+      private contacts_: any, isSingleline?: boolean,
       private putMenuAbove_?: boolean) {
     super();
 
@@ -44,7 +44,7 @@ export abstract class Compose extends HTMLElement {
       font-family: Arial, Helvetica, sans-serif;
       font-size: small;
     `;
-    this.content.contentEditable = isMultiline ? 'true' : 'plaintext-only';
+    this.content.contentEditable = isSingleline ? 'plaintext-only': 'true';
     this.content.addEventListener('blur', this.cancelAutocomplete_.bind(this));
     this.append(this.content);
 
@@ -64,7 +64,7 @@ export abstract class Compose extends HTMLElement {
           if (this.updateIsAutocompleting()) {
             this.submitAutocomplete_();
             e.preventDefault();
-          } else if (!isMultiline) {
+          } else if (isSingleline) {
             this.dispatchEvent(new Event('submit'));
             e.preventDefault();
           }
@@ -273,6 +273,7 @@ export abstract class Compose extends HTMLElement {
     this.dispatchEvent(new Event('email-added'));
   }
 
+  // TODO: Return and pass around ParsedAddresses instead of strings.
   getEmails() {
     let links = <NodeListOf<HTMLLinkElement>>this.content.querySelectorAll(
         `a.${Compose.EMAIL_CLASS_NAME}`);

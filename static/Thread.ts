@@ -1,4 +1,4 @@
-import {getCurrentWeekNumber, getPreviousWeekNumber, USER_ID} from './Base.js';
+import {getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddress, serializeAddress, USER_ID} from './Base.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
@@ -442,11 +442,25 @@ export class Thread {
 
     // Gmail will remove dupes for us.
     let to = lastMessage.from || '';
-    if (shouldReplyAll && lastMessage.to)
-      to += ',' + lastMessage.to;
 
-    if (extraEmails.length)
-      to += ',' + extraEmails.join(',');
+    if (shouldReplyAll && lastMessage.to) {
+      let myEmail = await getMyEmail();
+      let addresses = lastMessage.to.split(',');
+      for (let address of addresses) {
+        let parsed = parseAddress(address);
+        if (parsed.email !== myEmail) {
+          if (to !== '')
+            to += ',';
+          to += serializeAddress(parsed);
+        }
+      }
+    }
+
+    if (extraEmails.length) {
+      if (to !== '')
+        to += ',';
+      to += extraEmails.join(',');
+    }
 
     let subject = lastMessage.subject || '';
     let replyPrefix = 'Re: ';
