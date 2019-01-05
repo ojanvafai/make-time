@@ -10,10 +10,8 @@ export class TodoModel extends ThreadListModel {
   private pendingThreads_: Thread[];
   private needsMessageDetailsThreads_: Thread[];
 
-  constructor(
-      updateTitle: (key: string, ...title: string[]) => void,
-      private vacation_: string, labels: Labels) {
-    super(updateTitle, labels, serializationKey);
+  constructor(private vacation_: string, labels: Labels) {
+    super(labels, serializationKey);
     this.pendingThreads_ = [];
     this.needsMessageDetailsThreads_ = [];
   }

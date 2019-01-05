@@ -1,8 +1,15 @@
+import {updateLoaderTitle} from '../BaseMain.js';
+
 export abstract class Model extends EventTarget {
-  constructor(
-      protected updateTitle: (key: string, ...title: string[]) => void) {
+  constructor() {
     super();
   }
-  abstract async loadFromDisk(): Promise<any>;
-  abstract async update(): Promise<void>;
+
+  async loadFromDisk() {}
+
+  async update() {}
+
+  protected updateTitle(key: string, ...title: string[]) {
+    updateLoaderTitle(key, ...title);
+  }
 }

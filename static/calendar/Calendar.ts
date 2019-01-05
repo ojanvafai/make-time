@@ -5,6 +5,7 @@ import {TaskQueue} from '../TaskQueue.js'
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
 import {CALENDAR_ID, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+import { Model } from '../models/Model.js';
 
 function getStartOfWeek(date: Date): Date {
   const x = new Date(date);
@@ -167,7 +168,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   return aggregates;
 }
 
-export class Calendar {
+export class Calendar extends Model {
   private events: CalendarEvent[] = [];
   private dayAggregates: AsyncOnce<Aggregate[]>;
   private weekAggregates: AsyncOnce<Aggregate[]>;
@@ -176,6 +177,8 @@ export class Calendar {
   private onReceiveEventsChunkResolves: ((cs: CalendarEvent[]) => void)[] = [];
 
   constructor() {
+    super();
+
     this.dayAggregates = new AsyncOnce<Aggregate[]>(async () => {
       const events = [];
       // TODO - is there any easier way to convert an async iterable into an

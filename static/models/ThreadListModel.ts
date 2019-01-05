@@ -31,9 +31,8 @@ export abstract class ThreadListModel extends Model {
   private isUpdating_: boolean;
 
   constructor(
-      updateTitle: (key: string, ...title: string[]) => void,
       protected labels: Labels, private serializationKey_: string) {
-    super(updateTitle);
+    super();
 
     this.resetUndoableActions_();
     this.threads_ = [];

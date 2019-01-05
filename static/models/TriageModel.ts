@@ -18,10 +18,9 @@ export class TriageModel extends ThreadListModel {
   private mailProcessor_: MailProcessor;
 
   constructor(
-      updateTitle: (key: string, ...title: string[]) => void,
       private vacation_: string, labels: Labels, settings_: Settings,
       private queueSettings_: QueueSettings) {
-    super(updateTitle, labels, serializationKey);
+    super(labels, serializationKey);
 
     this.bestEffortThreads_ = [];
     this.needsProcessingThreads_ = [];
@@ -29,7 +28,7 @@ export class TriageModel extends ThreadListModel {
     this.needsArchivingThreads_ = [];
     this.pendingThreads_ = [];
     this.mailProcessor_ =
-        new MailProcessor(settings_, this, queueSettings_, labels, updateTitle);
+        new MailProcessor(settings_, this, queueSettings_, labels);
   }
 
   handleUndo(_thread: Thread) {}

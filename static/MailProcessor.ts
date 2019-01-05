@@ -1,4 +1,4 @@
-import {fetchThreads} from './BaseMain.js';
+import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -31,8 +31,7 @@ interface Stats {
 export class MailProcessor {
   constructor(
       public settings: Settings, private triageModel_: TriageModel,
-      private queuedLabelMap_: QueueSettings, private allLabels_: Labels,
-      private updateTitle_: (key: string, ...title: string[]) => void) {}
+      private queuedLabelMap_: QueueSettings, private allLabels_: Labels) {}
 
   private async pushThread_(thread: Thread) {
     await this.triageModel_.addThread(thread);
@@ -435,7 +434,7 @@ export class MailProcessor {
   }
 
   async processThreads(threads: Thread[]) {
-    this.updateTitle_(
+    updateLoaderTitle(
         'processUnprocessed',
         `Processing ${threads.length} unprocessed threads...`);
 
@@ -445,7 +444,7 @@ export class MailProcessor {
     };
     await taskQueue.flush();
 
-    this.updateTitle_('processUnprocessed');
+    updateLoaderTitle('processUnprocessed');
   }
 
   async dequeue(labelName: string) {
@@ -462,7 +461,7 @@ export class MailProcessor {
       return;
 
     for (var i = 0; i < threads.length; i++) {
-      this.updateTitle_(
+      updateLoaderTitle(
           'dequeue',
           `Dequeuing ${i + 1}/${threads.length} from ${labelName}...`);
 
@@ -472,7 +471,7 @@ export class MailProcessor {
       await thread.modify(addLabelIds, removeLabelIds);
       await this.pushThread_(thread);
     }
-    this.updateTitle_('dequeue');
+    updateLoaderTitle('dequeue');
   }
 
   async processSingleQueue(queue: string) {

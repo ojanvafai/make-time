@@ -12,8 +12,8 @@ export class ComposeModel extends Model {
   private subject_: string;
   private body_: string;
 
-  constructor(updateTitle: (key: string, ...title: string[]) => void) {
-    super(updateTitle);
+  constructor() {
+    super();
 
     this.sending_ = false;
     this.to_ = '';

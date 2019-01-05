@@ -1,38 +1,14 @@
 import {Calendar} from '../calendar/Calendar.js';
 import {Charter} from '../calendar/Charter.js';
-import {Model} from '../models/Model.js';
 
 import {View} from './View.js'
-
-class CalendarModel extends Model {
-  async loadFromDisk() {
-    return new Promise((resolve) => resolve());
-  }
-  async update(): Promise<void> {
-    return new Promise(resolve => resolve());
-  }
-}
 
 export class CalendarView extends View {
   private dayPlot: HTMLElement;
   private weekPlot: HTMLElement;
   private colorizeButton: HTMLElement;
-  private calendar: Calendar = new Calendar();
 
-  private model: Model = new CalendarModel(title => {
-    console.log('TITLE UPDATE TO ' + title);
-  });
-
-  async init() {
-    this.calendar.init();
-    const charter = new Charter();
-    const days = await this.calendar.getDayAggregates();
-    const weeks = await this.calendar.getWeekAggregates();
-    charter.chartData(days, this.dayPlot.id);
-    charter.chartData(weeks, this.weekPlot.id);
-  }
-
-  constructor() {
+  constructor(private model_: Calendar) {
     super();
 
     this.style.cssText = `
@@ -43,7 +19,7 @@ export class CalendarView extends View {
     this.colorizeButton = document.createElement('button');
     this.colorizeButton.innerText = 'Colorize Events';
     this.colorizeButton.addEventListener('click', () => {
-      this.calendar.colorizeEvents();
+      this.model_.colorizeEvents();
     });
     this.setFooter(this.colorizeButton);
 
@@ -60,8 +36,17 @@ export class CalendarView extends View {
     this.append(plotlyScript);
   }
 
+  async init() {
+    await this.model_.init();
+    const charter = new Charter();
+    const days = await this.model_.getDayAggregates();
+    const weeks = await this.model_.getWeekAggregates();
+    charter.chartData(days, this.dayPlot.id);
+    charter.chartData(weeks, this.weekPlot.id);
+  }
+
   getModel() {
-    return this.model;
+    return this.model_;
   }
 }
 

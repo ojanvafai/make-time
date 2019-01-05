@@ -1,6 +1,7 @@
 import {getCurrentWeekNumber} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
 import {getLabels, getQueuedLabelMap, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {Calendar} from './calendar/Calendar.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {ComposeModel} from './models/ComposeModel.js';
@@ -64,10 +65,11 @@ function getView() {
 async function createView(viewType: VIEW, params?: any) {
   switch (viewType) {
     case VIEW.Calendar:
-      return new CalendarView();
+      let calendar = new Calendar();
+      return new CalendarView(calendar);
 
     case VIEW.Compose:
-      let model = new ComposeModel(updateLoaderTitle);
+      let model = new ComposeModel();
       return new ComposeView(model, contacts_, params);
 
     case VIEW.Todo:
@@ -177,8 +179,7 @@ async function getTriageModel() {
     let settings = await getSettings();
     let vacation = settings.get(ServerStorage.KEYS.VACATION);
     triageModel_ = new TriageModel(
-        updateLoaderTitle, vacation, await getLabels(), settings,
-        await getQueuedLabelMap());
+        vacation, await getLabels(), settings, await getQueuedLabelMap());
   }
   return triageModel_;
 }
@@ -188,7 +189,7 @@ async function getTodoModel() {
   if (!todoModel_) {
     let settings = await getSettings();
     let vacation = settings.get(ServerStorage.KEYS.VACATION);
-    todoModel_ = new TodoModel(updateLoaderTitle, vacation, await getLabels());
+    todoModel_ = new TodoModel(vacation, await getLabels());
   }
   return todoModel_;
 }
