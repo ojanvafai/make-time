@@ -45,7 +45,7 @@ export class CalendarView extends View {
     this.colorizeButton.addEventListener('click', () => {
       this.calendar.colorizeEvents();
     });
-    this.append(this.colorizeButton);
+    this.setFooter(this.colorizeButton);
 
     this.dayPlot = document.createElement('div');
     this.dayPlot.id = 'day_plot';
@@ -58,12 +58,6 @@ export class CalendarView extends View {
     let plotlyScript = document.createElement('script');
     plotlyScript.src = 'https://cdn.plot.ly/plotly-1.4.1.min.js';
     this.append(plotlyScript);
-  }
-
-  setFooter_(dom: HTMLElement) {
-    let footer = <HTMLElement>document.getElementById('footer');
-    footer.textContent = 'Dummy Footer';
-    footer.append(dom);
   }
 
   getModel() {

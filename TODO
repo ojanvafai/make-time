@@ -14,7 +14,6 @@ P1: Will try to do soonish.
 - Add embedded composeView in the maketime/triage views for quick compose that's not replying to the current thread.
 - Add send+priority buttons to the compose view. Have it encode the priority in a comment? Or a display:none element?
 - Add manual sorting of triaged threads.
-- Make header:foo the only syntax for rules with a bit of special casing for email rules to handle foo+bar@ syntax.
 - add the ability to do inline responses
 - Make really resilient to flaky networks (e.g. queue up modify requests if they fail). This also can make sending emails something that happens instantly. Show pending work in the top-left so people can see what's pending and give a way of getting at the list of pending work. Ping google.com or something to see if offline since navigator.online doesn't catch flaky networks.
 - add ability to search for a set of threads and see which filter would match

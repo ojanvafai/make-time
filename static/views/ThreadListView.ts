@@ -157,14 +157,9 @@ export class ThreadListView extends View {
     return button;
   }
 
-  setFooter_(dom: HTMLElement) {
-    let footer = <HTMLElement>document.getElementById('footer');
-    footer.textContent = '';
-    this.actions_ = null;
-    footer.append(dom);
-  }
-
   tearDown() {
+    super.tearDown();
+
     for (let listener of this.modelListeners_) {
       this.model_.removeEventListener(listener.name, listener.handler);
     }
@@ -666,7 +661,8 @@ export class ThreadListView extends View {
       count.textContent = (lengthDiff < 10) ? String(lengthDiff) : '';
     });
 
-    this.setFooter_(container);
+    this.actions_ = null;
+    this.setFooter(container);
 
     compose.focus();
   }
