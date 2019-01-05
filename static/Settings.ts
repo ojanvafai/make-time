@@ -4,13 +4,106 @@ import {ErrorLogger} from './ErrorLogger.js';
 import {ServerStorage} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
+export interface HeaderFilterRule {
+  name: string;
+  value: string;
+}
+
+export interface FilterRule {
+  label?: string;
+  matchallmessages?: string;
+  nolistid?: boolean;
+  nocc?: boolean;
+  to?: string;
+  from?: string;
+  subject?: string;
+  plaintext?: string;
+  htmlcontent?: string;
+  header?: HeaderFilterRule[];
+}
+
+export const HEADER_FILTER_PREFIX = '$';
+
+export function isHeaderFilterField(fieldName: string) {
+  return fieldName.indexOf(HEADER_FILTER_PREFIX) == 0;
+}
+
+// TODO: Is there a less verbose way to do this while still having strict
+// typing?
+export function setFilterField(rule: FilterRule, name: string, value: string) {
+  switch (name) {
+    case 'label':
+      rule.label = value;
+      break;
+
+    case 'to':
+      rule.to = value;
+      break;
+
+    case 'from':
+      rule.from = value;
+      break;
+
+    case 'subject':
+      rule.subject = value;
+      break;
+
+    case 'plaintext':
+      rule.plaintext = value;
+      break;
+
+    case 'htmlcontent':
+      rule.htmlcontent = value;
+      break;
+
+    case 'matchallmessages':
+      rule.matchallmessages = value;
+      break;
+
+    default:
+      throw 'This should never happen.';
+  }
+}
+
+export function getFilterField(rule: FilterRule, name: string): string|boolean|
+    undefined {
+  switch (name) {
+    case 'label':
+      return rule.label;
+
+    case 'to':
+      return rule.to;
+
+    case 'from':
+      return rule.from;
+
+    case 'subject':
+      return rule.subject
+
+      case 'plaintext': return rule.plaintext
+
+      case 'htmlcontent': return rule.htmlcontent
+
+      case 'matchallmessages': return rule.matchallmessages;
+
+    case 'nolistid':
+      return rule.nolistid;
+
+    case 'nocc':
+      return rule.nocc;
+
+    default:
+      throw 'This should never happen.';
+  }
+}
+
 export class Settings {
   private fetcher_: AsyncOnce<void>;
   // TODO: Fix these to not assert non-null since they could realistically be
   // null if fetch() isn't completed.
   spreadsheetId!: string;
   private storage_!: ServerStorage;
-  private filters_: any;
+  private filters_: FilterRule[]|null;
 
   static QUEUED_LABELS_SHEET_NAME = 'queued_labels';
   static QUEUED_LABELS_SHEET_COLUMNS = ['label', 'queue', 'goal', 'index'];
@@ -98,7 +191,8 @@ export class Settings {
   ];
 
   constructor() {
-    this.fetcher_ = new AsyncOnce<void>(this.fetch_.bind(this))
+    this.fetcher_ = new AsyncOnce<void>(this.fetch_.bind(this));
+    this.filters_ = null;
   }
 
   async fetch() {
@@ -421,50 +515,92 @@ export class Settings {
 
     let rawRules = await SpreadsheetUtils.fetchSheet(
         this.spreadsheetId, Settings.FILTERS_SHEET_NAME_);
-    let rules: {}[] = [];
-    let labels: any = {};
-    this.filters_ = {
-      rules: rules,
-    };
+    this.filters_ = [];
 
     let ruleNames = rawRules[0];
-    let labelColumn = ruleNames.indexOf('label');
+    let hasDeprecatedHeaderRule = false;
 
     for (let i = 1, l = rawRules.length; i < l; i++) {
-      let ruleObj: any = {};
+      let ruleObj: FilterRule = {};
       for (let j = 0; j < ruleNames.length; j++) {
-        let name = ruleNames[j];
+        let name = ruleNames[j].toLowerCase();
         let value = rawRules[i][j];
-        if (j == labelColumn)
-          labels[value] = true;
+
         if (!value)
           continue;
-        ruleObj[name] = value.toLowerCase().trim();
+
+        value = value.toLowerCase().trim();
+
+        switch (name) {
+          case 'header':
+            let headers: HeaderFilterRule[];
+            try {
+              headers = JSON.parse(value);
+            } catch (e) {
+              hasDeprecatedHeaderRule = true;
+
+              // TODO: Remove all this once all clients have migrated over to $
+              // syntax.
+              let colonIndex = value.indexOf(':');
+              if (colonIndex == -1)
+                throw 'This should never happen.';
+              headers = [{
+                name: value.substring(0, colonIndex).trim(),
+                value: value.substring(colonIndex + 1).toLowerCase().trim(),
+              }];
+            }
+
+            // For historical reasons this is called header instead of headers.
+            // TODO: Change this once we're on a proper storage system and doing
+            // so will be easier.
+            ruleObj.header = headers;
+            break;
+
+          case 'nolistid':
+            ruleObj.nolistid = value;
+            break;
+
+          case 'nocc':
+            ruleObj.nocc = value;
+            break;
+
+          default:
+            setFilterField(ruleObj, name, value);
+        }
       }
-      rules.push(ruleObj);
+      this.filters_.push(ruleObj);
     }
 
+    if (hasDeprecatedHeaderRule)
+      await this.writeFilters(this.filters_, true);
     return this.filters_;
   }
 
-  async writeFilters(rules: any[]) {
+  async writeFilters(rules: FilterRule[], keepInMemory?: boolean) {
     let rows = [Settings.FILTERS_SHEET_COLUMNS_];
     for (let rule of rules) {
       let newRule: string[] = [];
 
-      for (let field in rule) {
-        if (!Settings.FILTERS_SHEET_COLUMNS_.includes(field))
-          throw `Invalid filter rule field: ${field}. Not saving filters.`;
-      }
+      let invalidField = Object.keys(rule).find(
+          x => !Settings.FILTERS_SHEET_COLUMNS_.includes(x));
+      if (invalidField)
+        throw `Invalid filter rule field: ${invalidField}. Not saving filters.`;
 
       for (let column of Settings.FILTERS_SHEET_COLUMNS_) {
-        let value = rule[column];
-        newRule.push(value || '');
+        let value;
+        if (column == 'header') {
+          value = JSON.stringify(rule.header);
+        } else {
+          value = getFilterField(rule, column);
+        }
+        newRule.push(value ? String(value) : '');
       }
       rows.push(newRule);
     }
 
-    let originalFilterSheetRowCount = this.filters_.rules.length + 1;
+    if (!this.filters_)
+      throw 'This should never happen.';
+    let originalFilterSheetRowCount = this.filters_.length + 1;
     await SpreadsheetUtils.writeSheet(
         this.spreadsheetId, Settings.FILTERS_SHEET_NAME_, rows,
         originalFilterSheetRowCount);
@@ -473,6 +609,7 @@ export class Settings {
     // network request and populate the filters from the rules argument to
     // writeFilters, but doesn't seem worth the potential extra code that needs
     // to have the rules be in the right format.
-    this.filters_ = null;
+    if (!keepInMemory)
+      this.filters_ = null;
   }
 }

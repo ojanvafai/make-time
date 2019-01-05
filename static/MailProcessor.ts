@@ -5,7 +5,7 @@ import {Message} from './Message.js';
 import {TriageModel} from './models/TriageModel.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage} from './ServerStorage.js';
-import {Settings} from './Settings.js';
+import {Settings, HeaderFilterRule} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 import {TaskQueue} from './TaskQueue.js';
 import {DEFAULT_QUEUE, Thread} from './Thread.js';
@@ -203,17 +203,9 @@ export class MailProcessor {
           lastRowProcessed + 1);
   }
 
-  matchesHeader_(message: Message, header: string) {
-    let colonIndex = header.indexOf(':');
-    if (colonIndex == -1) {
-      ErrorLogger.log(
-          `Invalid header filter. Header filters must be of the form headername:filtervalue.`);
-      return false;
-    }
-    let name = header.substring(0, colonIndex).trim();
-    let value = header.substring(colonIndex + 1).toLowerCase().trim();
-    let headerValue = message.getHeaderValue(name);
-    return headerValue && headerValue.toLowerCase().trim().includes(value);
+  matchesHeader_(message: Message, header: HeaderFilterRule) {
+    let headerValue = message.getHeaderValue(header.name);
+    return headerValue && headerValue.toLowerCase().trim().includes(header.value);
   }
 
   matchesRule(rule: any, message: Message) {
@@ -250,8 +242,10 @@ export class MailProcessor {
       matches = true;
     }
     if (rule.header) {
-      if (!this.matchesHeader_(message, rule.header))
-        return false;
+      for (let header of rule.header) {
+        if (!this.matchesHeader_(message, header))
+          return false;
+      }
       matches = true;
     }
     // TODO: only need to do this once per thread.
@@ -375,8 +369,8 @@ export class MailProcessor {
         return;
       }
 
-      let rulesSheet = await this.settings.getFilters();
-      let labelName = await this.getWinningLabel(thread, rulesSheet.rules);
+      let rules = await this.settings.getFilters();
+      let labelName = await this.getWinningLabel(thread, rules);
 
       if (labelName == Labels.ARCHIVE_LABEL) {
         addLabelIds.push(

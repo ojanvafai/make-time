@@ -1,7 +1,14 @@
 import {showDialog} from '../Base.js';
 import {QueueSettings} from '../QueueSettings.js';
 
-import {HELP_TEXT} from './Filters.js';
+import {HelpDialog} from './HelpDialog.js';
+
+let HELP_TEXT = `<b>Help</b> <a>show more</a>
+- Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
+
+Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
+
+Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
 
 export class QueuesView extends HTMLElement {
   private immediate_: HTMLElement|undefined;
@@ -11,12 +18,6 @@ export class QueuesView extends HTMLElement {
   private dialog_: HTMLDialogElement|undefined;
 
   static rowClassName_ = 'queue-row';
-  static HELP_TEXT_ = `<b>Help</b> <a>show more</a>
- - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
-
- Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
-
- Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
 
   constructor(
       private queueNames_: Set<string>,
@@ -147,26 +148,11 @@ export class QueuesView extends HTMLElement {
       this.appendRow_(queueData);
     }
 
-    let help = document.createElement('div');
-    help.style.cssText = `
-      flex: 1;
-      white-space: pre-wrap;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      margin-top: 4px;
-    `;
-    help.innerHTML = HELP_TEXT;
-
-    let expander = <HTMLAnchorElement>help.querySelector('a');
-    expander.onclick = () => {
-      let existing = window.getComputedStyle(help).webkitLineClamp;
-      // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
-      // returns 'none' from computed style.
-      let wasUnclamped = existing == 'none';
-      help.style.webkitLineClamp = wasUnclamped ? '2' : 'unset';
-      expander.textContent = wasUnclamped ? 'show more' : 'show less';
+    let helpButton = document.createElement('button');
+    helpButton.style.cssText = `margin-right: auto`;
+    helpButton.append('Help');
+    helpButton.onclick = () => {
+      new HelpDialog(HELP_TEXT);
     };
 
     let cancel = document.createElement('button');
@@ -182,7 +168,7 @@ export class QueuesView extends HTMLElement {
       display: flex;
       align-items: center;
     `;
-    buttonContainer.append(help, cancel, save);
+    buttonContainer.append(helpButton, cancel, save);
     this.append(buttonContainer);
 
     this.dialog_ = showDialog(this);

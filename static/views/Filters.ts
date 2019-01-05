@@ -1,19 +1,12 @@
 import {showDialog} from '../Base.js';
-import {Settings} from '../Settings.js';
-
-interface FilterRule {
-  label: string;
-  matchallmessages: string;
-  nolistid: boolean;
-  nocc: boolean;
-  [property: string]: string|boolean;
-}
+import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterField, Settings} from '../Settings.js';
+import {HelpDialog} from './HelpDialog.js';
 
 const CSV_FIELDS = ['from', 'to'];
 const CURSOR_SENTINEL = '!!!!!!!!';
 const DIRECTIVE_SEPARATOR_ = ':';
 const QUERY_SEPARATOR_ = '&&';
-export const HELP_TEXT = `<b>Help</b> <a>show more</a>
+export const HELP_TEXT = `<b>Help</b>
 Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "archive" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
 
  - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
@@ -29,12 +22,12 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
  - Every thread in the unprocessed queue gets exactly one needstriage label applied. If none of your filters apply to a thread, then make-time will apply a "needsfilter" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
 
 <b>Rule directives</b>
+ - <b>$anything:</b> Matches the raw email header "anything". So, $from matches the From header as plain text instead of the structure match that "from:" below does. You can view raw email headers in gmail by going to a message and opening "Show Original" from the "..." menu.
  - <b>to:</b> Matches the to/cc/bcc fields of the email. "foo" will match foo+anything@anything.com, "foo@gmail.com" will match foo@gmail.com and foo+anything@gmail.com, "gmail.com" will match anything@gmail.com.
  - <b>from:</b> Matches the from field of the email. Same matching rules as the "to" directive.
  - <b>subject:</b> Matches if the subject of the email includes this text.
  - <b>plaintext:</b> Matches if the plain text of the email includes this text.
  - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
- - <b>header:</b> Matches arbitrary email headers. You can see the email headers by going to gmail and clicking "Show original" for a given a message. The format is "header:value" where "header" is the name of the mail header and "value" is the value to search for in that mail header. For example, "X-Autoreply:yes" is a filter gmail (and probably other) vacation autoresponders as they put an X-Autoreply header on autoresponse messages.
 
 If there's a bug in the filtering code, emails should remain in the unprocessed label.
 `;
@@ -110,8 +103,7 @@ export class FiltersView extends HTMLElement {
   }
 
   async render_() {
-    let filters = await this.settings_.getFilters();
-    let rules = filters.rules;
+    let rules = await this.settings_.getFilters();
 
     let container = document.createElement('table');
     container.style.cssText = `font-size: 13px;`;
@@ -141,27 +133,11 @@ export class FiltersView extends HTMLElement {
     scrollable.append(container);
     this.append(scrollable);
 
-    let help = document.createElement('div');
-    help.style.cssText = `
-      flex: 1;
-      white-space: pre-wrap;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      margin-top: 4px;
-      font-size: 13px;
-    `;
-    help.innerHTML = HELP_TEXT;
-
-    let expander = <HTMLAnchorElement>help.querySelector('a');
-    expander.onclick = () => {
-      let existing = window.getComputedStyle(help).webkitLineClamp;
-      // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
-      // returns 'none' from computed style.
-      let wasUnclamped = existing == 'none';
-      help.style.webkitLineClamp = wasUnclamped ? '2' : 'unset';
-      expander.textContent = wasUnclamped ? 'show more' : 'show less';
+    let helpButton = document.createElement('button');
+    helpButton.style.cssText = `margin-right: auto`;
+    helpButton.append('Help');
+    helpButton.onclick = () => {
+      new HelpDialog(HELP_TEXT);
     };
 
     let cancel = document.createElement('button');
@@ -177,18 +153,37 @@ export class FiltersView extends HTMLElement {
       display: flex;
       align-items: center;
     `;
-    buttonContainer.append(help, cancel, save);
+    buttonContainer.append(helpButton, cancel, save);
     this.append(buttonContainer);
 
     this.dialog_ = showDialog(this);
   }
 
+  convertToFilterRule(obj: any) {
+    let rule: FilterRule = {
+      label: obj.label,
+    };
+    let headerRules: HeaderFilterRule[] = [];
+    for (let key in obj) {
+      if (isHeaderFilterField(key)) {
+        headerRules.push({name: key.substring(1), value: String(obj[key])});
+      } else {
+        setFilterField(rule, key, obj[key]);
+      }
+    }
+    if (headerRules.length)
+      rule.header = headerRules;
+    return rule;
+  }
+
   async save_() {
     let rows = this.querySelectorAll('tbody > tr');
-    let rules: {}[] = [];
+    let rules: FilterRule[] = [];
+
     for (let row of rows) {
       let query = (<HTMLElement>row.querySelector('.query')).textContent;
-      let rule = this.parseQuery_(query, true);
+      let parsed = this.parseQuery_(query, true);
+      let rule = this.convertToFilterRule(parsed);
 
       let label = <HTMLInputElement>row.querySelector('.label');
       rule.label = label.value;
@@ -266,7 +261,14 @@ export class FiltersView extends HTMLElement {
     for (let field in rule) {
       if (!Settings.FILTERS_RULE_DIRECTIVES.includes(field))
         continue;
-      queryParts[field] = rule[field];
+      if (field == 'header') {
+        let headers = <HeaderFilterRule[]>rule[field];
+        for (let header of headers) {
+          queryParts[`${HEADER_FILTER_PREFIX}${header.name}`] = header.value;
+        }
+      } else {
+        queryParts[field] = rule[field];
+      }
     }
 
     let editor = this.createQueryEditor_(queryParts);
@@ -343,7 +345,8 @@ export class FiltersView extends HTMLElement {
 
       let fieldTextWithoutSentinel =
           fieldText.replace(CURSOR_SENTINEL, '').trim();
-      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
+      if (!isHeaderFilterField(fieldTextWithoutSentinel) &&
+          !Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
         fieldElement.classList.add('invalid-directive');
 
       this.appendWithSentinel_(fieldElement, fieldText);
@@ -385,7 +388,7 @@ export class FiltersView extends HTMLElement {
   }
 
   parseQuery_(query: string, trimWhitespace: boolean) {
-    let queryParts = <FilterRule>{};
+    let queryParts: any = {};
     query = query.replace(/[\n\r]/g, '');
     let directives = query.split(QUERY_SEPARATOR_);
     for (let directive of directives) {

@@ -106,7 +106,9 @@ export class SettingsView extends HTMLElement {
 
     let filters = await this.settings_.getFilters();
     let queues: Set<string> = new Set();
-    for (let rule of filters.rules) {
+    for (let rule of filters) {
+      if (!rule.label)
+        throw 'This should never happen.';
       queues.add(rule.label);
     }
 

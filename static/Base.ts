@@ -21,7 +21,7 @@ function getWeekNumber(date: Date) {
       7);
 }
 
-export function showDialog(contents: HTMLElement) {
+export function showDialog(contents: HTMLElement|string) {
   let dialog = document.createElement('dialog');
   // Subtract out the top/bottom, padding and border from the max-height.
   dialog.style.cssText = `

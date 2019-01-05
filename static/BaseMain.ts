@@ -11,6 +11,7 @@ import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {Thread} from './Thread.js';
+import { HelpDialog } from './views/HelpDialog.js';
 
 export class ThreadData {
   constructor(public id: string, public historyId: string) {}
@@ -298,38 +299,8 @@ export async function fetchThreads(
   await getPageOfThreads();
 }
 
-let helpHtml_: string;
-
 export function showHelp() {
-  let contents = document.createElement('div');
-  contents.style.overflow = 'auto';
-  contents.innerHTML = helpText();
-  let dialog = showDialog(contents);
-  dialog.style.whiteSpace = 'pre-wrap';
-
-  let closeButton = document.createElement('div');
-  closeButton.classList.add('close-button');
-  closeButton.style.cssText = `
-    float: right;
-    position: sticky;
-    top: 0;
-    background-color: white;
-    padding-left: 10px;
-  `;
-  closeButton.onclick = () => dialog.close();
-  contents.prepend(closeButton);
-
-  return new Promise((resolve) => {
-    dialog.addEventListener('close', resolve);
-  });
-}
-
-function helpText() {
-  if (helpHtml_)
-    return helpHtml_;
-
-  helpHtml_ =
-      `make-time is an opinionated way of handling unreasonable amounts of email.
+  new HelpDialog(`make-time is an opinionated way of handling unreasonable amounts of email.
 
 <b style="font-size:120%">Disclaimers</b>
 Patches welcome, but otherwise, I built it for my needs. :) Feature requests are very welcome though. Often you'll think of something I want that I don't have and I'll build it. Contact ojan@ or file issues at https://github.com/ojanvafai/make-time if you want to contribute, give feedback, etc.
@@ -353,7 +324,5 @@ Whether you leave emails in your inbox by default or moved them into the unproce
     Do this: Skip Inbox, Apply label "maketime/unprocessed"
 
 <span style="color: red">Emails are only processed when make-time is open in a browser tab. Otherwise, your mail will stay in the unprocessed label. Would love to move this to a server cron, but this is a side project and I can't be bothered to figure out how to manage server-side gmail API oauth. <b>Patches *very* welcome for this.</b></span>
-`;
-
-  return helpHtml_;
-};
+`);
+}
