@@ -1,4 +1,4 @@
-import { View } from './views/View.js';
+import {View} from './views/View.js';
 
 export interface Action {
   name: string;
@@ -7,6 +7,22 @@ export interface Action {
   hidden?: boolean;
   repeatable?: boolean;
   destination?: string|null;
+}
+
+let actions_: Map<string, Action[]> = new Map();
+export function registerActions(viewName: string, actions: Action[]) {
+  actions_.set(viewName, actions);
+}
+
+export function getActions() {
+  return actions_;
+}
+
+// TODO: Should probably make Action a proper class and put this on Action.
+export function getActionKey(action: Action) {
+  if (action.key)
+    return action.key;
+  return action.name.charAt(0).toLowerCase();
 }
 
 export class Actions extends HTMLElement {
@@ -73,9 +89,7 @@ export class Actions extends HTMLElement {
       // #sigh
       if (!action.repeatable && e.repeat)
         return false;
-      if (action.key)
-        return action.key == e.key;
-      return action.name.charAt(0).toLowerCase() == e.key;
+      return getActionKey(action) == e.key;
     };
 
     let action = this.actions_.find(test);

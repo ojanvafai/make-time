@@ -1,4 +1,4 @@
-import {Action} from '../Actions.js';
+import {Action, registerActions} from '../Actions.js';
 import {AddressCompose, autocompleteItemSelectedEventName} from '../AddressCompose.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
@@ -18,6 +18,8 @@ let HELP: Action = {
 };
 
 const ACTIONS = [SEND, HELP];
+registerActions('Compose', ACTIONS);
+
 const PRE_FILL_URL =
     '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
 const HELP_TEXT =

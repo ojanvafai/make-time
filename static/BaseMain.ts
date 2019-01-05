@@ -307,6 +307,9 @@ Patches welcome, but otherwise, I built it for my needs. :) Feature requests are
 
 <span style="color: red">This is a side project. While I use it for my day to day email management, you might not want to. It has bugs.</span> They may be hard to deal with if you're not willing to dig into the code when they happen.
 
+<b style="font-size:120%">Keyboard shortcuts</b>
+Type "?" anywhere in make-time to see keyboard shortcuts.
+
 <b style="font-size:120%">Triage</b>
 
 All the triage actions mark a thread as read, remove it from the inbox, and remove the maketime labels. <b>Aside from archiving messages (and bugs), maketime will only modify labels under the "maketime" parent label.</b> So you can do whatever you want with other labels.

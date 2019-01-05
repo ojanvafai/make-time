@@ -2,13 +2,15 @@ import {Calendar} from '../calendar/Calendar.js';
 import {Charter} from '../calendar/Charter.js';
 
 import {View} from './View.js'
-import { Action } from '../Actions.js';
+import { Action, registerActions } from '../Actions.js';
 
 let COLORIZE_ACTION: Action = {
   name: 'Colorize Events',
   description:
       'Set the colors of events in your calendar to match the ones shown here.',
 };
+let ACTIONS = [COLORIZE_ACTION];
+registerActions('Calendar', ACTIONS);
 
 export class CalendarView extends View {
   private dayPlot: HTMLElement;
@@ -22,7 +24,7 @@ export class CalendarView extends View {
       flex-direction: column;
     `;
 
-    this.setActions([COLORIZE_ACTION]);
+    this.setActions(ACTIONS);
 
     this.dayPlot = document.createElement('div');
     this.dayPlot.id = 'day_plot';

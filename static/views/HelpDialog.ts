@@ -1,7 +1,7 @@
-import { showDialog } from '../Base.js';
+import {showDialog} from '../Base.js';
 
 export class HelpDialog extends HTMLElement {
-  constructor(helpText: string) {
+  constructor(helpText: HTMLElement|string) {
     super();
 
     let container = document.createElement('div');
@@ -18,7 +18,12 @@ export class HelpDialog extends HTMLElement {
       flex: 1;
       white-space: pre-wrap;
     `;
-    help.innerHTML = helpText;
+
+    if (typeof helpText === 'string')
+      help.innerHTML = <string>helpText;
+    else
+      help.append(helpText);
+
     container.append(help);
 
     let close = document.createElement('button');

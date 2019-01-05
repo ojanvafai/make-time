@@ -1,4 +1,4 @@
-import {Action} from '../Actions.js';
+import {Action, registerActions} from '../Actions.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
@@ -46,7 +46,7 @@ let ARCHIVE_ACTION = {
 };
 
 let QUICK_REPLY_ACTION = {
-  name: `Quick Reply`,
+  name: `Quick reply`,
   description:
       `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
 };
@@ -71,38 +71,38 @@ let MUTE_ACTION = {
   destination: Labels.MUTED_LABEL,
 };
 
-let NEXT_EMAIL_ACTION = {
-  name: `NextEmail`,
-  description: `Focus the next email.`,
+let NEXT_ROW_ACTION = {
+  name: `Next row`,
+  description: `Focus the next row.`,
   key: 'j',
   hidden: true,
   repeatable: true,
 };
 
-let PREVIOUS_EMAIL_ACTION = {
-  name: `PreviousEmail`,
-  description: `Focus the previous email.`,
+let PREVIOUS_ROW_ACTION = {
+  name: `Previous row`,
+  description: `Focus the previous row.`,
   key: 'k',
   hidden: true,
   repeatable: true,
 };
 
 let TOGGLE_FOCUSED_ACTION = {
-  name: `ToggleFocused`,
+  name: `Toggle focused`,
   description: `Toggle whether or not the focused element is selected.`,
   key: ' ',
   hidden: true,
 };
 
 let VIEW_FOCUSED_ACTION = {
-  name: `ViewFocused`,
+  name: `View focused`,
   description: `View the focused email.`,
   key: 'Enter',
   hidden: true,
 };
 
 let NEXT_QUEUE_ACTION = {
-  name: `NextQueue`,
+  name: `Next queue`,
   description: `Focus the first email of the next queue.`,
   key: 'n',
   hidden: true,
@@ -110,7 +110,7 @@ let NEXT_QUEUE_ACTION = {
 };
 
 let PREVIOUS_QUEUE_ACTION = {
-  name: `PreviousQueue`,
+  name: `Previous queue`,
   description: `Focus the first email of the previous queue.`,
   key: 'p',
   hidden: true,
@@ -118,15 +118,15 @@ let PREVIOUS_QUEUE_ACTION = {
 };
 
 let TOGGLE_QUEUE_ACTION = {
-  name: `ToggleQueue`,
+  name: `Toggle queue`,
   description: `Toggle all items in the current queue.`,
   key: 'g',
   hidden: true,
 };
 
-let VIEW_TRIAGE_ACTION = {
-  name: `ViewTriage`,
-  description: `Go to the triage view.`,
+let VIEW_THREADLIST_ACTION = {
+  name: `View thread list`,
+  description: `Go back to the thread list.`,
   key: 'Escape',
   hidden: true,
 };
@@ -137,7 +137,7 @@ let UNDO_ACTION = {
 };
 
 let MUST_DO_ACTION = {
-  name: `1: Must Do`,
+  name: `1: Must do`,
   description: `Must do today. Literally won't go home till it's done.`,
   destination: Labels.MUST_DO_LABEL,
 };
@@ -156,13 +156,13 @@ let BACKLOG_ACTION = {
 };
 
 let NEEDS_FILTER_ACTION = {
-  name: `4: Needs Filter`,
+  name: `4: Needs filter`,
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   destination: Labels.NEEDS_FILTER_LABEL,
 };
 
-let ACTIONS = [
+let BASE_ACTIONS = [
   ARCHIVE_ACTION,
   BLOCKED_ACTION,
   MUTE_ACTION,
@@ -175,21 +175,25 @@ let ACTIONS = [
 ];
 
 let RENDER_ALL_ACTIONS = [
-  PREVIOUS_EMAIL_ACTION,
-  NEXT_EMAIL_ACTION,
+  PREVIOUS_ROW_ACTION,
+  NEXT_ROW_ACTION,
   PREVIOUS_QUEUE_ACTION,
   NEXT_QUEUE_ACTION,
   TOGGLE_FOCUSED_ACTION,
   TOGGLE_QUEUE_ACTION,
   VIEW_FOCUSED_ACTION,
-  ...ACTIONS,
-];
+]
 
 let RENDER_ONE_ACTIONS = [
   QUICK_REPLY_ACTION,
-  VIEW_TRIAGE_ACTION,
-  ...ACTIONS,
+  VIEW_THREADLIST_ACTION,
 ];
+
+registerActions('Triage or Todo', [
+  ...BASE_ACTIONS,
+  ...RENDER_ALL_ACTIONS,
+  ...RENDER_ONE_ACTIONS,
+]);
 
 export class ThreadListView extends View {
   private modelListeners_: ListenerData[];
@@ -306,12 +310,12 @@ export class ThreadListView extends View {
 
   updateActions_() {
     if (this.renderedRow_) {
-      this.setActions(RENDER_ONE_ACTIONS);
+      this.setActions([...RENDER_ONE_ACTIONS, ...BASE_ACTIONS]);
       this.addToFooter(new Timer(
           this.autoStartTimer_, this.countDown_, this.timerDuration_,
           this.singleThreadContainer_));
     } else {
-      this.setActions(RENDER_ALL_ACTIONS);
+      this.setActions([...RENDER_ALL_ACTIONS, ...BASE_ACTIONS]);
     }
   }
 
@@ -448,12 +452,12 @@ export class ThreadListView extends View {
 
     if (this.focusedRow_ == null) {
       switch (action) {
-        case NEXT_EMAIL_ACTION:
+        case NEXT_ROW_ACTION:
         case NEXT_QUEUE_ACTION: {
           this.setFocus(rows[0]);
           break;
         }
-        case PREVIOUS_EMAIL_ACTION: {
+        case PREVIOUS_ROW_ACTION: {
           this.setFocus(rows[rows.length - 1]);
           break;
         }
@@ -466,13 +470,13 @@ export class ThreadListView extends View {
       return;
     }
     switch (action) {
-      case NEXT_EMAIL_ACTION: {
+      case NEXT_ROW_ACTION: {
         const nextRow = rowAtOffset(rows, this.focusedRow_, 1);
         if (nextRow)
           this.setFocus(nextRow);
         break;
       }
-      case PREVIOUS_EMAIL_ACTION: {
+      case PREVIOUS_ROW_ACTION: {
         const previousRow = rowAtOffset(rows, this.focusedRow_, -1);
         if (previousRow)
           this.setFocus(previousRow);
@@ -509,26 +513,26 @@ export class ThreadListView extends View {
       await this.showQuickReply();
       return;
     }
-    if (action == NEXT_EMAIL_ACTION || action == PREVIOUS_EMAIL_ACTION) {
+    if (action == NEXT_ROW_ACTION || action == PREVIOUS_ROW_ACTION) {
       this.moveFocus(action);
       return;
     }
     if (action == TOGGLE_FOCUSED_ACTION) {
       // If nothing is focused, pretend the first email was focused.
       if (!this.focusedRow_)
-        this.moveFocus(NEXT_EMAIL_ACTION);
+        this.moveFocus(NEXT_ROW_ACTION);
       if (!this.focusedRow_)
         return;
 
       this.focusedRow_.checked = !this.focusedRow_.checked;
       this.focusedRow_.updateHighlight_();
-      this.moveFocus(NEXT_EMAIL_ACTION);
+      this.moveFocus(NEXT_ROW_ACTION);
       return;
     }
     if (action == TOGGLE_QUEUE_ACTION) {
       // If nothing is focused, pretend the first email was focused.
       if (!this.focusedRow_)
-        this.moveFocus(NEXT_EMAIL_ACTION);
+        this.moveFocus(NEXT_ROW_ACTION);
       if (!this.focusedRow_)
         return;
       const checking = !this.focusedRow_.checked;
@@ -550,13 +554,13 @@ export class ThreadListView extends View {
     if (action == TOGGLE_QUEUE_ACTION) {
       return;
     }
-    if (action == VIEW_TRIAGE_ACTION) {
+    if (action == VIEW_THREADLIST_ACTION) {
       this.transitionToThreadList_(this.renderedRow_);
       return;
     }
     if (action == VIEW_FOCUSED_ACTION) {
       if (!this.focusedRow_)
-        this.moveFocus(NEXT_EMAIL_ACTION);
+        this.moveFocus(NEXT_ROW_ACTION);
       if (!this.focusedRow_)
         return;
       this.setRenderedRow_(this.focusedRow_);
