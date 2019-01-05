@@ -77,10 +77,6 @@ export class ComposeView extends View {
     this.appendButtons_();
   }
 
-  getModel() {
-    return this.model_;
-  }
-
   async init() {
     let localData = await this.model_.loadFromDisk();
     if (!localData)

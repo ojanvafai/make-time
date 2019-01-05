@@ -44,10 +44,6 @@ export class CalendarView extends View {
     charter.chartData(days, this.dayPlot.id);
     charter.chartData(weeks, this.weekPlot.id);
   }
-
-  getModel() {
-    return this.model_;
-  }
 }
 
 window.customElements.define('mt-calendar-view', CalendarView);

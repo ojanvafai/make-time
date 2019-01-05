@@ -139,10 +139,6 @@ export class ThreadListView extends View {
     this.model_.addEventListener(eventName, handler);
   }
 
-  getModel() {
-    return this.model_;
-  }
-
   private handleUndo_(thread: Thread) {
     if (this.renderedRow_)
       this.renderOne_(getThreadRow(thread));
@@ -170,7 +166,7 @@ export class ThreadListView extends View {
   async init() {
     await login();
     await this.model_.loadFromDisk();
-    await this.getModel().update();
+    await this.model_.update();
   }
 
   async goBack() {
