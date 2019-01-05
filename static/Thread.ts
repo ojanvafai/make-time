@@ -135,7 +135,7 @@ export class Thread {
       console.warn(
           `Modify call didn't remove or add any Labels for thread with subject: ${
               this.getSubjectSync()}`)
-      return;
+      return null;
     }
 
     let request: any = {

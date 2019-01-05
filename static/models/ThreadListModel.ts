@@ -25,13 +25,12 @@ export class ThreadListChangedEvent extends Event {
 }
 
 export abstract class ThreadListModel extends Model {
-  private undoableActions_!: TriageResult[];
+  private undoableActions_!: Promise<TriageResult|null>[];
   private threads_: Thread[];
   private queuedRemoves_: Thread[];
   private isUpdating_: boolean;
 
-  constructor(
-      protected labels: Labels, private serializationKey_: string) {
+  constructor(protected labels: Labels, private serializationKey_: string) {
     super();
 
     this.resetUndoableActions_();
@@ -147,10 +146,12 @@ export abstract class ThreadListModel extends Model {
   private async markTriagedInternal_(
       thread: Thread, destination: string|null,
       expectedNewMessageCount?: number) {
-    let triageResult = <TriageResult>(
-        await thread.markTriaged(destination, expectedNewMessageCount));
-    if (triageResult)
-      this.undoableActions_.push(triageResult);
+    // Put the promises into the undoableActions_ list instead of the resolve
+    // promises to avoid a race there undoableActions_ is reset (e.g. due to
+    // another triage action) and we push the result to it anyways.
+    let triageAction = thread.markTriaged(destination, expectedNewMessageCount);
+    this.undoableActions_.push(triageAction);
+    await triageAction;
     await this.handleTriaged(destination, thread);
   }
 
@@ -189,14 +190,18 @@ export abstract class ThreadListModel extends Model {
       return;
     }
 
-    let actions = this.undoableActions_;
+    let actionPromises = this.undoableActions_;
     this.resetUndoableActions_();
 
+    let actions = await Promise.all(actionPromises);
     for (let i = 0; i < actions.length; i++) {
       this.updateTitle(
           'undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
 
       let action = actions[i];
+      if (!action)
+        continue;
+
       this.handleUndo(action.thread);
 
       await action.thread.modify(action.removed, action.added);

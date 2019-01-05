@@ -21,14 +21,14 @@ let getThreadRow = (thread: Thread) => {
   return row;
 };
 
-let rowAtOffset = (rows: ThreadRow[], thread: ThreadRow, offset: number):
+let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number):
     ThreadRow|null => {
       if (offset != -1 && offset != 1)
         throw `getRowFromRelativeOffset called with offset of ${offset}`;
 
-      let index = rows.indexOf(thread);
+      let index = rows.indexOf(anchorRow);
       if (index == -1)
-        throw `Tried to get row via relative offset on a row that's not in the model.`;
+        throw `Tried to get row via relative offset on a row that's not in the dom.`;
       if (0 <= index + offset && index + offset < rows.length)
         return rows[index + offset];
       return null;
@@ -201,6 +201,7 @@ export class ThreadListView extends View {
   private scrollOffset_: number|undefined;
   private isSending_: boolean|undefined;
   private hasQueuedFrame_: boolean;
+  private hasNewRenderedRow_: boolean;
 
   constructor(
       private model_: ThreadListModel, public allLabels: Labels,
@@ -221,6 +222,7 @@ export class ThreadListView extends View {
     this.focusedRow_ = null;
     this.renderedRow_ = null;
     this.hasQueuedFrame_ = false;
+    this.hasNewRenderedRow_ = false;
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -230,7 +232,7 @@ export class ThreadListView extends View {
     this.append(this.rowGroupContainer_);
 
     this.rowGroupContainer_.addEventListener('renderThread', (e: Event) => {
-      this.renderOne_(<ThreadRow>e.target);
+      this.setRenderedRow_(<ThreadRow>e.target);
     });
 
     this.singleThreadContainer_ = document.createElement('div');
@@ -246,8 +248,7 @@ export class ThreadListView extends View {
     this.appendButton(bottomButtonUrl, bottomButtonText);
     this.updateActions_();
 
-    this.addListenerToModel(
-        'thread-list-changed', this.renderThreadList_.bind(this));
+    this.addListenerToModel('thread-list-changed', this.render_.bind(this));
     this.addListenerToModel(
         'best-effort-changed', this.handleBestEffortChanged_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
@@ -266,7 +267,7 @@ export class ThreadListView extends View {
 
   private handleUndo_(thread: Thread) {
     if (this.renderedRow_)
-      this.renderOne_(getThreadRow(thread));
+      this.setRenderedRow_(getThreadRow(thread));
   }
 
   appendButton(href: string, textContent = '') {
@@ -318,11 +319,11 @@ export class ThreadListView extends View {
     return false;
   }
 
-  private renderThreadList_() {
+  private render_() {
     if (this.hasQueuedFrame_)
       return;
     this.hasQueuedFrame_ = true;
-    requestAnimationFrame(this.renderThreadListDebounced_.bind(this));
+    requestAnimationFrame(this.renderFrame_.bind(this));
   }
 
   getRows_() {
@@ -330,7 +331,7 @@ export class ThreadListView extends View {
         this.rowGroupContainer_.querySelectorAll('mt-thread-row'));
   }
 
-  private renderThreadListDebounced_() {
+  private renderFrame_() {
     this.hasQueuedFrame_ = false;
     let threads = this.model_.getThreads();
     let oldRows = this.getRows_();
@@ -366,7 +367,7 @@ export class ThreadListView extends View {
 
       if (this.renderedRow_) {
         if (nextRow)
-          this.renderOne_(nextRow);
+          this.setRenderedRowInternal_(nextRow);
         else
           this.transitionToThreadList_(null);
       } else {
@@ -376,10 +377,27 @@ export class ThreadListView extends View {
       }
     }
 
-    // Always prerender the row that would get rendered if the user hits enter.
-    let rowToPrerender = this.focusedRow_ || newRows[0];
-    if (rowToPrerender && rowToPrerender != this.renderedRow_)
+    if (!this.focusedRow_ && !this.renderedRow_)
+      this.setFocus(newRows[0]);
+
+    if (this.hasNewRenderedRow_)
+      this.renderOne_();
+
+    // Prerender the next row in view one mode or the row that would get
+    // rendered if the user hits enter in threadlist mode.
+    let rowToPrerender = this.renderedRow_ ?
+        rowAtOffset(this.getRows_(), this.renderedRow_, 1) :
+        this.focusedRow_;
+    if (rowToPrerender)
       this.prerenderRow_(rowToPrerender);
+  }
+
+  private prerenderRow_(row: ThreadRow) {
+    if (row == this.renderedRow_)
+      throw 'Cannot prerender the currently rendered row.';
+    let dom = row.render(this.singleThreadContainer_);
+    dom.style.bottom = '0';
+    dom.style.visibility = 'hidden';
   }
 
   handleBestEffortChanged_() {
@@ -541,7 +559,7 @@ export class ThreadListView extends View {
         this.moveFocus(NEXT_EMAIL_ACTION);
       if (!this.focusedRow_)
         return;
-      this.renderOne_(this.focusedRow_);
+      this.setRenderedRow_(this.focusedRow_);
       return;
     }
 
@@ -562,7 +580,7 @@ export class ThreadListView extends View {
     this.setSubject_('');
     this.updateActions_();
 
-    this.renderThreadList_();
+    this.render_();
   }
 
   transitionToSingleThread_() {
@@ -594,19 +612,27 @@ export class ThreadListView extends View {
     }
   }
 
-  setRenderedRow_(row: ThreadRow|null) {
+  setRenderedRowInternal_(row: ThreadRow|null) {
+    this.hasNewRenderedRow_ = !!row;
     if (this.renderedRow_)
       this.renderedRow_.removeRendered();
     this.renderedRow_ = row;
   }
 
-  renderOne_(row: ThreadRow) {
+  setRenderedRow_(row: ThreadRow|null) {
+    this.setRenderedRowInternal_(row);
+    if (row)
+      this.render_();
+  }
+
+  renderOne_() {
+    if (this.renderedRow_ === null)
+      throw 'This should never happen.';
+
     if (this.rowGroupContainer_.style.display != 'none')
       this.transitionToSingleThread_();
 
-    this.setRenderedRow_(row);
-
-    let thread = row.thread;
+    let thread = this.renderedRow_.thread;
     let messages = thread.getMessagesSync();
     let viewInGmailButton = new ViewInGmailButton();
     viewInGmailButton.setMessageId(messages[messages.length - 1].id);
@@ -621,7 +647,7 @@ export class ThreadListView extends View {
     if (!this.renderedRow_)
       throw 'Something went wrong. This should never happen.';
 
-    let dom = row.render(this.singleThreadContainer_);
+    let dom = this.renderedRow_.render(this.singleThreadContainer_);
     // If previously prerendered offscreen, move it on screen.
     dom.style.bottom = '';
     dom.style.visibility = 'visible';
@@ -643,32 +669,8 @@ export class ThreadListView extends View {
 
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to
-    // make renderOne_ async and it's not important that we prevent the
-    // prerenderNext from starting till this is done.
+    // make renderOne_ async.
     this.renderedRow_.update();
-
-    // Intentionally don't await this so other work can proceed.
-    this.prerenderNext();
-  }
-
-  prerenderNext() {
-    // Since the call to prerender is async, the page can go back to the
-    // threadlist before this is called.
-    if (!this.renderedRow_)
-      return;
-
-    let rows = this.getRows_();
-    const nextRow = rowAtOffset(rows, this.renderedRow_, 1);
-    if (nextRow)
-      this.prerenderRow_(nextRow);
-  }
-
-  private prerenderRow_(row: ThreadRow) {
-    if (row == this.renderedRow_)
-      throw 'Cannot prerender the currently rendered row.';
-    let dom = row.render(this.singleThreadContainer_);
-    dom.style.bottom = '0';
-    dom.style.visibility = 'hidden';
   }
 
   showQuickReply() {
