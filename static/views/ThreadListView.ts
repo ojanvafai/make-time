@@ -1,4 +1,4 @@
-import {Actions} from '../Actions.js';
+import {Action} from '../Actions.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
@@ -38,44 +38,169 @@ interface ListenerData {
   name: string, handler: (e: Event) => void,
 }
 
+let ARCHIVE_ACTION = {
+  name: `Archive`,
+  description: `Archive and remove from the current queue.`,
+  // Done is removing all labels. Use null as a sentinel for that.
+  destination: null,
+};
+
+let QUICK_REPLY_ACTION = {
+  name: `Quick Reply`,
+  description:
+      `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
+};
+
+let BLOCKED_ACTION = {
+  name: `Blocked`,
+  description:
+      `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
+  destination: Labels.BLOCKED_LABEL,
+};
+
+let SPAM_ACTION = {
+  name: `Spam`,
+  description: `Report spam. Same beavhior as reporting spam in gmail.`,
+  destination: 'SPAM',
+};
+
+let MUTE_ACTION = {
+  name: `Mute`,
+  description:
+      `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
+  destination: Labels.MUTED_LABEL,
+};
+
+let NEXT_EMAIL_ACTION = {
+  name: `NextEmail`,
+  description: `Focus the next email.`,
+  key: 'j',
+  hidden: true,
+  repeatable: true,
+};
+
+let PREVIOUS_EMAIL_ACTION = {
+  name: `PreviousEmail`,
+  description: `Focus the previous email.`,
+  key: 'k',
+  hidden: true,
+  repeatable: true,
+};
+
+let TOGGLE_FOCUSED_ACTION = {
+  name: `ToggleFocused`,
+  description: `Toggle whether or not the focused element is selected.`,
+  key: ' ',
+  hidden: true,
+};
+
+let VIEW_FOCUSED_ACTION = {
+  name: `ViewFocused`,
+  description: `View the focused email.`,
+  key: 'Enter',
+  hidden: true,
+};
+
+let NEXT_QUEUE_ACTION = {
+  name: `NextQueue`,
+  description: `Focus the first email of the next queue.`,
+  key: 'n',
+  hidden: true,
+  repeatable: true,
+};
+
+let PREVIOUS_QUEUE_ACTION = {
+  name: `PreviousQueue`,
+  description: `Focus the first email of the previous queue.`,
+  key: 'p',
+  hidden: true,
+  repeatable: true,
+};
+
+let TOGGLE_QUEUE_ACTION = {
+  name: `ToggleQueue`,
+  description: `Toggle all items in the current queue.`,
+  key: 'g',
+  hidden: true,
+};
+
+let VIEW_TRIAGE_ACTION = {
+  name: `ViewTriage`,
+  description: `Go to the triage view.`,
+  key: 'Escape',
+  hidden: true,
+};
+
+let UNDO_ACTION = {
+  name: `Undo`,
+  description: `Undoes the last action taken.`,
+};
+
+let MUST_DO_ACTION = {
+  name: `1: Must Do`,
+  description: `Must do today. Literally won't go home till it's done.`,
+  destination: Labels.MUST_DO_LABEL,
+};
+
+let URGENT_ACTION = {
+  name: `2: Urgent`,
+  description: `Needs to happen ASAP.`,
+  destination: Labels.URGENT_LABEL,
+};
+
+let BACKLOG_ACTION = {
+  name: `3: Backlog`,
+  description:
+      `Important for achieving my mission, but can be done at leisure. Aim to spend >60% of your time here.`,
+  destination: Labels.BACKLOG_LABEL,
+};
+
+let NEEDS_FILTER_ACTION = {
+  name: `4: Needs Filter`,
+  description:
+      `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
+  destination: Labels.NEEDS_FILTER_LABEL,
+};
+
+let ACTIONS = [
+  ARCHIVE_ACTION,
+  BLOCKED_ACTION,
+  MUTE_ACTION,
+  MUST_DO_ACTION,
+  URGENT_ACTION,
+  BACKLOG_ACTION,
+  NEEDS_FILTER_ACTION,
+  SPAM_ACTION,
+  UNDO_ACTION,
+];
+
+let RENDER_ALL_ACTIONS = [
+  PREVIOUS_EMAIL_ACTION,
+  NEXT_EMAIL_ACTION,
+  PREVIOUS_QUEUE_ACTION,
+  NEXT_QUEUE_ACTION,
+  TOGGLE_FOCUSED_ACTION,
+  TOGGLE_QUEUE_ACTION,
+  VIEW_FOCUSED_ACTION,
+  ...ACTIONS,
+];
+
+let RENDER_ONE_ACTIONS = [
+  QUICK_REPLY_ACTION,
+  VIEW_TRIAGE_ACTION,
+  ...ACTIONS,
+];
+
 export class ThreadListView extends View {
   private modelListeners_: ListenerData[];
   private focusedRow_: ThreadRow|null;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private bestEffortButton_: HTMLElement;
-  private actions_: Actions|null = null;
   private renderedRow_: ThreadRow|null;
   private scrollOffset_: number|undefined;
   private isSending_: boolean|undefined;
   private hasQueuedFrame_: boolean;
-
-  static ACTIONS_ = [
-    Actions.ARCHIVE_ACTION,
-    Actions.BLOCKED_ACTION,
-    Actions.MUTE_ACTION,
-    Actions.MUST_DO_ACTION,
-    Actions.URGENT_ACTION,
-    Actions.BACKLOG_ACTION,
-    Actions.NEEDS_FILTER_ACTION,
-    Actions.SPAM_ACTION,
-    Actions.UNDO_ACTION,
-  ];
-
-  static RENDER_ALL_ACTIONS_ = [
-    Actions.PREVIOUS_EMAIL_ACTION,
-    Actions.NEXT_EMAIL_ACTION,
-    Actions.PREVIOUS_QUEUE_ACTION,
-    Actions.NEXT_QUEUE_ACTION,
-    Actions.TOGGLE_FOCUSED_ACTION,
-    Actions.TOGGLE_QUEUE_ACTION,
-    Actions.VIEW_FOCUSED_ACTION,
-  ].concat(ThreadListView.ACTIONS_);
-
-  static RENDER_ONE_ACTIONS_ = [
-    Actions.QUICK_REPLY_ACTION,
-    Actions.VIEW_TRIAGE_ACTION,
-  ].concat(ThreadListView.ACTIONS_);
 
   constructor(
       private model_: ThreadListModel, public allLabels: Labels,
@@ -179,24 +304,15 @@ export class ThreadListView extends View {
   }
 
   updateActions_() {
-    let footer = <HTMLElement>document.getElementById('footer');
-    footer.textContent = '';
-    let actions = this.renderedRow_ ? ThreadListView.RENDER_ONE_ACTIONS_ :
-                                      ThreadListView.RENDER_ALL_ACTIONS_;
-    this.actions_ = new Actions(this, actions);
-    footer.append(this.actions_);
     if (this.renderedRow_) {
-      let timer = new Timer(
+      this.setActions(RENDER_ONE_ACTIONS);
+      this.addToFooter(new Timer(
           this.autoStartTimer_, this.countDown_, this.timerDuration_,
-          this.singleThreadContainer_);
-      footer.append(timer);
+          this.singleThreadContainer_));
+    } else {
+      this.setActions(RENDER_ALL_ACTIONS);
     }
   }
-
-  async dispatchShortcut(e: KeyboardEvent) {
-    if (this.actions_)
-      this.actions_.dispatchShortcut(e);
-  };
 
   shouldSuppressActions() {
     return false;
@@ -314,16 +430,16 @@ export class ThreadListView extends View {
 
     if (this.focusedRow_ == null) {
       switch (action) {
-        case Actions.NEXT_EMAIL_ACTION:
-        case Actions.NEXT_QUEUE_ACTION: {
+        case NEXT_EMAIL_ACTION:
+        case NEXT_QUEUE_ACTION: {
           this.setFocus(rows[0]);
           break;
         }
-        case Actions.PREVIOUS_EMAIL_ACTION: {
+        case PREVIOUS_EMAIL_ACTION: {
           this.setFocus(rows[rows.length - 1]);
           break;
         }
-        case Actions.PREVIOUS_QUEUE_ACTION: {
+        case PREVIOUS_QUEUE_ACTION: {
           let lastGroup = rows[rows.length - 1].getGroup();
           this.focusFirstRowOfGroup_(lastGroup);
           break;
@@ -332,25 +448,25 @@ export class ThreadListView extends View {
       return;
     }
     switch (action) {
-      case Actions.NEXT_EMAIL_ACTION: {
+      case NEXT_EMAIL_ACTION: {
         const nextRow = rowAtOffset(rows, this.focusedRow_, 1);
         if (nextRow)
           this.setFocus(nextRow);
         break;
       }
-      case Actions.PREVIOUS_EMAIL_ACTION: {
+      case PREVIOUS_EMAIL_ACTION: {
         const previousRow = rowAtOffset(rows, this.focusedRow_, -1);
         if (previousRow)
           this.setFocus(previousRow);
         break;
       }
-      case Actions.NEXT_QUEUE_ACTION: {
+      case NEXT_QUEUE_ACTION: {
         let currentGroup = this.focusedRow_.getGroup();
         this.focusFirstRowOfGroup_(
             <ThreadRowGroup>currentGroup.nextElementSibling);
         break;
       }
-      case Actions.PREVIOUS_QUEUE_ACTION: {
+      case PREVIOUS_QUEUE_ACTION: {
         let currentGroup = this.focusedRow_.getGroup();
         this.focusFirstRowOfGroup_(
             <ThreadRowGroup>currentGroup.previousElementSibling);
@@ -366,36 +482,35 @@ export class ThreadListView extends View {
     this.setFocus(firstRow);
   }
 
-  async takeAction(action: any) {
-    if (action == Actions.UNDO_ACTION) {
+  async takeAction(action: Action) {
+    if (action == UNDO_ACTION) {
       this.model_.undoLastAction_();
       return;
     }
-    if (action == Actions.QUICK_REPLY_ACTION) {
+    if (action == QUICK_REPLY_ACTION) {
       await this.showQuickReply();
       return;
     }
-    if (action == Actions.NEXT_EMAIL_ACTION ||
-        action == Actions.PREVIOUS_EMAIL_ACTION) {
+    if (action == NEXT_EMAIL_ACTION || action == PREVIOUS_EMAIL_ACTION) {
       this.moveFocus(action);
       return;
     }
-    if (action == Actions.TOGGLE_FOCUSED_ACTION) {
+    if (action == TOGGLE_FOCUSED_ACTION) {
       // If nothing is focused, pretend the first email was focused.
       if (!this.focusedRow_)
-        this.moveFocus(Actions.NEXT_EMAIL_ACTION);
+        this.moveFocus(NEXT_EMAIL_ACTION);
       if (!this.focusedRow_)
         return;
 
       this.focusedRow_.checked = !this.focusedRow_.checked;
       this.focusedRow_.updateHighlight_();
-      this.moveFocus(Actions.NEXT_EMAIL_ACTION);
+      this.moveFocus(NEXT_EMAIL_ACTION);
       return;
     }
-    if (action == Actions.TOGGLE_QUEUE_ACTION) {
+    if (action == TOGGLE_QUEUE_ACTION) {
       // If nothing is focused, pretend the first email was focused.
       if (!this.focusedRow_)
-        this.moveFocus(Actions.NEXT_EMAIL_ACTION);
+        this.moveFocus(NEXT_EMAIL_ACTION);
       if (!this.focusedRow_)
         return;
       const checking = !this.focusedRow_.checked;
@@ -406,29 +521,32 @@ export class ThreadListView extends View {
         row.updateHighlight_();
       }
     }
-    if (action == Actions.NEXT_QUEUE_ACTION) {
+    if (action == NEXT_QUEUE_ACTION) {
       this.moveFocus(action);
       return;
     }
-    if (action == Actions.PREVIOUS_QUEUE_ACTION) {
+    if (action == PREVIOUS_QUEUE_ACTION) {
       this.moveFocus(action);
       return;
     }
-    if (action == Actions.TOGGLE_QUEUE_ACTION) {
+    if (action == TOGGLE_QUEUE_ACTION) {
       return;
     }
-    if (action == Actions.VIEW_TRIAGE_ACTION) {
+    if (action == VIEW_TRIAGE_ACTION) {
       this.transitionToThreadList_(this.renderedRow_);
       return;
     }
-    if (action == Actions.VIEW_FOCUSED_ACTION) {
+    if (action == VIEW_FOCUSED_ACTION) {
       if (!this.focusedRow_)
-        this.moveFocus(Actions.NEXT_EMAIL_ACTION);
+        this.moveFocus(NEXT_EMAIL_ACTION);
       if (!this.focusedRow_)
         return;
       this.renderOne_(this.focusedRow_);
       return;
     }
+
+    if (action.destination === undefined)
+      throw 'This should never happen.';
     await this.markTriaged(action.destination);
   }
 
@@ -640,11 +758,11 @@ export class ThreadListView extends View {
           compose.value, compose.getEmails(), replyAll.checked);
       this.updateActions_();
 
-      if (Actions.ARCHIVE_ACTION.destination !== null)
+      if (ARCHIVE_ACTION.destination !== null)
         throw 'This should never happen.';
       let expectedNewMessageCount = 1;
       await this.markTriaged(
-          Actions.ARCHIVE_ACTION.destination, expectedNewMessageCount);
+          ARCHIVE_ACTION.destination, expectedNewMessageCount);
 
       this.updateTitle('sendReply');
       this.isSending_ = false;
@@ -657,11 +775,10 @@ export class ThreadListView extends View {
       count.textContent = (lengthDiff < 10) ? String(lengthDiff) : '';
     });
 
-    this.actions_ = null;
+    this.setActions([]);
     this.setFooter(container);
 
     compose.focus();
   }
 }
-
 window.customElements.define('mt-thread-list-view', ThreadListView);

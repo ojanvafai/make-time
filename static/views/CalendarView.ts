@@ -2,11 +2,17 @@ import {Calendar} from '../calendar/Calendar.js';
 import {Charter} from '../calendar/Charter.js';
 
 import {View} from './View.js'
+import { Action } from '../Actions.js';
+
+let COLORIZE_ACTION: Action = {
+  name: 'Colorize Events',
+  description:
+      'Set the colors of events in your calendar to match the ones shown here.',
+};
 
 export class CalendarView extends View {
   private dayPlot: HTMLElement;
   private weekPlot: HTMLElement;
-  private colorizeButton: HTMLElement;
 
   constructor(private model_: Calendar) {
     super();
@@ -16,12 +22,7 @@ export class CalendarView extends View {
       flex-direction: column;
     `;
 
-    this.colorizeButton = document.createElement('button');
-    this.colorizeButton.innerText = 'Colorize Events';
-    this.colorizeButton.addEventListener('click', () => {
-      this.model_.colorizeEvents();
-    });
-    this.setFooter(this.colorizeButton);
+    this.setActions([COLORIZE_ACTION]);
 
     this.dayPlot = document.createElement('div');
     this.dayPlot.id = 'day_plot';
@@ -43,6 +44,15 @@ export class CalendarView extends View {
     const weeks = await this.model_.getWeekAggregates();
     charter.chartData(days, this.dayPlot.id);
     charter.chartData(weeks, this.weekPlot.id);
+  }
+
+  async takeAction(action: Action) {
+    if (action == COLORIZE_ACTION) {
+      this.model_.colorizeEvents();
+      return;
+    }
+
+    throw `Invalid action: ${JSON.stringify(action)}`;
   }
 }
 

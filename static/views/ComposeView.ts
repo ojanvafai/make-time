@@ -1,19 +1,22 @@
+import {Action} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
-import {showDialog} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 
+import {HelpDialog} from './HelpDialog.js';
 import {View} from './View.js';
 
-const SEND = {
+let SEND: Action = {
   name: 'Send',
-  description: 'Send the mail.'
+  description: 'Send the mail.',
 };
-const HELP = {
+
+let HELP: Action = {
   name: 'Help',
-  description: 'Help tips.'
+  description: 'Help tips.',
 };
+
 const ACTIONS = [SEND, HELP];
 const PRE_FILL_URL =
     '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
@@ -74,7 +77,7 @@ export class ComposeView extends View {
         'input', this.debounceHandleUpdates_.bind(this));
     this.append(this.body_);
 
-    this.appendButtons_();
+    this.setActions(ACTIONS);
   }
 
   async init() {
@@ -166,76 +169,6 @@ export class ComposeView extends View {
     this.body_.focus();
   }
 
-  appendButtons_() {
-    let container = document.createElement('div');
-    container.style.cssText = `
-      display: flex;
-      justify-content: center;
-      position: relative;
-    `;
-    this.append(container);
-
-    for (let action of ACTIONS) {
-      let button = document.createElement('button');
-      button.setAttribute('tooltip', action.description);
-
-      button.onclick = () => this.takeAction_(action);
-
-      let tooltipElement: HTMLElement;
-      button.onmouseenter = () => {
-        tooltipElement = document.createElement('div');
-        tooltipElement.style.cssText = `
-          position: absolute;
-          top: ${container.offsetHeight}px;
-          left: 0;
-          right: 0;
-          display: flex;
-          justify-content: center;
-        `;
-
-        let text = document.createElement('div');
-        text.style.cssText = `
-          background-color: white;
-          border: 1px solid;
-          padding: 4px;
-          width: 300px;
-        `;
-
-        text.append(<string>button.getAttribute('tooltip'));
-        tooltipElement.append(text);
-        container.append(tooltipElement);
-      };
-
-      button.onmouseleave = () => {
-        tooltipElement.remove();
-      };
-
-      let name = action.name;
-      button.textContent = name;
-      container.append(button);
-    }
-  }
-
-  showHelp_() {
-    let contents = document.createElement('div');
-    contents.style.overflow = 'auto';
-    contents.innerHTML = HELP_TEXT;
-    let dialog = showDialog(contents);
-    dialog.style.whiteSpace = 'pre-wrap';
-
-    let closeButton = document.createElement('div');
-    closeButton.classList.add('close-button');
-    closeButton.style.cssText = `
-      float: right;
-      position: sticky;
-      top: 0;
-      background-color: white;
-      padding-left: 10px;
-    `;
-    closeButton.onclick = () => dialog.close();
-    contents.prepend(closeButton);
-  }
-
   async send_() {
     await this.model_.send();
 
@@ -245,14 +178,14 @@ export class ComposeView extends View {
     this.body_.value = this.params_.body || '';
   }
 
-  async takeAction_(action: any) {
+  async takeAction(action: Action) {
     if (action == SEND) {
       await this.send_();
       return;
     }
 
     if (action == HELP) {
-      this.showHelp_();
+      new HelpDialog(HELP_TEXT);
       return;
     }
 
