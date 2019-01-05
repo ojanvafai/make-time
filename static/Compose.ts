@@ -303,7 +303,9 @@ export abstract class Compose extends HTMLElement {
       email.removeAttribute('contentEditable');
       email.removeAttribute('tabIndex');
     }
-    return cloned.innerHTML;
+    // Compose is white-space:pre-wrap and shift+enter inserts \n's. Convert
+    // them to BRs so they render when shown in white-space:normal contexts.
+    return cloned.innerHTML.replace('\n', '<br>');
   }
 
   set value(value) {
