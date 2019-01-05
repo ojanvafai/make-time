@@ -1,5 +1,5 @@
 import {Action} from '../Actions.js';
-import {AddressCompose} from '../AddressCompose.js';
+import {AddressCompose, autocompleteItemSelectedEventName} from '../AddressCompose.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
@@ -44,6 +44,9 @@ export class ComposeView extends View {
 
     this.to_ = new AddressCompose(contacts);
     this.to_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
+    this.to_.addEventListener(
+        autocompleteItemSelectedEventName,
+        this.debounceHandleUpdates_.bind(this));
     this.to_.style.cssText = `
       flex: 1;
       line-height: 1em;
@@ -94,6 +97,7 @@ export class ComposeView extends View {
     if (localData.body)
       this.body_.value = localData.body;
 
+    this.handleUpdates_();
     this.focusFirstEmpty_();
 
     await login();

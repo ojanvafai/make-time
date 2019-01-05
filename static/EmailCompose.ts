@@ -6,7 +6,7 @@ export class EmailCompose extends Compose {
   private autocompleteRange_: Range|null;
 
   constructor(contacts: any, isSingleline?: boolean, putMenuAbove?: boolean) {
-    super(contacts, isSingleline, putMenuAbove);
+    super(contacts, false, isSingleline, putMenuAbove);
     this.autocompleteRange_ = null;
     this.content.style.padding = '8px';
   }

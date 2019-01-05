@@ -8,6 +8,8 @@ interface SelectableParsedAddress extends ParsedAddress {
   selected?: boolean
 }
 
+export const autocompleteItemSelectedEventName = 'autocomplete-item-selected';
+
 // TODO: This code and the Filters rich text code have too much code
 // duplication. Find a way to factor that out. Probably need a mixin?
 export class AddressCompose extends Compose {
@@ -15,7 +17,7 @@ export class AddressCompose extends Compose {
   private autocompleteCursorRange_: Range|undefined;
 
   constructor(contacts: any) {
-    super(contacts);
+    super(contacts, true);
     this.content.style.padding = '4px';
     this.content.setAttribute('inputmode', 'email');
     // Need to always have some text in the field for the flexbox
@@ -151,6 +153,7 @@ export class AddressCompose extends Compose {
 
   insertAddress(selectedItem: AutoCompleteEntry) {
     this.setTextAndSelectSentinel_(selectedItem);
+    this.dispatchEvent(new Event(autocompleteItemSelectedEventName));
   }
 }
 

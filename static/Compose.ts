@@ -26,8 +26,8 @@ export abstract class Compose extends HTMLElement {
   protected abstract handleInput(e: InputEvent): void;
 
   constructor(
-      private contacts_: any, isSingleline?: boolean,
-      private putMenuAbove_?: boolean) {
+      private contacts_: any, private valueIsPlainText_: boolean,
+      isSingleline?: boolean, private putMenuAbove_?: boolean) {
     super();
 
     this.style.display = 'flex';
@@ -44,7 +44,7 @@ export abstract class Compose extends HTMLElement {
       font-family: Arial, Helvetica, sans-serif;
       font-size: small;
     `;
-    this.content.contentEditable = isSingleline ? 'plaintext-only': 'true';
+    this.content.contentEditable = isSingleline ? 'plaintext-only' : 'true';
     this.content.addEventListener('blur', this.cancelAutocomplete_.bind(this));
     this.append(this.content);
 
@@ -293,6 +293,9 @@ export abstract class Compose extends HTMLElement {
   }
 
   get value() {
+    if (this.valueIsPlainText_)
+      return this.content.textContent;
+
     let cloned = <HTMLElement>this.content.cloneNode(true);
     let emails = cloned.querySelectorAll(`a.${Compose.EMAIL_CLASS_NAME}`);
     for (let email of emails) {
@@ -303,8 +306,11 @@ export abstract class Compose extends HTMLElement {
     return cloned.innerHTML;
   }
 
-  set value(html) {
-    this.content.innerHTML = html;
+  set value(value) {
+    if (this.valueIsPlainText_)
+      this.content.textContent = value;
+    else
+      this.content.innerHTML = value;
     this.updatePlaceholder_();
   }
 
