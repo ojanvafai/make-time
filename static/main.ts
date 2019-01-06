@@ -19,8 +19,10 @@ import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
 
 let contacts_: Contact[] = [];
-var router = new Router();
 let currentView_: View;
+
+const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
+let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 enum VIEW {
   Calendar,

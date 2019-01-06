@@ -1,9 +1,25 @@
 // Modified verison of https://github.com/dstillman/pathparser.js
 export class Router {
   private rules_: any[];
+  private extraQueryParams_: string;
 
-  constructor() {
+  // universalQueryParameters_ is parameters that should survive navigations.
+  // This is useful for developer time parameters like whether to bundle JS.
+  constructor(universalQueryParameters?: string[]) {
     this.rules_ = [];
+
+    let windowParams = [];
+    if (universalQueryParameters && location.search) {
+      let windowQueryParts = window.location.search.substring(1).split('&');
+      for (let part of windowQueryParts) {
+        var nameValuePair = part.split('=', 2);
+        if (universalQueryParameters.includes(nameValuePair[0]))
+          windowParams.push(part);
+      }
+    }
+
+    this.extraQueryParams_ =
+        windowParams.length ? `?${windowParams.join('&')}` : '';
   }
 
   getParams_(rule: any, pathParts: string[], queryParts: string[]) {
@@ -52,7 +68,7 @@ export class Router {
 
   parsePath_(path: string) {
     if (path.charAt(0) != '/')
-      throw `Path must start with a /. Path: ${path}`;
+      throw ` Path must start with a /. Path: ${path}`;
     // Strip the leading '/'.
     return path.substring(1).split('/');
   }
@@ -84,7 +100,7 @@ export class Router {
     for (let rule of this.rules_) {
       var params = this.getParams_(rule, pathParts, queryParts);
       if (params) {
-        let newPath = location.toString();
+        let newPath = location.toString() + this.extraQueryParams_;
         if (!excludeFromHistory)
           history.pushState({}, '', newPath);
         return rule.handler(params);
