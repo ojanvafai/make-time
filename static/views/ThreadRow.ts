@@ -11,20 +11,27 @@ interface DateFormatOptions {
   minute: string;
 }
 
+let UNCHECKED_BACKGROUND_COLOR = 'white';
+
 export class ThreadRow extends HTMLElement {
   focused_: boolean;
   rendered!: RenderedThread;
   mark: boolean|undefined;
   private checkBox_: HTMLInputElement;
+  private label_: HTMLElement;
   private messageDetails_: HTMLElement;
 
   constructor(public thread: Thread) {
     super();
-    this.style.display = 'flex';
+    this.style.cssText = `
+      display: flex;
+      background-color: ${UNCHECKED_BACKGROUND_COLOR};
+    `;
 
     this.focused_ = false;
 
     let label = document.createElement('label');
+    this.label_ = label;
     label.style.cssText = `
       width: 32px;
       border-right: 0;
@@ -39,7 +46,9 @@ export class ThreadRow extends HTMLElement {
       margin-left: 5px;
       margin-right: 5px;
     `;
-    this.checkBox_.onchange = this.updateHighlight_.bind(this);
+    this.checkBox_.onchange = () => {
+      this.checked = this.checkBox_.checked;
+    };
 
     label.append(this.checkBox_);
     this.append(label);
@@ -55,7 +64,6 @@ export class ThreadRow extends HTMLElement {
     };
     this.append(this.messageDetails_);
 
-    this.updateHighlight_();
     this.renderRow_();
   }
 
@@ -159,15 +167,6 @@ export class ThreadRow extends HTMLElement {
     }
   }
 
-  private updateHighlight_() {
-    if (this.focused)
-      this.style.backgroundColor = '#ccc';
-    else if (this.checkBox_.checked)
-      this.style.backgroundColor = '#c2dbff';
-    else
-      this.style.backgroundColor = 'white';
-  }
-
   private dateString_(date: Date) {
     let options = <DateFormatOptions>{};
     let today = new Date();
@@ -192,7 +191,7 @@ export class ThreadRow extends HTMLElement {
 
   set focused(value) {
     this.focused_ = value;
-    this.updateHighlight_();
+    this.label_.style.backgroundColor = this.focused ? '#ccc' : '';
   }
 
   get checked() {
@@ -201,7 +200,8 @@ export class ThreadRow extends HTMLElement {
 
   set checked(value) {
     this.checkBox_.checked = value;
-    this.updateHighlight_();
+    this.style.backgroundColor =
+        this.checkBox_.checked ? '#c2dbff' : UNCHECKED_BACKGROUND_COLOR;
   }
 }
 

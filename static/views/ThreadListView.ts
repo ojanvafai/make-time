@@ -205,6 +205,7 @@ export class ThreadListView extends View {
   private isSending_: boolean|undefined;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
+  private isAutoFocusFirstRow_: boolean;
 
   constructor(
       private model_: ThreadListModel, public allLabels: Labels,
@@ -226,6 +227,7 @@ export class ThreadListView extends View {
     this.renderedRow_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
+    this.isAutoFocusFirstRow_ = false;
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -384,13 +386,14 @@ export class ThreadListView extends View {
       }
     }
 
+    if (!this.renderedRow_ && (!this.focusedRow_ || this.isAutoFocusFirstRow_))
+      this.setFocus(newRows[0], true);
+
     if (this.hasNewRenderedRow_)
       this.renderOne_();
     this.prerender_();
   }
 
-  // Prerender the next row in view one mode or the row that would get rendered
-  // if the user hits enter in threadlist mode.
   private prerender_() {
     let row;
     if (this.renderedRow_) {
@@ -398,15 +401,7 @@ export class ThreadListView extends View {
       if (row == this.renderedRow_)
         throw 'This should never happen.';
     } else {
-      // TODO: If we're in the middle of updating the model, the first row might
-      // change over the course of a number of frames. Maybe only prerender the
-      // first row if we're not in the middle of updating the model? There's a
-      // tradeoff between having the first row immediately rendered when the
-      // user hits enter and having the inbox fully loaded as quickly as
-      // possible since they're contending for network and CPU. What we relaly
-      // want here is a concept of network/CPU idle time in which to do
-      // prerenders.
-      row = this.focusedRow_ || this.getFirstRow_();
+      row = this.focusedRow_;
     }
 
     if (!row)
@@ -426,7 +421,9 @@ export class ThreadListView extends View {
     }
   }
 
-  setFocus(row: ThreadRow|null) {
+  setFocus(row: ThreadRow|null, isAutoFocusFirstRow?: boolean) {
+    this.isAutoFocusFirstRow_ = !!isAutoFocusFirstRow;
+
     if (this.focusedRow_)
       this.focusedRow_.focused = false;
 
