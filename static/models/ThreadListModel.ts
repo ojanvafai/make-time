@@ -169,8 +169,10 @@ export abstract class ThreadListModel extends Model {
       expectedNewMessageCount?: number) {
     this.resetUndoableActions_();
 
-    this.updateTitle('archiving', `Modifying ${threads.length} threads...`);
+    this.updateTitle(
+        'markThreadsTriaged', `Modifying ${threads.length} threads...`);
 
+    // Update the UI first and then archive one at a time.
     this.removeThreads_(threads);
 
     const taskQueue = new TaskQueue(3);
@@ -181,7 +183,7 @@ export abstract class ThreadListModel extends Model {
     };
     await taskQueue.flush();
 
-    this.updateTitle('archiving');
+    this.updateTitle('markThreadsTriaged');
   }
 
   async undoLastAction_() {

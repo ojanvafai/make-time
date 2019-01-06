@@ -47,8 +47,7 @@ let ARCHIVE_ACTION = {
 
 let QUICK_REPLY_ACTION = {
   name: `Quick reply`,
-  description:
-      `Give a short reply. Hit enter to send, escape to cancel. Allowed length is the allowed_reply_length setting.`,
+  description: `Give a short reply.`,
 };
 
 let BLOCKED_ACTION = {
@@ -60,14 +59,14 @@ let BLOCKED_ACTION = {
 
 let SPAM_ACTION = {
   name: `Spam`,
-  description: `Report spam. Same beavhior as reporting spam in gmail.`,
+  description: `Report spam. Same as reporting spam in gmail.`,
   destination: 'SPAM',
 };
 
 let MUTE_ACTION = {
   name: `Mute`,
   description:
-      `Like gmail mute, but more aggressive. Will never appear in your inbox again. Goes in triaged/supermuted label.`,
+      `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
   destination: Labels.MUTED_LABEL,
 };
 
@@ -182,7 +181,7 @@ let RENDER_ALL_ACTIONS = [
   TOGGLE_FOCUSED_ACTION,
   TOGGLE_QUEUE_ACTION,
   VIEW_FOCUSED_ACTION,
-]
+];
 
 let RENDER_ONE_ACTIONS = [
   QUICK_REPLY_ACTION,
@@ -413,23 +412,6 @@ export class ThreadListView extends View {
     }
   }
 
-  private getSelectedThreads_() {
-    let selected: Thread[] = [];
-    let rows = this.getRows_();
-    let firstUnselectedRowAfterSelected = null;
-    for (let child of rows) {
-      if (child.checked) {
-        selected.push(child.thread);
-      } else if (!firstUnselectedRowAfterSelected && selected.length) {
-        firstUnselectedRowAfterSelected = child;
-      }
-    }
-    return {
-      selected: selected,
-          firstUnselectedRowAfterSelected: firstUnselectedRowAfterSelected,
-    }
-  }
-
   setFocus(row: ThreadRow|null) {
     if (this.focusedRow_) {
       this.focusedRow_.focused = false;
@@ -600,19 +582,32 @@ export class ThreadListView extends View {
       this.model_.markSingleThreadTriaged(
           this.renderedRow_.thread, destination, expectedNewMessageCount);
     } else {
-      // Update the UI first and then archive one at a time.
-      let threads = this.getSelectedThreads_();
-      this.updateTitle(
-          'archiving', `Archiving ${threads.selected.length} threads...`);
+      let threads: Thread[] = [];
+      let firstUnselectedRowAfterFocused = null;
+      let focusedRowIsSelected = false;
 
-      // Move focus to the first unselected email.
-      // If we aren't able to find an unselected email,
-      // focusedEmail_ should end up null.
-      if (this.focusedRow_ &&
-          threads.selected.includes(this.focusedRow_.thread))
-        this.setFocus(threads.firstUnselectedRowAfterSelected);
+      let rows = this.getRows_();
+      for (let child of rows) {
+        if (child.checked) {
+          if (child == this.focusedRow_)
+            focusedRowIsSelected = true;
+          threads.push(child.thread);
+          // ThreadRows get reused, so clear the checkbox so it's not checked in
+          // the future.
+          child.checked = false;
+        } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
+          firstUnselectedRowAfterFocused = child;
+        }
+      }
+
+      // Move focus to the first unselected email. If we aren't able to find an
+      // unselected email, focusedEmail_ should end up null, so set it even if
+      // firstUnselectedRowAfterSelected is null.
+      if (focusedRowIsSelected)
+        this.setFocus(firstUnselectedRowAfterFocused);
+
       this.model_.markThreadsTriaged(
-          threads.selected, destination, expectedNewMessageCount);
+          threads, destination, expectedNewMessageCount);
     }
   }
 
@@ -693,7 +688,8 @@ export class ThreadListView extends View {
       display: flex;
       background-color: white;
     `;
-    compose.placeholder = 'Hit enter to send.';
+    compose.placeholder =
+        'Hit <enter> to send, <esc> to cancel. Allowed length is configurable in Settings.';
     container.append(compose);
 
     let onClose = this.updateActions_.bind(this);
