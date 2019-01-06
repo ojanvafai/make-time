@@ -334,6 +334,10 @@ export class ThreadListView extends View {
         this.rowGroupContainer_.querySelectorAll('mt-thread-row'));
   }
 
+  getFirstRow_() {
+    return <ThreadRow>this.rowGroupContainer_.querySelector('mt-thread-row');
+  }
+
   private renderFrame_() {
     this.hasQueuedFrame_ = false;
     let threads = this.model_.getThreads();
@@ -380,24 +384,34 @@ export class ThreadListView extends View {
       }
     }
 
-    if (!this.focusedRow_ && !this.renderedRow_)
-      this.setFocus(newRows[0]);
-
     if (this.hasNewRenderedRow_)
       this.renderOne_();
-
-    // Prerender the next row in view one mode or the row that would get
-    // rendered if the user hits enter in threadlist mode.
-    let rowToPrerender = this.renderedRow_ ?
-        rowAtOffset(this.getRows_(), this.renderedRow_, 1) :
-        this.focusedRow_;
-    if (rowToPrerender)
-      this.prerenderRow_(rowToPrerender);
+    this.prerender_();
   }
 
-  private prerenderRow_(row: ThreadRow) {
-    if (row == this.renderedRow_)
-      throw 'Cannot prerender the currently rendered row.';
+  // Prerender the next row in view one mode or the row that would get rendered
+  // if the user hits enter in threadlist mode.
+  private prerender_() {
+    let row;
+    if (this.renderedRow_) {
+      row = rowAtOffset(this.getRows_(), this.renderedRow_, 1);
+      if (row == this.renderedRow_)
+        throw 'This should never happen.';
+    } else {
+      // TODO: If we're in the middle of updating the model, the first row might
+      // change over the course of a number of frames. Maybe only prerender the
+      // first row if we're not in the middle of updating the model? There's a
+      // tradeoff between having the first row immediately rendered when the
+      // user hits enter and having the inbox fully loaded as quickly as
+      // possible since they're contending for network and CPU. What we relaly
+      // want here is a concept of network/CPU idle time in which to do
+      // prerenders.
+      row = this.focusedRow_ || this.getFirstRow_();
+    }
+
+    if (!row)
+      return;
+
     let dom = row.render(this.singleThreadContainer_);
     dom.style.bottom = '0';
     dom.style.visibility = 'hidden';
@@ -413,17 +427,14 @@ export class ThreadListView extends View {
   }
 
   setFocus(row: ThreadRow|null) {
-    if (this.focusedRow_) {
+    if (this.focusedRow_)
       this.focusedRow_.focused = false;
-      this.focusedRow_.updateHighlight_();
-    }
 
     this.focusedRow_ = row;
     if (!this.focusedRow_)
       return;
 
     this.focusedRow_.focused = true;
-    this.focusedRow_.updateHighlight_();
     this.focusedRow_.scrollIntoView({'block': 'nearest'});
   }
 
@@ -507,7 +518,6 @@ export class ThreadListView extends View {
         return;
 
       this.focusedRow_.checked = !this.focusedRow_.checked;
-      this.focusedRow_.updateHighlight_();
       this.moveFocus(NEXT_ROW_ACTION);
       return;
     }
@@ -522,7 +532,6 @@ export class ThreadListView extends View {
       let rows = this.focusedRow_.getGroup().getRows();
       for (let row of rows) {
         row.checked = checking;
-        row.updateHighlight_();
       }
     }
     if (action == NEXT_QUEUE_ACTION) {
@@ -554,14 +563,14 @@ export class ThreadListView extends View {
     await this.markTriaged(action.destination);
   }
 
-  transitionToThreadList_(focusedEmail: ThreadRow|null) {
+  transitionToThreadList_(focusedRow: ThreadRow|null) {
     this.showBackArrow_(false);
 
     this.rowGroupContainer_.style.display = 'flex';
     this.singleThreadContainer_.textContent = '';
     this.scrollContainer_.scrollTop = this.scrollOffset_ || 0;
 
-    this.setFocus(focusedEmail);
+    this.setFocus(focusedRow);
     this.setRenderedRow_(null);
     this.setSubject_('');
     this.updateActions_();
@@ -592,9 +601,9 @@ export class ThreadListView extends View {
           if (child == this.focusedRow_)
             focusedRowIsSelected = true;
           threads.push(child.thread);
-          // ThreadRows get reused, so clear the checkbox so it's not checked in
-          // the future.
-          child.checked = false;
+          // ThreadRows get recycled, so clear the checked and focused state for
+          // future use.
+          child.resetState();
         } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
           firstUnselectedRowAfterFocused = child;
         }

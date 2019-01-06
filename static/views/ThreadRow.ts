@@ -12,18 +12,17 @@ interface DateFormatOptions {
 }
 
 export class ThreadRow extends HTMLElement {
-  focused: boolean;
+  focused_: boolean;
   rendered!: RenderedThread;
   mark: boolean|undefined;
   private checkBox_: HTMLInputElement;
   private messageDetails_: HTMLElement;
-  private thread_!: Thread;
 
-  constructor(thread: Thread) {
+  constructor(public thread: Thread) {
     super();
     this.style.display = 'flex';
 
-    this.focused = false;
+    this.focused_ = false;
 
     let label = document.createElement('label');
     label.style.cssText = `
@@ -57,7 +56,14 @@ export class ThreadRow extends HTMLElement {
     this.append(this.messageDetails_);
 
     this.updateHighlight_();
-    this.setThread(thread);
+    this.renderRow_();
+  }
+
+  resetState() {
+    // Intentionally use the public setters so that updateHighlight_ gets
+    // called.
+    this.focused = false;
+    this.checked = false;
   }
 
   getGroup() {
@@ -82,15 +88,11 @@ export class ThreadRow extends HTMLElement {
     return this.rendered.render(container);
   }
 
-  setThread(thread: Thread) {
-    if (this.thread_)
-      return;
+  renderRow_() {
+    this.rendered = new RenderedThread(this.thread);
 
-    this.thread_ = thread;
-    this.rendered = new RenderedThread(thread);
-
-    let subject = this.thread_.getSubjectSync();
-    let messages = this.thread_.getMessagesSync();
+    let subject = this.thread.getSubjectSync();
+    let messages = this.thread.getMessagesSync();
 
     let lastMessage = messages[messages.length - 1];
 
@@ -123,7 +125,7 @@ export class ThreadRow extends HTMLElement {
     let snippet = document.createElement('span');
     snippet.style.color = '#666';
     // Snippet as returned by the gmail API is html escaped.
-    snippet.innerHTML = ` - ${this.thread_.snippet}`;
+    snippet.innerHTML = ` - ${this.thread.snippet}`;
 
     let title = document.createElement('div');
     title.append(subject, snippet);
@@ -157,7 +159,7 @@ export class ThreadRow extends HTMLElement {
     }
   }
 
-  updateHighlight_() {
+  private updateHighlight_() {
     if (this.focused)
       this.style.backgroundColor = '#ccc';
     else if (this.checkBox_.checked)
@@ -166,7 +168,7 @@ export class ThreadRow extends HTMLElement {
       this.style.backgroundColor = 'white';
   }
 
-  dateString_(date: Date) {
+  private dateString_(date: Date) {
     let options = <DateFormatOptions>{};
     let today = new Date();
     if (today.getFullYear() != date.getFullYear())
@@ -184,19 +186,22 @@ export class ThreadRow extends HTMLElement {
     return date.toLocaleString(undefined, options);
   }
 
+  get focused() {
+    return this.focused_;
+  }
+
+  set focused(value) {
+    this.focused_ = value;
+    this.updateHighlight_();
+  }
+
   get checked() {
-    // If we're mid construction of the row, then the checkbox may not exist
-    // yet.
-    return this.checkBox_ && this.checkBox_.checked;
+    return this.checkBox_.checked;
   }
 
   set checked(value) {
     this.checkBox_.checked = value;
     this.updateHighlight_();
-  }
-
-  get thread() {
-    return this.thread_;
   }
 }
 
