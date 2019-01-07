@@ -65,7 +65,7 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected async fetch() {
-    this.updateTitle('fetch', ' ');
+    this.updateTitle('TodoModel.fetch', ' ');
 
     let labels = await this.labels.getThreadCountForLabels((label: string) => {
       return this.vacation_ ? label == Labels.MUST_DO_LABEL :
@@ -100,6 +100,6 @@ export class TodoModel extends ThreadListModel {
       await this.addThread(thread);
     }
 
-    this.updateTitle('fetch');
+    this.updateTitle('TodoModel.fetch');
   }
 }

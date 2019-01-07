@@ -128,7 +128,7 @@ export class TriageModel extends ThreadListModel {
 
   // TODO: Store the list of threads in localStorage and update asynchronously.
   protected async fetch() {
-    this.updateTitle('fetch', ' ');
+    this.updateTitle('TriageModel.fetch', ' ');
 
     let labels = await this.labels.getThreadCountForLabels((label: string) => {
       return this.vacation_ ? label == Labels.needsTriageLabel(this.vacation_) :
@@ -188,7 +188,7 @@ export class TriageModel extends ThreadListModel {
       await thread.markTriaged(null);
     }
 
-    this.updateTitle('fetch');
+    this.updateTitle('TriageModel.fetch');
   }
 
   private async processThread_(thread: Thread, addDirectly?: boolean) {

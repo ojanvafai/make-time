@@ -540,10 +540,10 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 window.addEventListener('offline', () => {
-  updateTitle('offline', 'No network connection...');
+  updateTitle('main.offline', 'No network connection...');
 });
 
 window.addEventListener('online', () => {
-  updateTitle('offline');
+  updateTitle('main.offline');
   update();
 });

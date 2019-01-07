@@ -755,7 +755,7 @@ export class ThreadListView extends View {
       if (this.isSending_)
         return;
       this.isSending_ = true;
-      this.updateTitle('sendReply', 'Sending reply...');
+      this.updateTitle('ThreadListView.sendReply', 'Sending reply...');
 
       if (!this.renderedRow_)
         throw 'Something went wrong. This should never happen.';
@@ -772,7 +772,7 @@ export class ThreadListView extends View {
       await this.markTriaged(
           ARCHIVE_ACTION.destination, expectedNewMessageCount);
 
-      this.updateTitle('sendReply');
+      this.updateTitle('ThreadListView.sendReply');
       this.isSending_ = false;
     })
 

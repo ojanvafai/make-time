@@ -170,7 +170,8 @@ export abstract class ThreadListModel extends Model {
     this.resetUndoableActions_();
 
     this.updateTitle(
-        'markThreadsTriaged', `Modifying ${threads.length} threads...`);
+        'ThreadListModel.markThreadsTriaged',
+        `Modifying ${threads.length} threads...`);
 
     // Update the UI first and then archive one at a time.
     this.removeThreads_(threads);
@@ -183,7 +184,7 @@ export abstract class ThreadListModel extends Model {
     };
     await taskQueue.flush();
 
-    this.updateTitle('markThreadsTriaged');
+    this.updateTitle('ThreadListModel.markThreadsTriaged');
   }
 
   async undoLastAction_() {
@@ -198,7 +199,8 @@ export abstract class ThreadListModel extends Model {
     let actions = await Promise.all(actionPromises);
     for (let i = 0; i < actions.length; i++) {
       this.updateTitle(
-          'undoLastAction_', `Undoing ${i + 1}/${actions.length}...`);
+          'ThreadListModel.undoLastAction_',
+          `Undoing ${i + 1}/${actions.length}...`);
 
       let action = actions[i];
       if (!action)
@@ -213,7 +215,7 @@ export abstract class ThreadListModel extends Model {
       this.dispatchEvent(new UndoEvent(action.thread));
     }
 
-    this.updateTitle('undoLastAction_');
+    this.updateTitle('ThreadListModel.undoLastAction_');
   }
 
   hasBestEffortThreads() {
