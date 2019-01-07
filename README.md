@@ -11,51 +11,32 @@ See https://stackoverflow.com/posts/30319507/revisions.
 
 ## Starting a dev server
 For the dev server to work, you need to both start the firebase server and
-compile typescript after every change.
-
-You can run both with the following command:
+compile typescript after every change. You can run both with the following command:
 ```
-$ ./node_modules/concurrently/bin/concurrently.js --kill-others './node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time' './node_modules/typescript/bin/tsc --project tsconfig.json --watch'
+$ ./gulp serve'
 ```
 
-Now http://localhost:5000 serves make-time the same as consumer. For google.com
-credentials, use --port 5555 to serve from localhost:5555.
+Now http://localhost:5000 serves make-time the same as consumer.
 
-TODO: Create a gulp command does the above.
+### Flags for serving
+--google to use google.com credentials and serve from localhost:5555.
 
-### To start just the server
-```
-$ ./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time
-```
-
-### Compiling typescript
-```
-$ ./node_modules/.bin/tsc -p tsconfig.json
-```
+--bundle to also generate the bundled/minified JS on each file change.
 
 ## Deploying
 ```
-$ ./node_modules/gulp/bin/gulp.js deploy
+$ ./gulp deploy
 ```
 
-### Or to only upload to the mk-time project:
-```
-$ ./node_modules/gulp/bin/gulp.js deploy --skip-google
-```
-
-In order to deploy, Ojan will need to make you a collaborator on the relevant appengine projects first.
+In order to deploy, Ojan will need to make you a collaborator on the relevant appengine projects first. Use --skip-google to only upload to the mk-time project and skip google.com:mktime.
 
 ## Bundling
 By default, running locally will serve unbundled and deploying will bundle.
 You can override the default behavior (locally and on the server) with the
-query parameter bundle=0 for no bundling and bundle=1 for bundling. For the
-latter you'll need to manually run the command to generate the bundle.
-
-// TODO: Integrate gulp-watch or something like it to run gulp on file saves.
-
-```
-$ ./node_modules/gulp/bin/gulp.js
-```
+query parameter bundle=0 for no bundling and bundle=1 for bundling. For
+bundle=1 to work locally, need to start the server with "./gulp serve --bundle",
+which is generally not recommended because compiles are >10x slower with
+bundling.
 
 ## Recommendations
 If you use VS Code you can get autoformatting of TS code on save with:
@@ -67,7 +48,6 @@ If you use VS Code you can get autoformatting of TS code on save with:
     "editor.formatOnSave": true,
     "editor.formatOnType": true
   }
-
 
 ## Navigating the code
 index.html is the file that gets served, but it basically just loads main.js,
