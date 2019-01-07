@@ -13,7 +13,7 @@ See https://stackoverflow.com/posts/30319507/revisions.
 For the dev server to work, you need to both start the firebase server and
 compile typescript after every change. You can run both with the following command:
 ```
-$ ./gulp serve'
+$ ./gulp serve
 ```
 
 Now http://localhost:5000 serves make-time the same as consumer.
