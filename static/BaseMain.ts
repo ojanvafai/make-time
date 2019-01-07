@@ -266,7 +266,11 @@ interface FetchRequestParameters {
 }
 
 export async function fetchThreads(
-    forEachThread: (thread: Thread) => void, query: string, onlyFetchThreadsFromDisk?: boolean) {
+  forEachThread: (thread: Thread) => void, query: string, onlyFetchThreadsFromDisk?: boolean) {
+  // If the query is empty or just whitespace, then
+  if (query.trim() === '')
+    throw 'This should never happen';
+
   // Chats don't expose their bodies in the gmail API, so just skip them.
   query = `(${query}) AND -in:chats`;
 

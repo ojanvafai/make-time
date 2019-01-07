@@ -80,15 +80,15 @@ export class TodoModel extends ThreadListModel {
     // Then process all the threads that need network of some sort one at a
     // time, showing the user an update after each of the network-bound threads
     // is processed.
-    let hasPriorityLabel =
-        labelsToFetch.length ? `in:${labelsToFetch.join(' OR in:')}` : '';
-    let skipNetwork = true;
-    await fetchThreads((thread: Thread) => {
-      if (thread.hasMessageDetails)
-        this.pendingThreads_.push(thread);
-      else
-        this.needsMessageDetailsThreads_.push(thread);
-    }, hasPriorityLabel, skipNetwork);
+    if (labelsToFetch.length) {
+      let skipNetwork = true;
+      await fetchThreads((thread: Thread) => {
+        if (thread.hasMessageDetails)
+          this.pendingThreads_.push(thread);
+        else
+          this.needsMessageDetailsThreads_.push(thread);
+      }, `in:${labelsToFetch.join(' OR in:')}`, skipNetwork);
+    }
 
     this.setThreads(this.pendingThreads_);
     this.pendingThreads_ = [];
