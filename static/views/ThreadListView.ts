@@ -432,7 +432,10 @@ export class ThreadListView extends View {
       return;
 
     this.focusedRow_.focused = true;
-    this.focusedRow_.scrollIntoView({'block': 'nearest'});
+
+    // Don't want autofocusing to scroll the view.
+    if (!isAutoFocusFirstRow)
+      this.focusedRow_.scrollIntoView({'block': 'nearest'});
   }
 
   moveFocus(action: any) {
