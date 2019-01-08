@@ -17,11 +17,6 @@ export class TodoModel extends ThreadListModel {
     this.needsMessageDetailsThreads_ = [];
   }
 
-  handleUndo(thread: Thread) {
-    if (thread)
-      this.removeThread(thread);
-  }
-
   async handleTriaged(destination: string, thread: Thread) {
     // Setting priority adds the thread back into the triaged list at it's new
     // priority.

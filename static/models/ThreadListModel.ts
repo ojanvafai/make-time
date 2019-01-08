@@ -40,7 +40,6 @@ export abstract class ThreadListModel extends Model {
     this.isUpdating_ = false;
   }
 
-  protected abstract handleUndo(thread: Thread): void;
   protected abstract handleTriaged(destination: string|null, thread: Thread):
       void;
   protected abstract async fetch(): Promise<void>;
@@ -212,8 +211,6 @@ export abstract class ThreadListModel extends Model {
       let action = actions[i];
       if (!action)
         continue;
-
-      this.handleUndo(action.thread);
 
       await action.thread.modify(action.removed, action.added);
       await action.thread.update();

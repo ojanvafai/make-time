@@ -32,8 +32,6 @@ export class TriageModel extends ThreadListModel {
         new MailProcessor(settings_, this, queueSettings_, labels);
   }
 
-  handleUndo(_thread: Thread) {}
-
   handleTriaged(_destination: string|null, _thread: Thread) {}
 
   async isBestEffortQueue(thread: Thread) {
