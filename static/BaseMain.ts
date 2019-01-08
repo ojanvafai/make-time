@@ -22,7 +22,7 @@ export class ThreadData {
 
 interface TitleEntry {
   key: string;
-  title: string[];
+  title: (HTMLElement|string)[];
 }
 
 class ThreadCache {
@@ -221,19 +221,14 @@ export function updateTitle(key: string, ...opt_title: string[]) {
   updateTitleBase(titleStack_, node!, key, ...opt_title);
 }
 
-export function updateLoaderTitle(key: string, ...opt_title: string[]) {
-  // console.log(key, opt_title);
-  // console.trace();
-  let node = document.getElementById('loader-title');
+export function updateLoaderTitle(key: string, ...opt_title: (HTMLElement|string)[]) {
+  let node = document.getElementById('loader');
   updateTitleBase(loaderTitleStack_, node!, key, ...opt_title);
-
-  let titleContainer = <HTMLElement>document.getElementById('loader');
-  titleContainer.style.display = loaderTitleStack_.length ? '' : 'none';
 }
 
 function updateTitleBase(
     stack: TitleEntry[], node: HTMLElement, key: string,
-    ...opt_title: string[]) {
+    ...opt_title: (HTMLElement|string)[]) {
   let index = stack.findIndex((item) => item.key == key);
   if (!opt_title[0]) {
     if (index != -1)

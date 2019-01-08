@@ -9,7 +9,7 @@ export abstract class Model extends EventTarget {
 
   async update() {}
 
-  protected updateTitle(key: string, ...title: string[]) {
+  protected updateTitle(key: string, ...title: (HTMLElement|string)[]) {
     updateLoaderTitle(key, ...title);
   }
 }

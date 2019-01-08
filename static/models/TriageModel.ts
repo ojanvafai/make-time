@@ -2,6 +2,7 @@ import {fetchThreads} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {MailProcessor} from '../MailProcessor.js';
 import {QueueSettings} from '../QueueSettings.js';
+import {RadialProgress} from '../RadialProgress.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
 
@@ -126,10 +127,7 @@ export class TriageModel extends ThreadListModel {
     }
   }
 
-  // TODO: Store the list of threads in localStorage and update asynchronously.
   protected async fetch() {
-    this.updateTitle('TriageModel.fetch', ' ');
-
     let labels = await this.labels.getThreadCountForLabels((label: string) => {
       return this.vacation_ ? label == Labels.needsTriageLabel(this.vacation_) :
                               Labels.isNeedsTriageLabel(label);
@@ -169,10 +167,7 @@ export class TriageModel extends ThreadListModel {
 
     let needsMessageDetailsThreads = this.needsMessageDetailsThreads_.concat();
     this.needsMessageDetailsThreads_ = [];
-    for (let thread of needsMessageDetailsThreads) {
-      await thread.fetch();
-      await this.processThread_(thread, true);
-    }
+    await this.doFetches_(needsMessageDetailsThreads);
 
     let threadsToProcess = this.needsProcessingThreads_.concat();
     this.needsProcessingThreads_ = [];
@@ -181,14 +176,30 @@ export class TriageModel extends ThreadListModel {
     // Do these threads last since they are threads that have been archived
     // outside of maketime and just need to have their maketime labels removed,
     // so we don't need to block user visible thigns like processeing
-    // unprocessed threads on it.
+    // unprocessed threads on it. Don't even show the user that anything is
+    // happening (i.e. complete the updateTitle for this method before this).
     let threadsToArchive = this.needsArchivingThreads_.concat();
     this.needsArchivingThreads_ = [];
     for (let thread of threadsToArchive) {
       await thread.markTriaged(null);
     }
+  }
 
-    this.updateTitle('TriageModel.fetch');
+  private async doFetches_(threads: Thread[]) {
+    if (!threads.length)
+      return;
+
+    let progress = new RadialProgress(threads.length);
+    this.updateTitle(
+        'TriageModel.doFetches_', 'Updating thread list...', progress);
+
+    for (let i = 0; i < threads.length; i++) {
+      progress.update(threads.length - i);
+      let thread = threads[i];
+      await thread.fetch();
+      await this.processThread_(thread, true);
+    }
+    this.updateTitle('TriageModel.doFetches_');
   }
 
   private async processThread_(thread: Thread, addDirectly?: boolean) {

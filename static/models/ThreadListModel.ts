@@ -1,7 +1,8 @@
 import {getCachedThread, ThreadData} from '../BaseMain.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {Labels} from '../Labels.js';
-import {TaskQueue} from '../TaskQueue.js';
+import {RadialProgress} from '../RadialProgress.js';
+import {TaskCountChangedEvent, TaskCountChangedEventName, TaskQueue} from '../TaskQueue.js';
 import {Thread} from '../Thread.js';
 
 import {Model} from './Model.js';
@@ -169,14 +170,19 @@ export abstract class ThreadListModel extends Model {
       expectedNewMessageCount?: number) {
     this.resetUndoableActions_();
 
+    let progress = new RadialProgress(threads.length);
     this.updateTitle(
-        'ThreadListModel.markThreadsTriaged',
-        `Modifying ${threads.length} threads...`);
+        'ThreadListModel.markThreadsTriaged', 'Modifying threads...', progress);
 
     // Update the UI first and then archive one at a time.
     this.removeThreads_(threads);
 
     const taskQueue = new TaskQueue(3);
+    taskQueue.addEventListener(TaskCountChangedEventName, (e: Event) => {
+      let taskCountChanged = <TaskCountChangedEvent>e;
+      progress.update(taskCountChanged.count);
+    });
+
     for (let thread of threads) {
       taskQueue.queueTask(
           () => this.markTriagedInternal_(
@@ -196,11 +202,12 @@ export abstract class ThreadListModel extends Model {
     let actionPromises = this.undoableActions_;
     this.resetUndoableActions_();
 
+    let progress = new RadialProgress(actionPromises.length);
+    this.updateTitle('ThreadListModel.undoLastAction_', 'Undoing...', progress);
+
     let actions = await Promise.all(actionPromises);
     for (let i = 0; i < actions.length; i++) {
-      this.updateTitle(
-          'ThreadListModel.undoLastAction_',
-          `Undoing ${i + 1}/${actions.length}...`);
+      progress.update(actions.length - i);
 
       let action = actions[i];
       if (!action)

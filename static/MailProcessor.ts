@@ -4,10 +4,11 @@ import {Labels} from './Labels.js';
 import {Message} from './Message.js';
 import {TriageModel} from './models/TriageModel.js';
 import {QueueSettings} from './QueueSettings.js';
+import {RadialProgress} from './RadialProgress.js';
 import {ServerStorage} from './ServerStorage.js';
-import {Settings, HeaderFilterRule} from './Settings.js';
+import {HeaderFilterRule, Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
-import {TaskQueue} from './TaskQueue.js';
+import {TaskCountChangedEvent, TaskCountChangedEventName, TaskQueue} from './TaskQueue.js';
 import {DEFAULT_QUEUE, Thread} from './Thread.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
@@ -204,7 +205,8 @@ export class MailProcessor {
 
   matchesHeader_(message: Message, header: HeaderFilterRule) {
     let headerValue = message.getHeaderValue(header.name);
-    return headerValue && headerValue.toLowerCase().trim().includes(header.value);
+    return headerValue &&
+        headerValue.toLowerCase().trim().includes(header.value);
   }
 
   matchesRule(rule: any, message: Message) {
@@ -434,11 +436,17 @@ export class MailProcessor {
   }
 
   async processThreads(threads: Thread[]) {
-    updateLoaderTitle(
-        'processUnprocessed',
-        `Processing ${threads.length} unprocessed threads...`);
+    if (!threads.length)
+      return;
+
+    let progress = new RadialProgress(threads.length);
+    updateLoaderTitle('processUnprocessed', `Processing...`, progress);
 
     const taskQueue = new TaskQueue(3);
+    taskQueue.addEventListener(TaskCountChangedEventName, (e: Event) => {
+      let taskCountChanged = <TaskCountChangedEvent>e;
+      progress.update(taskCountChanged.count);
+    });
     for (let thread of threads) {
       taskQueue.queueTask(() => this.processThread_(thread));
     };
@@ -460,10 +468,12 @@ export class MailProcessor {
     if (!threads.length)
       return;
 
+    let progress = new RadialProgress(threads.length);
+    updateLoaderTitle(
+        'dequeue', `Dequeuing from ${labelName}...`, progress);
+
     for (var i = 0; i < threads.length; i++) {
-      updateLoaderTitle(
-          'dequeue',
-          `Dequeuing ${i + 1}/${threads.length} from ${labelName}...`);
+      progress.update(threads.length - i);
 
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];

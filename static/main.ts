@@ -251,21 +251,11 @@ async function onLoad() {
           helpButton);
 
   await routeToCurrentLocation();
-
-  // Don't want to show the earlier title, but still want to indicate loading is
-  // happening. since we're going to processMail still. It's a less jarring
-  // experience if the loading spinner doesn't go away and then come back when
-  // conteacts are done being fetched.
-  updateLoaderTitle('onLoad', '\xa0');
-
   await fetchContacts(gapi.auth.getToken());
-
   await update();
   // Wait until we've fetched all the threads before trying to process updates
   // regularly.
   setInterval(update, 1000 * 60);
-
-  updateLoaderTitle('onLoad');
 }
 
 onLoad();

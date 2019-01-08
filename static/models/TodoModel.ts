@@ -1,5 +1,6 @@
 import {fetchThreads} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
+import {RadialProgress} from '../RadialProgress.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
@@ -65,8 +66,6 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected async fetch() {
-    this.updateTitle('TodoModel.fetch', ' ');
-
     let labels = await this.labels.getThreadCountForLabels((label: string) => {
       return this.vacation_ ? label == Labels.MUST_DO_LABEL :
                               Labels.isPriorityLabel(label);
@@ -95,11 +94,23 @@ export class TodoModel extends ThreadListModel {
 
     let needsMessageDetailsThreads = this.needsMessageDetailsThreads_.concat();
     this.needsMessageDetailsThreads_ = [];
-    for (let thread of needsMessageDetailsThreads) {
+    await this.doFetches_(needsMessageDetailsThreads);
+  }
+
+  private async doFetches_(threads: Thread[]) {
+    if (!threads.length)
+      return;
+
+    let progress = new RadialProgress(threads.length);
+    this.updateTitle(
+        'TodoModel.doFetches_', 'Updating thread list...', progress);
+
+    for (let i = 0; i < threads.length; i++) {
+      progress.update(threads.length - i);
+      let thread = threads[i];
       await thread.fetch();
       await this.addThread(thread);
     }
-
-    this.updateTitle('TodoModel.fetch');
+    this.updateTitle('TodoModel.doFetches_');
   }
 }
