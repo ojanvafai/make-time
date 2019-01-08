@@ -43,12 +43,14 @@ export class Thread {
     if (!this.processedMessages_)
       throw noMessagesError;
 
+    // Need to reset all the label state in case the new set of messages has
+    // different labels.
     this.labelIds_ =
         new Set(this.processedMessages_.flatMap(x => x.getLabelIds()));
-
     this.labelNames_ = new Set();
     this.priority_ = null;
     this.muted_ = false;
+    this.queue_ = DEFAULT_QUEUE;
 
     for (let id of this.labelIds_) {
       let name = await this.allLabels_.getName(id);
@@ -57,18 +59,15 @@ export class Thread {
         continue;
       }
 
+      this.labelNames_.add(name);
+
       if (Labels.isNeedsTriageLabel(name))
         this.queue_ = name;
       else if (Labels.isPriorityLabel(name))
         this.priority_ = name;
       else if (name == Labels.MUTED_LABEL)
         this.muted_ = true;
-
-      this.labelNames_.add(name);
     }
-
-    if (this.queue_ === undefined)
-      this.queue_ = DEFAULT_QUEUE;
   }
 
   private async processMessages_(messages: any[]) {

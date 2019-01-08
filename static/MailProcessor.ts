@@ -385,13 +385,13 @@ export class MailProcessor {
 
       let prefixedLabelName;
 
-      // Don't queue if already triaged or dequeued (i.e. in the inbox with a
-      // needs triage label).
-      if ((await thread.getPriority()) ||
-          (await thread.isInInbox() &&
-           (await thread.getQueue() == DEFAULT_QUEUE)) ||
-          this.queuedLabelMap_.get(labelName).queue ==
-              QueueSettings.IMMEDIATE) {
+      let alreadyInTriaged = await thread.getPriority();
+      let alreadyInNeedsTriage = (await thread.isInInbox()) &&
+          (await thread.getQueue() != DEFAULT_QUEUE);
+      let labelNeedsQueueing =
+          this.queuedLabelMap_.get(labelName).queue != QueueSettings.IMMEDIATE;
+
+      if (alreadyInTriaged || alreadyInNeedsTriage || !labelNeedsQueueing) {
         prefixedLabelName = Labels.needsTriageLabel(labelName);
         addLabelIds.push('INBOX');
       } else {
@@ -469,8 +469,7 @@ export class MailProcessor {
       return;
 
     let progress = new RadialProgress(threads.length);
-    updateLoaderTitle(
-        'dequeue', `Dequeuing from ${labelName}...`, progress);
+    updateLoaderTitle('dequeue', `Dequeuing from ${labelName}...`, progress);
 
     for (var i = 0; i < threads.length; i++) {
       progress.update(threads.length - i);
