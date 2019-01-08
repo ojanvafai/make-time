@@ -11,28 +11,18 @@ import {ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
-let threadToRow: WeakMap<Thread, ThreadRow> = new WeakMap();
-let getThreadRow = (thread: Thread) => {
-  let row = threadToRow.get(thread);
-  if (!row) {
-    row = new ThreadRow(thread);
-    threadToRow.set(thread, row);
-  }
-  return row;
+let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
+    ThreadRow|null) => {
+  if (offset != -1 && offset != 1)
+    throw `getRowFromRelativeOffset called with offset of ${offset}`;
+
+  let index = rows.indexOf(anchorRow);
+  if (index == -1)
+    throw `Tried to get row via relative offset on a row that's not in the dom.`;
+  if (0 <= index + offset && index + offset < rows.length)
+    return rows[index + offset];
+  return null;
 };
-
-let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number):
-    ThreadRow|null => {
-      if (offset != -1 && offset != 1)
-        throw `getRowFromRelativeOffset called with offset of ${offset}`;
-
-      let index = rows.indexOf(anchorRow);
-      if (index == -1)
-        throw `Tried to get row via relative offset on a row that's not in the dom.`;
-      if (0 <= index + offset && index + offset < rows.length)
-        return rows[index + offset];
-      return null;
-    }
 
 interface ListenerData {
   name: string, handler: (e: Event) => void,
@@ -196,6 +186,7 @@ registerActions('Triage or Todo', [
 
 export class ThreadListView extends View {
   private modelListeners_: ListenerData[];
+  private threadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
@@ -223,6 +214,7 @@ export class ThreadListView extends View {
     `;
 
     this.modelListeners_ = [];
+    this.threadToRow_ = new WeakMap();
     this.focusedRow_ = null;
     this.renderedRow_ = null;
     this.hasQueuedFrame_ = false;
@@ -262,6 +254,15 @@ export class ThreadListView extends View {
     });
   }
 
+  private getThreadRow_(thread: Thread) {
+    let row = this.threadToRow_.get(thread);
+    if (!row) {
+      row = new ThreadRow(thread);
+      this.threadToRow_.set(thread, row);
+    }
+    return row;
+  };
+
   addListenerToModel(eventName: string, handler: (e: Event) => void) {
     this.modelListeners_.push({
       name: eventName,
@@ -272,7 +273,7 @@ export class ThreadListView extends View {
 
   private handleUndo_(thread: Thread) {
     if (this.renderedRow_)
-      this.setRenderedRow_(getThreadRow(thread));
+      this.setRenderedRow_(this.getThreadRow_(thread));
   }
 
   appendButton(href: string, textContent = '') {
@@ -355,7 +356,7 @@ export class ThreadListView extends View {
         currentGroup = new ThreadRowGroup(groupName);
         this.rowGroupContainer_.append(currentGroup);
       }
-      currentGroup.push(getThreadRow(thread));
+      currentGroup.push(this.getThreadRow_(thread));
     }
 
     let newRows = this.getRows_();
