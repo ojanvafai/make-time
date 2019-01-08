@@ -8,10 +8,11 @@ import {showDialog, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
+import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
 import {ServerStorage} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {Thread} from './Thread.js';
-import { HelpDialog } from './views/HelpDialog.js';
+import {HelpDialog} from './views/HelpDialog.js';
 
 export class ThreadData {
   constructor(public id: string, public historyId: string) {}
@@ -178,7 +179,7 @@ export async function login() {
   if (isSignedIn_)
     return;
 
-  updateLoaderTitle('login', 'Logging in...');
+  let progress = updateLoaderTitle('login', 1, 'Logging in...');
 
   await loadGapi();
   await gapi.client.init(
@@ -197,7 +198,7 @@ export async function login() {
     });
   }
 
-  updateLoaderTitle('login');
+  progress.countDown();
 }
 
 async function updateSigninStatus(isSignedIn: boolean) {
@@ -221,9 +222,29 @@ export function updateTitle(key: string, ...opt_title: string[]) {
   updateTitleBase(titleStack_, node!, key, ...opt_title);
 }
 
-export function updateLoaderTitle(key: string, ...opt_title: (HTMLElement|string)[]) {
+let progressElements: Map<string, RadialProgress> = new Map();
+
+export function updateLoaderTitle(
+    key: string, count: number, ...opt_title: (HTMLElement|string)[]) {
+  let progress = progressElements.get(key);
+  if (!progress) {
+    progress = new RadialProgress();
+    progressElements.set(key, progress);
+    progress.addEventListener(COMPLETED_EVENT_NAME, () => {
+      clearLoaderTitle(key);
+    });
+  }
+
+  progress.addToTotal(count);
+
   let node = document.getElementById('loader');
-  updateTitleBase(loaderTitleStack_, node!, key, ...opt_title);
+  updateTitleBase(loaderTitleStack_, node!, key, ...opt_title, progress);
+  return progress;
+}
+
+function clearLoaderTitle(key: string) {
+  let node = document.getElementById('loader');
+  updateTitleBase(loaderTitleStack_, node!, key);
 }
 
 function updateTitleBase(
@@ -248,7 +269,8 @@ function updateTitleBase(
     node.append(...stack[stack.length - 1].title);
 }
 
-export async function getCachedThread(response: ThreadData, onlyFetchThreadsFromDisk?: boolean) {
+export async function getCachedThread(
+    response: ThreadData, onlyFetchThreadsFromDisk?: boolean) {
   if (!threadCache_)
     threadCache_ = new ThreadCache();
   return await threadCache_.get(response, onlyFetchThreadsFromDisk);
@@ -261,7 +283,8 @@ interface FetchRequestParameters {
 }
 
 export async function fetchThreads(
-  forEachThread: (thread: Thread) => void, query: string, onlyFetchThreadsFromDisk?: boolean) {
+    forEachThread: (thread: Thread) => void, query: string,
+    onlyFetchThreadsFromDisk?: boolean) {
   // If the query is empty or just whitespace, then
   if (query.trim() === '')
     throw 'This should never happen';
@@ -299,7 +322,8 @@ export async function fetchThreads(
 }
 
 export function showHelp() {
-  new HelpDialog(`make-time is an opinionated way of handling unreasonable amounts of email.
+  new HelpDialog(
+      `make-time is an opinionated way of handling unreasonable amounts of email.
 
 <b style="font-size:120%">Disclaimers</b>
 Patches welcome, but otherwise, I built it for my needs. :) Feature requests are very welcome though. Often you'll think of something I want that I don't have and I'll build it. Contact ojan@ or file issues at https://github.com/ojanvafai/make-time if you want to contribute, give feedback, etc.

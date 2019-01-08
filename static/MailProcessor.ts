@@ -4,11 +4,10 @@ import {Labels} from './Labels.js';
 import {Message} from './Message.js';
 import {TriageModel} from './models/TriageModel.js';
 import {QueueSettings} from './QueueSettings.js';
-import {RadialProgress} from './RadialProgress.js';
 import {ServerStorage} from './ServerStorage.js';
 import {HeaderFilterRule, Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
-import {TaskCountChangedEvent, TaskCountChangedEventName, TaskQueue} from './TaskQueue.js';
+import { TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
 import {DEFAULT_QUEUE, Thread} from './Thread.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
@@ -439,20 +438,17 @@ export class MailProcessor {
     if (!threads.length)
       return;
 
-    let progress = new RadialProgress(threads.length);
-    updateLoaderTitle('processUnprocessed', `Processing...`, progress);
+    let progress = updateLoaderTitle(
+        'processUnprocessed', threads.length, `Processing...`);
 
     const taskQueue = new TaskQueue(3);
-    taskQueue.addEventListener(TaskCountChangedEventName, (e: Event) => {
-      let taskCountChanged = <TaskCountChangedEvent>e;
-      progress.update(taskCountChanged.count);
+    taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {
+      progress.countDown();
     });
     for (let thread of threads) {
       taskQueue.queueTask(() => this.processThread_(thread));
     };
     await taskQueue.flush();
-
-    updateLoaderTitle('processUnprocessed');
   }
 
   async dequeue(labelName: string) {
@@ -468,11 +464,11 @@ export class MailProcessor {
     if (!threads.length)
       return;
 
-    let progress = new RadialProgress(threads.length);
-    updateLoaderTitle('dequeue', `Dequeuing from ${labelName}...`, progress);
+    let progress = updateLoaderTitle(
+        'dequeue', threads.length, `Dequeuing from ${labelName}...`);
 
     for (var i = 0; i < threads.length; i++) {
-      progress.update(threads.length - i);
+      progress.countDown();
 
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
@@ -480,7 +476,6 @@ export class MailProcessor {
       await thread.modify(addLabelIds, removeLabelIds);
       await this.pushThread_(thread);
     }
-    updateLoaderTitle('dequeue');
   }
 
   async processSingleQueue(queue: string) {

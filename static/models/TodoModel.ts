@@ -1,6 +1,5 @@
 import {fetchThreads} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
-import {RadialProgress} from '../RadialProgress.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
@@ -96,16 +95,14 @@ export class TodoModel extends ThreadListModel {
     if (!threads.length)
       return;
 
-    let progress = new RadialProgress(threads.length);
-    this.updateTitle(
-        'TodoModel.doFetches_', 'Updating thread list...', progress);
+let progress =    this.updateTitle(
+        'TodoModel.doFetches_',threads.length, 'Updating thread list...');
 
     for (let i = 0; i < threads.length; i++) {
-      progress.update(threads.length - i);
+      progress.countDown();
       let thread = threads[i];
       await thread.fetch();
       await this.addThread(thread);
     }
-    this.updateTitle('TodoModel.doFetches_');
   }
 }

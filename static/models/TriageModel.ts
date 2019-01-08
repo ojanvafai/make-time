@@ -2,7 +2,6 @@ import {fetchThreads} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {MailProcessor} from '../MailProcessor.js';
 import {QueueSettings} from '../QueueSettings.js';
-import {RadialProgress} from '../RadialProgress.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
 
@@ -187,17 +186,14 @@ export class TriageModel extends ThreadListModel {
     if (!threads.length)
       return;
 
-    let progress = new RadialProgress(threads.length);
-    this.updateTitle(
-        'TriageModel.doFetches_', 'Updating thread list...', progress);
+    let progress = this.updateTitle(
+        'TriageModel.doFetches_', threads.length, 'Updating thread list...');
 
-    for (let i = 0; i < threads.length; i++) {
-      progress.update(threads.length - i);
-      let thread = threads[i];
+    for (let thread of threads) {
+      progress.countDown();
       await thread.fetch();
       await this.processThread_(thread, true);
     }
-    this.updateTitle('TriageModel.doFetches_');
   }
 
   private async processThread_(thread: Thread, addDirectly?: boolean) {

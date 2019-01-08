@@ -1,8 +1,7 @@
 import {getCachedThread, ThreadData} from '../BaseMain.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {Labels} from '../Labels.js';
-import {RadialProgress} from '../RadialProgress.js';
-import {TaskCountChangedEvent, TaskCountChangedEventName, TaskQueue} from '../TaskQueue.js';
+import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from '../TaskQueue.js';
 import {Thread} from '../Thread.js';
 
 import {Model} from './Model.js';
@@ -169,17 +168,16 @@ export abstract class ThreadListModel extends Model {
       expectedNewMessageCount?: number) {
     this.resetUndoableActions_();
 
-    let progress = new RadialProgress(threads.length);
-    this.updateTitle(
-        'ThreadListModel.markThreadsTriaged', 'Modifying threads...', progress);
+    let progress = this.updateTitle(
+        'ThreadListModel.markThreadsTriaged', threads.length,
+        'Modifying threads...');
 
     // Update the UI first and then archive one at a time.
     this.removeThreads_(threads);
 
     const taskQueue = new TaskQueue(3);
-    taskQueue.addEventListener(TaskCountChangedEventName, (e: Event) => {
-      let taskCountChanged = <TaskCountChangedEvent>e;
-      progress.update(taskCountChanged.count);
+    taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {
+      progress.countDown();
     });
 
     for (let thread of threads) {
@@ -188,8 +186,6 @@ export abstract class ThreadListModel extends Model {
               thread, destination, expectedNewMessageCount));
     };
     await taskQueue.flush();
-
-    this.updateTitle('ThreadListModel.markThreadsTriaged');
   }
 
   async undoLastAction_() {
@@ -201,12 +197,12 @@ export abstract class ThreadListModel extends Model {
     let actionPromises = this.undoableActions_;
     this.resetUndoableActions_();
 
-    let progress = new RadialProgress(actionPromises.length);
-    this.updateTitle('ThreadListModel.undoLastAction_', 'Undoing...', progress);
+    let progress = this.updateTitle(
+        'ThreadListModel.undoLastAction_', actionPromises.length, 'Undoing...');
 
     let actions = await Promise.all(actionPromises);
     for (let i = 0; i < actions.length; i++) {
-      progress.update(actions.length - i);
+      progress.countDown();
 
       let action = actions[i];
       if (!action)
@@ -218,8 +214,6 @@ export abstract class ThreadListModel extends Model {
 
       this.dispatchEvent(new UndoEvent(action.thread));
     }
-
-    this.updateTitle('ThreadListModel.undoLastAction_');
   }
 
   hasBestEffortThreads() {

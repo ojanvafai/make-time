@@ -1,10 +1,10 @@
 type Task = () => Promise<void>;
 
-export let TaskCountChangedEventName = 'task-queue-tasks-changed';
+export let TASK_COMPLETED_EVENT_NAME = 'task-queue-tasks-changed';
 
-export class TaskCountChangedEvent extends Event {
-  constructor(public count: number) {
-    super(TaskCountChangedEventName);
+export class TaskCompletedEvent extends Event {
+  constructor() {
+    super(TASK_COMPLETED_EVENT_NAME);
   }
 }
 
@@ -32,7 +32,7 @@ export class TaskQueue extends EventTarget {
 
     task().then(() => {
       this.inProgressTaskCount--;
-      this.dispatchTaskCountEvent();
+      this.dispatchTaskCompletedEvent();
       this.doTasks();
     });
     this.doTasks();
@@ -41,18 +41,12 @@ export class TaskQueue extends EventTarget {
   public queueTask(task: Task) {
     const shouldStart = this.tasks.length == 0;
     this.tasks.push(task);
-    this.dispatchTaskCountEvent();
     if (shouldStart)
       this.doTasks();
   }
 
-  dispatchTaskCountEvent() {
-    // This is kinda wonky. Want to show some progress for in progress tasks,
-    // but don't want them to appear completed. Otherwise, with 3 tasks, we lose
-    // most sense of progress in RadialProgress since all tasks happen in
-    // parallel.
-    let count = this.tasks.length + this.inProgressTaskCount / 2;
-    this.dispatchEvent(new TaskCountChangedEvent(count));
+  dispatchTaskCompletedEvent() {
+    this.dispatchEvent(new TaskCompletedEvent());
   }
 
   public flush() {

@@ -1,16 +1,24 @@
+export let COMPLETED_EVENT_NAME = 'radial-progress-completed';
+export class CompletedEvent extends Event {
+  constructor() {
+    super(COMPLETED_EVENT_NAME);
+  }
+}
+
 export class RadialProgress extends HTMLElement {
+  private total_: number;
+  private completed_: number;
   private slice1_: HTMLElement;
   private slice2_: HTMLElement;
 
-  constructor(private denominator_: number) {
+  constructor() {
     super();
+
+    this.total_ = 0;
+    this.completed_ = 0;
 
     this.slice1_ = document.createElement('div');
     this.slice2_ = document.createElement('div');
-
-    // Can't show meaningful progress with < 3 items.
-    if (denominator_ < 3)
-      return;
 
     let size = 16;
 
@@ -20,7 +28,6 @@ export class RadialProgress extends HTMLElement {
       height: ${size}px;
       border-radius: ${size / 2}px;
       position: relative;
-      display: inline-block;
     `;
 
     let clipCss = `
@@ -70,13 +77,35 @@ export class RadialProgress extends HTMLElement {
     clip2.append(this.slice2_);
   }
 
-  update(x: number) {
+  addToTotal(count: number) {
+    this.total_ += count;
+  }
+
+  countDown() {
+    if (this.total_ === 0)
+      throw 'This should never happen.';
+
+    this.completed_++;
+    if (this.completed_ == this.total_) {
+      this.dispatchEvent(new CompletedEvent());
+      this.total_ = 0;
+      this.completed_ = 0;
+    }
+
+    // Can't show meaningful progress with < 3 items.
+    if (this.total_ < 3) {
+      this.style.display = 'none';
+      return;
+    }
+
+    this.style.display = 'inline-block';
+
     let firstHalfAngle;
     let secondHalfAngle;
 
-    let percent = (this.denominator_ - x) / this.denominator_;
+    let ratio = this.completed_ / this.total_;
     // Always have some of the progress indicated.
-    let drawAngle = Math.max(10, percent * 360);
+    let drawAngle = Math.max(10, ratio * 360);
     if (drawAngle <= 180) {
       firstHalfAngle = drawAngle;
       secondHalfAngle = 0;
