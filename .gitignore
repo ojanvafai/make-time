@@ -2,5 +2,6 @@
 .firebaserc
 .vscode
 firebase-debug.log
-public/gen/
 node_modules/
+public/node_modules/
+public/gen/

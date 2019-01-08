@@ -16,18 +16,26 @@ let watch = require('gulp-watch');
 let mainFilename = '/main.js';
 let bundleDir = '/bundle';
 
+function readJsonFile(path) {
+  return JSON.parse(stripJsonComments(fs.readFileSync(path, 'utf8')))
+}
+
+function rmDir(path) {
+  let rimraf = require('rimraf');
+  rimraf.sync(path);
+}
+
 let outDir_;
 function getOutDir() {
   if (!outDir_) {
-    let tsConfig = JSON.parse(stripJsonComments(fs.readFileSync('./tsconfig.json', 'utf8')));
+    let tsConfig = readJsonFile('./tsconfig.json');
     outDir_ = tsConfig.compilerOptions.outDir;
   }
   return outDir_;
 }
 
 gulp.task("delete", (callback) => {
-  let rimraf = require('rimraf');
-  rimraf.sync(getOutDir());
+  rmDir(getOutDir());
   callback();
 });
 
@@ -66,7 +74,24 @@ gulp.task('bundle-watch', () => {
   }));
 });
 
-gulp.task('npm-install', shell.task('npm install'));
+gulp.task('symlink-node-modules', (done) => {
+  let process = require('process');
+
+  let package = readJsonFile('./package.json');
+  let dependencies = Object.keys(package.dependencies);
+
+  const root = './public/node_modules';
+  rmDir(root);
+  fs.mkdirSync(root);
+  process.chdir(root);
+
+  for (let dependency of dependencies) {
+    fs.symlinkSync( `../../node_modules/${dependency}`, dependency, 'dir');
+  }
+  done();
+});
+
+gulp.task('npm-install', gulp.series([shell.task('npm install'), 'symlink-node-modules']));
 
 let port = process.argv.includes('--google') ? '5555' : '5000';
 let firebaseServe = `./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time --port=${port}`;
