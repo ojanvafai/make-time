@@ -4,7 +4,7 @@
 // that have to know about Threads and things like that.
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {showDialog, USER_ID} from './Base.js';
+import {showDialog, USER_ID, getDefinitelyExistsElementById} from './Base.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
@@ -13,6 +13,11 @@ import {ServerStorage} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {Thread} from './Thread.js';
 import {HelpDialog} from './views/HelpDialog.js';
+
+// Extract these before rendering any threads since the threads can have
+// elements with IDs in them.
+const title = getDefinitelyExistsElementById('title');
+const loader = getDefinitelyExistsElementById('loader');
 
 export class ThreadData {
   constructor(public id: string, public historyId: string) {}
@@ -218,8 +223,7 @@ async function updateSigninStatus(isSignedIn: boolean) {
 }
 
 export function updateTitle(key: string, ...opt_title: string[]) {
-  let node = document.getElementById('title');
-  updateTitleBase(titleStack_, node!, key, ...opt_title);
+  updateTitleBase(titleStack_, title, key, ...opt_title);
 }
 
 let progressElements: Map<string, RadialProgress> = new Map();
@@ -237,14 +241,12 @@ export function updateLoaderTitle(
 
   progress.addToTotal(count);
 
-  let node = document.getElementById('loader');
-  updateTitleBase(loaderTitleStack_, node!, key, ...opt_title, progress);
+  updateTitleBase(loaderTitleStack_, loader, key, ...opt_title, progress);
   return progress;
 }
 
 function clearLoaderTitle(key: string) {
-  let node = document.getElementById('loader');
-  updateTitleBase(loaderTitleStack_, node!, key);
+  updateTitleBase(loaderTitleStack_, loader, key);
 }
 
 function updateTitleBase(

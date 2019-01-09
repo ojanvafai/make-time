@@ -88,6 +88,11 @@ gulp.task('symlink-node-modules', (done) => {
   for (let dependency of dependencies) {
     fs.symlinkSync( `../../node_modules/${dependency}`, dependency, 'dir');
   }
+
+  // TODO: Make all the commands agnostic to which subdirectory they run in.
+  // Change dir back to the original directory so the next command runs
+  // in the right place.
+  process.chdir('../..');
   done();
 });
 

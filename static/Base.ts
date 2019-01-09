@@ -89,3 +89,10 @@ export function serializeAddress(address: ParsedAddress) {
     return `${address.name} <${address.email}>`;
   return address.email;
 }
+
+export function getDefinitelyExistsElementById(id: string) {
+  let element = document.getElementById(id);
+  if (!element)
+    throw 'This should never happen.';
+  return element;
+}

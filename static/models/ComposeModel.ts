@@ -79,10 +79,10 @@ export class ComposeModel extends Model {
       return;
     this.sending_ = true;
 
-    this.updateTitle('ComposeModel.send', 'Sending...');
+    let progress = this.updateTitle('ComposeModel.send', 1, 'Sending...');
     await send(this.body_, to, this.subject_);
     await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
-    this.updateTitle('ComposeModel.send');
+    progress.countDown();
 
     this.sending_ = false;
   }

@@ -229,7 +229,7 @@ export class QueuesView extends HTMLElement {
   }
 
   updateHighlights_() {
-    let rows = <NodeListOf<HTMLElement>>document.querySelectorAll(
+    let rows = <NodeListOf<HTMLElement>>this.querySelectorAll(
         `.${QueuesView.rowClassName_}`);
     for (let row of rows) {
       row.style.backgroundColor = this.isChecked_(row) ? '#c2dbff' : 'white';

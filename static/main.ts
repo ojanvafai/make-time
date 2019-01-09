@@ -1,5 +1,5 @@
 import {getActionKey, getActions} from './Actions.js';
-import {getCurrentWeekNumber} from './Base.js';
+import {getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
 import {getLabels, getQueuedLabelMap, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
@@ -20,6 +20,16 @@ import {View} from './views/View.js';
 
 let contacts_: Contact[] = [];
 let currentView_: View;
+
+// Extract these before rendering any threads since the threads can have
+// elements with IDs in them.
+const content = getDefinitelyExistsElementById('content');
+const drawer = getDefinitelyExistsElementById('drawer');
+const hammburgerMenuToggle =
+    getDefinitelyExistsElementById('hamburger-menu-toggle');
+const backArrow = getDefinitelyExistsElementById('back-arrow');
+const mainContent = getDefinitelyExistsElementById('main-content');
+  const subject = getDefinitelyExistsElementById('subject');
 
 const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
@@ -95,7 +105,6 @@ async function setView(viewType: VIEW, params?: any) {
 
   currentView_ = await createView(viewType, params);
 
-  var content = <HTMLElement>document.getElementById('content');
   content.textContent = '';
   content.append(currentView_);
 
@@ -106,14 +115,11 @@ let DRAWER_OPEN = 'drawer-open';
 let CURRENT_PAGE_CLASS = 'current-page';
 
 function showBackArrow(show: boolean) {
-  (<HTMLElement>document.getElementById('hamburger-menu-toggle'))
-      .style.display = show ? 'none' : '';
-  (<HTMLElement>document.getElementById('back-arrow')).style.display =
-      show ? '' : 'none';
+  hammburgerMenuToggle.style.display = show ? 'none' : '';
+  backArrow.style.display = show ? '' : 'none';
 }
 
 function openMenu() {
-  let drawer = <HTMLElement>document.getElementById('drawer');
   let menuItems =
       <NodeListOf<HTMLAnchorElement>>drawer.querySelectorAll('a.item');
   for (let item of menuItems) {
@@ -124,43 +130,36 @@ function openMenu() {
     }
   }
 
-  let mainContent = <HTMLElement>document.getElementById('main-content');
   mainContent.classList.add(DRAWER_OPEN);
 }
 
 function closeMenu() {
-  let mainContent = <HTMLElement>document.getElementById('main-content');
   mainContent.classList.remove(DRAWER_OPEN);
 }
 
 function toggleMenu() {
-  let mainContent = <HTMLElement>document.getElementById('main-content');
   if (mainContent.classList.contains(DRAWER_OPEN))
     closeMenu();
   else
     openMenu();
 }
 
-(<HTMLElement>document.getElementById('back-arrow'))
-    .addEventListener('click', async () => {
-      if (getView().goBack)
-        await getView().goBack();
-    });
+backArrow.addEventListener('click', async () => {
+  if (getView().goBack)
+    await getView().goBack();
+});
 
-(<HTMLElement>document.getElementById('hamburger-menu-toggle'))
-    .addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleMenu();
-    });
+hammburgerMenuToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleMenu();
+});
 
-(<HTMLElement>document.getElementById('main-content'))
-    .addEventListener('click', (e) => {
-      let mainContent = <HTMLElement>document.getElementById('main-content');
-      if (mainContent.classList.contains(DRAWER_OPEN)) {
-        e.preventDefault();
-        closeMenu();
-      }
-    })
+mainContent.addEventListener('click', (e) => {
+  if (mainContent.classList.contains(DRAWER_OPEN)) {
+    e.preventDefault();
+    closeMenu();
+  }
+})
 
 async function createThreadListView(
     model: ThreadListModel, countDown: boolean, bottomButtonUrl: string,
@@ -172,7 +171,7 @@ async function createThreadListView(
       settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
   return new ThreadListView(
-      model, await getLabels(), getScroller(), updateLoaderTitle, setSubject,
+      model, await getLabels(), content, updateLoaderTitle, setSubject,
       showBackArrow, allowedReplyLength, contacts_, autoStartTimer, countDown,
       timerDuration, bottomButtonUrl, bottomButtonText);
 }
@@ -198,12 +197,7 @@ async function getTodoModel() {
   return todoModel_;
 }
 
-function getScroller() {
-  return <HTMLElement>document.getElementById('content');
-}
-
 function setSubject(...items: (string|Node)[]) {
-  let subject = <HTMLElement>document.getElementById('subject');
   subject.textContent = '';
   subject.append(...items);
 }
@@ -241,8 +235,7 @@ async function onLoad() {
   let menuTitle = document.createElement('div');
   menuTitle.append('MakeTime phases');
 
-  (<HTMLElement>document.getElementById('drawer'))
-      .append(
+  drawer.append(
           menuTitle,
           createMenuItem('Compose', {href: '/compose', nested: true}),
           createMenuItem('Triage', {href: '/triage', nested: true}),
