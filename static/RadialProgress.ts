@@ -5,17 +5,20 @@ export class CompletedEvent extends Event {
   }
 }
 
+let DEFAULT_COLOR = 'white';
+let OVERFLOW_COLOR = 'red';
+
 export class RadialProgress extends HTMLElement {
   private total_: number;
-  private completed_: number;
+  private completedCount_: number;
   private slice1_: HTMLElement;
   private slice2_: HTMLElement;
 
-  constructor() {
+  constructor(private allowOverflow_?: boolean) {
     super();
 
     this.total_ = 0;
-    this.completed_ = 0;
+    this.completedCount_ = 0;
 
     this.slice1_ = document.createElement('div');
     this.slice2_ = document.createElement('div');
@@ -57,8 +60,6 @@ export class RadialProgress extends HTMLElement {
       width: ${size}px;
       height: ${size}px;
       border-radius: ${size / 2}px;
-      background-color: white;
-      border-color: white;
       transform: rotate(0);
     `;
 
@@ -75,44 +76,73 @@ export class RadialProgress extends HTMLElement {
       clip: rect(0px, ${size}px, ${size}px, ${size / 2}px);
     `;
     clip2.append(this.slice2_);
+
+    this.setColor_(DEFAULT_COLOR);
   }
 
   addToTotal(count: number) {
     this.total_ += count;
     // Can't show meaningful progress with < 3 items.
-    if (this.total_ < 3)
+    if (this.total_ < 3) {
       this.style.display = 'none';
-    else
-      this.render();
+    } else {
+      this.style.display = 'inline-block';
+      this.render_();
+    }
   }
 
-  countDown() {
-    if (this.total_ === 0)
+  incrementProgress() {
+    if (this.allowOverflow_ || this.total_ === 0)
       throw 'This should never happen.';
 
-    this.completed_++;
-    if (this.completed_ == this.total_)
+    this.completedCount_++;
+    if (this.completedCount_ == this.total_)
       this.complete_();
     else
-      this.render();
+      this.render_();
   }
 
-  complete_() {
+  setProgress(count: number) {
+    this.completedCount_ = count;
+    this.render_();
+  }
+
+  private complete_() {
+    if (!this.allowOverflow_)
+      return;
+
     this.dispatchEvent(new CompletedEvent());
     this.total_ = 0;
-    this.completed_ = 0;
+    this.completedCount_ = 0;
     this.style.display = 'none';
   }
 
-  render() {
-    this.style.display = 'inline-block';
+  private setColor_(color: string) {
+    this.slice1_.style.backgroundColor = color;
+    this.slice1_.style.borderColor = color;
+    this.slice2_.style.backgroundColor = color;
+    this.slice2_.style.borderColor = color;
+  }
+
+  private render_() {
+    let completedCount;
+    if (this.allowOverflow_) {
+      completedCount = this.completedCount_ % this.total_;
+      let color =
+          this.completedCount_ > this.total_ ? OVERFLOW_COLOR : DEFAULT_COLOR;
+      this.setColor_(color);
+    } else {
+      if (this.completedCount_ > this.total_)
+        throw 'This should never happen.';
+      completedCount = this.completedCount_;
+    }
+
+    let ratio = completedCount / this.total_;
+    // Always have some of the progress indicated.
+    let drawAngle = Math.max(18, ratio * 360);
 
     let firstHalfAngle;
     let secondHalfAngle;
-
-    let ratio = this.completed_ / this.total_;
-    // Always have some of the progress indicated.
-    let drawAngle = Math.max(18, ratio * 360);
     if (drawAngle <= 180) {
       firstHalfAngle = drawAngle;
       secondHalfAngle = 0;

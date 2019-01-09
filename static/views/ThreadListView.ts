@@ -3,6 +3,7 @@ import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
+import {RadialProgress} from '../RadialProgress.js';
 import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -10,7 +11,6 @@ import {ViewInGmailButton} from '../ViewInGmailButton.js';
 import {ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
-import { RadialProgress } from '../RadialProgress.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
     ThreadRow|null) => {
@@ -725,6 +725,9 @@ export class ThreadListView extends View {
     let sideBar = document.createElement('div');
     sideBar.style.cssText = `margin: 4px;`;
 
+    let topBar = document.createElement('div');
+    topBar.style.cssText = 'display: flex';
+
     let replyAllLabel = document.createElement('label');
     let replyAll = document.createElement('input');
     replyAll.type = 'checkbox';
@@ -737,13 +740,8 @@ export class ThreadListView extends View {
       align-items: center;
     `;
 
-    let progress = document.createElement('progress');
-    progress.style.cssText = `
-      flex: 1;
-      width: 0;
-    `;
-    progress.max = this.allowedReplyLength_;
-    progress.value = 0;
+    let progress = new RadialProgress(true);
+    progress.addToTotal(this.allowedReplyLength_);
 
     let count = document.createElement('div');
     count.style.cssText = `
@@ -752,8 +750,22 @@ export class ThreadListView extends View {
     `;
 
     progressContainer.append(count, progress);
+    topBar.append(replyAllLabel, progressContainer);
 
-    sideBar.append(replyAllLabel, progressContainer);
+    let postSendActions = document.createElement('select');
+    let actionList = [
+      ARCHIVE_ACTION, BLOCKED_ACTION, MUST_DO_ACTION, URGENT_ACTION,
+      BACKLOG_ACTION, NEEDS_FILTER_ACTION
+    ];
+    for (let action of actionList) {
+      let option = document.createElement('option');
+      option.textContent = action.name;
+      // Convert to string since the archive action is null.
+      option.value = String(action.destination);
+      postSendActions.append(option);
+    }
+
+    sideBar.append(topBar, postSendActions);
     container.append(sideBar);
 
     compose.addEventListener('submit', async () => {
@@ -776,25 +788,29 @@ export class ThreadListView extends View {
       if (!this.renderedRow_)
         throw 'Something went wrong. This should never happen.';
 
+      let destination: string|null = postSendActions.selectedOptions[0].value;
+      // Sigh. HTMLOptionElement.value returns the text content of the option if
+      // there's no value set on the option. So we need to set "null" as a
+      // string and then convert it back to proper null here.
+      if (destination === 'null')
+        destination = null;
+
       // TODO: Handle if sending fails in such a way that the user can at least
       // save their message text.
       await this.renderedRow_.thread.sendReply(
           compose.value, compose.getEmails(), replyAll.checked);
       this.updateActions_();
 
-      if (ARCHIVE_ACTION.destination !== null)
-        throw 'This should never happen.';
       let expectedNewMessageCount = 1;
-      await this.markTriaged_(
-          ARCHIVE_ACTION.destination, expectedNewMessageCount);
+      await this.markTriaged_(destination, expectedNewMessageCount);
 
-      progress.countDown();
+      progress.incrementProgress();
       this.isSending_ = false;
     })
 
     compose.addEventListener('input', () => {
       let textLength = compose.plainText.length;
-      progress.value = textLength;
+      progress.setProgress(textLength);
       let lengthDiff = this.allowedReplyLength_ - textLength;
       count.textContent = (lengthDiff < 10) ? String(lengthDiff) : '';
     });

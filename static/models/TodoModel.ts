@@ -99,7 +99,7 @@ let progress =    this.updateTitle(
         'TodoModel.doFetches_',threads.length, 'Updating thread list...');
 
     for (let i = 0; i < threads.length; i++) {
-      progress.countDown();
+      progress.incrementProgress();
       let thread = threads[i];
       await thread.fetch();
       await this.addThread(thread);

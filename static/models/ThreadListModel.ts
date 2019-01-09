@@ -177,7 +177,7 @@ export abstract class ThreadListModel extends Model {
 
     const taskQueue = new TaskQueue(3);
     taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {
-      progress.countDown();
+      progress.incrementProgress();
     });
 
     for (let thread of threads) {
@@ -202,7 +202,7 @@ export abstract class ThreadListModel extends Model {
 
     let actions = await Promise.all(actionPromises);
     for (let i = 0; i < actions.length; i++) {
-      progress.countDown();
+      progress.incrementProgress();
 
       let action = actions[i];
       if (!action)

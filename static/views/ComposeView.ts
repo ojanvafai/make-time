@@ -52,7 +52,6 @@ export class ComposeView extends View {
     this.to_.style.cssText = `
       flex: 1;
       line-height: 1em;
-      word-break: break-word;
     `;
     this.appendLine_('To:\xa0', this.to_);
 

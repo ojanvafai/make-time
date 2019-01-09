@@ -203,7 +203,7 @@ export async function login() {
     });
   }
 
-  progress.countDown();
+  progress.incrementProgress();
 }
 
 async function updateSigninStatus(isSignedIn: boolean) {

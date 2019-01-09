@@ -190,7 +190,7 @@ export class TriageModel extends ThreadListModel {
         'TriageModel.doFetches_', threads.length, 'Updating thread list...');
 
     for (let thread of threads) {
-      progress.countDown();
+      progress.incrementProgress();
       await thread.fetch();
       await this.processThread_(thread, true);
     }

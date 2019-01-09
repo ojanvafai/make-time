@@ -82,7 +82,7 @@ export class ComposeModel extends Model {
     let progress = this.updateTitle('ComposeModel.send', 1, 'Sending...');
     await send(this.body_, to, this.subject_);
     await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
-    progress.countDown();
+    progress.incrementProgress();
 
     this.sending_ = false;
   }

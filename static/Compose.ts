@@ -39,6 +39,7 @@ export abstract class Compose extends HTMLElement {
       border: 1px solid;
       outline: none;
       background-color: white;
+      word-break: break-word;
 
       /* Match gmail default style of tiny text in compose to avoid different sizes on copy-paste. */
       font-family: Arial, Helvetica, sans-serif;

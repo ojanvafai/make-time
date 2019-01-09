@@ -443,7 +443,7 @@ export class MailProcessor {
 
     const taskQueue = new TaskQueue(3);
     taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {
-      progress.countDown();
+      progress.incrementProgress();
     });
     for (let thread of threads) {
       taskQueue.queueTask(() => this.processThread_(thread));
@@ -468,7 +468,7 @@ export class MailProcessor {
         'dequeue', threads.length, `Dequeuing from ${labelName}...`);
 
     for (var i = 0; i < threads.length; i++) {
-      progress.countDown();
+      progress.incrementProgress();
 
       var thread = threads[i];
       let addLabelIds = ['INBOX', autoLabel];
