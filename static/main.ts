@@ -240,7 +240,7 @@ async function onLoad() {
           createMenuItem('Compose', {href: '/compose', nested: true}),
           createMenuItem('Triage', {href: '/triage', nested: true}),
           createMenuItem('Todo', {href: '/todo', nested: true}),
-          createMenuItem('Calendar', {href: '/calendar'}), settingsButton,
+          createMenuItem('Calendar (alpha)', {href: '/calendar'}), settingsButton,
           helpButton);
 
   await routeToCurrentLocation();
