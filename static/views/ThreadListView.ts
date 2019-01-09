@@ -10,6 +10,7 @@ import {ViewInGmailButton} from '../ViewInGmailButton.js';
 import {ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
+import { RadialProgress } from '../RadialProgress.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
     ThreadRow|null) => {
@@ -200,7 +201,10 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, public allLabels: Labels,
-      private scrollContainer_: HTMLElement, public updateTitle: any,
+      private scrollContainer_: HTMLElement,
+      public updateTitle:
+          (key: string, count: number,
+           ...title: (HTMLElement|string)[]) => RadialProgress,
       private setSubject_: (...subject: (Node|string)[]) => void,
       private showBackArrow_: any, private allowedReplyLength_: number,
       private contacts_: any, private autoStartTimer_: boolean,
@@ -563,7 +567,7 @@ export class ThreadListView extends View {
 
     if (action.destination === undefined)
       throw 'This should never happen.';
-    await this.markTriaged(action.destination);
+    await this.markTriaged_(action.destination);
   }
 
   transitionToThreadList_(focusedRow: ThreadRow|null) {
@@ -588,10 +592,10 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.style.display = 'none';
   }
 
-  async markTriaged(
+  private async markTriaged_(
       destination: string|null, expectedNewMessageCount?: number) {
     if (this.renderedRow_) {
-      this.model_.markSingleThreadTriaged(
+      await this.model_.markSingleThreadTriaged(
           this.renderedRow_.thread, destination, expectedNewMessageCount);
     } else {
       let threads: Thread[] = [];
@@ -618,7 +622,7 @@ export class ThreadListView extends View {
       if (focusedRowIsSelected)
         this.setFocus(firstUnselectedRowAfterFocused);
 
-      this.model_.markThreadsTriaged(
+      await this.model_.markThreadsTriaged(
           threads, destination, expectedNewMessageCount);
     }
   }
@@ -656,7 +660,8 @@ export class ThreadListView extends View {
     this.setSubject_(subjectText, this.model_.getGroupName(thread));
 
     let rendered = this.renderedRow_.rendered;
-    if (rendered.isRendered() && rendered.parentNode != this.singleThreadContainer_)
+    if (rendered.isRendered() &&
+        rendered.parentNode != this.singleThreadContainer_)
       throw 'Tried to rerender already rendered thread. This should never happen.';
 
     if (rendered.isRendered()) {
@@ -765,7 +770,8 @@ export class ThreadListView extends View {
       if (this.isSending_)
         return;
       this.isSending_ = true;
-      this.updateTitle('ThreadListView.sendReply', 'Sending reply...');
+      let progress =
+          this.updateTitle('ThreadListView.sendReply', 1, 'Sending reply...');
 
       if (!this.renderedRow_)
         throw 'Something went wrong. This should never happen.';
@@ -779,10 +785,10 @@ export class ThreadListView extends View {
       if (ARCHIVE_ACTION.destination !== null)
         throw 'This should never happen.';
       let expectedNewMessageCount = 1;
-      await this.markTriaged(
+      await this.markTriaged_(
           ARCHIVE_ACTION.destination, expectedNewMessageCount);
 
-      this.updateTitle('ThreadListView.sendReply');
+      progress.countDown();
       this.isSending_ = false;
     })
 

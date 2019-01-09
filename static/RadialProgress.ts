@@ -79,6 +79,11 @@ export class RadialProgress extends HTMLElement {
 
   addToTotal(count: number) {
     this.total_ += count;
+    // Can't show meaningful progress with < 3 items.
+    if (this.total_ < 3)
+      this.style.display = 'none';
+    else
+      this.render();
   }
 
   countDown() {
@@ -86,18 +91,20 @@ export class RadialProgress extends HTMLElement {
       throw 'This should never happen.';
 
     this.completed_++;
-    if (this.completed_ == this.total_) {
-      this.dispatchEvent(new CompletedEvent());
-      this.total_ = 0;
-      this.completed_ = 0;
-    }
+    if (this.completed_ == this.total_)
+      this.complete_();
+    else
+      this.render();
+  }
 
-    // Can't show meaningful progress with < 3 items.
-    if (this.total_ < 3) {
-      this.style.display = 'none';
-      return;
-    }
+  complete_() {
+    this.dispatchEvent(new CompletedEvent());
+    this.total_ = 0;
+    this.completed_ = 0;
+    this.style.display = 'none';
+  }
 
+  render() {
     this.style.display = 'inline-block';
 
     let firstHalfAngle;
@@ -105,7 +112,7 @@ export class RadialProgress extends HTMLElement {
 
     let ratio = this.completed_ / this.total_;
     // Always have some of the progress indicated.
-    let drawAngle = Math.max(10, ratio * 360);
+    let drawAngle = Math.max(18, ratio * 360);
     if (drawAngle <= 180) {
       firstHalfAngle = drawAngle;
       secondHalfAngle = 0;
