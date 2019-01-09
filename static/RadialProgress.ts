@@ -79,6 +79,12 @@ export class RadialProgress extends HTMLElement {
 
   addToTotal(count: number) {
     this.total_ += count;
+
+    // Can't show meaningful progress with < 3 items.
+    if (this.total_ < 3) {
+      this.style.display = 'none';
+      return;
+    }
   }
 
   countDown() {
@@ -90,12 +96,6 @@ export class RadialProgress extends HTMLElement {
       this.dispatchEvent(new CompletedEvent());
       this.total_ = 0;
       this.completed_ = 0;
-    }
-
-    // Can't show meaningful progress with < 3 items.
-    if (this.total_ < 3) {
-      this.style.display = 'none';
-      return;
     }
 
     this.style.display = 'inline-block';
