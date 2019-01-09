@@ -15,7 +15,7 @@ let UNCHECKED_BACKGROUND_COLOR = 'white';
 
 export class ThreadRow extends HTMLElement {
   focused_: boolean;
-  rendered!: RenderedThread;
+  rendered: RenderedThread;
   mark: boolean|undefined;
   private checkBox_: HTMLInputElement;
   private label_: HTMLElement;
@@ -64,6 +64,7 @@ export class ThreadRow extends HTMLElement {
     };
     this.append(this.messageDetails_);
 
+    this.rendered = new RenderedThread(thread);
     this.renderRow_();
   }
 
@@ -84,21 +85,7 @@ export class ThreadRow extends HTMLElement {
     return parent;
   }
 
-  removeRendered() {
-    this.rendered.remove();
-  }
-
-  update() {
-    this.rendered.update();
-  }
-
-  render(container: HTMLElement) {
-    return this.rendered.render(container);
-  }
-
   renderRow_() {
-    this.rendered = new RenderedThread(this.thread);
-
     let subject = this.thread.getSubjectSync();
     let messages = this.thread.getMessagesSync();
 

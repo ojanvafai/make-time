@@ -307,7 +307,7 @@ export class ThreadListView extends View {
 
   async update() {
     if (this.renderedRow_)
-      await this.renderedRow_.update();
+      await this.renderedRow_.rendered.update();
   }
 
   updateActions_() {
@@ -408,9 +408,11 @@ export class ThreadListView extends View {
     if (!row)
       return;
 
-    let dom = row.render(this.singleThreadContainer_);
-    dom.style.bottom = '0';
-    dom.style.visibility = 'hidden';
+    let rendered = row.rendered;
+    rendered.render();
+    rendered.style.bottom = '0';
+    rendered.style.visibility = 'hidden';
+    this.singleThreadContainer_.append(rendered);
   }
 
   handleBestEffortChanged_() {
@@ -624,7 +626,7 @@ export class ThreadListView extends View {
   setRenderedRowInternal_(row: ThreadRow|null) {
     this.hasNewRenderedRow_ = !!row;
     if (this.renderedRow_)
-      this.renderedRow_.removeRendered();
+      this.renderedRow_.rendered.remove();
     this.renderedRow_ = row;
   }
 
@@ -653,19 +655,23 @@ export class ThreadListView extends View {
     subjectText.append(subject, viewInGmailButton);
     this.setSubject_(subjectText, this.model_.getGroupName(thread));
 
-    if (!this.renderedRow_)
-      throw 'Something went wrong. This should never happen.';
+    let rendered = this.renderedRow_.rendered;
+    if (rendered.isRendered() && rendered.parentNode != this.singleThreadContainer_)
+      throw 'Tried to rerender already rendered thread. This should never happen.';
 
-    let dom = this.renderedRow_.render(this.singleThreadContainer_);
-    // If previously prerendered offscreen, move it on screen.
-    dom.style.bottom = '';
-    dom.style.visibility = 'visible';
+    if (rendered.isRendered()) {
+      rendered.style.bottom = '';
+      rendered.style.visibility = 'visible';
+    } else {
+      this.renderedRow_.rendered.render();
+      this.singleThreadContainer_.append(rendered);
+    }
 
     this.updateActions_();
 
-    var elementToScrollTo = dom.querySelector('.unread');
+    var elementToScrollTo = rendered.querySelector('.unread');
     if (!elementToScrollTo) {
-      let messageNodes = dom.querySelectorAll('.message');
+      let messageNodes = rendered.querySelectorAll('.message');
       elementToScrollTo = messageNodes[messageNodes.length - 1];
     }
 
@@ -679,7 +685,7 @@ export class ThreadListView extends View {
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to
     // make renderOne_ async.
-    this.renderedRow_.update();
+    this.renderedRow_.rendered.update();
   }
 
   showQuickReply() {

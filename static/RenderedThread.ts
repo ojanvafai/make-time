@@ -1,16 +1,16 @@
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 
-export class RenderedThread {
-  private dom_: HTMLElement|null;
-
+export class RenderedThread extends HTMLElement {
   constructor(public thread: Thread) {
-    this.dom_ = null;
-  }
-
-  remove() {
-    if (this.dom_)
-      this.dom_.remove();
+    super();
+    this.style.cssText = `
+      background-color: white;
+      position: absolute;
+      left: 0;
+      right: 0;
+      max-width: 1000px;
+    `;
   }
 
   // TODO: We should be listening to update events on Thread and doing
@@ -19,49 +19,23 @@ export class RenderedThread {
   // RenderedThread and we want to update RenderedThread in those cases as well.
   async update() {
     await this.thread.update();
-    this.appendMessages_();
+    this.render();
   }
 
-  hasBeenRendered() {
-    return !!this.dom_;
+  isRendered() {
+    return !!this.parentNode;
   }
 
-  appendMessages_() {
-    if (!this.dom_) {
-      this.dom_ = document.createElement('div');
-      this.dom_.style.cssText = `
-        background-color: white;
-        position: absolute;
-        left: 0;
-        right: 0;
-        max-width: 1000px;
-      `;
-    }
-
+  render() {
     let messages = this.thread.getMessagesSync();
     // Only append new messages.
-    messages = messages.slice(this.dom_.childElementCount);
+    messages = messages.slice(this.childElementCount);
     for (let message of messages) {
       let rendered = this.renderMessage_(message);
-      if (this.dom_.childElementCount == 0)
+      if (this.childElementCount == 0)
         rendered.style.border = '0';
-      this.dom_.append(rendered);
+      this.append(rendered);
     }
-  }
-
-  render(newContainer: HTMLElement) {
-    if (this.dom_) {
-      // Intentionally don't await this so the messages are rendered ASAP and so
-      // render can stay sync.
-      this.update();
-    } else {
-      this.appendMessages_();
-    }
-
-    let dom = <HTMLElement>this.dom_;
-    if (dom.parentNode != newContainer)
-      newContainer.append(dom);
-    return dom;
   }
 
   renderMessage_(processedMessage: Message) {
@@ -189,3 +163,4 @@ export class RenderedThread {
     return date.toLocaleString(undefined, options);
   }
 }
+window.customElements.define('mt-rendered-thread', RenderedThread);
