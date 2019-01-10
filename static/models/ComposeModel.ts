@@ -45,7 +45,11 @@ export class ComposeModel extends Model {
   }
 
   async flush() {
-    if (!this.to_ && !this.inlineTo_ && !this.subject_ && !this.body_) {
+    // Intentionally only flush if the body is filled out to try to balance not
+    // accidentally sending emails to people because you didn't notice that the
+    // to field had old values but also not losing a long email if maketime
+    // crashes or something.
+    if (!this.body_) {
       await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
       return;
     }
