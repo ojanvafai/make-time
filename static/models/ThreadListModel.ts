@@ -202,17 +202,16 @@ export abstract class ThreadListModel extends Model {
 
     let actions = await Promise.all(actionPromises);
     for (let i = 0; i < actions.length; i++) {
-      progress.incrementProgress();
-
       let action = actions[i];
-      if (!action)
-        continue;
+      if (action) {
+        await action.thread.modify(action.removed, action.added);
+        await action.thread.update();
+        await this.addThread(action.thread);
 
-      await action.thread.modify(action.removed, action.added);
-      await action.thread.update();
-      await this.addThread(action.thread);
+        this.dispatchEvent(new UndoEvent(action.thread));
+      }
 
-      this.dispatchEvent(new UndoEvent(action.thread));
+      progress.incrementProgress();
     }
   }
 
