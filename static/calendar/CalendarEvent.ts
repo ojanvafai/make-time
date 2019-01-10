@@ -4,16 +4,29 @@ const OOO_REGEX = /.*(OOO|Holiday).*/;
 const EMAIL_REGEX = /.*(Email).*/;
 const INTERVIEW_REGEX = /.*(Interview).*/;
 
+interface GCalAttendee {
+  id: string;
+  email: string;
+  displayName?: string|undefined;
+  organizer: boolean;
+  self: boolean;
+  resource: boolean;
+  optional?: boolean|undefined;
+  responseStatus: gapi.client.calendar.AttendeeResponseStatus;
+  comment?: string|undefined;
+  additionalGuests?: number|undefined;
+}
+
 export class CalendarEvent {
   eventId: string;
-  colorId: number;
+  colorId: number|undefined;
   type: string;
   summary: string;
   start: Date;
   end: Date;
   duration: number;
   attendeeCount: number;
-  recurringEventId: string;
+  recurringEventId: string|undefined;
   shouldIgnore: boolean;
 
   static async fetchEventWithId(eventId: string) {
@@ -25,9 +38,9 @@ export class CalendarEvent {
   }
 
   getTargetColorId(): number {
-    const targetColorId = TYPES.get(this.type)
+    const targetColorId = TYPES.get(this.type);
     if (targetColorId === undefined)
-    throw ('No color id found for type.')
+      throw ('No color id found for type.');
     return targetColorId;
   }
 
@@ -45,9 +58,10 @@ export class CalendarEvent {
     return this.shouldIgnore;
   }
 
-  constructor(gcalEvent: any) {
+  constructor(gcalEvent: gapi.client.calendar.Event) {
     this.eventId = gcalEvent.id;
-    this.colorId = gcalEvent.colorId;
+    if (gcalEvent.colorId)
+      this.colorId = TYPES.get(gcalEvent.colorId);
     this.summary = gcalEvent.summary;
     this.recurringEventId = gcalEvent.recurringEventId;
     this.shouldIgnore = gcalEvent.transparency === 'transparent' ||
@@ -58,11 +72,9 @@ export class CalendarEvent {
     if (!attendees)
       attendees = [];
 
-    attendees =
-        attendees
-            .filter((attendee: any) => !attendee.resource && !attendee.self)
-
-                this.attendeeCount = attendees.length;
+    attendees = attendees.filter(
+        (attendee: GCalAttendee) => !attendee.resource && !attendee.self);
+    this.attendeeCount = attendees.length;
 
     if (gcalEvent.attendeesOmitted)
       this.attendeeCount = Infinity;
@@ -70,11 +82,15 @@ export class CalendarEvent {
     let start = gcalEvent.start.dateTime;
     if (!start)
       start = gcalEvent.start.date;
+    if (!start)
+      throw 'Got a calendar entry with no start date.';
     this.start = CalendarEvent.parseDate(start);
 
     let end = gcalEvent.end.dateTime;
     if (!end)
       end = gcalEvent.end.date;
+    if (!end)
+      throw 'Got a calendar entry with no end date.';
     this.end = CalendarEvent.parseDate(end);
 
     this.duration = this.end.getTime() - this.start.getTime();
