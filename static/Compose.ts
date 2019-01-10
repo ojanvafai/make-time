@@ -12,6 +12,12 @@ export class AutoCompleteEntry extends HTMLElement {
 }
 window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
 
+export class SubmitEvent extends Event {
+  constructor(public ctrlKey: boolean) {
+    super('submit');
+  }
+}
+
 export abstract class Compose extends HTMLElement {
   protected content: HTMLElement;
   private placeholder_: string|undefined;
@@ -61,14 +67,14 @@ export abstract class Compose extends HTMLElement {
           return;
 
         case 'Enter':
-          if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey)
+          if (e.altKey || e.metaKey || e.shiftKey)
             return;
 
           if (this.updateIsAutocompleting()) {
             this.submitAutocomplete_();
             e.preventDefault();
           } else if (isSingleline) {
-            this.dispatchEvent(new Event('submit'));
+            this.dispatchEvent(new SubmitEvent(e.ctrlKey));
             e.preventDefault();
           }
           return;

@@ -1,5 +1,6 @@
 import {Action, registerActions} from '../Actions.js';
 import {login} from '../BaseMain.js';
+import {SubmitEvent} from '../Compose.js';
 import {Contacts} from '../Contacts.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
@@ -714,7 +715,7 @@ export class ThreadListView extends View {
       background-color: white;
     `;
     compose.placeholder =
-        'Hit <enter> to send, <esc> to cancel. Allowed length is configurable in Settings.';
+        'Hit <enter> to send, <ctrl+enter> to send and archive, <esc> to cancel. Allowed length is configurable in Settings.';
 
     let replyAllLabel = document.createElement('label');
     let replyAll = document.createElement('input');
@@ -741,7 +742,9 @@ export class ThreadListView extends View {
 
     compose.addEventListener('cancel', onClose);
 
-    compose.addEventListener('submit', async () => {
+    compose.addEventListener('submit', async (e: Event) => {
+      let submitEvent = <SubmitEvent>e;
+
       let textLength = compose.plainText.length;
       if (!textLength)
         return;
@@ -770,7 +773,14 @@ export class ThreadListView extends View {
       this.isSending_ = false;
 
       this.updateActions_();
-      await this.renderedRow_.rendered.update();
+
+      if (submitEvent.ctrlKey) {
+        let expectedNewMessageCount = 1;
+        await this.markTriaged_(
+            ARCHIVE_ACTION.destination, expectedNewMessageCount);
+      } else {
+        await this.renderedRow_.rendered.update();
+      }
     })
 
     compose.addEventListener('input', () => {
