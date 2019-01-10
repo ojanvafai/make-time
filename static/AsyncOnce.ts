@@ -7,7 +7,9 @@ export class AsyncOnce<T> {
   private value_: T|null;
   private isDoing_: boolean = false;
 
-  constructor(asyncAction: ((value?: {}|PromiseLike<T>) => PromiseLike<T>)) {
+  constructor(asyncAction:
+                  ((value?: {}|PromiseLike<NonNullable<T>>) =>
+                       PromiseLike<NonNullable<T>>)) {
     this.queued_ = [];
     this.asyncAction_ = asyncAction;
     this.value_ = null;
