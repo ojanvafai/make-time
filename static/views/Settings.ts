@@ -192,11 +192,14 @@ export class SettingsView extends HTMLElement {
       return;
     }
 
-    let updates: {key: string|null, value?: string|boolean}[] = [];
+    let updates: {key: string, value: string|boolean}[] = [];
     let inputs = this.basicSettings_.querySelectorAll('input');
     for (let input of inputs) {
+      let key = input.getAttribute('key');
+      if (!key)
+        throw 'This should never happen.';
       let value = input.type == 'checkbox' ? input.checked : input.value;
-      updates.push({key: input.getAttribute('key'), value: value});
+      updates.push({key: key, value: value});
     }
     await this.settings_.writeUpdates(updates);
 
