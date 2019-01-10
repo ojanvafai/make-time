@@ -29,6 +29,12 @@ const HELP_TEXT =
 URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
 
+interface QueryParameters {
+   to?: string;
+   subject?: string;
+   body?: string;
+}
+
 export class ComposeView extends View {
   private to_: AddressCompose;
   private subject_: HTMLInputElement;
@@ -36,7 +42,7 @@ export class ComposeView extends View {
   private inlineTo_: HTMLElement|undefined;
 
   constructor(
-      private model_: ComposeModel, contacts: Contacts, private params_: any = {}) {
+      private model_: ComposeModel, contacts: Contacts, private params_: QueryParameters = {}) {
     super();
 
     this.style.cssText = `

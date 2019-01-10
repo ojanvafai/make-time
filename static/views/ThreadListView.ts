@@ -208,7 +208,7 @@ export class ThreadListView extends View {
           (key: string, count: number,
            ...title: (HTMLElement|string)[]) => RadialProgress,
       private setSubject_: (...subject: (Node|string)[]) => void,
-      private showBackArrow_: any, private allowedReplyLength_: number,
+      private showBackArrow_: (show: boolean) => void, private allowedReplyLength_: number,
       private contacts_: Contacts, private autoStartTimer_: boolean,
       private countDown_: boolean, private timerDuration_: number,
       bottomButtonUrl: string, bottomButtonText: string) {
@@ -447,7 +447,7 @@ export class ThreadListView extends View {
       this.focusedRow_.scrollIntoView({'block': 'nearest'});
   }
 
-  moveFocus(action: any) {
+  moveFocus(action: Action) {
     let rows = this.getRows_();
     if (!rows.length)
       return;

@@ -218,7 +218,6 @@ function createMenuItem(name: string, options: any) {
     a.onclick = options.onclick;
 
   a.addEventListener('click', closeMenu);
-
   return a;
 }
 

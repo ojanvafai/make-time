@@ -168,7 +168,9 @@ export class FiltersView extends HTMLElement {
       if (isHeaderFilterField(key)) {
         headerRules.push({name: key.substring(1), value: String(obj[key])});
       } else {
-        setFilterField(rule, key, obj[key]);
+        let validField = setFilterField(rule, key, obj[key]);
+        if (!validField)
+          return null;
       }
     }
     if (headerRules.length)
@@ -184,9 +186,19 @@ export class FiltersView extends HTMLElement {
       let query = (<HTMLElement>row.querySelector('.query')).textContent;
       let parsed = this.parseQuery_(query, true);
       let rule = this.convertToFilterRule(parsed);
+      if (!rule) {
+        alert('Rule has invalid field. Not saving filters.');
+        return;
+      }
 
       let label = <HTMLInputElement>row.querySelector('.label');
+
       rule.label = label.value;
+
+      if (rule.label === '') {
+        alert('Filter rule has no label. Not saving filters.');
+        return;
+      }
 
       let matchAll = <HTMLInputElement>row.querySelector('.matchallmessages');
       if (matchAll.checked)

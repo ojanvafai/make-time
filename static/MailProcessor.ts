@@ -5,7 +5,7 @@ import {Message} from './Message.js';
 import {TriageModel} from './models/TriageModel.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage} from './ServerStorage.js';
-import {HeaderFilterRule, Settings} from './Settings.js';
+import {HeaderFilterRule, Settings, FilterRule} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 import { TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
 import {DEFAULT_QUEUE, Thread} from './Thread.js';
@@ -208,7 +208,7 @@ export class MailProcessor {
         headerValue.toLowerCase().trim().includes(header.value);
   }
 
-  matchesRule(rule: any, message: Message) {
+  matchesRule(rule: FilterRule, message: Message) {
     var matches = false;
     if (rule.nolistid) {
       if (message.listId)
@@ -269,7 +269,7 @@ export class MailProcessor {
   }
 
   // TODO: Also log which message matched.
-  async logMatchingRule_(thread: Thread, rule: any) {
+  async logMatchingRule_(thread: Thread, rule: FilterRule) {
     if (this.settings.get(ServerStorage.KEYS.LOG_MATCHING_RULES)) {
       let subject = await thread.getSubject();
       console.log(`Thread with subject "${subject}" matched rule ${
@@ -277,7 +277,7 @@ export class MailProcessor {
     }
   }
 
-  async getWinningLabel(thread: Thread, rules: any[]) {
+  async getWinningLabel(thread: Thread, rules: FilterRule[]) {
     var messages = await thread.getMessages();
 
     for (let rule of rules) {

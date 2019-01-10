@@ -1,5 +1,10 @@
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
+export interface StorageUpdate {
+  key: string;
+  value: boolean | string | number | null;
+}
+
 export class ServerStorage {
   private static backendValues_: any;
   static BACKEND_SHEET_NAME_: string;
@@ -30,7 +35,7 @@ export class ServerStorage {
     return ServerStorage.backendValues_[key];
   }
 
-  async writeUpdates(updates: any[]) {
+  async writeUpdates(updates: StorageUpdate[]) {
     for (let update of updates) {
       ServerStorage.backendValues_[update.key] = update.value;
     }

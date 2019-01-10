@@ -997,7 +997,7 @@ declare namespace gapi.client {
              * values are less than the matched ranges only the specified values will be
              * written, existing values in the matched ranges will remain unaffected.
              */
-            values?: any[][];
+            values?: (boolean|string|number|null)[][];
         }
         interface DataValidationRule {
             /** The condition that data in the cell must match. */
@@ -2525,7 +2525,7 @@ declare namespace gapi.client {
              * Null values will be skipped.
              * To set a cell to an empty value, set the string value to an empty string.
              */
-            values?: any[][];
+            values?: (boolean|string|number|null)[][];
         }
         interface DeveloperMetadataResource {
             /**

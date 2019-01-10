@@ -27,7 +27,7 @@ export abstract class Compose extends HTMLElement {
 
   abstract isStillAutoCompleting(): boolean|null;
   abstract autocompleteText(): string;
-  abstract selectedEntry(selectedItem: any): any;
+  abstract selectedEntry(selectedItem: AutoCompleteEntry): Node;
   protected abstract getAutocompleteRange(): Range|null;
   protected abstract clearAutocompleteRange(): void;
   protected abstract insertAddress(selectedItem: AutoCompleteEntry): void;

@@ -350,36 +350,4 @@ export class Labels {
   getPriorityLabelNames() {
     return Array.from(this.priorityLabels_);
   }
-
-  async getThreadCountForLabels(labelFilter: (label: string) => boolean) {
-    let batch = gapi.client.newBatch();
-
-    let addedAny = false;
-    for (let entry of this.idToLabel_) {
-      if (labelFilter(entry[1])) {
-        addedAny = true;
-        batch.add(gapi.client.gmail.users.labels.get({
-          userId: USER_ID,
-          id: entry[0],
-        }));
-      }
-    }
-
-    let labelsWithThreads: {name: string, count: number}[] = [];
-
-    // If this is a first run, there may be no labels that match the filter rule
-    // and gapi batching throws when you try to await a batch that has no
-    // entries.
-    if (addedAny) {
-      let labelDetails = await batch;
-      for (let key in labelDetails.result) {
-        let details: any = labelDetails.result[key].result;
-        labelsWithThreads.push({
-          name: details.name,
-          count: details.threadsTotal,
-        });
-      }
-    }
-    return labelsWithThreads;
-  }
 }

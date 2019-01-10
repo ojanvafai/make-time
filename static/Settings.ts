@@ -1,7 +1,7 @@
 import {AsyncOnce} from './AsyncOnce.js';
 import {showDialog} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
-import {ServerStorage} from './ServerStorage.js';
+import {ServerStorage, StorageUpdate} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export interface HeaderFilterRule {
@@ -10,7 +10,7 @@ export interface HeaderFilterRule {
 }
 
 export interface FilterRule {
-  label?: string;
+  label: string;
   matchallmessages?: string;
   nolistid?: boolean;
   nocc?: boolean;
@@ -61,8 +61,9 @@ export function setFilterField(rule: FilterRule, name: string, value: string) {
       break;
 
     default:
-      throw 'This should never happen.';
+      return false;
   }
+  return true;
 }
 
 export function getFilterField(rule: FilterRule, name: string): string|boolean|
@@ -497,7 +498,7 @@ export class Settings {
     return value;
   }
 
-  async writeUpdates(updates: any[]) {
+  async writeUpdates(updates: StorageUpdate[]) {
     await this.storage_.writeUpdates(updates);
   }
 
@@ -521,7 +522,7 @@ export class Settings {
     let hasDeprecatedHeaderRule = false;
 
     for (let i = 1, l = rawRules.length; i < l; i++) {
-      let ruleObj: FilterRule = {};
+      let ruleObj: FilterRule = {label: ''};
       for (let j = 0; j < ruleNames.length; j++) {
         let name = ruleNames[j].toLowerCase();
         let value = rawRules[i][j];
@@ -565,9 +566,20 @@ export class Settings {
             break;
 
           default:
-            setFilterField(ruleObj, name, value);
+            let validField = setFilterField(ruleObj, name, value);
+            if (!validField)
+              throw 'This should never happen.';
         }
       }
+
+      if (ruleObj.label === '') {
+        console.warn(`There's filter with no label:`, ruleObj);
+        // Give it a fallback label. This shouldn't ever happen, but if we have
+        // a bug such that it does at least prevent the rule from being totally
+        // ignored and discarded.
+        ruleObj.label = 'nolabel';
+      }
+
       this.filters_.push(ruleObj);
     }
 
@@ -583,8 +595,8 @@ export class Settings {
 
       let invalidField = Object.keys(rule).find(
           x => !Settings.FILTERS_SHEET_COLUMNS_.includes(x));
-      if (invalidField)
-        throw `Invalid filter rule field: ${invalidField}. Not saving filters.`;
+      if (invalidField || rule.label === '')
+        throw 'This should never happen.';
 
       for (let column of Settings.FILTERS_SHEET_COLUMNS_) {
         let value;
