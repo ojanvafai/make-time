@@ -108,7 +108,7 @@ export class RadialProgress extends HTMLElement {
   }
 
   private complete_() {
-    if (!this.allowOverflow_)
+    if (this.allowOverflow_)
       return;
 
     this.dispatchEvent(new CompletedEvent());
