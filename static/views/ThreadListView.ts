@@ -715,22 +715,12 @@ export class ThreadListView extends View {
     `;
     compose.placeholder =
         'Hit <enter> to send, <esc> to cancel. Allowed length is configurable in Settings.';
-    container.append(compose);
-
-    let sideBar = document.createElement('div');
-    sideBar.style.cssText = `margin: 4px;`;
 
     let replyAllLabel = document.createElement('label');
     let replyAll = document.createElement('input');
     replyAll.type = 'checkbox';
     replyAll.checked = true;
     replyAllLabel.append(replyAll, 'reply all');
-
-    let progressContainer = document.createElement('div');
-    progressContainer.style.cssText = `
-      display: flex;
-      align-items: center;
-    `;
 
     let progress = new RadialProgress(true);
     progress.addToTotal(this.allowedReplyLength_);
@@ -741,34 +731,13 @@ export class ThreadListView extends View {
       color: red;
     `;
 
-    progressContainer.append(count, progress);
-
-    let replyBar = document.createElement('div');
-    replyBar.style.cssText = 'display: flex';
-    replyBar.append(replyAllLabel, progressContainer);
-
-    let postSendActions = document.createElement('select');
-    let actionList = [
-      ARCHIVE_ACTION, BLOCKED_ACTION, MUST_DO_ACTION, URGENT_ACTION,
-      BACKLOG_ACTION, NEEDS_FILTER_ACTION
-    ];
-    for (let action of actionList) {
-      let option = document.createElement('option');
-      option.textContent = action.name;
-      // Convert to string since the archive action is null.
-      option.value = String(action.destination);
-      postSendActions.append(option);
-    }
-
-    sideBar.append(postSendActions, replyBar);
-    container.append(sideBar);
-
     let onClose = this.updateActions_.bind(this);
 
     let cancel = document.createElement('button');
     cancel.textContent = 'cancel';
     cancel.onclick = onClose;
-    container.append(cancel);
+
+    container.append(compose, cancel, replyAllLabel, count, progress);
 
     compose.addEventListener('cancel', onClose);
 
@@ -783,33 +752,25 @@ export class ThreadListView extends View {
         return;
       }
 
+      if (!this.renderedRow_)
+        throw 'Something went wrong. This should never happen.';
+
       if (this.isSending_)
         return;
       this.isSending_ = true;
       let progress =
           this.updateTitle('ThreadListView.sendReply', 1, 'Sending reply...');
 
-      if (!this.renderedRow_)
-        throw 'Something went wrong. This should never happen.';
-
-      let destination: string|null = postSendActions.selectedOptions[0].value;
-      // Sigh. HTMLOptionElement.value returns the text content of the option if
-      // there's no value set on the option. So we need to set "null" as a
-      // string and then convert it back to proper null here.
-      if (destination === 'null')
-        destination = null;
-
       // TODO: Handle if sending fails in such a way that the user can at least
       // save their message text.
       await this.renderedRow_.thread.sendReply(
-          compose.value, compose.getEmails(), replyAll.checked);
-      this.updateActions_();
-
-      let expectedNewMessageCount = 1;
-      await this.markTriaged_(destination, expectedNewMessageCount);
+        compose.value, compose.getEmails(), replyAll.checked);
 
       progress.incrementProgress();
       this.isSending_ = false;
+
+      this.updateActions_();
+      await this.renderedRow_.rendered.update();
     })
 
     compose.addEventListener('input', () => {
