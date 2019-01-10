@@ -1,5 +1,6 @@
 import {Action, registerActions} from '../Actions.js';
 import {login} from '../BaseMain.js';
+import {Contacts} from '../Contacts.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
@@ -11,7 +12,6 @@ import {ViewInGmailButton} from '../ViewInGmailButton.js';
 import {ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
-import { Contacts } from '../Contacts.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
     ThreadRow|null) => {
@@ -665,13 +665,13 @@ export class ThreadListView extends View {
         rendered.parentNode != this.singleThreadContainer_)
       throw 'Tried to rerender already rendered thread. This should never happen.';
 
-    if (rendered.isRendered()) {
-      rendered.style.bottom = '';
-      rendered.style.visibility = 'visible';
-    } else {
+    if (!rendered.isRendered()) {
       this.renderedRow_.rendered.render();
       this.singleThreadContainer_.append(rendered);
     }
+
+    rendered.style.bottom = '';
+    rendered.style.visibility = 'visible';
 
     this.updateActions_();
 
@@ -764,7 +764,7 @@ export class ThreadListView extends View {
       // TODO: Handle if sending fails in such a way that the user can at least
       // save their message text.
       await this.renderedRow_.thread.sendReply(
-        compose.value, compose.getEmails(), replyAll.checked);
+          compose.value, compose.getEmails(), replyAll.checked);
 
       progress.incrementProgress();
       this.isSending_ = false;
