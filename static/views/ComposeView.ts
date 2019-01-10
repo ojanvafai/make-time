@@ -6,6 +6,7 @@ import {ComposeModel} from '../models/ComposeModel.js';
 
 import {HelpDialog} from './HelpDialog.js';
 import {View} from './View.js';
+import { Contacts } from '../Contacts.js';
 
 let SEND: Action = {
   name: 'Send',
@@ -35,7 +36,7 @@ export class ComposeView extends View {
   private inlineTo_: HTMLElement|undefined;
 
   constructor(
-      private model_: ComposeModel, contacts: any, private params_: any = {}) {
+      private model_: ComposeModel, contacts: Contacts, private params_: any = {}) {
     super();
 
     this.style.cssText = `

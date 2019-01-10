@@ -1,3 +1,5 @@
+import { Contacts } from "./Contacts";
+
 export class AutoCompleteEntry extends HTMLElement {
   name: string;
   email: string;
@@ -26,7 +28,7 @@ export abstract class Compose extends HTMLElement {
   protected abstract handleInput(e: InputEvent): void;
 
   constructor(
-      private contacts_: any, private valueIsPlainText_: boolean,
+      private contacts_: Contacts, private valueIsPlainText_: boolean,
       isSingleline?: boolean, private putMenuAbove_?: boolean) {
     super();
 
@@ -133,7 +135,7 @@ export abstract class Compose extends HTMLElement {
       this.append(this.autocompleteContainer_);
     }
 
-    if (this.contacts_.length)
+    if (this.contacts_.getAll().length)
       this.autocompleteContainer_.classList.remove('no-contacts');
     else
       this.autocompleteContainer_.classList.add('no-contacts');
@@ -221,7 +223,7 @@ export abstract class Compose extends HTMLElement {
 
     search = search.toLowerCase();
 
-    for (let contact of this.contacts_) {
+    for (let contact of this.contacts_.getAll()) {
       if (contact.name && contact.name.toLowerCase().includes(search)) {
         for (let email of contact.emails) {
           results.push({name: contact.name, email: email});

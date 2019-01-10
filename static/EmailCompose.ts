@@ -1,11 +1,12 @@
 import {AutoCompleteEntry, Compose} from './Compose.js';
+import { Contacts } from './Contacts.js';
 
 const SEPARATOR = ' ';
 
 export class EmailCompose extends Compose {
   private autocompleteRange_: Range|null;
 
-  constructor(contacts: any, isSingleline?: boolean, putMenuAbove?: boolean) {
+  constructor(contacts: Contacts, isSingleline?: boolean, putMenuAbove?: boolean) {
     super(contacts, false, isSingleline, putMenuAbove);
     this.autocompleteRange_ = null;
     this.content.style.padding = '8px';

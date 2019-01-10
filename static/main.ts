@@ -17,8 +17,9 @@ import {HelpDialog} from './views/HelpDialog.js';
 import {SettingsView} from './views/Settings.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
+import { Contacts } from './Contacts.js';
 
-let contacts_: Contact[] = [];
+let contacts_ = new Contacts();
 let currentView_: View;
 
 // Extract these before rendering any threads since the threads can have
@@ -244,7 +245,7 @@ async function onLoad() {
           helpButton);
 
   await routeToCurrentLocation();
-  await fetchContacts(gapi.auth.getToken());
+  await contacts_.fetch(gapi.auth.getToken());
   await update();
   // Wait until we've fetched all the threads before trying to process updates
   // regularly.
@@ -252,66 +253,6 @@ async function onLoad() {
 }
 
 onLoad();
-
-let CONTACT_STORAGE_KEY_ = 'contacts';
-
-interface Contact {
-  name: string;
-  emails: string[];
-}
-
-async function fetchContacts(token: any) {
-  if (contacts_.length)
-    return;
-
-  // This is 450kb! Either cache this and fetch infrequently, or find a way of
-  // getting the API to not send the data we don't need.
-  let response;
-  try {
-    response = await fetch(
-        'https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=' +
-        token.access_token + '&max-results=20000&v=3.0');
-  } catch (e) {
-    let message =
-        `Failed to fetch contacts. Google Contacts API is hella unsupported. See https://issuetracker.google.com/issues/115701813.`;
-
-    let contacts = await IDBKeyVal.getDefault().get(CONTACT_STORAGE_KEY_);
-    if (!contacts) {
-      ErrorLogger.log(message);
-      return;
-    }
-
-    ErrorLogger.log(`Using locally stored version of contacts. ${message}`);
-
-    // Manually copy each contact instead of just assigning because contacts_ is
-    // passed around and stored.
-    let parsed = JSON.parse(contacts);
-    for (let contact of parsed) {
-      contacts_.push(contact);
-    }
-    return;
-  }
-
-  let json = await response.json();
-  for (let entry of json.feed.entry) {
-    if (!entry.gd$email)
-      continue;
-    let contact = <Contact>{};
-    if (entry.title.$t)
-      contact.name = entry.title.$t;
-    contact.emails = [];
-    for (let email of entry.gd$email) {
-      contact.emails.push(email.address);
-    }
-    contacts_.push(contact);
-  }
-
-  // Store the final contacts object instead of the data fetched off the network
-  // since the latter can is order of magnitude larger and can exceed the
-  // allowed localStorage quota.
-  await IDBKeyVal.getDefault().set(
-      CONTACT_STORAGE_KEY_, JSON.stringify(contacts_));
-}
 
 async function gcLocalStorage() {
   let storage = new ServerStorage((await getSettings()).spreadsheetId);

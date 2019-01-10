@@ -11,6 +11,7 @@ import {ViewInGmailButton} from '../ViewInGmailButton.js';
 import {ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
+import { Contacts } from '../Contacts.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
     ThreadRow|null) => {
@@ -207,7 +208,7 @@ export class ThreadListView extends View {
            ...title: (HTMLElement|string)[]) => RadialProgress,
       private setSubject_: (...subject: (Node|string)[]) => void,
       private showBackArrow_: any, private allowedReplyLength_: number,
-      private contacts_: any, private autoStartTimer_: boolean,
+      private contacts_: Contacts, private autoStartTimer_: boolean,
       private countDown_: boolean, private timerDuration_: number,
       bottomButtonUrl: string, bottomButtonText: string) {
     super();

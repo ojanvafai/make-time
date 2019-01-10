@@ -1,5 +1,6 @@
 import {parseAddress, ParsedAddress, serializeAddress} from './Base.js';
 import {AutoCompleteEntry, Compose} from './Compose.js';
+import { Contacts } from './Contacts.js';
 
 const SEPARATOR = ',';
 const CURSOR_SENTINEL = '!!!!!!!!';
@@ -16,7 +17,7 @@ export class AddressCompose extends Compose {
   private autocompleteStartRange_: Range|undefined;
   private autocompleteCursorRange_: Range|undefined;
 
-  constructor(contacts: any) {
+  constructor(contacts: Contacts) {
     super(contacts, true);
     this.content.style.padding = '4px';
     this.content.setAttribute('inputmode', 'email');
