@@ -125,14 +125,9 @@ export class TriageModel extends ThreadListModel {
   }
 
   protected async fetch() {
-    let labels = await this.labels.getThreadCountForLabels((label: string) => {
-      return this.vacation_ ? label == Labels.needsTriageLabel(this.vacation_) :
-                              Labels.isNeedsTriageLabel(label);
-    });
-    let labelsToFetch =
-        labels.filter(data => data.count).map(data => data.name);
-    labelsToFetch =
-        this.queueSettings_.getSorted(labelsToFetch).map((item) => item[0]);
+    let labelsToFetch = this.vacation_ ?
+        [Labels.needsTriageLabel(this.vacation_)] :
+        this.labels.getNeedsTriageLabelNames();
 
     if (this.bestEffortThreads_)
       this.bestEffortThreads_ = [];

@@ -60,13 +60,8 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected async fetch() {
-    let labels = await this.labels.getThreadCountForLabels((label: string) => {
-      return this.vacation_ ? label == Labels.MUST_DO_LABEL :
-                              Labels.isPriorityLabel(label);
-    });
-    let labelsToFetch =
-        labels.filter(data => data.count).map(data => data.name);
-    labelsToFetch.sort(this.comparePriorities_);
+    let labelsToFetch = this.vacation_ ? [Labels.MUST_DO_LABEL] :
+                                         this.labels.getPriorityLabelNames();
 
     // Fetch the list of threads, and then only populate the ones that are in
     // the disk storage so as to show the user an update as soon as possible.
@@ -95,8 +90,8 @@ export class TodoModel extends ThreadListModel {
     if (!threads.length)
       return;
 
-let progress =    this.updateTitle(
-        'TodoModel.doFetches_',threads.length, 'Updating thread list...');
+    let progress = this.updateTitle(
+        'TodoModel.doFetches_', threads.length, 'Updating thread list...');
 
     for (let i = 0; i < threads.length; i++) {
       progress.incrementProgress();
