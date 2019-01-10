@@ -693,6 +693,9 @@ export class ThreadListView extends View {
     this.renderedRow_.rendered.update();
   }
 
+  // TODO: Make a proper QuickReply element. This function is getting unweildy
+  // and ThreadListView shouldn't know all these details about compose and
+  // sending.
   showQuickReply() {
     let container = document.createElement('div');
     container.style.cssText = `
@@ -713,20 +716,8 @@ export class ThreadListView extends View {
         'Hit <enter> to send, <esc> to cancel. Allowed length is configurable in Settings.';
     container.append(compose);
 
-    let onClose = this.updateActions_.bind(this);
-
-    let cancel = document.createElement('button');
-    cancel.textContent = 'cancel';
-    cancel.onclick = onClose;
-    container.append(cancel);
-
-    compose.addEventListener('cancel', onClose);
-
     let sideBar = document.createElement('div');
     sideBar.style.cssText = `margin: 4px;`;
-
-    let topBar = document.createElement('div');
-    topBar.style.cssText = 'display: flex';
 
     let replyAllLabel = document.createElement('label');
     let replyAll = document.createElement('input');
@@ -750,7 +741,10 @@ export class ThreadListView extends View {
     `;
 
     progressContainer.append(count, progress);
-    topBar.append(replyAllLabel, progressContainer);
+
+    let replyBar = document.createElement('div');
+    replyBar.style.cssText = 'display: flex';
+    replyBar.append(replyAllLabel, progressContainer);
 
     let postSendActions = document.createElement('select');
     let actionList = [
@@ -765,8 +759,17 @@ export class ThreadListView extends View {
       postSendActions.append(option);
     }
 
-    sideBar.append(topBar, postSendActions);
+    sideBar.append(postSendActions, replyBar);
     container.append(sideBar);
+
+    let onClose = this.updateActions_.bind(this);
+
+    let cancel = document.createElement('button');
+    cancel.textContent = 'cancel';
+    cancel.onclick = onClose;
+    container.append(cancel);
+
+    compose.addEventListener('cancel', onClose);
 
     compose.addEventListener('submit', async () => {
       let textLength = compose.plainText.length;
