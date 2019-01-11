@@ -36,7 +36,7 @@ export class Charter {
 
     for (let type of TYPES.keys()) {
       const color = hexToRGB(colors[TYPES.get(type)!].background);
-      const ys = aggregates.map(day => day.minutesPerType.get(type)!);
+      const ys = aggregates.map(day => day.minutesPerType.get(type)! / 60);
       data.push({
         x: dates,
         y: ys,
@@ -49,6 +49,9 @@ export class Charter {
     }
 
     // @ts-ignore
-    Plotly.newPlot(divId, data, {barmode: 'stack'});
+    Plotly.newPlot(divId, data, {
+      barmode: 'stack',
+      yaxis: {title: 'Hours'},
+    });
   }
 }

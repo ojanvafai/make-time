@@ -16,6 +16,8 @@ window.addEventListener('online', (_e) => {
   queuedRequests_ = [];
 });
 
+// TODO: Parameterize the return value of this so that we can have strong types
+// for all the code that calls gapiFetch.
 export async function gapiFetch(
     method: any, requestParams: any, opt_requestBody?: any) {
   let numRetries = 3;
