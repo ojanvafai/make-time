@@ -28,7 +28,7 @@ export class Charter {
     const dates = aggregates.map(day => day.start);
 
     interface PlotlySeries {
-      x: Date[], y: number[], name: string, type: string, marker: {
+      x: Date[], y: (number|string)[], name: string, type: string, marker: {
         color: string,
       }
     }
@@ -37,8 +37,13 @@ export class Charter {
     for (let type of TYPES.keys()) {
       const color = hexToRGB(colors[TYPES.get(type)!].background);
       // Show hours with 1 degree of precision.
-      const ys = aggregates.map(
-          day => Number(day.minutesPerType.get(type)! / 60).toFixed(1));
+      const ys = aggregates.map((day) => {
+        let minutes = day.minutesPerType.get(type);
+        // TODO: This shouldn't happen, but it does.
+        if (minutes === undefined)
+          minutes = 0;
+        return Number(minutes).toFixed(1);
+      });
       data.push({
         x: dates,
         y: ys,
