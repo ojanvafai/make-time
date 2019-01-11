@@ -36,7 +36,9 @@ export class Charter {
 
     for (let type of TYPES.keys()) {
       const color = hexToRGB(colors[TYPES.get(type)!].background);
-      const ys = aggregates.map(day => day.minutesPerType.get(type)! / 60);
+      // Show hours with 1 degree of precision.
+      const ys = aggregates.map(
+          day => Number(day.minutesPerType.get(type)! / 60).toFixed(1));
       data.push({
         x: dates,
         y: ys,
