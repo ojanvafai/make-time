@@ -8,6 +8,9 @@ import {Thread} from '../Thread.js';
 import {ThreadListModel} from './ThreadListModel.js';
 
 let serializationKey = 'triage-view';
+// Put a hard cap for folks that have infinitely large inboxes to not have a
+// terrible first experience of maketime.
+let maxThreadsToShow = 1000;
 
 export class TriageModel extends ThreadListModel {
   private bestEffortThreads_: Thread[]|null;
@@ -152,7 +155,7 @@ export class TriageModel extends ThreadListModel {
         this.processThread_.bind(this),
         `(${inInboxNoNeedsTriageLabel}) OR (${hasNeedsTriageLabel}) OR (${
             inUnprocessed})`,
-        skipNetwork);
+        skipNetwork, maxThreadsToShow);
 
     this.setThreads(this.pendingThreads_);
     this.pendingThreads_ = [];

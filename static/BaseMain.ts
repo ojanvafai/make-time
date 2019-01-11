@@ -281,12 +281,13 @@ export async function getCachedThread(
 interface FetchRequestParameters {
   userId: string;
   q: string;
-  pageToken: string;
+  pageToken?: string;
+  maxResults?: number;
 }
 
 export async function fetchThreads(
     forEachThread: (thread: Thread) => void, query: string,
-    onlyFetchThreadsFromDisk?: boolean) {
+    onlyFetchThreadsFromDisk: boolean = false, maxResults: number = 0) {
   // If the query is empty or just whitespace, then
   if (query.trim() === '')
     throw 'This should never happen';
@@ -298,11 +299,16 @@ export async function fetchThreads(
   // getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW); if (daysToShow)
   //   query += ` newer_than:${daysToShow}d`;
 
+  // let count = 0;
+
   let getPageOfThreads = async (opt_pageToken?: string) => {
     let requestParams = <FetchRequestParameters>{
       'userId': USER_ID,
       'q': query,
     };
+
+    if (maxResults)
+      requestParams.maxResults = maxResults;
 
     if (opt_pageToken)
       requestParams.pageToken = opt_pageToken;
@@ -310,14 +316,19 @@ export async function fetchThreads(
     let resp =
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
+    console.log('Got', threads.length, 'threads. Max should be', maxResults);
     for (let rawThread of threads) {
       let thread = await getCachedThread(rawThread, onlyFetchThreadsFromDisk);
       await forEachThread(thread);
     }
 
-    let nextPageToken = resp.result.nextPageToken;
-    if (nextPageToken)
-      await getPageOfThreads(nextPageToken);
+    // count += threads.length;
+    // if (count > maxResults)
+    //   return;
+
+    // let nextPageToken = resp.result.nextPageToken;
+    // if (nextPageToken)
+    //   await getPageOfThreads(nextPageToken);
   };
 
   await getPageOfThreads();
