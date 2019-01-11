@@ -440,7 +440,7 @@ export class MailProcessor {
       return;
 
     let progress = updateLoaderTitle(
-        'processUnprocessed', threads.length, `Processing...`);
+        'processUnprocessed', threads.length, `Filtering...`);
 
     const taskQueue = new TaskQueue(3);
     taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {
