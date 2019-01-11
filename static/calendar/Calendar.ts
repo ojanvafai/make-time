@@ -217,10 +217,12 @@ export class Calendar extends Model {
   })}
 
   async fetchEvents() {
+    let weeks = 26;
+    let days = weeks * 7;
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 365);
+    startDate.setDate(startDate.getDate() - days);
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 365);
+    endDate.setDate(endDate.getDate() + days);
 
     let pageToken = null;
     let pendingEvents: CalendarEvent[] = [];
