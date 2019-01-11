@@ -5,9 +5,9 @@ import {Message} from './Message.js';
 import {TriageModel} from './models/TriageModel.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage} from './ServerStorage.js';
-import {HeaderFilterRule, Settings, FilterRule} from './Settings.js';
+import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
-import { TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
+import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
 import {DEFAULT_QUEUE, Thread} from './Thread.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
@@ -431,7 +431,8 @@ export class MailProcessor {
   async process(threads: Thread[]) {
     await this.processThreads(threads);
     await this.processQueues();
-    await this.collapseStats();
+    if (threads.length)
+      await this.collapseStats();
   }
 
   async processThreads(threads: Thread[]) {
