@@ -67,7 +67,7 @@ let threadCache_: ThreadCache;
 
 // Client ID and API key from the Developer Console
 let CLIENT_ID: string;
-let isGoogle = location.toString().includes(':5555/') ||
+let isGoogle = location.toString().includes(':8000/') ||
     location.toString().includes('https://com-mktime');
 if (isGoogle)
   CLIENT_ID =

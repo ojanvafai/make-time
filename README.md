@@ -19,7 +19,7 @@ $ ./gulp serve
 Now http://localhost:5000 serves make-time the same as consumer.
 
 ### Flags for serving
---google to use google.com credentials and serve from localhost:5555.
+--google to use google.com credentials and serve from localhost:8000.
 
 --bundle to also generate the bundled/minified JS on each file change.
 
