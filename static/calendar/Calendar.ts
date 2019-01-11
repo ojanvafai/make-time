@@ -232,7 +232,7 @@ export class Calendar extends Model {
         timeMax: endDate.toISOString(),
         showDeleted: false,
         singleEvents: true,
-        maxResults: 500,  // Max is 2500.
+        maxResults: 2500,  // Max is 2500.
         orderBy: 'startTime' as 'startTime',
         pageToken: undefined as string | undefined,
       };
