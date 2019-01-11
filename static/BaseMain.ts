@@ -285,6 +285,9 @@ interface FetchRequestParameters {
   maxResults?: number;
 }
 
+// Gmail API only allows 500 as the cap for max results.
+let MAX_RESULTS_CAP = 500;
+
 export async function fetchThreads(
     forEachThread: (thread: Thread) => void, query: string,
     onlyFetchThreadsFromDisk: boolean = false, maxResults: number = 0) {
@@ -295,16 +298,16 @@ export async function fetchThreads(
   // Chats don't expose their bodies in the gmail API, so just skip them.
   query = `(${query}) AND -in:chats`;
 
-  // let daysToShow = (await
-  // getSettings()).get(ServerStorage.KEYS.DAYS_TO_SHOW); if (daysToShow)
-  //   query += ` newer_than:${daysToShow}d`;
-
-  // let count = 0;
+  let resultCountLeft = maxResults || MAX_RESULTS_CAP;
 
   let getPageOfThreads = async (opt_pageToken?: string) => {
+    let maxForThisFetch = Math.min(resultCountLeft, MAX_RESULTS_CAP);
+    resultCountLeft -= maxForThisFetch;
+
     let requestParams = <FetchRequestParameters>{
       'userId': USER_ID,
       'q': query,
+      'maxResults': maxForThisFetch,
     };
 
     if (maxResults)
@@ -316,19 +319,17 @@ export async function fetchThreads(
     let resp =
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
-    console.log('Got', threads.length, 'threads. Max should be', maxResults);
     for (let rawThread of threads) {
       let thread = await getCachedThread(rawThread, onlyFetchThreadsFromDisk);
       await forEachThread(thread);
     }
 
-    // count += threads.length;
-    // if (count > maxResults)
-    //   return;
+    if (resultCountLeft <= 0)
+      return;
 
-    // let nextPageToken = resp.result.nextPageToken;
-    // if (nextPageToken)
-    //   await getPageOfThreads(nextPageToken);
+    let nextPageToken = resp.result.nextPageToken;
+    if (nextPageToken)
+      await getPageOfThreads(nextPageToken);
   };
 
   await getPageOfThreads();
