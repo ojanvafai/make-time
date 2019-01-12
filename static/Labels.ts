@@ -129,7 +129,6 @@ export class Labels {
   async fetch() {
     var response = await gapiFetch(
         gapi.client.gmail.users.labels.list, {'userId': USER_ID});
-    await this.updateLabelVisibility_(response.result.labels);
     this.updateLabelLists_(response.result.labels);
   }
 
@@ -145,16 +144,6 @@ export class Labels {
 
     for (let label of labels) {
       this.addLabel_(label.name, label.id);
-    }
-  }
-
-  async updateLabelVisibility_(labels: any) {
-    for (let label of labels) {
-      if (!Labels.isMakeTimeLabel(label.name))
-        continue;
-      let shouldBeHidden = Labels.HIDDEN_LABELS.includes(label.name);
-      if (shouldBeHidden !== (label.messageListVisibility == 'hide'))
-        label = await this.updateVisibility_(label.name, label.id);
     }
   }
 
@@ -212,15 +201,6 @@ export class Labels {
       messageListVisibility: isHidden ? 'hide' : 'show',
       labelListVisibility: isHidden ? 'labelHide' : 'labelShow',
     };
-  }
-
-  async updateVisibility_(name: string, id: string) {
-    let resource = this.labelResource_(name);
-    resource.id = id;
-    resource.userId = USER_ID;
-    let response =
-        await gapiFetch(gapi.client.gmail.users.labels.update, resource);
-    return response.result;
   }
 
   async migrateThreads(
