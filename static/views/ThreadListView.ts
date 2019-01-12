@@ -764,13 +764,15 @@ export class ThreadListView extends View {
       let progress =
           this.updateTitle('ThreadListView.sendReply', 1, 'Sending reply...');
 
-      // TODO: Handle if sending fails in such a way that the user can at least
-      // save their message text.
-      await this.renderedRow_.thread.sendReply(
+      try {
+        // TODO: Handle if sending fails in such a way that the user can at least
+        // save their message text.
+        await this.renderedRow_.thread.sendReply(
           compose.value, compose.getEmails(), replyAll.checked);
-
-      progress.incrementProgress();
-      this.isSending_ = false;
+      } finally {
+        this.isSending_ = false;
+        progress.incrementProgress();
+      }
 
       this.updateActions_();
 

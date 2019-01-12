@@ -62,8 +62,11 @@ export abstract class ThreadListModel extends Model {
       return;
 
     this.isUpdating_ = true;
-    await this.fetch();
-    this.isUpdating_ = false;
+    try {
+      await this.fetch();
+    } finally {
+      this.isUpdating_ = false;
+    }
   }
 
   protected compareDates(a: Thread, b: Thread) {

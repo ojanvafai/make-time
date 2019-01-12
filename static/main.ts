@@ -287,15 +287,17 @@ export async function update() {
     return;
   isUpdating_ = true;
 
-  // Do the todo model first since it doens't need to send anything through
-  // MailProcessor, so is relatively constant time.
-  let todoModel = await getTodoModel();
-  let triageModel = await getTriageModel();
-  await Promise.all([todoModel.update(), triageModel.update(), view.update()]);
+  try {
+    // Do the todo model first since it doens't need to send anything through
+    // MailProcessor, so is relatively constant time.
+    let todoModel = await getTodoModel();
+    let triageModel = await getTriageModel();
+    await Promise.all([todoModel.update(), triageModel.update(), view.update()]);
 
-  await gcLocalStorage();
-
-  isUpdating_ = false;
+    await gcLocalStorage();
+  } finally {
+    isUpdating_ = false;
+  }
 }
 
 // Make sure links open in new tabs.
