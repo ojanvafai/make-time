@@ -69,7 +69,7 @@ export class Labels {
   // TODO: This should be uppercase to match gmail.
   static INBOX_LABEL = 'inbox';
   static MAKE_TIME_PREFIX = 'mt';
-  static FALLBACK_LABEL = 'needsfilter';
+  static FALLBACK_LABEL = 'unfiltered';
   static ARCHIVE_LABEL = 'archive';
   static BLOCKED_SUFFIX = 'blocked';
 
