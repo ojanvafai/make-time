@@ -150,7 +150,7 @@ export class Labels {
 
   async updateLabelVisibility_(labels: any) {
     for (let label of labels) {
-      if (!Labels.isUserLabel(label.id))
+      if (!Labels.isMakeTimeLabel(label.name))
         continue;
       let shouldBeHidden = Labels.HIDDEN_LABELS.includes(label.name);
       if (shouldBeHidden !== (label.messageListVisibility == 'hide'))
