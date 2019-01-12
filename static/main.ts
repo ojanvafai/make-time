@@ -14,7 +14,7 @@ import {ServerStorage} from './ServerStorage.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
 import {HelpDialog} from './views/HelpDialog.js';
-import {SettingsView} from './views/Settings.js';
+import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
 import { Contacts } from './Contacts.js';

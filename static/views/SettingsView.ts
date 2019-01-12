@@ -3,8 +3,8 @@ import {Labels} from '../Labels.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {Settings} from '../Settings.js';
 
-import {FiltersView} from './Filters.js';
-import {QueuesView} from './Queues.js';
+import {FiltersView} from './FiltersView.js';
+import {QueuesView} from './QueuesView.js';
 
 export class SettingsView extends HTMLElement {
   private scrollable_: HTMLElement;
