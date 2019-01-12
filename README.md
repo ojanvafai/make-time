@@ -1,13 +1,17 @@
 # MakeTime
 Make-time is an opinionated email client for Gmail.
 
-## Build dependencies
+## Install dependencies
 1. Checkout https://github.com/ojanvafai/make-time
 2. npm install
   ^^^^ This installs type script, firebase, gulp, etc.
-3. Use an editor of your choosing, although Visual Studio Code works
-particularly well with typescript integration.
-See https://stackoverflow.com/posts/30319507/revisions.
+4. Firebase serving needs permissions to start even a local server. To get these permissions,
+join this mailing list: https://groups.google.com/forum/#!forum/make-time.
+5. Login to firebase:
+```
+$ ./node_modules/firebase-tools/lib/bin/firebase.js serve
+```
+6. [Optional] Install Visual Studio Code. It work particularly well with typescript integration. See https://stackoverflow.com/posts/30319507/revisions.
 
 ## Starting a dev server
 For the dev server to work, you need to both start the firebase server and
