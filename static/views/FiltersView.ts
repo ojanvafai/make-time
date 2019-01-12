@@ -1,5 +1,7 @@
 import {showDialog} from '../Base.js';
+import {Labels} from '../Labels.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterField, Settings} from '../Settings.js';
+
 import {HelpDialog} from './HelpDialog.js';
 
 const CSV_FIELDS = ['from', 'to'];
@@ -92,7 +94,8 @@ export class FiltersView extends HTMLElement {
         row.previousSibling.before(row);
       }
     } else if (direction == 'ArrowDown') {
-      while (count-- && row.nextSibling) {
+      while (count-- && row.nextSibling &&
+             !row.nextSibling.hasAttribute('fallback')) {
         row.nextSibling.after(row);
       }
     } else {
@@ -123,6 +126,7 @@ export class FiltersView extends HTMLElement {
     if (!rules.length)
       body.append(this.createRule_({}));
 
+    body.append(this.createUnfileredRule_());
     container.append(body);
 
     let scrollable = document.createElement('div');
@@ -159,6 +163,37 @@ export class FiltersView extends HTMLElement {
     this.dialog_ = showDialog(this);
   }
 
+  createUnfileredRule_() {
+    let container = document.createElement('tr');
+    container.toggleAttribute('fallback');
+    container.style.cssText = `
+      line-height: 1.7em;
+    `;
+
+    let buttons = document.createElement('div');
+    buttons.style.display = 'flex';
+    this.appendCell_(container, buttons);
+
+    let addButton = document.createElement('span');
+    addButton.append('+');
+    addButton.classList.add('row-button');
+    addButton.onclick = () => {
+      let emptyRule = this.createRule_({});
+      container.before(emptyRule);
+    };
+    buttons.append(addButton);
+
+    let label = document.createElement('input');
+    label.disabled = true;
+    label.classList.add('label');
+    label.style.cssText = `width: 50px;`;
+    label.value = Labels.FALLBACK_LABEL;
+    this.appendCell_(container, label);
+
+    this.appendCell_(container, 'This label is applied when no filters match.');
+    return container;
+  }
+
   convertToFilterRule(obj: any) {
     let rule: FilterRule = {
       label: obj.label,
@@ -183,6 +218,8 @@ export class FiltersView extends HTMLElement {
     let rules: FilterRule[] = [];
 
     for (let row of rows) {
+      if (row.hasAttribute('fallback'))
+        continue;
       let query = (<HTMLElement>row.querySelector('.query')).textContent;
       let parsed = this.parseQuery_(query, true);
       let rule = this.convertToFilterRule(parsed);
@@ -228,7 +265,7 @@ export class FiltersView extends HTMLElement {
     this.dialog_.close();
   }
 
-  appendCell_(container: HTMLElement, item: HTMLElement) {
+  appendCell_(container: HTMLElement, item: HTMLElement|string) {
     let td = document.createElement('td');
     td.append(item);
     container.append(td);
