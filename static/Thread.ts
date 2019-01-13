@@ -27,8 +27,8 @@ export class Thread {
   private queue_: string|undefined;
   private processedMessages_: Message[]|undefined;
 
-  // TODO: Give this a non-any value once we import gapi types.
-  private fetchPromise_: Promise<any>|null = null;
+  private fetchPromise_:
+      Promise<gapi.client.Response<gapi.client.gmail.Thread>>|null = null;
 
   constructor(thread: any, private allLabels_: Labels) {
     this.id = thread.id;
@@ -410,7 +410,7 @@ export class Thread {
     if (this.hasMessageDetails && !forceNetwork)
       return null;
 
-    let messages: any;
+    let messages: gapi.client.gmail.Message[]|undefined;
     if (!forceNetwork)
       messages = await this.getThreadDataFromDisk_();
 
@@ -427,8 +427,12 @@ export class Thread {
       let resp = await this.fetchPromise_;
       this.fetchPromise_ = null;
 
+      if (!resp.result.messages)
+        throw ASSERT_STRING;
       messages = resp.result.messages;
 
+      if (!resp.result.historyId)
+        throw ASSERT_STRING;
       // If modifications have come in since we first created this Thread
       // instance then the historyId will have changed.
       this.historyId = resp.result.historyId;

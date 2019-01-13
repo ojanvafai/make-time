@@ -1,4 +1,4 @@
-import {USER_ID, ASSERT_STRING} from './Base.js';
+import {ASSERT_STRING, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 
@@ -42,14 +42,24 @@ export class Message {
   isUnread: boolean;
   isDraft: boolean;
 
-  constructor(public rawMessage: any, private previousMessage_?: Message) {
+  constructor(
+      public rawMessage: gapi.client.gmail.Message,
+      private previousMessage_?: Message) {
+    if (!rawMessage.id)
+      throw ASSERT_STRING;
     this.id = rawMessage.id;
 
     this.attachments_ = [];
 
     let hasDate = false;
 
+    if (!rawMessage.payload || !rawMessage.payload.headers)
+      throw ASSERT_STRING;
+
     for (var header of rawMessage.payload.headers) {
+      if (!header.name || !header.value)
+        throw ASSERT_STRING;
+
       // Some mail users lower case header names (probably just spam).
       switch (header.name.toLowerCase()) {
         case 'subject':
@@ -90,8 +100,11 @@ export class Message {
     if (!hasDate)
       this.date = new Date(Number(rawMessage.internalDate));
 
-    this.isUnread = rawMessage.labelIds.includes('UNREAD');
-    this.isDraft = rawMessage.labelIds.includes('DRAFT');
+    let labels = rawMessage.labelIds;
+    if (!labels)
+      throw ASSERT_STRING;
+    this.isUnread = labels.includes('UNREAD');
+    this.isDraft = labels.includes('DRAFT');
   }
 
   updateLabels(labelIds: string[]) {
@@ -100,7 +113,11 @@ export class Message {
 
   getHeaderValue(name: string) {
     name = name.toLowerCase();
+    if (!this.rawMessage.payload || !this.rawMessage.payload.headers)
+      throw ASSERT_STRING;
     for (var header of this.rawMessage.payload.headers) {
+      if (!header.name)
+        throw ASSERT_STRING;
       if (header.name.toLowerCase().includes(name))
         return header.value;
     }
@@ -112,6 +129,8 @@ export class Message {
   }
 
   getLabelIds() {
+    if (!this.rawMessage.labelIds)
+      throw ASSERT_STRING;
     return this.rawMessage.labelIds;
   }
 
@@ -176,12 +195,19 @@ export class Message {
     // If a message has no body at all, fallback to empty string.
     this.plain_ = '';
 
-    if (this.rawMessage.payload.parts) {
-      this.getMessageBody_(this.rawMessage.payload.parts);
+    let payload = this.rawMessage.payload;
+    if (!payload)
+      throw ASSERT_STRING;
+
+    if (payload.parts) {
+      this.getMessageBody_(payload.parts);
     } else {
-      let messageText =
-          Message.base64_.decode(this.rawMessage.payload.body.data);
-      if (this.rawMessage.payload.mimeType == 'text/html')
+      let body = payload.body;
+      if (!body || !body.data)
+        throw ASSERT_STRING;
+
+      let messageText = Message.base64_.decode(body.data);
+      if (payload.mimeType == 'text/html')
         this.html_ = messageText;
       else
         this.plain_ = messageText;
