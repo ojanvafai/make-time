@@ -1,8 +1,8 @@
-import {SpreadsheetUtils} from './SpreadsheetUtils.js';
+import {SpreadsheetUtils, SpreadsheetCellValue} from './SpreadsheetUtils.js';
 
 export interface StorageUpdate {
   key: string;
-  value: boolean | string | number | null;
+  value: SpreadsheetCellValue;
 }
 
 export class ServerStorage {
@@ -19,13 +19,26 @@ export class ServerStorage {
     const rawBackendValues = await SpreadsheetUtils.fetch2ColumnSheet(
         this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_);
 
+    // TODO: Remove the string check once clients have updated to not have
+    // stray undefineds in their settings.
+    let hasInvalidValues = false;
     ServerStorage.backendValues_ = {};
     // Strip no longer supported backend keys.
     for (let key of Object.values(ServerStorage.KEYS)) {
       let value = rawBackendValues[key];
+      // TODO: Remove the string check once clients have updated to not have
+      // stray undefineds in their settings.
+      if (value === 'undefined') {
+        hasInvalidValues = true;
+        value = '';
+      }
       if (value !== undefined)
         ServerStorage.backendValues_[key] = value;
     }
+
+    // Write out the valid values and remove this once all clients update.
+    if (hasInvalidValues)
+      await this.writeUpdates([]);
   }
 
   get(key: string) {

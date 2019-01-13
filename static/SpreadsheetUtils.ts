@@ -1,8 +1,11 @@
 import {ASSERT_STRING} from './Base.js';
 import {gapiFetch} from './Net.js';
 
+// Valid types to put in a spreadsheet cell.
+export type SpreadsheetCellValue = string|number|boolean|null;
+
 interface TwoColumnSheet {
-  [property: string]: string;
+  [property: string]: SpreadsheetCellValue;
 }
 
 async function getSheetId(
@@ -78,8 +81,8 @@ export class SpreadsheetUtils {
 
     for (var i = 0; i < values.length; i++) {
       let key = String(values[i][0]);
-      let value = String(values[i][1]);
-      if (key !== '' && value !== '')
+      let value = values[i][1];
+      if (key !== '')
         result[key] = value;
     }
     return result;

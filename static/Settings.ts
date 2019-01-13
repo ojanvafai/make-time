@@ -1,5 +1,5 @@
 import {AsyncOnce} from './AsyncOnce.js';
-import {showDialog, ASSERT_STRING} from './Base.js';
+import {ASSERT_STRING, showDialog} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {ServerStorage, StorageUpdate} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
