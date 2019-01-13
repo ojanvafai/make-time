@@ -484,7 +484,7 @@ export class MailProcessor {
   }
 
   async processSingleQueue(queue: string) {
-    let queueDatas: any[] = this.queuedLabelMap_.entries();
+    let queueDatas = this.queuedLabelMap_.entries();
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)
         await this.dequeue(queueData[0]);

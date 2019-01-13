@@ -1,5 +1,5 @@
 import {showDialog, ASSERT_STRING} from '../Base.js';
-import {QueueSettings} from '../QueueSettings.js';
+import {QueueSettings, QueueListEntry} from '../QueueSettings.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
@@ -236,7 +236,7 @@ export class QueuesView extends HTMLElement {
     }
   }
 
-  appendRow_(queueData: any) {
+  appendRow_(queueData: QueueListEntry) {
     let row = document.createElement('div');
     row.style.cssText = `
       display: flex;
@@ -254,15 +254,15 @@ export class QueuesView extends HTMLElement {
     checkbox.name = 'row';
     checkbox.onchange = () => this.updateHighlights_();
 
-    label.append(checkbox, queueData[0]);
+    label.append(checkbox, queueData.label);
     row.append(label);
 
-    let queue = queueData[1].queue;
+    let queue = queueData.data.queue;
     let days = this.createSelect_(QueueSettings.WEEKDAYS, queue);
     days.className = 'day';
     row.append(days);
 
-    let goal = queueData[1].goal;
+    let goal = queueData.data.goal;
     let goals = this.createSelect_(QueueSettings.goals, goal);
     goals.className = 'goal';
     row.append(goals);

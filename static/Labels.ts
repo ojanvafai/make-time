@@ -128,13 +128,15 @@ export class Labels {
 
   async fetch() {
     var response = await gapiFetch(
-        gapi.client.gmail.users.labels.list, {'userId': USER_ID});
+      gapi.client.gmail.users.labels.list, { 'userId': USER_ID });
+    if (!response.result.labels)
+      throw ASSERT_STRING;
     this.updateLabelLists_(response.result.labels);
   }
 
   // Make sure do to all the operations below synchronously to avoid exposing
   // an intermediary state to other code that's running.
-  updateLabelLists_(labels: any) {
+  updateLabelLists_(labels: gapi.client.gmail.Label[]) {
     this.labelToId_ = new Map();
     this.idToLabel_ = new Map();
     this.makeTimeLabelIds_ = new Set();
@@ -143,6 +145,10 @@ export class Labels {
     this.priorityLabels_ = new Set();
 
     for (let label of labels) {
+      if (!label.name)
+        throw ASSERT_STRING;
+      if (!label.id)
+        throw ASSERT_STRING;
       this.addLabel_(label.name, label.id);
     }
   }

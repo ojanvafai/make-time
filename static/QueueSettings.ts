@@ -3,11 +3,22 @@ import {Labels} from './Labels.js';
 import {Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
+export interface QueueData {
+  queue: string;
+  goal: string;
+  index: number;
+}
+
+export interface QueueListEntry {
+  label: string;
+  data: QueueData;
+}
+
 export class QueueSettings {
   private fetcher_: AsyncOnce<void>;
   // TODO: Fix these to not assert non-null since they could realistically be
   // null if fetch() isn't completed.
-  private map_!: any;
+  private map_!: Map<string, QueueData>;
 
   private static BUFFER_ = 10000;
   static MONTHLY = 'Monthly';
@@ -34,16 +45,16 @@ export class QueueSettings {
   }
 
   populateMap_(rawData: any) {
-    this.map_ = {};
+    this.map_ = new Map();
 
     for (let value of rawData) {
       let labelName = value[0].toLowerCase();
-      this.map_[labelName] = this.queueData_(value[1], value[2], value[3]);
+      this.map_.set(labelName, this.queueData_(value[1], value[2], value[3]));
     }
   }
 
   async write(newData: any[]) {
-    let originalQueueCount = Object.keys(this.map_).length;
+    let originalQueueCount = this.map_.size;
     let dataToWrite = [Settings.QUEUED_LABELS_SHEET_COLUMNS].concat(newData);
     await SpreadsheetUtils.writeSheet(
         this.spreadsheetId_, Settings.QUEUED_LABELS_SHEET_NAME, dataToWrite,
@@ -52,13 +63,12 @@ export class QueueSettings {
   }
 
   get(labelSuffix: string) {
-    return this.map_[labelSuffix.toLowerCase()] || this.queueData_();
-    ;
+    return this.map_.get(labelSuffix.toLowerCase()) || this.queueData_();
   }
 
-  queueComparator_(a: any, b: any) {
-    let aIndex = QueueSettings.queueIndex_(a[1]);
-    let bIndex = QueueSettings.queueIndex_(b[1]);
+  queueComparator_(a: QueueListEntry, b: QueueListEntry) {
+    let aIndex = QueueSettings.queueIndex_(a.data);
+    let bIndex = QueueSettings.queueIndex_(b.data);
 
     // If they have the same index, sort lexicographically.
     if (aIndex == bIndex) {
@@ -72,7 +82,8 @@ export class QueueSettings {
     return aIndex - bIndex;
   }
 
-  queueData_(opt_queue?: string, opt_goal?: string, opt_index?: number) {
+  queueData_(opt_queue?: string, opt_goal?: string, opt_index?: number):
+      QueueData {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
           goal: opt_goal || QueueSettings.goals[0],
@@ -81,18 +92,21 @@ export class QueueSettings {
     }
   }
 
-  queueEntry_(label: string) {
+  queueEntry_(label: string): QueueListEntry {
     let suffix = Labels.removeNeedsTriagePrefix(label);
     let data = this.get(suffix);
-    return [label, data];
+    return {
+      label: label,
+      data: data
+    };
   }
 
-  queueNameComparator(a: any, b: any) {
+  queueNameComparator(a: string, b: string) {
     return this.queueComparator_(this.queueEntry_(a), this.queueEntry_(b));
   }
 
   getSorted(labels: Iterable<string>) {
-    let entries: any[] = [];
+    let entries: QueueListEntry[] = [];
     for (let label of labels) {
       entries.push(this.queueEntry_(label));
     }
@@ -100,10 +114,10 @@ export class QueueSettings {
   }
 
   entries() {
-    return Object.entries(this.map_);
+    return this.map_.entries();
   }
 
-  static queueIndex_ = (queueData: any) => {
+  static queueIndex_ = (queueData: QueueData) => {
     let multiplier = 1;
 
     let queue = queueData.queue;
