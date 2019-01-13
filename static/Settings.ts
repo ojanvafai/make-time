@@ -1,5 +1,5 @@
 import {AsyncOnce} from './AsyncOnce.js';
-import {showDialog} from './Base.js';
+import {showDialog, ASSERT_STRING} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {ServerStorage, StorageUpdate} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
@@ -524,13 +524,16 @@ export class Settings {
     for (let i = 1, l = rawRules.length; i < l; i++) {
       let ruleObj: FilterRule = {label: ''};
       for (let j = 0; j < ruleNames.length; j++) {
-        let name = ruleNames[j].toLowerCase();
+        let rawName = ruleNames[j];
+        if (!rawName)
+          throw ASSERT_STRING;
+        let name = String(rawName).toLowerCase();
         let value = rawRules[i][j];
 
         if (!value)
           continue;
 
-        value = value.toLowerCase().trim();
+        value = String(value).toLowerCase().trim();
 
         switch (name) {
           case 'header':
@@ -558,11 +561,11 @@ export class Settings {
             break;
 
           case 'nolistid':
-            ruleObj.nolistid = value;
+            ruleObj.nolistid = value === 'true';
             break;
 
           case 'nocc':
-            ruleObj.nocc = value;
+            ruleObj.nocc = value === 'true';
             break;
 
           default:

@@ -2,6 +2,8 @@ import {gapiFetch} from './Net.js';
 
 export let USER_ID = 'me';
 
+export let ASSERT_STRING = 'This should never happen.';
+
 export function getCurrentWeekNumber() {
   return getWeekNumber(new Date());
 }
@@ -49,7 +51,10 @@ export async function getMyEmail() {
     let response = await gapiFetch(gapi.client.gmail.users.getProfile, {
       'userId': USER_ID,
     });
-    myEmail_ = response.result.emailAddress;
+    let address = response.result.emailAddress;
+    if (!address)
+      throw `This google account doesn't have an associated email address.`;
+    myEmail_ = address;
   }
   return myEmail_;
 }

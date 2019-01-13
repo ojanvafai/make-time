@@ -306,6 +306,8 @@ export class Labels {
         continue;
 
       var result = await this.createLabel_(labelSoFar);
+      if (!result.id)
+        throw 'This should never happen.';
       this.addLabel_(labelSoFar, result.id);
     }
 

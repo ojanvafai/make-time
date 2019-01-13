@@ -1,3 +1,4 @@
+import {ASSERT_STRING} from './Base.js';
 import {gapiFetch} from './Net.js';
 
 async function getSheetId(
@@ -6,8 +7,12 @@ async function getSheetId(
     spreadsheetId: spreadsheetId,
     ranges: [sheetName],
   });
-  // TODO: Handle response.status != 200.
-  return response.result.sheets[0].properties.sheetId;
+  if (!response || !response.result || !response.result.sheets)
+    throw ASSERT_STRING;
+  let sheet = response.result.sheets[0];
+  if (!sheet.properties)
+    throw ASSERT_STRING;
+  return sheet.properties.sheetId;
 }
 
 export class SpreadsheetUtils {
@@ -53,7 +58,7 @@ export class SpreadsheetUtils {
       let requestParams = {
         spreadsheetId: spreadsheetId,
         range: `${sheetName}!A${startRow}:ZZ${finalRow}`,
-      }
+      };
       await gapiFetch(
           gapi.client.sheets.spreadsheets.values.clear, requestParams, {});
     }
@@ -68,9 +73,10 @@ export class SpreadsheetUtils {
       return result;
 
     for (var i = 0; i < values.length; i++) {
-      let value = values[i];
-      if (value[0] || value[1])
-        result[value[0]] = value[1];
+      let key = String(values[i][0]);
+      let value = String(values[i][1]);
+      if (key !== '' && value !== '')
+        result[key] = value;
     }
     return result;
   }
@@ -100,7 +106,7 @@ export class SpreadsheetUtils {
       let requestParams = {
         spreadsheetId: spreadsheetId,
         range: `${sheetName}!A${startRow}:B${finalRow}`,
-      }
+      };
       await gapiFetch(
           gapi.client.sheets.spreadsheets.values.clear, requestParams, {});
     }

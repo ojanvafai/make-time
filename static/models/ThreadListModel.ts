@@ -107,8 +107,7 @@ export abstract class ThreadListModel extends Model {
     if (skipSerialization)
       return;
 
-    let threadData = this.threads_.map(
-        (thread) => new ThreadData(thread.id, thread.historyId));
+    let threadData = this.threads_.map((thread) => new ThreadData(thread));
     IDBKeyVal.getDefault().set(this.serializationKey_, threadData);
   }
 

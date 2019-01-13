@@ -9,6 +9,7 @@ import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
 import {DEFAULT_QUEUE, Thread} from './Thread.js';
+import { ASSERT_STRING } from './Base.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
@@ -170,7 +171,10 @@ export class MailProcessor {
       stats.minTime = Math.min(stats.minTime, Number(rows[i][2]));
       stats.maxTime = Math.max(stats.maxTime, Number(rows[i][2]));
 
-      var labelCounts = JSON.parse(rows[i][3]);
+      let labelCountString = rows[i][3];
+      if (!labelCountString)
+        throw ASSERT_STRING;
+      var labelCounts = JSON.parse(String(labelCountString));
       for (var label in labelCounts) {
         var count = labelCounts[label];
         if (label == Labels.ARCHIVE_LABEL) {

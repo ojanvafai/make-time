@@ -1,4 +1,4 @@
-import {getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddress, serializeAddress, USER_ID} from './Base.js';
+import {ASSERT_STRING, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddress, serializeAddress, USER_ID} from './Base.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
@@ -159,6 +159,8 @@ export class Thread {
     // could just use messages.batchModify to only modify the messages we know
     // about and avoid the race condition for cause #1 entirely.
     let newMessageMetadata = response.result.messages;
+    if (!newMessageMetadata)
+      throw ASSERT_STRING;
     let hasUnexpectedNewMessages = newMessageMetadata.length >
         this.processedMessages_.length + expectedNewMessageCount;
 
@@ -364,16 +366,23 @@ export class Thread {
     });
 
     let messages = resp.result.messages;
+    if (!messages)
+      throw ASSERT_STRING;
 
     // If there are new messages we need to do a full update. This
     // should be exceedingly rare though.
     if (this.processedMessages_.length != messages.length)
       return await this.update();
 
+    if (!resp.result.historyId)
+      throw ASSERT_STRING;
     this.historyId = resp.result.historyId;
 
     for (let i = 0; i < messages.length; i++) {
-      this.processedMessages_[i].updateLabels(messages[i].labelIds);
+      let labels = messages[i].labelIds;
+      if (!labels)
+        throw ASSERT_STRING;
+      this.processedMessages_[i].updateLabels(labels);
     }
     await this.processLabels_();
 

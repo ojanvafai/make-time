@@ -331,11 +331,11 @@ export class FiltersView extends HTMLElement {
     return container;
   }
 
-  appendCheckbox_(container: HTMLElement, className: string, value: string) {
+  appendCheckbox_(container: HTMLElement, className: string, checked: boolean) {
     let checkbox = document.createElement('input');
     checkbox.classList.add(className);
     checkbox.type = 'checkbox';
-    checkbox.checked = value == 'yes' || value == 'true';
+    checkbox.checked = checked;
     let cell = this.appendCell_(container, checkbox);
     cell.style.textAlign = 'center';
   }

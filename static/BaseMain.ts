@@ -20,9 +20,17 @@ const title = getDefinitelyExistsElementById('title');
 const loader = getDefinitelyExistsElementById('loader');
 
 export class ThreadData {
-  constructor(public id: string, public historyId: string) {}
-  equals(other: ThreadData) {
-    return this.id == other.id && this.historyId == other.historyId;
+  id: string;
+  historyId: string;
+
+  constructor(thread: (gapi.client.gmail.Thread|Thread)) {
+    if (!thread.id)
+      throw 'This should never happen.';
+    this.id = thread.id;
+
+    if (!thread.historyId)
+      throw 'This should never happen.';
+    this.historyId = thread.historyId;
   }
 }
 
@@ -320,7 +328,8 @@ export async function fetchThreads(
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      let thread = await getCachedThread(rawThread, onlyFetchThreadsFromDisk);
+      let thread = await getCachedThread(
+          new ThreadData(rawThread), onlyFetchThreadsFromDisk);
       await forEachThread(thread);
     }
 
