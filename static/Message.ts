@@ -22,7 +22,7 @@ export class Message {
   private quoteElidedMessage_: QuoteElidedMessage|undefined;
 
   id: string;
-  attachments_: any[];
+  attachments_: AttachmentResult[];
   subject: string|undefined;
   date!: Date;
   from: string|undefined;
@@ -235,6 +235,7 @@ export class Message {
       if (attachment.contentId == contentId)
         return attachment;
     }
+    return null;
   }
 
   appendAttachments_(dom: HTMLElement) {
@@ -318,12 +319,22 @@ export class Message {
     return str;
   }
 
-  parseAttachment_(attachment: any) {
+  parseAttachment_(attachment: gapi.client.gmail.MessagePart) {
+    if (!attachment.body)
+      throw ASSERT_STRING;
+
     let result = <AttachmentResult>{
       id: attachment.body.attachmentId,
       name: attachment.filename,
     };
+
+    if (!attachment.headers)
+      throw ASSERT_STRING;
+
     for (let header of attachment.headers) {
+      if (!header.name || !header.value)
+        throw ASSERT_STRING;
+
       switch (header.name.toLowerCase()) {
         case 'content-type':
           result.contentType = header.value.split(';')[0];
@@ -337,11 +348,14 @@ export class Message {
     return result;
   }
 
-  getMessageBody_(mimeParts: any) {
+  getMessageBody_(mimeParts: gapi.client.gmail.MessagePart[]) {
     for (var part of mimeParts) {
       // For the various 'multipart/*" mime types.
       if (part.parts)
         this.getMessageBody_(part.parts);
+
+      if (!part.body)
+        throw ASSERT_STRING;
 
       let attachmentId = part.body.attachmentId;
       if (attachmentId) {
@@ -351,9 +365,13 @@ export class Message {
 
       switch (part.mimeType) {
         case 'text/plain':
+          if (!part.body.data)
+            throw ASSERT_STRING;
           this.plain_ = Message.base64_.decode(part.body.data);
           break;
         case 'text/html':
+          if (!part.body.data)
+            throw ASSERT_STRING;
           this.html_ = Message.base64_.decode(part.body.data);
           break;
       }

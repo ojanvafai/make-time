@@ -1,6 +1,10 @@
 import {ASSERT_STRING} from './Base.js';
 import {gapiFetch} from './Net.js';
 
+interface TwoColumnSheet {
+  [property: string]: string;
+}
+
 async function getSheetId(
     spreadsheetId: string, sheetName: string): Promise<any> {
   let response = await gapiFetch(gapi.client.sheets.spreadsheets.get, {
@@ -67,7 +71,7 @@ export class SpreadsheetUtils {
   static fetch2ColumnSheet =
       async (spreadsheetId: string, sheetName: string) => {
     let range = `${sheetName}!A1:B`;
-    let result: any = {};
+    let result: TwoColumnSheet = {};
     let values = await SpreadsheetUtils.fetchSheet(spreadsheetId, range);
     if (!values)
       return result;
