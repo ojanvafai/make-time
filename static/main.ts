@@ -3,6 +3,7 @@ import {getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
 import {getLabels, getQueuedLabelMap, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
+import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {ComposeModel} from './models/ComposeModel.js';
@@ -17,7 +18,6 @@ import {HelpDialog} from './views/HelpDialog.js';
 import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
-import { Contacts } from './Contacts.js';
 
 let contacts_ = new Contacts();
 let currentView_: View;
@@ -25,12 +25,13 @@ let currentView_: View;
 // Extract these before rendering any threads since the threads can have
 // elements with IDs in them.
 const content = getDefinitelyExistsElementById('content');
+const toolbar = getDefinitelyExistsElementById('toolbar');
 const drawer = getDefinitelyExistsElementById('drawer');
 const hammburgerMenuToggle =
     getDefinitelyExistsElementById('hamburger-menu-toggle');
 const backArrow = getDefinitelyExistsElementById('back-arrow');
 const mainContent = getDefinitelyExistsElementById('main-content');
-  const subject = getDefinitelyExistsElementById('subject');
+const subject = getDefinitelyExistsElementById('subject');
 
 const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
@@ -51,7 +52,10 @@ window.onpopstate = () => {
 };
 
 router.add('/compose', async (params) => {
-  await setView(VIEW.Compose, params);
+  let shouldHideToolbar = !!Object.keys(params).length;
+  if (shouldHideToolbar)
+    preventUpdates();
+  await setView(VIEW.Compose, params, shouldHideToolbar);
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
@@ -100,7 +104,10 @@ async function createView(viewType: VIEW, params?: any) {
   }
 }
 
-async function setView(viewType: VIEW, params?: any) {
+async function setView(
+    viewType: VIEW, params?: any, shouldHideToolbar?: boolean) {
+  updateToolbarDisplay(shouldHideToolbar);
+
   if (currentView_)
     currentView_.tearDown();
 
@@ -110,6 +117,17 @@ async function setView(viewType: VIEW, params?: any) {
   content.append(currentView_);
 
   await currentView_.init();
+}
+
+let isUpdating_ = false;
+let shouldUpdate_ = true;
+
+function preventUpdates() {
+  shouldUpdate_ = false;
+}
+
+function updateToolbarDisplay(hide?: boolean) {
+  toolbar.style.display = hide ? 'none' : 'flex';
 }
 
 let DRAWER_OPEN = 'drawer-open';
@@ -236,12 +254,11 @@ async function onLoad() {
   menuTitle.append('MakeTime phases');
 
   drawer.append(
-          menuTitle,
-          createMenuItem('Compose', {href: '/compose', nested: true}),
-          createMenuItem('Triage', {href: '/triage', nested: true}),
-          createMenuItem('Todo', {href: '/todo', nested: true}),
-          createMenuItem('Calendar (alpha)', {href: '/calendar'}), settingsButton,
-          helpButton);
+      menuTitle, createMenuItem('Compose', {href: '/compose', nested: true}),
+      createMenuItem('Triage', {href: '/triage', nested: true}),
+      createMenuItem('Todo', {href: '/todo', nested: true}),
+      createMenuItem('Calendar (alpha)', {href: '/calendar'}), settingsButton,
+      helpButton);
 
   await routeToCurrentLocation();
   await contacts_.fetch(gapi.auth.getToken());
@@ -277,9 +294,10 @@ async function gcLocalStorage() {
   }
 }
 
-let isUpdating_ = false;
-
 export async function update() {
+  if (!shouldUpdate_)
+    return;
+
   // update can get called before any views are setup due to visibilitychange
   // and online handlers
   let view = await getView();
@@ -292,7 +310,8 @@ export async function update() {
     // MailProcessor, so is relatively constant time.
     let todoModel = await getTodoModel();
     let triageModel = await getTriageModel();
-    await Promise.all([todoModel.update(), triageModel.update(), view.update()]);
+    await Promise.all(
+        [todoModel.update(), triageModel.update(), view.update()]);
 
     await gcLocalStorage();
   } finally {
