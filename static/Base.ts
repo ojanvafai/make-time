@@ -77,7 +77,7 @@ export function parseAddress(address: string) {
 
   let email = split.pop();
   if (email === undefined)
-    throw 'This should never happen';
+    throw ASSERT_STRING;
   // Strip the trailing '>'.
   if (email.charAt(email.length - 1) == '>')
     email = email.substring(0, email.length - 1);
@@ -98,6 +98,6 @@ export function serializeAddress(address: ParsedAddress) {
 export function getDefinitelyExistsElementById(id: string) {
   let element = document.getElementById(id);
   if (!element)
-    throw 'This should never happen.';
+    throw ASSERT_STRING;
   return element;
 }

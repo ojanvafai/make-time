@@ -1,12 +1,14 @@
 import {AutoCompleteEntry, Compose} from './Compose.js';
-import { Contacts } from './Contacts.js';
+import {Contacts} from './Contacts.js';
+import { ASSERT_STRING } from './Base.js';
 
 const SEPARATOR = ' ';
 
 export class EmailCompose extends Compose {
   private autocompleteRange_: Range|null;
 
-  constructor(contacts: Contacts, isSingleline?: boolean, putMenuAbove?: boolean) {
+  constructor(
+      contacts: Contacts, isSingleline?: boolean, putMenuAbove?: boolean) {
     super(contacts, false, isSingleline, putMenuAbove);
     this.autocompleteRange_ = null;
     this.content.style.padding = '8px';
@@ -66,7 +68,7 @@ export class EmailCompose extends Compose {
 
   insertAddress(selectedItem: AutoCompleteEntry) {
     if (!this.autocompleteRange_)
-      throw 'This should never happen';
+      throw ASSERT_STRING;
 
     let range = this.cursor();
     range.setStart(

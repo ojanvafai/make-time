@@ -1,4 +1,4 @@
-import {showDialog} from '../Base.js';
+import {showDialog, ASSERT_STRING} from '../Base.js';
 import {Labels} from '../Labels.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {Settings} from '../Settings.js';
@@ -108,7 +108,7 @@ export class SettingsView extends HTMLElement {
     let queues: Set<string> = new Set();
     for (let rule of filters) {
       if (!rule.label)
-        throw 'This should never happen.';
+        throw ASSERT_STRING;
       queues.add(rule.label);
     }
 
@@ -197,7 +197,7 @@ export class SettingsView extends HTMLElement {
     for (let input of inputs) {
       let key = input.getAttribute('key');
       if (!key)
-        throw 'This should never happen.';
+        throw ASSERT_STRING;
       let value = input.type == 'checkbox' ? input.checked : input.value;
       updates.push({key: key, value: value});
     }

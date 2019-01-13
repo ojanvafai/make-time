@@ -1,3 +1,5 @@
+import { ASSERT_STRING } from "./Base.js";
+
 let queuedRequests_: ((value?: {}|PromiseLike<{}>|undefined) => void)[] = [];
 let TEN_SECONDS = 10 * 1000;
 
@@ -19,8 +21,8 @@ window.addEventListener('online', (_e) => {
 // TODO: Parameterize the return value of this so that we can have strong types
 // for all the code that calls gapiFetch.
 export async function gapiFetch<T>(
-    method: (params: any, body?: any) => gapi.client.Request<T>, requestParams: any,
-    opt_requestBody?: any) {
+    method: (params: any, body?: any) => gapi.client.Request<T>,
+    requestParams: any, opt_requestBody?: any) {
   let numRetries = 3;
   for (var i = 0; i < numRetries; i++) {
     try {
@@ -34,5 +36,5 @@ export async function gapiFetch<T>(
       await sleep(TEN_SECONDS);
     }
   }
-  throw 'This should never happen.';
+  throw ASSERT_STRING;
 }

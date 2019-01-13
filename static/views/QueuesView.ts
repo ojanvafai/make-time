@@ -1,4 +1,4 @@
-import {showDialog} from '../Base.js';
+import {showDialog, ASSERT_STRING} from '../Base.js';
 import {QueueSettings} from '../QueueSettings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -87,7 +87,7 @@ export class QueuesView extends HTMLElement {
             row.previousSibling.nodeType == Node.TEXT_NODE) {
           let parent = row.parentNode;
           if (!parent)
-            throw 'Something went wrong. This should never happen';
+            throw ASSERT_STRING;
           if (parent.previousSibling)
             (<HTMLElement>parent.previousSibling).append(row);
           else
@@ -101,7 +101,7 @@ export class QueuesView extends HTMLElement {
         if (!row.nextSibling) {
           let parent = row.parentNode;
           if (!parent)
-            throw 'Something went wrong. This should never happen';
+            throw ASSERT_STRING;
           if (parent.nextSibling)
             parent.nextSibling.firstChild!.after(row);
           else
@@ -207,14 +207,14 @@ export class QueuesView extends HTMLElement {
     }
 
     if (!this.dialog_)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
     this.dialog_.close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
     if (!this.dialog_)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
     this.dialog_.close();
   }
 
@@ -269,7 +269,7 @@ export class QueuesView extends HTMLElement {
 
     let container = this.getRowContainer_(queue);
     if (!container)
-      throw 'Something went wrong. This should never happen.'
+      throw ASSERT_STRING
       container.append(row);
   }
 

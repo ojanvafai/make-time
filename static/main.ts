@@ -1,5 +1,5 @@
 import {getActionKey, getActions} from './Actions.js';
-import {getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
+import {getCurrentWeekNumber, getDefinitelyExistsElementById, ASSERT_STRING} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
 import {getLabels, getQueuedLabelMap, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
@@ -100,7 +100,7 @@ async function createView(viewType: VIEW, params?: any) {
           await getTriageModel(), true, '/todo', 'Go to todo list');
 
     default:
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
   }
 }
 

@@ -4,7 +4,7 @@
 // that have to know about Threads and things like that.
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {getDefinitelyExistsElementById, showDialog, USER_ID} from './Base.js';
+import {ASSERT_STRING, getDefinitelyExistsElementById, showDialog, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
@@ -25,11 +25,11 @@ export class ThreadData {
 
   constructor(thread: (gapi.client.gmail.Thread|Thread)) {
     if (!thread.id)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
     this.id = thread.id;
 
     if (!thread.historyId)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
     this.historyId = thread.historyId;
   }
 }
@@ -301,7 +301,7 @@ export async function fetchThreads(
     onlyFetchThreadsFromDisk: boolean = false, maxResults: number = 0) {
   // If the query is empty or just whitespace, then
   if (query.trim() === '')
-    throw 'This should never happen';
+    throw ASSERT_STRING;
 
   // Chats don't expose their bodies in the gmail API, so just skip them.
   query = `(${query}) AND -in:chats`;

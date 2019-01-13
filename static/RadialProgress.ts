@@ -1,3 +1,5 @@
+import { ASSERT_STRING } from "./Base.js";
+
 export let COMPLETED_EVENT_NAME = 'radial-progress-completed';
 export class CompletedEvent extends Event {
   constructor() {
@@ -93,7 +95,7 @@ export class RadialProgress extends HTMLElement {
 
   incrementProgress() {
     if (this.allowOverflow_ || this.total_ === 0)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
 
     this.completedCount_++;
     if (this.completedCount_ == this.total_)
@@ -133,7 +135,7 @@ export class RadialProgress extends HTMLElement {
       this.setColor_(color);
     } else {
       if (this.completedCount_ > this.total_)
-        throw 'This should never happen.';
+        throw ASSERT_STRING;
       completedCount = this.completedCount_;
     }
 

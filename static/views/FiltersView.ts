@@ -1,4 +1,4 @@
-import {showDialog} from '../Base.js';
+import {showDialog, ASSERT_STRING} from '../Base.js';
 import {Labels} from '../Labels.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterField, Settings} from '../Settings.js';
 
@@ -254,14 +254,14 @@ export class FiltersView extends HTMLElement {
     await this.settings_.writeFilters(rules);
 
     if (!this.dialog_)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
     this.dialog_.close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
     if (!this.dialog_)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
     this.dialog_.close();
   }
 
@@ -470,7 +470,7 @@ export class FiltersView extends HTMLElement {
   setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
     if (!this.cursorSentinelElement_)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
     window.getSelection().selectAllChildren(this.cursorSentinelElement_);
   }
 

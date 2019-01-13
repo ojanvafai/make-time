@@ -1,4 +1,5 @@
 import {Action, registerActions} from '../Actions.js';
+import {ASSERT_STRING} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {SubmitEvent} from '../Compose.js';
 import {Contacts} from '../Contacts.js';
@@ -208,10 +209,11 @@ export class ThreadListView extends View {
           (key: string, count: number,
            ...title: (HTMLElement|string)[]) => RadialProgress,
       private setSubject_: (...subject: (Node|string)[]) => void,
-      private showBackArrow_: (show: boolean) => void, private allowedReplyLength_: number,
-      private contacts_: Contacts, private autoStartTimer_: boolean,
-      private countDown_: boolean, private timerDuration_: number,
-      bottomButtonUrl: string, bottomButtonText: string) {
+      private showBackArrow_: (show: boolean) => void,
+      private allowedReplyLength_: number, private contacts_: Contacts,
+      private autoStartTimer_: boolean, private countDown_: boolean,
+      private timerDuration_: number, bottomButtonUrl: string,
+      bottomButtonText: string) {
     super();
 
     this.style.cssText = `
@@ -406,7 +408,7 @@ export class ThreadListView extends View {
     if (this.renderedRow_) {
       row = rowAtOffset(this.getRows_(), this.renderedRow_, 1);
       if (row == this.renderedRow_)
-        throw 'This should never happen.';
+        throw ASSERT_STRING;
     } else {
       row = this.focusedRow_;
     }
@@ -568,7 +570,7 @@ export class ThreadListView extends View {
     }
 
     if (action.destination === undefined)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
     await this.markTriaged_(action.destination);
   }
 
@@ -644,7 +646,7 @@ export class ThreadListView extends View {
 
   renderOne_() {
     if (this.renderedRow_ === null)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
 
     if (this.rowGroupContainer_.style.display != 'none')
       this.transitionToSingleThread_();
@@ -756,7 +758,7 @@ export class ThreadListView extends View {
       }
 
       if (!this.renderedRow_)
-        throw 'Something went wrong. This should never happen.';
+        throw ASSERT_STRING;
 
       if (this.isSending_)
         return;
@@ -765,10 +767,10 @@ export class ThreadListView extends View {
           this.updateTitle('ThreadListView.sendReply', 1, 'Sending reply...');
 
       try {
-        // TODO: Handle if sending fails in such a way that the user can at least
-        // save their message text.
+        // TODO: Handle if sending fails in such a way that the user can at
+        // least save their message text.
         await this.renderedRow_.thread.sendReply(
-          compose.value, compose.getEmails(), replyAll.checked);
+            compose.value, compose.getEmails(), replyAll.checked);
       } finally {
         this.isSending_ = false;
         progress.incrementProgress();

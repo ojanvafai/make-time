@@ -1,6 +1,6 @@
-import {parseAddress, ParsedAddress, serializeAddress} from './Base.js';
+import {ASSERT_STRING, parseAddress, ParsedAddress, serializeAddress} from './Base.js';
 import {AutoCompleteEntry, Compose} from './Compose.js';
-import { Contacts } from './Contacts.js';
+import {Contacts} from './Contacts.js';
 
 const SEPARATOR = ',';
 const CURSOR_SENTINEL = '!!!!!!!!';
@@ -28,7 +28,7 @@ export class AddressCompose extends Compose {
 
   getAutocompleteRange() {
     if (!this.autocompleteStartRange_)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
     return this.autocompleteStartRange_;
   }
 
@@ -111,7 +111,7 @@ export class AddressCompose extends Compose {
     }
 
     if (!this.autocompleteCursorRange_)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
     let selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(this.autocompleteCursorRange_.cloneRange());
@@ -144,7 +144,7 @@ export class AddressCompose extends Compose {
     let parsed = this.parse_();
     let selected = parsed.find(x => !!x.selected);
     if (!selected)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
     return selected.email;
   }
 

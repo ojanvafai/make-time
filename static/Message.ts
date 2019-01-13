@@ -1,4 +1,4 @@
-import {USER_ID} from './Base.js';
+import {USER_ID, ASSERT_STRING} from './Base.js';
 import {Base64} from './base64.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 
@@ -156,7 +156,7 @@ export class Message {
     // Also, wrap the plain text in white-space:pre-wrap to make it render
     // nicely.
     if (this.plain_ === undefined)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
     let escaped = this.htmlEscape_(this.plain_);
 
     // Normalize newlines to simplify the logic.

@@ -1,4 +1,4 @@
-import {USER_ID} from './Base.js';
+import {USER_ID, ASSERT_STRING} from './Base.js';
 import {gapiFetch} from './Net.js';
 
 interface LabelResource {
@@ -307,7 +307,7 @@ export class Labels {
 
       var result = await this.createLabel_(labelSoFar);
       if (!result.id)
-        throw 'This should never happen.';
+        throw ASSERT_STRING;
       this.addLabel_(labelSoFar, result.id);
     }
 

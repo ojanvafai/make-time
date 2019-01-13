@@ -1,3 +1,5 @@
+import {ASSERT_STRING} from './Base.js';
+
 // Pattern for doing an async action exactly once even if it's called from
 // multiple locations with async yields in the middle.
 export class AsyncOnce<T> {
@@ -22,7 +24,7 @@ export class AsyncOnce<T> {
       // doesn't allow for async functions that return null, but at least it
       // allows void functions.
       if (this.value_ === null)
-        throw ('Something went wrong. This should never happen.');
+        throw ASSERT_STRING;
       return this.value_;
     }
 
@@ -31,7 +33,7 @@ export class AsyncOnce<T> {
 
     this.isDoing_ = true;
     if (!this.asyncAction_)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
     this.value_ = await this.asyncAction_();
     this.hasValue_ = true;
     this.isDoing_ = false;

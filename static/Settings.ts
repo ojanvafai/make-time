@@ -94,7 +94,7 @@ export function getFilterField(rule: FilterRule, name: string): string|boolean|
       return rule.nocc;
 
     default:
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
   }
 }
 
@@ -547,7 +547,7 @@ export class Settings {
               // syntax.
               let colonIndex = value.indexOf(':');
               if (colonIndex == -1)
-                throw 'This should never happen.';
+                throw ASSERT_STRING;
               headers = [{
                 name: value.substring(0, colonIndex).trim(),
                 value: value.substring(colonIndex + 1).toLowerCase().trim(),
@@ -571,7 +571,7 @@ export class Settings {
           default:
             let validField = setFilterField(ruleObj, name, value);
             if (!validField)
-              throw 'This should never happen.';
+              throw ASSERT_STRING;
         }
       }
 
@@ -599,7 +599,7 @@ export class Settings {
       let invalidField = Object.keys(rule).find(
           x => !Settings.FILTERS_SHEET_COLUMNS_.includes(x));
       if (invalidField || rule.label === '')
-        throw 'This should never happen.';
+        throw ASSERT_STRING;
 
       for (let column of Settings.FILTERS_SHEET_COLUMNS_) {
         let value;
@@ -614,7 +614,7 @@ export class Settings {
     }
 
     if (!this.filters_)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
     let originalFilterSheetRowCount = this.filters_.length + 1;
     await SpreadsheetUtils.writeSheet(
         this.spreadsheetId, Settings.FILTERS_SHEET_NAME_, rows,

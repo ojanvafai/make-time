@@ -1,4 +1,5 @@
-import { Contacts } from "./Contacts";
+import {ASSERT_STRING} from './Base.js';
+import {Contacts} from './Contacts.js';
 
 export class AutoCompleteEntry extends HTMLElement {
   name: string;
@@ -186,7 +187,7 @@ export abstract class Compose extends HTMLElement {
 
     let range = this.getAutocompleteRange();
     if (!range)
-      throw 'This should never happen.';
+      throw ASSERT_STRING;
     let rect = range.getBoundingClientRect();
     this.autocompleteContainer_.style.left = `${rect.left}px`;
     if (this.putMenuAbove_) {
@@ -199,7 +200,7 @@ export abstract class Compose extends HTMLElement {
 
   adjustAutocompleteIndex(adjustment: number) {
     if (this.autocompleteIndex_ === undefined)
-      throw 'Something went wrong. This should never happen.';
+      throw ASSERT_STRING;
 
     let container = <HTMLElement>this.autocompleteContainer_;
     let newIndex = Math.max(
@@ -270,7 +271,7 @@ export abstract class Compose extends HTMLElement {
     if (this.autocompleteIndex_ === undefined)
       throw 'Attempted to submit autocomplete without a selected entry.';
     if (!this.autocompleteContainer_)
-      throw 'This should never happen';
+      throw ASSERT_STRING;
 
     if (!selectedItem) {
       selectedItem = <AutoCompleteEntry>this.autocompleteContainer_
