@@ -4,7 +4,7 @@
 // that have to know about Threads and things like that.
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {ASSERT_STRING, getDefinitelyExistsElementById, showDialog, USER_ID} from './Base.js';
+import {ASSERT_STRING, getDefinitelyExistsElementById, showDialog, USER_ID, exists} from './Base.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
@@ -24,13 +24,8 @@ export class ThreadData {
   historyId: string;
 
   constructor(thread: (gapi.client.gmail.Thread|Thread)) {
-    if (!thread.id)
-      throw ASSERT_STRING;
-    this.id = thread.id;
-
-    if (!thread.historyId)
-      throw ASSERT_STRING;
-    this.historyId = thread.historyId;
+    this.id = exists(thread.id);
+    this.historyId = exists(thread.historyId);
   }
 }
 

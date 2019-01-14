@@ -1,3 +1,4 @@
+import {exists} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -9,7 +10,6 @@ import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
 import {DEFAULT_QUEUE, Thread} from './Thread.js';
-import { ASSERT_STRING } from './Base.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
@@ -172,9 +172,7 @@ export class MailProcessor {
       stats.maxTime = Math.max(stats.maxTime, Number(rows[i][2]));
 
       let labelCountString = rows[i][3];
-      if (!labelCountString)
-        throw ASSERT_STRING;
-      var labelCounts = JSON.parse(String(labelCountString));
+      var labelCounts = JSON.parse(String(exists(labelCountString)));
       for (var label in labelCounts) {
         var count = labelCounts[label];
         if (label == Labels.ARCHIVE_LABEL) {
@@ -443,8 +441,8 @@ export class MailProcessor {
     if (!threads.length)
       return;
 
-    let progress = updateLoaderTitle(
-        'processUnprocessed', threads.length, `Filtering...`);
+    let progress =
+        updateLoaderTitle('processUnprocessed', threads.length, `Filtering...`);
 
     const taskQueue = new TaskQueue(3);
     taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {

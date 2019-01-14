@@ -1,5 +1,5 @@
-import {showDialog, ASSERT_STRING} from '../Base.js';
-import {QueueSettings, QueueListEntry} from '../QueueSettings.js';
+import {exists, showDialog} from '../Base.js';
+import {QueueListEntry, QueueSettings} from '../QueueSettings.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
@@ -85,9 +85,7 @@ export class QueuesView extends HTMLElement {
         // group.
         if (!row.previousSibling ||
             row.previousSibling.nodeType == Node.TEXT_NODE) {
-          let parent = row.parentNode;
-          if (!parent)
-            throw ASSERT_STRING;
+          let parent = exists(row.parentNode);
           if (parent.previousSibling)
             (<HTMLElement>parent.previousSibling).append(row);
           else
@@ -99,9 +97,7 @@ export class QueuesView extends HTMLElement {
     } else if (direction == 'ArrowDown') {
       while (count--) {
         if (!row.nextSibling) {
-          let parent = row.parentNode;
-          if (!parent)
-            throw ASSERT_STRING;
+          let parent = exists(row.parentNode);
           if (parent.nextSibling)
             parent.nextSibling.firstChild!.after(row);
           else
@@ -206,16 +202,12 @@ export class QueuesView extends HTMLElement {
       return;
     }
 
-    if (!this.dialog_)
-      throw ASSERT_STRING;
-    this.dialog_.close();
+    exists(this.dialog_).close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
-    if (!this.dialog_)
-      throw ASSERT_STRING;
-    this.dialog_.close();
+    exists(this.dialog_).close();
   }
 
   createSelect_(list: string[], opt_selectedItem?: string) {
@@ -267,10 +259,8 @@ export class QueuesView extends HTMLElement {
     goals.className = 'goal';
     row.append(goals);
 
-    let container = this.getRowContainer_(queue);
-    if (!container)
-      throw ASSERT_STRING
-      container.append(row);
+    let container = exists(this.getRowContainer_(queue));
+    container.append(row);
   }
 
   getRowContainer_(queue: string) {

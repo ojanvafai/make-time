@@ -1,6 +1,6 @@
+import {exists} from './Base.js';
 import {AutoCompleteEntry, Compose} from './Compose.js';
 import {Contacts} from './Contacts.js';
-import { ASSERT_STRING } from './Base.js';
 
 const SEPARATOR = ' ';
 
@@ -67,13 +67,10 @@ export class EmailCompose extends Compose {
   }
 
   insertAddress(selectedItem: AutoCompleteEntry) {
-    if (!this.autocompleteRange_)
-      throw ASSERT_STRING;
-
+    let autocompleteRange = exists(this.autocompleteRange_);
     let range = this.cursor();
     range.setStart(
-        this.autocompleteRange_.startContainer,
-        this.autocompleteRange_.startOffset);
+        autocompleteRange.startContainer, autocompleteRange.startOffset);
 
     range.deleteContents();
 

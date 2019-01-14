@@ -1,5 +1,5 @@
 import {Action, registerActions} from '../Actions.js';
-import {ASSERT_STRING} from '../Base.js';
+import {ASSERT_STRING, exists, defined} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {SubmitEvent} from '../Compose.js';
 import {Contacts} from '../Contacts.js';
@@ -569,9 +569,7 @@ export class ThreadListView extends View {
       return;
     }
 
-    if (action.destination === undefined)
-      throw ASSERT_STRING;
-    await this.markTriaged_(action.destination);
+    await this.markTriaged_(defined(action.destination));
   }
 
   transitionToThreadList_(focusedRow: ThreadRow|null) {
@@ -645,13 +643,12 @@ export class ThreadListView extends View {
   }
 
   renderOne_() {
-    if (this.renderedRow_ === null)
-      throw ASSERT_STRING;
+    let renderedRow = exists(this.renderedRow_);
 
     if (this.rowGroupContainer_.style.display != 'none')
       this.transitionToSingleThread_();
 
-    let thread = this.renderedRow_.thread;
+    let thread = renderedRow.thread;
     let messages = thread.getMessagesSync();
     let viewInGmailButton = new ViewInGmailButton();
     viewInGmailButton.setMessageId(messages[messages.length - 1].id);
@@ -663,13 +660,13 @@ export class ThreadListView extends View {
     subjectText.append(subject, viewInGmailButton);
     this.setSubject_(subjectText, this.model_.getGroupName(thread));
 
-    let rendered = this.renderedRow_.rendered;
+    let rendered = renderedRow.rendered;
     if (rendered.isRendered() &&
         rendered.parentNode != this.singleThreadContainer_)
       throw 'Tried to rerender already rendered thread. This should never happen.';
 
     if (!rendered.isRendered()) {
-      this.renderedRow_.rendered.render();
+      renderedRow.rendered.render();
       this.singleThreadContainer_.append(rendered);
     }
 
@@ -694,7 +691,7 @@ export class ThreadListView extends View {
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to
     // make renderOne_ async.
-    this.renderedRow_.rendered.update();
+    renderedRow.rendered.update();
   }
 
   // TODO: Make a proper QuickReply element. This function is getting unweildy
@@ -757,8 +754,9 @@ export class ThreadListView extends View {
         return;
       }
 
-      if (!this.renderedRow_)
-        throw ASSERT_STRING;
+      // Grab this before setting isSending_ to true to ensure that we don't get
+      // stuck unable to send when there are bugs.
+      let renderedRow = exists(this.renderedRow_);
 
       if (this.isSending_)
         return;
@@ -769,7 +767,7 @@ export class ThreadListView extends View {
       try {
         // TODO: Handle if sending fails in such a way that the user can at
         // least save their message text.
-        await this.renderedRow_.thread.sendReply(
+        await renderedRow.thread.sendReply(
             compose.value, compose.getEmails(), replyAll.checked);
       } finally {
         this.isSending_ = false;
@@ -783,7 +781,7 @@ export class ThreadListView extends View {
         await this.markTriaged_(
             ARCHIVE_ACTION.destination, expectedNewMessageCount);
       } else {
-        await this.renderedRow_.rendered.update();
+        await renderedRow.rendered.update();
       }
     })
 

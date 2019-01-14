@@ -1,4 +1,4 @@
-import {showDialog, ASSERT_STRING} from '../Base.js';
+import {exists, showDialog} from '../Base.js';
 import {Labels} from '../Labels.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterField, Settings} from '../Settings.js';
 
@@ -253,16 +253,12 @@ export class FiltersView extends HTMLElement {
     }
     await this.settings_.writeFilters(rules);
 
-    if (!this.dialog_)
-      throw ASSERT_STRING;
-    this.dialog_.close();
+    exists(this.dialog_).close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
-    if (!this.dialog_)
-      throw ASSERT_STRING;
-    this.dialog_.close();
+    exists(this.dialog_).close();
   }
 
   appendCell_(container: HTMLElement, item: HTMLElement|string) {
@@ -469,9 +465,8 @@ export class FiltersView extends HTMLElement {
 
   setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
-    if (!this.cursorSentinelElement_)
-      throw ASSERT_STRING;
-    window.getSelection().selectAllChildren(this.cursorSentinelElement_);
+    window.getSelection().selectAllChildren(
+        exists(this.cursorSentinelElement_));
   }
 
   insertSentinelText_() {

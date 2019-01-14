@@ -1,4 +1,4 @@
-import {ASSERT_STRING, parseAddress, ParsedAddress, serializeAddress} from './Base.js';
+import {parseAddress, ParsedAddress, serializeAddress, exists} from './Base.js';
 import {AutoCompleteEntry, Compose} from './Compose.js';
 import {Contacts} from './Contacts.js';
 
@@ -27,9 +27,7 @@ export class AddressCompose extends Compose {
   }
 
   getAutocompleteRange() {
-    if (!this.autocompleteStartRange_)
-      throw ASSERT_STRING;
-    return this.autocompleteStartRange_;
+    return exists(this.autocompleteStartRange_);
   }
 
   clearAutocompleteRange() {
@@ -110,11 +108,9 @@ export class AddressCompose extends Compose {
       this.appendHandlingSentinel_(this.content, serialized);
     }
 
-    if (!this.autocompleteCursorRange_)
-      throw ASSERT_STRING;
     let selection = window.getSelection();
     selection.removeAllRanges();
-    selection.addRange(this.autocompleteCursorRange_.cloneRange());
+    selection.addRange(exists(this.autocompleteCursorRange_).cloneRange());
   }
 
   parse_(keepSentinelText?: boolean) {
@@ -143,9 +139,7 @@ export class AddressCompose extends Compose {
   autocompleteText() {
     let parsed = this.parse_();
     let selected = parsed.find(x => !!x.selected);
-    if (!selected)
-      throw ASSERT_STRING;
-    return selected.email;
+    return exists(selected).email;
   }
 
   selectedEntry(selectedItem: AutoCompleteEntry) {

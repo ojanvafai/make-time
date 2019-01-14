@@ -1,4 +1,4 @@
-import {showDialog, ASSERT_STRING} from '../Base.js';
+import {exists, showDialog} from '../Base.js';
 import {Labels} from '../Labels.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {Settings} from '../Settings.js';
@@ -107,9 +107,7 @@ export class SettingsView extends HTMLElement {
     let filters = await this.settings_.getFilters();
     let queues: Set<string> = new Set();
     for (let rule of filters) {
-      if (!rule.label)
-        throw ASSERT_STRING;
-      queues.add(rule.label);
+      queues.add(exists(rule.label));
     }
 
     queues.delete(Labels.ARCHIVE_LABEL);
@@ -195,9 +193,7 @@ export class SettingsView extends HTMLElement {
     let updates: {key: string, value: string|boolean}[] = [];
     let inputs = this.basicSettings_.querySelectorAll('input');
     for (let input of inputs) {
-      let key = input.getAttribute('key');
-      if (!key)
-        throw ASSERT_STRING;
+      let key = exists(input.getAttribute('key'));
       let value = input.type == 'checkbox' ? input.checked : input.value;
       updates.push({key: key, value: value});
     }

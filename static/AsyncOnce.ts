@@ -1,4 +1,4 @@
-import {ASSERT_STRING} from './Base.js';
+import {exists, notNull} from './Base.js';
 
 // Pattern for doing an async action exactly once even if it's called from
 // multiple locations with async yields in the middle.
@@ -23,18 +23,14 @@ export class AsyncOnce<T> {
       // the uninitialized value of this.value_. This is kind of gross as it
       // doesn't allow for async functions that return null, but at least it
       // allows void functions.
-      if (this.value_ === null)
-        throw ASSERT_STRING;
-      return this.value_;
+      return notNull(this.value_);
     }
 
     if (this.isDoing_)
       return new Promise(resolve => this.queued_.push(resolve));
 
     this.isDoing_ = true;
-    if (!this.asyncAction_)
-      throw ASSERT_STRING;
-    this.value_ = await this.asyncAction_();
+    this.value_ = await exists(this.asyncAction_)();
     this.hasValue_ = true;
     this.isDoing_ = false;
 

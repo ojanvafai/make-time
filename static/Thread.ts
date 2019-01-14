@@ -1,4 +1,4 @@
-import {ASSERT_STRING, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddress, serializeAddress, USER_ID} from './Base.js';
+import {exists, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddress, serializeAddress, USER_ID} from './Base.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
@@ -158,9 +158,7 @@ export class Thread {
     // https://issuetracker.google.com/issues/122167541. If not for this bug, we
     // could just use messages.batchModify to only modify the messages we know
     // about and avoid the race condition for cause #1 entirely.
-    let newMessageMetadata = response.result.messages;
-    if (!newMessageMetadata)
-      throw ASSERT_STRING;
+    let newMessageMetadata = exists(response.result.messages);
     let hasUnexpectedNewMessages = newMessageMetadata.length >
         this.processedMessages_.length + expectedNewMessageCount;
 
@@ -365,23 +363,17 @@ export class Thread {
       fields: 'historyId,messages(labelIds)',
     });
 
-    let messages = resp.result.messages;
-    if (!messages)
-      throw ASSERT_STRING;
+    let messages = exists(resp.result.messages);
 
     // If there are new messages we need to do a full update. This
     // should be exceedingly rare though.
     if (this.processedMessages_.length != messages.length)
       return await this.update();
 
-    if (!resp.result.historyId)
-      throw ASSERT_STRING;
-    this.historyId = resp.result.historyId;
+    this.historyId = exists(resp.result.historyId);
 
     for (let i = 0; i < messages.length; i++) {
-      let labels = messages[i].labelIds;
-      if (!labels)
-        throw ASSERT_STRING;
+      let labels = exists(messages[i].labelIds);
       this.processedMessages_[i].updateLabels(labels);
     }
     await this.processLabels_();
@@ -427,15 +419,11 @@ export class Thread {
       let resp = await this.fetchPromise_;
       this.fetchPromise_ = null;
 
-      if (!resp.result.messages)
-        throw ASSERT_STRING;
-      messages = resp.result.messages;
+      messages = exists(resp.result.messages);
 
-      if (!resp.result.historyId)
-        throw ASSERT_STRING;
       // If modifications have come in since we first created this Thread
       // instance then the historyId will have changed.
-      this.historyId = resp.result.historyId;
+      this.historyId = exists(resp.result.historyId);
     }
 
     let newMessages = await this.processMessages_(messages);

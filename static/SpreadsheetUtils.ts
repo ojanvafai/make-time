@@ -1,4 +1,4 @@
-import {ASSERT_STRING} from './Base.js';
+import {exists} from './Base.js';
 import {gapiFetch} from './Net.js';
 
 // Valid types to put in a spreadsheet cell.
@@ -14,12 +14,8 @@ async function getSheetId(
     spreadsheetId: spreadsheetId,
     ranges: [sheetName],
   });
-  if (!response || !response.result || !response.result.sheets)
-    throw ASSERT_STRING;
-  let sheet = response.result.sheets[0];
-  if (!sheet.properties)
-    throw ASSERT_STRING;
-  return sheet.properties.sheetId;
+  let sheet = exists(exists(exists(response).result).sheets)[0];
+  return exists(sheet.properties).sheetId;
 }
 
 export class SpreadsheetUtils {

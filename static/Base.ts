@@ -4,6 +4,24 @@ export let USER_ID = 'me';
 
 export let ASSERT_STRING = 'This should never happen.';
 
+export function notNull<T>(x: T|null) {
+  if (x === null)
+    throw new Error(ASSERT_STRING);
+  return x;
+}
+
+export function defined<T>(x: T|undefined) {
+  if (x === undefined)
+    throw new Error(ASSERT_STRING);
+  return x;
+}
+
+export function exists<T>(x: T|null|undefined) {
+  if (x === null || x === undefined)
+    throw new Error(ASSERT_STRING);
+  return x;
+}
+
 export function getCurrentWeekNumber() {
   return getWeekNumber(new Date());
 }
@@ -75,9 +93,7 @@ export function parseAddress(address: string) {
   if (split.length == 1)
     return out;
 
-  let email = split.pop();
-  if (email === undefined)
-    throw ASSERT_STRING;
+  let email = exists(split.pop());
   // Strip the trailing '>'.
   if (email.charAt(email.length - 1) == '>')
     email = email.substring(0, email.length - 1);
@@ -96,8 +112,5 @@ export function serializeAddress(address: ParsedAddress) {
 }
 
 export function getDefinitelyExistsElementById(id: string) {
-  let element = document.getElementById(id);
-  if (!element)
-    throw ASSERT_STRING;
-  return element;
+  return exists(document.getElementById(id));
 }

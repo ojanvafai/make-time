@@ -1,4 +1,4 @@
-import {ASSERT_STRING} from './Base.js';
+import {exists} from './Base.js';
 import {Contacts} from './Contacts.js';
 
 export class AutoCompleteEntry extends HTMLElement {
@@ -185,9 +185,7 @@ export abstract class Compose extends HTMLElement {
 
     this.selectAutocompleteItem_(0);
 
-    let range = this.getAutocompleteRange();
-    if (!range)
-      throw ASSERT_STRING;
+    let range = exists(this.getAutocompleteRange());
     let rect = range.getBoundingClientRect();
     this.autocompleteContainer_.style.left = `${rect.left}px`;
     if (this.putMenuAbove_) {
@@ -199,14 +197,11 @@ export abstract class Compose extends HTMLElement {
   }
 
   adjustAutocompleteIndex(adjustment: number) {
-    if (this.autocompleteIndex_ === undefined)
-      throw ASSERT_STRING;
-
     let container = <HTMLElement>this.autocompleteContainer_;
     let newIndex = Math.max(
         0,
         Math.min(
-            this.autocompleteIndex_ + adjustment,
+            exists(this.autocompleteIndex_) + adjustment,
             container.children.length - 1));
     this.selectAutocompleteItem_(newIndex);
   }
@@ -268,14 +263,9 @@ export abstract class Compose extends HTMLElement {
   }
 
   submitAutocomplete_(selectedItem?: AutoCompleteEntry) {
-    if (this.autocompleteIndex_ === undefined)
-      throw 'Attempted to submit autocomplete without a selected entry.';
-    if (!this.autocompleteContainer_)
-      throw ASSERT_STRING;
-
     if (!selectedItem) {
-      selectedItem = <AutoCompleteEntry>this.autocompleteContainer_
-                         .children[this.autocompleteIndex_];
+      selectedItem = <AutoCompleteEntry>exists(this.autocompleteContainer_)
+                         .children[exists(this.autocompleteIndex_)];
     }
     this.insertAddress(selectedItem);
 

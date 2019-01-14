@@ -1,4 +1,4 @@
-import {ASSERT_STRING, USER_ID} from './Base.js';
+import {exists, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 
@@ -45,52 +45,48 @@ export class Message {
   constructor(
       public rawMessage: gapi.client.gmail.Message,
       private previousMessage_?: Message) {
-    if (!rawMessage.id)
-      throw ASSERT_STRING;
-    this.id = rawMessage.id;
+    this.id = exists(rawMessage.id);
 
     this.attachments_ = [];
 
     let hasDate = false;
 
-    if (!rawMessage.payload || !rawMessage.payload.headers)
-      throw ASSERT_STRING;
-
-    for (var header of rawMessage.payload.headers) {
-      if (!header.name || !header.value)
-        throw ASSERT_STRING;
+    let headers = exists(exists(rawMessage.payload).headers);
+    for (var header of headers) {
+      let name = exists(header.name);
+      let value = exists(header.value);
 
       // Some mail users lower case header names (probably just spam).
-      switch (header.name.toLowerCase()) {
+      switch (name.toLowerCase()) {
         case 'subject':
-          this.subject = header.value;
+          this.subject = value;
           break;
         case 'date':
           hasDate = true;
-          this.date = new Date(header.value);
+          this.date = new Date(value);
           break;
         case 'from':
-          this.from = this.cleanseAddresses_(header.value);
+          this.from = this.cleanseAddresses_(value);
           this.fromEmails = this.extractEmails_(this.from);
           this.fromName = this.extractName_(this.from);
           break;
         case 'to':
-          this.to = this.cleanseAddresses_(header.value);
+          this.to = this.cleanseAddresses_(value);
           this.toEmails = this.extractEmails_(this.to);
           break;
         case 'cc':
-          this.cc = this.cleanseAddresses_(header.value);
+          this.cc = this.cleanseAddresses_(value);
           this.ccEmails = this.extractEmails_(this.cc);
           break;
         case 'bcc':
-          this.bcc = this.cleanseAddresses_(header.value);
+          this.bcc = this.cleanseAddresses_(value);
           this.bccEmails = this.extractEmails_(this.bcc);
           break;
         case 'message-id':
-          this.messageId = header.value;
+          this.messageId = value;
           break;
         case 'list-id':
-          this.listId = header.value;
+          this.listId = value;
           break;
       }
     }
@@ -100,9 +96,7 @@ export class Message {
     if (!hasDate)
       this.date = new Date(Number(rawMessage.internalDate));
 
-    let labels = rawMessage.labelIds;
-    if (!labels)
-      throw ASSERT_STRING;
+    let labels = exists(rawMessage.labelIds);
     this.isUnread = labels.includes('UNREAD');
     this.isDraft = labels.includes('DRAFT');
   }
@@ -113,12 +107,10 @@ export class Message {
 
   getHeaderValue(name: string) {
     name = name.toLowerCase();
-    if (!this.rawMessage.payload || !this.rawMessage.payload.headers)
-      throw ASSERT_STRING;
-    for (var header of this.rawMessage.payload.headers) {
-      if (!header.name)
-        throw ASSERT_STRING;
-      if (header.name.toLowerCase().includes(name))
+    let headers = exists(exists(this.rawMessage.payload).headers);
+
+    for (var header of headers) {
+      if (exists(header.name).toLowerCase().includes(name))
         return header.value;
     }
     return null;
@@ -129,9 +121,7 @@ export class Message {
   }
 
   getLabelIds() {
-    if (!this.rawMessage.labelIds)
-      throw ASSERT_STRING;
-    return this.rawMessage.labelIds;
+    return exists(this.rawMessage.labelIds);
   }
 
   getPlain() {
@@ -174,9 +164,7 @@ export class Message {
     //
     // Also, wrap the plain text in white-space:pre-wrap to make it render
     // nicely.
-    if (this.plain_ === undefined)
-      throw ASSERT_STRING;
-    let escaped = this.htmlEscape_(this.plain_);
+    let escaped = this.htmlEscape_(exists(this.plain_));
 
     // Normalize newlines to simplify the logic.
     let paragraphs =
@@ -195,18 +183,12 @@ export class Message {
     // If a message has no body at all, fallback to empty string.
     this.plain_ = '';
 
-    let payload = this.rawMessage.payload;
-    if (!payload)
-      throw ASSERT_STRING;
-
+    let payload = exists(this.rawMessage.payload);
     if (payload.parts) {
       this.getMessageBody_(payload.parts);
     } else {
-      let body = payload.body;
-      if (!body || body.data === undefined)
-        throw ASSERT_STRING;
-
-      let messageText = Message.base64_.decode(body.data);
+      let body = exists(payload.body);
+      let messageText = Message.base64_.decode(exists(body.data));
       if (payload.mimeType == 'text/html')
         this.html_ = messageText;
       else
@@ -320,28 +302,20 @@ export class Message {
   }
 
   parseAttachment_(attachment: gapi.client.gmail.MessagePart) {
-    if (!attachment.body)
-      throw ASSERT_STRING;
-
     let result = <AttachmentResult>{
-      id: attachment.body.attachmentId,
+      id: exists(attachment.body).attachmentId,
       name: attachment.filename,
     };
 
-    if (!attachment.headers)
-      throw ASSERT_STRING;
-
-    for (let header of attachment.headers) {
-      if (!header.name || !header.value)
-        throw ASSERT_STRING;
-
-      switch (header.name.toLowerCase()) {
+    let headers = exists(attachment.headers);
+    for (let header of headers) {
+      switch (exists(header.name).toLowerCase()) {
         case 'content-type':
-          result.contentType = header.value.split(';')[0];
+          result.contentType = exists(header.value).split(';')[0];
           break;
 
         case 'content-id':
-          result.contentId = header.value;
+          result.contentId = exists(header.value);
           break;
       }
     }
@@ -354,10 +328,8 @@ export class Message {
       if (part.parts)
         this.getMessageBody_(part.parts);
 
-      if (!part.body)
-        throw ASSERT_STRING;
-
-      let attachmentId = part.body.attachmentId;
+      let body = exists(part.body);
+      let attachmentId = body.attachmentId;
       if (attachmentId) {
         this.attachments_.push(this.parseAttachment_(part));
         continue;
@@ -365,14 +337,10 @@ export class Message {
 
       switch (part.mimeType) {
         case 'text/plain':
-          if (!part.body.data)
-            throw ASSERT_STRING;
-          this.plain_ = Message.base64_.decode(part.body.data);
+          this.plain_ = Message.base64_.decode(exists(body.data));
           break;
         case 'text/html':
-          if (!part.body.data)
-            throw ASSERT_STRING;
-          this.html_ = Message.base64_.decode(part.body.data);
+          this.html_ = Message.base64_.decode(exists(body.data));
           break;
       }
     }

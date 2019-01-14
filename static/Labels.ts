@@ -1,4 +1,4 @@
-import {USER_ID, ASSERT_STRING} from './Base.js';
+import {exists, USER_ID} from './Base.js';
 import {gapiFetch} from './Net.js';
 
 interface LabelResource {
@@ -128,10 +128,8 @@ export class Labels {
 
   async fetch() {
     var response = await gapiFetch(
-      gapi.client.gmail.users.labels.list, { 'userId': USER_ID });
-    if (!response.result.labels)
-      throw ASSERT_STRING;
-    this.updateLabelLists_(response.result.labels);
+        gapi.client.gmail.users.labels.list, {'userId': USER_ID});
+    this.updateLabelLists_(exists(response.result.labels));
   }
 
   // Make sure do to all the operations below synchronously to avoid exposing
@@ -145,11 +143,7 @@ export class Labels {
     this.priorityLabels_ = new Set();
 
     for (let label of labels) {
-      if (!label.name)
-        throw ASSERT_STRING;
-      if (!label.id)
-        throw ASSERT_STRING;
-      this.addLabel_(label.name, label.id);
+      this.addLabel_(exists(label.name), exists(label.id));
     }
   }
 
@@ -312,9 +306,7 @@ export class Labels {
         continue;
 
       var result = await this.createLabel_(labelSoFar);
-      if (!result.id)
-        throw ASSERT_STRING;
-      this.addLabel_(labelSoFar, result.id);
+      this.addLabel_(labelSoFar, exists(result.id));
     }
 
     id = this.labelToId_.get(name);
