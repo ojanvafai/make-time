@@ -1,5 +1,4 @@
 import {assert} from '../Base.js';
-import {threadCache} from '../BaseMain.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {Labels} from '../Labels.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from '../TaskQueue.js';
@@ -57,13 +56,10 @@ export abstract class ThreadListModel extends Model {
     if (!data)
       return;
 
-    // Make it only cache Threads in it's map
-    // and have the callers deal with whether they have a ThreadData or a
-    // Thread. Rename THreadData to ThreadFetcher.
     let threads = await Promise.all(
         <Promise<Thread>[]>data.map(async (x: SerializedThreadData) => {
           let fetcher = new ThreadFetcher(x.id, x.historyId, this.labels);
-          return await threadCache.get(fetcher);
+          return await fetcher.fetch();
         }));
     this.setThreads(threads, true);
   }

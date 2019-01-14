@@ -1,6 +1,6 @@
-import {defined} from './Base';
-import {Labels} from './Labels';
-import {Message} from './Message';
+import {defined} from './Base.js';
+import {Labels} from './Labels.js';
+import {Message} from './Message.js';
 
 export let DEFAULT_QUEUE = 'inbox';
 

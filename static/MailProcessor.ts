@@ -461,7 +461,8 @@ export class MailProcessor {
         await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
 
     let threads: Thread[] = [];
-    await fetchThreads((_fetcher: ThreadFetcher, thread: Thread|null) => {
+    await fetchThreads(async (fetcher: ThreadFetcher) => {
+      let thread = await fetcher.fetch();
       threads.push(notNull(thread));
     }, `in:${queuedLabelName}`);
 

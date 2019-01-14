@@ -1,5 +1,5 @@
-import {assert} from '../Base.js';
-import {fetchThreads, threadCache} from '../BaseMain.js';
+import {notNull} from '../Base.js';
+import {fetchThreads} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {MailProcessor} from '../MailProcessor.js';
 import {QueueSettings} from '../QueueSettings.js';
@@ -152,7 +152,8 @@ export class TriageModel extends ThreadListModel {
     // is processed.
     let skipNetwork = true;
     await fetchThreads(
-        async (fetcher: ThreadFetcher, thread: Thread|null) => {
+        async (fetcher: ThreadFetcher) => {
+          let thread = await fetcher.fetch(skipNetwork);
           if (thread !== null)
             await this.processThread_(thread);
           else
@@ -160,7 +161,7 @@ export class TriageModel extends ThreadListModel {
         },
         `(${inInboxNoNeedsTriageLabel}) OR (${hasNeedsTriageLabel}) OR (${
             inUnprocessed})`,
-        skipNetwork, maxThreadsToShow);
+        maxThreadsToShow);
 
     this.setThreads(this.pendingThreads_);
     this.pendingThreads_ = [];
@@ -185,18 +186,17 @@ export class TriageModel extends ThreadListModel {
     }
   }
 
-  private async doFetches_(threads: ThreadFetcher[]) {
-    if (!threads.length)
+  private async doFetches_(fetchers: ThreadFetcher[]) {
+    if (!fetchers.length)
       return;
 
     let progress = this.updateTitle(
-        'TriageModel.doFetches_', threads.length, 'Updating thread list...');
+        'TriageModel.doFetches_', fetchers.length, 'Updating thread list...');
 
-    for (let bareThread of threads) {
+    for (let fetcher of fetchers) {
       progress.incrementProgress();
-      let thread = await threadCache.get(bareThread);
-      assert(thread instanceof Thread);
-      await this.processThread_(<Thread>thread, true);
+      let thread = await fetcher.fetch();
+      await this.processThread_(notNull(thread), true);
     }
   }
 

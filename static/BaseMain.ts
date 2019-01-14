@@ -4,14 +4,13 @@
 // that have to know about Threads and things like that.
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, getDefinitelyExistsElementById, showDialog, USER_ID, notNull} from './Base.js';
+import {assert, defined, getDefinitelyExistsElementById, notNull, showDialog, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
 import {ServerStorage} from './ServerStorage.js';
 import {Settings} from './Settings.js';
-import {Thread} from './Thread.js';
 import {ThreadFetcher} from './ThreadFetcher.js';
 import {HelpDialog} from './views/HelpDialog.js';
 
@@ -24,35 +23,6 @@ interface TitleEntry {
   key: string;
   title: (HTMLElement|string)[];
 }
-
-class ThreadCache {
-  cache_: Map<string, Thread>;
-
-  constructor() {
-    this.cache_ = new Map();
-  }
-
-  async get(fetcher: ThreadFetcher, onlyFetchThreadsFromDisk?: boolean) {
-    // TODO: This cache grows indefinitely. It needs to be GC'ed, possibly after
-    // each update call? A simple step could be to delete the cache once a day.
-    // All the data is on disk, so it shouldn't be too expensive.
-    let entry = this.cache_.get(fetcher.id);
-    if (entry instanceof Thread) {
-      if (entry.historyId != fetcher.historyId)
-        await entry.update();
-      return entry;
-    }
-
-    let upgraded = await fetcher.fetch(!!onlyFetchThreadsFromDisk);
-    if (upgraded != null)
-      this.cache_.set(fetcher.id, upgraded);
-    else
-      assert(onlyFetchThreadsFromDisk);
-    return upgraded;
-  }
-}
-
-export let threadCache = new ThreadCache();
 
 let settings_: Settings;
 let labels_: Labels;
@@ -131,7 +101,8 @@ async function fetchTheSettingsThings() {
 
 async function doLabelMigration(
     addLabelIds: string[], removeLabelIds: string[], query: string) {
-  await fetchThreads(async (_fetcher: ThreadFetcher, thread: Thread | null) => {
+  await fetchThreads(async (fetcher: ThreadFetcher) => {
+    let thread = await fetcher.fetch();
     await notNull(thread).modify(addLabelIds, removeLabelIds);
   }, query);
 }
@@ -279,8 +250,7 @@ interface FetchRequestParameters {
 let MAX_RESULTS_CAP = 500;
 
 export async function fetchThreads(
-    forEachThread: (fetcher: ThreadFetcher, thread: Thread|null) => void,
-    query: string, onlyFetchThreadsFromDisk: boolean = false,
+    forEachThread: (fetcher: ThreadFetcher) => void, query: string,
     maxResults: number = 0) {
   // If the query is empty or just whitespace, then we would fetch all mail by
   // accident.
@@ -311,13 +281,9 @@ export async function fetchThreads(
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      let fetcher = new ThreadFetcher(
+      await forEachThread(new ThreadFetcher(
           defined(rawThread.id), defined(rawThread.historyId),
-          await getLabels());
-      let thread = await threadCache.get(fetcher, onlyFetchThreadsFromDisk);
-      if (!onlyFetchThreadsFromDisk)
-        assert(thread instanceof Thread);
-      await forEachThread(fetcher, thread);
+          await getLabels()));
     }
 
     if (resultCountLeft <= 0)

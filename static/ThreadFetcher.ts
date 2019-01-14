@@ -1,11 +1,12 @@
-import {defined, getCurrentWeekNumber, getPreviousWeekNumber, USER_ID} from './Base.js';
+import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, USER_ID} from './Base.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {Thread} from './Thread.js';
 import {ThreadUtils} from './ThreadUtils.js';
 
-// Class with just the basic thread data to fetch a proper Thread.
+let memoryCache: Map<string, Thread> = new Map();
+
 export class ThreadFetcher {
   private fetchPromise_:
       Promise<gapi.client.Response<gapi.client.gmail.Thread>>|null = null;
@@ -14,16 +15,31 @@ export class ThreadFetcher {
       public id: string, public historyId: string, private allLabels_: Labels) {
   }
 
-  async fetch(onlyFetchFromDisk: boolean) {
+  async fetch(onlyFetchFromDisk?: boolean) {
+    // TODO: This cache grows indefinitely. A simple fix could be to delete the
+    // cache once a day. All the data is on disk, so it shouldn't be too
+    // expensive.
+    let entry = memoryCache.get(this.id);
+    if (entry instanceof Thread) {
+      if (entry.historyId != this.historyId)
+        await entry.update();
+      return entry;
+    }
+
     let messages = await this.fetchFromDisk();
     if (!messages && !onlyFetchFromDisk)
       messages = await this.fetchFromNetwork();
-    if (!messages)
+    if (!messages) {
+      assert(onlyFetchFromDisk);
       return null;
+    }
 
     let processed =
         await ThreadUtils.processMessages(messages, [], this.allLabels_);
-    return new Thread(this.id, this.historyId, processed, this.allLabels_);
+    let thread =
+      new Thread(this.id, this.historyId, processed, this.allLabels_);
+    memoryCache.set(this.id, thread);
+    return thread;
   }
 
   async fetchFromNetwork() {
