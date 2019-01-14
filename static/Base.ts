@@ -4,21 +4,21 @@ export let USER_ID = 'me';
 
 let ASSERT_STRING = 'This should never happen.';
 
-export function notNull<T>(x: T|null) {
+export function notNull<T>(x: T|null, message?: string) {
   if (x === null)
-    throw new Error(ASSERT_STRING);
+    throw new Error(message || ASSERT_STRING);
   return x;
 }
 
-export function defined<T>(x: T|undefined) {
+export function defined<T>(x: T|undefined, message?: string) {
   if (x === undefined)
-    throw new Error(ASSERT_STRING);
+    throw new Error(message || ASSERT_STRING);
   return x;
 }
 
-export function exists<T>(x: T|null|undefined) {
+export function exists<T>(x: T|null|undefined, message?: string) {
   if (x === null || x === undefined)
-    throw new Error(ASSERT_STRING);
+    throw new Error(message || ASSERT_STRING);
   return x;
 }
 
