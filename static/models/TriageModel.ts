@@ -1,11 +1,10 @@
 import {assert} from '../Base.js';
-import {fetchThreads, getCachedThread} from '../BaseMain.js';
+import {fetchThreads, threadCache} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {MailProcessor} from '../MailProcessor.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
-import {ThreadBase} from '../ThreadBase.js';
 import {ThreadData} from '../ThreadData.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
@@ -107,8 +106,7 @@ export class TriageModel extends ThreadListModel {
     // Sort by queue, then by date.
     if (a.getQueue() == b.getQueue())
       return this.compareDates(a, b);
-    return this.queueSettings_.queueNameComparator(
-        a.getQueue(), b.getQueue());
+    return this.queueSettings_.queueNameComparator(a.getQueue(), b.getQueue());
   }
 
   hasBestEffortThreads() {
@@ -154,13 +152,11 @@ export class TriageModel extends ThreadListModel {
     // is processed.
     let skipNetwork = true;
     await fetchThreads(
-        async (thread: ThreadBase) => {
-          if (thread instanceof Thread)
+        async (threadData: ThreadData, thread: Thread|null) => {
+          if (thread !== null)
             await this.processThread_(thread);
-          else if (thread instanceof ThreadData)
-            this.needsMessageDetailsThreads_.push(thread);
           else
-            assert(false);
+            this.needsMessageDetailsThreads_.push(threadData);
         },
         `(${inInboxNoNeedsTriageLabel}) OR (${hasNeedsTriageLabel}) OR (${
             inUnprocessed})`,
@@ -198,7 +194,7 @@ export class TriageModel extends ThreadListModel {
 
     for (let bareThread of threads) {
       progress.incrementProgress();
-      let thread = await getCachedThread(bareThread);
+      let thread = await threadCache.get(bareThread);
       assert(thread instanceof Thread);
       await this.processThread_(<Thread>thread, true);
     }

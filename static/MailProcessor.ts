@@ -1,4 +1,4 @@
-import {assert, defined, notNull} from './Base.js';
+import {defined, notNull} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -10,7 +10,8 @@ import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
 import {Thread} from './Thread.js';
-import {DEFAULT_QUEUE, ThreadBase} from './ThreadBase.js';
+import {DEFAULT_QUEUE} from './ThreadBase.js';
+import {ThreadData} from './ThreadData.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';
@@ -460,9 +461,8 @@ export class MailProcessor {
         await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
 
     let threads: Thread[] = [];
-    await fetchThreads((thread: ThreadBase) => {
-      assert(thread instanceof Thread);
-      threads.push(<Thread>thread);
+    await fetchThreads((_threadData: ThreadData, thread: Thread|null) => {
+      threads.push(notNull(thread));
     }, `in:${queuedLabelName}`);
 
     if (!threads.length)

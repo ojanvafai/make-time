@@ -1,8 +1,7 @@
 import {assert} from '../Base.js';
-import {fetchThreads, getCachedThread} from '../BaseMain.js';
+import {fetchThreads, threadCache} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {Thread} from '../Thread.js';
-import {ThreadBase} from '../ThreadBase.js';
 import {ThreadData} from '../ThreadData.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
@@ -73,13 +72,11 @@ export class TodoModel extends ThreadListModel {
     // is processed.
     if (labelsToFetch.length) {
       let skipNetwork = true;
-      await fetchThreads((thread: ThreadBase) => {
-        if (thread instanceof Thread)
+      await fetchThreads((threadData: ThreadData, thread: Thread | null) => {
+        if (thread !== null)
           this.pendingThreads_.push(thread);
-        else if (thread instanceof ThreadData)
-          this.needsMessageDetailsThreads_.push(thread);
         else
-          assert(false);
+          this.needsMessageDetailsThreads_.push(threadData);
       }, `in:${labelsToFetch.join(' OR in:')}`, skipNetwork);
     }
 
@@ -100,7 +97,7 @@ export class TodoModel extends ThreadListModel {
 
     for (let i = 0; i < threads.length; i++) {
       progress.incrementProgress();
-      let thread = await getCachedThread(threads[i]);
+      let thread = await threadCache.get(threads[i]);
       assert(thread instanceof Thread);
       await this.addThread(<Thread>thread);
     }

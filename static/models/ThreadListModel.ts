@@ -1,5 +1,5 @@
 import {assert} from '../Base.js';
-import {getCachedThread} from '../BaseMain.js';
+import {threadCache} from '../BaseMain.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {Labels} from '../Labels.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from '../TaskQueue.js';
@@ -24,6 +24,11 @@ export class ThreadListChangedEvent extends Event {
   constructor() {
     super('thread-list-changed');
   }
+}
+
+interface SerializedThreadData {
+  id: string;
+  historyId: string;
 }
 
 export abstract class ThreadListModel extends Model {
@@ -52,8 +57,14 @@ export abstract class ThreadListModel extends Model {
     if (!data)
       return;
 
-    let threads = await Promise.all(<Promise<Thread>[]>data.map(
-        async (x: ThreadData) => await getCachedThread(x)));
+    // Make it only cache Threads in it's map
+    // and have the callers deal with whether they have a ThreadData or a
+    // Thread. Rename THreadData to ThreadFetcher.
+    let threads = await Promise.all(
+        <Promise<Thread>[]>data.map(async (x: SerializedThreadData) => {
+          let threadData = new ThreadData(x.id, x.historyId, this.labels);
+          return await threadCache.get(threadData);
+        }));
     this.setThreads(threads, true);
   }
 
@@ -108,8 +119,8 @@ export abstract class ThreadListModel extends Model {
     if (skipSerialization)
       return;
 
-    let threadData =
-        this.threads_.map((thread) => new ThreadData(thread, this.labels));
+    let threadData = this.threads_.map(
+        (thread) => new ThreadData(thread.id, thread.historyId, this.labels));
     IDBKeyVal.getDefault().set(this.serializationKey_, threadData);
   }
 

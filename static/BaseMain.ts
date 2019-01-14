@@ -4,7 +4,7 @@
 // that have to know about Threads and things like that.
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, getDefinitelyExistsElementById, showDialog, USER_ID} from './Base.js';
+import {assert, defined, getDefinitelyExistsElementById, showDialog, USER_ID, notNull} from './Base.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
@@ -12,7 +12,6 @@ import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
 import {ServerStorage} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {Thread} from './Thread.js';
-import {ThreadBase} from './ThreadBase.js';
 import {ThreadData} from './ThreadData.js';
 import {HelpDialog} from './views/HelpDialog.js';
 
@@ -27,7 +26,7 @@ interface TitleEntry {
 }
 
 class ThreadCache {
-  cache_: Map<string, ThreadBase>;
+  cache_: Map<string, Thread>;
 
   constructor() {
     this.cache_ = new Map();
@@ -44,15 +43,16 @@ class ThreadCache {
       return entry;
     }
 
-    let bareThread = new ThreadData(threadData, await getLabels());
-    let upgraded = await bareThread.upgrade(!!onlyFetchThreadsFromDisk);
-    let thread = upgraded || bareThread
-    if (!onlyFetchThreadsFromDisk)
-    assert(thread instanceof Thread);
-    this.cache_.set(threadData.id, thread);
-    return thread;
+    let upgraded = await threadData.upgrade(!!onlyFetchThreadsFromDisk);
+    if (upgraded != null)
+      this.cache_.set(threadData.id, upgraded);
+    else
+      assert(onlyFetchThreadsFromDisk);
+    return upgraded;
   }
 }
+
+export let threadCache = new ThreadCache();
 
 let settings_: Settings;
 let labels_: Labels;
@@ -60,7 +60,6 @@ let queuedLabelMap_: QueueSettings;
 let loginDialog_: HTMLDialogElement;
 let titleStack_: TitleEntry[] = [];
 let loaderTitleStack_: TitleEntry[] = [];
-let threadCache_: ThreadCache;
 
 // Client ID and API key from the Developer Console
 let CLIENT_ID: string;
@@ -132,9 +131,8 @@ async function fetchTheSettingsThings() {
 
 async function doLabelMigration(
     addLabelIds: string[], removeLabelIds: string[], query: string) {
-  await fetchThreads(async (thread: ThreadBase) => {
-    assert(thread instanceof Thread);
-    await (<Thread>thread).modify(addLabelIds, removeLabelIds);
+  await fetchThreads(async (_threadData: ThreadData, thread: Thread | null) => {
+    await notNull(thread).modify(addLabelIds, removeLabelIds);
   }, query);
 }
 
@@ -270,13 +268,6 @@ function updateTitleBase(
     node.append(...stack[stack.length - 1].title);
 }
 
-export async function getCachedThread(
-    response: ThreadData, onlyFetchThreadsFromDisk?: boolean) {
-  if (!threadCache_)
-    threadCache_ = new ThreadCache();
-  return await threadCache_.get(response, onlyFetchThreadsFromDisk);
-}
-
 interface FetchRequestParameters {
   userId: string;
   q: string;
@@ -288,8 +279,9 @@ interface FetchRequestParameters {
 let MAX_RESULTS_CAP = 500;
 
 export async function fetchThreads(
-    forEachThread: (thread: ThreadBase) => void, query: string,
-    onlyFetchThreadsFromDisk: boolean = false, maxResults: number = 0) {
+    forEachThread: (threadData: ThreadData, thread: Thread|null) => void,
+    query: string, onlyFetchThreadsFromDisk: boolean = false,
+    maxResults: number = 0) {
   // If the query is empty or just whitespace, then we would fetch all mail by
   // accident.
   assert(query.trim() !== '');
@@ -319,11 +311,13 @@ export async function fetchThreads(
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      let thread = await getCachedThread(
-          new ThreadData(rawThread, await getLabels()), onlyFetchThreadsFromDisk);
+      let threadData = new ThreadData(
+          defined(rawThread.id), defined(rawThread.historyId),
+          await getLabels());
+      let thread = await threadCache.get(threadData, onlyFetchThreadsFromDisk);
       if (!onlyFetchThreadsFromDisk)
         assert(thread instanceof Thread);
-      await forEachThread(thread);
+      await forEachThread(threadData, thread);
     }
 
     if (resultCountLeft <= 0)
