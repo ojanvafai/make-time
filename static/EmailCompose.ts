@@ -1,4 +1,4 @@
-import {exists} from './Base.js';
+import {notNull} from './Base.js';
 import {AutoCompleteEntry, Compose} from './Compose.js';
 import {Contacts} from './Contacts.js';
 
@@ -67,7 +67,7 @@ export class EmailCompose extends Compose {
   }
 
   insertAddress(selectedItem: AutoCompleteEntry) {
-    let autocompleteRange = exists(this.autocompleteRange_);
+    let autocompleteRange = notNull(this.autocompleteRange_);
     let range = this.cursor();
     range.setStart(
         autocompleteRange.startContainer, autocompleteRange.startOffset);

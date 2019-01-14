@@ -1,4 +1,4 @@
-import {exists, notNull} from './Base.js';
+import {defined, notNull} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -170,7 +170,7 @@ export class MailProcessor {
       stats.maxTime = Math.max(stats.maxTime, Number(rows[i][2]));
 
       let labelCountString = rows[i][3];
-      var labelCounts = JSON.parse(String(exists(labelCountString)));
+      var labelCounts = JSON.parse(String(defined(labelCountString)));
       for (var label in labelCounts) {
         var count = labelCounts[label];
         if (label == Labels.ARCHIVE_LABEL) {

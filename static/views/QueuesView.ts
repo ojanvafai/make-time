@@ -1,4 +1,4 @@
-import {exists, showDialog} from '../Base.js';
+import {defined, showDialog, notNull} from '../Base.js';
 import {QueueListEntry, QueueSettings} from '../QueueSettings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -85,7 +85,7 @@ export class QueuesView extends HTMLElement {
         // group.
         if (!row.previousSibling ||
             row.previousSibling.nodeType == Node.TEXT_NODE) {
-          let parent = exists(row.parentNode);
+          let parent = notNull(row.parentNode);
           if (parent.previousSibling)
             (<HTMLElement>parent.previousSibling).append(row);
           else
@@ -97,7 +97,7 @@ export class QueuesView extends HTMLElement {
     } else if (direction == 'ArrowDown') {
       while (count--) {
         if (!row.nextSibling) {
-          let parent = exists(row.parentNode);
+          let parent = notNull(row.parentNode);
           if (parent.nextSibling)
             parent.nextSibling.firstChild!.after(row);
           else
@@ -202,12 +202,12 @@ export class QueuesView extends HTMLElement {
       return;
     }
 
-    exists(this.dialog_).close();
+    defined(this.dialog_).close();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
-    exists(this.dialog_).close();
+    defined(this.dialog_).close();
   }
 
   createSelect_(list: string[], opt_selectedItem?: string) {
@@ -259,7 +259,7 @@ export class QueuesView extends HTMLElement {
     goals.className = 'goal';
     row.append(goals);
 
-    let container = exists(this.getRowContainer_(queue));
+    let container = defined(this.getRowContainer_(queue));
     container.append(row);
   }
 

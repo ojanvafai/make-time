@@ -4,25 +4,25 @@ export let USER_ID = 'me';
 
 let ASSERT_STRING = 'This should never happen.';
 
-export function notNull<T>(x: T|null, message?: string) {
+export function notNull<T>(x: T|null, message?: string): T {
   if (x === null)
     throw new Error(message || ASSERT_STRING);
   return x;
 }
 
-export function defined<T>(x: T|undefined, message?: string) {
+export function defined<T>(x: T|undefined, message?: string): T {
   if (x === undefined)
     throw new Error(message || ASSERT_STRING);
   return x;
 }
 
-export function exists<T>(x: T|null|undefined, message?: string) {
+export function definedAndNotNull<T>(x: T|null|undefined, message?: string): T {
   if (x === null || x === undefined)
     throw new Error(message || ASSERT_STRING);
   return x;
 }
 
-export function assert<T>(x: T|null|undefined, message?: string) {
+export function assert<T>(x: T|null|undefined, message?: string): T {
   if (!x)
     throw new Error(message || ASSERT_STRING);
   return x;
@@ -99,7 +99,7 @@ export function parseAddress(address: string) {
   if (split.length == 1)
     return out;
 
-  let email = exists(split.pop());
+  let email = defined(split.pop());
   // Strip the trailing '>'.
   if (email.charAt(email.length - 1) == '>')
     email = email.substring(0, email.length - 1);
@@ -118,5 +118,5 @@ export function serializeAddress(address: ParsedAddress) {
 }
 
 export function getDefinitelyExistsElementById(id: string) {
-  return exists(document.getElementById(id));
+  return notNull(document.getElementById(id));
 }

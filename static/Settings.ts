@@ -1,5 +1,5 @@
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, exists, showDialog} from './Base.js';
+import {assert, defined, showDialog, notNull} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {ServerStorage, StorageUpdate} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
@@ -522,7 +522,7 @@ export class Settings {
     for (let i = 1, l = rawRules.length; i < l; i++) {
       let ruleObj: FilterRule = {label: ''};
       for (let j = 0; j < ruleNames.length; j++) {
-        let rawName = exists(ruleNames[j]);
+        let rawName = defined(ruleNames[j]);
         let name = String(rawName).toLowerCase();
         let value = rawRules[i][j];
 
@@ -606,7 +606,7 @@ export class Settings {
       rows.push(newRule);
     }
 
-    let originalFilterSheetRowCount = exists(this.filters_).length + 1;
+    let originalFilterSheetRowCount = notNull(this.filters_).length + 1;
     await SpreadsheetUtils.writeSheet(
         this.spreadsheetId, Settings.FILTERS_SHEET_NAME_, rows,
         originalFilterSheetRowCount);

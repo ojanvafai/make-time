@@ -1,4 +1,4 @@
-import {exists, USER_ID} from './Base.js';
+import {defined, USER_ID} from './Base.js';
 import {gapiFetch} from './Net.js';
 
 interface LabelResource {
@@ -129,7 +129,7 @@ export class Labels {
   async fetch() {
     var response = await gapiFetch(
         gapi.client.gmail.users.labels.list, {'userId': USER_ID});
-    this.updateLabelLists_(exists(response.result.labels));
+    this.updateLabelLists_(defined(response.result.labels));
   }
 
   // Make sure do to all the operations below synchronously to avoid exposing
@@ -143,7 +143,7 @@ export class Labels {
     this.priorityLabels_ = new Set();
 
     for (let label of labels) {
-      this.addLabel_(exists(label.name), exists(label.id));
+      this.addLabel_(defined(label.name), defined(label.id));
     }
   }
 
@@ -306,7 +306,7 @@ export class Labels {
         continue;
 
       var result = await this.createLabel_(labelSoFar);
-      this.addLabel_(labelSoFar, exists(result.id));
+      this.addLabel_(labelSoFar, defined(result.id));
     }
 
     id = this.labelToId_.get(name);

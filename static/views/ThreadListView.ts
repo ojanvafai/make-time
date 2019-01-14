@@ -1,5 +1,5 @@
 import {Action, registerActions} from '../Actions.js';
-import {assert, defined, exists} from '../Base.js';
+import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {SubmitEvent} from '../Compose.js';
 import {Contacts} from '../Contacts.js';
@@ -642,7 +642,7 @@ export class ThreadListView extends View {
   }
 
   renderOne_() {
-    let renderedRow = exists(this.renderedRow_);
+    let renderedRow = notNull(this.renderedRow_);
 
     if (this.rowGroupContainer_.style.display != 'none')
       this.transitionToSingleThread_();
@@ -756,7 +756,7 @@ export class ThreadListView extends View {
 
       // Grab this before setting isSending_ to true to ensure that we don't get
       // stuck unable to send when there are bugs.
-      let renderedRow = exists(this.renderedRow_);
+      let renderedRow = notNull(this.renderedRow_);
 
       if (this.isSending_)
         return;

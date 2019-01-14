@@ -1,4 +1,4 @@
-import {exists, USER_ID} from './Base.js';
+import {defined, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 
@@ -45,16 +45,16 @@ export class Message {
   constructor(
       public rawMessage: gapi.client.gmail.Message,
       private previousMessage_?: Message) {
-    this.id = exists(rawMessage.id);
+    this.id = defined(rawMessage.id);
 
     this.attachments_ = [];
 
     let hasDate = false;
 
-    let headers = exists(exists(rawMessage.payload).headers);
+    let headers = defined(defined(rawMessage.payload).headers);
     for (var header of headers) {
-      let name = exists(header.name);
-      let value = exists(header.value);
+      let name = defined(header.name);
+      let value = defined(header.value);
 
       // Some mail users lower case header names (probably just spam).
       switch (name.toLowerCase()) {
@@ -96,7 +96,7 @@ export class Message {
     if (!hasDate)
       this.date = new Date(Number(rawMessage.internalDate));
 
-    let labels = exists(rawMessage.labelIds);
+    let labels = defined(rawMessage.labelIds);
     this.isUnread = labels.includes('UNREAD');
     this.isDraft = labels.includes('DRAFT');
   }
@@ -107,10 +107,10 @@ export class Message {
 
   getHeaderValue(name: string) {
     name = name.toLowerCase();
-    let headers = exists(exists(this.rawMessage.payload).headers);
+    let headers = defined(defined(this.rawMessage.payload).headers);
 
     for (var header of headers) {
-      if (exists(header.name).toLowerCase().includes(name))
+      if (defined(header.name).toLowerCase().includes(name))
         return header.value;
     }
     return null;
@@ -121,7 +121,7 @@ export class Message {
   }
 
   getLabelIds() {
-    return exists(this.rawMessage.labelIds);
+    return defined(this.rawMessage.labelIds);
   }
 
   getPlain() {
@@ -164,7 +164,7 @@ export class Message {
     //
     // Also, wrap the plain text in white-space:pre-wrap to make it render
     // nicely.
-    let escaped = this.htmlEscape_(exists(this.plain_));
+    let escaped = this.htmlEscape_(defined(this.plain_));
 
     // Normalize newlines to simplify the logic.
     let paragraphs =
@@ -183,12 +183,12 @@ export class Message {
     // If a message has no body at all, fallback to empty string.
     this.plain_ = '';
 
-    let payload = exists(this.rawMessage.payload);
+    let payload = defined(this.rawMessage.payload);
     if (payload.parts) {
       this.getMessageBody_(payload.parts);
     } else {
-      let body = exists(payload.body);
-      let messageText = Message.base64_.decode(exists(body.data));
+      let body = defined(payload.body);
+      let messageText = Message.base64_.decode(defined(body.data));
       if (payload.mimeType == 'text/html')
         this.html_ = messageText;
       else
@@ -303,19 +303,19 @@ export class Message {
 
   parseAttachment_(attachment: gapi.client.gmail.MessagePart) {
     let result = <AttachmentResult>{
-      id: exists(attachment.body).attachmentId,
+      id: defined(attachment.body).attachmentId,
       name: attachment.filename,
     };
 
-    let headers = exists(attachment.headers);
+    let headers = defined(attachment.headers);
     for (let header of headers) {
-      switch (exists(header.name).toLowerCase()) {
+      switch (defined(header.name).toLowerCase()) {
         case 'content-type':
-          result.contentType = exists(header.value).split(';')[0];
+          result.contentType = defined(header.value).split(';')[0];
           break;
 
         case 'content-id':
-          result.contentId = exists(header.value);
+          result.contentId = defined(header.value);
           break;
       }
     }
@@ -328,7 +328,7 @@ export class Message {
       if (part.parts)
         this.getMessageBody_(part.parts);
 
-      let body = exists(part.body);
+      let body = defined(part.body);
       let attachmentId = body.attachmentId;
       if (attachmentId) {
         this.attachments_.push(this.parseAttachment_(part));
@@ -337,10 +337,10 @@ export class Message {
 
       switch (part.mimeType) {
         case 'text/plain':
-          this.plain_ = Message.base64_.decode(exists(body.data));
+          this.plain_ = Message.base64_.decode(defined(body.data));
           break;
         case 'text/html':
-          this.html_ = Message.base64_.decode(exists(body.data));
+          this.html_ = Message.base64_.decode(defined(body.data));
           break;
       }
     }
