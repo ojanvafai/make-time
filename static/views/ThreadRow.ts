@@ -85,8 +85,8 @@ export class ThreadRow extends HTMLElement {
   }
 
   renderRow_() {
-    let subject = this.thread.getSubjectSync();
-    let messages = this.thread.getMessagesSync();
+    let subject = this.thread.getSubject();
+    let messages = this.thread.getMessages();
 
     let lastMessage = messages[messages.length - 1];
 

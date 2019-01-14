@@ -72,8 +72,7 @@ export abstract class ThreadListModel extends Model {
   }
 
   protected compareDates(a: Thread, b: Thread) {
-    return -(a.getDateSync() > b.getDateSync()) ||
-        +(a.getDateSync() < b.getDateSync());
+    return -(a.getDate() > b.getDate()) || +(a.getDate() < b.getDate());
   }
 
   getThreads() {

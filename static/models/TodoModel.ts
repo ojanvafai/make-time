@@ -29,7 +29,7 @@ export class TodoModel extends ThreadListModel {
   }
 
   async addThread(thread: Thread) {
-    let priority = await thread.getPriority();
+    let priority = thread.getPriority();
     // Only threads with a priority should be added and
     // only show MUST_DO_LABEL when on vacation.
     if (priority && (!this.vacation_ || priority == Labels.MUST_DO_LABEL))
@@ -37,7 +37,7 @@ export class TodoModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    let priority = thread.getPrioritySync();
+    let priority = thread.getPriority();
     if (priority)
       return Labels.removePriorityPrefix(priority);
     // This can happen when we rename or remove a priority from make-time.

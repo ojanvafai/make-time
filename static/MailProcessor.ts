@@ -1,4 +1,4 @@
-import {defined, notNull, assert} from './Base.js';
+import {assert, defined, notNull} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -270,16 +270,15 @@ export class MailProcessor {
   }
 
   // TODO: Also log which message matched.
-  async logMatchingRule_(thread: Thread, rule: FilterRule) {
+  logMatchingRule_(thread: Thread, rule: FilterRule) {
     if (this.settings.get(ServerStorage.KEYS.LOG_MATCHING_RULES)) {
-      let subject = await thread.getSubject();
-      console.log(`Thread with subject "${subject}" matched rule ${
+      console.log(`Thread with subject "${thread.getSubject()}" matched rule ${
           JSON.stringify(rule)}`);
     }
   }
 
-  async getWinningLabel(thread: Thread, rules: FilterRule[]) {
-    var messages = await thread.getMessages();
+  getWinningLabel(thread: Thread, rules: FilterRule[]) {
+    var messages = thread.getMessages();
 
     for (let rule of rules) {
       if (rule.matchallmessages == 'yes') {
@@ -290,13 +289,13 @@ export class MailProcessor {
             break;
         }
         if (matches) {
-          await this.logMatchingRule_(thread, rule);
+          this.logMatchingRule_(thread, rule);
           return rule.label;
         }
       } else {
         for (let message of messages) {
           if (this.matchesRule(rule, message)) {
-            await this.logMatchingRule_(thread, rule);
+            this.logMatchingRule_(thread, rule);
             return rule.label;
           }
         }
@@ -308,8 +307,8 @@ export class MailProcessor {
     return Labels.FALLBACK_LABEL;
   }
 
-  async getPriority(thread: Thread) {
-    let messages = await thread.getMessages();
+  getPriority(thread: Thread) {
+    let messages = thread.getMessages();
     let lastMessage = messages[messages.length - 1];
     // TODO: Also check the subject line? last message wins over subject?
     let plainText = lastMessage.getPlain();
@@ -351,7 +350,7 @@ export class MailProcessor {
           await this.allLabels_.getId(Labels.PROCESSED_LABEL);
       let addLabelIds = [processedLabelId];
 
-      if (await thread.isMuted()) {
+      if (thread.isMuted()) {
         let mutedId = await this.allLabels_.getId(Labels.MUTED_LABEL);
         removeLabelIds = removeLabelIds.filter((item) => item != mutedId);
         removeLabelIds.push('INBOX');
@@ -360,7 +359,7 @@ export class MailProcessor {
         return;
       }
 
-      let priority = await this.getPriority(thread);
+      let priority = this.getPriority(thread);
       if (priority) {
         let labelName = Labels.addPriorityPrefix(priority);
         addLabelIds.push(await this.allLabels_.getId(labelName));
@@ -371,23 +370,23 @@ export class MailProcessor {
       }
 
       let rules = await this.settings.getFilters();
-      let labelName = await this.getWinningLabel(thread, rules);
+      let labelName = this.getWinningLabel(thread, rules);
 
       if (labelName == Labels.ARCHIVE_LABEL) {
         addLabelIds.push(
             await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
         removeLabelIds.push('INBOX');
         await thread.modify(addLabelIds, removeLabelIds);
-        if (await thread.isInInbox())
+        if (thread.isInInbox())
           this.logToStatsPage_(labelName, startTime);
         return;
       }
 
       let prefixedLabelName;
 
-      let alreadyInTriaged = await thread.getPriority();
-      let alreadyInNeedsTriage = (await thread.isInInbox()) &&
-          (await thread.getQueue() != DEFAULT_QUEUE);
+      let alreadyInTriaged = thread.getPriority();
+      let alreadyInNeedsTriage =
+          thread.isInInbox() && thread.getQueue() != DEFAULT_QUEUE;
       let labelNeedsQueueing =
           this.queuedLabelMap_.get(labelName).queue != QueueSettings.IMMEDIATE;
 
@@ -400,7 +399,7 @@ export class MailProcessor {
       }
 
       let prefixedLabelId = await this.allLabels_.getId(prefixedLabelName);
-      let alreadyHadLabel = (await thread.getLabelIds()).has(prefixedLabelId);
+      let alreadyHadLabel = thread.getLabelIds().has(prefixedLabelId);
 
       addLabelIds.push(prefixedLabelId);
       removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);

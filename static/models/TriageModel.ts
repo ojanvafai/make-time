@@ -39,8 +39,8 @@ export class TriageModel extends ThreadListModel {
 
   handleTriaged(_destination: string|null, _thread: Thread) {}
 
-  async isBestEffortQueue(thread: Thread) {
-    let queue = await thread.getQueue();
+  private isBestEffortQueue_(thread: Thread) {
+    let queue = thread.getQueue();
     let parts = queue.split('/');
     let lastPart = parts[parts.length - 1];
     let data = this.queueSettings_.get(lastPart);
@@ -51,10 +51,10 @@ export class TriageModel extends ThreadListModel {
   // aren't great. Would be best to know how long the email was actually in the
   // inbox rather than when the last email was sent, e.g. if someone was on
   // vacation. Could track the last N dequeue dates for each queue maybe?
-  async isBankrupt(thread: Thread) {
-    let messages = await thread.getMessages();
+  private isBankrupt_(thread: Thread) {
+    let messages = thread.getMessages();
     let date = messages[messages.length - 1].date;
-    let queue = await thread.getQueue();
+    let queue = thread.getQueue();
     let queueData = this.queueSettings_.get(queue);
 
     let numDays = 7;
@@ -69,7 +69,7 @@ export class TriageModel extends ThreadListModel {
   }
 
   async bankruptThread(thread: Thread) {
-    let queue = await thread.getQueue();
+    let queue = thread.getQueue();
     queue = Labels.removeNeedsTriagePrefix(queue);
     let newLabel = Labels.addBankruptPrefix(queue);
     await thread.markTriaged(newLabel);
@@ -77,15 +77,14 @@ export class TriageModel extends ThreadListModel {
 
   async addThread(thread: Thread) {
     // Threads with a priority have already been triaged, so don't add them.
-    if (await thread.getPriority())
+    if (thread.getPriority())
       return;
 
-    if (this.vacation_ &&
-        (this.vacation_ !== (await thread.getDisplayableQueue())))
+    if (this.vacation_ && (this.vacation_ !== thread.getDisplayableQueue()))
       return;
 
-    if (!this.vacation_ && await this.isBestEffortQueue(thread)) {
-      if (await this.isBankrupt(thread)) {
+    if (!this.vacation_ && this.isBestEffortQueue_(thread)) {
+      if (this.isBankrupt_(thread)) {
         await this.bankruptThread(thread);
         return;
       }
@@ -101,15 +100,15 @@ export class TriageModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    return thread.getDisplayableQueueSync();
+    return thread.getDisplayableQueue();
   }
 
   protected compareThreads(a: Thread, b: Thread) {
     // Sort by queue, then by date.
-    if (a.getQueueSync() == b.getQueueSync())
+    if (a.getQueue() == b.getQueue())
       return this.compareDates(a, b);
     return this.queueSettings_.queueNameComparator(
-        a.getQueueSync(), b.getQueueSync());
+        a.getQueue(), b.getQueue());
   }
 
   hasBestEffortThreads() {
@@ -207,11 +206,11 @@ export class TriageModel extends ThreadListModel {
 
   private async processThread_(thread: Thread, addDirectly?: boolean) {
     let processedId = await this.labels.getId(Labels.PROCESSED_LABEL);
-    let messages = await thread.getMessages();
+    let messages = thread.getMessages();
     let lastMessage = messages[messages.length - 1];
-    let isInInbox = await thread.isInInbox();
+    let isInInbox = thread.isInInbox();
     let hasUnprocessedLabel =
-        (await thread.getLabelNames()).has(Labels.UNPROCESSED_LABEL);
+        thread.getLabelNames().has(Labels.UNPROCESSED_LABEL);
 
     // Since processing threads is destructive (e.g. it removes priority
     // labels), only process threads in the inbox or with the unprocessed label.

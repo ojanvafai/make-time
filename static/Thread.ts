@@ -4,21 +4,12 @@ import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
-import { ThreadBase } from './ThreadBase.js';
-import { ThreadData } from './ThreadData.js';
-
-let noMessagesError =
-    'Attempted to operate on messages before they were fetched';
-let staleThreadError =
-    'Thread was modified before message details were fetched.';
-let staleAfterFetchError =
-    'Thread is still stale after fetch. This should never happen.';
+import {ThreadBase} from './ThreadBase.js';
+import {ThreadData} from './ThreadData.js';
 
 export let DEFAULT_QUEUE = 'inbox';
 
 export class Thread extends ThreadBase {
-  hasMessageDetails: boolean = false;
-
   snippet: string|undefined;
   private labelIds_: Set<string>|undefined;
   private labelNames_: Set<string>|undefined;
@@ -36,13 +27,10 @@ export class Thread extends ThreadBase {
   }
 
   private async processLabels_() {
-    if (!this.processedMessages_)
-      throw noMessagesError;
-
+    let messages = defined(this.processedMessages_);
     // Need to reset all the label state in case the new set of messages has
     // different labels.
-    this.labelIds_ =
-        new Set(this.processedMessages_.flatMap(x => x.getLabelIds()));
+    this.labelIds_ = new Set(messages.flatMap(x => x.getLabelIds()));
     this.labelNames_ = new Set();
     this.priority_ = null;
     this.muted_ = false;
@@ -67,7 +55,6 @@ export class Thread extends ThreadBase {
   }
 
   async processMessages(messages: any[]) {
-    this.hasMessageDetails = true;
     if (this.processedMessages_ === undefined)
       this.processedMessages_ = [];
 
@@ -106,15 +93,7 @@ export class Thread extends ThreadBase {
   async modify(
       addLabelIds: string[], removeLabelIds: string[],
       expectedNewMessageCount: number = 0) {
-    // Need the message details to get the list of currently applied labels.
-    // Almost always we will have already fetched this since we're showing the
-    // thread to the user already or we'll all least have it on disk.
-    if (!this.hasMessageDetails)
-      await this.fetch();
-
-    if (this.labelIds_ === undefined)
-      throw staleThreadError;
-    let currentLabelIds = this.labelIds_;
+    let currentLabelIds = defined(this.labelIds_);
 
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
@@ -130,7 +109,7 @@ export class Thread extends ThreadBase {
     if (!removeLabelIds.length && !addLabelIds.length) {
       console.warn(
           `Modify call didn't remove or add any Labels for thread with subject: ${
-              this.getSubjectSync()}`)
+              this.getSubject()}`)
       return null;
     }
 
@@ -143,8 +122,7 @@ export class Thread extends ThreadBase {
     let response =
         await gapiFetch(gapi.client.gmail.users.threads.modify, request);
 
-    if (this.processedMessages_ === undefined)
-      throw staleThreadError;
+    let messages = defined(this.processedMessages_);
 
     // If the number of messages has changed from when we got the message
     // details for this thread and when we did the modify call, that can be one
@@ -156,8 +134,8 @@ export class Thread extends ThreadBase {
     // could just use messages.batchModify to only modify the messages we know
     // about and avoid the race condition for cause #1 entirely.
     let newMessageMetadata = defined(response.result.messages);
-    let hasUnexpectedNewMessages = newMessageMetadata.length >
-        this.processedMessages_.length + expectedNewMessageCount;
+    let hasUnexpectedNewMessages =
+        newMessageMetadata.length > messages.length + expectedNewMessageCount;
 
     // The response to modify doesn't include historyIds, so we need to do a
     // fetch to get the new historyId. While doing so, we also fetch the new
@@ -175,7 +153,7 @@ export class Thread extends ThreadBase {
     // wanted to be 100% sure we could fetch the individual messages that are
     // new and see that they 404, but that seems like overkill.
     if (hasUnexpectedNewMessages &&
-        newMessageMetadata.length <= this.processedMessages_.length) {
+        newMessageMetadata.length <= messages.length) {
       // TODO: Handle the case where this network request fails.
       await gapiFetch(gapi.client.gmail.users.threads.modify, {
         'userId': USER_ID,
@@ -192,15 +170,7 @@ export class Thread extends ThreadBase {
 
   async markTriaged(
       destination: string|null, expectedNewMessageCount?: number) {
-    // Need the message details to get the list of current applied labels.
-    // Almost always we will have alread fetched this since we're showing the
-    // thread to the user already.
-    await this.fetch();
-
-    if (this.labelNames_ === undefined)
-      throw staleThreadError;
-
-    if (destination && this.labelNames_.has(destination))
+    if (destination && defined(this.labelNames_).has(destination))
       return null;
 
     var addLabelIds: string[] = [];
@@ -220,116 +190,51 @@ export class Thread extends ThreadBase {
         addLabelIds, removeLabelIds, expectedNewMessageCount);
   }
 
-  async getLastMessage() {
-    await this.fetch();
-    if (this.processedMessages_ === undefined)
-      throw staleAfterFetchError;
-    return this.processedMessages_[this.processedMessages_.length - 1];
+  isInInbox() {
+    return defined(this.labelIds_).has('INBOX');
   }
 
-  // TODO: make all these sync now that they don't fetch.
-  async isInInbox() {
-    await this.fetch();
-    if (this.labelIds_ === undefined)
-      throw staleAfterFetchError;
-    return this.labelIds_.has('INBOX');
+  getLabelIds() {
+    return defined(this.labelIds_);
   }
 
-  async getLabelIds() {
-    await this.fetch();
-    if (this.labelIds_ === undefined)
-      throw staleAfterFetchError;
-    return this.labelIds_;
+  getLabelNames() {
+    return defined(this.labelNames_);
   }
 
-  async getLabelNames() {
-    await this.fetch();
-    if (this.labelNames_ === undefined)
-      throw staleAfterFetchError;
-    return this.labelNames_;
-  }
-
-  async getDate() {
-    await this.fetch();
-    return this.getDateSync();
-  }
-
-  getDateSync() {
-    if (this.processedMessages_ === undefined)
-      throw staleAfterFetchError;
-    let lastMessage =
-        this.processedMessages_[this.processedMessages_.length - 1];
+  getDate() {
+    let messages = defined(this.processedMessages_);
+    let lastMessage = messages[messages.length - 1];
     return lastMessage.date;
   }
 
-  async getSubject() {
-    await this.fetch();
-    return this.getSubjectSync();
+  getSubject() {
+    return defined(this.processedMessages_)[0].subject || '(no subject)';
   }
 
-  getSubjectSync() {
-    if (this.processedMessages_ === undefined)
-      throw staleAfterFetchError;
-    return this.processedMessages_[0].subject || '(no subject)';
+  getMessages() {
+    return defined(this.processedMessages_);
   }
 
-  async getMessages() {
-    await this.fetch();
-    return this.getMessagesSync();
-  }
-
-  getMessagesSync() {
-    if (this.processedMessages_ === undefined)
-      throw staleAfterFetchError;
-    return this.processedMessages_;
-  }
-
-  async getDisplayableQueue() {
-    let queue = await this.getQueue();
-    return this.getDisplayableQueueInternal_(queue);
-  }
-
-  getDisplayableQueueSync() {
-    let queue = this.getQueueSync();
-    return this.getDisplayableQueueInternal_(queue);
-  }
-
-  getDisplayableQueueInternal_(queue: string) {
+  getDisplayableQueue() {
+    let queue = this.getQueue();
     return Labels.removeNeedsTriagePrefix(queue);
   }
 
-  async getQueue() {
-    await this.fetch();
-    return this.getQueueSync();
+  getQueue() {
+    return defined(this.queue_);
   }
 
-  getQueueSync() {
-    if (this.queue_ === undefined)
-      throw staleAfterFetchError;
-    return this.queue_;
+  getPriority() {
+    return defined(this.priority_);
   }
 
-  async getPriority() {
-    await this.fetch();
-    return this.getPrioritySync();
-  }
-
-  getPrioritySync() {
-    if (this.priority_ === undefined)
-      throw staleAfterFetchError;
-    return this.priority_;
-  }
-
-  async isMuted() {
-    await this.fetch();
-    if (this.muted_ === undefined)
-      throw staleAfterFetchError;
-    return this.muted_;
+  isMuted() {
+    return defined(this.muted_);
   }
 
   private async fetchMetadataOnly_() {
-    if (!this.processedMessages_)
-      throw noMessagesError;
+    let processed = defined(this.processedMessages_);
 
     let resp = await gapiFetch(gapi.client.gmail.users.threads.get, {
       userId: USER_ID,
@@ -342,14 +247,14 @@ export class Thread extends ThreadBase {
 
     // If there are new messages we need to do a full update. This
     // should be exceedingly rare though.
-    if (this.processedMessages_.length != messages.length)
+    if (processed.length != messages.length)
       return await this.update();
 
     this.historyId = defined(resp.result.historyId);
 
     for (let i = 0; i < messages.length; i++) {
       let labels = defined(messages[i].labelIds);
-      this.processedMessages_[i].updateLabels(labels);
+      processed[i].updateLabels(labels);
     }
     await this.processLabels_();
 
@@ -358,10 +263,7 @@ export class Thread extends ThreadBase {
   }
 
   private async serializeMessageData_() {
-    if (!this.processedMessages_)
-      throw noMessagesError;
-
-    let messages = this.processedMessages_.map(x => x.rawMessage);
+    let messages = defined(this.processedMessages_).map(x => x.rawMessage);
     let key = this.getKey_(getCurrentWeekNumber());
     try {
       await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
@@ -377,7 +279,7 @@ export class Thread extends ThreadBase {
 
   async sendReply(
       replyText: string, extraEmails: string[], shouldReplyAll: boolean) {
-    let messages = await this.getMessages();
+    let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
     // Gmail will remove dupes for us.

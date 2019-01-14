@@ -27,7 +27,7 @@ export class RenderedThread extends HTMLElement {
   }
 
   render() {
-    let messages = this.thread.getMessagesSync();
+    let messages = this.thread.getMessages();
     // Only append new messages.
     messages = messages.slice(this.childElementCount);
     for (let message of messages) {

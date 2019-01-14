@@ -648,12 +648,12 @@ export class ThreadListView extends View {
       this.transitionToSingleThread_();
 
     let thread = renderedRow.thread;
-    let messages = thread.getMessagesSync();
+    let messages = thread.getMessages();
     let viewInGmailButton = new ViewInGmailButton();
     viewInGmailButton.setMessageId(messages[messages.length - 1].id);
     viewInGmailButton.style.display = 'inline-flex';
 
-    let subject = thread.getSubjectSync();
+    let subject = thread.getSubject();
     let subjectText = document.createElement('div');
     subjectText.style.flex = '1';
     subjectText.append(subject, viewInGmailButton);
