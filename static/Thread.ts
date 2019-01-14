@@ -2,15 +2,13 @@ import {defined, getMyEmail, parseAddress, serializeAddress, USER_ID} from './Ba
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {gapiFetch} from './Net.js';
-import {ProcessedMessageData, ThreadBase} from './ThreadBase.js';
-import {ThreadData} from './ThreadData.js';
+import {ProcessedMessageData} from './ProcessedMessageData.js';
+import {ThreadUtils} from './ThreadUtils.js';
 
-export class Thread extends ThreadBase {
+export class Thread {
   constructor(
-      thread: ThreadData, private processed_: ProcessedMessageData,
-      allLabels: Labels) {
-    super(thread.id, thread.historyId, allLabels);
-  }
+      public id: string, public historyId: string,
+      private processed_: ProcessedMessageData, private allLabels_: Labels) {}
 
   equals(other: Thread) {
     return this.id == other.id && this.historyId == other.historyId;
@@ -70,7 +68,7 @@ export class Thread extends ThreadBase {
     // better to have updated historyIds before we do anything like serializing
     // to disk than to get in an inconsistent state and see need the count of
     // new messages to identify if we're in the gmail bug case mentioned above.
-    await this.fetchMetadataOnly_();
+    await this.update();
 
     // In the bug case, there will be more messages in the response from the
     // modify call than in the response to the fetchMetadataOnly_ call. If we
@@ -83,7 +81,7 @@ export class Thread extends ThreadBase {
         'userId': USER_ID,
         'id': this.id,
         'addLabelIds': ['INBOX'],
-        'removeLabelIds': [await this.allLabels.getId(Labels.PROCESSED_LABEL)],
+        'removeLabelIds': [await this.allLabels_.getId(Labels.PROCESSED_LABEL)],
       });
     }
 
@@ -99,13 +97,13 @@ export class Thread extends ThreadBase {
 
     var addLabelIds: string[] = [];
     if (destination)
-      addLabelIds.push(await this.allLabels.getId(destination));
+      addLabelIds.push(await this.allLabels_.getId(destination));
 
     var removeLabelIds = ['UNREAD', 'INBOX'];
     // If archiving, remove all make-time labels except unprocessed. Don't want
     // archiving a thread to remove this label without actually processing it.
-    let unprocessedId = await this.allLabels.getId(Labels.UNPROCESSED_LABEL);
-    let makeTimeIds = this.allLabels.getMakeTimeLabelIds().filter((item) => {
+    let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
+    let makeTimeIds = this.allLabels_.getMakeTimeLabelIds().filter((item) => {
       return item != unprocessedId && !addLabelIds.includes(item);
     });
     removeLabelIds = removeLabelIds.concat(makeTimeIds);
@@ -165,41 +163,37 @@ export class Thread extends ThreadBase {
     return this.processed_.messages.map(x => x.rawMessage);
   }
 
-  private async fetchMetadataOnly_() {
+  async update() {
     let processed = this.processed_.messages;
 
     let resp = await gapiFetch(gapi.client.gmail.users.threads.get, {
       userId: USER_ID,
       id: this.id,
       format: 'minimal',
-      fields: 'historyId,messages(labelIds)',
+      fields: 'historyId,messages(id,labelIds)',
     });
 
     let messages = defined(resp.result.messages);
 
-    // If there are new messages we need to do a full update. This
-    // should be exceedingly rare though.
-    if (processed.length != messages.length) {
-      await this.update();
-      return;
-    }
-
-    this.historyId = defined(resp.result.historyId);
-
-    for (let i = 0; i < messages.length; i++) {
+    for (let i = 0; i < processed.length; i++) {
       let labels = defined(messages[i].labelIds);
       processed[i].updateLabels(labels);
     }
-    let allRawMessages = this.getRawMessages_();
-    this.processed_ =
-        await this.processMessages(allRawMessages, this.processed_.messages);
-    await this.serializeMessageData(allRawMessages);
-  }
 
-  async update() {
-    let messages = await this.fetch();
-    this.processed_ =
-        await this.processMessages(messages, this.processed_.messages);
+    let allRawMessages = this.getRawMessages_();
+    // Fetch the full message details for any new messages.
+    for (let i = allRawMessages.length; i < messages.length; i++) {
+      let resp = await gapiFetch(gapi.client.gmail.users.messages.get, {
+        userId: USER_ID,
+        id: messages[i].id,
+      });
+      allRawMessages.push(resp.result);
+    }
+
+    this.historyId = defined(resp.result.historyId);
+    this.processed_ = await ThreadUtils.processMessages(
+        allRawMessages, this.processed_.messages, this.allLabels_);
+    await ThreadUtils.serializeMessageData(allRawMessages, this.historyId);
   }
 
   async sendReply(

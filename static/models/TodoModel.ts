@@ -2,7 +2,7 @@ import {assert} from '../Base.js';
 import {fetchThreads, threadCache} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {Thread} from '../Thread.js';
-import {ThreadData} from '../ThreadData.js';
+import {ThreadFetcher} from '../ThreadFetcher.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
@@ -10,12 +10,12 @@ let serializationKey = 'todo-view';
 
 export class TodoModel extends ThreadListModel {
   private pendingThreads_: Thread[];
-  private needsMessageDetailsThreads_: ThreadData[];
+  private needsFetchThreads_: ThreadFetcher[];
 
   constructor(private vacation_: string, labels: Labels) {
     super(labels, serializationKey);
     this.pendingThreads_ = [];
-    this.needsMessageDetailsThreads_ = [];
+    this.needsFetchThreads_ = [];
   }
 
   async handleTriaged(destination: string, thread: Thread) {
@@ -72,23 +72,23 @@ export class TodoModel extends ThreadListModel {
     // is processed.
     if (labelsToFetch.length) {
       let skipNetwork = true;
-      await fetchThreads((threadData: ThreadData, thread: Thread | null) => {
+      await fetchThreads((fetcher: ThreadFetcher, thread: Thread|null) => {
         if (thread !== null)
           this.pendingThreads_.push(thread);
         else
-          this.needsMessageDetailsThreads_.push(threadData);
+          this.needsFetchThreads_.push(fetcher);
       }, `in:${labelsToFetch.join(' OR in:')}`, skipNetwork);
     }
 
     this.setThreads(this.pendingThreads_);
     this.pendingThreads_ = [];
 
-    let needsMessageDetailsThreads = this.needsMessageDetailsThreads_.concat();
-    this.needsMessageDetailsThreads_ = [];
-    await this.doFetches_(needsMessageDetailsThreads);
+    let needsFetchThreads = this.needsFetchThreads_.concat();
+    this.needsFetchThreads_ = [];
+    await this.doFetches_(needsFetchThreads);
   }
 
-  private async doFetches_(threads: ThreadData[]) {
+  private async doFetches_(threads: ThreadFetcher[]) {
     if (!threads.length)
       return;
 

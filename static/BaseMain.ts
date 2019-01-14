@@ -12,7 +12,7 @@ import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
 import {ServerStorage} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {Thread} from './Thread.js';
-import {ThreadData} from './ThreadData.js';
+import {ThreadFetcher} from './ThreadFetcher.js';
 import {HelpDialog} from './views/HelpDialog.js';
 
 // Extract these before rendering any threads since the threads can have
@@ -32,20 +32,20 @@ class ThreadCache {
     this.cache_ = new Map();
   }
 
-  async get(threadData: ThreadData, onlyFetchThreadsFromDisk?: boolean) {
+  async get(fetcher: ThreadFetcher, onlyFetchThreadsFromDisk?: boolean) {
     // TODO: This cache grows indefinitely. It needs to be GC'ed, possibly after
     // each update call? A simple step could be to delete the cache once a day.
     // All the data is on disk, so it shouldn't be too expensive.
-    let entry = this.cache_.get(threadData.id);
+    let entry = this.cache_.get(fetcher.id);
     if (entry instanceof Thread) {
-      if (entry.historyId != threadData.historyId)
+      if (entry.historyId != fetcher.historyId)
         await entry.update();
       return entry;
     }
 
-    let upgraded = await threadData.upgrade(!!onlyFetchThreadsFromDisk);
+    let upgraded = await fetcher.fetch(!!onlyFetchThreadsFromDisk);
     if (upgraded != null)
-      this.cache_.set(threadData.id, upgraded);
+      this.cache_.set(fetcher.id, upgraded);
     else
       assert(onlyFetchThreadsFromDisk);
     return upgraded;
@@ -131,7 +131,7 @@ async function fetchTheSettingsThings() {
 
 async function doLabelMigration(
     addLabelIds: string[], removeLabelIds: string[], query: string) {
-  await fetchThreads(async (_threadData: ThreadData, thread: Thread | null) => {
+  await fetchThreads(async (_fetcher: ThreadFetcher, thread: Thread | null) => {
     await notNull(thread).modify(addLabelIds, removeLabelIds);
   }, query);
 }
@@ -279,7 +279,7 @@ interface FetchRequestParameters {
 let MAX_RESULTS_CAP = 500;
 
 export async function fetchThreads(
-    forEachThread: (threadData: ThreadData, thread: Thread|null) => void,
+    forEachThread: (fetcher: ThreadFetcher, thread: Thread|null) => void,
     query: string, onlyFetchThreadsFromDisk: boolean = false,
     maxResults: number = 0) {
   // If the query is empty or just whitespace, then we would fetch all mail by
@@ -311,13 +311,13 @@ export async function fetchThreads(
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      let threadData = new ThreadData(
+      let fetcher = new ThreadFetcher(
           defined(rawThread.id), defined(rawThread.historyId),
           await getLabels());
-      let thread = await threadCache.get(threadData, onlyFetchThreadsFromDisk);
+      let thread = await threadCache.get(fetcher, onlyFetchThreadsFromDisk);
       if (!onlyFetchThreadsFromDisk)
         assert(thread instanceof Thread);
-      await forEachThread(threadData, thread);
+      await forEachThread(fetcher, thread);
     }
 
     if (resultCountLeft <= 0)

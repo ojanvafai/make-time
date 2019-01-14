@@ -4,7 +4,7 @@ import {IDBKeyVal} from '../idb-keyval.js';
 import {Labels} from '../Labels.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from '../TaskQueue.js';
 import {Thread} from '../Thread.js';
-import {ThreadData} from '../ThreadData.js';
+import {ThreadFetcher} from '../ThreadFetcher.js';
 
 import {Model} from './Model.js';
 
@@ -62,8 +62,8 @@ export abstract class ThreadListModel extends Model {
     // Thread. Rename THreadData to ThreadFetcher.
     let threads = await Promise.all(
         <Promise<Thread>[]>data.map(async (x: SerializedThreadData) => {
-          let threadData = new ThreadData(x.id, x.historyId, this.labels);
-          return await threadCache.get(threadData);
+          let fetcher = new ThreadFetcher(x.id, x.historyId, this.labels);
+          return await threadCache.get(fetcher);
         }));
     this.setThreads(threads, true);
   }
@@ -119,9 +119,10 @@ export abstract class ThreadListModel extends Model {
     if (skipSerialization)
       return;
 
-    let threadData = this.threads_.map(
-        (thread) => new ThreadData(thread.id, thread.historyId, this.labels));
-    IDBKeyVal.getDefault().set(this.serializationKey_, threadData);
+    let data: SerializedThreadData[] = this.threads_.map(
+        (thread) =>
+            <SerializedThreadData>{id: thread.id, historyId: thread.historyId});
+    IDBKeyVal.getDefault().set(this.serializationKey_, data);
   }
 
   async addThread(thread: Thread) {

@@ -1,8 +1,6 @@
-import {defined, getCurrentWeekNumber, USER_ID} from './Base.js';
-import {IDBKeyVal} from './idb-keyval.js';
-import {Labels} from './Labels.js';
-import {Message} from './Message.js';
-import {gapiFetch} from './Net.js';
+import {defined} from './Base';
+import {Labels} from './Labels';
+import {Message} from './Message';
 
 export let DEFAULT_QUEUE = 'inbox';
 
@@ -71,54 +69,5 @@ export class ProcessedMessageData {
       let processed = new Message(message, previousMessage);
       this.messages.push(processed);
     }
-  }
-}
-
-export class ThreadBase {
-  private fetchPromise_:
-      Promise<gapi.client.Response<gapi.client.gmail.Thread>>|null = null;
-
-  constructor(
-      public id: string, public historyId: string,
-      protected allLabels: Labels) {}
-
-  protected getKey(weekNumber: number) {
-    return `thread-${weekNumber}-${this.historyId}`;
-  }
-
-  async fetch() {
-    if (!this.fetchPromise_) {
-      this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
-        userId: USER_ID,
-        id: this.id,
-      })
-    }
-    let resp = await this.fetchPromise_;
-    this.fetchPromise_ = null;
-
-    // If modifications have come in since we first created this Thread
-    // instance then the historyId will have changed.
-    this.historyId = defined(resp.result.historyId);
-
-    let messages = defined(resp.result.messages);
-    await this.serializeMessageData(messages);
-    return messages;
-  }
-
-  protected async serializeMessageData(messages: gapi.client.gmail.Message[]) {
-    let key = this.getKey(getCurrentWeekNumber());
-    try {
-      await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
-    } catch (e) {
-      console.log('Fail storing message details in IDB.', e);
-    }
-  }
-
-  protected async processMessages(
-      messages: gapi.client.gmail.Message[], oldMessages: Message[]) {
-    let processed =
-        new ProcessedMessageData(messages, oldMessages, this.allLabels);
-    await processed.processLabelNames();
-    return processed;
   }
 }

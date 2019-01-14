@@ -5,7 +5,7 @@ import {MailProcessor} from '../MailProcessor.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
-import {ThreadData} from '../ThreadData.js';
+import {ThreadFetcher} from '../ThreadFetcher.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
@@ -17,7 +17,7 @@ let maxThreadsToShow = 1000;
 export class TriageModel extends ThreadListModel {
   private bestEffortThreads_: Thread[]|null;
   private needsProcessingThreads_: Thread[];
-  private needsMessageDetailsThreads_: ThreadData[];
+  private needsFetchThreads_: ThreadFetcher[];
   private needsArchivingThreads_: Thread[];
   private pendingThreads_: Thread[];
   private mailProcessor_: MailProcessor;
@@ -29,7 +29,7 @@ export class TriageModel extends ThreadListModel {
 
     this.bestEffortThreads_ = [];
     this.needsProcessingThreads_ = [];
-    this.needsMessageDetailsThreads_ = [];
+    this.needsFetchThreads_ = [];
     this.needsArchivingThreads_ = [];
     this.pendingThreads_ = [];
     this.mailProcessor_ =
@@ -152,11 +152,11 @@ export class TriageModel extends ThreadListModel {
     // is processed.
     let skipNetwork = true;
     await fetchThreads(
-        async (threadData: ThreadData, thread: Thread|null) => {
+        async (fetcher: ThreadFetcher, thread: Thread|null) => {
           if (thread !== null)
             await this.processThread_(thread);
           else
-            this.needsMessageDetailsThreads_.push(threadData);
+            this.needsFetchThreads_.push(fetcher);
         },
         `(${inInboxNoNeedsTriageLabel}) OR (${hasNeedsTriageLabel}) OR (${
             inUnprocessed})`,
@@ -165,9 +165,9 @@ export class TriageModel extends ThreadListModel {
     this.setThreads(this.pendingThreads_);
     this.pendingThreads_ = [];
 
-    let needsMessageDetailsThreads = this.needsMessageDetailsThreads_.concat();
-    this.needsMessageDetailsThreads_ = [];
-    await this.doFetches_(needsMessageDetailsThreads);
+    let needsFetchThreads = this.needsFetchThreads_.concat();
+    this.needsFetchThreads_ = [];
+    await this.doFetches_(needsFetchThreads);
 
     let threadsToProcess = this.needsProcessingThreads_.concat();
     this.needsProcessingThreads_ = [];
@@ -185,7 +185,7 @@ export class TriageModel extends ThreadListModel {
     }
   }
 
-  private async doFetches_(threads: ThreadData[]) {
+  private async doFetches_(threads: ThreadFetcher[]) {
     if (!threads.length)
       return;
 
