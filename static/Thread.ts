@@ -1,99 +1,25 @@
-import {defined, getCurrentWeekNumber, getMyEmail, parseAddress, serializeAddress, USER_ID} from './Base.js';
-import {IDBKeyVal} from './idb-keyval.js';
+import {defined, getMyEmail, parseAddress, serializeAddress, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
-import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
-import {ThreadBase} from './ThreadBase.js';
+import {ProcessedMessageData, ThreadBase} from './ThreadBase.js';
 import {ThreadData} from './ThreadData.js';
 
-export let DEFAULT_QUEUE = 'inbox';
-
 export class Thread extends ThreadBase {
-  snippet: string|undefined;
-  private labelIds_: Set<string>|undefined;
-  private labelNames_: Set<string>|undefined;
-  private priority_: string|null|undefined;
-  private muted_: boolean|undefined;
-  private queue_: string|undefined;
-  private processedMessages_: Message[]|undefined;
-
-  constructor(thread: ThreadData, private allLabels_: Labels) {
-    super(thread.id, thread.historyId);
+  constructor(
+      thread: ThreadData, private processed_: ProcessedMessageData,
+      allLabels: Labels) {
+    super(thread.id, thread.historyId, allLabels);
   }
 
   equals(other: Thread) {
     return this.id == other.id && this.historyId == other.historyId;
   }
 
-  private async processLabels_() {
-    let messages = defined(this.processedMessages_);
-    // Need to reset all the label state in case the new set of messages has
-    // different labels.
-    this.labelIds_ = new Set(messages.flatMap(x => x.getLabelIds()));
-    this.labelNames_ = new Set();
-    this.priority_ = null;
-    this.muted_ = false;
-    this.queue_ = DEFAULT_QUEUE;
-
-    for (let id of this.labelIds_) {
-      let name = await this.allLabels_.getName(id);
-      if (!name) {
-        console.log(`Label id does not exist. WTF. ${id}`);
-        continue;
-      }
-
-      this.labelNames_.add(name);
-
-      if (Labels.isNeedsTriageLabel(name))
-        this.queue_ = name;
-      else if (Labels.isPriorityLabel(name))
-        this.priority_ = name;
-      else if (name == Labels.MUTED_LABEL)
-        this.muted_ = true;
-    }
-  }
-
-  async processMessages(messages: any[]) {
-    if (this.processedMessages_ === undefined)
-      this.processedMessages_ = [];
-
-    this.snippet = messages[messages.length - 1].snippet;
-
-    let oldMessageCount = this.processedMessages_.length;
-    let newProcessedMessages: Message[] = [];
-
-    for (let i = 0; i < messages.length; i++) {
-      let message = messages[i];
-
-      // In theory, the only thing that can change on old messages is the
-      // labels, which are only stored in the rawMessage_ field of Message. To
-      // avoid recomputing the message body and quote diffs, just set the raw
-      // message instead of fully reprocessing.
-      if (i < oldMessageCount) {
-        this.processedMessages_[i].rawMessage = message;
-        continue;
-      }
-
-      let previousMessage;
-      if (this.processedMessages_.length)
-        previousMessage =
-            this.processedMessages_[this.processedMessages_.length - 1];
-
-      let processed = new Message(message, previousMessage);
-      this.processedMessages_.push(processed);
-      newProcessedMessages.push(processed);
-    }
-
-    await this.processLabels_();
-    await this.serializeMessageData_();
-    return newProcessedMessages;
-  }
-
   async modify(
       addLabelIds: string[], removeLabelIds: string[],
       expectedNewMessageCount: number = 0) {
-    let currentLabelIds = defined(this.labelIds_);
+    let currentLabelIds = this.processed_.ids;
 
     // Only remove labels that are actually on the thread. That way
     // undo will only reapply labels that were actually there.
@@ -122,8 +48,6 @@ export class Thread extends ThreadBase {
     let response =
         await gapiFetch(gapi.client.gmail.users.threads.modify, request);
 
-    let messages = defined(this.processedMessages_);
-
     // If the number of messages has changed from when we got the message
     // details for this thread and when we did the modify call, that can be one
     // of two causes:
@@ -134,8 +58,8 @@ export class Thread extends ThreadBase {
     // could just use messages.batchModify to only modify the messages we know
     // about and avoid the race condition for cause #1 entirely.
     let newMessageMetadata = defined(response.result.messages);
-    let hasUnexpectedNewMessages =
-        newMessageMetadata.length > messages.length + expectedNewMessageCount;
+    let hasUnexpectedNewMessages = newMessageMetadata.length >
+        this.processed_.messages.length + expectedNewMessageCount;
 
     // The response to modify doesn't include historyIds, so we need to do a
     // fetch to get the new historyId. While doing so, we also fetch the new
@@ -153,13 +77,13 @@ export class Thread extends ThreadBase {
     // wanted to be 100% sure we could fetch the individual messages that are
     // new and see that they 404, but that seems like overkill.
     if (hasUnexpectedNewMessages &&
-        newMessageMetadata.length <= messages.length) {
+        newMessageMetadata.length <= this.processed_.messages.length) {
       // TODO: Handle the case where this network request fails.
       await gapiFetch(gapi.client.gmail.users.threads.modify, {
         'userId': USER_ID,
         'id': this.id,
         'addLabelIds': ['INBOX'],
-        'removeLabelIds': [await this.allLabels_.getId(Labels.PROCESSED_LABEL)],
+        'removeLabelIds': [await this.allLabels.getId(Labels.PROCESSED_LABEL)],
       });
     }
 
@@ -170,18 +94,18 @@ export class Thread extends ThreadBase {
 
   async markTriaged(
       destination: string|null, expectedNewMessageCount?: number) {
-    if (destination && defined(this.labelNames_).has(destination))
+    if (destination && this.processed_.names.has(destination))
       return null;
 
     var addLabelIds: string[] = [];
     if (destination)
-      addLabelIds.push(await this.allLabels_.getId(destination));
+      addLabelIds.push(await this.allLabels.getId(destination));
 
     var removeLabelIds = ['UNREAD', 'INBOX'];
     // If archiving, remove all make-time labels except unprocessed. Don't want
     // archiving a thread to remove this label without actually processing it.
-    let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
-    let makeTimeIds = this.allLabels_.getMakeTimeLabelIds().filter((item) => {
+    let unprocessedId = await this.allLabels.getId(Labels.UNPROCESSED_LABEL);
+    let makeTimeIds = this.allLabels.getMakeTimeLabelIds().filter((item) => {
       return item != unprocessedId && !addLabelIds.includes(item);
     });
     removeLabelIds = removeLabelIds.concat(makeTimeIds);
@@ -191,29 +115,29 @@ export class Thread extends ThreadBase {
   }
 
   isInInbox() {
-    return defined(this.labelIds_).has('INBOX');
+    return this.processed_.ids.has('INBOX');
   }
 
   getLabelIds() {
-    return defined(this.labelIds_);
+    return this.processed_.ids;
   }
 
   getLabelNames() {
-    return defined(this.labelNames_);
+    return this.processed_.names;
   }
 
   getDate() {
-    let messages = defined(this.processedMessages_);
+    let messages = this.processed_.messages;
     let lastMessage = messages[messages.length - 1];
     return lastMessage.date;
   }
 
   getSubject() {
-    return defined(this.processedMessages_)[0].subject || '(no subject)';
+    return this.processed_.messages[0].subject || '(no subject)';
   }
 
   getMessages() {
-    return defined(this.processedMessages_);
+    return this.processed_.messages;
   }
 
   getDisplayableQueue() {
@@ -222,19 +146,27 @@ export class Thread extends ThreadBase {
   }
 
   getQueue() {
-    return defined(this.queue_);
+    return this.processed_.queue;
   }
 
   getPriority() {
-    return defined(this.priority_);
+    return this.processed_.priority;
   }
 
   isMuted() {
-    return defined(this.muted_);
+    return this.processed_.muted;
+  }
+
+  getSnippet() {
+    return this.processed_.snippet;
+  }
+
+  private getRawMessages_() {
+    return this.processed_.messages.map(x => x.rawMessage);
   }
 
   private async fetchMetadataOnly_() {
-    let processed = defined(this.processedMessages_);
+    let processed = this.processed_.messages;
 
     let resp = await gapiFetch(gapi.client.gmail.users.threads.get, {
       userId: USER_ID,
@@ -247,8 +179,10 @@ export class Thread extends ThreadBase {
 
     // If there are new messages we need to do a full update. This
     // should be exceedingly rare though.
-    if (processed.length != messages.length)
-      return await this.update();
+    if (processed.length != messages.length) {
+      await this.update();
+      return;
+    }
 
     this.historyId = defined(resp.result.historyId);
 
@@ -256,25 +190,16 @@ export class Thread extends ThreadBase {
       let labels = defined(messages[i].labelIds);
       processed[i].updateLabels(labels);
     }
-    await this.processLabels_();
-
-    this.serializeMessageData_();
-    return null;
-  }
-
-  private async serializeMessageData_() {
-    let messages = defined(this.processedMessages_).map(x => x.rawMessage);
-    let key = this.getKey_(getCurrentWeekNumber());
-    try {
-      await IDBKeyVal.getDefault().set(key, JSON.stringify(messages));
-    } catch (e) {
-      console.log('Fail storing message details in IDB.', e);
-    }
+    let allRawMessages = this.getRawMessages_();
+    this.processed_ =
+        await this.processMessages(allRawMessages, this.processed_.messages);
+    await this.serializeMessageData(allRawMessages);
   }
 
   async update() {
-    let messages = await this.fetch(true);
-    return this.processMessages(messages);
+    let messages = await this.fetch();
+    this.processed_ =
+        await this.processMessages(messages, this.processed_.messages);
   }
 
   async sendReply(

@@ -119,7 +119,7 @@ export class ThreadRow extends HTMLElement {
     let snippet = document.createElement('span');
     snippet.style.color = '#666';
     // Snippet as returned by the gmail API is html escaped.
-    snippet.innerHTML = ` - ${this.thread.snippet}`;
+    snippet.innerHTML = ` - ${this.thread.getSnippet()}`;
 
     let title = document.createElement('div');
     title.append(subject, snippet);

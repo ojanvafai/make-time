@@ -9,8 +9,8 @@ import {ServerStorage} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
-import {DEFAULT_QUEUE, Thread} from './Thread.js';
-import {ThreadBase} from './ThreadBase.js';
+import {Thread} from './Thread.js';
+import {DEFAULT_QUEUE, ThreadBase} from './ThreadBase.js';
 
 const STATISTICS_SHEET_NAME = 'statistics';
 const DAILY_STATS_SHEET_NAME = 'daily_stats';

@@ -6,8 +6,8 @@ import { Labels } from './Labels.js';
 
 // Class with just the basic thread data to fetch a proper Thread.
 export class ThreadData extends ThreadBase {
-  constructor(thread: (gapi.client.gmail.Thread|Thread), private labels_: Labels) {
-    super(defined(thread.id), defined(thread.historyId));
+  constructor(thread: (gapi.client.gmail.Thread|Thread), allLabels: Labels) {
+    super(defined(thread.id), defined(thread.historyId), allLabels);
   }
 
   async upgrade(onlyFetchFromDisk: boolean) {
@@ -17,17 +17,16 @@ export class ThreadData extends ThreadBase {
     if (!messages)
       return null;
 
-    let thread = new Thread(this, this.labels_);
-    await thread.processMessages(messages);
-    return thread;
+    let processed = await this.processMessages(messages, []);
+    return new Thread(this, processed, this.allLabels);
   }
 
   async fetchFromDisk() {
-    let currentKey = this.getKey_(getCurrentWeekNumber());
+    let currentKey = this.getKey(getCurrentWeekNumber());
     let localData = await IDBKeyVal.getDefault().get(currentKey);
 
     if (!localData) {
-      let previousKey = this.getKey_(getPreviousWeekNumber());
+      let previousKey = this.getKey(getPreviousWeekNumber());
       localData = await IDBKeyVal.getDefault().get(previousKey);
       if (localData) {
         await IDBKeyVal.getDefault().set(currentKey, localData);
