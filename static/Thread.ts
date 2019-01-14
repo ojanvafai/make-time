@@ -1,9 +1,11 @@
-import {defined, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddress, serializeAddress, USER_ID, assert} from './Base.js';
+import {defined, getCurrentWeekNumber, getMyEmail, parseAddress, serializeAddress, USER_ID} from './Base.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
+import { ThreadBase } from './ThreadBase.js';
+import { ThreadData } from './ThreadData.js';
 
 let noMessagesError =
     'Attempted to operate on messages before they were fetched';
@@ -14,9 +16,7 @@ let staleAfterFetchError =
 
 export let DEFAULT_QUEUE = 'inbox';
 
-export class Thread {
-  id: string;
-  historyId: string;
+export class Thread extends ThreadBase {
   hasMessageDetails: boolean = false;
 
   snippet: string|undefined;
@@ -27,12 +27,8 @@ export class Thread {
   private queue_: string|undefined;
   private processedMessages_: Message[]|undefined;
 
-  private fetchPromise_:
-      Promise<gapi.client.Response<gapi.client.gmail.Thread>>|null = null;
-
-  constructor(thread: any, private allLabels_: Labels) {
-    this.id = thread.id;
-    this.historyId = thread.historyId;
+  constructor(thread: ThreadData, private allLabels_: Labels) {
+    super(thread.id, thread.historyId);
   }
 
   equals(other: Thread) {
@@ -70,7 +66,7 @@ export class Thread {
     }
   }
 
-  private async processMessages_(messages: any[]) {
+  async processMessages(messages: any[]) {
     this.hasMessageDetails = true;
     if (this.processedMessages_ === undefined)
       this.processedMessages_ = [];
@@ -103,6 +99,7 @@ export class Thread {
     }
 
     await this.processLabels_();
+    await this.serializeMessageData_();
     return newProcessedMessages;
   }
 
@@ -330,28 +327,6 @@ export class Thread {
     return this.muted_;
   }
 
-  private async getThreadDataFromDisk_() {
-    let currentKey = this.getKey_(getCurrentWeekNumber());
-    let localData = await IDBKeyVal.getDefault().get(currentKey);
-
-    if (!localData) {
-      let previousKey = this.getKey_(getPreviousWeekNumber());
-      localData = await IDBKeyVal.getDefault().get(previousKey);
-      if (localData) {
-        await IDBKeyVal.getDefault().set(currentKey, localData);
-        await IDBKeyVal.getDefault().del(previousKey);
-      }
-    }
-
-    if (localData)
-      return JSON.parse(localData);
-    return null;
-  }
-
-  private getKey_(weekNumber: number) {
-    return `thread-${weekNumber}-${this.historyId}`;
-  }
-
   private async fetchMetadataOnly_() {
     if (!this.processedMessages_)
       throw noMessagesError;
@@ -395,44 +370,9 @@ export class Thread {
     }
   }
 
-  async fetch(forceNetwork?: boolean, skipNetwork?: boolean) {
-    // Cannot both force and skip network.
-    assert(!forceNetwork || !skipNetwork);
-
-    if (this.hasMessageDetails && !forceNetwork)
-      return null;
-
-    let messages: gapi.client.gmail.Message[]|undefined;
-    if (!forceNetwork)
-      messages = await this.getThreadDataFromDisk_();
-
-    if (!messages) {
-      if (skipNetwork)
-        return;
-
-      if (!this.fetchPromise_) {
-        this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
-          userId: USER_ID,
-          id: this.id,
-        })
-      }
-      let resp = await this.fetchPromise_;
-      this.fetchPromise_ = null;
-
-      messages = defined(resp.result.messages);
-
-      // If modifications have come in since we first created this Thread
-      // instance then the historyId will have changed.
-      this.historyId = defined(resp.result.historyId);
-    }
-
-    let newMessages = await this.processMessages_(messages);
-    this.serializeMessageData_();
-    return newMessages;
-  }
-
   async update() {
-    return await this.fetch(true);
+    let messages = await this.fetch(true);
+    return this.processMessages(messages);
   }
 
   async sendReply(

@@ -1,10 +1,12 @@
 import {assert} from '../Base.js';
-import {fetchThreads} from '../BaseMain.js';
+import {fetchThreads, getCachedThread} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {MailProcessor} from '../MailProcessor.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
+import {ThreadBase} from '../ThreadBase.js';
+import {ThreadData} from '../ThreadData.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
@@ -16,7 +18,7 @@ let maxThreadsToShow = 1000;
 export class TriageModel extends ThreadListModel {
   private bestEffortThreads_: Thread[]|null;
   private needsProcessingThreads_: Thread[];
-  private needsMessageDetailsThreads_: Thread[];
+  private needsMessageDetailsThreads_: ThreadData[];
   private needsArchivingThreads_: Thread[];
   private pendingThreads_: Thread[];
   private mailProcessor_: MailProcessor;
@@ -153,7 +155,14 @@ export class TriageModel extends ThreadListModel {
     // is processed.
     let skipNetwork = true;
     await fetchThreads(
-        this.processThread_.bind(this),
+        async (thread: ThreadBase) => {
+          if (thread instanceof Thread)
+            await this.processThread_(thread);
+          else if (thread instanceof ThreadData)
+            this.needsMessageDetailsThreads_.push(thread);
+          else
+            assert(false);
+        },
         `(${inInboxNoNeedsTriageLabel}) OR (${hasNeedsTriageLabel}) OR (${
             inUnprocessed})`,
         skipNetwork, maxThreadsToShow);
@@ -181,31 +190,22 @@ export class TriageModel extends ThreadListModel {
     }
   }
 
-  private async doFetches_(threads: Thread[]) {
+  private async doFetches_(threads: ThreadData[]) {
     if (!threads.length)
       return;
 
     let progress = this.updateTitle(
         'TriageModel.doFetches_', threads.length, 'Updating thread list...');
 
-    for (let thread of threads) {
+    for (let bareThread of threads) {
       progress.incrementProgress();
-      await thread.fetch();
-      await this.processThread_(thread, true);
+      let thread = await getCachedThread(bareThread);
+      assert(thread instanceof Thread);
+      await this.processThread_(<Thread>thread, true);
     }
   }
 
   private async processThread_(thread: Thread, addDirectly?: boolean) {
-    if (!thread.hasMessageDetails) {
-      // addDirectly should only ever be called for threads that have had their
-      // message details fetched.
-      assert(
-          !addDirectly,
-          'Attempted to add a thread that lacked message details');
-      this.needsMessageDetailsThreads_.push(thread);
-      return;
-    }
-
     let processedId = await this.labels.getId(Labels.PROCESSED_LABEL);
     let messages = await thread.getMessages();
     let lastMessage = messages[messages.length - 1];

@@ -1,9 +1,10 @@
 import {assert} from '../Base.js';
-import {getCachedThread, ThreadData} from '../BaseMain.js';
+import {getCachedThread} from '../BaseMain.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {Labels} from '../Labels.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from '../TaskQueue.js';
 import {Thread} from '../Thread.js';
+import {ThreadData} from '../ThreadData.js';
 
 import {Model} from './Model.js';
 
@@ -108,7 +109,8 @@ export abstract class ThreadListModel extends Model {
     if (skipSerialization)
       return;
 
-    let threadData = this.threads_.map((thread) => new ThreadData(thread));
+    let threadData =
+        this.threads_.map((thread) => new ThreadData(thread, this.labels));
     IDBKeyVal.getDefault().set(this.serializationKey_, threadData);
   }
 

@@ -1,6 +1,9 @@
-import {fetchThreads} from '../BaseMain.js';
+import {assert} from '../Base.js';
+import {fetchThreads, getCachedThread} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {Thread} from '../Thread.js';
+import {ThreadBase} from '../ThreadBase.js';
+import {ThreadData} from '../ThreadData.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
@@ -8,7 +11,7 @@ let serializationKey = 'todo-view';
 
 export class TodoModel extends ThreadListModel {
   private pendingThreads_: Thread[];
-  private needsMessageDetailsThreads_: Thread[];
+  private needsMessageDetailsThreads_: ThreadData[];
 
   constructor(private vacation_: string, labels: Labels) {
     super(labels, serializationKey);
@@ -70,11 +73,13 @@ export class TodoModel extends ThreadListModel {
     // is processed.
     if (labelsToFetch.length) {
       let skipNetwork = true;
-      await fetchThreads((thread: Thread) => {
-        if (thread.hasMessageDetails)
+      await fetchThreads((thread: ThreadBase) => {
+        if (thread instanceof Thread)
           this.pendingThreads_.push(thread);
-        else
+        else if (thread instanceof ThreadData)
           this.needsMessageDetailsThreads_.push(thread);
+        else
+          assert(false);
       }, `in:${labelsToFetch.join(' OR in:')}`, skipNetwork);
     }
 
@@ -86,7 +91,7 @@ export class TodoModel extends ThreadListModel {
     await this.doFetches_(needsMessageDetailsThreads);
   }
 
-  private async doFetches_(threads: Thread[]) {
+  private async doFetches_(threads: ThreadData[]) {
     if (!threads.length)
       return;
 
@@ -95,9 +100,9 @@ export class TodoModel extends ThreadListModel {
 
     for (let i = 0; i < threads.length; i++) {
       progress.incrementProgress();
-      let thread = threads[i];
-      await thread.fetch();
-      await this.addThread(thread);
+      let thread = await getCachedThread(threads[i]);
+      assert(thread instanceof Thread);
+      await this.addThread(<Thread>thread);
     }
   }
 }
