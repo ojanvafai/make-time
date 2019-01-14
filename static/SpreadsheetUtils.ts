@@ -15,7 +15,7 @@ async function getSheetId(
     ranges: [sheetName],
   });
   let sheet = defined(defined(defined(response).result).sheets)[0];
-  return defined(sheet.properties).sheetId;
+  return defined(defined(sheet.properties).sheetId);
 }
 
 export class SpreadsheetUtils {
@@ -50,7 +50,6 @@ export class SpreadsheetUtils {
     let response = await gapiFetch(
         gapi.client.sheets.spreadsheets.values.update, requestParams,
         requestBody);
-    // TODO: Handle if response.status != 200.
 
     // Ensure at least opt_rowsToOverwrite get overridden so that old values get
     // cleared.
@@ -99,7 +98,6 @@ export class SpreadsheetUtils {
     let response = await gapiFetch(
         gapi.client.sheets.spreadsheets.values.update, requestParams,
         requestBody);
-    // TODO: Handle if response.status != 200.
 
     // Ensure at least opt_rowsToOverwrite get overridden so that old values get
     // cleared.
@@ -131,7 +129,6 @@ export class SpreadsheetUtils {
     await gapiFetch(
         gapi.client.sheets.spreadsheets.values.append, requestParams,
         requestBody);
-    // TODO: Handle if response.status != 200.
   }
 
   static deleteRows = async (
@@ -142,9 +139,6 @@ export class SpreadsheetUtils {
     };
 
     var sheetId = await getSheetId(spreadsheetId, sheetName);
-    if (sheetId === undefined)
-      throw `Could not get sheetId for sheet ${sheetName}`;
-
     var batchUpdateSpreadsheetRequestBody = {
       requests: [
         {
@@ -163,6 +157,5 @@ export class SpreadsheetUtils {
     await gapiFetch(
         gapi.client.sheets.spreadsheets.batchUpdate, params,
         batchUpdateSpreadsheetRequestBody);
-    // TODO: Handle response.status != 200.
   }
 }

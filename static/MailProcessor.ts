@@ -197,10 +197,11 @@ export class MailProcessor {
     if (stats)
       await this.writeCollapsedStats(stats);
 
-    if (lastRowProcessed)
+    if (lastRowProcessed > 0) {
       await SpreadsheetUtils.deleteRows(
           this.settings.spreadsheetId, STATISTICS_SHEET_NAME, 1,
           lastRowProcessed + 1);
+    }
   }
 
   matchesHeader_(message: Message, header: HeaderFilterRule) {
