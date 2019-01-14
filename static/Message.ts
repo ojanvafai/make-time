@@ -203,7 +203,7 @@ export class Message {
       this.getMessageBody_(payload.parts);
     } else {
       let body = payload.body;
-      if (!body || !body.data)
+      if (!body || body.data === undefined)
         throw ASSERT_STRING;
 
       let messageText = Message.base64_.decode(body.data);

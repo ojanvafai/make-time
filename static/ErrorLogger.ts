@@ -38,7 +38,7 @@ class Logger extends HTMLElement {
     this.append(buttonContainer);
   }
 
-  log(message: string) {
+  log(message: string, details?: string) {
     console.error(message);
 
     if (!this.parentNode)
@@ -49,7 +49,15 @@ class Logger extends HTMLElement {
       padding: 3px;
     `;
     container.append(
-        `${this.messageContainer_.children.length + 1}: ${message}`);
+      `${this.messageContainer_.children.length + 1}: ${message}`);
+
+    if (details) {
+      let detailsElement = document.createElement('details');
+      detailsElement.innerHTML = '<summary>Details</summary>';
+      detailsElement.append(details);
+      container.append(detailsElement);
+    }
+
     this.messageContainer_.append(container);
   }
 

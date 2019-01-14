@@ -1,5 +1,5 @@
 import {getActionKey, getActions} from './Actions.js';
-import {getCurrentWeekNumber, getDefinitelyExistsElementById, ASSERT_STRING} from './Base.js';
+import {ASSERT_STRING, getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
 import {getLabels, getQueuedLabelMap, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
@@ -466,21 +466,53 @@ document.body.addEventListener('keydown', async (e) => {
 });
 
 window.addEventListener('error', (e) => {
-  var emailBody = 'Something went wrong...';
-  if (e.body)
-    emailBody += '\n' + e.body;
-  if (e.error)
-    emailBody += '\n' + e.error;
-  if (e.stack)
-    emailBody += '\n\n' + e.stack;
-  ErrorLogger.log(emailBody);
+  ErrorLogger.log(
+      e.error, JSON.stringify(e, ['body', 'error', 'message', 'stack']));
 });
 
+const NETWORK_OFFLINE_ERROR_MESSAGE =
+    'A network error occurred. Are you offline?';
+const FETCH_ERROR_MESSAGE =
+    'A network error occurred, and the request could not be completed.';
+
 window.addEventListener('unhandledrejection', (e) => {
+  let reason = e.reason;
   // 401 means the credentials are invalid and you probably need to 2 factor.
-  if (e.reason && e.reason.status == 401)
-    window.location.reload();
-  ErrorLogger.log(e.reason);
+  let message;
+  if (reason) {
+    if (reason.status == 401)
+      window.location.reload();
+
+    // Different promise types stow a human understandable message in different
+    // places. :(
+
+    // Case: throw new Error('msg');
+    message = reason.message;
+
+    // Case: gapi network failures.
+    if (!message) {
+      message =
+          reason.result && reason.result.error && reason.result.error.message;
+    }
+
+    // Case: fetch network failure
+    if (!message)
+      message = reason.error && reason.error.message;
+
+    if (message === FETCH_ERROR_MESSAGE)
+      message = NETWORK_OFFLINE_ERROR_MESSAGE;
+  }
+
+  // Plain stringify will skip a bunch of things, so manually list out
+  // everything we might care about. Add to this list over time as we find other
+  // error types.
+  let details = JSON.stringify(
+      reason, ['stack', 'message', 'body', 'result', 'error', 'code']);
+
+  if (message)
+    ErrorLogger.log(message, details);
+  else
+    ErrorLogger.log(details);
 });
 
 window.addEventListener('offline', () => {
