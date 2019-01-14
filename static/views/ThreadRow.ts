@@ -2,6 +2,7 @@ import {RenderedThread} from '../RenderedThread.js';
 import {Thread} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
+import { assert } from '../Base.js';
 
 interface DateFormatOptions {
   year: string;
@@ -80,9 +81,7 @@ export class ThreadRow extends HTMLElement {
     while (parent && !(parent instanceof ThreadRowGroup)) {
       parent = parent.parentElement
     }
-    if (!parent)
-      throw 'Attempted to get the parent group of a ThreadRow not in a group.';
-    return parent;
+    return assert(parent, 'Attempted to get the parent group of a ThreadRow not in a group.');
   }
 
   renderRow_() {

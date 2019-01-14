@@ -1,5 +1,5 @@
 import {AsyncOnce} from './AsyncOnce.js';
-import {ASSERT_STRING, showDialog, exists} from './Base.js';
+import {assert, defined, exists, showDialog} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {ServerStorage, StorageUpdate} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
@@ -94,7 +94,9 @@ export function getFilterField(rule: FilterRule, name: string): string|boolean|
       return rule.nocc;
 
     default:
-      throw ASSERT_STRING;
+      // Throw instead of asserting here so that TypeScript knows that this
+      // function never returns undefined.
+      throw new Error('This should never happen.');
   }
 }
 
@@ -218,9 +220,7 @@ export class Settings {
     if (!response.result.files.length)
       await this.showSetupDialog_();
     let id = response.result.files[0].id;
-    if (!id)
-      throw 'Fetched spreadsheet file, but has no spreadsheetId';
-    return id;
+    return assert(id, 'Fetched spreadsheet file, but has no spreadsheetId');
   }
 
   async showSetupDialog_() {
@@ -256,9 +256,9 @@ export class Settings {
   async generateSpreadsheet() {
     let response = await gapi.client.sheets.spreadsheets.create(
         {}, {'properties': {'title': 'make-time backend (do not rename!)'}});
-    let spreadsheetId = response.result.spreadsheetId;
-    if (!spreadsheetId)
-      throw 'Something went wrong generating the spreadsheet.';
+    let spreadsheetId = assert(
+        response.result.spreadsheetId,
+        'Something went wrong generating the spreadsheet.');
 
     let addSheetRequests: {}[] = [];
     for (let i = 0; i < Settings.sheetData_.length; i++) {
@@ -274,17 +274,15 @@ export class Settings {
 
     let sheetNameToId: any = {};
 
-    if (!addSheetsResponse.result.replies)
-      throw 'Generating spreadsheet failed.';
+    let replies = assert(
+        addSheetsResponse.result.replies, 'Generating spreadsheet failed.');
 
-    for (let reply of addSheetsResponse.result.replies) {
+    for (let reply of replies) {
       if (!reply.addSheet)
         continue;
-      let properties = reply.addSheet.properties;
-      if (!properties || !properties.title)
-        throw 'Generating spreadsheet failed.';
-
-      sheetNameToId[properties.title] = properties.sheetId;
+      let properties =
+          assert(reply.addSheet.properties, 'Generating spreadsheet failed.');
+      sheetNameToId[defined(properties.title)] = properties.sheetId;
     }
 
     let formatSheetRequests: {}[] = [];
@@ -544,8 +542,7 @@ export class Settings {
               // TODO: Remove all this once all clients have migrated over to $
               // syntax.
               let colonIndex = value.indexOf(':');
-              if (colonIndex == -1)
-                throw ASSERT_STRING;
+              assert(colonIndex !== -1);
               headers = [{
                 name: value.substring(0, colonIndex).trim(),
                 value: value.substring(colonIndex + 1).toLowerCase().trim(),
@@ -568,8 +565,7 @@ export class Settings {
 
           default:
             let validField = setFilterField(ruleObj, name, value);
-            if (!validField)
-              throw ASSERT_STRING;
+            assert(validField);
         }
       }
 
@@ -596,8 +592,7 @@ export class Settings {
 
       let invalidField = Object.keys(rule).find(
           x => !Settings.FILTERS_SHEET_COLUMNS_.includes(x));
-      if (invalidField || rule.label === '')
-        throw ASSERT_STRING;
+      assert(!invalidField && rule.label !== '');
 
       for (let column of Settings.FILTERS_SHEET_COLUMNS_) {
         let value;

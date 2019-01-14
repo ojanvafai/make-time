@@ -1,3 +1,4 @@
+import {assert} from '../Base.js';
 import {getCachedThread, ThreadData} from '../BaseMain.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {Labels} from '../Labels.js';
@@ -127,8 +128,7 @@ export abstract class ThreadListModel extends Model {
     if (this.queuedRemoves_)
       this.queuedRemoves_.push(thread);
     var index = this.threads_.indexOf(thread);
-    if (index == -1)
-      throw 'Attempted to remove thread not in the model.';
+    assert(index !== -1, 'Attempted to remove thread not in the model.');
     this.threads_.splice(index, 1);
   }
 

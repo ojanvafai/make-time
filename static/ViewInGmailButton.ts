@@ -1,3 +1,5 @@
+import {defined} from './Base.js';
+
 export class ViewInGmailButton extends HTMLElement {
   messageId_: string|undefined;
 
@@ -19,9 +21,8 @@ export class ViewInGmailButton extends HTMLElement {
     `;
 
     this.onclick = (e) => {
-      if (!this.messageId_)
-        throw 'Invalid message id';
-      window.open(`https://mail.google.com/mail/#all/${this.messageId_}`);
+      window.open(
+          `https://mail.google.com/mail/#all/${defined(this.messageId_)}`);
       e.preventDefault();
       e.stopPropagation();
     };

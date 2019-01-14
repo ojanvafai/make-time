@@ -1,3 +1,4 @@
+import {assert} from '../Base.js';
 import {fetchThreads} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {MailProcessor} from '../MailProcessor.js';
@@ -198,8 +199,9 @@ export class TriageModel extends ThreadListModel {
     if (!thread.hasMessageDetails) {
       // addDirectly should only ever be called for threads that have had their
       // message details fetched.
-      if (addDirectly)
-        throw 'Attempted to add a thread that lacked message details';
+      assert(
+          !addDirectly,
+          'Attempted to add a thread that lacked message details');
       this.needsMessageDetailsThreads_.push(thread);
       return;
     }

@@ -4,7 +4,7 @@
 // that have to know about Threads and things like that.
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {ASSERT_STRING, getDefinitelyExistsElementById, showDialog, USER_ID, exists} from './Base.js';
+import {assert, exists, getDefinitelyExistsElementById, showDialog, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
@@ -108,8 +108,8 @@ let settingThingsFetcher_: AsyncOnce<void>;
 async function fetchTheSettingsThings() {
   if (!settingThingsFetcher_) {
     settingThingsFetcher_ = new AsyncOnce<void>(async () => {
-      if (settings_ || labels_)
-        throw 'Tried to fetch settings or labels twice.';
+      assert(
+          !settings_ && !labels_, 'Tried to fetch settings or labels twice.');
 
       await login();
 
@@ -200,8 +200,9 @@ export async function login() {
 
   if (!isSignedIn) {
     await new Promise((resolve) => {
-      if (queuedLogin_)
-        throw 'login() was called twice while waiting for login to finish.';
+      assert(
+          !queuedLogin_,
+          'login() was called twice while waiting for login to finish.');
       queuedLogin_ = resolve;
     });
   }
@@ -294,9 +295,9 @@ let MAX_RESULTS_CAP = 500;
 export async function fetchThreads(
     forEachThread: (thread: Thread) => void, query: string,
     onlyFetchThreadsFromDisk: boolean = false, maxResults: number = 0) {
-  // If the query is empty or just whitespace, then
-  if (query.trim() === '')
-    throw ASSERT_STRING;
+  // If the query is empty or just whitespace, then we would fetch all mail by
+  // accident.
+  assert(query.trim() !== '');
 
   // Chats don't expose their bodies in the gmail API, so just skip them.
   query = `(${query}) AND -in:chats`;

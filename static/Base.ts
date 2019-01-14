@@ -2,7 +2,7 @@ import {gapiFetch} from './Net.js';
 
 export let USER_ID = 'me';
 
-export let ASSERT_STRING = 'This should never happen.';
+let ASSERT_STRING = 'This should never happen.';
 
 export function notNull<T>(x: T|null) {
   if (x === null)
@@ -19,6 +19,12 @@ export function defined<T>(x: T|undefined) {
 export function exists<T>(x: T|null|undefined) {
   if (x === null || x === undefined)
     throw new Error(ASSERT_STRING);
+  return x;
+}
+
+export function assert<T>(x: T|null|undefined, message?: string) {
+  if (!x)
+    throw new Error(message || ASSERT_STRING);
   return x;
 }
 
@@ -69,10 +75,10 @@ export async function getMyEmail() {
     let response = await gapiFetch(gapi.client.gmail.users.getProfile, {
       'userId': USER_ID,
     });
-    let address = response.result.emailAddress;
-    if (!address)
-      throw `This google account doesn't have an associated email address.`;
-    myEmail_ = address;
+    myEmail_ = assert(
+        response.result.emailAddress,
+        `This google account doesn't have an associated email address.`);
+    ;
   }
   return myEmail_;
 }

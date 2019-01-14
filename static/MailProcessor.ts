@@ -1,4 +1,4 @@
-import {exists} from './Base.js';
+import {exists, notNull} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -159,11 +159,9 @@ export class MailProcessor {
         };
       }
 
-      if (!stats)
-        throw 'Something went wrong computing stats.';
-
       lastRowProcessed = i;
 
+      stats = notNull(stats);
       stats.numInvocations++;
       stats.totalThreads += Number(rows[i][1]);
 

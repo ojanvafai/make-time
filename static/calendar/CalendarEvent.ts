@@ -1,4 +1,5 @@
 import {CALENDAR_ID, TYPE_EMAIL, TYPE_FOCUS_NON_RECURRING, TYPE_FOCUS_RECURRING, TYPE_INTERVIEW, TYPE_MEETING_NON_RECURRING, TYPE_MEETING_RECURRING, TYPE_ONE_ON_ONE_NON_RECURRING, TYPE_ONE_ON_ONE_RECURRING, TYPE_OOO, TYPE_UNBOOKED, TYPES,} from './Constants.js';
+import { assert } from '../Base.js';
 
 const OOO_REGEX = /.*(OOO|Holiday).*/;
 const EMAIL_REGEX = /.*(Email).*/;
@@ -82,15 +83,13 @@ export class CalendarEvent {
     let start = gcalEvent.start.dateTime;
     if (!start)
       start = gcalEvent.start.date;
-    if (!start)
-      throw 'Got a calendar entry with no start date.';
+    start = assert(start, 'Got a calendar entry with no start date.');
     this.start = CalendarEvent.parseDate(start);
 
     let end = gcalEvent.end.dateTime;
     if (!end)
       end = gcalEvent.end.date;
-    if (!end)
-      throw 'Got a calendar entry with no end date.';
+    end = assert(end, 'Got a calendar entry with no end date.');
     this.end = CalendarEvent.parseDate(end);
 
     this.duration = this.end.getTime() - this.start.getTime();

@@ -1,4 +1,4 @@
-import {exists} from './Base.js';
+import {defined} from './Base.js';
 import {gapiFetch} from './Net.js';
 
 // Valid types to put in a spreadsheet cell.
@@ -14,8 +14,8 @@ async function getSheetId(
     spreadsheetId: spreadsheetId,
     ranges: [sheetName],
   });
-  let sheet = exists(exists(exists(response).result).sheets)[0];
-  return exists(sheet.properties).sheetId;
+  let sheet = defined(defined(defined(response).result).sheets)[0];
+  return defined(sheet.properties).sheetId;
 }
 
 export class SpreadsheetUtils {

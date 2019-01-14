@@ -1,4 +1,4 @@
-import {exists, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddress, serializeAddress, USER_ID} from './Base.js';
+import {exists, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddress, serializeAddress, USER_ID, assert} from './Base.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
@@ -396,8 +396,8 @@ export class Thread {
   }
 
   async fetch(forceNetwork?: boolean, skipNetwork?: boolean) {
-    if (forceNetwork && skipNetwork)
-      throw 'Cannot both force and skip network.';
+    // Cannot both force and skip network.
+    assert(!forceNetwork || !skipNetwork);
 
     if (this.hasMessageDetails && !forceNetwork)
       return null;

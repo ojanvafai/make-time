@@ -1,5 +1,5 @@
 import {Action, registerActions} from '../Actions.js';
-import {ASSERT_STRING, exists, defined} from '../Base.js';
+import {assert, defined, exists} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {SubmitEvent} from '../Compose.js';
 import {Contacts} from '../Contacts.js';
@@ -407,8 +407,7 @@ export class ThreadListView extends View {
     let row;
     if (this.renderedRow_) {
       row = rowAtOffset(this.getRows_(), this.renderedRow_, 1);
-      if (row == this.renderedRow_)
-        throw ASSERT_STRING;
+      assert(row !== this.renderedRow_);
     } else {
       row = this.focusedRow_;
     }
@@ -661,9 +660,10 @@ export class ThreadListView extends View {
     this.setSubject_(subjectText, this.model_.getGroupName(thread));
 
     let rendered = renderedRow.rendered;
-    if (rendered.isRendered() &&
-        rendered.parentNode != this.singleThreadContainer_)
-      throw 'Tried to rerender already rendered thread. This should never happen.';
+    assert(
+        !rendered.isRendered() ||
+            rendered.parentNode == this.singleThreadContainer_,
+        'Tried to rerender already rendered thread. This should never happen.');
 
     if (!rendered.isRendered()) {
       renderedRow.rendered.render();

@@ -1,5 +1,5 @@
 import {getActionKey, getActions} from './Actions.js';
-import {ASSERT_STRING, getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
+import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
 import {getLabels, getQueuedLabelMap, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
@@ -100,7 +100,9 @@ async function createView(viewType: VIEW, params?: any) {
           await getTriageModel(), true, '/todo', 'Go to todo list');
 
     default:
-      throw ASSERT_STRING;
+      // Throw instead of asserting here so that TypeScript knows that this
+      // function never returns undefined.
+      throw new Error('This should never happen.');
   }
 }
 
@@ -111,7 +113,7 @@ async function setView(
   if (currentView_)
     currentView_.tearDown();
 
-  currentView_ = await createView(viewType, params);
+  currentView_ = defined(await createView(viewType, params));
 
   content.textContent = '';
   content.append(currentView_);

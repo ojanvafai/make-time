@@ -1,4 +1,4 @@
-import { ASSERT_STRING } from "./Base.js";
+import {assert} from './Base.js';
 
 export let COMPLETED_EVENT_NAME = 'radial-progress-completed';
 export class CompletedEvent extends Event {
@@ -94,8 +94,7 @@ export class RadialProgress extends HTMLElement {
   }
 
   incrementProgress() {
-    if (this.allowOverflow_ || this.total_ === 0)
-      throw ASSERT_STRING;
+    assert(!this.allowOverflow_ && this.total_ !== 0);
 
     this.completedCount_++;
     if (this.completedCount_ == this.total_)
@@ -134,8 +133,7 @@ export class RadialProgress extends HTMLElement {
           this.completedCount_ > this.total_ ? OVERFLOW_COLOR : DEFAULT_COLOR;
       this.setColor_(color);
     } else {
-      if (this.completedCount_ > this.total_)
-        throw ASSERT_STRING;
+      assert(this.completedCount_ <= this.total_);
       completedCount = this.completedCount_;
     }
 

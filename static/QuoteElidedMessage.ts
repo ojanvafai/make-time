@@ -1,4 +1,5 @@
-import {Message} from './Message';
+import {defined} from './Base.js';
+import {Message} from './Message.js';
 
 // Rolling hash taken from https://gist.github.com/i-e-b/b892d95ac7c0cf4b70e4.
 let MINIMUM_HASH_LENGTH = 10;
@@ -149,15 +150,11 @@ export class QuoteElidedMessage {
   }
 
   getHashes() {
-    if (!this.hashes_)
-      throw 'Tried to return hashes before they were computed.';
-    return this.hashes_;
+    return defined(this.hashes_);
   }
 
   getDom() {
-    if (!this.dom_)
-      throw 'Tried to return dom before it was generated.';
-    return this.dom_;
+    return defined(this.dom_);
   }
 
   computeHashes_() {
