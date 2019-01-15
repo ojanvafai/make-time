@@ -309,40 +309,6 @@ export class MailProcessor {
     return Labels.FALLBACK_LABEL;
   }
 
-  getPriority(thread: Thread) {
-    let messages = thread.getMessages();
-    let lastMessage = messages[messages.length - 1];
-    // TODO: Also check the subject line? last message wins over subject?
-    let plainText = lastMessage.getPlain();
-    if (!plainText) {
-      // Lazy way of getting the plain text out of the HTML.
-      let dummyDiv = document.createElement('div');
-      dummyDiv.innerHTML = lastMessage.getHtml() || '';
-      plainText = dummyDiv.textContent;
-    }
-
-    let lowestIndex = Number.MAX_SAFE_INTEGER;
-    let matchingPriority;
-    for (let priority of Labels.SORTED_PRIORITIES) {
-      let tag = `##${priority}`;
-      let index = plainText.indexOf(tag);
-
-      if (index == -1)
-        continue;
-      if (index > lowestIndex)
-        continue;
-      // Make sure what follows the tag is a space, newline, or end of message.
-      let nextChar = plainText.charAt(index + tag.length);
-      if (nextChar && nextChar != ' ' && nextChar != '\n' && nextChar != '\r')
-        continue;
-
-      lowestIndex = index;
-      matchingPriority = priority;
-    }
-
-    return matchingPriority;
-  }
-
   async processThread_(thread: Thread) {
     try {
       let startTime = new Date();
@@ -358,16 +324,6 @@ export class MailProcessor {
         removeLabelIds.push('INBOX');
         await thread.modify(addLabelIds, removeLabelIds);
         this.logToStatsPage_(Labels.MUTED_LABEL, startTime);
-        return;
-      }
-
-      let priority = this.getPriority(thread);
-      if (priority) {
-        let labelName = Labels.addPriorityPrefix(priority);
-        addLabelIds.push(await this.allLabels_.getId(labelName));
-        removeLabelIds.push('INBOX');
-        await thread.modify(addLabelIds, removeLabelIds);
-        await this.pushThread_(thread);
         return;
       }
 

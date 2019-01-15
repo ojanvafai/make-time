@@ -1,12 +1,12 @@
 import {Action, registerActions} from '../Actions.js';
 import {AddressCompose, autocompleteItemSelectedEventName} from '../AddressCompose.js';
 import {login} from '../BaseMain.js';
+import {Contacts} from '../Contacts.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 
 import {HelpDialog} from './HelpDialog.js';
 import {View} from './View.js';
-import { Contacts } from '../Contacts.js';
 
 let SEND: Action = {
   name: 'Send',
@@ -23,16 +23,14 @@ registerActions('Compose', ACTIONS);
 
 const PRE_FILL_URL =
     '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
-const HELP_TEXT =
-    `Put ## followed by a priority level in your email to automatically route your message to a that make-time priority. Valid priorities are ##must-do, ##urgent, ##backlog, ##delegate.
-
-URL to prefill fields: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
+const HELP_TEXT = `For quick notes to yourself, you can create links and homescreen shortcuts, e.g.
+click this link: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 `;
 
 interface QueryParameters {
-   to?: string;
-   subject?: string;
-   body?: string;
+  to?: string;
+  subject?: string;
+  body?: string;
 }
 
 export class ComposeView extends View {
@@ -42,7 +40,8 @@ export class ComposeView extends View {
   private inlineTo_: HTMLElement|undefined;
 
   constructor(
-      private model_: ComposeModel, contacts: Contacts, private params_: QueryParameters = {}) {
+      private model_: ComposeModel, contacts: Contacts,
+      private params_: QueryParameters = {}) {
     super();
 
     this.style.cssText = `
