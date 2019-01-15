@@ -7,6 +7,11 @@ import {ThreadUtils} from './ThreadUtils.js';
 
 let memoryCache: Map<string, Thread> = new Map();
 
+interface SerializedMessages {
+  historyId?: string;
+  messages?: gapi.client.gmail.Message[];
+}
+
 export class ThreadFetcher {
   private fetchPromise_:
       Promise<gapi.client.Response<gapi.client.gmail.Thread>>|null = null;
@@ -26,18 +31,20 @@ export class ThreadFetcher {
       return entry;
     }
 
-    let messages = await this.fetchFromDisk();
-    if (!messages && !onlyFetchFromDisk)
-      messages = await this.fetchFromNetwork();
-    if (!messages) {
+    let data = await this.fetchFromDisk();
+    if (!data && !onlyFetchFromDisk)
+      data = await this.fetchFromNetwork();
+    if (!data) {
       assert(onlyFetchFromDisk);
       return null;
     }
 
-    let processed =
-        await ThreadUtils.processMessages(messages, [], this.allLabels_);
+    let processed = await ThreadUtils.processMessages(
+        defined(data.messages), [], this.allLabels_);
     let thread =
-      new Thread(this.id, this.historyId, processed, this.allLabels_);
+        new Thread(this.id, this.historyId, processed, this.allLabels_);
+    if (data.historyId != this.historyId)
+      await thread.update();
     memoryCache.set(this.id, thread);
     return thread;
   }
@@ -52,31 +59,54 @@ export class ThreadFetcher {
     let resp = await this.fetchPromise_;
     this.fetchPromise_ = null;
 
-    // If modifications have come in since we first created this Thread
-    // instance then the historyId will have changed.
-    this.historyId = defined(resp.result.historyId);
-
     let messages = defined(resp.result.messages);
-    await ThreadUtils.serializeMessageData(messages, this.historyId);
-    return messages;
+    await ThreadUtils.serializeMessageData(messages, this.id, this.historyId);
+    return resp.result;
   }
 
-  async fetchFromDisk() {
-    let currentKey = ThreadUtils.getKey(getCurrentWeekNumber(), this.historyId);
-    let localData = await IDBKeyVal.getDefault().get(currentKey);
+  async fetchFromDisk(): Promise<SerializedMessages|null> {
+    let currentWeekKey = ThreadUtils.getKey(getCurrentWeekNumber(), this.id);
+    let localData = await IDBKeyVal.getDefault().get(currentWeekKey);
 
+    let oldKey;
     if (!localData) {
-      let previousKey =
-          ThreadUtils.getKey(getPreviousWeekNumber(), this.historyId);
-      localData = await IDBKeyVal.getDefault().get(previousKey);
-      if (localData) {
-        await IDBKeyVal.getDefault().set(currentKey, localData);
-        await IDBKeyVal.getDefault().del(previousKey);
+      oldKey = ThreadUtils.getKey(getPreviousWeekNumber(), this.id);
+      localData = await IDBKeyVal.getDefault().get(oldKey);
+    }
+
+    // TODO: Remove this once all clients have updated.
+    if (!localData) {
+      oldKey = ThreadUtils.getKey(getCurrentWeekNumber(), this.historyId);
+      localData = await IDBKeyVal.getDefault().get(oldKey);
+    }
+
+    // TODO: Remove this once all clients have updated.
+    if (!localData) {
+      oldKey = ThreadUtils.getKey(getPreviousWeekNumber(), this.historyId);
+      localData = await IDBKeyVal.getDefault().get(oldKey);
+    }
+
+    if (!localData)
+      return null;
+
+    let parsed = JSON.parse(localData);
+    // TODO: Remove this version below once all clients have updated.
+    if (Array.isArray(parsed)) {
+      if (!oldKey)
+        oldKey = currentWeekKey;
+
+      parsed = {
+        historyId: this.historyId,
+        messages: parsed,
       }
     }
 
-    if (localData)
-      return JSON.parse(localData);
-    return null;
+    if (oldKey) {
+      // TODO: Use the localData string once we remove the isArray block above.
+      await IDBKeyVal.getDefault().del(oldKey);
+      await IDBKeyVal.getDefault().set(currentWeekKey, JSON.stringify(parsed));
+    }
+
+    return parsed;
   }
 }

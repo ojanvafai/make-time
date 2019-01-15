@@ -182,6 +182,8 @@ export class Thread {
 
     let allRawMessages = this.getRawMessages_();
     // Fetch the full message details for any new messages.
+    // TODO: If there are many messages to fetch, might be faster to just
+    // refetch the whole thread or maybe do a BatchRequest for all the messages.
     for (let i = allRawMessages.length; i < messages.length; i++) {
       let resp = await gapiFetch(gapi.client.gmail.users.messages.get, {
         userId: USER_ID,
@@ -193,7 +195,8 @@ export class Thread {
     this.historyId = defined(resp.result.historyId);
     this.processed_ = await ThreadUtils.processMessages(
         allRawMessages, this.processed_.messages, this.allLabels_);
-    await ThreadUtils.serializeMessageData(allRawMessages, this.historyId);
+    await ThreadUtils.serializeMessageData(
+        allRawMessages, this.id, this.historyId);
   }
 
   async sendReply(
