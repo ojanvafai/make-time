@@ -163,16 +163,27 @@ export class TriageModel extends ThreadListModel {
             inUnprocessed})`,
         maxThreadsToShow);
 
+    // Set threads taht are already in the inbox atomically so there isn't user
+    // visible flicker.
     this.setThreads(this.pendingThreads_);
     this.pendingThreads_ = [];
 
+    // Process the threads with locally cached thread data (although
+    // possibly with new messages that need fetching) since they are probably
+    // being shown to the user already.
+    let existingThreadsToProcess = this.needsProcessingThreads_.concat();
+    this.needsProcessingThreads_ = [];
+    await this.mailProcessor_.process(existingThreadsToProcess, false);
+
+    // Fetch threads that don't have locally cached thread data.
     let needsFetchThreads = this.needsFetchThreads_.concat();
     this.needsFetchThreads_ = [];
     await this.doFetches_(needsFetchThreads);
 
-    let threadsToProcess = this.needsProcessingThreads_.concat();
+    // Process all the newly fetched threads that are still in the inbox.
+    let newThreadsToProcess = this.needsProcessingThreads_.concat();
     this.needsProcessingThreads_ = [];
-    await this.mailProcessor_.process(threadsToProcess);
+    await this.mailProcessor_.process(newThreadsToProcess);
 
     // Do these threads last since they are threads that have been archived
     // outside of maketime and just need to have their maketime labels removed,
@@ -200,11 +211,10 @@ export class TriageModel extends ThreadListModel {
     }
   }
 
-  private async processThread_(thread: Thread, addDirectly?: boolean) {
+  async needsProcessing_(thread: Thread) {
     let processedId = await this.labels.getId(Labels.PROCESSED_LABEL);
     let messages = thread.getMessages();
     let lastMessage = messages[messages.length - 1];
-    let isInInbox = thread.isInInbox();
     let hasUnprocessedLabel =
         thread.getLabelNames().has(Labels.UNPROCESSED_LABEL);
 
@@ -212,16 +222,25 @@ export class TriageModel extends ThreadListModel {
     // labels), only process threads in the inbox or with the unprocessed label.
     // Otherwise, they might be threads that are prioritized, but lack the
     // processed label for some reason.
-    if (!lastMessage.getLabelIds().includes(processedId) &&
-        (isInInbox || hasUnprocessedLabel)) {
-      this.needsProcessingThreads_.push(thread);
-      return;
-    }
+    return !lastMessage.getLabelIds().includes(processedId) &&
+        (thread.isInInbox() || hasUnprocessedLabel)
+  }
 
-    // Threads that have triage labels but aren't in the inbox were
-    // archived outside of maketime and should have their triage labels
-    // removed.
-    if (!isInInbox) {
+  private async processThread_(thread: Thread, addDirectly?: boolean) {
+    if (await this.needsProcessing_(thread)) {
+      this.needsProcessingThreads_.push(thread);
+      // If the thread doesn't have the default queue, then it's already in the
+      // inbox and we want to show it with stale thread data instead of removing
+      // it just to add it back in again when it gets processed. This avoids
+      // flashes of threads disappearing and reappearing when new messages come
+      // in and also avoids going to the next thread when the currently rendered
+      // thread gets a new message.
+      if (thread.hasDefaultQueue())
+        return;
+    } else if (!thread.isInInbox()) {
+      // Threads that have triage labels but aren't in the inbox were
+      // archived outside of maketime and should have their triage labels
+      // removed.
       this.needsArchivingThreads_.push(thread);
       return;
     }

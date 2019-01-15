@@ -2,7 +2,7 @@ import {defined} from './Base.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
 
-export let DEFAULT_QUEUE = 'inbox';
+let DEFAULT_QUEUE = 'inbox';
 
 export class ProcessedMessageData {
   ids: Set<string>;
@@ -26,6 +26,10 @@ export class ProcessedMessageData {
     this.messages = oldMessages;
     this.snippet = defined(rawMessages[rawMessages.length - 1].snippet);
     this.processMessages_(rawMessages);
+  }
+
+  hasDefaultQueue() {
+    return this.queue == DEFAULT_QUEUE;
   }
 
   async processLabelNames() {

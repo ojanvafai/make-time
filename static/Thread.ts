@@ -147,6 +147,10 @@ export class Thread {
     return this.processed_.queue;
   }
 
+  hasDefaultQueue() {
+    return this.processed_.hasDefaultQueue();
+  }
+
   getPriority() {
     return this.processed_.priority;
   }

@@ -4,7 +4,6 @@ import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
 import {TriageModel} from './models/TriageModel.js';
-import {DEFAULT_QUEUE} from './ProcessedMessageData.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
@@ -111,7 +110,7 @@ export class MailProcessor {
         [Object.values(stats)]);
   }
 
-  async collapseStats() {
+  private async collapseStats_() {
     let stats: Stats|null = null;
     var rows = await SpreadsheetUtils.fetchSheet(
         this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
@@ -309,7 +308,7 @@ export class MailProcessor {
     return Labels.FALLBACK_LABEL;
   }
 
-  async processThread_(thread: Thread) {
+  async processThread_(thread: Thread, skipPushThread: boolean) {
     try {
       let startTime = new Date();
 
@@ -335,6 +334,12 @@ export class MailProcessor {
             await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
         removeLabelIds.push('INBOX');
         await thread.modify(addLabelIds, removeLabelIds);
+        // TODO: Technically the thread could have been in the TriageModel at
+        // this point and we need to remove it. That would happen if a thread
+        // didn't get auto-archived based off it's earlier messages, but would
+        // based of it's most recent message. Even if we hit this case it isn't
+        // so bad since the threadlist will get completely updated on the next
+        // update() call.
         if (thread.isInInbox())
           this.logToStatsPage_(labelName, startTime);
         return;
@@ -343,8 +348,7 @@ export class MailProcessor {
       let prefixedLabelName;
 
       let alreadyInTriaged = thread.getPriority();
-      let alreadyInNeedsTriage =
-          thread.isInInbox() && thread.getQueue() != DEFAULT_QUEUE;
+      let alreadyInNeedsTriage = thread.isInInbox() && thread.hasDefaultQueue();
       let labelNeedsQueueing =
           this.queuedLabelMap_.get(labelName).queue != QueueSettings.IMMEDIATE;
 
@@ -363,7 +367,7 @@ export class MailProcessor {
       removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);
 
       await thread.modify(addLabelIds, removeLabelIds);
-      if (addLabelIds.includes('INBOX'))
+      if (!skipPushThread && addLabelIds.includes('INBOX'))
         await this.pushThread_(thread);
 
       if (!alreadyHadLabel)
@@ -386,14 +390,14 @@ export class MailProcessor {
         this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
   }
 
-  async process(threads: Thread[]) {
-    await this.processThreads(threads);
-    await this.processQueues();
+  async process(threads: Thread[], skipPushThread?: boolean) {
+    await this.processThreads_(threads, !!skipPushThread);
+    await this.processQueues_();
     if (threads.length)
-      await this.collapseStats();
+      await this.collapseStats_();
   }
 
-  async processThreads(threads: Thread[]) {
+  private async processThreads_(threads: Thread[], skipPushThread: boolean) {
     if (!threads.length)
       return;
 
@@ -405,7 +409,7 @@ export class MailProcessor {
       progress.incrementProgress();
     });
     for (let thread of threads) {
-      taskQueue.queueTask(() => this.processThread_(thread));
+      taskQueue.queueTask(() => this.processThread_(thread, skipPushThread));
     };
     await taskQueue.flush();
   }
@@ -491,7 +495,7 @@ export class MailProcessor {
     return days;
   }
 
-  async processQueues() {
+  private async processQueues_() {
     let storage = new ServerStorage(this.settings.spreadsheetId);
     await storage.fetch();
     let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
