@@ -617,11 +617,19 @@ export class ThreadListView extends View {
         }
       }
 
-      // Move focus to the first unselected email. If we aren't able to find an
-      // unselected email, focusedEmail_ should end up null, so set it even if
-      // firstUnselectedRowAfterSelected is null.
-      if (focusedRowIsSelected)
-        this.setFocus(firstUnselectedRowAfterFocused);
+      if (threads.length) {
+        // Move focus to the first unselected email. If we aren't able to find
+        // an unselected email, focusedEmail_ should end up null, so set it even
+        // if firstUnselectedRowAfterSelected is null.
+        if (focusedRowIsSelected)
+          this.setFocus(firstUnselectedRowAfterFocused);
+      } else {
+        // If no rows are selected, triage the focused row.
+        if (!this.focusedRow_)
+          return;
+        threads.push(this.focusedRow_.thread);
+        this.moveFocus(NEXT_ROW_ACTION);
+      }
 
       await this.model_.markThreadsTriaged(
           threads, destination, expectedNewMessageCount);
