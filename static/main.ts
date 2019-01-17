@@ -105,9 +105,8 @@ async function createView(viewType: VIEW, params?: any) {
   }
 }
 
-async function setView(
-    viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
-  updateMenuButtonDisplay(shouldHideMenu);
+async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
+  showMenuButton(shouldHideMenu);
 
   if (currentView_)
     currentView_.tearDown();
@@ -127,8 +126,8 @@ function preventUpdates() {
   shouldUpdate_ = false;
 }
 
-function updateMenuButtonDisplay(hide?: boolean) {
-  hammburgerMenuToggle.style.display = hide ? 'hidden' : 'visible';
+function showMenuButton(hide?: boolean) {
+  hammburgerMenuToggle.style.visibility = hide ? 'hidden' : 'visible';
 }
 
 let DRAWER_OPEN = 'drawer-open';
