@@ -55,8 +55,11 @@ export class Router {
       var nameValue = part.split('=', 2);
       var key = nameValue[0];
       // But ignore empty parameters and don't override named parameters
+      // Spaces in query parameters are encoded as '+' in some cases. Need to
+      // make them spaces *before* decoding to avoid converting legitimate
+      // pluses to spaces.
       if (nameValue.length == 2 && !params[key] && !missingParams[key])
-        params[key] = decodeURIComponent(nameValue[1]);
+        params[key] = decodeURIComponent(nameValue[1].replace(/\+/g, ' '));
     }
 
     return params;
