@@ -25,7 +25,6 @@ let currentView_: View;
 // Extract these before rendering any threads since the threads can have
 // elements with IDs in them.
 const content = getDefinitelyExistsElementById('content');
-const toolbar = getDefinitelyExistsElementById('toolbar');
 const drawer = getDefinitelyExistsElementById('drawer');
 const hammburgerMenuToggle =
     getDefinitelyExistsElementById('hamburger-menu-toggle');
@@ -52,10 +51,10 @@ window.onpopstate = () => {
 };
 
 router.add('/compose', async (params) => {
-  let shouldHideToolbar = !!Object.keys(params).length;
-  if (shouldHideToolbar)
+  let shouldHideMenu = !!Object.keys(params).length;
+  if (shouldHideMenu)
     preventUpdates();
-  await setView(VIEW.Compose, params, shouldHideToolbar);
+  await setView(VIEW.Compose, params, shouldHideMenu);
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
@@ -107,8 +106,8 @@ async function createView(viewType: VIEW, params?: any) {
 }
 
 async function setView(
-    viewType: VIEW, params?: any, shouldHideToolbar?: boolean) {
-  updateToolbarDisplay(shouldHideToolbar);
+    viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
+  updateMenuButtonDisplay(shouldHideMenu);
 
   if (currentView_)
     currentView_.tearDown();
@@ -128,8 +127,8 @@ function preventUpdates() {
   shouldUpdate_ = false;
 }
 
-function updateToolbarDisplay(hide?: boolean) {
-  toolbar.style.display = hide ? 'none' : 'flex';
+function updateMenuButtonDisplay(hide?: boolean) {
+  hammburgerMenuToggle.style.display = hide ? 'hidden' : 'visible';
 }
 
 let DRAWER_OPEN = 'drawer-open';

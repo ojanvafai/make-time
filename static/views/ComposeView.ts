@@ -1,5 +1,6 @@
 import {Action, registerActions} from '../Actions.js';
 import {AddressCompose, autocompleteItemSelectedEventName} from '../AddressCompose.js';
+import {defined, getMyEmail} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {Contacts} from '../Contacts.js';
 import {EmailCompose} from '../EmailCompose.js';
@@ -21,16 +22,27 @@ let HELP: Action = {
 const ACTIONS = [SEND, HELP];
 registerActions('Compose', ACTIONS);
 
-const PRE_FILL_URL =
-    '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
-const HELP_TEXT = `For quick notes to yourself, you can create links and homescreen shortcuts, e.g.
-click this link: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
+async function getHelpText() {
+  const PRE_FILL_URL =
+      '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
+  return `For quick notes to yourself, you can create links and homescreen shortcuts, e.g. click this link: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
+
+Even better, you can make a custom search engine on desktop Chrome that will autosend emails with the autosend parameter. In Chrome's Manage Search Engine settings, click the add button and fill in the following:
+ - Search engine: Put whatever name you want here
+ - Keyword: mt
+ - URL with %s in place of query:
+     ${window.location.origin}/compose?autosend=1&to=${
+      await getMyEmail()}&subject=%s
+
+Now in chrome you can type "mt", tab, then a message it it will send you an email address that you can triage later. This is great for quick jotting down of thoughts.
 `;
+}
 
 interface QueryParameters {
   to?: string;
   subject?: string;
   body?: string;
+  autosend?: string;
 }
 
 export class ComposeView extends View {
@@ -82,12 +94,16 @@ export class ComposeView extends View {
       min-height: 50px;
     `;
 
-    this.body_.addEventListener('email-added', this.handleUpdates_.bind(this));
+    this.body_.addEventListener('email-added', () => this.handleUpdates_());
     this.body_.addEventListener(
         'input', this.debounceHandleUpdates_.bind(this));
     this.append(this.body_);
 
     this.setActions(ACTIONS);
+  }
+
+  shouldAutoSend() {
+    return this.params_ && this.params_.autosend === '1';
   }
 
   async init() {
@@ -104,10 +120,17 @@ export class ComposeView extends View {
     if (localData.body)
       this.body_.value = localData.body;
 
-    this.handleUpdates_();
-    this.focusFirstEmpty_();
+    if (!this.shouldAutoSend()) {
+      this.handleUpdates_();
+      this.focusFirstEmpty_();
+    }
 
     await login();
+
+    if (this.shouldAutoSend()) {
+      this.handleUpdates_(true);
+      this.send_();
+    }
   }
 
   appendLine_(...children: (string|Node)[]) {
@@ -143,7 +166,7 @@ export class ComposeView extends View {
   }
 
   debounceHandleUpdates_() {
-    window.requestIdleCallback(this.handleUpdates_.bind(this));
+    window.requestIdleCallback(() => this.handleUpdates_());
   }
 
   clearInlineTo_() {
@@ -151,7 +174,7 @@ export class ComposeView extends View {
       this.inlineTo_.textContent = '';
   }
 
-  async handleUpdates_() {
+  async handleUpdates_(skipFlushToDisk?: boolean) {
     let emails = this.body_.getEmails();
     if (emails.length) {
       this.getInlineTo_().textContent = emails.join(', ');
@@ -163,7 +186,8 @@ export class ComposeView extends View {
     this.model_.setInlineTo(this.inlineToText_());
     this.model_.setSubject(this.subject_.value);
     this.model_.setBody(this.body_.value);
-    await this.model_.flush();
+    if (!skipFlushToDisk)
+      await this.model_.flush();
   }
 
   focusFirstEmpty_() {
@@ -181,7 +205,19 @@ export class ComposeView extends View {
   }
 
   async send_() {
-    await this.model_.send();
+    let sent = await this.model_.send();
+
+    if (this.shouldAutoSend()) {
+      sent = defined(sent);
+      document.write(`<pre><h1>Sent</h1>
+<b>to:</b>${sent.to}
+
+<b>subject:</b>${sent.subject}
+
+<b>body:</b>
+${sent.body}
+</pre>`);
+    }
 
     this.to_.value = this.params_.to || '';
     this.clearInlineTo_();
@@ -196,7 +232,7 @@ export class ComposeView extends View {
     }
 
     if (action == HELP) {
-      new HelpDialog(HELP_TEXT);
+      new HelpDialog(await getHelpText());
       return;
     }
 

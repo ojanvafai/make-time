@@ -89,5 +89,11 @@ export class ComposeModel extends Model {
     progress.incrementProgress();
 
     this.sending_ = false;
+
+    return {
+      to: to,
+      subject: this.subject_,
+      body: this.body_,
+    }
   }
 }
