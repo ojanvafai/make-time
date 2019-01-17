@@ -29,7 +29,7 @@ async function getHelpText() {
 
 Even better, you can make a custom search engine on desktop Chrome that will autosend emails with the autosend parameter. In Chrome's Manage Search Engine settings, click the add button and fill in the following:
  - Search engine: Put whatever name you want here
- - Keyword: mt
+ - Keyword: mk
  - URL with %s in place of query:
      ${window.location.origin}/compose?autosend=1&to=${
       await getMyEmail()}&subject=%s
