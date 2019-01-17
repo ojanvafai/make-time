@@ -41,6 +41,9 @@ export class ThreadRow extends HTMLElement {
       justify-content: center;
       align-items: center;
     `;
+    label.onclick = () => {
+      this.dispatchEvent(new Event('focusRow', {bubbles: true}));
+    };
 
     this.checkBox_ = document.createElement('input');
     this.checkBox_.type = 'checkbox';

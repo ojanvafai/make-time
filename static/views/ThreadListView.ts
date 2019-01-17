@@ -240,6 +240,10 @@ export class ThreadListView extends View {
       this.setRenderedRow_(<ThreadRow>e.target);
     });
 
+    this.rowGroupContainer_.addEventListener('focusRow', (e: Event) => {
+      this.setFocus(<ThreadRow>e.target);
+    });
+
     this.singleThreadContainer_ = document.createElement('div');
     this.singleThreadContainer_.style.cssText = `
       position: relative;
