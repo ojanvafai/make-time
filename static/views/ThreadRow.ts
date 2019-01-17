@@ -1,8 +1,9 @@
+import {assert} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {Thread} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
+
 import {ThreadRowGroup} from './ThreadRowGroup.js';
-import { assert } from '../Base.js';
 
 interface DateFormatOptions {
   year: string;
@@ -61,12 +62,31 @@ export class ThreadRow extends HTMLElement {
       flex: 1;
     `;
     this.messageDetails_.onclick = () => {
-      this.dispatchEvent(new Event('renderThread', {bubbles: true}));
+      // If the user is selecting the subject line in the row, have that prevent
+      // rendering the thread so they can copy-paste the subject.
+      if (!this.threadRowContainsSelection_())
+        this.dispatchEvent(new Event('renderThread', {bubbles: true}));
     };
     this.append(this.messageDetails_);
 
     this.rendered = new RenderedThread(thread);
     this.renderRow_();
+  }
+
+  threadRowContainsSelection_() {
+    let sel = window.getSelection();
+    return !sel.isCollapsed &&
+        (this.containsNode_(sel.anchorNode) ||
+         this.containsNode_(sel.focusNode));
+  }
+
+  containsNode_(node: Node) {
+    while (node.parentNode) {
+      if (node.parentNode == this)
+        return true;
+      node = node.parentNode;
+    }
+    return false;
   }
 
   resetState() {
@@ -81,7 +101,9 @@ export class ThreadRow extends HTMLElement {
     while (parent && !(parent instanceof ThreadRowGroup)) {
       parent = parent.parentElement
     }
-    return assert(parent, 'Attempted to get the parent group of a ThreadRow not in a group.');
+    return assert(
+        parent,
+        'Attempted to get the parent group of a ThreadRow not in a group.');
   }
 
   renderRow_() {
