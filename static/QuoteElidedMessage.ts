@@ -125,7 +125,8 @@ export class QuoteElidedMessage {
     // Behaviors to disallow:
     // - Meta can mess with the viewport and other things.
     // - Title will update the tab title for make time.
-    let tagNames = ['meta', 'title'];
+    // - link rel=stylesheet and style modify maketime's UI.
+    let tagNames = ['meta', 'title', 'link', 'style'];
     for (let tagName of tagNames) {
       for (let node of this.dom_.querySelectorAll(tagName)) {
         node.remove();

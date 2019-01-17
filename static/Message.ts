@@ -202,7 +202,6 @@ export class Message {
       this.quoteElidedMessage_ =
           new QuoteElidedMessage(html, this.previousMessage_);
       let dom = this.quoteElidedMessage_.getDom();
-      this.disableStyleSheets_(dom);
       let attachments = this.rewriteInlineImages_(dom);
       // Intentionally don't await this so we show the thread without waiting
       // for attachement image fetches.
@@ -365,12 +364,4 @@ export class Message {
       }
     });
   };
-
-  // Don't want stylesheets in emails to style the whole page.
-  disableStyleSheets_(messageDom: HTMLElement) {
-    let styles = messageDom.querySelectorAll('style');
-    for (let style of styles) {
-      style.setAttribute('type', 'not-css');
-    }
-  }
 }
