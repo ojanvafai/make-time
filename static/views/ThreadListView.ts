@@ -317,7 +317,7 @@ export class ThreadListView extends View {
 
   async update() {
     if (this.renderedRow_)
-      await this.renderedRow_.rendered.update();
+      await this.renderedRow_.thread.update();
   }
 
   updateActions_() {
@@ -703,7 +703,7 @@ export class ThreadListView extends View {
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to
     // make renderOne_ async.
-    renderedRow.rendered.update();
+    renderedRow.thread.update();
   }
 
   // TODO: Make a proper QuickReply element. This function is getting unweildy
@@ -793,7 +793,7 @@ export class ThreadListView extends View {
         await this.markTriaged_(
             ARCHIVE_ACTION.destination, expectedNewMessageCount);
       } else {
-        await renderedRow.rendered.update();
+        await renderedRow.thread.update();
       }
     })
 

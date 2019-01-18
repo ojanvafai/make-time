@@ -1,6 +1,6 @@
 import {assert} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
-import {Thread} from '../Thread.js';
+import {Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
@@ -72,6 +72,9 @@ export class ThreadRow extends HTMLElement {
     };
     this.append(this.messageDetails_);
 
+    thread.addEventListener(
+        UpdatedEvent.NAME, () => this.handleThreadUpdated_());
+
     this.rendered = new RenderedThread(thread);
     this.renderRow_();
   }
@@ -107,6 +110,11 @@ export class ThreadRow extends HTMLElement {
     return assert(
         parent,
         'Attempted to get the parent group of a ThreadRow not in a group.');
+  }
+
+  private handleThreadUpdated_() {
+    this.renderRow_();
+    this.rendered.render();
   }
 
   renderRow_() {

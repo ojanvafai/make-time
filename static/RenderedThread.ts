@@ -13,15 +13,6 @@ export class RenderedThread extends HTMLElement {
     `;
   }
 
-  // TODO: We should be listening to update events on Thread and doing
-  // appendMessages instead of manually doing it here and remove the update
-  // method from RenderedThread since threads can be updated outside of
-  // RenderedThread and we want to update RenderedThread in those cases as well.
-  async update() {
-    await this.thread.update();
-    this.render();
-  }
-
   isRendered() {
     return !!this.parentNode;
   }

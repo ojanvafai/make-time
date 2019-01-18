@@ -367,8 +367,16 @@ export class MailProcessor {
       removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);
 
       await thread.modify(addLabelIds, removeLabelIds);
-      if (!skipPushThread && addLabelIds.includes('INBOX'))
-        await this.pushThread_(thread);
+      if (addLabelIds.includes('INBOX')) {
+        if (skipPushThread) {
+          // The thread is already in the ThreadListModel, but we still want to
+          // update it so that it rerenders the row with the latest thread
+          // information.
+          thread.update();
+        } else {
+          await this.pushThread_(thread);
+        }
+      }
 
       if (!alreadyHadLabel)
         this.logToStatsPage_(labelName, startTime);

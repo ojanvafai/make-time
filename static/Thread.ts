@@ -5,10 +5,19 @@ import {gapiFetch} from './Net.js';
 import {ProcessedMessageData} from './ProcessedMessageData.js';
 import {ThreadUtils} from './ThreadUtils.js';
 
-export class Thread {
+export class UpdatedEvent extends Event {
+  static NAME = 'thread-updated';
+  constructor() {
+    super(UpdatedEvent.NAME);
+  }
+}
+
+export class Thread extends EventTarget {
   constructor(
       public id: string, public historyId: string,
-      private processed_: ProcessedMessageData, private allLabels_: Labels) {}
+      private processed_: ProcessedMessageData, private allLabels_: Labels) {
+    super();
+  }
 
   equals(other: Thread) {
     return this.id == other.id && this.historyId == other.historyId;
@@ -177,6 +186,11 @@ export class Thread {
       fields: 'historyId,messages(id,labelIds)',
     });
 
+    if (this.historyId == resp.result.historyId)
+      return;
+
+    this.historyId = defined(resp.result.historyId);
+
     let messages = defined(resp.result.messages);
 
     for (let i = 0; i < processed.length; i++) {
@@ -196,11 +210,12 @@ export class Thread {
       allRawMessages.push(resp.result);
     }
 
-    this.historyId = defined(resp.result.historyId);
     this.processed_ = await ThreadUtils.processMessages(
         allRawMessages, this.processed_.messages, this.allLabels_);
     await ThreadUtils.serializeMessageData(
-        allRawMessages, this.id, this.historyId);
+      allRawMessages, this.id, this.historyId);
+
+    this.dispatchEvent(new UpdatedEvent());
   }
 
   async sendReply(
