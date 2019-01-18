@@ -1,5 +1,5 @@
 import {Action, Actions} from '../Actions.js';
-import { getDefinitelyExistsElementById } from '../Base.js';
+import {getDefinitelyExistsElementById} from '../Base.js';
 
 // Extract this before rendering any threads since the threads can have
 // elements with IDs in them.
@@ -10,14 +10,13 @@ export abstract class View extends HTMLElement {
 
   constructor() {
     super();
+    this.setFooter();
     this.actions_ = new Actions(this);
   }
 
   abstract async takeAction(action: Action): Promise<void>;
 
-  tearDown() {
-    this.setFooter();
-  }
+  tearDown() {};
   async init() {};
   async goBack() {}
   async update() {}

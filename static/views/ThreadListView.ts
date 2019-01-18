@@ -298,8 +298,6 @@ export class ThreadListView extends View {
   }
 
   tearDown() {
-    super.tearDown();
-
     for (let listener of this.modelListeners_) {
       this.model_.removeEventListener(listener.name, listener.handler);
     }

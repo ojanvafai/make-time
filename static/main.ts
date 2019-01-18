@@ -7,6 +7,7 @@ import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {ComposeModel} from './models/ComposeModel.js';
+import {Model} from './models/Model.js';
 import {ThreadListModel} from './models/ThreadListModel.js';
 import {TodoModel} from './models/TodoModel.js';
 import {TriageModel} from './models/TriageModel.js';
@@ -80,23 +81,19 @@ function getView() {
   return currentView_;
 }
 
-async function createView(viewType: VIEW, params?: any) {
+async function createModel(viewType: VIEW) {
   switch (viewType) {
     case VIEW.Calendar:
-      let calendar = new Calendar();
-      return new CalendarView(calendar);
+      return new Calendar();
 
     case VIEW.Compose:
-      let model = new ComposeModel();
-      return new ComposeView(model, contacts_, params);
+      return new ComposeModel();
 
     case VIEW.Todo:
-      return await createThreadListView(
-          await getTodoModel(), false, '/triage', 'Back to Triaging');
+      return await getTodoModel();
 
     case VIEW.Triage:
-      return await createThreadListView(
-          await getTriageModel(), true, '/todo', 'Go to todo list');
+      return await getTriageModel();
 
     default:
       // Throw instead of asserting here so that TypeScript knows that this
@@ -105,13 +102,51 @@ async function createView(viewType: VIEW, params?: any) {
   }
 }
 
+async function createView(viewType: VIEW, model: Model, params?: any) {
+  switch (viewType) {
+    case VIEW.Calendar:
+      return new CalendarView(<Calendar>model);
+
+    case VIEW.Compose:
+      return new ComposeView(<ComposeModel>model, contacts_, params);
+
+    case VIEW.Todo:
+      return await createThreadListView(
+          <TodoModel>model, false, '/triage', 'Back to Triaging');
+
+    case VIEW.Triage:
+      return await createThreadListView(
+          <TriageModel>model, true, '/todo', 'Go to todo list');
+
+    default:
+      // Throw instead of asserting here so that TypeScript knows that this
+      // function never returns undefined.
+      throw new Error('This should never happen.');
+  }
+}
+
+let viewGeneration = 0;
 async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
+  let thisViewGeneration = ++viewGeneration;
+
   showMenuButton(shouldHideMenu);
 
   if (currentView_)
     currentView_.tearDown();
 
-  currentView_ = defined(await createView(viewType, params));
+  let model = defined(await createModel(viewType));
+  // Abort if we transitioned to a new view while this one was being created.
+  if (thisViewGeneration !== viewGeneration)
+    return;
+
+  let view = defined(await createView(viewType, model, params));
+  // Abort if we transitioned to a new view while this one was being created.
+  if (thisViewGeneration !== viewGeneration) {
+    view.tearDown();
+    return;
+  }
+
+  currentView_ = view;
 
   content.textContent = '';
   content.append(currentView_);
@@ -239,7 +274,7 @@ function createMenuItem(name: string, options: any) {
   return a;
 }
 
-async function onLoad() {
+function appendMenu() {
   let settingsButton = createMenuItem('Settings', {
     onclick: async () => {
       new SettingsView(await getSettings(), await getQueuedLabelMap());
@@ -259,7 +294,10 @@ async function onLoad() {
       createMenuItem('Todo', {href: '/todo', nested: true}),
       createMenuItem('Calendar (alpha)', {href: '/calendar'}), settingsButton,
       helpButton);
+}
 
+async function onLoad() {
+  appendMenu();
   await routeToCurrentLocation();
   await contacts_.fetch(gapi.auth.getToken());
   await update();
