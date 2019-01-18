@@ -402,8 +402,10 @@ export class ThreadListView extends View {
     if (!this.renderedRow_ && (!this.focusedRow_ || this.isAutoFocusFirstRow_))
       this.setFocus(newRows[0], true);
 
-    if (this.hasNewRenderedRow_)
+    if (this.hasNewRenderedRow_) {
+      this.hasNewRenderedRow_ = false;
       this.renderOne_();
+    }
     this.prerender_();
   }
 

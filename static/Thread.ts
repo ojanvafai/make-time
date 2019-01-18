@@ -180,7 +180,7 @@ export class Thread {
     let messages = defined(resp.result.messages);
 
     for (let i = 0; i < processed.length; i++) {
-      let labels = defined(messages[i].labelIds);
+      let labels = messages[i].labelIds || [];
       processed[i].updateLabels(labels);
     }
 
