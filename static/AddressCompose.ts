@@ -6,7 +6,6 @@ import {Contacts} from './Contacts.js';
 
 // TODO: Handle mouse drag selections + copy + paste + delete + backspace +
 // arrows.
-// TODO: Don't include the name+<> when someone just types a bare email address
 
 export class AddressCompose extends HTMLElement {
   private preventAutoComplete_: boolean;

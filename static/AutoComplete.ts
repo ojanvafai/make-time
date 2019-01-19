@@ -59,7 +59,7 @@ export class AutoComplete extends HTMLElement {
 
     // Include whatever the user is typing in case it's not in their contacts or
     // if the contacts API is down.
-    results.push({name: search.split('@')[0], address: search});
+    results.push({name: '', address: search});
 
     // TODO: Sort the results to put +foo address after the main ones.
     // Prefer things that start with the search text over substring matching.
