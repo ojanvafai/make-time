@@ -50,7 +50,7 @@ export class ComposeView extends View {
   private to_: AddressCompose;
   private subject_: HTMLInputElement;
   private body_: EmailCompose;
-  private inlineTo_: HTMLElement|undefined;
+  private inlineTo_: AddressCompose;
 
   constructor(
       private model_: ComposeModel, contacts: Contacts,
@@ -65,18 +65,7 @@ export class ComposeView extends View {
 
     this.to_ = new AddressCompose(contacts);
     this.to_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
-    this.to_.style.cssText = `
-      flex: 1;
-      line-height: 1em;
-      border: 1px solid;
-      padding: 1px;
-      background-color: white;
-      word-break: break-word;
-
-      /* Match gmail default style of tiny text in compose to avoid different sizes on copy-paste. */
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: small;
-    `;
+    this.to_.style.flex = '1';
     this.appendLine_('To:\xa0', this.to_);
 
     this.subject_ = document.createElement('input');
@@ -105,6 +94,9 @@ export class ComposeView extends View {
         'input', this.debounceHandleUpdates_.bind(this));
     this.append(this.body_);
 
+    this.inlineTo_ = new AddressCompose(contacts, true);
+    this.inlineTo_.style.flex = '1';
+
     this.setActions(ACTIONS);
   }
 
@@ -120,7 +112,7 @@ export class ComposeView extends View {
     if (localData.to)
       this.to_.value = localData.to;
     if (localData.inlineTo)
-      this.getInlineTo_().textContent = localData.inlineTo;
+      this.getInlineTo_().value = localData.inlineTo;
     if (localData.subject)
       this.subject_.value = localData.subject;
     if (localData.body)
@@ -158,12 +150,11 @@ export class ComposeView extends View {
   inlineToText_() {
     if (!this.inlineTo_)
       return '';
-    return this.inlineTo_.textContent;
+    return this.inlineTo_.value;
   }
 
   getInlineTo_() {
-    if (!this.inlineTo_) {
-      this.inlineTo_ = document.createElement('div');
+    if (!this.inlineTo_.parentNode) {
       let line = this.createLine_('In email:\xa0', this.inlineTo_);
       let parent = <HTMLElement>this.to_.parentNode;
       parent.after(line);
@@ -177,13 +168,13 @@ export class ComposeView extends View {
 
   clearInlineTo_() {
     if (this.inlineTo_)
-      this.inlineTo_.textContent = '';
+      this.inlineTo_.value = '';
   }
 
   async handleUpdates_(skipFlushToDisk?: boolean) {
     let emails = this.body_.getEmails();
     if (emails.length) {
-      this.getInlineTo_().textContent = emails.join(', ');
+      this.getInlineTo_().value = emails.join(', ');
     } else {
       this.clearInlineTo_();
     }

@@ -13,16 +13,22 @@ export class AddressCompose extends HTMLElement {
   private input_: HTMLInputElement;
   private addressContainer_: HTMLElement;
 
-  constructor(contacts: Contacts) {
+  constructor(contacts: Contacts, disabled?: boolean) {
     super();
+
+    this.style.cssText = `
+      line-height: 1em;
+      border: 1px solid;
+      padding: 1px;
+      word-break: break-word;
+
+      /* Match gmail default style of tiny text in compose to avoid different sizes on copy-paste. */
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: small;
+    `;
 
     this.preventAutoComplete_ = false;
     this.autoComplete_ = new AutoComplete(contacts);
-    this.cancelAutoComplete_();
-    this.autoComplete_.addEventListener(
-        EntrySelectedEvent.NAME,
-        (e) => this.submitAutoComplete_((<EntrySelectedEvent>e).entry));
-    this.append(this.autoComplete_);
 
     this.addressContainer_ = document.createElement('div');
     this.addressContainer_.style.cssText = `
@@ -32,6 +38,23 @@ export class AddressCompose extends HTMLElement {
     this.append(this.addressContainer_);
 
     this.input_ = document.createElement('input');
+    this.addressContainer_.append(this.input_);
+
+    if (disabled) {
+      this.style.border = '0';
+      this.style.color = 'grey';
+      this.input_.style.display = 'none';
+      return;
+    }
+
+    this.style.backgroundColor = 'white';
+
+    this.cancelAutoComplete_();
+    this.autoComplete_.addEventListener(
+        EntrySelectedEvent.NAME,
+        (e) => this.submitAutoComplete_((<EntrySelectedEvent>e).entry));
+    this.append(this.autoComplete_);
+
     this.input_.style.cssText = `
       border: 0;
       outline: 0;
@@ -42,7 +65,6 @@ export class AddressCompose extends HTMLElement {
     this.input_.addEventListener(
         'input', (e) => this.handleInput_(<InputEvent>e));
     this.input_.addEventListener('keydown', (e) => this.handleyKeyDown_(e));
-    this.addressContainer_.append(this.input_);
   }
 
   get value() {
@@ -57,6 +79,10 @@ export class AddressCompose extends HTMLElement {
   }
 
   set value(value: string) {
+    for (let chip of this.addressContainer_.querySelectorAll('.chip')) {
+      chip.remove();
+    }
+
     let addresses = parseAddressList(value);
     for (let address of addresses) {
       this.input_.before(this.createChip_(address));
@@ -93,6 +119,7 @@ export class AddressCompose extends HTMLElement {
 
   createChip_(address: ParsedAddress) {
     let outer = document.createElement('span');
+    outer.className = 'chip';
     outer.style.cssText = `
       font-size: .75rem;
       border: 1px solid #dadce0;
@@ -101,12 +128,13 @@ export class AddressCompose extends HTMLElement {
       display: inline-block;
       height: 20px;
       margin: 2px;
+      background-color: white;
     `;
     outer.addEventListener('click', () => this.selectChip_(outer));
     outer.addEventListener(
         'mouseenter', () => outer.style.backgroundColor = 'lightgrey');
     outer.addEventListener(
-        'mouseleave', () => outer.style.backgroundColor = '');
+        'mouseleave', () => outer.style.backgroundColor = 'white');
 
     let inner = document.createElement('span');
     inner.style.cssText = `
