@@ -139,7 +139,7 @@ export class AddressCompose extends Compose {
   autocompleteText() {
     let parsed = this.parse_();
     let selected = parsed.find(x => !!x.selected);
-    return defined(selected).email;
+    return defined(selected).address;
   }
 
   selectedEntry(selectedItem: AutoCompleteEntry) {

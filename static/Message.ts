@@ -66,20 +66,20 @@ export class Message {
           this.date = new Date(value);
           break;
         case 'from':
-          this.from = this.cleanseAddresses_(value);
+          this.from = value;
           this.fromEmails = this.extractEmails_(this.from);
           this.fromName = this.extractName_(this.from);
           break;
         case 'to':
-          this.to = this.cleanseAddresses_(value);
+          this.to = value;
           this.toEmails = this.extractEmails_(this.to);
           break;
         case 'cc':
-          this.cc = this.cleanseAddresses_(value);
+          this.cc = value;
           this.ccEmails = this.extractEmails_(this.cc);
           break;
         case 'bcc':
-          this.bcc = this.cleanseAddresses_(value);
+          this.bcc = value;
           this.bccEmails = this.extractEmails_(this.bcc);
           break;
         case 'message-id':
@@ -114,10 +114,6 @@ export class Message {
         return header.value;
     }
     return null;
-  }
-
-  cleanseAddresses_(str: string) {
-    return str.replace(/"/g, '');
   }
 
   getLabelIds() {

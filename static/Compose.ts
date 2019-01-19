@@ -3,12 +3,12 @@ import {Contacts} from './Contacts.js';
 
 export class AutoCompleteEntry extends HTMLElement {
   name: string;
-  email: string;
+  address: string;
 
   constructor() {
     super();
     this.name = '';
-    this.email = '';
+    this.address = '';
   }
 }
 window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
@@ -153,7 +153,7 @@ export abstract class Compose extends HTMLElement {
     // contacts as we always add a single fallback. If that candidate includes a
     // space, then we know the user isn't typing an email address and we should
     // cancel the autocomplete entirely.
-    if (candidates.length == 1 && candidates[0].email.includes(' ')) {
+    if (candidates.length == 1 && candidates[0].address.includes(' ')) {
       this.cancelAutocomplete_();
       return;
     }
@@ -177,9 +177,9 @@ export abstract class Compose extends HTMLElement {
         text += `${candidate.name}: `;
         entry.name = candidate.name;
       }
-      text += candidate.email;
+      text += candidate.address;
       entry.textContent = text
-      entry.email = candidate.email;
+      entry.address = candidate.address;
       this.autocompleteContainer_.append(entry);
     }
 
@@ -217,7 +217,7 @@ export abstract class Compose extends HTMLElement {
   }
 
   getAutocompleteCandidates_() {
-    let results: {name: string, email: string}[] = [];
+    let results: {name: string, address: string}[] = [];
 
     let search = this.autocompleteText();
     if (!search)
@@ -227,21 +227,21 @@ export abstract class Compose extends HTMLElement {
 
     for (let contact of this.contacts_.getAll()) {
       if (contact.name && contact.name.toLowerCase().includes(search)) {
-        for (let email of contact.emails) {
-          results.push({name: contact.name, email: email});
+        for (let address of contact.emails) {
+          results.push({name: contact.name, address: address});
         }
       } else {
-        for (let email of contact.emails) {
-          let lowerCaseEmail = email.toLowerCase();
-          if (lowerCaseEmail.split('@')[0].includes(search))
-            results.push({name: contact.name, email: email});
+        for (let address of contact.emails) {
+          let lowercase = address.toLowerCase();
+          if (lowercase.split('@')[0].includes(search))
+            results.push({name: contact.name, address: address});
         }
       }
     }
 
     // Include whatever the user is typing in case it's not in their contacts or
     // if the contacts API is down.
-    results.push({name: search.split('@')[0], email: search});
+    results.push({name: search.split('@')[0], address: search});
 
     // TODO: Sort the results to put +foo address after the main ones.
     // Prefer things that start with the search text over substring matching.
@@ -283,6 +283,8 @@ export abstract class Compose extends HTMLElement {
       // Remove the leading +.
       name = name.substring(1, name.length);
       let email = link.href.replace('mailto:', '');
+      // TODO: This needs to use serializeAddress so it correclty quotes the
+      // name if it has a comma.
       results.push(name.includes('@') ? email : `${name} <${email}>`);
     }
     return results;

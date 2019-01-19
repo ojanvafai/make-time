@@ -1,4 +1,5 @@
-import {defined, getMyEmail, parseAddress, serializeAddress, USER_ID} from './Base.js';
+import parseAddressList from "../deps/emailjs-addressparser/addressparser.js";
+import {defined, getMyEmail, serializeAddress, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {gapiFetch} from './Net.js';
@@ -228,13 +229,12 @@ export class Thread extends EventTarget {
 
     if (shouldReplyAll && lastMessage.to) {
       let myEmail = await getMyEmail();
-      let addresses = lastMessage.to.split(',');
+      let addresses = parseAddressList(lastMessage.to);
       for (let address of addresses) {
-        let parsed = parseAddress(address);
-        if (parsed.email !== myEmail) {
+        if (address.address !== myEmail) {
           if (to !== '')
             to += ',';
-          to += serializeAddress(parsed);
+          to += serializeAddress(address);
         }
       }
     }

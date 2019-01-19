@@ -84,15 +84,16 @@ export async function getMyEmail() {
 }
 
 export interface ParsedAddress {
-  name?: string, email: string
+  name: string, address: string
 }
 
+// TODO: Delete this one AddressCompose no longer uses it.
 // Parse "user@foo.com" and "User Name <user@foo.com>".
 export function parseAddress(address: string) {
   let trimmed = address.trim();
   let out: ParsedAddress = {
     name: '',
-    email: trimmed,
+    address: trimmed,
   }
 
   let split = trimmed.split('<');
@@ -103,7 +104,7 @@ export function parseAddress(address: string) {
   // Strip the trailing '>'.
   if (email.charAt(email.length - 1) == '>')
     email = email.substring(0, email.length - 1);
-  out.email = email.trim();
+  out.address = email.trim();
 
   // Can there be multiple '<' in an email address, e.g. can there be a '<' in
   // the name?
@@ -112,9 +113,10 @@ export function parseAddress(address: string) {
 }
 
 export function serializeAddress(address: ParsedAddress) {
-  if (address.name)
-    return `${address.name} <${address.email}>`;
-  return address.email;
+  if (address.address === '' || address.name === '')
+    return address.address || address.name;
+  let name = address.name.includes(',') ? `"${address.name}"` : address.name;
+  return `${name} <${address.address}>`;
 }
 
 export function getDefinitelyExistsElementById(id: string) {

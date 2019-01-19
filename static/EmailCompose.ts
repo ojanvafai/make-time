@@ -59,8 +59,8 @@ export class EmailCompose extends Compose {
   selectedEntry(selectedItem: AutoCompleteEntry) {
     let link = document.createElement('a');
     link.className = Compose.EMAIL_CLASS_NAME;
-    link.href = `mailto:${selectedItem.email}`;
-    link.textContent = `+${selectedItem.name || selectedItem.email}`;
+    link.href = `mailto:${selectedItem.address}`;
+    link.textContent = `+${selectedItem.name || selectedItem.address}`;
     link.tabIndex = -1;
     link.contentEditable = 'false';
     return link;
