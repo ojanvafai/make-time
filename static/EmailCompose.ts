@@ -32,6 +32,7 @@ export class EmailCompose extends HTMLElement {
         EntrySelectedEvent.NAME,
         (e) => this.submitAutocomplete_((<EntrySelectedEvent>e).entry));
     this.append(this.autoComplete_);
+    this.hideAutocompleteMenu_();
 
     this.content = document.createElement('div');
     this.content.style.cssText = `
