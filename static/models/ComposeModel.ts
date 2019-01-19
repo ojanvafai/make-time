@@ -1,3 +1,5 @@
+import parseAddressList from '../../deps/emailjs-addressparser/addressparser.js';
+
 import {IDBKeyVal} from '../idb-keyval.js';
 import {send} from '../Mail.js';
 
@@ -62,15 +64,23 @@ export class ComposeModel extends Model {
     });
   }
 
-  async send() {
-    let to = '';
-    if (this.to_)
-      to += this.to_ + ',';
-    if (this.inlineTo_)
-      to += this.inlineTo_ + ',';
+  hasInvalidAddresses_(value: string) {
+    let addresses = parseAddressList(value);
+    for (let address of addresses) {
+      if (!address.address)
+        return true;
+      let parts = address.address.split('@');
+      if (parts.length !== 2)
+        return true;
+      if (!parts[1].includes('.'))
+        return true;
+    }
+    return false;
+  }
 
-    if (!to || !to.includes('@') || !to.includes('.')) {
-      alert(`To field does not include a valid email address: ${to}`);
+  async send() {
+    if (this.hasInvalidAddresses_(this.to_)) {
+      alert(`To field has an invalid email address: ${this.to_}`);
       return;
     }
 
@@ -78,6 +88,12 @@ export class ComposeModel extends Model {
       alert(`Subject is empty.`);
       return;
     }
+
+    let to = '';
+    if (this.to_)
+      to += this.to_ + ',';
+    if (this.inlineTo_)
+      to += this.inlineTo_ + ',';
 
     if (this.sending_)
       return;
@@ -91,9 +107,7 @@ export class ComposeModel extends Model {
     this.sending_ = false;
 
     return {
-      to: to,
-      subject: this.subject_,
-      body: this.body_,
+      to: to, subject: this.subject_, body: this.body_,
     }
   }
 }

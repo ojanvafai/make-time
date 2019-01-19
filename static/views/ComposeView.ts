@@ -1,5 +1,5 @@
 import {Action, registerActions} from '../Actions.js';
-import {AddressCompose, autocompleteItemSelectedEventName} from '../AddressCompose.js';
+import {AddressCompose} from '../AddressCompose.js';
 import {defined, getMyEmail} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {Contacts} from '../Contacts.js';
@@ -25,7 +25,8 @@ registerActions('Compose', ACTIONS);
 async function getHelpText() {
   const PRE_FILL_URL =
       '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
-  return `For quick notes to yourself, you can create links and homescreen shortcuts, e.g. click this link: <a href='${PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
+  return `For quick notes to yourself, you can create links and homescreen shortcuts, e.g. click this link: <a href='${
+      PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
 
 Even better, you can make a custom search engine on desktop Chrome that will autosend emails with the autosend parameter. In Chrome's Manage Search Engine settings, click the add button and fill in the following:
  - Search engine: Put whatever name you want here
@@ -64,17 +65,22 @@ export class ComposeView extends View {
 
     this.to_ = new AddressCompose(contacts);
     this.to_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
-    this.to_.addEventListener(
-        autocompleteItemSelectedEventName,
-        this.debounceHandleUpdates_.bind(this));
     this.to_.style.cssText = `
       flex: 1;
       line-height: 1em;
+      border: 1px solid;
+      padding: 1px;
+      background-color: white;
+      word-break: break-word;
+
+      /* Match gmail default style of tiny text in compose to avoid different sizes on copy-paste. */
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: small;
     `;
     this.appendLine_('To:\xa0', this.to_);
 
     this.subject_ = document.createElement('input');
-    ;
+    this.subject_.placeholder = 'Subject';
     this.subject_.addEventListener(
         'input', this.debounceHandleUpdates_.bind(this));
     this.subject_.style.cssText = `
@@ -83,7 +89,7 @@ export class ComposeView extends View {
       outline: none;
       padding: 4px;
     `;
-    this.appendLine_('Subject:\xa0', this.subject_);
+    this.appendLine_(this.subject_);
 
     this.body_ = new EmailCompose(contacts);
     this.body_.style.cssText = `
@@ -143,7 +149,7 @@ export class ComposeView extends View {
     line.style.cssText = `
       display: flex;
       margin: 4px;
-      align-items: baseline;
+      align-items: center;
     `;
     line.append(...children);
     return line;
@@ -158,7 +164,7 @@ export class ComposeView extends View {
   getInlineTo_() {
     if (!this.inlineTo_) {
       this.inlineTo_ = document.createElement('div');
-      let line = this.createLine_('Inline to:\xa0', this.inlineTo_);
+      let line = this.createLine_('In email:\xa0', this.inlineTo_);
       let parent = <HTMLElement>this.to_.parentNode;
       parent.after(line);
     }

@@ -1,4 +1,5 @@
-import parseAddressList from "../deps/emailjs-addressparser/addressparser.js";
+import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
+
 import {defined, getMyEmail, serializeAddress, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
@@ -214,7 +215,7 @@ export class Thread extends EventTarget {
     this.processed_ = await ThreadUtils.processMessages(
         allRawMessages, this.processed_.messages, this.allLabels_);
     await ThreadUtils.serializeMessageData(
-      allRawMessages, this.id, this.historyId);
+        allRawMessages, this.id, this.historyId);
 
     this.dispatchEvent(new UpdatedEvent());
   }

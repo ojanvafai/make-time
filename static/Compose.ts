@@ -1,17 +1,6 @@
-import {defined, notNull} from './Base.js';
+import {AutoComplete, EntrySelectedEvent, AutoCompleteEntry} from './AutoComplete.js';
+import {notNull} from './Base.js';
 import {Contacts} from './Contacts.js';
-
-export class AutoCompleteEntry extends HTMLElement {
-  name: string;
-  address: string;
-
-  constructor() {
-    super();
-    this.name = '';
-    this.address = '';
-  }
-}
-window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
 
 export class SubmitEvent extends Event {
   constructor(public ctrlKey: boolean) {
@@ -20,10 +9,9 @@ export class SubmitEvent extends Event {
 }
 
 export abstract class Compose extends HTMLElement {
+  private autoComplete_: AutoComplete;
   protected content: HTMLElement;
   private placeholder_: string|undefined;
-  private autocompleteContainer_: HTMLElement|null = null;
-  private autocompleteIndex_: number|undefined;
   static EMAIL_CLASS_NAME: string;
 
   abstract isStillAutoCompleting(): boolean|null;
@@ -35,11 +23,17 @@ export abstract class Compose extends HTMLElement {
   protected abstract handleInput(e: InputEvent): void;
 
   constructor(
-      private contacts_: Contacts, private valueIsPlainText_: boolean,
+      contacts: Contacts, private valueIsPlainText_: boolean,
       isSingleline?: boolean, private putMenuAbove_?: boolean) {
     super();
 
     this.style.display = 'flex';
+
+    this.autoComplete_ = new AutoComplete(contacts);
+    this.autoComplete_.addEventListener(
+        EntrySelectedEvent.NAME,
+        (e) => this.submitAutocomplete_((<EntrySelectedEvent>e).entry));
+    this.append(this.autoComplete_);
 
     this.content = document.createElement('div');
     this.content.style.cssText = `
@@ -83,14 +77,14 @@ export abstract class Compose extends HTMLElement {
         case 'ArrowUp':
           if (this.updateIsAutocompleting()) {
             e.preventDefault();
-            this.adjustAutocompleteIndex(-1);
+            this.autoComplete_.adjustIndex(-1);
           }
           return;
 
         case 'ArrowDown':
           if (this.updateIsAutocompleting()) {
             e.preventDefault();
-            this.adjustAutocompleteIndex(1);
+            this.autoComplete_.adjustIndex(1);
           }
           return;
 
@@ -130,131 +124,33 @@ export abstract class Compose extends HTMLElement {
   }
 
   protected renderAutocomplete() {
-    if (!this.autocompleteContainer_) {
-      this.autocompleteContainer_ = document.createElement('div');
-      this.autocompleteContainer_.style.cssText = `
-        background-color: white;
-        position: fixed;
-        border: 1px solid;
-        box-shadow: 2px -2px 10px 1px lightgrey;
-      `;
-      // Fix box shadow to respect menu position
-      this.append(this.autocompleteContainer_);
-    }
-
-    if (this.contacts_.getAll().length)
-      this.autocompleteContainer_.classList.remove('no-contacts');
-    else
-      this.autocompleteContainer_.classList.add('no-contacts');
-
-    let candidates = this.getAutocompleteCandidates_();
+    this.autoComplete_.style.display = '';
+    let candidates = this.autoComplete_.render(this.autocompleteText());
 
     // If there's only one candidate, that means there were no matches in
     // contacts as we always add a single fallback. If that candidate includes a
     // space, then we know the user isn't typing an email address and we should
     // cancel the autocomplete entirely.
-    if (candidates.length == 1 && candidates[0].address.includes(' ')) {
+    if (candidates.length == 1 &&
+        (candidates[0].address.includes(' ') ||
+         candidates[0].name.includes(' '))) {
       this.cancelAutocomplete_();
       return;
     }
 
-    this.autocompleteContainer_.textContent = '';
-    for (let candidate of candidates) {
-      let entry = new AutoCompleteEntry();
-      // Prevent clicking on the menu losing cursor position.
-      entry.onmousedown = (e) => {
-        e.preventDefault();
-      };
-      entry.onclick = () => {
-        this.submitAutocomplete_(entry);
-      };
-      entry.style.cssText = `
-        display: block;
-        padding: 4px;
-      `;
-      let text = '';
-      if (candidate.name) {
-        text += `${candidate.name}: `;
-        entry.name = candidate.name;
-      }
-      text += candidate.address;
-      entry.textContent = text
-      entry.address = candidate.address;
-      this.autocompleteContainer_.append(entry);
-    }
-
-    this.selectAutocompleteItem_(0);
-
     let range = notNull(this.getAutocompleteRange());
     let rect = range.getBoundingClientRect();
-    this.autocompleteContainer_.style.left = `${rect.left}px`;
+    this.autoComplete_.style.left = `${rect.left}px`;
     if (this.putMenuAbove_) {
-      this.autocompleteContainer_.style.bottom =
+      this.autoComplete_.style.bottom =
           `${document.documentElement.offsetHeight - rect.top}px`;
     } else {
-      this.autocompleteContainer_.style.top = `${rect.bottom + 4}px`;
+      this.autoComplete_.style.top = `${rect.bottom + 4}px`;
     }
-  }
-
-  adjustAutocompleteIndex(adjustment: number) {
-    let container = <HTMLElement>this.autocompleteContainer_;
-    let newIndex = Math.max(
-        0,
-        Math.min(
-            defined(this.autocompleteIndex_) + adjustment,
-            container.children.length - 1));
-    this.selectAutocompleteItem_(newIndex);
-  }
-
-  selectAutocompleteItem_(index: number) {
-    let container = <HTMLElement>this.autocompleteContainer_;
-    this.autocompleteIndex_ = index;
-    for (let i = 0; i < container.children.length; i++) {
-      let child = <AutoCompleteEntry>container.children[i];
-      child.style.backgroundColor = (i == index) ? '#6677dd' : 'white';
-      child.style.color = (i == index) ? 'white' : 'black';
-    }
-  }
-
-  getAutocompleteCandidates_() {
-    let results: {name: string, address: string}[] = [];
-
-    let search = this.autocompleteText();
-    if (!search)
-      return results;
-
-    search = search.toLowerCase();
-
-    for (let contact of this.contacts_.getAll()) {
-      if (contact.name && contact.name.toLowerCase().includes(search)) {
-        for (let address of contact.emails) {
-          results.push({name: contact.name, address: address});
-        }
-      } else {
-        for (let address of contact.emails) {
-          let lowercase = address.toLowerCase();
-          if (lowercase.split('@')[0].includes(search))
-            results.push({name: contact.name, address: address});
-        }
-      }
-    }
-
-    // Include whatever the user is typing in case it's not in their contacts or
-    // if the contacts API is down.
-    results.push({name: search.split('@')[0], address: search});
-
-    // TODO: Sort the results to put +foo address after the main ones.
-    // Prefer things that start with the search text over substring matching.
-    // Sort by usage?
-    results = results.splice(0, 4);
-    return results;
   }
 
   hideAutocompleteMenu_() {
-    if (!this.autocompleteContainer_)
-      return;
-    this.autocompleteContainer_.remove();
-    this.autocompleteContainer_ = null;
+    this.autoComplete_.style.display = 'none';
   }
 
   cancelAutocomplete_() {
@@ -263,10 +159,8 @@ export abstract class Compose extends HTMLElement {
   }
 
   submitAutocomplete_(selectedItem?: AutoCompleteEntry) {
-    if (!selectedItem) {
-      selectedItem = <AutoCompleteEntry>notNull(this.autocompleteContainer_)
-                         .children[defined(this.autocompleteIndex_)];
-    }
+    if (!selectedItem)
+      selectedItem = this.autoComplete_.selected();
     this.insertAddress(selectedItem);
 
     this.cancelAutocomplete_();

@@ -1,9 +1,11 @@
 import {notNull} from './Base.js';
-import {AutoCompleteEntry, Compose} from './Compose.js';
+import { Compose} from './Compose.js';
 import {Contacts} from './Contacts.js';
+import { AutoCompleteEntry } from './AutoComplete.js';
 
 const SEPARATOR = ' ';
 
+// TODO: Merge this with Compose now that it's the only subclass.
 export class EmailCompose extends Compose {
   private autocompleteRange_: Range|null;
 
