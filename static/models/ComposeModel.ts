@@ -78,7 +78,7 @@ export class ComposeModel extends Model {
     return false;
   }
 
-  async send() {
+  async send(sanitizedBodyText: string) {
     if (this.hasInvalidAddresses_(this.to_)) {
       alert(`To field has an invalid email address: ${this.to_}`);
       return;
@@ -107,7 +107,7 @@ export class ComposeModel extends Model {
     this.sending_ = false;
 
     return {
-      to: to, subject: this.subject_, body: this.body_,
+      to: to, subject: this.subject_, body: sanitizedBodyText,
     }
   }
 }

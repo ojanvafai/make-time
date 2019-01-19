@@ -187,6 +187,10 @@ export class EmailCompose extends HTMLElement {
     return this.content.textContent;
   }
 
+  get rawValue() {
+    return this.content.innerHTML;
+  }
+
   get value() {
     let cloned = <HTMLElement>this.content.cloneNode(true);
     let emails = cloned.querySelectorAll(`a.${EMAIL_CLASS_NAME}`);

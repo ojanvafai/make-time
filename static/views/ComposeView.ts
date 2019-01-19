@@ -182,7 +182,7 @@ export class ComposeView extends View {
     this.model_.setTo(this.to_.value);
     this.model_.setInlineTo(this.inlineToText_());
     this.model_.setSubject(this.subject_.value);
-    this.model_.setBody(this.body_.value);
+    this.model_.setBody(this.body_.rawValue);
     if (!skipFlushToDisk)
       await this.model_.flush();
   }
@@ -202,7 +202,7 @@ export class ComposeView extends View {
   }
 
   async send_() {
-    let sent = await this.model_.send();
+    let sent = await this.model_.send(this.body_.value);
 
     if (this.shouldAutoSend()) {
       sent = defined(sent);
