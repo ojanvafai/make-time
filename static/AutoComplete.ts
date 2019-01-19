@@ -50,8 +50,7 @@ export class AutoComplete extends HTMLElement {
         }
       } else {
         for (let address of contact.emails) {
-          let lowercase = address.toLowerCase();
-          if (lowercase.split('@')[0].includes(search))
+          if (address.includes(search))
             results.push({name: contact.name, address: address});
         }
       }
