@@ -11,7 +11,6 @@ export class SubmitEvent extends Event {
   }
 }
 
-// TODO: Merge this with Compose now that it's the only subclass.
 export class EmailCompose extends HTMLElement {
   private autocompleteRange_: Range|null;
   private autoComplete_: AutoComplete;

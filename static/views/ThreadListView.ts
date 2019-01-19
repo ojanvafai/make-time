@@ -1,9 +1,8 @@
 import {Action, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {SubmitEvent} from '../Compose.js';
 import {Contacts} from '../Contacts.js';
-import {EmailCompose} from '../EmailCompose.js';
+import {EmailCompose, SubmitEvent} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {RadialProgress} from '../RadialProgress.js';
