@@ -62,6 +62,7 @@ export class Actions extends HTMLElement {
     buttonContainer.style.cssText = `
       display: flex;
       flex-wrap: wrap;
+      flex: 1;
     `;
     this.append(buttonContainer);
 
@@ -139,6 +140,9 @@ export class Actions extends HTMLElement {
         font-size: 2em;
         display: flex;
         align-items: center;
+        justify-content: center;
+        width: 1em;
+        flex: 0 0 auto;
       `;
       overflowButton.textContent = this.showOverfow_ ? '«' : '»';
       overflowButton.addEventListener('click', () => {
