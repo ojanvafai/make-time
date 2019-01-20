@@ -35,7 +35,7 @@ export class ThreadRow extends HTMLElement {
     let label = document.createElement('label');
     this.label_ = label;
     label.style.cssText = `
-      width: 32px;
+      width: 40px;
       border-right: 0;
       display: flex;
       justify-content: center;
