@@ -54,9 +54,9 @@ export class Actions extends HTMLElement {
   private render_() {
     this.textContent = '';
 
-    let renderMini = !this.showOverfow_ && window.innerWidth < 600;
-    let actions =
-        (!renderMini && this.overflow_) ? this.allActions_() : this.actions_;
+    let renderMini =
+        !this.showOverfow_ && this.overflow_ && window.innerWidth < 600;
+    let actions = renderMini ? this.allActions_() : this.actions_;
 
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
@@ -77,14 +77,14 @@ export class Actions extends HTMLElement {
         white-space: nowrap;
         overflow: hidden;
         max-width: max-content;
-        min-width: 2em;
+        min-width: 3em;
         position: relative;
         background-color: ${backgroundColor};
         user-select: none;
       `;
 
       if (renderMini) {
-        button.style.flex = '1 1 0';
+        button.style.flex = '1 1 auto';
         button.style.paddingLeft = '1px';
         button.style.paddingRight = '1px';
       }
