@@ -63,17 +63,19 @@ let MUTE_ACTION = {
   destination: Labels.MUTED_LABEL,
 };
 
+// Next row action is the only navigation action that's not hidden as it allows
+// for efficient sequential triaging in either threadlist or single thread views
+// using only the toolbar buttons.
 let NEXT_ROW_ACTION = {
-  name: `Next row`,
-  description: `Focus the next row.`,
+  name: `Skip`,
+  description: `Go to the next row/thread.`,
   key: 'j',
-  hidden: true,
   repeatable: true,
 };
 
 let PREVIOUS_ROW_ACTION = {
   name: `Previous row`,
-  description: `Focus the previous row.`,
+  description: `Go to the previous row.`,
   key: 'k',
   hidden: true,
   repeatable: true,
@@ -129,26 +131,29 @@ let UNDO_ACTION = {
 };
 
 let MUST_DO_ACTION = {
-  name: `1: Must do`,
+  name: `Must do`,
   description: `Must do today. Literally won't go home till it's done.`,
   destination: Labels.MUST_DO_LABEL,
+  key: '1',
 };
 
 let URGENT_ACTION = {
-  name: `2: Urgent`,
+  name: `Urgent`,
   description: `Needs to happen ASAP.`,
   destination: Labels.URGENT_LABEL,
+  key: '2',
 };
 
 let BACKLOG_ACTION = {
-  name: `3: Backlog`,
+  name: `Backlog`,
   description:
       `Important for achieving my mission, but can be done at leisure. Aim to spend >60% of your time here.`,
   destination: Labels.BACKLOG_LABEL,
+  key: '3',
 };
 
 let NEEDS_FILTER_ACTION = {
-  name: `4: Needs filter`,
+  name: `Needs filter`,
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   destination: Labels.NEEDS_FILTER_LABEL,
@@ -164,11 +169,11 @@ let BASE_ACTIONS = [
   NEEDS_FILTER_ACTION,
   SPAM_ACTION,
   UNDO_ACTION,
+  NEXT_ROW_ACTION,
 ];
 
 let RENDER_ALL_ACTIONS = [
   PREVIOUS_ROW_ACTION,
-  NEXT_ROW_ACTION,
   PREVIOUS_QUEUE_ACTION,
   NEXT_QUEUE_ACTION,
   TOGGLE_FOCUSED_ACTION,
@@ -477,9 +482,14 @@ export class ThreadListView extends View {
     }
     switch (action) {
       case NEXT_ROW_ACTION: {
-        const nextRow = rowAtOffset(rows, this.focusedRow_, 1);
-        if (nextRow)
-          this.setFocus(nextRow);
+        let currentRow = this.renderedRow_ || this.focusedRow_;
+        const nextRow = rowAtOffset(rows, currentRow, 1);
+        if (nextRow) {
+          if (this.renderedRow_)
+            this.setRenderedRow_(nextRow);
+          else
+            this.setFocus(nextRow);
+        }
         break;
       }
       case PREVIOUS_ROW_ACTION: {

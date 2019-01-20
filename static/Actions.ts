@@ -74,9 +74,11 @@ export class Actions extends HTMLElement {
       button.onmouseleave = () => {
         tooltipElement.remove();
       };
-      let name = action.name;
-      button.innerHTML =
-          `<span class="shortcut">${name.charAt(0)}</span>${name.slice(1)}`;
+
+      let key = action.key || action.name.charAt(0);
+      let name = action.key ? `:${action.name}` : action.name.slice(1);
+      button.innerHTML = `<span class="shortcut">${key.toUpperCase()}</span>${name}`;
+
       this.append(button);
     }
   }
