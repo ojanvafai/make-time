@@ -43,6 +43,13 @@ export class Actions extends HTMLElement {
       if (action.hidden)
         continue;
       let button = document.createElement('button');
+      button.style.cssText = `
+        flex: 1 1 0;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: max-content;
+        min-width: 3em;
+      `;
       button.setAttribute('tooltip', action.description);
 
       button.onclick = () => this.takeAction(action);
@@ -77,7 +84,8 @@ export class Actions extends HTMLElement {
 
       let key = action.key || action.name.charAt(0);
       let name = action.key ? `:${action.name}` : action.name.slice(1);
-      button.innerHTML = `<span class="shortcut">${key.toUpperCase()}</span>${name}`;
+      button.innerHTML =
+          `<span class="shortcut">${key.toUpperCase()}</span>${name}`;
 
       this.append(button);
     }
