@@ -154,6 +154,7 @@ let BACKLOG_ACTION = {
 
 let NEEDS_FILTER_ACTION = {
   name: `Needs filter`,
+  shortName: 'Filter',
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   destination: Labels.NEEDS_FILTER_LABEL,
@@ -167,9 +168,12 @@ let BASE_ACTIONS = [
   URGENT_ACTION,
   BACKLOG_ACTION,
   NEEDS_FILTER_ACTION,
+  NEXT_ROW_ACTION,
+];
+
+let OVERFLOW_ACTIONS = [
   SPAM_ACTION,
   UNDO_ACTION,
-  NEXT_ROW_ACTION,
 ];
 
 let RENDER_ALL_ACTIONS = [
@@ -325,13 +329,12 @@ export class ThreadListView extends View {
   }
 
   updateActions_() {
+    let actions = this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
+    this.setActions([...actions, ...BASE_ACTIONS], OVERFLOW_ACTIONS);
     if (this.renderedRow_) {
-      this.setActions([...RENDER_ONE_ACTIONS, ...BASE_ACTIONS]);
       this.addToFooter(new Timer(
           this.autoStartTimer_, this.countDown_, this.timerDuration_,
           this.singleThreadContainer_));
-    } else {
-      this.setActions([...RENDER_ALL_ACTIONS, ...BASE_ACTIONS]);
     }
   }
 
