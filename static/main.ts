@@ -20,7 +20,6 @@ import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
 
-let contacts_ = new Contacts();
 let currentView_: View;
 
 // Extract these before rendering any threads since the threads can have
@@ -108,7 +107,7 @@ async function createView(viewType: VIEW, model: Model, params?: any) {
       return new CalendarView(<Calendar>model);
 
     case VIEW.Compose:
-      return new ComposeView(<ComposeModel>model, contacts_, params);
+      return new ComposeView(<ComposeModel>model, params);
 
     case VIEW.Todo:
       return await createThreadListView(
@@ -226,7 +225,7 @@ async function createThreadListView(
 
   return new ThreadListView(
       model, await getLabels(), content, updateLoaderTitle, setSubject,
-      showBackArrow, allowedReplyLength, contacts_, autoStartTimer, countDown,
+      showBackArrow, allowedReplyLength, autoStartTimer, countDown,
       timerDuration, bottomButtonUrl, bottomButtonText);
 }
 
@@ -299,7 +298,6 @@ function appendMenu() {
 async function onLoad() {
   appendMenu();
   await routeToCurrentLocation();
-  await contacts_.fetch(gapi.auth.getToken());
   await update();
   // Wait until we've fetched all the threads before trying to process updates
   // regularly.
@@ -308,27 +306,34 @@ async function onLoad() {
 
 onLoad();
 
-async function gcLocalStorage() {
+async function dailyUpdates() {
   let storage = new ServerStorage((await getSettings()).spreadsheetId);
-  let lastGCTime = storage.get(ServerStorage.KEYS.LAST_GC_TIME);
+  let lastGCTime = storage.get(ServerStorage.KEYS.LAST_DAILY_UPDATES_TIME);
   let oneDay = 24 * 60 * 60 * 1000;
-  if (!lastGCTime || Date.now() - lastGCTime > oneDay) {
-    let currentWeekNumber = getCurrentWeekNumber();
-    let keys = await IDBKeyVal.getDefault().keys();
-    for (let key of keys) {
-      let match = key.match(/^thread-(\d+)-\d+$/);
-      if (!match)
-        continue;
+  if (lastGCTime && (Date.now() - lastGCTime) < oneDay)
+    return;
 
-      // At this point, any threads in the inbox still should have been updated
-      // to the current week. So anything in another week should be stale
-      // and can be deleted.
-      let weekNumber = Number(match[1]);
-      if (weekNumber != currentWeekNumber)
-        await IDBKeyVal.getDefault().del(key);
-    }
-    await storage.writeUpdates(
-        [{key: ServerStorage.KEYS.LAST_GC_TIME, value: Date.now()}]);
+  await Contacts.getDefault().update();
+  await gcLocalStorage();
+
+  await storage.writeUpdates(
+      [{key: ServerStorage.KEYS.LAST_DAILY_UPDATES_TIME, value: Date.now()}]);
+}
+
+async function gcLocalStorage() {
+  let currentWeekNumber = getCurrentWeekNumber();
+  let keys = await IDBKeyVal.getDefault().keys();
+  for (let key of keys) {
+    let match = key.match(/^thread-(\d+)-\d+$/);
+    if (!match)
+      continue;
+
+    // At this point, any threads in the inbox still should have been updated
+    // to the current week. So anything in another week should be stale
+    // and can be deleted.
+    let weekNumber = Number(match[1]);
+    if (weekNumber != currentWeekNumber)
+      await IDBKeyVal.getDefault().del(key);
   }
 }
 
@@ -351,7 +356,7 @@ export async function update() {
     await Promise.all(
         [todoModel.update(), triageModel.update(), view.update()]);
 
-    await gcLocalStorage();
+    await dailyUpdates();
   } finally {
     isUpdating_ = false;
   }

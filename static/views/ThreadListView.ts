@@ -1,7 +1,6 @@
 import {Action, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {Contacts} from '../Contacts.js';
 import {EmailCompose, SubmitEvent} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
@@ -216,10 +215,9 @@ export class ThreadListView extends View {
            ...title: (HTMLElement|string)[]) => RadialProgress,
       private setSubject_: (...subject: (Node|string)[]) => void,
       private showBackArrow_: (show: boolean) => void,
-      private allowedReplyLength_: number, private contacts_: Contacts,
-      private autoStartTimer_: boolean, private countDown_: boolean,
-      private timerDuration_: number, bottomButtonUrl: string,
-      bottomButtonText: string) {
+      private allowedReplyLength_: number, private autoStartTimer_: boolean,
+      private countDown_: boolean, private timerDuration_: number,
+      bottomButtonUrl: string, bottomButtonText: string) {
     super();
 
     this.style.cssText = `
@@ -332,8 +330,8 @@ export class ThreadListView extends View {
 
     if (this.renderedRow_) {
       let timer = new Timer(
-        this.autoStartTimer_, this.countDown_, this.timerDuration_,
-        this.singleThreadContainer_);
+          this.autoStartTimer_, this.countDown_, this.timerDuration_,
+          this.singleThreadContainer_);
       this.addToFooter(timer);
       timer.style.top = `-${timer.offsetHeight}px`;
     }
@@ -731,7 +729,7 @@ export class ThreadListView extends View {
       width: 100%;
     `;
 
-    let compose = new EmailCompose(this.contacts_, true, true);
+    let compose = new EmailCompose(true, true);
     compose.style.cssText = `
       flex: 1;
       margin: 4px;

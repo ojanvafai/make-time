@@ -2,7 +2,6 @@ import {Action, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
 import {defined, getMyEmail} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {Contacts} from '../Contacts.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 
@@ -53,8 +52,7 @@ export class ComposeView extends View {
   private inlineTo_: AddressCompose;
 
   constructor(
-      private model_: ComposeModel, contacts: Contacts,
-      private params_: QueryParameters = {}) {
+      private model_: ComposeModel, private params_: QueryParameters = {}) {
     super();
 
     this.style.cssText = `
@@ -63,7 +61,7 @@ export class ComposeView extends View {
       height: 100%;
     `;
 
-    this.to_ = new AddressCompose(contacts);
+    this.to_ = new AddressCompose();
     this.to_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
     this.to_.style.flex = '1';
     this.appendLine_('To:\xa0', this.to_);
@@ -80,7 +78,7 @@ export class ComposeView extends View {
     `;
     this.appendLine_(this.subject_);
 
-    this.body_ = new EmailCompose(contacts);
+    this.body_ = new EmailCompose();
     this.body_.style.cssText = `
       flex: 1 1 0;
       margin: 4px;
@@ -94,7 +92,7 @@ export class ComposeView extends View {
         'input', this.debounceHandleUpdates_.bind(this));
     this.append(this.body_);
 
-    this.inlineTo_ = new AddressCompose(contacts, true);
+    this.inlineTo_ = new AddressCompose(true);
     this.inlineTo_.style.flex = '1';
 
     this.setActions(ACTIONS);

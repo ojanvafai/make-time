@@ -1,16 +1,10 @@
-import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, USER_ID} from './Base.js';
-import {IDBKeyVal} from './idb-keyval.js';
+import {assert, defined, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {Thread} from './Thread.js';
 import {ThreadUtils} from './ThreadUtils.js';
 
 let memoryCache: Map<string, Thread> = new Map();
-
-interface SerializedMessages {
-  historyId?: string;
-  messages?: gapi.client.gmail.Message[];
-}
 
 export class ThreadFetcher {
   private fetchPromise_:
@@ -31,7 +25,7 @@ export class ThreadFetcher {
       return entry;
     }
 
-    let data = await this.fetchFromDisk();
+    let data = await ThreadUtils.fetchFromDisk(this.id);
     if (!data && !onlyFetchFromDisk)
       data = await this.fetchFromNetwork();
     if (!data) {
@@ -62,51 +56,5 @@ export class ThreadFetcher {
     let messages = defined(resp.result.messages);
     await ThreadUtils.serializeMessageData(messages, this.id, this.historyId);
     return resp.result;
-  }
-
-  async fetchFromDisk(): Promise<SerializedMessages|null> {
-    let currentWeekKey = ThreadUtils.getKey(getCurrentWeekNumber(), this.id);
-    let localData = await IDBKeyVal.getDefault().get(currentWeekKey);
-
-    let oldKey;
-    if (!localData) {
-      oldKey = ThreadUtils.getKey(getPreviousWeekNumber(), this.id);
-      localData = await IDBKeyVal.getDefault().get(oldKey);
-    }
-
-    // TODO: Remove this once all clients have updated.
-    if (!localData) {
-      oldKey = ThreadUtils.getKey(getCurrentWeekNumber(), this.historyId);
-      localData = await IDBKeyVal.getDefault().get(oldKey);
-    }
-
-    // TODO: Remove this once all clients have updated.
-    if (!localData) {
-      oldKey = ThreadUtils.getKey(getPreviousWeekNumber(), this.historyId);
-      localData = await IDBKeyVal.getDefault().get(oldKey);
-    }
-
-    if (!localData)
-      return null;
-
-    let parsed = JSON.parse(localData);
-    // TODO: Remove this version below once all clients have updated.
-    if (Array.isArray(parsed)) {
-      if (!oldKey)
-        oldKey = currentWeekKey;
-
-      parsed = {
-        historyId: this.historyId,
-        messages: parsed,
-      }
-    }
-
-    if (oldKey) {
-      // TODO: Use the localData string once we remove the isArray block above.
-      await IDBKeyVal.getDefault().del(oldKey);
-      await IDBKeyVal.getDefault().set(currentWeekKey, JSON.stringify(parsed));
-    }
-
-    return parsed;
   }
 }

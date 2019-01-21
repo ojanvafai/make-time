@@ -2,7 +2,6 @@ import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
 
 import {AutoComplete, EntrySelectedEvent} from './AutoComplete.js';
 import {assert, defined, ParsedAddress, serializeAddress} from './Base.js';
-import {Contacts} from './Contacts.js';
 
 let CHIP_BORDER_COLOR = '#dadce0';
 
@@ -12,7 +11,7 @@ export class AddressCompose extends HTMLElement {
   private input_: HTMLInputElement;
   private addressContainer_: HTMLElement;
 
-  constructor(contacts: Contacts, private disabled_?: boolean) {
+  constructor(private disabled_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -27,7 +26,7 @@ export class AddressCompose extends HTMLElement {
     `;
 
     this.preventAutoComplete_ = false;
-    this.autoComplete_ = new AutoComplete(contacts);
+    this.autoComplete_ = new AutoComplete();
 
     this.addressContainer_ = document.createElement('div');
     this.addressContainer_.style.cssText = `

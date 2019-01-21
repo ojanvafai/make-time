@@ -272,8 +272,7 @@ export class Message {
     }
   }
 
-  // TODO: Restructure so people can search over the plain text of the emails as
-  // well.
+  // TODO: Use addressparser.
   extractEmails_(str: string) {
     var regex = new RegExp('<(.*?)>|(\\S*?@\\S*)', 'g');
     str = str.toLowerCase();

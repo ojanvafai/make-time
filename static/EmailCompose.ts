@@ -1,6 +1,5 @@
 import {AutoComplete, AutoCompleteEntry, EntrySelectedEvent} from './AutoComplete.js';
 import {notNull} from './Base.js';
-import {Contacts} from './Contacts.js';
 
 const SEPARATOR = ' ';
 const EMAIL_CLASS_NAME = 'mk-email';
@@ -18,16 +17,14 @@ export class EmailCompose extends HTMLElement {
   private placeholder_: string|undefined;
   static EMAIL_CLASS_NAME: string;
 
-  constructor(
-      contacts: Contacts, isSingleline?: boolean,
-      private putMenuAbove_?: boolean) {
+  constructor(isSingleline?: boolean, private putMenuAbove_?: boolean) {
     super();
 
     this.style.display = 'flex';
 
     this.autocompleteRange_ = null;
 
-    this.autoComplete_ = new AutoComplete(contacts);
+    this.autoComplete_ = new AutoComplete();
     this.autoComplete_.addEventListener(
         EntrySelectedEvent.NAME,
         (e) => this.submitAutocomplete_((<EntrySelectedEvent>e).entry));

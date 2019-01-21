@@ -1,3 +1,4 @@
+import {defined} from './Base.js';
 import {Contacts} from './Contacts.js';
 
 export class EntrySelectedEvent extends Event {
@@ -22,8 +23,9 @@ window.customElements.define('mt-auto-complete-entry', AutoCompleteEntry);
 
 export class AutoComplete extends HTMLElement {
   private index_: number;
+  private contacts_: Contacts;
 
-  constructor(private contacts_: Contacts) {
+  constructor() {
     super();
     // TODO: Fix box shadow to respect whether the menu is above or below.
     this.style.cssText = `
@@ -33,6 +35,8 @@ export class AutoComplete extends HTMLElement {
       box-shadow: 2px -2px 10px 1px lightgrey;
     `;
     this.index_ = 0;
+    // Setup contacts in the constructor so the data is fetched off disk early.
+    this.contacts_ = Contacts.getDefault();
   }
 
   getCandidates(search: string) {
@@ -56,19 +60,29 @@ export class AutoComplete extends HTMLElement {
       }
     }
 
-    // Include whatever the user is typing in case it's not in their contacts or
-    // if the contacts API is down.
-    results.push({name: '', address: search});
+    if (results.length) {
+      // TODO: Put +foo address after the main ones and prefer things that start
+      // with the search text over substring matching.
+      if (this.contacts_.getSendCounts()) {
+        let counts = defined(this.contacts_.getSendCounts());
+        results.sort((a, b) => {
+          let aCount = counts.get(a.address) || 0;
+          let bCount = counts.get(b.address) || 0;
+          return bCount - aCount;
+        });
+      }
+      results = results.splice(0, 4);
+    } else {
+      // Include whatever the user is typing in case it's not in their contacts
+      // or if the contacts API is down.
+      results.push({name: '', address: search});
+    }
 
-    // TODO: Sort the results to put +foo address after the main ones.
-    // Prefer things that start with the search text over substring matching.
-    // Sort by usage?
-    results = results.splice(0, 4);
     return results;
   }
 
   render(search: string) {
-    if (this.contacts_.getAll().length)
+    if (Contacts.getDefault().getAll().length)
       this.classList.remove('no-contacts');
     else
       this.classList.add('no-contacts');
