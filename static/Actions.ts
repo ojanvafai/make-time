@@ -63,10 +63,10 @@ export class Actions extends HTMLElement {
       button.style.cssText = `
         white-space: nowrap;
         overflow: hidden;
-        max-width: max-content;
         position: relative;
         background-color: ${backgroundColor};
         user-select: none;
+        min-width: 3em;
       `;
 
       if (renderMini) {
