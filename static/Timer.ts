@@ -17,8 +17,10 @@ export class Timer extends HTMLElement {
       display: block;
       font-size: 32px;
       padding: 4px;
+      position: absolute;
+      right: 0;
+      bottom: 0;
     `;
-
 
     if (countDown_) {
       // Never autostart the timer on the first thread.

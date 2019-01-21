@@ -30,8 +30,8 @@ export abstract class View extends HTMLElement {
     return false;
   }
 
-  protected setActions(actions: Action[], overflow?: Action[]) {
-    this.actions_.setActions(actions, overflow);
+  protected setActions(actions: Action[]) {
+    this.actions_.setActions(actions);
     this.setFooter(this.actions_);
   }
 

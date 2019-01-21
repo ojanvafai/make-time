@@ -40,6 +40,7 @@ let ARCHIVE_ACTION = {
 
 let QUICK_REPLY_ACTION = {
   name: `Quick reply`,
+  shortName: `Reply`,
   description: `Give a short reply.`,
 };
 
@@ -168,12 +169,9 @@ let BASE_ACTIONS = [
   URGENT_ACTION,
   BACKLOG_ACTION,
   NEEDS_FILTER_ACTION,
-  NEXT_ROW_ACTION,
-];
-
-let OVERFLOW_ACTIONS = [
-  SPAM_ACTION,
   UNDO_ACTION,
+  SPAM_ACTION,
+  NEXT_ROW_ACTION,
 ];
 
 let RENDER_ALL_ACTIONS = [
@@ -330,11 +328,14 @@ export class ThreadListView extends View {
 
   updateActions_() {
     let actions = this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
-    this.setActions([...actions, ...BASE_ACTIONS], OVERFLOW_ACTIONS);
+    this.setActions([...actions, ...BASE_ACTIONS]);
+
     if (this.renderedRow_) {
-      this.addToFooter(new Timer(
-          this.autoStartTimer_, this.countDown_, this.timerDuration_,
-          this.singleThreadContainer_));
+      let timer = new Timer(
+        this.autoStartTimer_, this.countDown_, this.timerDuration_,
+        this.singleThreadContainer_);
+      this.addToFooter(timer);
+      timer.style.top = `-${timer.offsetHeight}px`;
     }
   }
 
