@@ -1,4 +1,6 @@
-import {defined, notNull} from './Base.js';
+import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
+
+import {defined, notNull, ParsedAddress} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -39,9 +41,9 @@ export class MailProcessor {
     await this.triageModel_.addThread(thread);
   }
 
-  endsWithAddress(addresses: string[], filterAddress: string) {
+  endsWithAddress(addresses: ParsedAddress[], filterAddress: string) {
     for (var j = 0; j < addresses.length; j++) {
-      if (addresses[j].endsWith(filterAddress))
+      if (addresses[j].address.endsWith(filterAddress))
         return true;
     }
     return false;
@@ -57,18 +59,18 @@ export class MailProcessor {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  startsWithAddress(addresses: string[], filterAddress: string) {
+  startsWithAddress(addresses: ParsedAddress[], filterAddress: string) {
     var parts = this.escapeRegExp(filterAddress).split('@');
     var regexp = '^' + parts[0] + '(?:\\+[^@]*?)?@' + parts[1];
     for (var j = 0; j < addresses.length; j++) {
-      if (this.matchesRegexp(regexp, addresses[j]))
+      if (this.matchesRegexp(regexp, addresses[j].address))
         return true;
     }
     return false;
   }
 
-  containsAddress(addresses: string[]|undefined, filterAddressCsv: string) {
-    if (!addresses)
+  containsAddress(addresses: ParsedAddress[], filterAddressCsv: string) {
+    if (!addresses.length)
       return false;
 
     var filterAddresses =
@@ -217,29 +219,25 @@ export class MailProcessor {
         return false;
       matches = true;
     }
+
+    let parsedFrom = message.from ? parseAddressList(message.from) : [];
+    let parsedTo = message.to ? parseAddressList(message.to) : [];
+    let parsedCc = message.cc ? parseAddressList(message.cc) : [];
+    let parsedBcc = message.bcc ? parseAddressList(message.bcc) : [];
+    let parsedToCcBcc = [...parsedTo, ...parsedCc, ...parsedBcc];
+
     if (rule.nocc) {
-      let emailCount = 0;
-
-      if (message.toEmails)
-        emailCount += message.toEmails.length;
-      if (message.ccEmails)
-        emailCount += message.ccEmails.length;
-      if (message.bccEmails)
-        emailCount += message.bccEmails.length;
-
-      if (emailCount != 1)
+      if (parsedToCcBcc.length != 1)
         return false;
       matches = true;
     }
     if (rule.to) {
-      if (!this.containsAddress(message.toEmails, rule.to) &&
-          !this.containsAddress(message.ccEmails, rule.to) &&
-          !this.containsAddress(message.bccEmails, rule.to))
+      if (!this.containsAddress(parsedToCcBcc, rule.to))
         return false;
       matches = true;
     }
     if (rule.from) {
-      if (!this.containsAddress(message.fromEmails, rule.from))
+      if (!this.containsAddress(parsedFrom, rule.from))
         return false;
       matches = true;
     }

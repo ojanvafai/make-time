@@ -1,3 +1,5 @@
+import parseAddressList from '../../deps/emailjs-addressparser/addressparser.js';
+
 import {assert} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {Thread, UpdatedEvent} from '../Thread.js';
@@ -136,7 +138,12 @@ export class ThreadRow extends HTMLElement {
     from.style.cssText = `
       overflow: hidden;
     `;
-    from.textContent = lastMessage.fromName || '';
+    if (lastMessage.from) {
+      let parsed = parseAddressList(lastMessage.from)[0];
+      from.textContent = parsed.name || parsed.address;
+    } else {
+      from.textContent = '';
+    }
 
     let count = document.createElement('div');
     count.style.cssText = `

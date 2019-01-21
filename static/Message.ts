@@ -26,17 +26,9 @@ export class Message {
   subject: string|undefined;
   date!: Date;
   from: string|undefined;
-  fromEmails: string[]|undefined;
-  fromName: string|undefined;
   to: string|undefined;
-  toEmails: string[]|undefined;
-  toName: string|undefined;
   cc: string|undefined;
-  ccEmails: string[]|undefined;
-  ccName: string|undefined;
   bcc: string|undefined;
-  bccEmails: string[]|undefined;
-  bccName: string|undefined;
   messageId: string|undefined;
   listId: string|undefined;
   isUnread: boolean;
@@ -67,20 +59,15 @@ export class Message {
           break;
         case 'from':
           this.from = value;
-          this.fromEmails = this.extractEmails_(this.from);
-          this.fromName = this.extractName_(this.from);
           break;
         case 'to':
           this.to = value;
-          this.toEmails = this.extractEmails_(this.to);
           break;
         case 'cc':
           this.cc = value;
-          this.ccEmails = this.extractEmails_(this.cc);
           break;
         case 'bcc':
           this.bcc = value;
-          this.bccEmails = this.extractEmails_(this.bcc);
           break;
         case 'message-id':
           this.messageId = value;
@@ -270,29 +257,6 @@ export class Message {
       attachmentData.image.src =
           `data:${attachmentData.attachment.contentType},${data}`;
     }
-  }
-
-  // TODO: Use addressparser.
-  extractEmails_(str: string) {
-    var regex = new RegExp('<(.*?)>|(\\S*?@\\S*)', 'g');
-    str = str.toLowerCase();
-    var emails: string[] = [];
-    var match;
-    while ((match = regex.exec(str.toLowerCase())) !== null) {
-      for (var i = 1; i < match.length; ++i) {
-        if (match[i]) {
-          emails.push(match[i]);
-        }
-      }
-    }
-    return emails;
-  }
-
-  extractName_(str: string) {
-    let parts = str.split('<');
-    if (parts.length > 1)
-      return parts[0].trim();
-    return str;
   }
 
   parseAttachment_(attachment: gapi.client.gmail.MessagePart) {

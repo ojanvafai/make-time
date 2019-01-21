@@ -1,3 +1,5 @@
+import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
+
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 
@@ -60,12 +62,13 @@ export class RenderedThread extends HTMLElement {
     from.style.cssText = `color: black`;
 
     if (processedMessage.from) {
-      if (processedMessage.from.includes('<')) {
+      let parsed = parseAddressList(processedMessage.from)[0];
+      if (parsed.name) {
         let b = document.createElement('b');
-        b.append(<string>processedMessage.fromName);
-        from.append(b, ' <', (<string[]>processedMessage.fromEmails)[0], '>');
+        b.append(parsed.name);
+        from.append(b, ' <', parsed.address, '>');
       } else {
-        from.append(processedMessage.from);
+        from.append(parsed.address);
       }
     }
 
