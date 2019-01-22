@@ -245,7 +245,7 @@ export class ThreadListView extends View {
     });
 
     this.rowGroupContainer_.addEventListener('focusRow', (e: Event) => {
-      this.setFocus(<ThreadRow>e.target);
+      this.setFocus_(<ThreadRow>e.target);
     });
 
     this.singleThreadContainer_ = document.createElement('div');
@@ -399,12 +399,12 @@ export class ThreadListView extends View {
       } else {
         // Intentionally call even if nextRow is null to clear out the focused
         // row if there's nothing left to focus.
-        this.setFocus(nextRow);
+        this.setFocus_(nextRow);
       }
     }
 
     if (!this.renderedRow_ && (!this.focusedRow_ || this.isAutoFocusFirstRow_))
-      this.setFocus(newRows[0], true);
+      this.setFocus_(newRows[0], true);
 
     if (this.hasNewRenderedRow_) {
       this.hasNewRenderedRow_ = false;
@@ -432,7 +432,7 @@ export class ThreadListView extends View {
     this.singleThreadContainer_.append(rendered);
   }
 
-  handleBestEffortChanged_() {
+  private handleBestEffortChanged_() {
     if (this.model_.hasBestEffortThreads()) {
       this.bestEffortButton_.textContent = `Triage best effort threads`;
       this.bestEffortButton_.style.display = '';
@@ -441,7 +441,7 @@ export class ThreadListView extends View {
     }
   }
 
-  setFocus(row: ThreadRow|null, isAutoFocusFirstRow?: boolean) {
+  private setFocus_(row: ThreadRow|null, isAutoFocusFirstRow?: boolean) {
     this.isAutoFocusFirstRow_ = !!isAutoFocusFirstRow;
 
     if (this.focusedRow_)
@@ -452,13 +452,15 @@ export class ThreadListView extends View {
       return;
 
     this.focusedRow_.focused = true;
+  }
 
-    // Don't want autofocusing to scroll the view.
-    if (!isAutoFocusFirstRow)
+  private setFocusAndScrollIntoView_(row: ThreadRow|null) {
+    this.setFocus_(row);
+    if (this.focusedRow_)
       this.focusedRow_.scrollIntoView({'block': 'center'});
   }
 
-  moveFocus(action: Action) {
+  private moveFocus_(action: Action) {
     let rows = this.getRows_();
     if (!rows.length)
       return;
@@ -467,11 +469,11 @@ export class ThreadListView extends View {
       switch (action) {
         case NEXT_ROW_ACTION:
         case NEXT_QUEUE_ACTION: {
-          this.setFocus(rows[0]);
+          this.setFocusAndScrollIntoView_(rows[0]);
           break;
         }
         case PREVIOUS_ROW_ACTION: {
-          this.setFocus(rows[rows.length - 1]);
+          this.setFocusAndScrollIntoView_(rows[rows.length - 1]);
           break;
         }
         case PREVIOUS_QUEUE_ACTION: {
@@ -490,14 +492,14 @@ export class ThreadListView extends View {
           if (this.renderedRow_)
             this.setRenderedRow_(nextRow);
           else
-            this.setFocus(nextRow);
+            this.setFocusAndScrollIntoView_(nextRow);
         }
         break;
       }
       case PREVIOUS_ROW_ACTION: {
         const previousRow = rowAtOffset(rows, this.focusedRow_, -1);
         if (previousRow)
-          this.setFocus(previousRow);
+          this.setFocusAndScrollIntoView_(previousRow);
         break;
       }
       case NEXT_QUEUE_ACTION: {
@@ -519,7 +521,7 @@ export class ThreadListView extends View {
     if (!group)
       return;
     let firstRow = <ThreadRow>group.querySelector('mt-thread-row');
-    this.setFocus(firstRow);
+    this.setFocusAndScrollIntoView_(firstRow);
   }
 
   async takeAction(action: Action) {
@@ -532,24 +534,24 @@ export class ThreadListView extends View {
       return;
     }
     if (action == NEXT_ROW_ACTION || action == PREVIOUS_ROW_ACTION) {
-      this.moveFocus(action);
+      this.moveFocus_(action);
       return;
     }
     if (action == TOGGLE_FOCUSED_ACTION) {
       // If nothing is focused, pretend the first email was focused.
       if (!this.focusedRow_)
-        this.moveFocus(NEXT_ROW_ACTION);
+        this.moveFocus_(NEXT_ROW_ACTION);
       if (!this.focusedRow_)
         return;
 
       this.focusedRow_.checked = !this.focusedRow_.checked;
-      this.moveFocus(NEXT_ROW_ACTION);
+      this.moveFocus_(NEXT_ROW_ACTION);
       return;
     }
     if (action == TOGGLE_QUEUE_ACTION) {
       // If nothing is focused, pretend the first email was focused.
       if (!this.focusedRow_)
-        this.moveFocus(NEXT_ROW_ACTION);
+        this.moveFocus_(NEXT_ROW_ACTION);
       if (!this.focusedRow_)
         return;
       const checking = !this.focusedRow_.checked;
@@ -560,11 +562,11 @@ export class ThreadListView extends View {
       }
     }
     if (action == NEXT_QUEUE_ACTION) {
-      this.moveFocus(action);
+      this.moveFocus_(action);
       return;
     }
     if (action == PREVIOUS_QUEUE_ACTION) {
-      this.moveFocus(action);
+      this.moveFocus_(action);
       return;
     }
     if (action == TOGGLE_QUEUE_ACTION) {
@@ -576,7 +578,7 @@ export class ThreadListView extends View {
     }
     if (action == VIEW_FOCUSED_ACTION) {
       if (!this.focusedRow_)
-        this.moveFocus(NEXT_ROW_ACTION);
+        this.moveFocus_(NEXT_ROW_ACTION);
       if (!this.focusedRow_)
         return;
       this.setRenderedRow_(this.focusedRow_);
@@ -593,7 +595,7 @@ export class ThreadListView extends View {
     this.singleThreadContainer_.textContent = '';
     this.scrollContainer_.scrollTop = this.scrollOffset_ || 0;
 
-    this.setFocus(focusedRow);
+    this.setFocusAndScrollIntoView_(focusedRow);
     this.setRenderedRow_(null);
     this.setSubject_('');
     this.updateActions_();
@@ -637,13 +639,13 @@ export class ThreadListView extends View {
         // an unselected email, focusedEmail_ should end up null, so set it even
         // if firstUnselectedRowAfterSelected is null.
         if (focusedRowIsSelected)
-          this.setFocus(firstUnselectedRowAfterFocused);
+          this.setFocus_(firstUnselectedRowAfterFocused);
       } else {
         // If no rows are selected, triage the focused row.
         if (!this.focusedRow_)
           return;
         threads.push(this.focusedRow_.thread);
-        this.moveFocus(NEXT_ROW_ACTION);
+        this.moveFocus_(NEXT_ROW_ACTION);
       }
 
       await this.model_.markThreadsTriaged(
