@@ -9,7 +9,7 @@ Make-time is an opinionated email client for Gmail.
 join this mailing list: https://groups.google.com/forum/#!forum/make-time.
 5. Login to firebase:
 ```
-$ ./node_modules/firebase-tools/lib/bin/firebase.js serve
+$ ./node_modules/firebase-tools/lib/bin/firebase.js login
 ```
 6. [Optional] Install Visual Studio Code. It work particularly well with typescript integration. See https://stackoverflow.com/posts/30319507/revisions.
 

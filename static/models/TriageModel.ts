@@ -3,6 +3,7 @@ import {fetchThreads} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
 import {MailProcessor} from '../MailProcessor.js';
 import {QueueSettings} from '../QueueSettings.js';
+import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
 import {ThreadFetcher} from '../ThreadFetcher.js';
@@ -21,6 +22,7 @@ export class TriageModel extends ThreadListModel {
   private needsArchivingThreads_: Thread[];
   private pendingThreads_: Thread[];
   private mailProcessor_: MailProcessor;
+  private daysToShow_?: number;
 
   constructor(
       private vacation_: string, labels: Labels, settings_: Settings,
@@ -34,6 +36,7 @@ export class TriageModel extends ThreadListModel {
     this.pendingThreads_ = [];
     this.mailProcessor_ =
         new MailProcessor(settings_, this, queueSettings_, labels);
+    this.daysToShow_ = settings_.get(ServerStorage.KEYS.DAYS_TO_SHOW);
   }
 
   handleTriaged(_destination: string|null, _thread: Thread) {}
@@ -46,13 +49,19 @@ export class TriageModel extends ThreadListModel {
     return data && data.goal == 'Best Effort';
   }
 
+  private threadDays_(thread: Thread) {
+    // TODO: Make this respect day boundaries instead of just doing 24 hours.
+    let messages = thread.getMessages();
+    let date = messages[messages.length - 1].date;
+    let oneDay = 24 * 60 * 60 * 1000;
+    return (Date.now() - date.getTime()) / (oneDay);
+  }
+
   // This function is all gross and hardcoded. Also, the constants themselves
   // aren't great. Would be best to know how long the email was actually in the
   // inbox rather than when the last email was sent, e.g. if someone was on
   // vacation. Could track the last N dequeue dates for each queue maybe?
   private isBankrupt_(thread: Thread) {
-    let messages = thread.getMessages();
-    let date = messages[messages.length - 1].date;
     let queue = thread.getQueue();
     let queueData = this.queueSettings_.get(queue);
 
@@ -62,9 +71,7 @@ export class TriageModel extends ThreadListModel {
     else if (queueData.queue == QueueSettings.MONTHLY)
       numDays = 42;
 
-    let oneDay = 24 * 60 * 60 * 1000;
-    let diffDays = (Date.now() - date.getTime()) / (oneDay);
-    return diffDays > numDays;
+    return this.threadDays_(thread) > numDays;
   }
 
   async bankruptThread(thread: Thread) {
@@ -74,14 +81,32 @@ export class TriageModel extends ThreadListModel {
     await thread.markTriaged(newLabel);
   }
 
-  async addThread(thread: Thread) {
+  // TODO: Should this handle bankrupting threads too? We'd want to keep this
+  // method sync, but could push threads onto an array to be bankrupted later
+  // and return false here.
+  shouldShowThread(thread: Thread) {
     // Threads with a priority have already been triaged, so don't add them.
     if (thread.getPriority())
-      return;
+      return false;
 
     if (this.vacation_ && (this.vacation_ !== thread.getDisplayableQueue()))
+      return false;
+
+    if (this.daysToShow_ !== undefined &&
+        this.threadDays_(thread) > this.daysToShow_)
+      return false;
+
+    return true;
+  }
+
+  async addThread(thread: Thread) {
+    // Call this before bankupting as we don't want to bankrupt things with a
+    // priority.
+    if (!this.shouldShowThread(thread))
       return;
 
+    // TODO: Merge this into shouldShowThread and stop overriding addThread
+    // entirely.
     if (!this.vacation_ && this.isBestEffortQueue_(thread)) {
       if (this.isBankrupt_(thread)) {
         await this.bankruptThread(thread);
