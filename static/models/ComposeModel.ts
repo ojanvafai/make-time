@@ -1,9 +1,8 @@
-import parseAddressList from '../../deps/emailjs-addressparser/addressparser.js';
-
 import {IDBKeyVal} from '../idb-keyval.js';
 import {send} from '../Mail.js';
 
 import {Model} from './Model.js';
+import { parseAddressList } from '../Base.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 

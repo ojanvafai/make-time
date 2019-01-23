@@ -1,7 +1,6 @@
-import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
 
 import {AutoComplete, EntrySelectedEvent} from './AutoComplete.js';
-import {assert, defined, ParsedAddress, serializeAddress} from './Base.js';
+import {assert, defined, ParsedAddress, serializeAddress, parseAddressList} from './Base.js';
 
 let CHIP_BORDER_COLOR = '#dadce0';
 

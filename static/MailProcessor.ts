@@ -1,6 +1,4 @@
-import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
-
-import {defined, notNull, ParsedAddress} from './Base.js';
+import {defined, notNull, ParsedAddress, parseAddressList} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';

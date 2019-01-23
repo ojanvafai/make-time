@@ -1,3 +1,4 @@
+import emailJsParseAddressList from '../deps/emailjs-addressparser/addressparser.js';
 import {gapiFetch} from './Net.js';
 
 export let USER_ID = 'me';
@@ -84,7 +85,7 @@ export async function getMyEmail() {
 }
 
 export interface ParsedAddress {
-  name: string, address: string
+  name: string, address: string,
 }
 
 // TODO: Delete this one AddressCompose no longer uses it.
@@ -110,6 +111,13 @@ export function parseAddress(address: string) {
   // the name?
   out.name = split.join('<').trim();
   return out;
+}
+
+// TODO: Make all the callers handle groups properly. For now just flatten
+// groups and pretend they don't exist.
+export function parseAddressList(addresses: string) {
+  let parsed = emailJsParseAddressList(addresses);
+  return parsed.flatMap(x => x.group || x);
 }
 
 export function serializeAddress(address: ParsedAddress) {

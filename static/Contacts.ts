@@ -1,6 +1,4 @@
-import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
-
-import {defined, USER_ID} from './Base.js';
+import {defined, USER_ID, parseAddressList} from './Base.js';
 import {fetchMessages} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
 

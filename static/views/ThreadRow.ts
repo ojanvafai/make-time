@@ -1,6 +1,4 @@
-import parseAddressList from '../../deps/emailjs-addressparser/addressparser.js';
-
-import {assert} from '../Base.js';
+import {assert, parseAddressList} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';

@@ -1,6 +1,4 @@
-import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
-
-import {defined, getMyEmail, serializeAddress, USER_ID} from './Base.js';
+import {defined, getMyEmail, serializeAddress, USER_ID, parseAddressList} from './Base.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {gapiFetch} from './Net.js';

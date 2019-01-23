@@ -1,5 +1,4 @@
-import parseAddressList from '../deps/emailjs-addressparser/addressparser.js';
-
+import {parseAddressList} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 
