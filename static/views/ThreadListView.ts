@@ -326,7 +326,7 @@ export class ThreadListView extends View {
 
   updateActions_() {
     let actions = this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
-    this.setActions([...actions, ...BASE_ACTIONS]);
+    this.setActions([...BASE_ACTIONS, ...actions]);
 
     if (this.renderedRow_) {
       let timer = new Timer(
