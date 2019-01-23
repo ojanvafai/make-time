@@ -35,8 +35,9 @@ export class ThreadFetcher {
 
     let processed = await ThreadUtils.processMessages(
         defined(data.messages), [], this.allLabels_);
-    let thread =
-        new Thread(this.id, this.historyId, processed, this.allLabels_);
+    // Make sure to use the historyId that matches the processed threads.
+    let thread = new Thread(
+        this.id, defined(data.historyId), processed, this.allLabels_);
     if (data.historyId != this.historyId)
       await thread.update();
     memoryCache.set(this.id, thread);
