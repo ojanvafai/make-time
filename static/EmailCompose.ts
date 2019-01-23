@@ -13,11 +13,13 @@ export class SubmitEvent extends Event {
 export class EmailCompose extends HTMLElement {
   private autocompleteRange_: Range|null;
   private autoComplete_: AutoComplete;
+  private bubble_: HTMLElement|null;
   protected content: HTMLElement;
   private placeholder_: string|undefined;
   static EMAIL_CLASS_NAME: string;
 
-  constructor(isSingleline?: boolean, private putMenuAbove_?: boolean) {
+  constructor(
+      private isSingleline_?: boolean, private putMenuAbove_?: boolean) {
     super();
 
     this.style.display = 'flex';
@@ -30,6 +32,8 @@ export class EmailCompose extends HTMLElement {
         (e) => this.submitAutocomplete_((<EntrySelectedEvent>e).entry));
     this.append(this.autoComplete_);
     this.hideAutocompleteMenu_();
+
+    this.bubble_ = null;
 
     this.content = document.createElement('div');
     this.content.style.cssText = `
@@ -45,57 +49,163 @@ export class EmailCompose extends HTMLElement {
       font-family: Arial, Helvetica, sans-serif;
       font-size: small;
     `;
-    this.content.contentEditable = isSingleline ? 'plaintext-only' : 'true';
+    this.content.contentEditable = 'true';
     this.content.addEventListener('blur', this.cancelAutocomplete_.bind(this));
     this.append(this.content);
 
-    this.addEventListener('keydown', async (e) => {
-      switch (e.key) {
-        case 'Escape':
-          if (this.updateIsAutocompleting())
-            this.cancelAutocomplete_();
-          else
-            this.dispatchEvent(new Event('cancel'));
-          return;
-
-        case 'Enter':
-          if (e.altKey || e.metaKey || e.shiftKey)
-            return;
-
-          if (this.updateIsAutocompleting()) {
-            this.submitAutocomplete_();
-            e.preventDefault();
-          } else if (isSingleline) {
-            this.dispatchEvent(new SubmitEvent(e.ctrlKey));
-            e.preventDefault();
-          }
-          return;
-
-        case 'ArrowUp':
-          if (this.updateIsAutocompleting()) {
-            e.preventDefault();
-            this.autoComplete_.adjustIndex(-1);
-          }
-          return;
-
-        case 'ArrowDown':
-          if (this.updateIsAutocompleting()) {
-            e.preventDefault();
-            this.autoComplete_.adjustIndex(1);
-          }
-          return;
-
-        case 'ArrowLeft':
-        case 'ArrowRight':
-          this.cancelAutocomplete_();
-          return;
-      }
-    });
-
+    this.addEventListener('click', (e) => this.handleClick_(e));
+    this.addEventListener('keydown', (e) => this.handleKeyDown_(e));
     this.addEventListener('input', async (e: Event) => {
       this.handleInput(<InputEvent>e);
       this.updatePlaceholder_();
     });
+  }
+
+  bubbleIsFocused_() {
+    if (!this.bubble_)
+      return false;
+    let node = document.activeElement;
+    while (node) {
+      if (node === this.bubble_)
+        return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  async showLinkBubble_() {
+    if (this.bubbleIsFocused_())
+      return;
+
+    if (this.bubble_)
+      this.bubble_.remove();
+
+    let selection = window.getSelection();
+    let range = selection.getRangeAt(0);
+    let link = this.getContainingLink_(range.commonAncestorContainer);
+    if (!link)
+      return;
+
+    let rect = link.getBoundingClientRect();
+
+    this.bubble_ = document.createElement('div');
+    this.bubble_.style.cssText = `
+      position: absolute;
+      top: ${rect.bottom}px;
+      left: ${rect.left}px;
+      white-space: nowrap;
+      border: 1px solid;
+      background-color: #eee;
+      box-shadow: 2px 2px 10px 1px lightgrey;
+      padding: 2px;
+    `;
+    let input = document.createElement('input');
+    input.value = link.href;
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === 'Escape')
+        notNull(this.bubble_).remove();
+    });
+    input.addEventListener('change', () => {
+      notNull(link).href = input.value;
+      this.dispatchEvent(new Event('input'));
+    });
+
+    let deleteButton = document.createElement('span');
+    deleteButton.textContent = '[remove]';
+    deleteButton.addEventListener('click', () => {
+      link = notNull(link);
+      link.before(link.textContent);
+      link.remove();
+      this.dispatchEvent(new Event('input'));
+    });
+
+    this.bubble_.append('URL ', input, ' ', deleteButton);
+    this.append(this.bubble_);
+  }
+
+  async handleClick_(_e: MouseEvent) {
+    this.showLinkBubble_();
+  }
+
+  async handleKeyDown_(e: KeyboardEvent) {
+    switch (e.key) {
+      case 'k':
+        // TODO: Just do metaKey on mac and ctrlKey elsewhere.
+        if (e.ctrlKey || e.metaKey) {
+          this.insertLink_();
+          e.preventDefault();
+        }
+        return;
+
+      case 'Escape':
+        if (this.updateIsAutocompleting())
+          this.cancelAutocomplete_();
+        else
+          this.dispatchEvent(new Event('cancel'));
+        return;
+
+      case 'Enter':
+        if (e.altKey || e.metaKey || e.shiftKey)
+          return;
+
+        if (this.updateIsAutocompleting()) {
+          this.submitAutocomplete_();
+          e.preventDefault();
+        } else if (this.isSingleline_) {
+          this.dispatchEvent(new SubmitEvent(e.ctrlKey));
+          e.preventDefault();
+        }
+        return;
+
+      case 'ArrowUp':
+        if (this.updateIsAutocompleting()) {
+          e.preventDefault();
+          this.autoComplete_.adjustIndex(-1);
+        }
+        return;
+
+      case 'ArrowDown':
+        if (this.updateIsAutocompleting()) {
+          e.preventDefault();
+          this.autoComplete_.adjustIndex(1);
+        }
+        return;
+
+      case 'ArrowLeft':
+      case 'ArrowRight':
+        this.cancelAutocomplete_();
+        return;
+    }
+
+    this.showLinkBubble_();
+  }
+
+  getContainingLink_(node: Node) {
+    let parent = node.parentNode;
+    while (parent) {
+      if (parent.nodeName === 'A')
+        return parent as HTMLLinkElement;
+      parent = parent.parentNode;
+    }
+    return null;
+  }
+
+  insertLink_() {
+    let selection = window.getSelection();
+    let range = selection.getRangeAt(0);
+    if (this.getContainingLink_(range.commonAncestorContainer)) {
+      alert('Selection is already in a link.');
+      return;
+    }
+
+    if (selection.isCollapsed) {
+      alert('Not supported. Select some text to insert a link.');
+    } else {
+      let contents = range.extractContents();
+      let link = document.createElement('a');
+      link.append(contents);
+      range.insertNode(link);
+    }
   }
 
   updatePlaceholder_() {
