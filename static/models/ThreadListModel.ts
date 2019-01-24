@@ -49,6 +49,7 @@ export abstract class ThreadListModel extends Model {
       void;
   protected abstract async fetch(): Promise<void>;
   protected abstract compareThreads(a: Thread, b: Thread): number;
+  protected abstract shouldShowThread(thread: Thread): boolean;
   abstract getGroupName(thread: Thread): string;
 
   async loadFromDisk() {
@@ -92,7 +93,8 @@ export abstract class ThreadListModel extends Model {
     let queuedRemoves = this.queuedRemoves_;
     this.queuedRemoves_ = [];
 
-    this.threads_ = threads.filter(x => !queuedRemoves.includes(x));
+    this.threads_ = threads.filter(
+        x => this.shouldShowThread(x) && !queuedRemoves.includes(x));
     this.threads_.sort(this.compareThreads.bind(this));
 
     let changed = oldThreads.length != this.threads_.length;
@@ -122,6 +124,8 @@ export abstract class ThreadListModel extends Model {
   }
 
   async addThread(thread: Thread) {
+    if (!this.shouldShowThread(thread))
+      return;
     this.threads_.push(thread);
     this.threads_.sort(this.compareThreads.bind(this));
     this.threadListChanged_();

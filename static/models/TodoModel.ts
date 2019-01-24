@@ -27,12 +27,12 @@ export class TodoModel extends ThreadListModel {
     await this.addThread(thread);
   }
 
-  async addThread(thread: Thread) {
+  shouldShowThread(thread: Thread) {
     let priority = thread.getPriority();
-    // Only threads with a priority should be added and
-    // only show MUST_DO_LABEL when on vacation.
-    if (priority && (!this.vacation_ || priority == Labels.MUST_DO_LABEL))
-      await super.addThread(thread);
+    // Only threads with a priority should be added and only show MUST_DO_LABEL
+    // when on vacation.
+    return !!(
+        priority && (!this.vacation_ || priority == Labels.MUST_DO_LABEL));
   }
 
   getGroupName(thread: Thread) {
