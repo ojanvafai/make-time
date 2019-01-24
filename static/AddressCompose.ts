@@ -1,6 +1,6 @@
 
 import {AutoComplete, EntrySelectedEvent} from './AutoComplete.js';
-import {assert, defined, ParsedAddress, serializeAddress, parseAddressList} from './Base.js';
+import {assert, defined, parseAddressList, ParsedAddress, serializeAddress} from './Base.js';
 
 let CHIP_BORDER_COLOR = '#dadce0';
 
@@ -57,11 +57,14 @@ export class AddressCompose extends HTMLElement {
         (e) => this.submitAutoComplete_((<EntrySelectedEvent>e).entry));
     this.append(this.autoComplete_);
 
+    // Make box-sizing:content-box so we can set the width to the chip
+    // offsetWidth when making chips editable and have them be the same width
+    // without needing to do extra work.
     this.input_.style.cssText = `
       border: 0;
       outline: 0;
       margin: 2px;
-      width: 100%;
+      box-sizing: content-box;
     `;
     this.input_.setAttribute('inputmode', 'email');
     this.input_.addEventListener(
@@ -145,6 +148,12 @@ export class AddressCompose extends HTMLElement {
     this.input_.before(chip);
     this.setInputValue_('');
 
+    // Put the input back at the end of the address container.
+    this.addressContainer_.append(this.input_);
+    this.input_.style.width = 'auto';
+    this.input_.style.flex = '1';
+    this.focusInput_();
+
     this.dispatchEvent(new Event('input'));
 
     this.cancelAutoComplete_();
@@ -194,7 +203,7 @@ export class AddressCompose extends HTMLElement {
   setInputValue_(value: string) {
     this.input_.value = value;
     this.preventAutoComplete_ = false;
-    this.input_.focus();
+    this.focusInput_();
 
     this.updateAutoComplete_();
   }
@@ -256,7 +265,13 @@ export class AddressCompose extends HTMLElement {
     if (!relatedTarget || !this.containsNode_(relatedTarget as Node) ||
         this.getContainingChip_(relatedTarget as Node)) {
       this.submitAutoComplete_();
+      this.input_.style.display = 'none';
     }
+  }
+
+  focusInput_() {
+    this.input_.style.display = '';
+    this.input_.focus();
   }
 
   isCursorAtEnd_() {
@@ -276,19 +291,23 @@ export class AddressCompose extends HTMLElement {
       else
         chip.remove();
     }
-    this.input_.focus();
+    this.focusInput_();
     this.dispatchEvent(new Event('input'));
   }
 
-  makeChipEditable_(chip: Element) {
+  makeChipEditable_(chip: HTMLElement) {
     if (this.disabled_)
       return;
 
     this.submitAutoComplete_();
     chip.before(this.input_);
+
+    this.input_.style.width = `${chip.offsetWidth}px`;
+    this.input_.style.flex = '';
+
     this.removeChips_(chip);
     this.setInputValue_(chip.textContent);
-    this.input_.focus();
+    this.focusInput_();
 
     this.input_.selectionStart = 0;
     this.input_.selectionEnd = this.input_.value.length;
@@ -322,7 +341,7 @@ export class AddressCompose extends HTMLElement {
   handleClick_(e: Event) {
     if (window.getSelection().isCollapsed &&
         !this.getContainingChip_(e.target as Node))
-      this.input_.focus();
+      this.focusInput_();
   }
 
   handleyKeyDown_(e: KeyboardEvent) {
@@ -402,7 +421,7 @@ export class AddressCompose extends HTMLElement {
     let selected = this.getSelectedChips_();
     if (selected)
       this.removeChips_(...selected);
-    this.input_.focus();
+    this.focusInput_();
   }
 
   handleCopy_(e: ClipboardEvent) {

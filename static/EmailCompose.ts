@@ -101,6 +101,8 @@ export class EmailCompose extends HTMLElement {
       this.bubble_.remove();
 
     let selection = window.getSelection();
+    if (selection.rangeCount === 0)
+      return;
     let range = selection.getRangeAt(0);
     let link = this.getContainingLink_(range.commonAncestorContainer);
     if (!link || !this.isInsideContent_(link))
@@ -215,6 +217,9 @@ export class EmailCompose extends HTMLElement {
 
   insertLink_() {
     let selection = window.getSelection();
+    if (selection.rangeCount === 0)
+      return;
+
     let range = selection.getRangeAt(0);
     if (this.getContainingLink_(range.commonAncestorContainer)) {
       alert('Selection is already in a link.');
