@@ -1,6 +1,6 @@
 import {Action, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
-import {defined, getMyEmail} from '../Base.js';
+import {getMyEmail} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
@@ -201,9 +201,10 @@ export class ComposeView extends View {
 
   async send_() {
     let sent = await this.model_.send(this.body_.value);
+    if (!sent)
+      return;
 
     if (this.shouldAutoSend()) {
-      sent = defined(sent);
       document.write(`<pre><h1>Sent</h1>
 <b>to:</b>${sent.to}
 
