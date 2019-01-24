@@ -154,7 +154,7 @@ export class Timer extends HTMLElement {
     if (this.countDown_) {
       this.timeLeft_--;
       if (this.timeLeft_ > 20) {
-        this.timeDisplay_.style.color = 'white';
+        this.timeDisplay_.style.color = '#ddd';
       } else if (this.timeLeft_ > 5) {
         this.timeDisplay_.style.color = 'black';
       } else {
@@ -167,7 +167,7 @@ export class Timer extends HTMLElement {
       } else if (this.timeLeft_ > 150) {
         this.timeDisplay_.style.color = 'black';
       } else {
-        this.timeDisplay_.style.color = 'white';
+        this.timeDisplay_.style.color = '#ddd';
       }
     }
 
