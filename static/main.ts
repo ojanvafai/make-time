@@ -6,6 +6,7 @@ import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {IDBKeyVal} from './idb-keyval.js';
+import {LongTasks} from './LongTasks.js';
 import {ComposeModel} from './models/ComposeModel.js';
 import {Model} from './models/Model.js';
 import {ThreadListModel} from './models/ThreadListModel.js';
@@ -34,6 +35,19 @@ const subject = getDefinitelyExistsElementById('subject');
 
 const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
+
+let longTasks_: LongTasks;
+function updateLongTaskTracking() {
+  // Read this setting out of local storage so we don't block on reading
+  // settings from the network to set this up.
+  if (localStorage.getItem(ServerStorage.KEYS.TRACK_LONG_TASKS)) {
+    longTasks_ = new LongTasks();
+    document.body.append(longTasks_);
+  } else if (longTasks_) {
+    longTasks_.remove();
+  }
+}
+updateLongTaskTracking();
 
 enum VIEW {
   Calendar,
@@ -302,6 +316,12 @@ async function onLoad() {
   // Wait until we've fetched all the threads before trying to process updates
   // regularly.
   setInterval(update, 1000 * 60);
+  let settings = await getSettings();
+  if (settings.get(ServerStorage.KEYS.TRACK_LONG_TASKS))
+    localStorage.setItem(ServerStorage.KEYS.TRACK_LONG_TASKS, 'true');
+  else
+    localStorage.removeItem(ServerStorage.KEYS.TRACK_LONG_TASKS);
+  updateLongTaskTracking();
 }
 
 onLoad();

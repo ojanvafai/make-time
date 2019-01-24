@@ -1,5 +1,5 @@
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, showDialog, notNull} from './Base.js';
+import {assert, defined, notNull, showDialog} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {ServerStorage, StorageUpdate} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
@@ -188,6 +188,13 @@ export class Settings {
       name: 'Log matching rules',
       description:
           `Log the matching filter rule to the chrome developer console.`,
+      default: false,
+      type: 'checkbox',
+    },
+    {
+      key: ServerStorage.KEYS.TRACK_LONG_TASKS,
+      name: 'Visualize jank',
+      description: `Flash the screen red whenever make-time is frozen.`,
       default: false,
       type: 'checkbox',
     },

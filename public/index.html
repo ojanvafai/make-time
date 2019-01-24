@@ -246,19 +246,10 @@
 
       let script = document.createElement('script');
       script.type = 'module';
-      if (shouldBundle) {
-        script.textContent = `
-import {update} from '/gen/bundle/main.js';
+      script.textContent = `
+import {update} from '/gen${shouldBundle ? '/bundle/' : '/'}main.js';
 window.update = update;`;
-      } else {
-        script.textContent = `
-import {update} from '/gen/main.js';
-import '/gen/LongTasks.js';
-window.update = update;`;
-      }
       document.body.append(script);
     </script>
-
-    <mt-long-tasks></mt-long-tasks>
   </body>
 </html>

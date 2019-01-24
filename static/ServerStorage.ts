@@ -68,6 +68,7 @@ interface KeyTypes {
   ALLOWED_REPLY_LENGTH: string;
   DAYS_TO_SHOW: string;
   LOG_MATCHING_RULES: string;
+  TRACK_LONG_TASKS: string;
 }
 
 let keys: KeyTypes = {
@@ -80,6 +81,7 @@ let keys: KeyTypes = {
   ALLOWED_REPLY_LENGTH: 'allowed_reply_length',
   DAYS_TO_SHOW: 'days_to_show',
   LOG_MATCHING_RULES: 'log_matching_rules',
+  TRACK_LONG_TASKS: 'track_long_tasks',
 };
 
 // List of keys stored in the backend sheet.
