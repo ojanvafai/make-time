@@ -73,7 +73,7 @@ export class EmailCompose extends HTMLElement {
     return false;
   }
 
-  async showLinkBubble_() {
+  showLinkBubbleForSelection_() {
     if (this.bubbleIsFocused_())
       return;
 
@@ -86,6 +86,10 @@ export class EmailCompose extends HTMLElement {
     if (!link)
       return;
 
+    this.showLinkBubble_(link);
+  }
+
+  showLinkBubble_(link: HTMLAnchorElement) {
     let rect = link.getBoundingClientRect();
 
     this.bubble_ = document.createElement('div');
@@ -124,7 +128,7 @@ export class EmailCompose extends HTMLElement {
   }
 
   async handleClick_(_e: MouseEvent) {
-    this.showLinkBubble_();
+    this.showLinkBubbleForSelection_();
   }
 
   async handleKeyDown_(e: KeyboardEvent) {
@@ -177,14 +181,14 @@ export class EmailCompose extends HTMLElement {
         return;
     }
 
-    this.showLinkBubble_();
+    this.showLinkBubbleForSelection_();
   }
 
   getContainingLink_(node: Node) {
     let parent = node.parentNode;
     while (parent) {
       if (parent.nodeName === 'A')
-        return parent as HTMLLinkElement;
+        return parent as HTMLAnchorElement;
       parent = parent.parentNode;
     }
     return null;
@@ -205,6 +209,8 @@ export class EmailCompose extends HTMLElement {
       let link = document.createElement('a');
       link.append(contents);
       range.insertNode(link);
+      this.showLinkBubble_(link);
+      notNull(notNull(this.bubble_).querySelector('input')).focus();
     }
   }
 
@@ -235,9 +241,9 @@ export class EmailCompose extends HTMLElement {
     let candidates = this.autoComplete_.render(this.autocompleteText());
 
     // If there's only one candidate, that means there were no matches in
-    // contacts as we always add a single fallback. If that candidate includes a
-    // space, then we know the user isn't typing an email address and we should
-    // cancel the autocomplete entirely.
+    // contacts as we always add a single fallback. If that candidate includes
+    // a space, then we know the user isn't typing an email address and we
+    // should cancel the autocomplete entirely.
     if (candidates.length == 1 &&
         (candidates[0].address.includes(' ') ||
          candidates[0].name.includes(' '))) {
@@ -393,8 +399,8 @@ export class EmailCompose extends HTMLElement {
     let selectedEntry = this.selectedEntry(selectedItem);
     range.insertNode(selectedEntry);
 
-    // If the next character is the separator, don't include it, but still move
-    // the cursor after it.
+    // If the next character is the separator, don't include it, but still
+    // move the cursor after it.
     let separator = document.createTextNode(SEPARATOR);
     range.collapse();
     range.insertNode(separator);
