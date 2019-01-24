@@ -16,6 +16,7 @@ export class EmailCompose extends HTMLElement {
   private bubble_: HTMLElement|null;
   protected content: HTMLElement;
   private placeholder_: string|undefined;
+  private boundSelectionChange_: () => void;
   static EMAIL_CLASS_NAME: string;
 
   constructor(
@@ -53,12 +54,21 @@ export class EmailCompose extends HTMLElement {
     this.content.addEventListener('blur', this.cancelAutocomplete_.bind(this));
     this.append(this.content);
 
-    this.addEventListener('click', (e) => this.handleClick_(e));
     this.addEventListener('keydown', (e) => this.handleKeyDown_(e));
     this.addEventListener('input', async (e: Event) => {
       this.handleInput(<InputEvent>e);
       this.updatePlaceholder_();
     });
+
+    this.boundSelectionChange_ = this.handleSelectionChange_.bind(this);
+  }
+
+  connectedCallback() {
+    document.addEventListener('selectionchange', this.boundSelectionChange_);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener('selectionchange', this.boundSelectionChange_);
   }
 
   bubbleIsFocused_() {
@@ -73,7 +83,17 @@ export class EmailCompose extends HTMLElement {
     return false;
   }
 
-  showLinkBubbleForSelection_() {
+  isInsideContent_(node: Node) {
+    let parent = node.parentNode;
+    while (parent) {
+      if (parent === this.content)
+        return true;
+      parent = parent.parentNode;
+    }
+    return false;
+  }
+
+  handleSelectionChange_() {
     if (this.bubbleIsFocused_())
       return;
 
@@ -83,7 +103,7 @@ export class EmailCompose extends HTMLElement {
     let selection = window.getSelection();
     let range = selection.getRangeAt(0);
     let link = this.getContainingLink_(range.commonAncestorContainer);
-    if (!link)
+    if (!link || !this.isInsideContent_(link))
       return;
 
     this.showLinkBubble_(link);
@@ -130,10 +150,6 @@ export class EmailCompose extends HTMLElement {
 
     this.bubble_.append('URL ', input, ' ', deleteButton);
     this.append(this.bubble_);
-  }
-
-  async handleClick_(_e: MouseEvent) {
-    this.showLinkBubbleForSelection_();
   }
 
   async handleKeyDown_(e: KeyboardEvent) {
@@ -185,8 +201,6 @@ export class EmailCompose extends HTMLElement {
         this.cancelAutocomplete_();
         return;
     }
-
-    this.showLinkBubbleForSelection_();
   }
 
   getContainingLink_(node: Node) {
