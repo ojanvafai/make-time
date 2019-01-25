@@ -165,10 +165,18 @@ export class EmailCompose extends HTMLElement {
         return;
 
       case 'Escape':
-        if (this.updateIsAutocompleting())
+        if (this.updateIsAutocompleting()) {
           this.cancelAutocomplete_();
-        else
+        } else {
           this.dispatchEvent(new Event('cancel'));
+          // Prevent the escape in quick reply both closing quick reply and
+          // taking you back to the threadlist.
+          // TODO: Technically we should only do this if stopPropagation is
+          // called on the dispatched cancel event. We could make that work with
+          // a class that wraps the KeyboardEvent and delgates the
+          // stopPropagation call if needed.
+          e.stopPropagation();
+        }
         return;
 
       case 'Enter':
