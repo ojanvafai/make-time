@@ -345,6 +345,8 @@ export class EmailCompose extends HTMLElement {
   set value(value) {
     this.content.innerHTML = value;
     this.updatePlaceholder_();
+    if (this.bubble_)
+      this.bubble_.remove();
   }
 
   get placeholder() {
