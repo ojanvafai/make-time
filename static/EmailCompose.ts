@@ -116,7 +116,7 @@ export class EmailCompose extends HTMLElement {
 
     this.bubble_ = document.createElement('div');
     this.bubble_.style.cssText = `
-      position: absolute;
+      position: fixed;
       top: ${rect.bottom}px;
       left: ${rect.left}px;
       white-space: nowrap;
@@ -134,6 +134,7 @@ export class EmailCompose extends HTMLElement {
         selection.selectAllChildren(link);
         selection.collapseToEnd();
         e.preventDefault();
+        e.stopPropagation();
       }
     });
     input.addEventListener('change', () => {
