@@ -17,6 +17,8 @@ let UNCHECKED_BACKGROUND_COLOR = 'white';
 
 export class ThreadRow extends HTMLElement {
   focused_: boolean;
+  checked_: boolean;
+  focusImpliesChecked_: boolean;
   rendered: RenderedThread;
   mark: boolean|undefined;
   private checkBox_: HTMLInputElement;
@@ -31,8 +33,10 @@ export class ThreadRow extends HTMLElement {
     `;
 
     this.focused_ = false;
+    this.checked_ = false;
+    this.focusImpliesChecked_ = true;
 
-    let label = document.createElement('label');
+    let label = document.createElement('div');
     this.label_ = label;
     label.style.cssText = `
       width: 40px;
@@ -41,19 +45,23 @@ export class ThreadRow extends HTMLElement {
       justify-content: center;
       align-items: center;
     `;
-    label.onclick = () => {
+    label.addEventListener('click', () => {
+      this.checked = !this.checked;
+      this.clearFocusImpliesChecked_();
       this.dispatchEvent(new Event('focusRow', {bubbles: true}));
-    };
+    });
 
     this.checkBox_ = document.createElement('input');
     this.checkBox_.type = 'checkbox';
+    // This pointer-events:none is so that clicking on the checkbox doesn't do
+    // anything since we toggle the checked state ourselves. For some reason
+    // e.preventDefault() on click doesn't seem to achieve the same result, but
+    // couldn't actually reduce it to a small test case to file a bug.
     this.checkBox_.style.cssText = `
       margin-left: 5px;
       margin-right: 5px;
+      pointer-events: none;
     `;
-    this.checkBox_.onchange = () => {
-      this.checked = this.checkBox_.checked;
-    };
 
     label.append(this.checkBox_);
     this.append(label);
@@ -96,8 +104,7 @@ export class ThreadRow extends HTMLElement {
   }
 
   resetState() {
-    // Intentionally use the public setters so that updateHighlight_ gets
-    // called.
+    // Intentionally use the public setters so that styles are updated.
     this.focused = false;
     this.checked = false;
   }
@@ -209,23 +216,39 @@ export class ThreadRow extends HTMLElement {
     return date.toLocaleString(undefined, options);
   }
 
+  clearFocusImpliesChecked_() {
+    this.focusImpliesChecked_ = false;
+    this.updateCheckbox_();
+  }
+
   get focused() {
     return this.focused_;
   }
 
   set focused(value) {
+    // Changing focus away from this row resets this bit so that later focusing
+    // it this checks it again.
+    if (!value)
+      this.focusImpliesChecked_ = true;
+
     this.focused_ = value;
     this.label_.style.backgroundColor = this.focused ? '#ccc' : '';
+    this.updateCheckbox_();
   }
 
   get checked() {
-    return this.checkBox_.checked;
+    return this.checked_ || (this.focused_ && this.focusImpliesChecked_);
   }
 
   set checked(value) {
-    this.checkBox_.checked = value;
+    this.checked_ = value;
     this.style.backgroundColor =
-        this.checkBox_.checked ? '#c2dbff' : UNCHECKED_BACKGROUND_COLOR;
+        this.checked_ ? '#c2dbff' : UNCHECKED_BACKGROUND_COLOR;
+    this.updateCheckbox_();
+  }
+
+  updateCheckbox_() {
+    this.checkBox_.checked = this.checked;
   }
 }
 

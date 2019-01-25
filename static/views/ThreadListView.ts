@@ -442,6 +442,9 @@ export class ThreadListView extends View {
   }
 
   private setFocus_(row: ThreadRow|null, isAutoFocusFirstRow?: boolean) {
+    if (this.focusedRow_ === row)
+      return;
+
     this.isAutoFocusFirstRow_ = !!isAutoFocusFirstRow;
 
     if (this.focusedRow_)
@@ -617,36 +620,31 @@ export class ThreadListView extends View {
           this.renderedRow_.thread, destination, expectedNewMessageCount);
     } else {
       let threads: Thread[] = [];
-      let firstUnselectedRowAfterFocused = null;
-      let focusedRowIsSelected = false;
+      let firstUncheckedRowAfterFocused = null;
+      let focusedRowIsChecked = false;
 
       let rows = this.getRows_();
       for (let child of rows) {
         if (child.checked) {
           if (child == this.focusedRow_)
-            focusedRowIsSelected = true;
+            focusedRowIsChecked = true;
           threads.push(child.thread);
           // ThreadRows get recycled, so clear the checked and focused state for
           // future use.
           child.resetState();
-        } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
-          firstUnselectedRowAfterFocused = child;
+        } else if (focusedRowIsChecked && !firstUncheckedRowAfterFocused) {
+          firstUncheckedRowAfterFocused = child;
         }
       }
 
-      if (threads.length) {
-        // Move focus to the first unselected email. If we aren't able to find
-        // an unselected email, focusedEmail_ should end up null, so set it even
-        // if firstUnselectedRowAfterSelected is null.
-        if (focusedRowIsSelected)
-          this.setFocus_(firstUnselectedRowAfterFocused);
-      } else {
-        // If no rows are selected, triage the focused row.
-        if (!this.focusedRow_)
-          return;
-        threads.push(this.focusedRow_.thread);
-        this.moveFocus_(NEXT_ROW_ACTION);
-      }
+      if (!threads.length)
+        return;
+
+      // Move focus to the first unselected email. If we aren't able to find an
+      // unselected email, focusedEmail_ should end up null, so set it even if
+      // firstUnselectedRowAfterSelected is null.
+      if (focusedRowIsChecked)
+        this.setFocus_(firstUncheckedRowAfterFocused);
 
       await this.model_.markThreadsTriaged(
           threads, destination, expectedNewMessageCount);
