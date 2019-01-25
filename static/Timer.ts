@@ -19,7 +19,6 @@ export class Timer extends HTMLElement {
       padding: 4px;
       position: absolute;
       right: 0;
-      bottom: 0;
     `;
 
     if (countDown_) {

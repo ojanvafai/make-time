@@ -33,6 +33,7 @@ export class AutoComplete extends HTMLElement {
       position: fixed;
       border: 1px solid;
       box-shadow: 2px -2px 10px 1px lightgrey;
+      z-index: 100;
     `;
     this.index_ = 0;
     // Setup contacts in the constructor so the data is fetched off disk early.

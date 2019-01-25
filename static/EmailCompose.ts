@@ -19,8 +19,7 @@ export class EmailCompose extends HTMLElement {
   private boundSelectionChange_: () => void;
   static EMAIL_CLASS_NAME: string;
 
-  constructor(
-      private isSingleline_?: boolean, private putMenuAbove_?: boolean) {
+  constructor(private isSingleline_?: boolean) {
     super();
 
     this.style.display = 'flex';
@@ -127,8 +126,8 @@ export class EmailCompose extends HTMLElement {
       background-color: #eee;
       box-shadow: 2px 2px 10px 1px lightgrey;
       padding: 2px;
+      z-index: 100;
     `;
-    this.positionRelativeTo_(this.bubble_, link.getBoundingClientRect());
 
     let input = document.createElement('input');
     input.value = link.href;
@@ -158,10 +157,18 @@ export class EmailCompose extends HTMLElement {
 
     this.bubble_.append('URL ', input, ' ', deleteButton);
     this.append(this.bubble_);
+
+    this.positionRelativeTo_(this.bubble_, link.getBoundingClientRect());
   }
 
   positionRelativeTo_(node: HTMLElement, rect: ClientRect) {
-    node.style.top = `${rect.bottom + 4}px`;
+    let buffer = 4;
+    let height = node.offsetHeight;
+    let putAbove =
+        document.documentElement.offsetHeight < (rect.bottom + buffer + height);
+    let top = putAbove ? rect.top - buffer - height : rect.bottom + buffer;
+    node.style.top = `${top}px`;
+
     node.style.left = `${rect.left}px`;
   }
 
@@ -295,13 +302,7 @@ export class EmailCompose extends HTMLElement {
 
     let range = notNull(this.getAutocompleteRange());
     let rect = range.getBoundingClientRect();
-    if (this.putMenuAbove_) {
-      this.autoComplete_.style.left = `${rect.left}px`;
-      this.autoComplete_.style.bottom =
-          `${document.documentElement.offsetHeight - rect.top}px`;
-    } else {
-      this.positionRelativeTo_(this.autoComplete_, rect);
-    }
+    this.positionRelativeTo_(this.autoComplete_, rect);
   }
 
   hideAutocompleteMenu_() {

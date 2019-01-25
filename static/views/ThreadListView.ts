@@ -731,7 +731,7 @@ export class ThreadListView extends View {
       width: 100%;
     `;
 
-    let compose = new EmailCompose(true, true);
+    let compose = new EmailCompose(true);
     compose.style.cssText = `
       flex: 1;
       margin: 4px;
