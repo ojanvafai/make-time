@@ -1,4 +1,4 @@
-import {defined, notNull, ParsedAddress, parseAddressList} from './Base.js';
+import {defined, notNull, parseAddressList, ParsedAddress} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -344,7 +344,8 @@ export class MailProcessor {
       let prefixedLabelName;
 
       let alreadyInTriaged = thread.getPriority();
-      let alreadyInNeedsTriage = thread.isInInbox() && thread.hasDefaultQueue();
+      let alreadyInNeedsTriage =
+          thread.isInInbox() && !thread.hasDefaultQueue();
       let labelNeedsQueueing =
           this.queuedLabelMap_.get(labelName).queue != QueueSettings.IMMEDIATE;
 

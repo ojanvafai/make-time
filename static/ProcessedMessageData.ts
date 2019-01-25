@@ -29,7 +29,7 @@ export class ProcessedMessageData {
   }
 
   hasDefaultQueue() {
-    return this.queue == DEFAULT_QUEUE;
+    return this.queue === DEFAULT_QUEUE;
   }
 
   async processLabelNames() {
