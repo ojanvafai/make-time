@@ -52,6 +52,7 @@ export class EmailCompose extends HTMLElement {
     `;
     this.content.contentEditable = 'true';
     this.content.addEventListener('blur', this.cancelAutocomplete_.bind(this));
+    this.content.addEventListener('click', (e) => this.handleClick_(e));
     this.append(this.content);
 
     this.addEventListener('keydown', (e) => this.handleKeyDown_(e));
@@ -69,6 +70,12 @@ export class EmailCompose extends HTMLElement {
 
   disconnectedCallback() {
     document.removeEventListener('selectionchange', this.boundSelectionChange_);
+  }
+
+  handleClick_(e: MouseEvent) {
+    // The contentEditable=false on mailto links makes them clickable again.
+    if (this.getContainingLink_(e.target as Node))
+      e.preventDefault();
   }
 
   bubbleIsFocused_() {
@@ -112,19 +119,17 @@ export class EmailCompose extends HTMLElement {
   }
 
   showLinkBubble_(link: HTMLAnchorElement) {
-    let rect = link.getBoundingClientRect();
-
     this.bubble_ = document.createElement('div');
     this.bubble_.style.cssText = `
       position: fixed;
-      top: ${rect.bottom}px;
-      left: ${rect.left}px;
       white-space: nowrap;
       border: 1px solid;
       background-color: #eee;
       box-shadow: 2px 2px 10px 1px lightgrey;
       padding: 2px;
     `;
+    this.positionRelativeTo_(this.bubble_, link.getBoundingClientRect());
+
     let input = document.createElement('input');
     input.value = link.href;
     input.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -153,6 +158,11 @@ export class EmailCompose extends HTMLElement {
 
     this.bubble_.append('URL ', input, ' ', deleteButton);
     this.append(this.bubble_);
+  }
+
+  positionRelativeTo_(node: HTMLElement, rect: ClientRect) {
+    node.style.top = `${rect.bottom + 4}px`;
+    node.style.left = `${rect.left}px`;
   }
 
   async handleKeyDown_(e: KeyboardEvent) {
@@ -214,12 +224,11 @@ export class EmailCompose extends HTMLElement {
     }
   }
 
-  getContainingLink_(node: Node) {
-    let parent = node.parentNode;
-    while (parent) {
-      if (parent.nodeName === 'A')
-        return parent as HTMLAnchorElement;
-      parent = parent.parentNode;
+  getContainingLink_(node: Node|null) {
+    while (node) {
+      if (node.nodeName === 'A')
+        return node as HTMLAnchorElement;
+      node = node.parentNode;
     }
     return null;
   }
@@ -286,12 +295,12 @@ export class EmailCompose extends HTMLElement {
 
     let range = notNull(this.getAutocompleteRange());
     let rect = range.getBoundingClientRect();
-    this.autoComplete_.style.left = `${rect.left}px`;
     if (this.putMenuAbove_) {
+      this.autoComplete_.style.left = `${rect.left}px`;
       this.autoComplete_.style.bottom =
           `${document.documentElement.offsetHeight - rect.top}px`;
     } else {
-      this.autoComplete_.style.top = `${rect.bottom + 4}px`;
+      this.positionRelativeTo_(this.autoComplete_, rect);
     }
   }
 
