@@ -46,6 +46,7 @@ export class AddressCompose extends HTMLElement {
 
     this.style.backgroundColor = 'white';
     this.tabIndex = 0;
+    this.addEventListener('focus', (e) => this.handleFocus_(e));
     this.addEventListener('click', (e) => this.handleClick_(e));
     this.addEventListener('keydown', (e) => this.handleyKeyDown_(e));
     this.addEventListener('copy', (e) => this.handleCopy_(e));
@@ -337,6 +338,10 @@ export class AddressCompose extends HTMLElement {
     }
 
     return selected;
+  }
+
+  handleFocus_(_e: FocusEvent) {
+    this.focusInput_();
   }
 
   handleClick_(e: Event) {
