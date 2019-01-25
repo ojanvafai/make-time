@@ -164,12 +164,16 @@ export class EmailCompose extends HTMLElement {
   positionRelativeTo_(node: HTMLElement, rect: ClientRect) {
     let buffer = 4;
     let height = node.offsetHeight;
-    let putAbove =
-        document.documentElement.offsetHeight < (rect.bottom + buffer + height);
+    let windowHeight = document.documentElement.offsetHeight;
+    let putAbove = windowHeight < (rect.bottom + buffer + height);
     let top = putAbove ? rect.top - buffer - height : rect.bottom + buffer;
     node.style.top = `${top}px`;
 
-    node.style.left = `${rect.left}px`;
+    let width = node.offsetWidth;
+    let windowWidth = document.documentElement.offsetWidth;
+    let shiftLeft = windowWidth < (rect.left + width)
+    let left = shiftLeft ? windowWidth - width : rect.left;
+    node.style.left = `${left}px`;
   }
 
   async handleKeyDown_(e: KeyboardEvent) {
