@@ -265,12 +265,13 @@ export class AddressCompose extends HTMLElement {
     if (!relatedTarget || !this.containsNode_(relatedTarget as Node) ||
         this.getContainingChip_(relatedTarget as Node)) {
       this.submitAutoComplete_();
-      this.input_.style.display = 'none';
+      this.input_.style.width = '0px';
     }
   }
 
   focusInput_() {
-    this.input_.style.display = '';
+    if (this.input_.clientWidth === 0)
+      this.input_.style.width = 'auto';
     this.input_.focus();
   }
 
