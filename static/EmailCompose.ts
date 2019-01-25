@@ -133,7 +133,6 @@ export class EmailCompose extends HTMLElement {
     input.value = link.href;
     input.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === 'Escape') {
-        notNull(this.bubble_).remove();
         let selection = window.getSelection();
         selection.selectAllChildren(link);
         selection.collapseToEnd();
