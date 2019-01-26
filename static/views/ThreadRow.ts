@@ -5,6 +5,8 @@ import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 
+export const FOCUS_THREAD_ROW_EVENT_NAME = 'focus-thread-row';
+
 interface DateFormatOptions {
   year: string;
   month: string;
@@ -18,7 +20,7 @@ let UNCHECKED_BACKGROUND_COLOR = 'white';
 export class ThreadRow extends HTMLElement {
   focused_: boolean;
   checked_: boolean;
-  focusImpliesChecked_: boolean;
+  focusImpliesSelected_: boolean;
   rendered: RenderedThread;
   mark: boolean|undefined;
   private checkBox_: HTMLInputElement;
@@ -34,7 +36,7 @@ export class ThreadRow extends HTMLElement {
 
     this.focused_ = false;
     this.checked_ = false;
-    this.focusImpliesChecked_ = true;
+    this.focusImpliesSelected_ = true;
 
     let label = document.createElement('div');
     this.label_ = label;
@@ -46,9 +48,8 @@ export class ThreadRow extends HTMLElement {
       align-items: center;
     `;
     label.addEventListener('click', () => {
-      this.checked = !this.checked;
-      this.clearFocusImpliesChecked_();
-      this.dispatchEvent(new Event('focusRow', {bubbles: true}));
+      this.checked = !this.selected;
+      this.focused = true;
     });
 
     this.checkBox_ = document.createElement('input');
@@ -216,11 +217,6 @@ export class ThreadRow extends HTMLElement {
     return date.toLocaleString(undefined, options);
   }
 
-  clearFocusImpliesChecked_() {
-    this.focusImpliesChecked_ = false;
-    this.updateCheckbox_();
-  }
-
   get focused() {
     return this.focused_;
   }
@@ -229,26 +225,32 @@ export class ThreadRow extends HTMLElement {
     // Changing focus away from this row resets this bit so that later focusing
     // it this checks it again.
     if (!value)
-      this.focusImpliesChecked_ = true;
+      this.focusImpliesSelected_ = true;
 
     this.focused_ = value;
     this.label_.style.backgroundColor = this.focused ? '#ccc' : '';
     this.updateCheckbox_();
+    this.dispatchEvent(new Event(FOCUS_THREAD_ROW_EVENT_NAME, {bubbles: true}));
+  }
+
+  get selected() {
+    return this.checked_ || (this.focused_ && this.focusImpliesSelected_);
   }
 
   get checked() {
-    return this.checked_ || (this.focused_ && this.focusImpliesChecked_);
+    return this.checked_;
   }
 
   set checked(value) {
     this.checked_ = value;
     this.style.backgroundColor =
         this.checked_ ? '#c2dbff' : UNCHECKED_BACKGROUND_COLOR;
+    this.focusImpliesSelected_ = false;
     this.updateCheckbox_();
   }
 
   updateCheckbox_() {
-    this.checkBox_.checked = this.checked;
+    this.checkBox_.checked = this.selected;
   }
 }
 

@@ -9,7 +9,7 @@ import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
-import {ThreadRow} from './ThreadRow.js';
+import {FOCUS_THREAD_ROW_EVENT_NAME, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
@@ -244,9 +244,10 @@ export class ThreadListView extends View {
       this.setRenderedRow_(<ThreadRow>e.target);
     });
 
-    this.rowGroupContainer_.addEventListener('focusRow', (e: Event) => {
-      this.setFocus_(<ThreadRow>e.target);
-    });
+    this.rowGroupContainer_.addEventListener(
+        FOCUS_THREAD_ROW_EVENT_NAME, (e: Event) => {
+          this.handleFocusRow_(<ThreadRow>e.target);
+        });
 
     this.singleThreadContainer_ = document.createElement('div');
     this.singleThreadContainer_.style.cssText = `
@@ -444,19 +445,23 @@ export class ThreadListView extends View {
   }
 
   private setFocus_(row: ThreadRow|null, isAutoFocusFirstRow?: boolean) {
+    this.isAutoFocusFirstRow_ = !!isAutoFocusFirstRow;
+    if (row)
+      row.focused = true;
+    else
+      this.clearFocus_();
+  }
+
+  clearFocus_() {
+    this.focusedRow_ = null;
+  }
+
+  private handleFocusRow_(row: ThreadRow|null) {
     if (this.focusedRow_ === row)
       return;
-
-    this.isAutoFocusFirstRow_ = !!isAutoFocusFirstRow;
-
     if (this.focusedRow_)
       this.focusedRow_.focused = false;
-
     this.focusedRow_ = row;
-    if (!this.focusedRow_)
-      return;
-
-    this.focusedRow_.focused = true;
   }
 
   private setFocusAndScrollIntoView_(row: ThreadRow|null) {
@@ -622,20 +627,20 @@ export class ThreadListView extends View {
           this.renderedRow_.thread, destination, expectedNewMessageCount);
     } else {
       let threads: Thread[] = [];
-      let firstUncheckedRowAfterFocused = null;
-      let focusedRowIsChecked = false;
+      let firstUnselectedRowAfterFocused = null;
+      let focusedRowIsSelected = false;
 
       let rows = this.getRows_();
       for (let child of rows) {
-        if (child.checked) {
+        if (child.selected) {
           if (child == this.focusedRow_)
-            focusedRowIsChecked = true;
+            focusedRowIsSelected = true;
           threads.push(child.thread);
           // ThreadRows get recycled, so clear the checked and focused state for
           // future use.
           child.resetState();
-        } else if (focusedRowIsChecked && !firstUncheckedRowAfterFocused) {
-          firstUncheckedRowAfterFocused = child;
+        } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
+          firstUnselectedRowAfterFocused = child;
         }
       }
 
@@ -645,8 +650,8 @@ export class ThreadListView extends View {
       // Move focus to the first unselected email. If we aren't able to find an
       // unselected email, focusedEmail_ should end up null, so set it even if
       // firstUnselectedRowAfterSelected is null.
-      if (focusedRowIsChecked)
-        this.setFocus_(firstUncheckedRowAfterFocused);
+      if (focusedRowIsSelected)
+        this.setFocus_(firstUnselectedRowAfterFocused);
 
       await this.model_.markThreadsTriaged(
           threads, destination, expectedNewMessageCount);

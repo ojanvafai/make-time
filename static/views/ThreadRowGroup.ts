@@ -62,11 +62,15 @@ export class ThreadRowGroup extends HTMLElement {
     this.selectRows_(false);
   }
 
-  selectRows_(value: boolean) {
-    // TODO: Give this a proper type.
-    let rows = <NodeListOf<any>>this.rowContainer_.childNodes;
+  selectRows_(select: boolean) {
+    let rows = <NodeListOf<ThreadRow>>this.rowContainer_.childNodes;
     for (let child of rows) {
-      child.checked = value;
+      child.checked = select;
+    }
+
+    if (select) {
+      let lastRow = rows[rows.length - 1];
+      lastRow.focused = true;
     }
   }
 
