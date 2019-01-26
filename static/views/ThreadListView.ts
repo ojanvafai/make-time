@@ -726,8 +726,7 @@ export class ThreadListView extends View {
     let container = document.createElement('div');
     container.style.cssText = `
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-wrap: wrap;
       width: 100%;
     `;
 
@@ -762,7 +761,16 @@ export class ThreadListView extends View {
     cancel.textContent = 'cancel';
     cancel.onclick = onClose;
 
-    container.append(compose, cancel, replyAllLabel, count, progress);
+    // Group these together so they wrap atomically.
+    let controls = document.createElement('div');
+    controls.style.cssText = `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+    controls.append(cancel, replyAllLabel, count, progress);
+
+    container.append(compose, controls);
 
     compose.addEventListener('cancel', onClose);
 
