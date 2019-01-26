@@ -201,6 +201,7 @@ export class ThreadListView extends View {
   private singleThreadContainer_: HTMLElement;
   private bestEffortButton_: HTMLElement;
   private renderedRow_: ThreadRow|null;
+  private renderedGroupName_: string|null;
   private scrollOffset_: number|undefined;
   private isSending_: boolean|undefined;
   private hasQueuedFrame_: boolean;
@@ -229,6 +230,7 @@ export class ThreadListView extends View {
     this.threadToRow_ = new WeakMap();
     this.focusedRow_ = null;
     this.renderedRow_ = null;
+    this.renderedGroupName_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
     this.isAutoFocusFirstRow_ = false;
@@ -395,10 +397,13 @@ export class ThreadListView extends View {
       }
 
       if (this.renderedRow_) {
-        if (nextRow)
+        if (nextRow &&
+            this.renderedGroupName_ ===
+                this.model_.getGroupName(nextRow.thread)) {
           this.setRenderedRowInternal_(nextRow);
-        else
+        } else {
           this.transitionToThreadList_(null);
+        }
       } else {
         // Intentionally call even if nextRow is null to clear out the focused
         // row if there's nothing left to focus.
@@ -663,6 +668,7 @@ export class ThreadListView extends View {
     if (this.renderedRow_)
       this.renderedRow_.rendered.remove();
     this.renderedRow_ = row;
+    this.renderedGroupName_ = row ? this.model_.getGroupName(row.thread) : null;
   }
 
   setRenderedRow_(row: ThreadRow|null) {
@@ -683,11 +689,10 @@ export class ThreadListView extends View {
     viewInGmailButton.setMessageId(messages[messages.length - 1].id);
     viewInGmailButton.style.display = 'inline-flex';
 
-    let subject = thread.getSubject();
-    let subjectText = document.createElement('div');
-    subjectText.style.flex = '1';
-    subjectText.append(subject, viewInGmailButton);
-    this.setSubject_(subjectText, this.model_.getGroupName(thread));
+    let subject = document.createElement('div');
+    subject.style.flex = '1';
+    subject.append(thread.getSubject());
+    this.setSubject_(subject, viewInGmailButton);
 
     let rendered = renderedRow.rendered;
     assert(
