@@ -9,8 +9,8 @@ export class Timer extends HTMLElement {
   overlay_: HTMLElement|null = null;
 
   constructor(
-      autoStart: boolean, private countDown_: boolean, private duration_: number,
-      private overlayContainer_: HTMLElement) {
+      autoStart: boolean, private countDown_: boolean,
+      private duration_: number, private overlayContainer_: HTMLElement) {
     super();
 
     this.style.cssText = `
@@ -21,15 +21,9 @@ export class Timer extends HTMLElement {
       right: 0;
     `;
 
-    if (countDown_) {
-      // Never autostart the timer on the first thread.
-      if (Timer.autoStart_ === undefined) {
-        Timer.autoStart_ = autoStart;
-        this.paused_ = true;
-      } else {
-        this.paused_ = !Timer.autoStart_;
-      }
-    }
+    if (Timer.autoStart_ === undefined)
+      Timer.autoStart_ = autoStart;
+    this.paused_ = !Timer.autoStart_;
 
     this.timeDisplay_ = document.createElement('span');
     this.timeDisplay_.style.cssText = `
@@ -72,9 +66,9 @@ export class Timer extends HTMLElement {
   }
 
   toggleTimer_() {
-    this.paused_ = !this.paused_;
-    if (this.paused_)
-      Timer.autoStart_ = false;
+    let shouldPlay = this.paused_;
+    this.paused_ = !shouldPlay;
+    Timer.autoStart_ = shouldPlay;
     this.updatePlayButton_();
   }
 

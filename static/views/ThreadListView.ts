@@ -327,14 +327,16 @@ export class ThreadListView extends View {
   updateActions_() {
     let actions = this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     this.setActions([...BASE_ACTIONS, ...actions]);
+    if (this.renderedRow_)
+      this.addTimer_();
+  }
 
-    if (this.renderedRow_) {
-      let timer = new Timer(
-          this.autoStartTimer_, this.countDown_, this.timerDuration_,
-          this.singleThreadContainer_);
-      this.addToFooter(timer);
-      timer.style.top = `-${timer.offsetHeight}px`;
-    }
+  addTimer_() {
+    let timer = new Timer(
+        this.autoStartTimer_, this.countDown_, this.timerDuration_,
+        this.singleThreadContainer_);
+    this.addToFooter(timer);
+    timer.style.top = `-${timer.offsetHeight}px`;
   }
 
   shouldSuppressActions() {
@@ -817,6 +819,7 @@ export class ThreadListView extends View {
 
     this.setActions([]);
     this.setFooter(container);
+    this.addTimer_();
 
     compose.focus();
   }
