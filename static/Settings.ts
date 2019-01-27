@@ -248,7 +248,7 @@ export class Settings {
       let contents = document.createElement('div');
       contents.style.overflow = 'auto';
       contents.append(
-          `make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage.\n\n`,
+          `make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage. This may change in the future.\n\n`,
           generateBackendLink);
 
       let dialog = showDialog(contents);
