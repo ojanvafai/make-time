@@ -34,6 +34,7 @@ export class RenderedThread extends HTMLElement {
     var messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
       padding: 0 8px;
+      word-break: break-word;
     `;
     messageDiv.className = 'message';
     messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
