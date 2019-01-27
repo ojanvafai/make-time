@@ -5,6 +5,7 @@
 
 import {AsyncOnce} from './AsyncOnce.js';
 import {assert, defined, getDefinitelyExistsElementById, notNull, showDialog, USER_ID} from './Base.js';
+import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
@@ -95,9 +96,17 @@ async function fetchTheSettingsThings() {
       await migrateLabels(labels_);
     });
   }
-  await settingThingsFetcher_.do();
+  try {
+    await settingThingsFetcher_.do();
+  } catch (e) {
+    showPleaseReload();
+  }
 }
 
+function showPleaseReload() {
+  ErrorLogger.log(
+      `Something went wrong loading MakeTime and you need to reload. This usually happens if you're not connected to the internet when loading MakeTime.`);
+}
 
 async function doLabelMigration(
     addLabelIds: string[], removeLabelIds: string[], query: string) {
@@ -153,22 +162,26 @@ export async function login() {
 
   let progress = updateLoaderTitle('login', 1, 'Logging in...');
 
-  await loadGapi();
-  await gapi.client.init(
-      {discoveryDocs: DISCOVERY_DOCS, clientId: CLIENT_ID, scope: SCOPES});
-  // Listen for sign-in state changes.
-  gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-  // Handle the initial sign-in state.
-  let isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-  updateSigninStatus(isSignedIn);
+  try {
+    await loadGapi();
+    await gapi.client.init(
+        {discoveryDocs: DISCOVERY_DOCS, clientId: CLIENT_ID, scope: SCOPES});
+    // Listen for sign-in state changes.
+    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+    // Handle the initial sign-in state.
+    let isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
+    updateSigninStatus(isSignedIn);
 
-  if (!isSignedIn) {
-    await new Promise((resolve) => {
-      assert(
-          !queuedLogin_,
-          'login() was called twice while waiting for login to finish.');
-      queuedLogin_ = resolve;
-    });
+    if (!isSignedIn) {
+      await new Promise((resolve) => {
+        assert(
+            !queuedLogin_,
+            'login() was called twice while waiting for login to finish.');
+        queuedLogin_ = resolve;
+      });
+    }
+  } catch (e) {
+    showPleaseReload();
   }
 
   progress.incrementProgress();
@@ -348,21 +361,21 @@ export function showHelp() {
   new HelpDialog(
       `make-time is an opinionated way of handling unreasonable amounts of email.
 
-<b style="font-size:120%">Disclaimers</b>
+<b style='font-size:120%'>Disclaimers</b>
 Patches welcome, but otherwise, I built it for my needs. :) Feature requests are very welcome though. Often you'll think of something I want that I don't have and I'll build it. Contact ojan@ or file issues at https://github.com/ojanvafai/make-time if you want to contribute, give feedback, etc.
 
-<span style="color: red">This is a side project. While I use it for my day to day email management, you might not want to. It has bugs.</span> They may be hard to deal with if you're not willing to dig into the code when they happen.
+<span style='color: red'>This is a side project. While I use it for my day to day email management, you might not want to. It has bugs.</span> They may be hard to deal with if you're not willing to dig into the code when they happen.
 
 <b style="font-size:120%">Keyboard shortcuts</b>
-Type "?" anywhere in make-time to see keyboard shortcuts.
+Type '?' anywhere in make-time to see keyboard shortcuts.
 
-<b style="font-size:120%">Triage</b>
+<b style='font-size:120%'>Triage</b>
 
 All the triage actions mark a thread as read, remove it from the inbox, and remove the maketime labels. <b>Aside from archiving messages (and bugs), maketime will only modify labels under the "maketime" parent label.</b> So you can do whatever you want with other labels.
 
 The goal of triage is to get in the flow of doing all the triage quickly. After triage is done, you enter make-time mode where you work through each thread in priority order. This helps avoid flip-flopping back and forth between quick triage and deep thinking.
 
-<b style="font-size:120%">Filtering</b>
+<b style='font-size:120%'>Filtering</b>
 
 Philosopy: Labels are a triage tool, not a search/organization tool. The goal is to have all your labels and inbox be empty when you're done with triage. The first filter that applies to a thread wins, so every thread gets exactly one label. This enables richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day. See the fillter settings dialog for more information.
 
@@ -370,8 +383,8 @@ Make-time processes all emails in your inbox and all emails in the maketime/unpr
 
 Whether you leave emails in your inbox by default or moved them into the unprocessed label so you don't see them in in gmail itself till they've been processed is up to you. If you want all your mail to be unprocessed by default, create a real gmail filter with:
     Has the words: -in:chats -label:mute -from:me
-    Do this: Skip Inbox, Apply label "maketime/unprocessed"
+  Do this: Skip Inbox,
+      Apply label 'maketime/unprocessed'
 
-<span style="color: red">Emails are only processed when make-time is open in a browser tab. Otherwise, your mail will stay in the unprocessed label. Would love to move this to a server cron, but this is a side project and I can't be bothered to figure out how to manage server-side gmail API oauth. <b>Patches *very* welcome for this.</b></span>
-`);
+<span style = 'color: red'>Emails are only processed when MakeTime is open in a browser tab. Otherwise, your mail will stay in the unprocessed label.Would love to move this to a server cron, but this is a side project and I can't be bothered to figure out how to manage server-side gmail API oauth. <b>Patches *very* welcome for this.</b></span> `);
 }
