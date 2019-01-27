@@ -448,6 +448,8 @@ export class FiltersView extends HTMLElement {
       if (trimWhitespace) {
         field = field.trim();
         value = value.trim();
+        if (CSV_FIELDS.includes(field))
+          value = value.split(',').map(x => x.trim()).join(',');
       }
 
       if (hasColon && !value)
