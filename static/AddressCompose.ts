@@ -55,7 +55,7 @@ export class AddressCompose extends HTMLElement {
     this.cancelAutoComplete_();
     this.autoComplete_.addEventListener(
         EntrySelectedEvent.NAME,
-        (e) => this.submitAutoComplete_((<EntrySelectedEvent>e).entry));
+        (e) => this.submitAutoComplete_(false, (<EntrySelectedEvent>e).entry));
     this.append(this.autoComplete_);
 
     // Make box-sizing:content-box so we can set the width to the chip
@@ -136,7 +136,7 @@ export class AddressCompose extends HTMLElement {
     return selected;
   }
 
-  submitAutoComplete_(selectedItem?: ParsedAddress) {
+  submitAutoComplete_(skipSetFocus?: boolean, selectedItem?: ParsedAddress) {
     this.preventAutoComplete_ = false;
 
     selectedItem = selectedItem || this.getSelectedAddress_();
@@ -153,7 +153,8 @@ export class AddressCompose extends HTMLElement {
     this.addressContainer_.append(this.input_);
     this.input_.style.width = 'auto';
     this.input_.style.flex = '1';
-    this.focusInput_();
+    if (!skipSetFocus)
+      this.focusInput_();
 
     this.dispatchEvent(new Event('input'));
 
@@ -265,7 +266,7 @@ export class AddressCompose extends HTMLElement {
     let relatedTarget = (e as FocusEvent).relatedTarget;
     if (!relatedTarget || !this.containsNode_(relatedTarget as Node) ||
         this.getContainingChip_(relatedTarget as Node)) {
-      this.submitAutoComplete_();
+      this.submitAutoComplete_(true);
       this.input_.style.width = '0px';
     }
   }
