@@ -1,4 +1,4 @@
-import {defined, USER_ID, parseAddressList} from './Base.js';
+import {defined, parseAddressList, USER_ID} from './Base.js';
 import {fetchMessages} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
 
@@ -63,9 +63,14 @@ export class Contacts {
         'https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=' +
         gapi.auth.getToken().access_token + '&max-results=20000&v=3.0');
 
-    let contacts = [];
+    let contacts: Contact[] = [];
 
     let json = await response.json();
+
+    // If a user has no contacts, then this field is undefined.
+    if (!json.feed.entry)
+      return contacts;
+
     for (let entry of json.feed.entry) {
       if (!entry.gd$email)
         continue;
