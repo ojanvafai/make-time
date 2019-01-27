@@ -95,7 +95,7 @@ export class Labels {
   static NEEDS_FILTER = 'needs-filter';
 
   static SORTED_PRIORITIES =
-      [Labels.MUST_DO, Labels.URGENT, Labels.BACKLOG, Labels.NEEDS_FILTER];
+      [Labels.NEEDS_FILTER, Labels.MUST_DO, Labels.URGENT, Labels.BACKLOG];
 
   static MUST_DO_LABEL = Labels.addPriorityPrefix(Labels.MUST_DO);
   static URGENT_LABEL = Labels.addPriorityPrefix(Labels.URGENT);
