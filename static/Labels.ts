@@ -1,3 +1,4 @@
+import {AsyncOnce} from './AsyncOnce.js';
 import {defined, USER_ID} from './Base.js';
 import {gapiFetch} from './Net.js';
 
@@ -8,6 +9,8 @@ interface LabelResource {
   id: string;
   userId: string;
 }
+
+let labelFetchers_: Map<string, AsyncOnce<gapi.client.gmail.Label>> = new Map();
 
 export class Labels {
   static isUserLabel = (id: string) => {
@@ -270,10 +273,22 @@ export class Labels {
   }
 
   async createLabel_(name: string) {
-    let resource = this.labelResource_(name);
-    resource.userId = USER_ID;
-    let resp = await gapiFetch(gapi.client.gmail.users.labels.create, resource);
-    return resp.result;
+    // createLabel_ can be called while an existing createLabel_ network request
+    // for that label is in progress. Ensure that it doesn't do another network
+    // request since gmail will return an error for trying to create a label
+    // that already exists.
+    let fetcher = labelFetchers_.get(name);
+    if (!fetcher) {
+      fetcher = new AsyncOnce<gapi.client.gmail.Label>(async () => {
+        let resource = this.labelResource_(name);
+        resource.userId = USER_ID;
+        let resp =
+            await gapiFetch(gapi.client.gmail.users.labels.create, resource);
+        return resp.result;
+      });
+      labelFetchers_.set(name, fetcher);
+    }
+    return await fetcher.do();
   }
 
   async getIds(names: string[]) {
