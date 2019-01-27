@@ -12,6 +12,7 @@ import {Model} from './models/Model.js';
 import {ThreadListModel} from './models/ThreadListModel.js';
 import {TodoModel} from './models/TodoModel.js';
 import {TriageModel} from './models/TriageModel.js';
+import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {ServerStorage} from './ServerStorage.js';
 import {CalendarView} from './views/CalendarView.js';
@@ -377,10 +378,25 @@ export async function update() {
         [todoModel.update(), triageModel.update(), view.update()]);
 
     await dailyUpdates();
+  } catch (e) {
+    // TODO: Move this to Net.js once we've made it so that all network requests
+    // that fail due to being offline get retried.
+    if (getErrorMessage(e) === NETWORK_OFFLINE_ERROR_MESSAGE) {
+      updateTitle(
+          CONNECTION_FAILURE_KEY, 'Having trouble connecting to internet...');
+    } else {
+      throw e;
+    }
   } finally {
     isUpdating_ = false;
   }
 }
+
+window.addEventListener(CONNECTION_FAILURE_KEY, () => {
+  // Net.js fires this when a network request succeeds, which indicates we're no
+  // longer offline.
+  updateTitle(CONNECTION_FAILURE_KEY);
+});
 
 // Make sure links open in new tabs.
 document.body.addEventListener('click', async (e) => {
@@ -538,33 +554,30 @@ const NETWORK_OFFLINE_ERROR_MESSAGE =
 const FETCH_ERROR_MESSAGE =
     'A network error occurred, and the request could not be completed.';
 
+// Different promise types stow a human understandable message in different
+// places. :( Also, if we catch via a try/catch, then we need to pass the
+// exception itself as an argument this function instead of e.reason.
+function getErrorMessage(reason: any) {
+  // Case: throw new Error('msg');
+  let message = reason.message;
+
+  // Cases: (gapi network failure) || fetch network failure
+  let error = (reason.result && reason.result.error) || reason.error;
+  // Case: gapi network failures.
+  if (!message)
+    message = error && error.message;
+
+  if (error && error.code === -1 && message === FETCH_ERROR_MESSAGE)
+    message = NETWORK_OFFLINE_ERROR_MESSAGE;
+
+  return message;
+}
+
 window.addEventListener('unhandledrejection', (e) => {
   let reason = e.reason;
   // 401 means the credentials are invalid and you probably need to 2 factor.
-  let message;
-  if (reason) {
-    if (reason.status == 401)
-      window.location.reload();
-
-    // Different promise types stow a human understandable message in different
-    // places. :(
-
-    // Case: throw new Error('msg');
-    message = reason.message;
-
-    // Case: gapi network failures.
-    if (!message) {
-      message =
-          reason.result && reason.result.error && reason.result.error.message;
-    }
-
-    // Case: fetch network failure
-    if (!message)
-      message = reason.error && reason.error.message;
-
-    if (message === FETCH_ERROR_MESSAGE)
-      message = NETWORK_OFFLINE_ERROR_MESSAGE;
-  }
+  if (reason && reason.status == 401)
+    window.location.reload();
 
   // Plain stringify will skip a bunch of things, so manually list out
   // everything we might care about. Add to this list over time as we find other
@@ -572,6 +585,7 @@ window.addEventListener('unhandledrejection', (e) => {
   let details = JSON.stringify(
       reason, ['stack', 'message', 'body', 'result', 'error', 'code']);
 
+  let message = getErrorMessage(e.reason);
   if (message)
     ErrorLogger.log(message, details);
   else

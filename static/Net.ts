@@ -1,5 +1,6 @@
 let queuedRequests_: ((value?: {}|PromiseLike<{}>|undefined) => void)[] = [];
 let TEN_SECONDS = 10 * 1000;
+export const CONNECTION_FAILURE_KEY = 'trouble-connecting-to-internet';
 
 function backOnline() {
   return new Promise(resolve => queuedRequests_.push(resolve));
@@ -20,14 +21,15 @@ window.addEventListener('online', (_e) => {
 // for all the code that calls gapiFetch.
 export async function gapiFetch<T>(
     method: (params: any, body?: any) => gapi.client.Request<T>,
-    requestParams: any,
-    opt_requestBody?: any) {
+    requestParams: any, opt_requestBody?: any) {
   let numRetries = 3;
   for (var i = 0; i < numRetries; i++) {
     try {
       if (!navigator.onLine)
         await backOnline();
-      return await method(requestParams, opt_requestBody);
+      let response = await method(requestParams, opt_requestBody);
+      window.dispatchEvent(new Event(CONNECTION_FAILURE_KEY));
+      return response;
     } catch (e) {
       console.log('Response failed.');
       if (i == numRetries - 1)
