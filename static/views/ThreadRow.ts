@@ -7,15 +7,23 @@ import {ThreadRowGroup} from './ThreadRowGroup.js';
 
 export const FOCUS_THREAD_ROW_EVENT_NAME = 'focus-thread-row';
 
-interface DateFormatOptions {
-  year: string;
-  month: string;
-  day: string;
-  hour: string;
-  minute: string;
-}
-
 let UNCHECKED_BACKGROUND_COLOR = 'white';
+
+let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+})
+
+let DIFFERENT_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+})
+
+let SAME_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  hour: 'numeric',
+  minute: 'numeric',
+})
 
 export class ThreadRow extends HTMLElement {
   focused_: boolean;
@@ -200,21 +208,17 @@ export class ThreadRow extends HTMLElement {
   }
 
   private dateString_(date: Date) {
-    let options = <DateFormatOptions>{};
+    let formatter: Intl.DateTimeFormat;
     let today = new Date();
-    if (today.getFullYear() != date.getFullYear())
-      options.year = 'numeric';
-
-    if (today.getMonth() != date.getMonth() ||
-        today.getDate() != date.getDate()) {
-      options.month = 'short';
-      options.day = 'numeric';
+    if (today.getFullYear() != date.getFullYear()) {
+      formatter = DIFFERENT_YEAR_FORMATTER;
+    } else if (today.getMonth() != date.getMonth() ||
+      today.getDate() != date.getDate()) {
+      formatter = DIFFERENT_DAY_FORMATTER;
     } else {
-      options.hour = 'numeric';
-      options.minute = 'numeric';
+      formatter = SAME_DAY_FORMATTER;
     }
-
-    return date.toLocaleString(undefined, options);
+    return formatter.format(date);
   }
 
   get focused() {

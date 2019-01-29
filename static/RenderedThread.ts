@@ -2,6 +2,29 @@ import {parseAddressList} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 
+let formattingOptions: {
+  year?: string;
+  month?: string;
+  day?: string;
+  hour?: string;
+  minute?: string;
+} = {
+  hour: 'numeric',
+  minute: 'numeric',
+}
+
+let SAME_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
+
+formattingOptions.month = 'short';
+formattingOptions.day = 'numeric';
+
+let DIFFERENT_DAY_FORMATTER =
+    new Intl.DateTimeFormat(undefined, formattingOptions);
+
+formattingOptions.year = 'numeric';
+let DIFFERENT_YEAR_FORMATTER =
+    new Intl.DateTimeFormat(undefined, formattingOptions);
+
 export class RenderedThread extends HTMLElement {
   constructor(public thread: Thread) {
     super();
@@ -138,23 +161,19 @@ export class RenderedThread extends HTMLElement {
     container.append(div);
   }
 
-  dateString_(date: Date) {
-    let options: {[property: string]: string} = {
-      hour: 'numeric',
-      minute: 'numeric',
-    };
-
+  private dateString_(date: Date) {
+    let formatter: Intl.DateTimeFormat;
     let today = new Date();
-    if (today.getFullYear() != date.getFullYear())
-      options.year = 'numeric';
-
-    if (today.getMonth() != date.getMonth() ||
+    if (today.getFullYear() != date.getFullYear()) {
+      formatter = DIFFERENT_YEAR_FORMATTER;
+    } else if (
+        today.getMonth() != date.getMonth() ||
         today.getDate() != date.getDate()) {
-      options.month = 'short';
-      options.day = 'numeric';
+      formatter = DIFFERENT_DAY_FORMATTER;
+    } else {
+      formatter = SAME_DAY_FORMATTER;
     }
-
-    return date.toLocaleString(undefined, options);
+    return formatter.format(date);
   }
 }
 window.customElements.define('mt-rendered-thread', RenderedThread);
