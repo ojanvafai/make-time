@@ -230,7 +230,11 @@ export class ThreadRow extends HTMLElement {
     this.focused_ = value;
     this.label_.style.backgroundColor = this.focused ? '#ccc' : '';
     this.updateCheckbox_();
-    this.dispatchEvent(new Event(FOCUS_THREAD_ROW_EVENT_NAME, {bubbles: true}));
+    // TODO: Technically we probably want a blur event as well for !value.
+    if (value) {
+      this.dispatchEvent(
+          new Event(FOCUS_THREAD_ROW_EVENT_NAME, {bubbles: true}));
+    }
   }
 
   get selected() {

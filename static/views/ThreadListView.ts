@@ -201,12 +201,12 @@ export class ThreadListView extends View {
   private singleThreadContainer_: HTMLElement;
   private bestEffortButton_: HTMLElement;
   private renderedRow_: ThreadRow|null;
+  private autoFocusedRow_: ThreadRow|null;
   private renderedGroupName_: string|null;
   private scrollOffset_: number|undefined;
   private isSending_: boolean|undefined;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
-  private isAutoFocusFirstRow_: boolean;
 
   constructor(
       private model_: ThreadListModel, public allLabels: Labels,
@@ -230,10 +230,10 @@ export class ThreadListView extends View {
     this.threadToRow_ = new WeakMap();
     this.focusedRow_ = null;
     this.renderedRow_ = null;
+    this.autoFocusedRow_ = null;
     this.renderedGroupName_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
-    this.isAutoFocusFirstRow_ = false;
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -411,8 +411,10 @@ export class ThreadListView extends View {
       }
     }
 
-    if (!this.renderedRow_ && (!this.focusedRow_ || this.isAutoFocusFirstRow_))
-      this.setFocus_(newRows[0], true);
+    if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
+      this.autoFocusedRow_ = newRows[0];
+      this.setFocus_(this.autoFocusedRow_);
+    }
 
     if (this.hasNewRenderedRow_) {
       this.hasNewRenderedRow_ = false;
@@ -449,8 +451,7 @@ export class ThreadListView extends View {
     }
   }
 
-  private setFocus_(row: ThreadRow|null, isAutoFocusFirstRow?: boolean) {
-    this.isAutoFocusFirstRow_ = !!isAutoFocusFirstRow;
+  private setFocus_(row: ThreadRow|null) {
     if (row)
       row.focused = true;
     else
@@ -459,11 +460,17 @@ export class ThreadListView extends View {
 
   clearFocus_() {
     this.focusedRow_ = null;
+    this.autoFocusedRow_ = null;
   }
 
   private handleFocusRow_(row: ThreadRow|null) {
-    if (this.focusedRow_ === row)
+    // Once a row gets manually focused, stop auto-focusing.
+    if (row !== this.autoFocusedRow_)
+      this.autoFocusedRow_ = null;
+
+    if (row === this.focusedRow_)
       return;
+
     if (this.focusedRow_)
       this.focusedRow_.focused = false;
     this.focusedRow_ = row;
