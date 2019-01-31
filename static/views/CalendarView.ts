@@ -1,8 +1,8 @@
+import {Action, registerActions} from '../Actions.js';
 import {Calendar} from '../calendar/Calendar.js';
 import {Charter} from '../calendar/Charter.js';
 
 import {View} from './View.js'
-import { Action, registerActions } from '../Actions.js';
 
 let COLORIZE_ACTION: Action = {
   name: 'Colorize Events',
@@ -28,11 +28,11 @@ export class CalendarView extends View {
 
     this.dayPlot = document.createElement('div');
     this.dayPlot.id = 'day_plot';
-    this.append(this.dayPlot);
+    this.append('Day summaries:', this.dayPlot);
 
     this.weekPlot = document.createElement('div');
     this.weekPlot.id = 'week_plot';
-    this.append(this.weekPlot);
+    this.append('Week summaries:', this.weekPlot);
 
     let plotlyScript = document.createElement('script');
     plotlyScript.src = 'https://cdn.plot.ly/plotly-1.4.1.min.js';
@@ -44,8 +44,21 @@ export class CalendarView extends View {
     const charter = new Charter();
     const days = await this.model_.getDayAggregates();
     const weeks = await this.model_.getWeekAggregates();
-    charter.chartData(days, this.dayPlot.id);
-    charter.chartData(weeks, this.weekPlot.id);
+
+    let startDate = new Date();
+    startDate.setDate(startDate.getDate() - 14);
+    let endDate = new Date();
+    endDate.setDate(endDate.getDate() + 14);
+    charter.chartData(
+        days, this.dayPlot.id, [startDate.getTime(), endDate.getTime()]);
+
+    let weekStartDate = new Date();
+    weekStartDate.setDate(weekStartDate.getDate() - 90);
+    let weekEndDate = new Date();
+    weekEndDate.setDate(weekEndDate.getDate() + 90);
+    charter.chartData(
+        weeks, this.weekPlot.id,
+        [weekStartDate.getTime(), weekEndDate.getTime()]);
   }
 
   async takeAction(action: Action) {

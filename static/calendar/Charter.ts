@@ -10,6 +10,8 @@ function hexToRGB(hex: string): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+type DateRange = [number, number];
+
 export class Charter {
   private colors: AsyncOnce<any>;
 
@@ -23,7 +25,7 @@ export class Charter {
     });
   }
 
-  async chartData(aggregates: Aggregate[], divId: string) {
+  async chartData(aggregates: Aggregate[], divId: string, range: DateRange) {
     let colors = await this.colors.do();
     const dates = aggregates.map(day => day.start);
 
@@ -56,9 +58,8 @@ export class Charter {
     }
 
     // @ts-ignore
-    Plotly.newPlot(divId, data, {
-      barmode: 'stack',
-      yaxis: {title: 'Hours'},
-    });
+    Plotly.newPlot(
+        divId, data,
+        {barmode: 'stack', yaxis: {title: 'Hours'}, xaxis: {range: range}});
   }
 }
