@@ -16,7 +16,7 @@ export class QuoteElidedMessage {
   constructor(currentMessage: string, previousMessage: Message|undefined) {
     this.dom_ = document.createElement('div');
     this.dom_.innerHTML = currentMessage;
-    this.removeDisallowedElements_();
+    this.sanitizeContent_();
 
     this.computeHashes_();
     if (!previousMessage)
@@ -119,6 +119,11 @@ export class QuoteElidedMessage {
     }
   }
 
+  sanitizeContent_() {
+    this.removeDisallowedElements_();
+    this.preWrapElements_();
+  }
+
   // This removes elements that break make-time rendering. This is not a
   // security feature.
   removeDisallowedElements_() {
@@ -131,6 +136,18 @@ export class QuoteElidedMessage {
       for (let node of this.dom_.querySelectorAll(tagName)) {
         node.remove();
       }
+    }
+  }
+
+  // gmail appears to rewrite white-space:pre to white-space:pre-wrap and some
+  // content (e.g. crbug.com emails) seems to warrant this.
+  preWrapElements_() {
+    // TODO: Technically this can return non-HTMLElements.
+    let nodes = this.dom_.querySelectorAll<HTMLElement>('*');
+    for (let node of nodes) {
+      // TODO: There are other tags that default to white-space:pre as well.
+      if (node.tagName === 'PRE' || node.style.whiteSpace === 'pre')
+        node.style.whiteSpace = 'pre-wrap';
     }
   }
 
