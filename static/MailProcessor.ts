@@ -437,11 +437,13 @@ export class MailProcessor {
     let progress = updateLoaderTitle(
         'dequeue', threads.length, `Dequeuing from ${labelName}...`);
 
+    let processedLabelId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
+
     for (var i = 0; i < threads.length; i++) {
       progress.incrementProgress();
 
       var thread = threads[i];
-      let addLabelIds = ['INBOX', autoLabel];
+      let addLabelIds = ['INBOX', autoLabel, processedLabelId];
       let removeLabelIds = [queuedLabel];
       await thread.modify(addLabelIds, removeLabelIds);
       await this.pushThread_(thread);

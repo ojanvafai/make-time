@@ -63,7 +63,12 @@ export class QueueSettings {
   }
 
   get(labelSuffix: string) {
-    return this.map_.get(labelSuffix.toLowerCase()) || this.queueData_();
+    let lowerCase = labelSuffix.toLowerCase();
+    // Blocked is a special label that dequeues daily, is not best effort, and
+    // is always put first.
+    if (lowerCase === Labels.BLOCKED_SUFFIX)
+      return this.queueData_(QueueSettings.DAILY);
+    return this.map_.get(lowerCase) || this.queueData_();
   }
 
   queueComparator_(a: QueueListEntry, b: QueueListEntry) {
@@ -95,10 +100,7 @@ export class QueueSettings {
   queueEntry_(label: string): QueueListEntry {
     let suffix = Labels.removeNeedsTriagePrefix(label);
     let data = this.get(suffix);
-    return {
-      label: label,
-      data: data
-    };
+    return {label: label, data: data};
   }
 
   queueNameComparator(a: string, b: string) {

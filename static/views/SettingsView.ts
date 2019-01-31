@@ -112,7 +112,6 @@ export class SettingsView extends HTMLElement {
 
     queues.delete(Labels.ARCHIVE_LABEL);
     queues.add(Labels.FALLBACK_LABEL);
-    queues.add(Labels.BLOCKED_SUFFIX);
 
     new QueuesView(queues, this.queueSettings_);
     this.cancel_();
