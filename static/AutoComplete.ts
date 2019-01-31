@@ -73,7 +73,9 @@ export class AutoComplete extends HTMLElement {
         });
       }
       results = results.splice(0, 4);
-    } else {
+    }
+
+    if (results.length < 4) {
       // Include whatever the user is typing in case it's not in their contacts
       // or if the contacts API is down.
       results.push({name: '', address: search});
