@@ -383,6 +383,7 @@ export class ThreadListView extends View {
     let newRows = this.getRows_();
     let removedRows = oldRows.filter(x => !newRows.includes(x));
 
+    let toast: HTMLElement|undefined;
     let focused = this.renderedRow_ || this.focusedRow_;
     if (focused && removedRows.find(x => x == focused)) {
       // Find the next row in oldRows that isn't also removed.
@@ -397,9 +398,38 @@ export class ThreadListView extends View {
       }
 
       if (this.renderedRow_) {
-        if (nextRow &&
-            this.renderedGroupName_ ===
-                this.model_.getGroupName(nextRow.thread)) {
+        if (nextRow) {
+          let nextGroupName = this.model_.getGroupName(nextRow.thread);
+          if (this.renderedGroupName_ !== nextGroupName) {
+            toast = document.createElement('div');
+            toast.style.cssText = `
+              position: fixed;
+              top: 50%;
+              right: 0;
+              bottom: 0;
+              left: 0;
+              font-size: 20px;
+              opacity: 0.5;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              pointer-events: none;
+              transition: opacity 0.5s;
+              transition-delay: 2s;
+              opacity: 0.8;
+            `;
+            let text = document.createElement('div');
+            text.style.cssText = `
+              background-color: black;
+              padding: 10px;
+              border-radius: 5px;
+              border: 1px solid grey;
+              color: white;
+            `;
+            setTimeout(() => defined(toast).style.opacity = '0');
+            text.append(`Now triaging: ${nextGroupName}`);
+            toast.append(text);
+          }
           this.setRenderedRowInternal_(nextRow);
         } else {
           this.transitionToThreadList_(null);
@@ -418,7 +448,7 @@ export class ThreadListView extends View {
 
     if (this.hasNewRenderedRow_) {
       this.hasNewRenderedRow_ = false;
-      this.renderOne_();
+      this.renderOne_(toast);
     }
     this.prerender_();
   }
@@ -684,7 +714,7 @@ export class ThreadListView extends View {
       this.render_();
   }
 
-  renderOne_() {
+  renderOne_(toast?: HTMLElement) {
     let renderedRow = notNull(this.renderedRow_);
 
     if (this.rowGroupContainer_.style.display != 'none')
@@ -716,6 +746,8 @@ export class ThreadListView extends View {
     rendered.style.visibility = 'visible';
 
     this.updateActions_();
+    if (toast)
+      this.addToFooter(toast);
 
     var elementToScrollTo = rendered.querySelector('.unread');
     if (!elementToScrollTo) {
