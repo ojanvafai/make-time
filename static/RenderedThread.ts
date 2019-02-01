@@ -1,4 +1,4 @@
-import {parseAddressList} from './Base.js';
+import {notNull, parseAddressList} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 
@@ -26,6 +26,8 @@ let DIFFERENT_YEAR_FORMATTER =
     new Intl.DateTimeFormat(undefined, formattingOptions);
 
 export class RenderedThread extends HTMLElement {
+  private spinner_: HTMLElement|undefined;
+
   constructor(public thread: Thread) {
     super();
     this.style.cssText = `
@@ -41,6 +43,22 @@ export class RenderedThread extends HTMLElement {
     return !!this.parentNode;
   }
 
+  showSpinner(show: boolean) {
+    if (show) {
+      this.spinner_ = document.createElement('div');
+      this.spinner_.append('loading...');
+      this.spinner_.style.cssText = `
+        text-align: center;
+        padding: 8px;
+        background: #ddd;
+      `;
+      this.append(this.spinner_);
+      this.spinner_.scrollIntoView({'block': 'center', 'behavior': 'smooth'});
+    } else if (this.spinner_) {
+      this.spinner_.remove();
+    }
+  }
+
   render() {
     let messages = this.thread.getMessages();
     // Only append new messages.
@@ -51,6 +69,10 @@ export class RenderedThread extends HTMLElement {
         rendered.style.border = '0';
       this.append(rendered);
     }
+  }
+
+  lastMessage() {
+    return notNull(this.lastElementChild);
   }
 
   renderMessage_(processedMessage: Message) {

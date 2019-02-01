@@ -750,17 +750,9 @@ export class ThreadListView extends View {
       this.addToFooter(toast);
 
     var elementToScrollTo = rendered.querySelector('.unread');
-    if (!elementToScrollTo) {
-      let messageNodes = rendered.querySelectorAll('.message');
-      elementToScrollTo = messageNodes[messageNodes.length - 1];
-    }
-
-    elementToScrollTo.scrollIntoView();
-    // Make sure that there's at least 50px of space above for showing that
-    // there's a previous message.
-    let y = elementToScrollTo.getBoundingClientRect().top;
-    if (y < 70)
-      document.documentElement!.scrollTop -= 70 - y;
+    if (!elementToScrollTo)
+      elementToScrollTo = rendered.lastMessage();
+    elementToScrollTo.scrollIntoView({'block': 'center'});
 
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to
@@ -863,7 +855,15 @@ export class ThreadListView extends View {
         await this.markTriaged_(
             ARCHIVE_ACTION.destination, expectedNewMessageCount);
       } else {
+        renderedRow.rendered.showSpinner(true);
         await renderedRow.thread.update();
+        renderedRow.rendered.showSpinner(false);
+
+        // The user can change the rendered row while the thread is updating.
+        if (renderedRow === this.renderedRow_) {
+          let lastMessage = renderedRow.rendered.lastMessage();
+          lastMessage.scrollIntoView();
+        }
       }
     })
 
