@@ -38,10 +38,10 @@ const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 let longTasks_: LongTasks;
-function updateLongTaskTracking() {
+async function updateLongTaskTracking() {
   // Read this setting out of local storage so we don't block on reading
   // settings from the network to set this up.
-  if (localStorage.getItem(ServerStorage.KEYS.TRACK_LONG_TASKS)) {
+  if (await IDBKeyVal.getDefault().get(ServerStorage.KEYS.TRACK_LONG_TASKS)) {
     longTasks_ = new LongTasks();
     document.body.append(longTasks_);
   } else if (longTasks_) {
@@ -318,30 +318,36 @@ async function onLoad() {
   // regularly.
   setInterval(update, 1000 * 60);
   let settings = await getSettings();
-  if (settings.get(ServerStorage.KEYS.TRACK_LONG_TASKS))
-    localStorage.setItem(ServerStorage.KEYS.TRACK_LONG_TASKS, 'true');
-  else
-    localStorage.removeItem(ServerStorage.KEYS.TRACK_LONG_TASKS);
-  updateLongTaskTracking();
+  if (settings.get(ServerStorage.KEYS.TRACK_LONG_TASKS)) {
+    await IDBKeyVal.getDefault().set(
+        ServerStorage.KEYS.TRACK_LONG_TASKS, 'true');
+  } else {
+    await IDBKeyVal.getDefault().del(ServerStorage.KEYS.TRACK_LONG_TASKS);
+  }
+  await updateLongTaskTracking();
 }
 
 onLoad();
 
-async function dailyUpdates() {
-  let storage = new ServerStorage((await getSettings()).spreadsheetId);
-  let lastGCTime = storage.get(ServerStorage.KEYS.LAST_DAILY_UPDATES_TIME);
+const DAILY_LOCAL_UPDATES_KEY = 'daily-local-updates';
+
+// Updates to things stored in local storage. This should not be used for things
+// that should happen once per day globally since the user might have maketime
+// open on multiple clients.
+async function dailyLocalUpdates() {
+  let lastUpdateTime: number|undefined =
+      await IDBKeyVal.getDefault().get(DAILY_LOCAL_UPDATES_KEY);
   let oneDay = 24 * 60 * 60 * 1000;
-  if (lastGCTime && (Date.now() - lastGCTime) < oneDay)
+  if (lastUpdateTime && (Date.now() - lastUpdateTime) < oneDay)
     return;
 
   await Contacts.getDefault().update();
-  await gcLocalStorage();
+  await gcStaleThreadData();
 
-  await storage.writeUpdates(
-      [{key: ServerStorage.KEYS.LAST_DAILY_UPDATES_TIME, value: Date.now()}]);
+  await IDBKeyVal.getDefault().set(DAILY_LOCAL_UPDATES_KEY, Date.now());
 }
 
-async function gcLocalStorage() {
+async function gcStaleThreadData() {
   let currentWeekNumber = getCurrentWeekNumber();
   let keys = await IDBKeyVal.getDefault().keys();
   for (let key of keys) {
@@ -377,7 +383,7 @@ export async function update() {
     await Promise.all(
         [todoModel.update(), triageModel.update(), view.update()]);
 
-    await dailyUpdates();
+    await dailyLocalUpdates();
   } catch (e) {
     // TODO: Move this to Net.js once we've made it so that all network requests
     // that fail due to being offline get retried.

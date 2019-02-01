@@ -61,7 +61,6 @@ export class ServerStorage {
 interface KeyTypes {
   HAS_SHOWN_FIRST_RUN: string;
   LAST_DEQUEUE_TIME: string;
-  LAST_DAILY_UPDATES_TIME: string;
   VACATION: string;
   TIMER_DURATION: string;
   AUTO_START_TIMER: string;
@@ -74,7 +73,6 @@ interface KeyTypes {
 let keys: KeyTypes = {
   HAS_SHOWN_FIRST_RUN: 'has_shown_first_run',
   LAST_DEQUEUE_TIME: 'Last dequeue time',
-  LAST_DAILY_UPDATES_TIME: 'Last GC time',
   VACATION: 'vacation',
   TIMER_DURATION: 'timeout',
   AUTO_START_TIMER: 'auto_start_timer',
