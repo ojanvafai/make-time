@@ -73,8 +73,19 @@ export class RenderedThread extends HTMLElement {
     }
   }
 
-  lastMessage() {
-    return notNull(this.lastElementChild);
+  firstUnreadMessageHeader() {
+    let message = this.querySelector('.unread');
+    if (!message)
+      return null;
+    return this.getHeader_(message);
+  }
+
+  lastMessageHeader() {
+    return this.getHeader_(notNull(this.lastElementChild));
+  }
+
+  getHeader_(message: Element) {
+    return notNull(message.querySelector('.headers'));
   }
 
   renderMessage_(processedMessage: Message) {

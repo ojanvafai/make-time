@@ -749,9 +749,9 @@ export class ThreadListView extends View {
     if (toast)
       this.addToFooter(toast);
 
-    var elementToScrollTo = rendered.querySelector('.unread');
+    var elementToScrollTo = rendered.firstUnreadMessageHeader();
     if (!elementToScrollTo)
-      elementToScrollTo = rendered.lastMessage();
+      elementToScrollTo = rendered.lastMessageHeader();
     elementToScrollTo.scrollIntoView({'block': 'center'});
 
     // Check if new messages have come in since we last fetched from the
@@ -861,7 +861,7 @@ export class ThreadListView extends View {
 
         // The user can change the rendered row while the thread is updating.
         if (renderedRow === this.renderedRow_) {
-          let lastMessage = renderedRow.rendered.lastMessage();
+          let lastMessage = renderedRow.rendered.lastMessageHeader();
           lastMessage.scrollIntoView({behavior: 'smooth'});
         }
       }
