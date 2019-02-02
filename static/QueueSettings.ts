@@ -49,7 +49,14 @@ export class QueueSettings {
 
     for (let value of rawData) {
       let labelName = value[0].toLowerCase();
-      this.map_.set(labelName, this.queueData_(value[1], value[2], value[3]));
+      let queueData;
+      // Blocked is a special label that dequeues daily, is not best effort, and
+      // is always put first.
+      if (labelName === Labels.BLOCKED_SUFFIX)
+        queueData = this.queueData_(QueueSettings.DAILY);
+      else
+        queueData = this.queueData_(value[1], value[2], value[3]);
+      this.map_.set(labelName, queueData);
     }
   }
 
@@ -63,12 +70,7 @@ export class QueueSettings {
   }
 
   get(labelSuffix: string) {
-    let lowerCase = labelSuffix.toLowerCase();
-    // Blocked is a special label that dequeues daily, is not best effort, and
-    // is always put first.
-    if (lowerCase === Labels.BLOCKED_SUFFIX)
-      return this.queueData_(QueueSettings.DAILY);
-    return this.map_.get(lowerCase) || this.queueData_();
+    return this.map_.get(labelSuffix.toLowerCase()) || this.queueData_();
   }
 
   queueComparator_(a: QueueListEntry, b: QueueListEntry) {
