@@ -61,8 +61,10 @@ export class RenderedThread extends HTMLElement {
 
   render() {
     let messages = this.thread.getMessages();
+    let alreadyRenderedMessages =
+        [...this.children].filter(x => x.classList.contains('message'));
     // Only append new messages.
-    messages = messages.slice(this.childElementCount);
+    messages = messages.slice(alreadyRenderedMessages.length);
     for (let message of messages) {
       let rendered = this.renderMessage_(message);
       if (this.childElementCount == 0)

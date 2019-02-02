@@ -862,7 +862,7 @@ export class ThreadListView extends View {
         // The user can change the rendered row while the thread is updating.
         if (renderedRow === this.renderedRow_) {
           let lastMessage = renderedRow.rendered.lastMessage();
-          lastMessage.scrollIntoView();
+          lastMessage.scrollIntoView({behavior: 'smooth'});
         }
       }
     })
