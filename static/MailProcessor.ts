@@ -1,4 +1,4 @@
-import {defined, notNull, parseAddressList, ParsedAddress} from './Base.js';
+import {notNull, parseAddressList, ParsedAddress} from './Base.js';
 import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -7,28 +7,9 @@ import {TriageModel} from './models/TriageModel.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
-import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
 import {Thread} from './Thread.js';
 import {ThreadFetcher} from './ThreadFetcher.js';
-
-const STATISTICS_SHEET_NAME = 'statistics';
-const DAILY_STATS_SHEET_NAME = 'daily_stats';
-
-interface Stats {
-  yearMonthDay: string;
-  totalThreads: number;
-  ignoredThreads: number;
-  nonIgnoredThreads: number;
-  immediateCount: number;
-  dailyCount: number;
-  weeklyCount: number;
-  monthlyCount: number;
-  numInvocations: number;
-  totalTime: number;
-  minTime: number;
-  maxTime: number;
-}
 
 export class MailProcessor {
   constructor(
@@ -88,120 +69,6 @@ export class MailProcessor {
       }
     }
     return false;
-  }
-
-  getYearMonthDay(timestamp: number) {
-    let date = new Date(timestamp);
-
-    let month = date.getMonth() + 1;
-    let paddedMonth = month < 10 ? '0' + month : String(month);
-
-    let day = date.getDate();
-    let paddedDay = day < 10 ? '0' + day : String(day);
-
-    return date.getFullYear() + '/' + paddedMonth + '/' + paddedDay;
-  }
-
-  async writeCollapsedStats(stats: Stats) {
-    if (!stats.numInvocations)
-      return;
-    await SpreadsheetUtils.appendToSheet(
-        this.settings.spreadsheetId, DAILY_STATS_SHEET_NAME,
-        [Object.values(stats)]);
-  }
-
-  private async collapseStats_() {
-    let stats: Stats|null = null;
-    var rows = await SpreadsheetUtils.fetchSheet(
-        this.settings.spreadsheetId, STATISTICS_SHEET_NAME);
-    let todayYearMonthDay = this.getYearMonthDay(Date.now());
-    let currentYearMonthDay;
-
-    let lastRowProcessed = 0;
-
-    for (var i = 1; i < rows.length; ++i) {
-      // timestamp, threads_processed, messages_processed, total_time,
-      // perLabelThreadCountJSON
-
-      let timestamp = Number(rows[i][0]);
-      // Ignore empty rows
-      if (!timestamp) {
-        continue;
-      }
-
-      let yearMonthDay = this.getYearMonthDay(timestamp);
-
-      if (todayYearMonthDay < yearMonthDay)
-        throw `Something is wrong with the statistics spreadsheet. Some rows have dates in the future: ${
-            yearMonthDay}`;
-
-      // Don't process any rows from today. Since the sheet is in date order, we
-      // can stop processing entirely.
-      if (todayYearMonthDay == yearMonthDay)
-        break;
-
-      if (currentYearMonthDay != yearMonthDay) {
-        if (stats)
-          await this.writeCollapsedStats(stats);
-        currentYearMonthDay = yearMonthDay;
-        stats = {
-          yearMonthDay: currentYearMonthDay,
-          totalThreads: 0,
-          ignoredThreads: 0,
-          nonIgnoredThreads: 0,
-          immediateCount: 0,
-          dailyCount: 0,
-          weeklyCount: 0,
-          monthlyCount: 0,
-          numInvocations: 0,
-          totalTime: 0,
-          minTime: Number.MAX_VALUE,
-          maxTime: 0,
-        };
-      }
-
-      lastRowProcessed = i;
-
-      stats = notNull(stats);
-      stats.numInvocations++;
-      stats.totalThreads += Number(rows[i][1]);
-
-      stats.totalTime += Number(rows[i][2]);
-      stats.minTime = Math.min(stats.minTime, Number(rows[i][2]));
-      stats.maxTime = Math.max(stats.maxTime, Number(rows[i][2]));
-
-      let labelCountString = rows[i][3];
-      var labelCounts = JSON.parse(String(defined(labelCountString)));
-      for (var label in labelCounts) {
-        var count = labelCounts[label];
-        if (label == Labels.ARCHIVE_LABEL) {
-          stats.ignoredThreads += count;
-        } else {
-          stats.nonIgnoredThreads += count;
-
-          let queueData = this.queuedLabelMap_.get(label);
-          if (queueData.queue == QueueSettings.IMMEDIATE) {
-            stats.immediateCount += count;
-          } else if (queueData.queue == QueueSettings.DAILY) {
-            stats.dailyCount += count;
-          } else if (queueData.queue == QueueSettings.MONTHLY) {
-            stats.monthlyCount += count;
-          } else {
-            // Assume all the other queues are weekly queues.
-            stats.weeklyCount += count;
-          }
-        }
-      }
-    }
-
-    if (stats)
-      await this.writeCollapsedStats(stats);
-
-    if (lastRowProcessed > 0) {
-      await SpreadsheetUtils.deleteRows(
-          this.settings.spreadsheetId, STATISTICS_SHEET_NAME, 1,
-          lastRowProcessed + 1);
-    }
   }
 
   matchesHeader_(message: Message, header: HeaderFilterRule) {
@@ -306,8 +173,6 @@ export class MailProcessor {
 
   async processThread_(thread: Thread, skipPushThread: boolean) {
     try {
-      let startTime = new Date();
-
       let removeLabelIds = this.allLabels_.getMakeTimeLabelIds().concat();
       let processedLabelId =
           await this.allLabels_.getId(Labels.PROCESSED_LABEL);
@@ -318,7 +183,6 @@ export class MailProcessor {
         removeLabelIds = removeLabelIds.filter((item) => item != mutedId);
         removeLabelIds.push('INBOX');
         await thread.modify(addLabelIds, removeLabelIds);
-        this.logToStatsPage_(Labels.MUTED_LABEL, startTime);
         return;
       }
 
@@ -330,14 +194,6 @@ export class MailProcessor {
             await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
         removeLabelIds.push('INBOX');
         await thread.modify(addLabelIds, removeLabelIds);
-        // TODO: Technically the thread could have been in the TriageModel at
-        // this point and we need to remove it. That would happen if a thread
-        // didn't get auto-archived based off it's earlier messages, but would
-        // based of it's most recent message. Even if we hit this case it isn't
-        // so bad since the threadlist will get completely updated on the next
-        // update() call.
-        if (thread.isInInbox())
-          this.logToStatsPage_(labelName, startTime);
         return;
       }
 
@@ -358,8 +214,6 @@ export class MailProcessor {
       }
 
       let prefixedLabelId = await this.allLabels_.getId(prefixedLabelName);
-      let alreadyHadLabel = thread.getLabelIds().has(prefixedLabelId);
-
       addLabelIds.push(prefixedLabelId);
       removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);
 
@@ -374,32 +228,14 @@ export class MailProcessor {
           await this.pushThread_(thread);
         }
       }
-
-      if (!alreadyHadLabel)
-        this.logToStatsPage_(labelName, startTime);
     } catch (e) {
       ErrorLogger.log(`Failed to process message.\n\n${JSON.stringify(e)}`);
     }
   }
 
-  async logToStatsPage_(labelName: string, startTime: Date) {
-    // TODO: Simplify this now that we write the stats for each thread at a
-    // time.
-    let perLabelCounts: {[property: string]: number} = {};
-    perLabelCounts[labelName] = 1;
-    var data = [
-      startTime.getTime(), 1, Date.now() - startTime.getTime(),
-      JSON.stringify(perLabelCounts)
-    ];
-    await SpreadsheetUtils.appendToSheet(
-        this.settings.spreadsheetId, STATISTICS_SHEET_NAME, [data]);
-  }
-
   async process(threads: Thread[], skipPushThread?: boolean) {
     await this.processThreads_(threads, !!skipPushThread);
     await this.processQueues_();
-    if (threads.length)
-      await this.collapseStats_();
   }
 
   private async processThreads_(threads: Thread[], skipPushThread: boolean) {

@@ -126,21 +126,6 @@ export class Settings {
       initialData: [Settings.QUEUED_LABELS_SHEET_COLUMNS],
     },
     {
-      name: 'statistics',
-      initialData: [[
-        'timestamp', 'num_threads_labelled', 'total_time', 'per_label_counts'
-      ]],
-    },
-    {
-      name: 'daily_stats',
-      initialData: [[
-        'date', 'total_threads', 'archived_threads_count',
-        'non_archived_threads_count', 'immediate_count', 'daily_count',
-        'weekly_count', 'monthly_count', 'num_invocations',
-        'total_running_time', 'min_running_time', 'max_running_time'
-      ]],
-    },
-    {
       name: 'backend-do-not-modify',
     },
   ];
@@ -339,9 +324,6 @@ export class Settings {
           'fields': 'gridProperties.frozenRowCount'
         }
       });
-
-      if (data.name == 'daily_stats')
-        this.addDailyStatsCharts_(sheetId, formatSheetRequests);
     }
 
     await gapi.client.sheets.spreadsheets.batchUpdate({
@@ -350,146 +332,6 @@ export class Settings {
     });
 
     return spreadsheetId;
-  }
-
-  addDailyStatsCharts_(sheetId: string, requests: any[]) {
-    requests.push({
-      'addChart': {
-        'chart': {
-          'position': {'newSheet': true},
-          'spec': {
-            'basicChart': {
-              'chartType': 'AREA',
-              'stackedType': 'STACKED',
-              'legendPosition': 'TOP_LEGEND',
-              'headerCount': 1,
-              'domains': [{
-                'domain': {
-                  'sourceRange': {
-                    'sources': [{
-                      'sheetId': sheetId,
-                      'startRowIndex': 0,
-                      'startColumnIndex': 0,
-                      'endColumnIndex': 1
-                    }]
-                  }
-                }
-              }],
-              'series': [
-                {
-                  'series': {
-                    'sourceRange': {
-                      'sources': [{
-                        'sheetId': sheetId,
-                        'startRowIndex': 0,
-                        'startColumnIndex': 4,
-                        'endColumnIndex': 5
-                      }]
-                    }
-                  },
-                  'targetAxis': 'LEFT_AXIS'
-                },
-                {
-                  'series': {
-                    'sourceRange': {
-                      'sources': [{
-                        'sheetId': sheetId,
-                        'startRowIndex': 0,
-                        'startColumnIndex': 5,
-                        'endColumnIndex': 6
-                      }]
-                    }
-                  },
-                  'targetAxis': 'LEFT_AXIS'
-                },
-                {
-                  'series': {
-                    'sourceRange': {
-                      'sources': [{
-                        'sheetId': sheetId,
-                        'startRowIndex': 0,
-                        'startColumnIndex': 6,
-                        'endColumnIndex': 7
-                      }]
-                    }
-                  },
-                  'targetAxis': 'LEFT_AXIS'
-                },
-                {
-                  'series': {
-                    'sourceRange': {
-                      'sources': [{
-                        'sheetId': sheetId,
-                        'startRowIndex': 0,
-                        'startColumnIndex': 7,
-                        'endColumnIndex': 8
-                      }]
-                    }
-                  },
-                  'targetAxis': 'LEFT_AXIS'
-                },
-              ],
-            }
-          },
-        }
-      }
-    });
-
-    requests.push({
-      'addChart': {
-        'chart': {
-          'position': {'newSheet': true},
-          'spec': {
-            'basicChart': {
-              'chartType': 'AREA',
-              'stackedType': 'STACKED',
-              'legendPosition': 'TOP_LEGEND',
-              'headerCount': 1,
-              'domains': [{
-                'domain': {
-                  'sourceRange': {
-                    'sources': [{
-                      'sheetId': sheetId,
-                      'startRowIndex': 0,
-                      'startColumnIndex': 0,
-                      'endColumnIndex': 1
-                    }]
-                  }
-                }
-              }],
-              'series': [
-                {
-                  'series': {
-                    'sourceRange': {
-                      'sources': [{
-                        'sheetId': sheetId,
-                        'startRowIndex': 0,
-                        'startColumnIndex': 2,
-                        'endColumnIndex': 3
-                      }]
-                    }
-                  },
-                  'targetAxis': 'LEFT_AXIS'
-                },
-                {
-                  'series': {
-                    'sourceRange': {
-                      'sources': [{
-                        'sheetId': sheetId,
-                        'startRowIndex': 0,
-                        'startColumnIndex': 3,
-                        'endColumnIndex': 4
-                      }]
-                    }
-                  },
-                  'targetAxis': 'LEFT_AXIS'
-                },
-              ],
-            }
-          },
-        }
-      }
-    });
   }
 
   has(setting: string) {
