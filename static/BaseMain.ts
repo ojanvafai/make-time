@@ -3,8 +3,15 @@
 // modules. It's not trivial to detangle though. It's mostly reused functions
 // that have to know about Threads and things like that.
 
+import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
+// Sigh: We need the auth.js file to be imported after app.js, so import an
+// unused dummy name to make clang-format sort it correctly. Then we need to use
+// the import to keep typescript from stripping it.
+import * as usedForSideEffects from '../third_party/firebasejs/5.8.2/firebase-auth.js';
+usedForSideEffects;
+
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, getDefinitelyExistsElementById, notNull, showDialog, USER_ID} from './Base.js';
+import {assert, defined, getDefinitelyExistsElementById, notNull, USER_ID} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
@@ -28,20 +35,32 @@ interface TitleEntry {
 let settings_: Settings;
 let labels_: Labels;
 let queuedLabelMap_: QueueSettings;
-let loginDialog_: HTMLDialogElement;
 let titleStack_: TitleEntry[] = [];
 let loaderTitleStack_: TitleEntry[] = [];
 
 // Client ID and API key from the Developer Console
-let CLIENT_ID: string;
+let clientId: string;
+let firebaseConfig: {apiKey: string, authDomain: string, projectId: string};
 let isGoogle = location.toString().includes(':8000/') ||
     location.toString().includes('https://com-mktime');
-if (isGoogle)
-  CLIENT_ID =
+
+if (isGoogle) {
+  firebaseConfig = {
+    apiKey: 'AIzaSyCcuBNlI6FgtgiLub2ihGInrNwDc3_UZSY',
+    authDomain: 'com-mktime.firebaseapp.com',
+    projectId: 'google.com:mktime',
+  };
+  clientId =
       '800053010416-p1p6n47o6ovdm04329v9p8mskl618kuj.apps.googleusercontent.com';
-else
-  CLIENT_ID =
+} else {
+  firebaseConfig = {
+    apiKey: 'AIzaSyDFj2KpiXCNYnmp7VxKz5wpjJ4RquGB8qA',
+    authDomain: 'mk-time.firebaseapp.com',
+    projectId: 'mk-time',
+  };
+  clientId =
       '475495334695-0i3hbt50i5lj8blad3j7bj8j4fco8edo.apps.googleusercontent.com';
+}
 
 // Array of API discovery doc URLs for APIs used by the quickstart
 let DISCOVERY_DOCS = [
@@ -51,10 +70,14 @@ let DISCOVERY_DOCS = [
   'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 ];
 
-// Authorization scopes required by the API; multiple scopes can be
-// included, separated by spaces.
-let SCOPES =
-    'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/spreadsheets https://www.google.com/m8/feeds https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/calendar.readonly';
+// Authorization scopes required by the Google API.
+let SCOPES = [
+  'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.google.com/m8/feeds',
+  'https://www.googleapis.com/auth/drive.metadata.readonly',
+  'https://www.googleapis.com/auth/calendar.readonly',
+];
 
 let isSignedIn_ = false;
 
@@ -154,52 +177,76 @@ function loadGapi() {
   });
 };
 
-let queuedLogin_: ((value?: {}|PromiseLike<{}>|undefined) => void);
+function redirectToSignInPage_() {
+  var provider = new firebase.auth.GoogleAuthProvider();
+  SCOPES.forEach(x => provider.addScope(x));
+  firebase.auth().signInWithRedirect(provider);
+}
+
+let queuedLogin_: PromiseLike<{}>|undefined;
+let loadedGapi_ = false;
 
 export async function login() {
   if (isSignedIn_)
     return;
 
-  let progress = updateLoaderTitle('login', 1, 'Logging in...');
-
-  try {
-    await loadGapi();
-    await gapi.client.init(
-        {discoveryDocs: DISCOVERY_DOCS, clientId: CLIENT_ID, scope: SCOPES});
-    // Listen for sign-in state changes.
-    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-    // Handle the initial sign-in state.
-    let isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-    updateSigninStatus(isSignedIn);
-
-    if (!isSignedIn) {
-      await new Promise((resolve) => {
-        assert(
-            !queuedLogin_,
-            'login() was called twice while waiting for login to finish.');
-        queuedLogin_ = resolve;
-      });
-    }
-  } catch (e) {
-    showPleaseReload();
+  if (queuedLogin_) {
+    await queuedLogin_;
+    return;
   }
 
-  progress.incrementProgress();
-}
+  let progress = updateLoaderTitle('login', 1, 'Logging in...');
 
-async function updateSigninStatus(isSignedIn: boolean) {
-  isSignedIn_ = isSignedIn;
-  if (isSignedIn_) {
-    if (loginDialog_)
-      loginDialog_.close();
-    if (queuedLogin_)
-      queuedLogin_();
-  } else {
-    let loginButton = document.createElement('button');
-    loginButton.style.cssText = `font-size: 40px;`;
-    loginButton.textContent = 'Log In';
-    loginButton.onclick = () => gapi.auth2.getAuthInstance().signIn();
-    loginDialog_ = showDialog(loginButton);
+  // Assert that we're not initializing firebase more than once.
+  assert(!firebase.apps.length);
+
+  try {
+    await firebase.initializeApp(firebaseConfig);
+
+    // getRedirectResult triggers onIdTokenChanged, so no need to handle the
+    // result, but we do need to call it.
+    await firebase.auth().getRedirectResult();
+
+    queuedLogin_ = new Promise(resolve => {
+      // Use onIdTokenChanged instead of onAuthStateChanged since that captures
+      // id token revocation in addition to login/logout.
+      firebase.auth().onIdTokenChanged(async (user) => {
+        if (user) {
+          if (loadedGapi_)
+            return;
+          loadedGapi_ = true;
+          await loadGapi();
+          await gapi.client.init({
+            discoveryDocs: DISCOVERY_DOCS,
+            clientId: clientId,
+            scope: SCOPES.join(' '),
+          });
+
+          if (!gapi.auth2.getAuthInstance().isSignedIn.get())
+            redirectToSignInPage_();
+
+          // Firebase APIs don't detect signout of google accounts. They manage
+          // firebase tokens only. It's weird though, since they fire
+          // onIdTokenChanged but still pass a user object as if you're still
+          // signed in.
+          gapi.auth2.getAuthInstance().isSignedIn.listen(
+              (isSignedIn: boolean) => {
+                if (!isSignedIn)
+                  redirectToSignInPage_();
+              });
+
+          progress.incrementProgress();
+          resolve();
+        } else {
+          redirectToSignInPage_();
+        }
+      });
+    });
+    return queuedLogin_;
+  } catch (e) {
+    showPleaseReload();
+    console.log(e);
+    return;
   }
 }
 

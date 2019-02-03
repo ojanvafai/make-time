@@ -1,4 +1,4 @@
-import emailJsParseAddressList from '../deps/emailjs-addressparser/addressparser.js';
+import emailJsParseAddressList from '../third_party/emailjs-addressparser/addressparser.js';
 import {gapiFetch} from './Net.js';
 
 export let USER_ID = 'me';
