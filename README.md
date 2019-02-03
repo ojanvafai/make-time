@@ -1,6 +1,9 @@
 # MakeTime
 Make-time is an opinionated email client for Gmail.
 
+Contributions in the form of filing bugs or pull requests for anything ranging from
+typo fixes to substantial changes are very welcome.
+
 ## Install dependencies
 1. Checkout https://github.com/ojanvafai/make-time
 2. npm install
