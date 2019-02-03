@@ -11,5 +11,3 @@ if (!window.firebase.auth) {
 const result = window.firebase.auth;
 if (!result) throw Error("Something went wrong with wrapping firebase.auth.")
 export default result
-
-//# sourceMappingURL=firebase-auth.js.map

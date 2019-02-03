@@ -1,60 +1,73 @@
-import {SpreadsheetUtils, SpreadsheetCellValue} from './SpreadsheetUtils.js';
+import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-export interface StorageUpdate {
-  key: string;
-  value: SpreadsheetCellValue;
+import {notNull} from './Base.js';
+import {firebaseAuth, firestore} from './BaseMain.js';
+import {SpreadsheetCellValue, SpreadsheetUtils} from './SpreadsheetUtils.js';
+
+export interface StorageUpdates {
+  [property: string]: SpreadsheetCellValue;
 }
 
 export class ServerStorage {
-  private static backendValues_: any;
+  // private static backendValues_: any;
+  private static data_: firebase.firestore.DocumentSnapshot;
   static BACKEND_SHEET_NAME_: string;
   static KEYS: KeyTypes;
 
   constructor(private spreadsheetId_: string) {}
 
+  // TODO: Rename to init.
   async fetch() {
-    if (ServerStorage.backendValues_)
+    if (ServerStorage.data_)
       return;
 
+    let doc = this.getDocument_();
+    ServerStorage.data_ = await doc.get();
+
+    if (!ServerStorage.data_.exists) {
+      // TODO: Delete this one all users are migrated to firestore.
+      let spreadsheetData = await this.fetchSpreadsheetValues_();
+      await doc.set(spreadsheetData || {});
+      ServerStorage.data_ = await doc.get();
+    }
+  }
+
+  private async fetchSpreadsheetValues_() {
     const rawBackendValues = await SpreadsheetUtils.fetch2ColumnSheet(
         this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_);
 
-    // TODO: Remove the string check once clients have updated to not have
-    // stray undefineds in their settings.
-    let hasInvalidValues = false;
-    ServerStorage.backendValues_ = {};
+    let values: any = {};
     // Strip no longer supported backend keys.
     for (let key of Object.values(ServerStorage.KEYS)) {
       let value = rawBackendValues[key];
       // TODO: Remove the string check once clients have updated to not have
       // stray undefineds in their settings.
       if (value === 'undefined') {
-        hasInvalidValues = true;
         value = '';
       }
       if (value !== undefined)
-        ServerStorage.backendValues_[key] = value;
+        values[key] = value;
     }
+    return values;
+  }
 
-    // Write out the valid values and remove this once all clients update.
-    if (hasInvalidValues)
-      await this.writeUpdates([]);
+  getDocument_() {
+    let db = firestore();
+    let uid = notNull(firebaseAuth().currentUser).uid;
+    return db.collection('users').doc(uid);
   }
 
   get(key: string) {
-    if (!ServerStorage.backendValues_)
+    if (!ServerStorage.data_) {
       throw `Attempted to read out of storage before fetching from the network: ${
           key}.`;
-    return ServerStorage.backendValues_[key];
+    }
+    return ServerStorage.data_.get(key);
   }
 
-  async writeUpdates(updates: StorageUpdate[]) {
-    for (let update of updates) {
-      ServerStorage.backendValues_[update.key] = update.value;
-    }
-    await SpreadsheetUtils.write2ColumnSheet(
-        this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_,
-        Object.entries(ServerStorage.backendValues_));
+  async writeUpdates(updates: StorageUpdates) {
+    let doc = this.getDocument_();
+    doc.update(updates);
   }
 }
 

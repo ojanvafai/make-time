@@ -1,7 +1,7 @@
 import {AsyncOnce} from './AsyncOnce.js';
 import {assert, defined, notNull, showDialog} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
-import {ServerStorage, StorageUpdate} from './ServerStorage.js';
+import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export interface HeaderFilterRule {
@@ -210,6 +210,10 @@ export class Settings {
   }
 
   async fetch_() {
+    // TODO: Once ServerStorage no longer needs spreadsheetId, fetch the
+    // spreadsheetId on demand so that we don't block on the drive/spreadsheet
+    // API calls on initial load until we do something that requires filter or
+    // queue data.
     this.spreadsheetId = await this.getSpreadsheetId_();
     this.storage_ = new ServerStorage(this.spreadsheetId);
     await this.storage_.fetch();
@@ -503,7 +507,7 @@ export class Settings {
     return value;
   }
 
-  async writeUpdates(updates: StorageUpdate[]) {
+  async writeUpdates(updates: StorageUpdates) {
     await this.storage_.writeUpdates(updates);
   }
 

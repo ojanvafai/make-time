@@ -1,6 +1,7 @@
-import {defined, showDialog, notNull} from '../Base.js';
+import {defined, notNull, showDialog} from '../Base.js';
 import {Labels} from '../Labels.js';
 import {QueueSettings} from '../QueueSettings.js';
+import {StorageUpdates} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
 import {FiltersView} from './FiltersView.js';
@@ -189,12 +190,12 @@ export class SettingsView extends HTMLElement {
       return;
     }
 
-    let updates: {key: string, value: string|boolean}[] = [];
+    let updates: StorageUpdates = {};
     let inputs = this.basicSettings_.querySelectorAll('input');
     for (let input of inputs) {
       let key = notNull(input.getAttribute('key'));
       let value = input.type == 'checkbox' ? input.checked : input.value;
-      updates.push({key: key, value: value});
+      updates[key] = value;
     }
     await this.settings_.writeUpdates(updates);
 

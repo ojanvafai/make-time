@@ -10,4 +10,3 @@ if (!window.firebase) {
 }
 export const firebase = window.firebase;
 if (!firebase) throw Error("Something went wrong with wrapping firebase.")
-//# sourceMappingURL=firebase-app.js.map

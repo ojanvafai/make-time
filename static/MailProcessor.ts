@@ -5,7 +5,7 @@ import {Labels} from './Labels.js';
 import {Message} from './Message.js';
 import {TriageModel} from './models/TriageModel.js';
 import {QueueSettings} from './QueueSettings.js';
-import {ServerStorage} from './ServerStorage.js';
+import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
@@ -515,7 +515,8 @@ export class MailProcessor {
       await this.processSingleQueue(category);
     }
 
-    await storage.writeUpdates(
-        [{key: ServerStorage.KEYS.LAST_DEQUEUE_TIME, value: Date.now()}]);
+    let updates: StorageUpdates = {};
+    updates[ServerStorage.KEYS.LAST_DEQUEUE_TIME] = Date.now();
+    await storage.writeUpdates(updates);
   }
 }

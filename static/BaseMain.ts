@@ -9,6 +9,8 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 // the import to keep typescript from stripping it.
 import * as usedForSideEffects from '../third_party/firebasejs/5.8.2/firebase-auth.js';
 usedForSideEffects;
+import * as usedForSideEffects2 from '../third_party/firebasejs/5.8.2/firebase-firestore.js';
+usedForSideEffects2;
 
 import {AsyncOnce} from './AsyncOnce.js';
 import {assert, defined, getDefinitelyExistsElementById, notNull, USER_ID} from './Base.js';
@@ -17,7 +19,7 @@ import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {QueueSettings} from './QueueSettings.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
-import {ServerStorage} from './ServerStorage.js';
+import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {ThreadFetcher} from './ThreadFetcher.js';
 import {HelpDialog} from './views/HelpDialog.js';
@@ -111,8 +113,9 @@ async function fetchTheSettingsThings() {
       let storage = new ServerStorage(settings_.spreadsheetId);
       if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
         await showHelp();
-        storage.writeUpdates(
-            [{key: ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN, value: true}]);
+        let updates: StorageUpdates = {};
+        updates[ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN] = true;
+        storage.writeUpdates(updates);
       }
 
       await labelsPromise;
@@ -248,6 +251,18 @@ export async function login() {
     console.log(e);
     return;
   }
+}
+
+let firestore_: firebase.firestore.Firestore;
+export function firestore() {
+  if (!firestore_) {
+    firestore_ = firebase.firestore();
+  }
+  return firestore_;
+}
+
+export function firebaseAuth() {
+  return firebase.auth();
 }
 
 export function updateTitle(key: string, ...opt_title: string[]) {
