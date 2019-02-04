@@ -34,6 +34,7 @@ interface TitleEntry {
   title: (HTMLElement|string)[];
 }
 
+let storage_: ServerStorage;
 let settings_: Settings;
 let labels_: Labels;
 let queuedLabelMap_: QueueSettings;
@@ -93,6 +94,11 @@ export async function getSettings() {
   return settings_;
 }
 
+export async function getServerStorage() {
+  await fetchTheSettingsThings();
+  return storage_;
+}
+
 let settingThingsFetcher_: AsyncOnce<void>;
 async function fetchTheSettingsThings() {
   if (!settingThingsFetcher_) {
@@ -109,13 +115,17 @@ async function fetchTheSettingsThings() {
       let labelsPromise = labels_.fetch();
 
       await settings_.fetch();
+      // TODO: Once we don't need the spreadsheetId anymore pass ServerStorage
+      // as an argument to the Settings constructor.
+      storage_ = new ServerStorage(settings_.spreadsheetId);
+      settings_.setStorage(storage_);
+      await storage_.fetch();
 
-      let storage = new ServerStorage(settings_.spreadsheetId);
-      if (!storage.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
+      if (!storage_.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
         await showHelp();
         let updates: StorageUpdates = {};
         updates[ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN] = true;
-        storage.writeUpdates(updates);
+        storage_.writeUpdates(updates);
       }
 
       await labelsPromise;
@@ -166,7 +176,7 @@ let queueSettingsFetcher_: AsyncOnce<void>;
 export async function getQueuedLabelMap() {
   if (!queueSettingsFetcher_) {
     queueSettingsFetcher_ = new AsyncOnce<void>(async () => {
-      queuedLabelMap_ = new QueueSettings((await getSettings()).spreadsheetId);
+      queuedLabelMap_ = new QueueSettings(await getServerStorage());
       await queuedLabelMap_.fetch();
     });
   }

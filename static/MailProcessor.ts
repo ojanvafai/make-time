@@ -1,5 +1,5 @@
 import {notNull, parseAddressList, ParsedAddress} from './Base.js';
-import {fetchThreads, updateLoaderTitle} from './BaseMain.js';
+import {fetchThreads, updateLoaderTitle, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -339,7 +339,7 @@ export class MailProcessor {
   }
 
   private async processQueues_() {
-    let storage = new ServerStorage(this.settings.spreadsheetId);
+    let storage = await getServerStorage();
     await storage.fetch();
     let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
     const categories = this.categoriesToDequeue(lastDequeueTime);

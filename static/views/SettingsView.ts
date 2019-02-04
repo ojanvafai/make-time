@@ -95,7 +95,6 @@ export class SettingsView extends HTMLElement {
       return;
     }
     new FiltersView(this.settings_);
-    this.cancel_();
   }
 
   async showQueuesDialog_() {
@@ -115,7 +114,6 @@ export class SettingsView extends HTMLElement {
     queues.add(Labels.FALLBACK_LABEL);
 
     new QueuesView(queues, this.queueSettings_);
-    this.cancel_();
   }
 
   populateSettings_(container: HTMLElement) {
@@ -198,8 +196,7 @@ export class SettingsView extends HTMLElement {
       updates[key] = value;
     }
     await this.settings_.writeUpdates(updates);
-
-    window.location.reload();
+    this.dialog_.close();
   }
 
   cancel_() {

@@ -2,19 +2,22 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {notNull} from './Base.js';
 import {firebaseAuth, firestore} from './BaseMain.js';
-import {SpreadsheetCellValue, SpreadsheetUtils} from './SpreadsheetUtils.js';
+import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export interface StorageUpdates {
-  [property: string]: SpreadsheetCellValue;
+  [property: string]: any;
 }
 
-export class ServerStorage {
-  // private static backendValues_: any;
+export const ServerStorageUpdateEventName = 'server-storage-update';
+
+export class ServerStorage extends EventTarget {
   private static data_: firebase.firestore.DocumentSnapshot;
   static BACKEND_SHEET_NAME_: string;
   static KEYS: KeyTypes;
 
-  constructor(private spreadsheetId_: string) {}
+  constructor(public spreadsheetId: string) {
+    super();
+  }
 
   // TODO: Rename to init.
   async fetch() {
@@ -22,6 +25,10 @@ export class ServerStorage {
       return;
 
     let doc = this.getDocument_();
+    doc.onSnapshot((snapshot) => {
+      ServerStorage.data_ = snapshot;
+      this.dispatchEvent(new Event(ServerStorageUpdateEventName));
+    });
     ServerStorage.data_ = await doc.get();
 
     if (!ServerStorage.data_.exists) {
@@ -34,7 +41,7 @@ export class ServerStorage {
 
   private async fetchSpreadsheetValues_() {
     const rawBackendValues = await SpreadsheetUtils.fetch2ColumnSheet(
-        this.spreadsheetId_, ServerStorage.BACKEND_SHEET_NAME_);
+        this.spreadsheetId, ServerStorage.BACKEND_SHEET_NAME_);
 
     let values: any = {};
     // Strip no longer supported backend keys.
@@ -81,6 +88,7 @@ interface KeyTypes {
   DAYS_TO_SHOW: string;
   LOG_MATCHING_RULES: string;
   TRACK_LONG_TASKS: string;
+  QUEUES: string;
 }
 
 let keys: KeyTypes = {
@@ -93,6 +101,7 @@ let keys: KeyTypes = {
   DAYS_TO_SHOW: 'days_to_show',
   LOG_MATCHING_RULES: 'log_matching_rules',
   TRACK_LONG_TASKS: 'track_long_tasks',
+  QUEUES: 'queues',
 };
 
 // List of keys stored in the backend sheet.

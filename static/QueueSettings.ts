@@ -1,5 +1,7 @@
 import {AsyncOnce} from './AsyncOnce.js';
+import {defined} from './Base.js';
 import {Labels} from './Labels.js';
+import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
@@ -14,11 +16,13 @@ export interface QueueListEntry {
   data: QueueData;
 }
 
+export interface AllQueueDatas {
+  [property: string]: QueueData;
+}
+
 export class QueueSettings {
   private fetcher_: AsyncOnce<void>;
-  // TODO: Fix these to not assert non-null since they could realistically be
-  // null if fetch() isn't completed.
-  private map_!: Map<string, QueueData>;
+  private queueDatas_?: AllQueueDatas;
 
   private static BUFFER_ = 10000;
   static MONTHLY = 'Monthly';
@@ -30,47 +34,52 @@ export class QueueSettings {
   ];
   static goals = ['Inbox Zero', 'Best Effort']
 
-  constructor(private spreadsheetId_: string) {
-    this.fetcher_ = new AsyncOnce<void>(this.fetch_.bind(this))
+  constructor(private storage_: ServerStorage) {
+    this.storage_.addEventListener(
+        ServerStorageUpdateEventName, () => this.resetQueueData_());
+    this.fetcher_ = new AsyncOnce<void>(this.fetch_.bind(this));
   }
 
   async fetch() {
     await this.fetcher_.do()
   }
 
-  async fetch_() {
-    let values = await SpreadsheetUtils.fetchSheet(
-        this.spreadsheetId_, `${Settings.QUEUED_LABELS_SHEET_NAME}!A2:D`);
-    this.populateMap_(values);
+  resetQueueData_() {
+    this.queueDatas_ = this.storage_.get(ServerStorage.KEYS.QUEUES);
+    // Blocked is a special label that dequeues daily, is not best effort, and
+    // is always put first.
+    defined(this.queueDatas_)[Labels.BLOCKED_SUFFIX] =
+        this.queueData_(QueueSettings.DAILY);
   }
 
-  populateMap_(rawData: any) {
-    this.map_ = new Map();
+  async fetch_() {
+    this.resetQueueData_();
 
-    for (let value of rawData) {
-      let labelName = value[0].toLowerCase();
-      let queueData;
-      // Blocked is a special label that dequeues daily, is not best effort, and
-      // is always put first.
-      if (labelName === Labels.BLOCKED_SUFFIX)
-        queueData = this.queueData_(QueueSettings.DAILY);
-      else
-        queueData = this.queueData_(value[1], value[2], value[3]);
-      this.map_.set(labelName, queueData);
+    if (!this.queueDatas_) {
+      let values = await SpreadsheetUtils.fetchSheet(
+          this.storage_.spreadsheetId,
+          `${Settings.QUEUED_LABELS_SHEET_NAME}!A2:D`);
+      let oldData: any = {};
+      for (let value of values) {
+        let labelName = (value[0] as string).toLowerCase();
+        oldData[labelName] = this.queueData_(
+            value[1] as string, value[2] as string, value[3] as number);
+      }
+      let updates: StorageUpdates = {};
+      updates[ServerStorage.KEYS.QUEUES] = oldData;
+      this.storage_.writeUpdates(updates);
     }
   }
 
-  async write(newData: any[]) {
-    let originalQueueCount = this.map_.size;
-    let dataToWrite = [Settings.QUEUED_LABELS_SHEET_COLUMNS].concat(newData);
-    await SpreadsheetUtils.writeSheet(
-        this.spreadsheetId_, Settings.QUEUED_LABELS_SHEET_NAME, dataToWrite,
-        originalQueueCount);
-    this.populateMap_(newData);
+  async write(newData: AllQueueDatas) {
+    let updates: StorageUpdates = {};
+    updates[ServerStorage.KEYS.QUEUES] = newData;
+    this.storage_.writeUpdates(updates);
   }
 
   get(labelSuffix: string) {
-    return this.map_.get(labelSuffix.toLowerCase()) || this.queueData_();
+    return defined(this.queueDatas_)[labelSuffix.toLowerCase()] ||
+        this.queueData_();
   }
 
   queueComparator_(a: QueueListEntry, b: QueueListEntry) {
@@ -118,7 +127,7 @@ export class QueueSettings {
   }
 
   entries() {
-    return this.map_.entries();
+    return Object.entries(defined(this.queueDatas_));
   }
 
   static queueIndex_ = (queueData: QueueData) => {

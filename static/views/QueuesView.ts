@@ -1,5 +1,5 @@
-import {defined, showDialog, notNull} from '../Base.js';
-import {QueueListEntry, QueueSettings} from '../QueueSettings.js';
+import {defined, notNull, showDialog} from '../Base.js';
+import {AllQueueDatas, QueueListEntry, QueueSettings} from '../QueueSettings.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
@@ -170,8 +170,7 @@ export class QueuesView extends HTMLElement {
     this.dialog_ = showDialog(this);
   }
 
-  extractQueueData_(
-      output: (string|number)[][], group: HTMLElement, queue: string) {
+  extractQueueData_(output: AllQueueDatas, group: HTMLElement, queue: string) {
     let selectors = group.querySelectorAll(`.${QueuesView.rowClassName_}`);
     for (let i = 0; i < selectors.length; i++) {
       let selector = selectors[i];
@@ -183,12 +182,12 @@ export class QueuesView extends HTMLElement {
       let goal = (<HTMLSelectElement>selector.querySelector('.goal')!)
                      .selectedOptions[0]
                      .value;
-      output.push([label, queue, goal, i + 1]);
+      output[label] = {queue, goal, index: i + 1};
     }
   }
 
   async save_() {
-    let newQueueData: (string|number)[][] = [];
+    let newQueueData: AllQueueDatas = {};
 
     this.extractQueueData_(
         newQueueData, this.immediate_!, QueueSettings.IMMEDIATE);
@@ -196,12 +195,7 @@ export class QueuesView extends HTMLElement {
     this.extractQueueData_(newQueueData, this.weekly_!, QueueSettings.WEEKLY);
     this.extractQueueData_(newQueueData, this.monthly_!, QueueSettings.MONTHLY);
 
-    if (newQueueData.length) {
-      await this.queuedLabelData_.write(newQueueData);
-      window.location.reload();
-      return;
-    }
-
+    await this.queuedLabelData_.write(newQueueData);
     defined(this.dialog_).close();
   }
 

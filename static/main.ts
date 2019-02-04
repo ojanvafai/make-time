@@ -1,7 +1,7 @@
 import {getActionKey, getActions} from './Actions.js';
 import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
-import {getLabels, getQueuedLabelMap, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {getLabels, getQueuedLabelMap, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
@@ -14,7 +14,7 @@ import {TodoModel} from './models/TodoModel.js';
 import {TriageModel} from './models/TriageModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
-import {ServerStorage} from './ServerStorage.js';
+import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
 import {HelpDialog} from './views/HelpDialog.js';
@@ -311,6 +311,14 @@ function appendMenu() {
 }
 
 async function onLoad() {
+  let serverStorage = await getServerStorage();
+  serverStorage.addEventListener(ServerStorageUpdateEventName, () => {
+    // Rerender the current view on settings changes in case a setting would
+    // change it's behavior, e.g. duration of the countdown timer or sort order
+    // of queues.
+    routeToCurrentLocation();
+  });
+
   appendMenu();
   await routeToCurrentLocation();
   await update();
