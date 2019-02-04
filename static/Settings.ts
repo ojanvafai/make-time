@@ -339,11 +339,8 @@ export class Settings {
 
   get(setting: string) {
     let value = this.storage_.get(setting);
-    if (value === undefined)
+    if (value === null || value === undefined)
       return this.defaultValue_(setting);
-    let settingData = Settings.fields.find((item) => item.key == setting);
-    if (settingData && settingData.type == 'checkbox')
-      return value === 'TRUE';
     return value;
   }
 

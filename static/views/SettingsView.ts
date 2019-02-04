@@ -192,7 +192,17 @@ export class SettingsView extends HTMLElement {
     let inputs = this.basicSettings_.querySelectorAll('input');
     for (let input of inputs) {
       let key = notNull(input.getAttribute('key'));
-      let value = input.type == 'checkbox' ? input.checked : input.value;
+      let value;
+      switch (input.type) {
+        case 'checkbox':
+          value = input.checked;
+          break;
+        case 'number':
+          value = input.value === '' ? null : input.value;
+          break;
+        default:
+          value = input.value;
+      }
       updates[key] = value;
     }
     await this.settings_.writeUpdates(updates);

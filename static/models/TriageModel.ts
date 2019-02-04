@@ -22,7 +22,7 @@ export class TriageModel extends ThreadListModel {
   private needsArchivingThreads_: Thread[];
   private pendingThreads_: Thread[];
   private mailProcessor_: MailProcessor;
-  private daysToShow_?: number;
+  private daysToShow_: number|null;
 
   constructor(
       private vacation_: string, labels: Labels, settings_: Settings,
@@ -92,7 +92,7 @@ export class TriageModel extends ThreadListModel {
     if (this.vacation_ && (this.vacation_ !== thread.getDisplayableQueue()))
       return false;
 
-    if (this.daysToShow_ !== undefined &&
+    if (this.daysToShow_ !== null &&
         this.threadDays_(thread) > this.daysToShow_)
       return false;
 

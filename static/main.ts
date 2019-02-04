@@ -244,7 +244,12 @@ async function createThreadListView(
       timerDuration, bottomButtonUrl, bottomButtonText);
 }
 
-let triageModel_: TriageModel;
+async function resetModels() {
+  triageModel_ = undefined;
+  todoModel_ = undefined;
+}
+
+let triageModel_: TriageModel|undefined;
 async function getTriageModel() {
   if (!triageModel_) {
     let settings = await getSettings();
@@ -255,7 +260,7 @@ async function getTriageModel() {
   return triageModel_;
 }
 
-let todoModel_: TodoModel;
+let todoModel_: TodoModel|undefined;
 async function getTodoModel() {
   if (!todoModel_) {
     let settings = await getSettings();
@@ -312,11 +317,12 @@ function appendMenu() {
 
 async function onLoad() {
   let serverStorage = await getServerStorage();
-  serverStorage.addEventListener(ServerStorageUpdateEventName, () => {
+  serverStorage.addEventListener(ServerStorageUpdateEventName, async () => {
     // Rerender the current view on settings changes in case a setting would
     // change it's behavior, e.g. duration of the countdown timer or sort order
     // of queues.
-    routeToCurrentLocation();
+    await resetModels();
+    await routeToCurrentLocation();
   });
 
   appendMenu();
