@@ -1,6 +1,6 @@
 import {defined, showDialog} from '../Base.js';
 import {Labels} from '../Labels.js';
-import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterField, Settings} from '../Settings.js';
+import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
@@ -203,7 +203,7 @@ export class FiltersView extends HTMLElement {
       if (isHeaderFilterField(key)) {
         headerRules.push({name: key.substring(1), value: String(obj[key])});
       } else {
-        let validField = setFilterField(rule, key, obj[key]);
+        let validField = setFilterStringField(rule, key, obj[key]);
         if (!validField)
           return null;
       }
@@ -239,7 +239,7 @@ export class FiltersView extends HTMLElement {
 
       let matchAll = <HTMLInputElement>row.querySelector('.matchallmessages');
       if (matchAll.checked)
-        rule.matchallmessages = 'yes';
+        rule.matchallmessages = true;
 
       let noListId = <HTMLInputElement>row.querySelector('.nolistid');
       if (noListId.checked)

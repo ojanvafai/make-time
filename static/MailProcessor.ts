@@ -145,7 +145,7 @@ export class MailProcessor {
     var messages = thread.getMessages();
 
     for (let rule of rules) {
-      if (rule.matchallmessages == 'yes') {
+      if (rule.matchallmessages) {
         let matches = false;
         for (let message of messages) {
           matches = this.matchesRule(rule, message);

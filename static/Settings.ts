@@ -1,6 +1,8 @@
+import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
+
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, notNull, showDialog} from './Base.js';
-import {ErrorLogger} from './ErrorLogger.js';
+import {assert, defined, notNull} from './Base.js';
+import {firebaseAuth, firestore} from './BaseMain.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
@@ -11,7 +13,7 @@ export interface HeaderFilterRule {
 
 export interface FilterRule {
   label: string;
-  matchallmessages?: string;
+  matchallmessages?: boolean;
   nolistid?: boolean;
   nocc?: boolean;
   to?: string;
@@ -30,7 +32,8 @@ export function isHeaderFilterField(fieldName: string) {
 
 // TODO: Is there a less verbose way to do this while still having strict
 // typing?
-export function setFilterField(rule: FilterRule, name: string, value: string) {
+export function setFilterStringField(
+    rule: FilterRule, name: string, value: string) {
   switch (name) {
     case 'label':
       rule.label = value;
@@ -56,79 +59,26 @@ export function setFilterField(rule: FilterRule, name: string, value: string) {
       rule.htmlcontent = value;
       break;
 
-    case 'matchallmessages':
-      rule.matchallmessages = value;
-      break;
-
     default:
       return false;
   }
   return true;
 }
 
-export function getFilterField(rule: FilterRule, name: string): string|boolean|
-    undefined {
-  switch (name) {
-    case 'label':
-      return rule.label;
-
-    case 'to':
-      return rule.to;
-
-    case 'from':
-      return rule.from;
-
-    case 'subject':
-      return rule.subject
-
-      case 'plaintext': return rule.plaintext
-
-      case 'htmlcontent': return rule.htmlcontent
-
-      case 'matchallmessages': return rule.matchallmessages;
-
-    case 'nolistid':
-      return rule.nolistid;
-
-    case 'nocc':
-      return rule.nocc;
-
-    default:
-      // Throw instead of asserting here so that TypeScript knows that this
-      // function never returns undefined.
-      throw new Error('This should never happen.');
-  }
-}
+let FILTERS_KEY = 'filters';
 
 export class Settings {
   private fetcher_: AsyncOnce<void>;
-  // TODO: Fix these to not assert non-null since they could realistically be
-  // null if fetch() isn't completed.
   spreadsheetId!: string;
+  // TODO: Pass this in as a constructor argument and remove the assert !.
   private storage_!: ServerStorage;
-  private filters_: FilterRule[]|null;
+  private filters_?: firebase.firestore.DocumentSnapshot;
 
-  static QUEUED_LABELS_SHEET_NAME = 'queued_labels';
-  static QUEUED_LABELS_SHEET_COLUMNS = ['label', 'queue', 'goal', 'index'];
-  static FILTERS_SHEET_NAME_ = 'filters';
+  private static FILTERS_SHEET_NAME_ = 'filters';
   static FILTERS_RULE_DIRECTIVES =
       ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
-  static FILTERS_SHEET_COLUMNS_ = ['label'].concat(
+  private static FILTER_RULE_FIELDS_ = ['label'].concat(
       Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
-
-  static sheetData_ = [
-    {
-      name: Settings.FILTERS_SHEET_NAME_,
-      initialData: [Settings.FILTERS_SHEET_COLUMNS_],
-    },
-    {
-      name: Settings.QUEUED_LABELS_SHEET_NAME,
-      initialData: [Settings.QUEUED_LABELS_SHEET_COLUMNS],
-    },
-    {
-      name: 'backend-do-not-modify',
-    },
-  ];
 
   static fields = [
     {
@@ -187,7 +137,6 @@ export class Settings {
 
   constructor() {
     this.fetcher_ = new AsyncOnce<void>(this.fetch_.bind(this));
-    this.filters_ = null;
   }
 
   async fetch() {
@@ -211,125 +160,9 @@ export class Settings {
     if (!response || !response.result || !response.result.files)
       throw `Couldn't fetch settings spreadsheet.`;
 
-    if (!response.result.files.length)
-      await this.showSetupDialog_();
+    assert(response.result.files.length);
     let id = response.result.files[0].id;
     return assert(id, 'Fetched spreadsheet file, but has no spreadsheetId');
-  }
-
-  async showSetupDialog_() {
-    return new Promise(() => {
-      let generateBackendLink = document.createElement('a');
-      generateBackendLink.append(
-          'Click here to generate a backend spreadsheet');
-      generateBackendLink.onclick = async () => {
-        generateBackendLink.textContent = 'generating...';
-        setTimeout(
-            () => ErrorLogger.log(
-                'Hmmm...this is taking a while, something might have gone wrong. Keep waiting a bit or reload to try again.'),
-            30000);
-        await this.generateSpreadsheet();
-        window.location.reload();
-      };
-
-      let contents = document.createElement('div');
-      contents.style.overflow = 'auto';
-      contents.append(
-          `make-time is a side project and I don't want to deal with storing sensitive data on a server. So all data is stored in a spreadsheet of your making or in your browser's local storage. This may change in the future.\n\n`,
-          generateBackendLink);
-
-      let dialog = showDialog(contents);
-      dialog.style.whiteSpace = 'pre-wrap';
-      dialog.oncancel = () => {
-        alert(`Make-time requires a settings spreadsheet to function.`);
-        window.location.reload();
-      };
-    });
-  }
-
-  async generateSpreadsheet() {
-    let response = await gapi.client.sheets.spreadsheets.create(
-        {}, {'properties': {'title': 'make-time backend (do not rename!)'}});
-    let spreadsheetId = assert(
-        response.result.spreadsheetId,
-        'Something went wrong generating the spreadsheet.');
-
-    let addSheetRequests: {}[] = [];
-    for (let i = 0; i < Settings.sheetData_.length; i++) {
-      let data = Settings.sheetData_[i];
-      addSheetRequests.push({addSheet: {properties: {title: data.name}}});
-    }
-    addSheetRequests.push({deleteSheet: {sheetId: 0}});
-
-    let addSheetsResponse = await gapi.client.sheets.spreadsheets.batchUpdate({
-      spreadsheetId: spreadsheetId,
-      resource: {requests: addSheetRequests},
-    });
-
-    let sheetNameToId: any = {};
-
-    let replies = assert(
-        addSheetsResponse.result.replies, 'Generating spreadsheet failed.');
-
-    for (let reply of replies) {
-      if (!reply.addSheet)
-        continue;
-      let properties =
-          assert(reply.addSheet.properties, 'Generating spreadsheet failed.');
-      sheetNameToId[defined(properties.title)] = properties.sheetId;
-    }
-
-    let formatSheetRequests: {}[] = [];
-
-    for (let i = 0; i < Settings.sheetData_.length; i++) {
-      let data = Settings.sheetData_[i];
-
-      if (!data.initialData)
-        continue;
-
-      let values = data.initialData;
-      await gapi.client.sheets.spreadsheets.values.update(
-          {
-            spreadsheetId: spreadsheetId,
-            range: SpreadsheetUtils.a1Notation(data.name, 0, values[0].length),
-            valueInputOption: 'USER_ENTERED',
-          },
-          {
-            majorDimension: 'ROWS',
-            values: values,
-          });
-
-      let sheetId = sheetNameToId[data.name];
-
-      // Bold first row
-      formatSheetRequests.push({
-        'repeatCell': {
-          'range': {'sheetId': sheetId, 'startRowIndex': 0, 'endRowIndex': 1},
-          'cell': {'userEnteredFormat': {'textFormat': {'bold': true}}},
-          'fields': 'userEnteredFormat(textFormat)',
-        }
-      });
-
-      // Freeze first row
-      formatSheetRequests.push({
-        'updateSheetProperties': {
-          'properties': {
-            'sheetId': sheetId,
-            'gridProperties': {
-              'frozenRowCount': 1,
-            }
-          },
-          'fields': 'gridProperties.frozenRowCount'
-        }
-      });
-    }
-
-    await gapi.client.sheets.spreadsheets.batchUpdate({
-      spreadsheetId: spreadsheetId,
-      resource: {requests: formatSheetRequests},
-    });
-
-    return spreadsheetId;
   }
 
   has(setting: string) {
@@ -356,16 +189,42 @@ export class Settings {
     throw `No such setting: ${setting}`;
   }
 
-  async getFilters() {
-    if (this.filters_)
-      return this.filters_;
+  getFiltersDocument_() {
+    let db = firestore();
+    let uid = notNull(firebaseAuth().currentUser).uid;
+    return db.collection(uid).doc('filters');
+  }
 
+  filtersObject_(rules: FilterRule[]) {
+    return {
+      filters: rules,
+    }
+  }
+
+  async getFilters() {
+    if (!this.filters_) {
+      let doc = this.getFiltersDocument_();
+      doc.onSnapshot((snapshot) => {
+        this.filters_ = snapshot;
+      });
+      this.filters_ = await doc.get();
+
+      if (!this.filters_.exists) {
+        // TODO: Delete this one all users are migrated to firestore.
+        let spreadsheetData = await this.fetchSpreadsheetValues_();
+        await doc.set(this.filtersObject_(spreadsheetData));
+        this.filters_ = await doc.get();
+      }
+    }
+
+    return this.filters_.get(FILTERS_KEY);
+  }
+
+  async fetchSpreadsheetValues_() {
     let rawRules = await SpreadsheetUtils.fetchSheet(
         this.spreadsheetId, Settings.FILTERS_SHEET_NAME_);
-    this.filters_ = [];
-
+    let filters = [];
     let ruleNames = rawRules[0];
-    let hasDeprecatedHeaderRule = false;
 
     for (let i = 1, l = rawRules.length; i < l; i++) {
       let ruleObj: FilterRule = {label: ''};
@@ -385,8 +244,6 @@ export class Settings {
             try {
               headers = JSON.parse(value);
             } catch (e) {
-              hasDeprecatedHeaderRule = true;
-
               // TODO: Remove all this once all clients have migrated over to $
               // syntax.
               let colonIndex = value.indexOf(':');
@@ -403,6 +260,10 @@ export class Settings {
             ruleObj.header = headers;
             break;
 
+          case 'matchallmessages':
+            ruleObj.matchallmessages = value === 'true';
+            break;
+
           case 'nolistid':
             ruleObj.nolistid = value === 'true';
             break;
@@ -412,7 +273,7 @@ export class Settings {
             break;
 
           default:
-            let validField = setFilterField(ruleObj, name, value);
+            let validField = setFilterStringField(ruleObj, name, value);
             assert(validField);
         }
       }
@@ -425,45 +286,17 @@ export class Settings {
         ruleObj.label = 'nolabel';
       }
 
-      this.filters_.push(ruleObj);
+      filters.push(ruleObj);
     }
-
-    if (hasDeprecatedHeaderRule)
-      await this.writeFilters(this.filters_, true);
-    return this.filters_;
+    return filters;
   }
 
-  async writeFilters(rules: FilterRule[], keepInMemory?: boolean) {
-    let rows = [Settings.FILTERS_SHEET_COLUMNS_];
+  async writeFilters(rules: FilterRule[]) {
     for (let rule of rules) {
-      let newRule: string[] = [];
-
       let invalidField = Object.keys(rule).find(
-          x => !Settings.FILTERS_SHEET_COLUMNS_.includes(x));
+          x => !Settings.FILTER_RULE_FIELDS_.includes(x));
       assert(!invalidField && rule.label !== '');
-
-      for (let column of Settings.FILTERS_SHEET_COLUMNS_) {
-        let value;
-        if (column == 'header') {
-          value = JSON.stringify(rule.header);
-        } else {
-          value = getFilterField(rule, column);
-        }
-        newRule.push(value ? String(value) : '');
-      }
-      rows.push(newRule);
     }
-
-    let originalFilterSheetRowCount = notNull(this.filters_).length + 1;
-    await SpreadsheetUtils.writeSheet(
-        this.spreadsheetId, Settings.FILTERS_SHEET_NAME_, rows,
-        originalFilterSheetRowCount);
-
-    // Null out the filters so they get refetched. In theory could avoid the
-    // network request and populate the filters from the rules argument to
-    // writeFilters, but doesn't seem worth the potential extra code that needs
-    // to have the rules be in the right format.
-    if (!keepInMemory)
-      this.filters_ = null;
+    this.getFiltersDocument_().update(this.filtersObject_(rules));
   }
 }

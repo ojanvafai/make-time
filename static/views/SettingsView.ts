@@ -59,15 +59,6 @@ export class SettingsView extends HTMLElement {
     this.basicSettings_ = document.createElement('div');
     this.populateSettings_(this.basicSettings_);
 
-    let spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${
-        this.settings_.spreadsheetId}/edit`;
-    let clearBackendInstructions = document.createElement('div');
-    clearBackendInstructions.style.cssText = `margin: 16px 0;`;
-    clearBackendInstructions.innerHTML =
-        `To disconnect backend spreadsheet completely, delete or rename <a href=${
-            spreadsheetUrl}>the spreadsheet itself</a>.`;
-    this.scrollable_.append(clearBackendInstructions);
-
     let save = document.createElement('button');
     save.style.cssText = `float: right;`;
     save.append('save');
