@@ -1,4 +1,4 @@
-import {defined, getMyEmail, serializeAddress, USER_ID, parseAddressList} from './Base.js';
+import {defined, getMyEmail, parseAddressList, serializeAddress, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {gapiFetch} from './Net.js';
@@ -223,8 +223,8 @@ export class Thread extends EventTarget {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
-    // Gmail will remove dupes for us.
-    let to = lastMessage.from || '';
+    // Gmail will remove dupes for us if the to and from fields have overlap.
+    let to = lastMessage.replyTo || lastMessage.from || '';
 
     if (shouldReplyAll && lastMessage.to) {
       let myEmail = await getMyEmail();

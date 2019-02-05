@@ -26,6 +26,7 @@ export class Message {
   subject: string|undefined;
   date!: Date;
   from: string|undefined;
+  replyTo: string|undefined;
   to: string|undefined;
   cc: string|undefined;
   bcc: string|undefined;
@@ -59,6 +60,9 @@ export class Message {
           break;
         case 'from':
           this.from = value;
+          break;
+        case 'reply-to':
+          this.replyTo = value;
           break;
         case 'to':
           this.to = value;
