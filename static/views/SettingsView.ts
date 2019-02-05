@@ -161,7 +161,7 @@ export class SettingsView extends HTMLElement {
       if (field.type == 'checkbox')
         input.checked = this.settings_.get(field.key);
       else if (this.settings_.has(field.key))
-        input.value = this.settings_.get(field.key);
+        input.value = this.settings_.getNonDefault(field.key);
 
       input.setAttribute('key', field.key);
 

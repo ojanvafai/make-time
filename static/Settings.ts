@@ -170,6 +170,10 @@ export class Settings {
     return value !== undefined;
   }
 
+  getNonDefault(setting: string) {
+    return this.storage_.get(setting);;
+  }
+
   get(setting: string) {
     let value = this.storage_.get(setting);
     if (value === null || value === undefined)
