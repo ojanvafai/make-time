@@ -2,7 +2,6 @@ import {AsyncOnce} from './AsyncOnce.js';
 import {defined} from './Base.js';
 import {Labels} from './Labels.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
-import {Settings} from './Settings.js';
 import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export interface QueueData {
@@ -58,9 +57,9 @@ export class QueueSettings {
     this.resetQueueData_();
 
     if (!this.queueDatas_) {
+      const QUEUED_LABELS_SHEET_NAME = 'queued_labels';
       let values = await SpreadsheetUtils.fetchSheet(
-          this.storage_.spreadsheetId,
-          `${Settings.QUEUED_LABELS_SHEET_NAME}!A2:D`);
+          this.storage_.spreadsheetId, `${QUEUED_LABELS_SHEET_NAME}!A2:D`);
       let oldData: any = {};
       for (let value of values) {
         let labelName = (value[0] as string).toLowerCase();
