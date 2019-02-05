@@ -6,6 +6,11 @@
     <link rel="manifest" href="./manifest.json">
 
     <style>
+      /* Hack to prevent wide images and videos from causing horizontal scrolling. */
+      .message img, .message video {
+        max-width: -webkit-fill-available;
+        max-width: fill-available;
+      }
       html {
         font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
         height: 100%;

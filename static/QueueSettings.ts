@@ -46,9 +46,11 @@ export class QueueSettings {
 
   resetQueueData_() {
     this.queueDatas_ = this.storage_.get(ServerStorage.KEYS.QUEUES);
+    if (!this.queueDatas_)
+      return;
     // Blocked is a special label that dequeues daily, is not best effort, and
     // is always put first.
-    defined(this.queueDatas_)[Labels.BLOCKED_SUFFIX] =
+    this.queueDatas_[Labels.BLOCKED_SUFFIX] =
         this.queueData_(QueueSettings.DAILY);
   }
 
