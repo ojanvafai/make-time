@@ -1,34 +1,23 @@
-import {defined, notNull, showDialog} from '../Base.js';
+import {defined, notNull} from '../Base.js';
+import {Labels} from '../Labels.js';
 import {AllQueueDatas, QueueListEntry, QueueSettings} from '../QueueSettings.js';
-
-import {HelpDialog} from './HelpDialog.js';
-
-let HELP_TEXT = `<b>Help</b> <a>show more</a>
-- Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
-
-Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
-
-Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
+import {Settings} from '../Settings.js';
 
 export class QueuesView extends HTMLElement {
   private immediate_: HTMLElement|undefined;
   private daily_: HTMLElement|undefined;
   private weekly_: HTMLElement|undefined;
   private monthly_: HTMLElement|undefined;
-  private dialog_: HTMLDialogElement|undefined;
 
   static rowClassName_ = 'queue-row';
 
   constructor(
-      private queueNames_: Set<string>,
-      private queuedLabelData_: QueueSettings) {
+      private settings_: Settings, private queuedLabelData_: QueueSettings) {
     super();
 
     this.style.cssText = `
       display: flex;
       flex-direction: column;
-      width: 800px;
-      max-width: 95vw;
       outline: 0;
     `;
 
@@ -58,6 +47,8 @@ export class QueuesView extends HTMLElement {
   }
 
   moveRow_(direction: string, move10: boolean) {
+    this.dispatchChange_();
+
     let rows =
         [].slice.call(this.querySelectorAll(`.${QueuesView.rowClassName_}`));
     let row: HTMLElement|undefined;
@@ -115,14 +106,26 @@ export class QueuesView extends HTMLElement {
   }
 
   createRowGroup_(groupName: string) {
-    let group = document.createElement('div');
+    let group = document.createElement('fieldset');
     group.className = groupName.toLowerCase();
-    group.textContent = groupName;
     group.style.cssText = `margin-top: 15px;`;
+
+    let legend = document.createElement('legend');
+    legend.append(groupName);
+    group.append(legend);
     return group;
   }
 
   async render_() {
+    let filters = await this.settings_.getFilters();
+    let queues: Set<string> = new Set();
+    for (let rule of filters) {
+      queues.add(defined(rule.label));
+    }
+
+    queues.delete(Labels.ARCHIVE_LABEL);
+    queues.add(Labels.FALLBACK_LABEL);
+
     // TODO: Show help text if there are no queues.
     let scrollable = document.createElement('div');
     scrollable.style.cssText = `
@@ -139,35 +142,10 @@ export class QueuesView extends HTMLElement {
     scrollable.append(
         this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
-    let queueDatas = this.queuedLabelData_.getSorted(this.queueNames_);
+    let queueDatas = this.queuedLabelData_.getSorted(queues);
     for (let queueData of queueDatas) {
       this.appendRow_(queueData);
     }
-
-    let helpButton = document.createElement('button');
-    helpButton.style.cssText = `margin-right: auto`;
-    helpButton.append('Help');
-    helpButton.onclick = () => {
-      new HelpDialog(HELP_TEXT);
-    };
-
-    let cancel = document.createElement('button');
-    cancel.append('cancel');
-    cancel.onclick = () => this.cancel_();
-
-    let save = document.createElement('button');
-    save.append('save');
-    save.onclick = () => this.save_();
-
-    let buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
-      display: flex;
-      align-items: center;
-    `;
-    buttonContainer.append(helpButton, cancel, save);
-    this.append(buttonContainer);
-
-    this.dialog_ = showDialog(this);
   }
 
   extractQueueData_(output: AllQueueDatas, group: HTMLElement, queue: string) {
@@ -186,26 +164,23 @@ export class QueuesView extends HTMLElement {
     }
   }
 
-  async save_() {
+  getAllQueueDatas() {
     let newQueueData: AllQueueDatas = {};
-
     this.extractQueueData_(
         newQueueData, this.immediate_!, QueueSettings.IMMEDIATE);
     this.extractQueueData_(newQueueData, this.daily_!, QueueSettings.DAILY);
     this.extractQueueData_(newQueueData, this.weekly_!, QueueSettings.WEEKLY);
     this.extractQueueData_(newQueueData, this.monthly_!, QueueSettings.MONTHLY);
-
-    await this.queuedLabelData_.write(newQueueData);
-    defined(this.dialog_).close();
+    return newQueueData;
   }
 
-  cancel_() {
-    // TODO: prompt if there are changes.
-    defined(this.dialog_).close();
+  dispatchChange_() {
+    this.dispatchEvent(new Event('change'));
   }
 
   createSelect_(list: string[], opt_selectedItem?: string) {
     let select = document.createElement('select');
+    select.addEventListener('change', () => this.dispatchChange_());
     for (let item of list) {
       let option = this.createOption_(item);
       option.selected = opt_selectedItem == item;

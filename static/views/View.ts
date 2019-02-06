@@ -14,10 +14,10 @@ export abstract class View extends HTMLElement {
     this.actions_ = new Actions(this);
   }
 
-  abstract async takeAction(action: Action): Promise<void>;
+  async takeAction(_action: Action): Promise<void> {}
 
-  tearDown() {};
-  async init() {};
+  tearDown() {}
+  async init() {}
   async goBack() {}
   async update() {}
 

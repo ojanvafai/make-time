@@ -72,12 +72,6 @@ export class QueueSettings {
     }
   }
 
-  async write(newData: AllQueueDatas) {
-    let updates: StorageUpdates = {};
-    updates[ServerStorage.KEYS.QUEUES] = newData;
-    this.storage_.writeUpdates(updates);
-  }
-
   get(labelSuffix: string) {
     return defined(this.queueDatas_)[labelSuffix.toLowerCase()] ||
         this.queueData_();

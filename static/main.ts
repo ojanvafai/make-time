@@ -53,6 +53,7 @@ updateLongTaskTracking();
 enum VIEW {
   Calendar,
   Compose,
+  Settings,
   Todo,
   Triage,
 }
@@ -87,6 +88,10 @@ router.add('/calendar', async (_parans) => {
   await setView(VIEW.Calendar);
 });
 
+router.add('/settings', async (_parans) => {
+  await setView(VIEW.Settings);
+});
+
 async function routeToTriage() {
   await setView(VIEW.Triage);
 }
@@ -109,6 +114,9 @@ async function createModel(viewType: VIEW) {
     case VIEW.Triage:
       return await getTriageModel();
 
+    case VIEW.Settings:
+      return null;
+
     default:
       // Throw instead of asserting here so that TypeScript knows that this
       // function never returns undefined.
@@ -116,7 +124,7 @@ async function createModel(viewType: VIEW) {
   }
 }
 
-async function createView(viewType: VIEW, model: Model, params?: any) {
+async function createView(viewType: VIEW, model: Model|null, params?: any) {
   switch (viewType) {
     case VIEW.Calendar:
       return new CalendarView(<Calendar>model);
@@ -131,6 +139,9 @@ async function createView(viewType: VIEW, model: Model, params?: any) {
     case VIEW.Triage:
       return await createThreadListView(
           <TriageModel>model, true, '/todo', 'Go to todo list');
+
+    case VIEW.Settings:
+      return new SettingsView(await getSettings(), await getQueuedLabelMap());
 
     default:
       // Throw instead of asserting here so that TypeScript knows that this
@@ -294,12 +305,6 @@ function createMenuItem(name: string, options: any) {
 }
 
 function appendMenu() {
-  let settingsButton = createMenuItem('Settings', {
-    onclick: async () => {
-      new SettingsView(await getSettings(), await getQueuedLabelMap());
-    }
-  });
-
   let helpButton = createMenuItem('Help', {
     onclick: async () => showHelp(),
   });
@@ -311,8 +316,8 @@ function appendMenu() {
       menuTitle, createMenuItem('Compose', {href: '/compose', nested: true}),
       createMenuItem('Triage', {href: '/triage', nested: true}),
       createMenuItem('Todo', {href: '/todo', nested: true}),
-      createMenuItem('Calendar (alpha)', {href: '/calendar'}), settingsButton,
-      helpButton);
+      createMenuItem('Calendar (alpha)', {href: '/calendar'}),
+      createMenuItem('Settings', {href: '/settings'}), helpButton);
 }
 
 async function onLoad() {

@@ -1,24 +1,33 @@
-import {defined, notNull, showDialog} from '../Base.js';
-import {Labels} from '../Labels.js';
+import {assert, notNull} from '../Base.js';
 import {QueueSettings} from '../QueueSettings.js';
-import {StorageUpdates} from '../ServerStorage.js';
+import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
 import {FiltersView} from './FiltersView.js';
+import {HelpDialog} from './HelpDialog.js';
 import {QueuesView} from './QueuesView.js';
+import {View} from './View.js';
 
-export class SettingsView extends HTMLElement {
+let HELP_TEXT = `<b>Reordering queues:</b>
+Use ctrl+up/down or cmd+up/down to reorder the focused queue. Hold shift to move 10 rows at a time.
+
+Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
+
+Queues can be marked as "Inbox Zero" or "Best Effort". Best Effort queues are only shown after the Inbox Zero threads have all be processed. Best Effort threads are autotriaged to a "bankrupt/queuename" label when they are too old (1 week for daily queues, 2 weeks for weekly, or 6 weeks for monthly). This distinction is especially useful for times when you have to play email catchup (returning from vacation, post perf, etc.). It allows you to focus on at least triaging the potentially important Inbox Zero emails while still getting your non-email work done. Since the queue structure is maintained, you can always go back and get caught up on the bankrupt threads.`;
+
+export class SettingsView extends View {
   private scrollable_: HTMLElement;
-  private hadChanges_: boolean;
-  private dialog_: HTMLDialogElement;
   private basicSettings_: HTMLElement;
+  private queues_: QueuesView;
+  private saveButton_: HTMLButtonElement;
 
   constructor(
       private settings_: Settings, private queueSettings_: QueueSettings) {
     super();
+
     this.style.cssText = `
-      display: flex;
-      flex-direction: column;
+      background: white;
+      display: block;
     `;
 
     this.scrollable_ = document.createElement('div');
@@ -27,14 +36,6 @@ export class SettingsView extends HTMLElement {
       padding: 4px;
     `;
     this.append(this.scrollable_);
-
-    let title = document.createElement('div');
-    title.style.cssText = `
-      font-weight: bold;
-      margin-bottom: 16px;
-    `;
-    title.append('Settings');
-    this.scrollable_.append(title);
 
     let filtersLinkContainer = document.createElement('div');
     filtersLinkContainer.style.cssText = `
@@ -46,74 +47,57 @@ export class SettingsView extends HTMLElement {
     filtersLinkContainer.append(filtersLink);
     this.scrollable_.append(filtersLinkContainer);
 
-    let queuesLinkContainer = document.createElement('div');
-    queuesLinkContainer.style.cssText = `
-      margin-bottom: 16px;
-    `;
-    let queuesLink = document.createElement('a');
-    queuesLink.append('Modify queues');
-    queuesLink.onclick = () => this.showQueuesDialog_();
-    queuesLinkContainer.append(queuesLink);
-    this.scrollable_.append(queuesLinkContainer);
-
-    this.basicSettings_ = document.createElement('div');
+    this.basicSettings_ = document.createElement('table');
     this.populateSettings_(this.basicSettings_);
+    this.scrollable_.append(this.basicSettings_);
 
-    let save = document.createElement('button');
-    save.style.cssText = `float: right;`;
-    save.append('save');
-    save.onclick = () => this.save_();
+    this.queues_ = new QueuesView(this.settings_, this.queueSettings_);
+    this.queues_.addEventListener('change', () => this.handleChange_());
 
-    let cancel = document.createElement('button');
-    cancel.style.cssText = `float: right;`;
-    cancel.append('cancel');
-    cancel.onclick = () => this.cancel_();
+    let queuesContainer = document.createElement('fieldset');
+    queuesContainer.innerHTML = '<legend>Queue sort order</legend>';
+    queuesContainer.append(this.queues_);
+    this.scrollable_.append(queuesContainer);
+
+    let helpButton = document.createElement('button');
+    helpButton.append('Help');
+    helpButton.onclick = () => {
+      new HelpDialog(HELP_TEXT);
+    };
+
+    this.saveButton_ = document.createElement('button');
+    this.saveButton_.append('Save Changes');
+    this.saveButton_.disabled = true;
+    this.saveButton_.onclick = () => this.save_();
 
     let buttonContainer = document.createElement('div');
-    buttonContainer.append(save, cancel);
+    buttonContainer.style.cssText = `
+      display: flex;
+      justify-content: center;
+    `;
+    buttonContainer.append(this.saveButton_, helpButton);
     this.append(buttonContainer);
 
-    this.hadChanges_ = false;
-    this.addEventListener('change', () => this.hadChanges_ = true, true);
+    this.addEventListener('change', () => this.handleChange_(), true);
+    // change only fires on text inputs after the field is blurred, so also
+    // listen to input so we can enable the savechanges button without having to
+    // blur the input.
+    this.addEventListener('input', () => this.handleChange_(), true);
+  }
 
-    this.dialog_ = showDialog(this);
+  handleChange_() {
+    this.saveButton_.disabled = false;
   }
 
   showFilterDialog_() {
-    if (this.hadChanges_) {
-      alert(
-          'You have changed some settings in this dialog. Please save or cancel first.');
-      return;
-    }
     new FiltersView(this.settings_);
-  }
-
-  async showQueuesDialog_() {
-    if (this.hadChanges_) {
-      alert(
-          'You have changed some settings in this dialog. Please save or cancel first.');
-      return;
-    }
-
-    let filters = await this.settings_.getFilters();
-    let queues: Set<string> = new Set();
-    for (let rule of filters) {
-      queues.add(defined(rule.label));
-    }
-
-    queues.delete(Labels.ARCHIVE_LABEL);
-    queues.add(Labels.FALLBACK_LABEL);
-
-    new QueuesView(queues, this.queueSettings_);
   }
 
   populateSettings_(container: HTMLElement) {
     for (let field of Settings.fields) {
-      let label = document.createElement('label');
-      label.style.cssText = `
-        display: flex;
+      let row = document.createElement('tr');
+      row.style.cssText = `
         margin: 5px 0;
-        position: relative;
       `;
 
       let helpButton = document.createElement('span');
@@ -165,19 +149,19 @@ export class SettingsView extends HTMLElement {
 
       input.setAttribute('key', field.key);
 
-      label.append(field.name, helpButton, input);
-      container.append(label);
-    }
+      let label = document.createElement('td');
+      label.append(field.name, helpButton);
 
-    this.scrollable_.append(container);
+      let inputContainer = document.createElement('td');
+      inputContainer.append(input);
+      row.append(label, inputContainer);
+
+      container.append(row);
+    }
   }
 
   async save_() {
-    // No need to reload the page if nothing's changed.
-    if (!this.hadChanges_) {
-      this.dialog_.close();
-      return;
-    }
+    assert(!this.saveButton_.disabled);
 
     let updates: StorageUpdates = {};
     let inputs = this.basicSettings_.querySelectorAll('input');
@@ -196,13 +180,11 @@ export class SettingsView extends HTMLElement {
       }
       updates[key] = value;
     }
-    await this.settings_.writeUpdates(updates);
-    this.dialog_.close();
-  }
 
-  cancel_() {
-    // TODO: prompt if there are changes.
-    this.dialog_.close();
+    updates[ServerStorage.KEYS.QUEUES] = this.queues_.getAllQueueDatas();
+
+    await this.settings_.writeUpdates(updates);
+    this.saveButton_.disabled = true;
   }
 }
 
