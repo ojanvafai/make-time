@@ -33,9 +33,9 @@ interface TitleEntry {
   title: (HTMLElement|string)[];
 }
 
-let storage_: ServerStorage;
+let storage_ = new ServerStorage();
+let labels_ = new Labels();
 let settings_: Settings;
-let labels_: Labels;
 let titleStack_: TitleEntry[] = [];
 let loaderTitleStack_: TitleEntry[] = [];
 
@@ -88,8 +88,9 @@ export async function getSettings() {
   return settings_;
 }
 
+// Intentionally don't fetch here so that the onload sequence can listen to
+// events on ServerStorage without forcing a login.
 export async function getServerStorage() {
-  await fetchTheSettingsThings();
   return storage_;
 }
 
@@ -97,13 +98,7 @@ let settingThingsFetcher_: AsyncOnce<void>;
 async function fetchTheSettingsThings() {
   if (!settingThingsFetcher_) {
     settingThingsFetcher_ = new AsyncOnce<void>(async () => {
-      assert(
-          !settings_ && !labels_, 'Tried to fetch settings or labels twice.');
-
       await login();
-
-      storage_ = new ServerStorage();
-      labels_ = new Labels();
       await Promise.all([labels_.fetch(), storage_.fetch()]);
 
       // This has to happen after storage_.fetch().
@@ -142,17 +137,18 @@ function redirectToSignInPage_() {
   firebase.auth().signInWithRedirect(provider);
 }
 
-let queuedLogin_: PromiseLike<{}>|undefined;
+let loginOnce_: AsyncOnce<void>;
 let loadedGapi_ = false;
 
 export async function login() {
+  if (!loginOnce_)
+    loginOnce_ = new AsyncOnce<void>(login_);
+  await loginOnce_.do();
+}
+
+async function login_() {
   if (isSignedIn_)
     return;
-
-  if (queuedLogin_) {
-    await queuedLogin_;
-    return;
-  }
 
   let progress = updateLoaderTitle('login', 1, 'Logging in...');
 
@@ -166,7 +162,7 @@ export async function login() {
     // result, but we do need to call it.
     await firebase.auth().getRedirectResult();
 
-    queuedLogin_ = new Promise(resolve => {
+    await new Promise(resolve => {
       // Use onIdTokenChanged instead of onAuthStateChanged since that captures
       // id token revocation in addition to login/logout.
       firebase.auth().onIdTokenChanged(async (user) => {
@@ -204,7 +200,6 @@ export async function login() {
         }
       });
     });
-    return queuedLogin_;
   } catch (e) {
     showPleaseReload();
     console.log(e);
