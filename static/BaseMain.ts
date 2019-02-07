@@ -13,7 +13,7 @@ import * as usedForSideEffects2 from '../third_party/firebasejs/5.8.2/firebase-f
 usedForSideEffects2;
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, getDefinitelyExistsElementById, notNull, USER_ID} from './Base.js';
+import {assert, defined, getDefinitelyExistsElementById, USER_ID} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
@@ -116,8 +116,6 @@ async function fetchTheSettingsThings() {
         updates[ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN] = true;
         storage_.writeUpdates(updates);
       }
-
-      await migrateLabels(labels_);
     });
   }
   try {
@@ -130,34 +128,6 @@ async function fetchTheSettingsThings() {
 function showPleaseReload() {
   ErrorLogger.log(
       `Something went wrong loading MakeTime and you need to reload. This usually happens if you're not connected to the internet when loading MakeTime.`);
-}
-
-async function doLabelMigration(
-    addLabelIds: string[], removeLabelIds: string[], query: string) {
-  await fetchThreads(async (fetcher: ThreadFetcher) => {
-    let thread = await fetcher.fetch();
-    await notNull(thread).modify(addLabelIds, removeLabelIds);
-  }, query);
-}
-
-async function migrateLabels(labels: Labels) {
-  // Rename parent labesl before sublabels.
-  await labels.rename(
-      Labels.OLD_MAKE_TIME_PREFIX, Labels.MAKE_TIME_PREFIX, doLabelMigration);
-  await labels.rename(
-      Labels.OLD_TRIAGED_LABEL, Labels.TRIAGED_LABEL, doLabelMigration);
-  await labels.rename(
-      Labels.OLD_QUEUED_LABEL, Labels.QUEUED_LABEL, doLabelMigration);
-
-  await labels.rename(
-      Labels.OLD_PRIORITY_LABEL, Labels.PRIORITY_LABEL, doLabelMigration);
-  await labels.rename(
-      Labels.OLD_NEEDS_TRIAGE_LABEL, Labels.NEEDS_TRIAGE_LABEL,
-      doLabelMigration);
-  await labels.rename(
-      Labels.OLD_PROCESSED_LABEL, Labels.PROCESSED_LABEL, doLabelMigration);
-  await labels.rename(
-      Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL, doLabelMigration);
 }
 
 function loadGapi() {

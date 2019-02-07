@@ -163,18 +163,6 @@ export class Labels {
     }
   }
 
-  removeLabel_(name: string) {
-    let id = this.labelToId_.get(name);
-    if (id) {
-      this.labelToId_.delete(name);
-      this.idToLabel_.delete(id);
-      this.makeTimeLabelIds_.delete(id);
-    }
-    this.makeTimeLabelNames_.delete(name);
-    this.needsTriageLabelNames_.delete(name);
-    this.priorityLabels_.delete(name);
-  }
-
   async getName(id: string) {
     let name = this.idToLabel_.get(id);
 
@@ -188,15 +176,6 @@ export class Labels {
     return name;
   }
 
-  isParentLabel(name: string) {
-    let prefix = `${name}/`;
-    for (let name in this.labelToId_) {
-      if (name.startsWith(prefix))
-        return true;
-    }
-    return false;
-  }
-
   labelResource_(name: string) {
     let isHidden = Labels.HIDDEN_LABELS.includes(name);
     return <LabelResource>{
@@ -204,72 +183,6 @@ export class Labels {
       messageListVisibility: isHidden ? 'hide' : 'show',
       labelListVisibility: isHidden ? 'labelHide' : 'labelShow',
     };
-  }
-
-  async migrateThreads(
-      oldName: string, newName: string,
-      migrater:
-          (addLabelIds: string[], removeLabelIds: string[],
-           query: string) => {}) {
-    let addLabelIds = [this.labelToId_.get(newName)!];
-    let removeLabelIds = [this.labelToId_.get(oldName)!];
-    let query = `in:${oldName}`;
-    migrater(addLabelIds, removeLabelIds, query);
-  }
-
-  async rename(
-      oldName: string, newName: string,
-      migrater:
-          (addLabelIds: string[], removeLabelIds: string[],
-           query: string) => {}) {
-    let id = this.labelToId_.get(oldName);
-    if (id) {
-      if (this.labelToId_.get(newName)) {
-        await this.migrateThreads(oldName, newName, migrater);
-        this.delete(oldName);
-      } else {
-        let resource = this.labelResource_(newName);
-        resource.id = id;
-        let body = {
-          'userId': USER_ID,
-          'id': id,
-          'resource': resource,
-        };
-
-        await gapiFetch(gapi.client.gmail.users.labels.update, body);
-        this.removeLabel_(oldName);
-        this.addLabel_(newName, id);
-      }
-    }
-
-    // Rename all the nested labels as well.
-    // Do sub labels even if the parent label doesn't exist in case previous
-    // renames failed partway through.
-    let oldPrefix = `${oldName}/`;
-    let newPrefix = `${newName}/`;
-    for (let name in this.labelToId_) {
-      if (name.startsWith(oldPrefix))
-        await this.rename(name, name.replace(oldPrefix, newPrefix), migrater);
-    }
-  }
-
-  async delete(name: string, opt_includeNested?: boolean) {
-    let id = this.labelToId_.get(name);
-    if (id) {
-      await gapiFetch(gapi.client.gmail.users.labels.delete, {
-        'userId': USER_ID,
-        'id': id,
-      });
-      this.removeLabel_(name);
-    }
-
-    if (opt_includeNested) {
-      let prefix = `${name}/`;
-      for (let name in this.labelToId_) {
-        if (name.startsWith(prefix))
-          await this.delete(name, true);
-      }
-    }
   }
 
   async createLabel_(name: string) {
@@ -289,10 +202,6 @@ export class Labels {
       labelFetchers_.set(name, fetcher);
     }
     return await fetcher.do();
-  }
-
-  async getIds(names: string[]) {
-    return await Promise.all(names.map(async (name) => await this.getId(name)));
   }
 
   async getId(name: string): Promise<string> {
