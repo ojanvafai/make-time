@@ -68,17 +68,13 @@ if (isGoogle) {
 // Array of API discovery doc URLs for APIs used by the quickstart
 let DISCOVERY_DOCS = [
   'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest',
-  'https://sheets.googleapis.com/$discovery/rest?version=v4',
-  'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
   'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 ];
 
 // Authorization scopes required by the Google API.
 let SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',
-  'https://www.googleapis.com/auth/spreadsheets',
   'https://www.google.com/m8/feeds',
-  'https://www.googleapis.com/auth/drive.metadata.readonly',
   'https://www.googleapis.com/auth/calendar.readonly',
 ];
 
@@ -108,17 +104,12 @@ async function fetchTheSettingsThings() {
 
       await login();
 
-      settings_ = new Settings();
+      storage_ = new ServerStorage();
+      settings_ = new Settings(storage_);
       labels_ = new Labels();
 
-      // Don't await this here so we fetch settings in parallel.
+      // Don't await this here so we fetch storage in parallel.
       let labelsPromise = labels_.fetch();
-
-      await settings_.fetch();
-      // TODO: Once we don't need the spreadsheetId anymore pass ServerStorage
-      // as an argument to the Settings constructor.
-      storage_ = new ServerStorage(settings_.spreadsheetId);
-      settings_.setStorage(storage_);
       await storage_.fetch();
 
       if (!storage_.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
@@ -235,6 +226,9 @@ export async function login() {
             scope: SCOPES.join(' '),
           });
 
+          // TODO: This returns false in multilogin scenarios. Calling
+          // gapi.auth2.getAuthInstance().signIn() shows a popup that fixes it,
+          // but popups require a user gesture.
           if (!gapi.auth2.getAuthInstance().isSignedIn.get())
             redirectToSignInPage_();
 

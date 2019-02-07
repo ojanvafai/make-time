@@ -824,7 +824,7 @@ export class ThreadListView extends View {
 
       if (textLength > this.allowedReplyLength_) {
         alert(`Email is longer than the allowed length of ${
-            this.allowedReplyLength_} characters. Allowed length is configurable in the settings spreadsheet as the allowed_reply_length setting.`);
+            this.allowedReplyLength_} characters. Allowed length is configurable in Settings.`);
         return;
       }
 

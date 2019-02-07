@@ -1,8 +1,6 @@
-import {AsyncOnce} from './AsyncOnce.js';
-import {defined} from './Base.js';
+import {defined, assert} from './Base.js';
 import {Labels} from './Labels.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
-import {SpreadsheetUtils} from './SpreadsheetUtils.js';
 
 export interface QueueData {
   queue: string;
@@ -20,7 +18,6 @@ export interface AllQueueDatas {
 }
 
 export class QueueSettings {
-  private fetcher_: AsyncOnce<void>;
   private queueDatas_?: AllQueueDatas;
 
   private static BUFFER_ = 10000;
@@ -36,40 +33,28 @@ export class QueueSettings {
   constructor(private storage_: ServerStorage) {
     this.storage_.addEventListener(
         ServerStorageUpdateEventName, () => this.resetQueueData_());
-    this.fetcher_ = new AsyncOnce<void>(this.fetch_.bind(this));
   }
 
   async fetch() {
-    await this.fetcher_.do()
+    this.resetQueueData_();
+    if (!this.queueDatas_) {
+      let updates: StorageUpdates = {};
+      updates[ServerStorage.KEYS.QUEUES] = {};
+      await this.storage_.writeUpdates(updates);
+      this.resetQueueData_();
+      assert(this.queueDatas_);
+    }
   }
 
-  resetQueueData_() {
+  async resetQueueData_() {
     this.queueDatas_ = this.storage_.get(ServerStorage.KEYS.QUEUES);
     if (!this.queueDatas_)
       return;
+
     // Blocked is a special label that dequeues daily, is not best effort, and
     // is always put first.
     this.queueDatas_[Labels.BLOCKED_SUFFIX] =
         this.queueData_(QueueSettings.DAILY);
-  }
-
-  async fetch_() {
-    this.resetQueueData_();
-
-    if (!this.queueDatas_) {
-      const QUEUED_LABELS_SHEET_NAME = 'queued_labels';
-      let values = await SpreadsheetUtils.fetchSheet(
-          this.storage_.spreadsheetId, `${QUEUED_LABELS_SHEET_NAME}!A2:D`);
-      let oldData: any = {};
-      for (let value of values) {
-        let labelName = (value[0] as string).toLowerCase();
-        oldData[labelName] = this.queueData_(
-            value[1] as string, value[2] as string, value[3] as number);
-      }
-      let updates: StorageUpdates = {};
-      updates[ServerStorage.KEYS.QUEUES] = oldData;
-      this.storage_.writeUpdates(updates);
-    }
   }
 
   get(labelSuffix: string) {
