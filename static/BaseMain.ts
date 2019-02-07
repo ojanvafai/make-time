@@ -79,12 +79,12 @@ let SCOPES = [
 let isSignedIn_ = false;
 
 export async function getLabels() {
-  await fetchTheSettingsThings();
+  await login();
   return labels_;
 }
 
 export async function getSettings() {
-  await fetchTheSettingsThings();
+  await login();
   return settings_;
 }
 
@@ -92,32 +92,6 @@ export async function getSettings() {
 // events on ServerStorage without forcing a login.
 export async function getServerStorage() {
   return storage_;
-}
-
-let settingThingsFetcher_: AsyncOnce<void>;
-async function fetchTheSettingsThings() {
-  if (!settingThingsFetcher_) {
-    settingThingsFetcher_ = new AsyncOnce<void>(async () => {
-      await login();
-      await Promise.all([labels_.fetch(), storage_.fetch()]);
-
-      // This has to happen after storage_.fetch().
-      settings_ = new Settings(storage_);
-      await settings_.fetch();
-
-      if (!storage_.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
-        await showHelp();
-        let updates: StorageUpdates = {};
-        updates[ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN] = true;
-        storage_.writeUpdates(updates);
-      }
-    });
-  }
-  try {
-    await settingThingsFetcher_.do();
-  } catch (e) {
-    showPleaseReload();
-  }
 }
 
 function showPleaseReload() {
@@ -182,6 +156,19 @@ async function login_() {
           // but popups require a user gesture.
           if (!gapi.auth2.getAuthInstance().isSignedIn.get())
             redirectToSignInPage_();
+
+          await Promise.all([labels_.fetch(), storage_.fetch()]);
+
+          // This has to happen after storage_.fetch().
+          settings_ = new Settings(storage_);
+          await settings_.fetch();
+
+          if (!storage_.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
+            await showHelp();
+            let updates: StorageUpdates = {};
+            updates[ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN] = true;
+            storage_.writeUpdates(updates);
+          }
 
           // Firebase APIs don't detect signout of google accounts. They manage
           // firebase tokens only. It's weird though, since they fire
