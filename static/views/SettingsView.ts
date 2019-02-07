@@ -1,5 +1,4 @@
 import {assert, notNull} from '../Base.js';
-import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
@@ -21,8 +20,7 @@ export class SettingsView extends View {
   private queues_: QueuesView;
   private saveButton_: HTMLButtonElement;
 
-  constructor(
-      private settings_: Settings, private queueSettings_: QueueSettings) {
+  constructor(private settings_: Settings) {
     super();
 
     this.style.cssText = `
@@ -51,7 +49,7 @@ export class SettingsView extends View {
     this.populateSettings_(this.basicSettings_);
     this.scrollable_.append(this.basicSettings_);
 
-    this.queues_ = new QueuesView(this.settings_, this.queueSettings_);
+    this.queues_ = new QueuesView(this.settings_);
     this.queues_.addEventListener('change', () => this.handleChange_());
 
     let queuesContainer = document.createElement('fieldset');

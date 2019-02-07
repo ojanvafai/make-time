@@ -1,7 +1,7 @@
 import {getActionKey, getActions} from './Actions.js';
 import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
-import {getLabels, getQueuedLabelMap, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {getLabels, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
@@ -141,7 +141,7 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
           <TriageModel>model, true, '/todo', 'Go to todo list');
 
     case VIEW.Settings:
-      return new SettingsView(await getSettings(), await getQueuedLabelMap());
+      return new SettingsView(await getSettings());
 
     default:
       // Throw instead of asserting here so that TypeScript knows that this
@@ -265,8 +265,7 @@ async function getTriageModel() {
   if (!triageModel_) {
     let settings = await getSettings();
     let vacation = settings.get(ServerStorage.KEYS.VACATION);
-    triageModel_ = new TriageModel(
-        vacation, await getLabels(), settings, await getQueuedLabelMap());
+    triageModel_ = new TriageModel(vacation, await getLabels(), settings);
   }
   return triageModel_;
 }

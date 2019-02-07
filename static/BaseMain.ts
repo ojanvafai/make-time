@@ -17,7 +17,6 @@ import {assert, defined, getDefinitelyExistsElementById, notNull, USER_ID} from 
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
-import {QueueSettings} from './QueueSettings.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
@@ -37,7 +36,6 @@ interface TitleEntry {
 let storage_: ServerStorage;
 let settings_: Settings;
 let labels_: Labels;
-let queuedLabelMap_: QueueSettings;
 let titleStack_: TitleEntry[] = [];
 let loaderTitleStack_: TitleEntry[] = [];
 
@@ -105,12 +103,12 @@ async function fetchTheSettingsThings() {
       await login();
 
       storage_ = new ServerStorage();
-      settings_ = new Settings(storage_);
       labels_ = new Labels();
+      await Promise.all([labels_.fetch(), storage_.fetch()]);
 
-      // Don't await this here so we fetch storage in parallel.
-      let labelsPromise = labels_.fetch();
-      await storage_.fetch();
+      // This has to happen after storage_.fetch().
+      settings_ = new Settings(storage_);
+      await settings_.fetch();
 
       if (!storage_.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
         await showHelp();
@@ -119,7 +117,6 @@ async function fetchTheSettingsThings() {
         storage_.writeUpdates(updates);
       }
 
-      await labelsPromise;
       await migrateLabels(labels_);
     });
   }
@@ -161,18 +158,6 @@ async function migrateLabels(labels: Labels) {
       Labels.OLD_PROCESSED_LABEL, Labels.PROCESSED_LABEL, doLabelMigration);
   await labels.rename(
       Labels.OLD_MUTED_LABEL, Labels.MUTED_LABEL, doLabelMigration);
-}
-
-let queueSettingsFetcher_: AsyncOnce<void>;
-export async function getQueuedLabelMap() {
-  if (!queueSettingsFetcher_) {
-    queueSettingsFetcher_ = new AsyncOnce<void>(async () => {
-      queuedLabelMap_ = new QueueSettings(await getServerStorage());
-      await queuedLabelMap_.fetch();
-    });
-  }
-  await queueSettingsFetcher_.do();
-  return queuedLabelMap_;
 }
 
 function loadGapi() {

@@ -11,8 +11,7 @@ export class QueuesView extends HTMLElement {
 
   static rowClassName_ = 'queue-row';
 
-  constructor(
-      private settings_: Settings, private queuedLabelData_: QueueSettings) {
+  constructor(private settings_: Settings) {
     super();
 
     this.style.cssText = `
@@ -142,7 +141,7 @@ export class QueuesView extends HTMLElement {
     scrollable.append(
         this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
-    let queueDatas = this.queuedLabelData_.getSorted(queues);
+    let queueDatas = this.settings_.getQueueSettings().getSorted(queues);
     for (let queueData of queueDatas) {
       this.appendRow_(queueData);
     }

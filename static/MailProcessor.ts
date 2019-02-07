@@ -1,5 +1,5 @@
 import {notNull, parseAddressList, ParsedAddress} from './Base.js';
-import {fetchThreads, updateLoaderTitle, getServerStorage} from './BaseMain.js';
+import {fetchThreads, getServerStorage, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -14,7 +14,7 @@ import {ThreadFetcher} from './ThreadFetcher.js';
 export class MailProcessor {
   constructor(
       public settings: Settings, private triageModel_: TriageModel,
-      private queuedLabelMap_: QueueSettings, private allLabels_: Labels) {}
+      private allLabels_: Labels) {}
 
   private async pushThread_(thread: Thread) {
     await this.triageModel_.addThread(thread);
@@ -203,7 +203,8 @@ export class MailProcessor {
       let alreadyInNeedsTriage =
           thread.isInInbox() && !thread.hasDefaultQueue();
       let labelNeedsQueueing =
-          this.queuedLabelMap_.get(labelName).queue != QueueSettings.IMMEDIATE;
+          this.settings.getQueueSettings().get(labelName).queue !=
+          QueueSettings.IMMEDIATE;
 
       if (alreadyInTriaged || alreadyInNeedsTriage || !labelNeedsQueueing) {
         prefixedLabelName = Labels.needsTriageLabel(labelName);
@@ -287,7 +288,7 @@ export class MailProcessor {
   }
 
   async processSingleQueue(queue: string) {
-    let queueDatas = this.queuedLabelMap_.entries();
+    let queueDatas = this.settings.getQueueSettings().entries();
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)
         await this.dequeue(queueData[0]);

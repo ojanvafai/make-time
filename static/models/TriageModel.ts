@@ -25,8 +25,7 @@ export class TriageModel extends ThreadListModel {
   private daysToShow_: number|null;
 
   constructor(
-      private vacation_: string, labels: Labels, settings_: Settings,
-      private queueSettings_: QueueSettings) {
+      private vacation_: string, labels: Labels, private settings_: Settings) {
     super(labels, serializationKey);
 
     this.bestEffortThreads_ = [];
@@ -34,8 +33,7 @@ export class TriageModel extends ThreadListModel {
     this.needsFetchThreads_ = [];
     this.needsArchivingThreads_ = [];
     this.pendingThreads_ = [];
-    this.mailProcessor_ =
-        new MailProcessor(settings_, this, queueSettings_, labels);
+    this.mailProcessor_ = new MailProcessor(settings_, this, labels);
     this.daysToShow_ = settings_.get(ServerStorage.KEYS.DAYS_TO_SHOW);
   }
 
@@ -45,7 +43,7 @@ export class TriageModel extends ThreadListModel {
     let queue = thread.getQueue();
     let parts = queue.split('/');
     let lastPart = parts[parts.length - 1];
-    let data = this.queueSettings_.get(lastPart);
+    let data = this.settings_.getQueueSettings().get(lastPart);
     return data && data.goal == 'Best Effort';
   }
 
@@ -63,7 +61,7 @@ export class TriageModel extends ThreadListModel {
   // vacation. Could track the last N dequeue dates for each queue maybe?
   private isBankrupt_(thread: Thread) {
     let queue = thread.getQueue();
-    let queueData = this.queueSettings_.get(queue);
+    let queueData = this.settings_.getQueueSettings().get(queue);
 
     let numDays = 7;
     if (queueData.queue == QueueSettings.WEEKLY)
@@ -131,7 +129,8 @@ export class TriageModel extends ThreadListModel {
     // Sort by queue, then by date.
     if (a.getQueue() == b.getQueue())
       return this.compareDates(a, b);
-    return this.queueSettings_.queueNameComparator(a.getQueue(), b.getQueue());
+    return this.settings_.getQueueSettings().queueNameComparator(
+        a.getQueue(), b.getQueue());
   }
 
   hasBestEffortThreads() {

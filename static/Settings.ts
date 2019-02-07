@@ -1,7 +1,8 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, notNull} from './Base.js';
+import {assert, notNull, defined} from './Base.js';
 import {firebaseAuth, firestore} from './BaseMain.js';
+import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 
 export interface HeaderFilterRule {
@@ -67,6 +68,7 @@ let FILTERS_KEY = 'filters';
 
 export class Settings {
   private filters_?: firebase.firestore.DocumentSnapshot;
+  private queueSettings_?: QueueSettings;
 
   static FILTERS_RULE_DIRECTIVES =
       ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
@@ -157,6 +159,15 @@ export class Settings {
         return field.default;
     }
     throw `No such setting: ${setting}`;
+  }
+
+  async fetch() {
+    this.queueSettings_ = new QueueSettings(this.storage_);
+    await this.queueSettings_.fetch();
+  }
+
+  getQueueSettings() {
+    return defined(this.queueSettings_);
   }
 
   getFiltersDocument_() {
