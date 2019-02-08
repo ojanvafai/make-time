@@ -5,6 +5,7 @@ import {MailProcessor} from '../MailProcessor.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
+import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from '../TaskQueue.js';
 import {Thread} from '../Thread.js';
 import {ThreadFetcher} from '../ThreadFetcher.js';
 
@@ -197,17 +198,12 @@ export class TriageModel extends ThreadListModel {
     // being shown to the user already.
     let existingThreadsToProcess = this.needsProcessingThreads_.concat();
     this.needsProcessingThreads_ = [];
-    await this.mailProcessor_.process(existingThreadsToProcess, false);
+    await this.mailProcessor_.process(existingThreadsToProcess, true);
 
     // Fetch threads that don't have locally cached thread data.
     let needsFetchThreads = this.needsFetchThreads_.concat();
     this.needsFetchThreads_ = [];
     await this.doFetches_(needsFetchThreads);
-
-    // Process all the newly fetched threads that are still in the inbox.
-    let newThreadsToProcess = this.needsProcessingThreads_.concat();
-    this.needsProcessingThreads_ = [];
-    await this.mailProcessor_.process(newThreadsToProcess);
 
     // Do these threads last since they are threads that have been archived
     // outside of maketime and just need to have their maketime labels removed,
@@ -226,13 +222,19 @@ export class TriageModel extends ThreadListModel {
       return;
 
     let progress = this.updateTitle(
-        'TriageModel.doFetches_', fetchers.length, 'Updating thread list...');
+        'TriageModel.doFetches_', fetchers.length, 'Updating threads...');
 
-    for (let fetcher of fetchers) {
+    const taskQueue = new TaskQueue(3);
+    taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {
       progress.incrementProgress();
-      let thread = await fetcher.fetch();
-      await this.processThread_(notNull(thread), true);
-    }
+    });
+    for (let fetcher of fetchers) {
+      taskQueue.queueTask(async () => {
+        let thread = await fetcher.fetch();
+        await this.processThread_(notNull(thread), true);
+      });
+    };
+    await taskQueue.flush();
   }
 
   async needsProcessing_(thread: Thread) {
@@ -252,15 +254,19 @@ export class TriageModel extends ThreadListModel {
 
   private async processThread_(thread: Thread, addDirectly?: boolean) {
     if (await this.needsProcessing_(thread)) {
-      this.needsProcessingThreads_.push(thread);
-      // If the thread doesn't have the default queue, then it's already in the
-      // inbox and we want to show it with stale thread data instead of removing
-      // it just to add it back in again when it gets processed. This avoids
-      // flashes of threads disappearing and reappearing when new messages come
-      // in and also avoids going to the next thread when the currently rendered
-      // thread gets a new message.
-      if (thread.hasDefaultQueue())
-        return;
+      if (addDirectly) {
+        this.mailProcessor_.processThread(thread);
+      } else {
+        this.needsProcessingThreads_.push(thread);
+        // If the thread doesn't have the default queue, then it's already in
+        // the inbox and we want to show it with stale thread data instead of
+        // removing it just to add it back in again when it gets processed. This
+        // avoids flashes of threads disappearing and reappearing when new
+        // messages come in and also avoids going to the next thread when the
+        // currently rendered thread gets a new message.
+        if (thread.hasDefaultQueue())
+          return;
+      }
     } else if (!thread.isInInbox()) {
       // Threads that have triage labels but aren't in the inbox were
       // archived outside of maketime and should have their triage labels

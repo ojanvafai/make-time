@@ -68,9 +68,9 @@ export class QueueSettings {
 
     // If they have the same index, sort lexicographically.
     if (aIndex == bIndex) {
-      if (a < b)
+      if (a.label < b.label)
         return -1;
-      else if (a > b)
+      else if (a.label > b.label)
         return 1;
       return 0
     }

@@ -171,7 +171,7 @@ export class MailProcessor {
     return Labels.FALLBACK_LABEL;
   }
 
-  async processThread_(thread: Thread, skipPushThread: boolean) {
+  async processThread(thread: Thread, shouldPushThread?: boolean) {
     try {
       let removeLabelIds = this.allLabels_.getMakeTimeLabelIds().concat();
       let processedLabelId =
@@ -220,13 +220,13 @@ export class MailProcessor {
 
       await thread.modify(addLabelIds, removeLabelIds);
       if (addLabelIds.includes('INBOX')) {
-        if (skipPushThread) {
+        if (shouldPushThread) {
+          await this.pushThread_(thread);
+        } else {
           // The thread is already in the ThreadListModel, but we still want to
           // update it so that it rerenders the row with the latest thread
           // information.
           thread.update();
-        } else {
-          await this.pushThread_(thread);
         }
       }
     } catch (e) {
@@ -234,12 +234,12 @@ export class MailProcessor {
     }
   }
 
-  async process(threads: Thread[], skipPushThread?: boolean) {
-    await this.processThreads_(threads, !!skipPushThread);
+  async process(threads: Thread[], shouldPushThread?: boolean) {
+    await this.processThreads_(threads, shouldPushThread);
     await this.processQueues_();
   }
 
-  private async processThreads_(threads: Thread[], skipPushThread: boolean) {
+  private async processThreads_(threads: Thread[], shouldPushThread?: boolean) {
     if (!threads.length)
       return;
 
@@ -251,7 +251,8 @@ export class MailProcessor {
       progress.incrementProgress();
     });
     for (let thread of threads) {
-      taskQueue.queueTask(() => this.processThread_(thread, skipPushThread));
+      taskQueue.queueTask(
+          async () => await this.processThread(thread, shouldPushThread));
     };
     await taskQueue.flush();
   }
