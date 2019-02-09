@@ -1,4 +1,4 @@
-import {defined, getMyEmail, parseAddressList, serializeAddress, USER_ID} from './Base.js';
+import {assert, defined, getMyEmail, parseAddressList, serializeAddress, USER_ID} from './Base.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {gapiFetch} from './Net.js';
@@ -11,6 +11,22 @@ export class UpdatedEvent extends Event {
     super(UpdatedEvent.NAME);
   }
 }
+
+export enum ReplyType {
+  ReplyAll = 'reply all',
+  Reply = 'reply',
+  Forward = 'forward',
+}
+
+let FWD_THREAD_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'short',
+  weekday: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  timeZoneName: 'short',
+});
 
 export class Thread extends EventTarget {
   constructor(
@@ -219,21 +235,28 @@ export class Thread extends EventTarget {
   }
 
   async sendReply(
-      replyText: string, extraEmails: string[], shouldReplyAll: boolean) {
+      replyText: string, extraEmails: string[], replyType: ReplyType) {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
-    // Gmail will remove dupes for us if the to and from fields have overlap.
-    let to = lastMessage.replyTo || lastMessage.from || '';
+    let to = '';
+    if (replyType === ReplyType.Forward) {
+      assert(
+          extraEmails.length,
+          'Add recipients by typing +email in the reply box.')
+    } else {
+      // Gmail will remove dupes for us if the to and from fields have overlap.
+      to = lastMessage.replyTo || lastMessage.from || '';
 
-    if (shouldReplyAll && lastMessage.to) {
-      let myEmail = await getMyEmail();
-      let addresses = parseAddressList(lastMessage.to);
-      for (let address of addresses) {
-        if (address.address !== myEmail) {
-          if (to !== '')
-            to += ',';
-          to += serializeAddress(address);
+      if (replyType === ReplyType.ReplyAll && lastMessage.to) {
+        let myEmail = await getMyEmail();
+        let addresses = parseAddressList(lastMessage.to);
+        for (let address of addresses) {
+          if (address.address !== myEmail) {
+            if (to !== '')
+              to += ',';
+            to += serializeAddress(address);
+          }
         }
       }
     }
@@ -245,18 +268,31 @@ export class Thread extends EventTarget {
     }
 
     let subject = lastMessage.subject || '';
-    let replyPrefix = 'Re: ';
+    let replyPrefix = replyType === ReplyType.Forward ? 'Fwd: ' : 'Re: ';
     if (subject && !subject.startsWith(replyPrefix))
       subject = replyPrefix + subject;
 
     let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
-    if (shouldReplyAll && lastMessage.cc)
+    if (replyType === ReplyType.ReplyAll && lastMessage.cc)
       headers += `Cc: ${lastMessage.cc}\n`;
 
-    let text = `${replyText}<br><br>${lastMessage.from} wrote:<br>
+    let text;
+    if (replyType === ReplyType.Forward) {
+      let from = lastMessage.from ? `From: ${lastMessage.from}<br>` : '';
+      let date = lastMessage.from ?
+          `Date: ${FWD_THREAD_DATE_FORMATTER.format(lastMessage.date)}<br>` :
+          '';
+      let subject =
+          lastMessage.from ? `Subject: ${lastMessage.subject}<br>` : '';
+      let to = lastMessage.from ? `To: ${lastMessage.to}<br>` : '';
+      text = `${replyText}<br><br>---------- Forwarded message ---------<br>${
+          from}${date}${subject}${to}<br>${lastMessage.getHtmlOrPlain()}`;
+    } else {
+      text = `${replyText}<br><br>${lastMessage.from} wrote:<br>
   <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
     ${lastMessage.getHtmlOrPlain()}
   </blockquote>`;
+    }
 
     await send(text, to, subject, headers, this.id);
   }

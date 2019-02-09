@@ -5,7 +5,7 @@ import {EmailCompose, SubmitEvent} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {RadialProgress} from '../RadialProgress.js';
-import {Thread} from '../Thread.js';
+import {ReplyType, Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
@@ -781,11 +781,12 @@ export class ThreadListView extends View {
     compose.placeholder =
         'Hit <enter> to send, <ctrl+enter> to send and archive, <esc> to cancel. Allowed length is configurable in Settings.';
 
-    let replyAllLabel = document.createElement('label');
-    let replyAll = document.createElement('input');
-    replyAll.type = 'checkbox';
-    replyAll.checked = true;
-    replyAllLabel.append(replyAll, 'reply all');
+    let replyType = document.createElement('select');
+    replyType.innerHTML = `
+      <option>${ReplyType.ReplyAll}</option>
+      <option>${ReplyType.Reply}</option>
+      <option>${ReplyType.Forward}</option>
+    `;
 
     let progress = new RadialProgress(true);
     progress.addToTotal(this.allowedReplyLength_);
@@ -809,7 +810,7 @@ export class ThreadListView extends View {
       align-items: center;
       justify-content: center;
     `;
-    controls.append(cancel, replyAllLabel, count, progress);
+    controls.append(cancel, replyType, count, progress);
 
     container.append(compose, controls);
 
@@ -838,11 +839,12 @@ export class ThreadListView extends View {
       let progress =
           this.updateTitle('ThreadListView.sendReply', 1, 'Sending reply...');
 
+      let type = replyType.selectedOptions[0].value as ReplyType;
       try {
         // TODO: Handle if sending fails in such a way that the user can at
         // least save their message text.
         await renderedRow.thread.sendReply(
-            compose.value, compose.getEmails(), replyAll.checked);
+            compose.value, compose.getEmails(), type);
       } finally {
         this.isSending_ = false;
         progress.incrementProgress();
@@ -851,10 +853,10 @@ export class ThreadListView extends View {
       this.updateActions_();
 
       if (submitEvent.ctrlKey) {
-        let expectedNewMessageCount = 1;
+        let expectedNewMessageCount = type === ReplyType.Forward ? 0 : 1;
         await this.markTriaged_(
             ARCHIVE_ACTION.destination, expectedNewMessageCount);
-      } else {
+      } else if (type !== ReplyType.Forward) {
         renderedRow.rendered.showSpinner(true);
         await renderedRow.thread.update();
         renderedRow.rendered.showSpinner(false);
