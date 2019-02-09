@@ -235,7 +235,8 @@ export class Thread extends EventTarget {
   }
 
   async sendReply(
-      replyText: string, extraEmails: string[], replyType: ReplyType) {
+      replyText: string, extraEmails: string[], replyType: ReplyType,
+      sender?: gapi.client.gmail.SendAs) {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
@@ -275,6 +276,15 @@ export class Thread extends EventTarget {
     let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
     if (replyType === ReplyType.ReplyAll && lastMessage.cc)
       headers += `Cc: ${lastMessage.cc}\n`;
+
+    if (sender) {
+      let displayName = sender.displayName || '';
+      let sendAsEmail = sender.sendAsEmail || '';
+      headers += `From: ${
+          serializeAddress({name: displayName, address: sendAsEmail})}\n`;
+      if (sender.replyToAddress)
+        headers += `Reply-To: ${sender.replyToAddress}\n`;
+    }
 
     let text;
     if (replyType === ReplyType.Forward) {

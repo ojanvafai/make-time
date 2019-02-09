@@ -22,6 +22,7 @@ import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {ThreadFetcher} from './ThreadFetcher.js';
 import {HelpDialog} from './views/HelpDialog.js';
+import {SendAs} from './SendAs.js';
 
 // Extract these before rendering any threads since the threads can have
 // elements with IDs in them.
@@ -35,6 +36,7 @@ interface TitleEntry {
 
 let storage_ = new ServerStorage();
 let labels_ = new Labels();
+let sendAs_ = new SendAs();
 let settings_: Settings;
 let titleStack_: TitleEntry[] = [];
 let loaderTitleStack_: TitleEntry[] = [];
@@ -86,6 +88,11 @@ export async function getLabels() {
 export async function getSettings() {
   await login();
   return settings_;
+}
+
+export async function getSendAs() {
+  await login();
+  return sendAs_;
 }
 
 // Intentionally don't fetch here so that the onload sequence can listen to
@@ -161,7 +168,8 @@ async function login_() {
             return;
           }
 
-          await Promise.all([labels_.fetch(), storage_.fetch()]);
+          await Promise.all(
+              [storage_.fetch(), labels_.fetch(), sendAs_.fetch()]);
 
           // This has to happen after storage_.fetch().
           settings_ = new Settings(storage_);

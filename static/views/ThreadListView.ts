@@ -1,10 +1,11 @@
 import {Action, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
-import {login} from '../BaseMain.js';
+import {getSendAs, login} from '../BaseMain.js';
 import {EmailCompose, SubmitEvent} from '../EmailCompose.js';
 import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {RadialProgress} from '../RadialProgress.js';
+import {SendAs} from '../SendAs.js';
 import {ReplyType, Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -209,6 +210,7 @@ export class ThreadListView extends View {
   private isSending_: boolean|undefined;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
+  private sendAs_?: SendAs;
 
   constructor(
       private model_: ThreadListModel, public allLabels: Labels,
@@ -316,6 +318,7 @@ export class ThreadListView extends View {
 
   async init() {
     await login();
+    this.sendAs_ = await getSendAs();
     await this.model_.loadFromDisk();
     await this.model_.update();
   }
@@ -790,6 +793,30 @@ export class ThreadListView extends View {
       <option>${ReplyType.Forward}</option>
     `;
 
+    let sendAs = defined(this.sendAs_);
+    let from;
+    let senders: HTMLSelectElement;
+    if (sendAs.senders && sendAs.senders.length > 1) {
+      from = document.createElement('div');
+      from.style.cssText = `
+        white-space: nowrap;
+        margin: 0 6px;
+      `;
+      senders = document.createElement('select');
+      senders.style.cssText = `
+        margin-left: 2px;
+      `;
+      from.append('From', senders);
+
+      for (let sender of sendAs.senders) {
+        let option = document.createElement('option');
+        option.append(defined(sender.sendAsEmail));
+        if (sender.isDefault)
+          option.setAttribute('selected', 'true');
+        senders.append(option);
+      }
+    }
+
     let progress = new RadialProgress(true);
     progress.addToTotal(this.allowedReplyLength_);
 
@@ -809,10 +836,14 @@ export class ThreadListView extends View {
     let controls = document.createElement('div');
     controls.style.cssText = `
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: center;
     `;
-    controls.append(cancel, replyType, count, progress);
+    controls.append(cancel, replyType);
+    if (from)
+      controls.append(from);
+    controls.append(count, progress);
 
     container.append(compose, controls);
 
@@ -841,12 +872,25 @@ export class ThreadListView extends View {
       let progress =
           this.updateTitle('ThreadListView.sendReply', 1, 'Sending reply...');
 
+      let sender: gapi.client.gmail.SendAs|undefined;
+      if (sendAs.senders && sendAs.senders.length) {
+        // Even if there's only one sendAs sender, we should use it since it
+        // could have a custom reply-to.
+        if (sendAs.senders.length == 1) {
+          sender = sendAs.senders[0];
+        } else {
+          let sendAsEmail = senders.selectedOptions[0].value;
+          sender =
+              defined(sendAs.senders.find(x => x.sendAsEmail == sendAsEmail));
+        }
+      }
+
       let type = replyType.selectedOptions[0].value as ReplyType;
       try {
         // TODO: Handle if sending fails in such a way that the user can at
         // least save their message text.
         await renderedRow.thread.sendReply(
-            compose.value, compose.getEmails(), type);
+            compose.value, compose.getEmails(), type, sender);
       } finally {
         this.isSending_ = false;
         progress.incrementProgress();
