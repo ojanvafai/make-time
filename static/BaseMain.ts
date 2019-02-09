@@ -151,11 +151,15 @@ async function login_() {
             scope: SCOPES.join(' '),
           });
 
-          // TODO: This returns false in multilogin scenarios. Calling
-          // gapi.auth2.getAuthInstance().signIn() shows a popup that fixes it,
-          // but popups require a user gesture.
-          if (!gapi.auth2.getAuthInstance().isSignedIn.get())
-            redirectToSignInPage_();
+          // This returns false in multilogin scenarios. Calling
+          // gapi.auth2.getAuthInstance().signIn() prompts the user to pick an
+          // account.
+          if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
+            // @ts-ignore gapi.auth2.SigninOptions in DefinitelyTyped doesn't
+            // know about ux_mode. :(
+            gapi.auth2.getAuthInstance().signIn({ux_mode: 'redirect'});
+            return;
+          }
 
           await Promise.all([labels_.fetch(), storage_.fetch()]);
 
