@@ -41,6 +41,7 @@ let QUICK_REPLY_ACTION = {
   name: `Quick reply`,
   shortName: `Reply`,
   description: `Give a short reply.`,
+  key: 'r',
 };
 
 let BLOCKED_ACTION = {
@@ -158,6 +159,7 @@ let NEEDS_FILTER_ACTION = {
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   destination: Labels.NEEDS_FILTER_LABEL,
+  key: 'f',
 };
 
 let BASE_ACTIONS = [
