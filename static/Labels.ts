@@ -111,15 +111,6 @@ export class Labels {
     Labels.MUTED_LABEL,
   ];
 
-  // TODO: Delete these one all users have migrated.
-  static OLD_MAKE_TIME_PREFIX = 'maketime';
-  static OLD_TRIAGED_LABEL = Labels.addMakeTimePrefix('triaged');
-  static OLD_PRIORITY_LABEL = Labels.addMakeTimePrefix('priority');
-  static OLD_NEEDS_TRIAGE_LABEL = Labels.addMakeTimePrefix('needstriage');
-  static OLD_MUTED_LABEL = Labels.triagedLabel('supermuted');
-  static OLD_PROCESSED_LABEL = Labels.addMakeTimePrefix('processed');
-  static OLD_QUEUED_LABEL = Labels.addMakeTimePrefix('queued');
-
   // TODO: These can be undefined if fetch hasn't finished. Make the code
   // robust to that and remove the !'s
   private labelToId_!: Map<string, string>;
