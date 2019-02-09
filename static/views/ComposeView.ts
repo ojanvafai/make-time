@@ -1,9 +1,10 @@
 import {Action, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
-import {getMyEmail} from '../Base.js';
-import {login} from '../BaseMain.js';
+import {defined, getMyEmail} from '../Base.js';
+import {getSendAs, login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
+import {SendAs} from '../SendAs.js';
 
 import {HelpDialog} from './HelpDialog.js';
 import {View} from './View.js';
@@ -55,10 +56,12 @@ interface QueryParameters {
 }
 
 export class ComposeView extends View {
+  private from_: HTMLSelectElement;
   private to_: AddressCompose;
   private subject_: HTMLInputElement;
   private body_: EmailCompose;
   private inlineTo_: AddressCompose;
+  private sendAs_?: SendAs;
 
   constructor(
       private model_: ComposeModel, private params_: QueryParameters = {}) {
@@ -69,6 +72,11 @@ export class ComposeView extends View {
       flex-direction: column;
       height: 100%;
     `;
+
+    this.from_ = document.createElement('select');
+    this.from_.addEventListener(
+        'change', this.debounceHandleUpdates_.bind(this));
+    this.appendLine_('From:\xa0', this.from_);
 
     this.to_ = new AddressCompose();
     this.to_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
@@ -107,6 +115,22 @@ export class ComposeView extends View {
     this.setActions(ACTIONS);
   }
 
+  async setFrom_(selected?: gapi.client.gmail.SendAs) {
+    this.sendAs_ = defined(await getSendAs());
+    let senders = defined(
+        this.sendAs_.senders,
+        `Gmail didn't give make-time a list of from addresses. This should never happen. Please file a make-time bug. `)
+
+    for (let sender of senders) {
+      let option = document.createElement('option');
+      option.append(defined(sender.sendAsEmail));
+      if (selected ? sender.sendAsEmail === selected.sendAsEmail :
+                     sender.isDefault)
+        option.setAttribute('selected', 'true');
+      this.from_.append(option);
+    }
+  }
+
   shouldAutoSend() {
     return this.params_ && this.params_.autosend === '1';
   }
@@ -126,11 +150,13 @@ export class ComposeView extends View {
       this.body_.value = localData.body;
 
     if (!this.shouldAutoSend()) {
-      this.handleUpdates_();
+      this.handleUpdates_(true);
       this.focusFirstEmpty_();
     }
 
     await login();
+    // TODO: Make it possible to set the sender via query parameter.
+    await this.setFrom_(localData.sender);
 
     if (this.shouldAutoSend()) {
       this.handleUpdates_(true);
@@ -184,6 +210,13 @@ export class ComposeView extends View {
       this.getInlineTo_().value = emails.join(', ');
     } else {
       this.clearInlineTo_();
+    }
+
+    if (this.from_.selectedOptions.length) {
+      let sendAsEmail = this.from_.selectedOptions[0].value;
+      let sender = defined(defined(this.sendAs_).senders)
+                       .find(x => x.sendAsEmail == sendAsEmail);
+      this.model_.setSender(sender);
     }
 
     this.model_.setTo(this.to_.value);

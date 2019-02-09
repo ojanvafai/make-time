@@ -1,4 +1,4 @@
-import {USER_ID} from './Base.js';
+import {serializeAddress, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {gapiFetch} from './Net.js';
 
@@ -12,7 +12,8 @@ function isAscii(str: string) {
 }
 
 export async function send(
-    text: string, to: string, subject: string, opt_extraHeaders?: string,
+    text: string, to: string, subject: string,
+    sender?: gapi.client.gmail.SendAs, opt_extraHeaders?: string,
     opt_threadId?: string) {
   let base64 = new Base64();
 
@@ -27,6 +28,15 @@ Content-Type: text/html; charset="UTF-8"
 
   if (opt_extraHeaders)
     email += opt_extraHeaders;
+
+  if (sender) {
+    let displayName = sender.displayName || '';
+    let sendAsEmail = sender.sendAsEmail || '';
+    email += `From: ${
+        serializeAddress({name: displayName, address: sendAsEmail})}\n`;
+    if (sender.replyToAddress)
+      email += `Reply-To: ${sender.replyToAddress}\n`;
+  }
 
   // This newline between the headers and the email body is necessary.
   email += `

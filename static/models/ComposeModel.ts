@@ -1,13 +1,14 @@
+import {parseAddressList} from '../Base.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {send} from '../Mail.js';
 
 import {Model} from './Model.js';
-import { parseAddressList } from '../Base.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 
 export class ComposeModel extends Model {
   private sending_: boolean;
+  private sender_?: gapi.client.gmail.SendAs;
   private to_: string;
   private inlineTo_: string;
   private subject_: string;
@@ -24,6 +25,10 @@ export class ComposeModel extends Model {
   }
 
   async update() {}
+
+  setSender(value?: gapi.client.gmail.SendAs) {
+    this.sender_ = value;
+  }
 
   setTo(value: string) {
     this.to_ = value;
@@ -56,6 +61,7 @@ export class ComposeModel extends Model {
     }
 
     await IDBKeyVal.getDefault().set(AUTO_SAVE_KEY, {
+      sender: this.sender_,
       to: this.to_,
       inlineTo: this.inlineTo_,
       subject: this.subject_,
@@ -99,7 +105,7 @@ export class ComposeModel extends Model {
     this.sending_ = true;
 
     let progress = this.updateTitle('ComposeModel.send', 1, 'Sending...');
-    await send(this.body_, to, this.subject_);
+    await send(this.body_, to, this.subject_, this.sender_);
     await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
     progress.incrementProgress();
 

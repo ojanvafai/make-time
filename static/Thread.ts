@@ -277,15 +277,6 @@ export class Thread extends EventTarget {
     if (replyType === ReplyType.ReplyAll && lastMessage.cc)
       headers += `Cc: ${lastMessage.cc}\n`;
 
-    if (sender) {
-      let displayName = sender.displayName || '';
-      let sendAsEmail = sender.sendAsEmail || '';
-      headers += `From: ${
-          serializeAddress({name: displayName, address: sendAsEmail})}\n`;
-      if (sender.replyToAddress)
-        headers += `Reply-To: ${sender.replyToAddress}\n`;
-    }
-
     let text;
     if (replyType === ReplyType.Forward) {
       let from = lastMessage.from ? `From: ${lastMessage.from}<br>` : '';
@@ -304,6 +295,6 @@ export class Thread extends EventTarget {
   </blockquote>`;
     }
 
-    await send(text, to, subject, headers, this.id);
+    await send(text, to, subject, sender, headers, this.id);
   }
 }
