@@ -27,6 +27,7 @@ export class Message {
   date!: Date;
   from: string|undefined;
   replyTo: string|undefined;
+  deliveredTo: string|undefined;
   to: string|undefined;
   cc: string|undefined;
   bcc: string|undefined;
@@ -63,6 +64,16 @@ export class Message {
           break;
         case 'reply-to':
           this.replyTo = value;
+          break;
+        case 'delivered-to':
+          // This header seems to be included multiple times in some emails. At
+          // least with gmail forwarding though the last instanced of the header
+          // is the original address it was delivered to. In theory, it's
+          // possible that one isn't in the sendAs list though and an earlier
+          // one is, so should probably make Delivered-To a list and use the
+          // last one that is a match when choosing which address to default to
+          // for quick reply.
+          this.deliveredTo = value;
           break;
         case 'to':
           this.to = value;

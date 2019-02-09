@@ -768,7 +768,7 @@ export class ThreadListView extends View {
   // TODO: Make a proper QuickReply element. This function is getting unweildy
   // and ThreadListView shouldn't know all these details about compose and
   // sending.
-  showQuickReply() {
+  async showQuickReply() {
     let container = document.createElement('div');
     container.style.cssText = `
       display: flex;
@@ -808,10 +808,14 @@ export class ThreadListView extends View {
       `;
       from.append('From', senders);
 
+      let messages = notNull(this.renderedRow_).thread.getMessages();
+      let lastMessage = messages[messages.length - 1];
+      let deliveredTo = lastMessage.deliveredTo;
+
       for (let sender of sendAs.senders) {
         let option = document.createElement('option');
         option.append(defined(sender.sendAsEmail));
-        if (sender.isDefault)
+        if (deliveredTo ? sender.sendAsEmail === deliveredTo : sender.isDefault)
           option.setAttribute('selected', 'true');
         senders.append(option);
       }
