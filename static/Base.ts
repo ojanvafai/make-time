@@ -88,31 +88,6 @@ export interface ParsedAddress {
   name: string, address: string,
 }
 
-// TODO: Delete this one AddressCompose no longer uses it.
-// Parse "user@foo.com" and "User Name <user@foo.com>".
-export function parseAddress(address: string) {
-  let trimmed = address.trim();
-  let out: ParsedAddress = {
-    name: '',
-    address: trimmed,
-  }
-
-  let split = trimmed.split('<');
-  if (split.length == 1)
-    return out;
-
-  let email = defined(split.pop());
-  // Strip the trailing '>'.
-  if (email.charAt(email.length - 1) == '>')
-    email = email.substring(0, email.length - 1);
-  out.address = email.trim();
-
-  // Can there be multiple '<' in an email address, e.g. can there be a '<' in
-  // the name?
-  out.name = split.join('<').trim();
-  return out;
-}
-
 // TODO: Make all the callers handle groups properly. For now just flatten
 // groups and pretend they don't exist.
 export function parseAddressList(addresses: string) {

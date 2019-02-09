@@ -46,7 +46,7 @@ let QUICK_REPLY_ACTION = {
 let BLOCKED_ACTION = {
   name: `Blocked`,
   description:
-      `Block on action from someone else. Gets queued to be shown once a week on a day of your choosing via Settings.`,
+      `Block on action from someone else. Shows up once a day to retriage.`,
   destination: Labels.BLOCKED_LABEL,
 };
 

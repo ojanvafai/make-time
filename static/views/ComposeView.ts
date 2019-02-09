@@ -19,7 +19,16 @@ let HELP: Action = {
 };
 
 const ACTIONS = [SEND, HELP];
-registerActions('Compose', ACTIONS);
+
+// TODO: Make actions that allow modifier keys and make insert link a proper
+// action on both ComposeView and ThreadListView's quick reply.
+registerActions('Compose', [
+  ...ACTIONS, {
+    key: '<ctrl>+k/<cmd>+k',
+    name: 'Insert link',
+    description: 'Converts selected text to be a link.',
+  }
+]);
 
 async function getHelpText() {
   const PRE_FILL_URL =
