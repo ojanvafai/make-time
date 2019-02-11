@@ -1,5 +1,6 @@
-import {CALENDAR_ID, TYPE_EMAIL, TYPE_FOCUS_NON_RECURRING, TYPE_FOCUS_RECURRING, TYPE_INTERVIEW, TYPE_MEETING_NON_RECURRING, TYPE_MEETING_RECURRING, TYPE_ONE_ON_ONE_NON_RECURRING, TYPE_ONE_ON_ONE_RECURRING, TYPE_OOO, TYPE_UNBOOKED, TYPES,} from './Constants.js';
-import { assert } from '../Base.js';
+import {assert, notNull} from '../Base.js';
+
+import {CALENDAR_ID, TYPE_EMAIL, TYPE_FOCUS_NON_RECURRING, TYPE_FOCUS_RECURRING, TYPE_INTERVIEW, TYPE_MEETING_NON_RECURRING, TYPE_MEETING_RECURRING, TYPE_ONE_ON_ONE_NON_RECURRING, TYPE_ONE_ON_ONE_RECURRING, TYPE_OOO, TYPES,} from './Constants.js';
 
 const OOO_REGEX = /.*(OOO|Holiday).*/;
 const EMAIL_REGEX = /.*(Email).*/;
@@ -21,7 +22,7 @@ interface GCalAttendee {
 export class CalendarEvent {
   eventId: string;
   colorId: number|undefined;
-  type: string;
+  type: string|null;
   summary: string;
   start: Date;
   end: Date;
@@ -39,7 +40,7 @@ export class CalendarEvent {
   }
 
   getTargetColorId(): number {
-    const targetColorId = TYPES.get(this.type);
+    const targetColorId = TYPES.get(notNull(this.type));
     if (targetColorId === undefined)
       throw ('No color id found for type.');
     return targetColorId;
@@ -94,7 +95,7 @@ export class CalendarEvent {
 
     this.duration = this.end.getTime() - this.start.getTime();
 
-    this.type = TYPE_UNBOOKED;
+    this.type = null;
 
     if (this.shouldIgnore)
       return;

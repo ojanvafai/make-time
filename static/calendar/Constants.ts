@@ -8,7 +8,9 @@ export const TYPE_ONE_ON_ONE_RECURRING = 'Recurring one on one';
 export const TYPE_ONE_ON_ONE_NON_RECURRING = 'Non-recurring one on one';
 export const TYPE_FOCUS_RECURRING = 'Recurring focus block';
 export const TYPE_FOCUS_NON_RECURRING = 'Non-recurring focus block';
-export const TYPE_UNBOOKED = 'Unbooked time';
+export const TYPE_UNBOOKED_SMALL = 'Unbooked time (<= 30m)';
+export const TYPE_UNBOOKED_MEDIUM = 'Unbooked time (30m-60m)';
+export const TYPE_UNBOOKED_LARGE = 'Unbooked time (> 60m)';
 export const TYPE_OOO = 'OOO'
 export const TYPE_EMAIL = 'Email'
 export const TYPE_INTERVIEW = 'Interview'
@@ -41,7 +43,9 @@ const TYPE_COLORS: [string, string][] = [
   [TYPE_FOCUS_NON_RECURRING, '#dbadff'],
   [TYPE_EMAIL, '#5484ed'],
   [TYPE_INTERVIEW, '#46d6db'],
-  [TYPE_UNBOOKED, '#fbd75b'],
+  [TYPE_UNBOOKED_SMALL, '#af1085'],
+  [TYPE_UNBOOKED_MEDIUM, '#0e3e2e'],
+  [TYPE_UNBOOKED_LARGE, '#fbd75b'],
   [TYPE_OOO, '#e1e1e1'],
 ];
 
@@ -50,6 +54,8 @@ export const TYPES: Map<string, number> =
                               type_color[0],
                               COLORS.indexOf(type_color[1]) + 1,
                             ] as [string, number]}));
+
+export const TYPE_TO_COLOR = new Map(TYPE_COLORS);
 
 // 10: #51b749, 2: #7ae7bf,
 // 3:  #dbadff, 1: #a4bdfc

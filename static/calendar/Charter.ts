@@ -1,7 +1,7 @@
 import {AsyncOnce} from '../AsyncOnce.js';
 
 import {Aggregate} from './Aggregate.js'
-import {CALENDAR_ID, TYPES} from './Constants.js'
+import {CALENDAR_ID, TYPE_TO_COLOR, TYPES} from './Constants.js'
 
 function hexToRGB(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -37,7 +37,9 @@ export class Charter {
     const data: PlotlySeries[] = [];
 
     for (let type of TYPES.keys()) {
-      const color = hexToRGB(colors[TYPES.get(type)!].background);
+      const calendarColor = colors[TYPES.get(type)!];
+      const color = hexToRGB(
+          calendarColor ? calendarColor.background : TYPE_TO_COLOR.get(type));
       // Show hours with 1 degree of precision.
       const ys = aggregates.map((day) => {
         let minutes = day.minutesPerType.get(type);

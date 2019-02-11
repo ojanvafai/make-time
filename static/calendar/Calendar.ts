@@ -1,11 +1,15 @@
 import {AsyncOnce} from '../AsyncOnce.js';
+import {defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
+import {Model} from '../models/Model.js';
 import {TaskQueue} from '../TaskQueue.js'
 
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
-import {CALENDAR_ID, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
-import { Model } from '../models/Model.js';
+import {CALENDAR_ID, TYPE_UNBOOKED_LARGE, TYPE_UNBOOKED_MEDIUM, TYPE_UNBOOKED_SMALL, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+
+const SMALL_DURATION_MINS = 30;
+const MEDIUM_DURATION_MINS = 60;
 
 function getStartOfWeek(date: Date): Date {
   const x = new Date(date);
@@ -77,16 +81,94 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
     });
   }
 
-  function sortEvents(a: EventChange, b: EventChange) {
+  function sortEvents(a: CalendarEvent, b: CalendarEvent) {
+    return a.start.getTime() - b.start.getTime();
+  }
+
+  function sortEventChanges(a: EventChange, b: EventChange) {
     return a.ts.getTime() - b.ts.getTime();
   }
   // TODO - eliminate multiple sorts.
-  eventChanges.sort(sortEvents)
+  eventChanges.sort(sortEventChanges)
 
   // Insert event changes at the beginning and end of the work
   // day. Needed for multi-day events to work.
   const firstDay = new Date(events[0].start);
   const lastDay = new Date(events[events.length - 1].start);
+
+  let minutesPerType: Map<string, number>;
+
+  let addDuration = (type: string, duration: number) => {
+    if (!minutesPerType.has(type)) {
+      minutesPerType.set(type, 0);
+    }
+    minutesPerType.set(type, defined(minutesPerType.get(type)) + duration);
+  };
+
+  let addUnbookedDuration = (durationMs: number) => {
+    if (durationMs <= 0)
+      return;
+    let unbookedDuration = durationMs / 60 / 1000;
+    if (unbookedDuration < SMALL_DURATION_MINS)
+      addDuration(TYPE_UNBOOKED_SMALL, unbookedDuration);
+    else if (unbookedDuration < MEDIUM_DURATION_MINS)
+      addDuration(TYPE_UNBOOKED_MEDIUM, unbookedDuration);
+    else
+      addDuration(TYPE_UNBOOKED_LARGE, unbookedDuration);
+  };
+
+  let minutesMap = new Map();
+  let addMinutesPerType = (day: Date) => {
+    minutesPerType = new Map()
+    let cloned = new Date(day);
+    cloned.setHours(0, 0, 0);
+    minutesMap.set(cloned.getTime(), minutesPerType);
+  };
+
+  let setMinutesPerType = (day: Date) => {
+    let cloned = new Date(day);
+    cloned.setHours(0, 0, 0);
+    minutesPerType = minutesMap.get(cloned.getTime());
+    if (!minutesPerType)
+      minutesPerType = new Map();
+  };
+
+  let currentDay = new Date(events[0].start);
+  currentDay.setHours(WORKING_DAY_START, 0, 0);
+  let unbookedStart = currentDay;
+  addMinutesPerType(currentDay);
+
+  events.sort(sortEvents);
+  for (let event of events) {
+    if (event.end < unbookedStart)
+      continue;
+
+    // Skip to the end of the event for events that span multiple days since
+    // we're just looking for unbooked time.
+    const tsDay = new Date(event.end);
+    tsDay.setHours(WORKING_DAY_START, 0, 0);
+    if (tsDay.getTime() != currentDay.getTime()) {
+      currentDay.setHours(WORKING_DAY_END, 0, 0);
+      let end = (event.start < currentDay) ? event.start : currentDay;
+      let duration = getDurationOverlappingWorkDay(unbookedStart, end, end);
+      addUnbookedDuration(duration);
+      currentDay = tsDay;
+      unbookedStart = tsDay;
+      addMinutesPerType(currentDay);
+    }
+
+    let start = event.start;
+    if (unbookedStart.getTime() < start.getTime()) {
+      let duration = getDurationOverlappingWorkDay(unbookedStart, start, start);
+      addUnbookedDuration(duration);
+    }
+    unbookedStart = event.end;
+  }
+
+  currentDay.setHours(WORKING_DAY_END, 0, 0);
+  let duration =
+      getDurationOverlappingWorkDay(unbookedStart, currentDay, currentDay);
+  addUnbookedDuration(duration);
 
   // TODO - insert a change at the beginning and end of each day
   // and handle empty event change regions.
@@ -103,7 +185,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
         {ts: dayEnd, type: EVENT_CHANGE.EVENT_WORKDAY, event: null})
   }
 
-  eventChanges.sort(sortEvents)
+  eventChanges.sort(sortEventChanges)
 
   const day = new Date(events[0].start);
   day.setHours(0, 0, 0);
@@ -112,8 +194,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   const inProgressEvents: Set<CalendarEvent> = new Set();
   let ts = day;
 
-  let minutesPerType: Map<string, number> = new Map();
-
+  setMinutesPerType(day);
   for (let eventChange of eventChanges) {
     let primaryInProgressEvents = Array.from(inProgressEvents);
     // OOO events take priority.
@@ -134,37 +215,32 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
         getDurationOverlappingWorkDay(ts, eventChange.ts, day) / 60 / 1000;
 
     for (let inProgressEvent of primaryInProgressEvents) {
-      if (!minutesPerType.has(inProgressEvent.type)) {
-        minutesPerType.set(inProgressEvent.type, 0);
-      }
-      minutesPerType.set(
-          inProgressEvent.type,
-          minutesPerType.get(inProgressEvent.type)! +
-              durationMinutes / primaryInProgressEvents.length);
+      addDuration(
+          notNull(inProgressEvent.type),
+          durationMinutes / primaryInProgressEvents.length);
     }
 
     if (eventChange.type == EVENT_CHANGE.EVENT_START) {
       if (eventChange.event === null)
-        throw ('Event start with null event.')
-        inProgressEvents.add(eventChange.event);
+        throw ('Event start with null event.');
+      inProgressEvents.add(eventChange.event);
     } else if (eventChange.type == EVENT_CHANGE.EVENT_END) {
       if (eventChange.event === null)
-        throw ('Event end with null event.')
-        inProgressEvents.delete(eventChange.event)
+        throw ('Event end with null event.');
+      inProgressEvents.delete(eventChange.event);
     }
+
     ts = eventChange.ts;
     const tsDay = new Date(ts);
     tsDay.setHours(0, 0, 0);
     if (tsDay.getTime() != day.getTime()) {
       if (day.getDay() != 0 && day.getDay() != 6)
-        aggregates.push(new Aggregate(new Date(day), minutesPerType));
-      minutesPerType = new Map();
+        aggregates.push(new Aggregate(new Date(day), minutesPerType!));
       day.setDate(day.getDate() + 1);
+      setMinutesPerType(day);
     }
   }
-  for (let aggregate of aggregates) {
-    aggregate.addTotalNonMeetingTime();
-  }
+
   return aggregates;
 }
 
