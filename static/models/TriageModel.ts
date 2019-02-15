@@ -188,6 +188,9 @@ export class TriageModel extends ThreadListModel {
             inUnprocessed})`,
         maxThreadsToShow);
 
+    if (this.updatingStopped)
+      return;
+
     // Set threads taht are already in the inbox atomically so there isn't user
     // visible flicker.
     this.setThreads(this.pendingThreads_);
@@ -200,10 +203,16 @@ export class TriageModel extends ThreadListModel {
     this.needsProcessingThreads_ = [];
     await this.mailProcessor_.process(existingThreadsToProcess, true);
 
+    if (this.updatingStopped)
+      return;
+
     // Fetch threads that don't have locally cached thread data.
     let needsFetchThreads = this.needsFetchThreads_.concat();
     this.needsFetchThreads_ = [];
     await this.doFetches_(needsFetchThreads);
+
+    if (this.updatingStopped)
+      return;
 
     // Do these threads last since they are threads that have been archived
     // outside of maketime and just need to have their maketime labels removed,
@@ -230,6 +239,8 @@ export class TriageModel extends ThreadListModel {
     });
     for (let fetcher of fetchers) {
       taskQueue.queueTask(async () => {
+        if (this.updatingStopped)
+          return;
         let thread = await fetcher.fetch();
         await this.processThread_(notNull(thread), true);
       });

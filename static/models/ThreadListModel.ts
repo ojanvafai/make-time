@@ -35,6 +35,7 @@ export abstract class ThreadListModel extends Model {
   private threads_: Thread[];
   private queuedRemoves_: Thread[];
   private isUpdating_: boolean;
+  protected updatingStopped: boolean;
 
   constructor(protected labels: Labels, private serializationKey_: string) {
     super();
@@ -43,6 +44,7 @@ export abstract class ThreadListModel extends Model {
     this.threads_ = [];
     this.queuedRemoves_ = [];
     this.isUpdating_ = false;
+    this.updatingStopped = false;
   }
 
   protected abstract handleTriaged(destination: string|null, thread: Thread):
@@ -51,6 +53,10 @@ export abstract class ThreadListModel extends Model {
   protected abstract compareThreads(a: Thread, b: Thread): number;
   protected abstract shouldShowThread(thread: Thread): boolean;
   abstract getGroupName(thread: Thread): string;
+
+  stopUpdating() {
+    this.updatingStopped = true;
+  }
 
   async loadFromDisk() {
     let data = await IDBKeyVal.getDefault().get(this.serializationKey_);
@@ -68,7 +74,7 @@ export abstract class ThreadListModel extends Model {
   async update() {
     // Updates can take a very long time if there's a lot of threads to process.
     // Make sure two don't happen in parallel.
-    if (this.isUpdating_)
+    if (this.isUpdating_ || this.updatingStopped)
       return;
 
     this.isUpdating_ = true;

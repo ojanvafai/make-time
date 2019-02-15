@@ -81,6 +81,9 @@ export class TodoModel extends ThreadListModel {
       }, `in:${labelsToFetch.join(' OR in:')}`);
     }
 
+    if (this.updatingStopped)
+      return;
+
     this.setThreads(this.pendingThreads_);
     this.pendingThreads_ = [];
 
@@ -97,6 +100,9 @@ export class TodoModel extends ThreadListModel {
         'TodoModel.doFetches_', threads.length, 'Updating thread list...');
 
     for (let i = 0; i < threads.length; i++) {
+      if (this.updatingStopped)
+        return;
+
       progress.incrementProgress();
       let thread = await threads[i].fetch();
       assert(thread instanceof Thread);

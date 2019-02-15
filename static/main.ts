@@ -356,10 +356,18 @@ async function setupReloadOnVersionChange() {
   if (data.exists)
     version_ = defined(data.data()).version;
 
-  doc.onSnapshot((snapshot) => {
+  doc.onSnapshot(async (snapshot) => {
     let newVersion = defined(snapshot.data()).version;
     if (version_ == newVersion)
       return;
+
+    // Don't do updates if a new server version has been pushed and we will be
+    // reloading soon since we don't want conflicting updaters to run on
+    // different clients.
+    let todoModel = await getTodoModel();
+    let triageModel = await getTriageModel();
+    todoModel.stopUpdating();
+    triageModel.stopUpdating();
 
     let dialog: HTMLDialogElement;
 
