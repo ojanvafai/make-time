@@ -7,5 +7,8 @@ service cloud.firestore {
     match /{userId}/{document=**} {
       allow read, write: if request.auth.uid == userId;
     }
+    match /global/version {
+      allow read;
+    }
   }
 }

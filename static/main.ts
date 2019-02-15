@@ -1,7 +1,7 @@
 import {getActionKey, getActions} from './Actions.js';
-import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById} from './Base.js';
+import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById, showDialog} from './Base.js';
 // TODO: Clean up these dependencies to be less spaghetti.
-import {getLabels, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {firestore, getLabels, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
@@ -343,9 +343,45 @@ async function onLoad() {
     await IDBKeyVal.getDefault().del(ServerStorage.KEYS.TRACK_LONG_TASKS);
   }
   await updateLongTaskTracking();
+  await setupReloadOnVersionChange();
 }
 
 onLoad();
+
+let version_: number;
+async function setupReloadOnVersionChange() {
+  let db = firestore();
+  let doc = db.collection('global').doc('version');
+  let data = await doc.get();
+  if (data.exists)
+    version_ = defined(data.data()).version;
+
+  doc.onSnapshot((snapshot) => {
+    let newVersion = defined(snapshot.data()).version;
+    if (version_ == newVersion)
+      return;
+
+    let dialog: HTMLDialogElement;
+
+    let container = document.createElement('div');
+    container.append(
+        'A new version of maketime is available. This window will reload in 60 seconds.');
+    let close = document.createElement('button');
+    close.append('close');
+    close.onclick = () => dialog.close();
+
+    let buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+        display: flex;
+        justify-content: flex-end;
+      `;
+    buttonContainer.append(close);
+    container.append(buttonContainer);
+    dialog = showDialog(container);
+
+    setTimeout(() => window.location.reload(), 60000);
+  });
+}
 
 const DAILY_LOCAL_UPDATES_KEY = 'daily-local-updates';
 
