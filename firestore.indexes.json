@@ -10,5 +10,20 @@
   //     ]
   //   }
   // ]
-  "indexes": []
+  "indexes": [
+    {
+      "collectionId": "metadata",
+      "fields": [
+        { "fieldPath": "timestamp", "mode": "ASCENDING" },
+        { "fieldPath": "hasGroup", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionId": "metadata",
+      "fields": [
+        { "fieldPath": "timestamp", "mode": "ASCENDING" },
+        { "fieldPath": "hasPriority", "mode": "ASCENDING" }
+      ]
+    }
+  ]
 }

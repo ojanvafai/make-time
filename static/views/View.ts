@@ -19,7 +19,6 @@ export abstract class View extends HTMLElement {
   tearDown() {}
   async init() {}
   async goBack() {}
-  async update() {}
 
   async dispatchShortcut(e: KeyboardEvent) {
     if (this.actions_)

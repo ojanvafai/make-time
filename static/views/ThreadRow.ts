@@ -94,6 +94,7 @@ export class ThreadRow extends HTMLElement {
 
     this.rendered = new RenderedThread(thread);
     this.renderRow_();
+    this.thread.addEventListener(UpdatedEvent.NAME, () => this.renderRow_());
   }
 
   threadRowContainsSelection_() {
@@ -135,9 +136,6 @@ export class ThreadRow extends HTMLElement {
 
   renderRow_() {
     let subject = this.thread.getSubject();
-    let messages = this.thread.getMessages();
-
-    let lastMessage = messages[messages.length - 1];
 
     let fromContainer = document.createElement('div');
     fromContainer.style.cssText = `
@@ -152,8 +150,10 @@ export class ThreadRow extends HTMLElement {
     from.style.cssText = `
       overflow: hidden;
     `;
-    if (lastMessage.from) {
-      let parsed = parseAddressList(lastMessage.from)[0];
+
+    let fromText = this.thread.getFrom();
+    if (fromText) {
+      let parsed = parseAddressList(fromText)[0];
       from.textContent = parsed.name || parsed.address;
     } else {
       from.textContent = '';
@@ -165,8 +165,10 @@ export class ThreadRow extends HTMLElement {
       margin-left: 4px;
       color: grey;
     `;
-    if (messages.length > 1)
-      count.textContent = String(messages.length);
+
+    let messageIds = this.thread.getMessageIds();
+    if (messageIds.length > 1)
+      count.textContent = String(messageIds.length);
 
     fromContainer.append(from, count);
 
@@ -184,10 +186,10 @@ export class ThreadRow extends HTMLElement {
     `;
 
     let date = document.createElement('div');
-    date.textContent = this.dateString_(lastMessage.date);
+    date.textContent = this.dateString_(this.thread.getDate());
 
     let popoutButton = new ViewInGmailButton();
-    popoutButton.setMessageId(messages[messages.length - 1].id);
+    popoutButton.setMessageId(messageIds[messageIds.length - 1]);
     popoutButton.style.marginLeft = '4px';
     popoutButton.style.marginRight = '4px';
 
@@ -212,8 +214,9 @@ export class ThreadRow extends HTMLElement {
     let today = new Date();
     if (today.getFullYear() != date.getFullYear()) {
       formatter = DIFFERENT_YEAR_FORMATTER;
-    } else if (today.getMonth() != date.getMonth() ||
-      today.getDate() != date.getDate()) {
+    } else if (
+        today.getMonth() != date.getMonth() ||
+        today.getDate() != date.getDate()) {
       formatter = DIFFERENT_DAY_FORMATTER;
     } else {
       formatter = SAME_DAY_FORMATTER;

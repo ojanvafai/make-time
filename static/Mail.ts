@@ -46,8 +46,9 @@ ${text}`;
   if (opt_threadId)
     resource.threadId = opt_threadId;
 
-  await gapiFetch(gapi.client.gmail.users.messages.send, {
+  let response = await gapiFetch(gapi.client.gmail.users.messages.send, {
     'userId': USER_ID,
     'resource': resource,
   });
+  return response.result;
 }

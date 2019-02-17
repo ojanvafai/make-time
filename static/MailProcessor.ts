@@ -1,23 +1,205 @@
-import {notNull, parseAddressList, ParsedAddress} from './Base.js';
-import {fetchThreads, getServerStorage, updateLoaderTitle} from './BaseMain.js';
+import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
+
+import {defined, parseAddressList, ParsedAddress, USER_ID, showDialog} from './Base.js';
+import {fetchThreads, firestoreUserCollection, getServerStorage, getLabels} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
-import {TriageModel} from './models/TriageModel.js';
+import {gapiFetch} from './Net.js';
+import {QueueNames} from './QueueNames.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
-import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from './TaskQueue.js';
-import {Thread} from './Thread.js';
-import {ThreadFetcher} from './ThreadFetcher.js';
+import {BuiltInLabels, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 
 export class MailProcessor {
-  constructor(
-      public settings: Settings, private triageModel_: TriageModel,
-      private allLabels_: Labels) {}
+  constructor(public settings: Settings) {}
 
-  private async pushThread_(thread: Thread) {
-    await this.triageModel_.addThread(thread);
+  async process() {
+    await this.processQueues_();
+    await this.syncWithGmail_();
+  }
+
+  // TODO: Delete this once all clients have upgraded.
+  async migrateThreadsToFirestore() {
+    let labels = await getLabels();
+    let labelsToMigrate = [
+      ...(labels.getNeedsTriageLabelNames()),
+      ...(labels.getQueuedLabelNames()),
+      ...(labels.getPriorityLabelNames()),
+      Labels.MUTED_LABEL,
+    ];
+
+    if (!labelsToMigrate.length)
+      return;
+
+    let idsToRemove = labelsToMigrate.map(x => labels.getId(x));
+    let query = 'in:' + labelsToMigrate.join(' OR in:');
+    let threadsToMigrate: gapi.client.gmail.Thread[] = [];
+    await fetchThreads(x => threadsToMigrate.push(x), query);
+
+    if (!threadsToMigrate.length)
+      return;
+
+    let dialog = showDialog(`Migrating ${
+        threadsToMigrate.length} threads. This might take a while.`);
+
+    for (let gmailThread of threadsToMigrate) {
+      let thread = await this.fetchFullThread_(
+          defined(gmailThread.id), defined(gmailThread.historyId));
+
+      // Migrate labels to firestore.
+      let addToInbox = await thread.migrateMaketimeLabelsToFirestore();
+      // Remove the labels from the thread so we don't keep migrating on each
+      // update and add everything but muted to the inbox since queued and
+      // prioritized threads are now also in the inbox.
+      await gapiFetch(gapi.client.gmail.users.threads.modify, {
+        'userId': USER_ID,
+        'id': thread.id,
+        'addLabelIds': addToInbox ? ['INBOX'] : [],
+        'removeLabelIds': idsToRemove,
+      });
+    };
+
+    dialog.close();
+  }
+
+
+  // Only remove labels from messages that were seen by the user at the time
+  // they took the action.
+  private async removeGmailLabels_(
+      firestoreKey: string, removeLabelIds: string[]) {
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    let querySnapshot =
+        await metadataCollection.where(firestoreKey, '>', 0).get();
+
+    // TODO: Use a TaskQueue and or gapi batch to make this faster?
+    for (let doc of querySnapshot.docs) {
+      let messageIds = doc.data().messageIds;
+      let count = doc.data()[firestoreKey];
+      await gapiFetch(gapi.client.gmail.users.messages.batchModify, {
+        'userId': USER_ID,
+        'ids': messageIds.slice(0, count),
+        'removeLabelIds': removeLabelIds,
+      });
+
+      // TODO: Technically there's a race here from when we query to when we do
+      // the update. A new message could have come in and the user already
+      // archives it before this runs and that archive would get lost due to
+      // this delete.
+      let update: any = {};
+      update[firestoreKey] = firebase.firestore.FieldValue.delete();
+      await doc.ref.update(update);
+    }
+  }
+
+  private async moveToInbox_() {
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    let querySnapshot = await metadataCollection
+                            .where(ThreadMetadataKeys.moveToInbox, '==', true)
+                            .get();
+
+    for (let doc of querySnapshot.docs) {
+      await gapiFetch(gapi.client.gmail.users.threads.modify, {
+        'userId': USER_ID,
+        'id': doc.id,
+        'addLabelIds': ['INBOX'],
+      });
+
+      let update: ThreadMetadataUpdate = {
+        moveToInbox: firebase.firestore.FieldValue.delete(),
+      };
+      await doc.ref.update(update);
+    }
+  }
+
+  private async fetchFullThread_(threadId: string, historyId: string) {
+    let metadata = await Thread.fetchMetadata(threadId);
+    let thread = Thread.create(threadId, metadata);
+    await thread.fetchFromDisk();
+    if (thread.getHistoryId() !== historyId)
+      await thread.update();
+    return thread;
+  }
+
+  private async syncWithGmail_() {
+    // Add back in threads that were archived and then undone.
+    await this.moveToInbox_();
+
+    // Flush any pending archives/markReads from maketime.
+    await this.removeGmailLabels_(
+        ThreadMetadataKeys.countToArchive, ['INBOX', 'UNREAD']);
+    await this.removeGmailLabels_(
+        ThreadMetadataKeys.countToMarkRead, ['UNREAD']);
+
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    let labelSnapshot =
+        await metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true)
+            .get();
+    let hasLabelIds = labelSnapshot.docs.map(x => x.id);
+    let prioritySnapshot =
+        await metadataCollection
+            .where(ThreadMetadataKeys.hasPriority, '==', true)
+            .get();
+    let hasPriorityIds = prioritySnapshot.docs.map(x => x.id);
+
+    let existingIds = new Set([...hasLabelIds, ...hasPriorityIds]);
+
+    // Update maketime with anything in the inbox.
+    await fetchThreads(async (gmailThread: gapi.client.gmail.Thread) => {
+      let threadId = defined(gmailThread.id);
+      let thread =
+          await this.fetchFullThread_(threadId, defined(gmailThread.historyId));
+      existingIds.delete(threadId);
+
+      // Gmail has phantom messages that keep threads in the inbox but that you
+      // can't access. Archive the whole thread for these messages. See
+      // https://issuetracker.google.com/issues/122167541.
+      let messages = thread.getMessages();
+      let inInbox = messages.some(x => x.getLabelIds().includes('INBOX'));
+      if (!inInbox) {
+        await gapiFetch(gapi.client.gmail.users.threads.modify, {
+          'userId': USER_ID,
+          'id': threadId,
+          'removeLabelIds': ['INBOX'],
+        });
+      }
+
+      // Everything in the inbox should have a labelId and/or a priorityId.
+      // This can happen if something had been processed, then archived, then
+      // the user manually puts it back in the inbox. The thread metadata in
+      // firestore shows doesn't indicate new messages since there aren't
+      // actually new messages, but we still want to filter it.
+      if (thread.needsFiltering() ||
+          (!thread.getLabelId() && !thread.getPriorityId() &&
+           !thread.isBlocked())) {
+        await this.processThread_(thread);
+      }
+    }, `in:inbox`);
+
+    // For anything that used to be in the inbox, but isn't anymore (e.g. the
+    // user archived from gmail), clear it's metadata so it doesn't show up in
+    // maketime either.
+    await this.clearThreadMetadata_(existingIds);
+  }
+
+  private async clearThreadMetadata_(ids: Iterable<string>) {
+    for (let id of ids) {
+      // Do one last fetch to ensure a new message hasn't come in that puts the
+      // thread back in the inbox, then clear metadata.
+      let response = await gapiFetch(gapi.client.gmail.users.threads.get, {
+        'userId': USER_ID,
+        'id': id,
+        fields: 'messages(labelIds)',
+      });
+      let messages = defined(defined(defined(response).result).messages);
+      let isInInbox = messages.some(x => defined(x.labelIds).includes('INBOX'));
+      if (!isInInbox)
+        Thread.clearMetadata(id);
+    }
   }
 
   endsWithAddress(addresses: ParsedAddress[], filterAddress: string) {
@@ -141,7 +323,7 @@ export class MailProcessor {
     }
   }
 
-  getWinningLabel(thread: Thread, rules: FilterRule[]) {
+  private getWinningLabel_(thread: Thread, rules: FilterRule[]) {
     var messages = thread.getMessages();
 
     for (let rule of rules) {
@@ -171,128 +353,73 @@ export class MailProcessor {
     return Labels.FALLBACK_LABEL;
   }
 
-  async processThread(thread: Thread, shouldPushThread?: boolean) {
+  private async processThread_(thread: Thread) {
     try {
-      let removeLabelIds = this.allLabels_.getMakeTimeLabelIds().concat();
-      let processedLabelId =
-          await this.allLabels_.getId(Labels.PROCESSED_LABEL);
-      let addLabelIds = [processedLabelId];
-
       if (thread.isMuted()) {
-        let mutedId = await this.allLabels_.getId(Labels.MUTED_LABEL);
-        removeLabelIds = removeLabelIds.filter((item) => item != mutedId);
-        removeLabelIds.push('INBOX');
-        await thread.modify(addLabelIds, removeLabelIds);
+        await thread.archive();
         return;
       }
 
       let rules = await this.settings.getFilters();
-      let labelName = this.getWinningLabel(thread, rules);
+      let label = this.getWinningLabel_(thread, rules);
 
-      if (labelName == Labels.ARCHIVE_LABEL) {
-        addLabelIds.push(
-            await this.allLabels_.getId(Labels.PROCESSED_ARCHIVE_LABEL));
-        removeLabelIds.push('INBOX');
-        await thread.modify(addLabelIds, removeLabelIds);
+      if (label == Labels.ARCHIVE_LABEL) {
+        await thread.archive();
         return;
       }
 
-      let prefixedLabelName;
+      // If it already has a priority, or it's already in dequeued with a
+      // labelId, don't queue it.
+      let shouldQueue = !thread.getPriorityId() &&
+          (!thread.getLabelId() || thread.isQueued()) &&
+          (this.settings.getQueueSettings().get(label).queue !=
+           QueueSettings.IMMEDIATE);
 
-      let alreadyInTriaged = thread.getPriority();
-      let alreadyInNeedsTriage =
-          thread.isInInbox() && !thread.hasDefaultQueue();
-      let labelNeedsQueueing =
-          this.settings.getQueueSettings().get(labelName).queue !=
-          QueueSettings.IMMEDIATE;
-
-      if (alreadyInTriaged || alreadyInNeedsTriage || !labelNeedsQueueing) {
-        prefixedLabelName = Labels.needsTriageLabel(labelName);
-        addLabelIds.push('INBOX');
-      } else {
-        prefixedLabelName = Labels.addQueuedPrefix(labelName);
-        removeLabelIds.push('INBOX');
-      }
-
-      let prefixedLabelId = await this.allLabels_.getId(prefixedLabelName);
-      addLabelIds.push(prefixedLabelId);
-      removeLabelIds = removeLabelIds.filter(id => id != prefixedLabelId);
-
-      await thread.modify(addLabelIds, removeLabelIds);
-      if (addLabelIds.includes('INBOX')) {
-        if (shouldPushThread) {
-          await this.pushThread_(thread);
-        } else {
-          // The thread is already in the ThreadListModel, but we still want to
-          // update it so that it rerenders the row with the latest thread
-          // information.
-          thread.update();
-        }
-      }
+      // Need to clear needsFiltering
+      thread.setLabelAndQueued(shouldQueue, label);
     } catch (e) {
       ErrorLogger.log(`Failed to process message.\n\n${JSON.stringify(e)}`);
     }
   }
 
-  async process(threads: Thread[], shouldPushThread?: boolean) {
-    await this.processThreads_(threads, shouldPushThread);
-    await this.processQueues_();
+  async dequeue(labelId: number) {
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    let querySnapshot = await metadataCollection
+                            .where(ThreadMetadataKeys.labelId, '==', labelId)
+                            .where(ThreadMetadataKeys.queued, '==', true)
+                            .get();
+    for (let doc of querySnapshot.docs) {
+      await doc.ref.update({
+        queued: firebase.firestore.FieldValue.delete(),
+      });
+    }
   }
 
-  private async processThreads_(threads: Thread[], shouldPushThread?: boolean) {
-    if (!threads.length)
-      return;
-
-    let progress =
-        updateLoaderTitle('processUnprocessed', threads.length, `Filtering...`);
-
-    const taskQueue = new TaskQueue(3);
-    taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {
-      progress.incrementProgress();
-    });
-    for (let thread of threads) {
-      taskQueue.queueTask(
-          async () => await this.processThread(thread, shouldPushThread));
-    };
-    await taskQueue.flush();
-  }
-
-  async dequeue(labelName: string) {
-    var queuedLabelName = Labels.addQueuedPrefix(labelName);
-    var queuedLabel = await this.allLabels_.getId(queuedLabelName);
-    var autoLabel =
-        await this.allLabels_.getId(Labels.needsTriageLabel(labelName));
-
-    let threads: Thread[] = [];
-    await fetchThreads(async (fetcher: ThreadFetcher) => {
-      let thread = await fetcher.fetch();
-      threads.push(notNull(thread));
-    }, `in:${queuedLabelName}`);
-
-    if (!threads.length)
-      return;
-
-    let progress = updateLoaderTitle(
-        'dequeue', threads.length, `Dequeuing from ${labelName}...`);
-
-    let processedLabelId = await this.allLabels_.getId(Labels.PROCESSED_LABEL);
-
-    for (var i = 0; i < threads.length; i++) {
-      progress.incrementProgress();
-
-      var thread = threads[i];
-      let addLabelIds = ['INBOX', autoLabel, processedLabelId];
-      let removeLabelIds = [queuedLabel];
-      await thread.modify(addLabelIds, removeLabelIds);
-      await this.pushThread_(thread);
+  async dequeueBlocked_() {
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    let querySnapshot =
+        await metadataCollection.where(ThreadMetadataKeys.blocked, '==', true)
+            .get();
+    for (let doc of querySnapshot.docs) {
+      await doc.ref.update({
+        blocked: firebase.firestore.FieldValue.delete(),
+        labelId: BuiltInLabels.Blocked,
+        hasLabel: true,
+      } as ThreadMetadataUpdate);
     }
   }
 
   async processSingleQueue(queue: string) {
+    if (queue === QueueSettings.DAILY)
+      await this.dequeueBlocked_();
+
+    let queueNames = new QueueNames();
     let queueDatas = this.settings.getQueueSettings().entries();
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)
-        await this.dequeue(queueData[0]);
+        await this.dequeue(await queueNames.getId(queueData[0]));
     }
   }
 

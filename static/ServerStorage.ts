@@ -23,16 +23,17 @@ export class ServerStorage extends EventTarget {
       return;
 
     let doc = this.getDocument_();
-    doc.onSnapshot((snapshot) => {
-      this.data_ = snapshot;
-      this.dispatchEvent(new Event(ServerStorageUpdateEventName));
-    });
     this.data_ = await doc.get();
 
     if (!this.data_.exists) {
       await doc.set({});
       this.data_ = await doc.get();
     }
+
+    doc.onSnapshot((snapshot) => {
+      this.data_ = snapshot;
+      this.dispatchEvent(new Event(ServerStorageUpdateEventName));
+    });
   }
 
   getDocument_() {

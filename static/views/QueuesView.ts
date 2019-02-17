@@ -152,14 +152,12 @@ export class QueuesView extends HTMLElement {
     for (let i = 0; i < selectors.length; i++) {
       let selector = selectors[i];
       let label = selector.querySelector('.label')!.textContent;
-      if (queue == QueueSettings.WEEKLY)
+      if (queue == QueueSettings.WEEKLY) {
         queue = (<HTMLSelectElement>selector.querySelector('.day')!)
                     .selectedOptions[0]
                     .value;
-      let goal = (<HTMLSelectElement>selector.querySelector('.goal')!)
-                     .selectedOptions[0]
-                     .value;
-      output[label] = {queue, goal, index: i + 1};
+      }
+      output[label] = {queue, index: i + 1};
     }
   }
 
@@ -221,11 +219,6 @@ export class QueuesView extends HTMLElement {
     let days = this.createSelect_(QueueSettings.WEEKDAYS, queue);
     days.className = 'day';
     row.append(days);
-
-    let goal = queueData.data.goal;
-    let goals = this.createSelect_(QueueSettings.goals, goal);
-    goals.className = 'goal';
-    row.append(goals);
 
     let container = defined(this.getRowContainer_(queue));
     container.append(row);

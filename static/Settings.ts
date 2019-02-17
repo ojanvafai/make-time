@@ -1,7 +1,7 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, notNull, defined} from './Base.js';
-import {firebaseAuth, firestore} from './BaseMain.js';
+import {assert, defined} from './Base.js';
+import {firestoreUserCollection} from './BaseMain.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 
@@ -80,7 +80,7 @@ export class Settings {
       key: ServerStorage.KEYS.VACATION,
       name: 'Vacation',
       description:
-          `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail. Cannot be a Best Effort queue.`,
+          `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
     },
     {
       key: ServerStorage.KEYS.TIMER_DURATION,
@@ -171,9 +171,7 @@ export class Settings {
   }
 
   getFiltersDocument_() {
-    let db = firestore();
-    let uid = notNull(firebaseAuth().currentUser).uid;
-    return db.collection(uid).doc('filters');
+    return firestoreUserCollection().doc('filters');
   }
 
   filtersObject_(rules: FilterRule[]) {
@@ -185,15 +183,16 @@ export class Settings {
   async getFilters() {
     if (!this.filters_) {
       let doc = this.getFiltersDocument_();
-      doc.onSnapshot((snapshot) => {
-        this.filters_ = snapshot;
-      });
       this.filters_ = await doc.get();
 
       if (!this.filters_.exists) {
         await doc.set(this.filtersObject_([]));
         this.filters_ = await doc.get();
       }
+
+      doc.onSnapshot((snapshot) => {
+        this.filters_ = snapshot;
+      });
     }
 
     return this.filters_.get(FILTERS_KEY);

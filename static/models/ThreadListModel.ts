@@ -1,16 +1,15 @@
+import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {assert} from '../Base.js';
-import {IDBKeyVal} from '../idb-keyval.js';
+import {firestoreUserCollection} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
-import {TASK_COMPLETED_EVENT_NAME, TaskQueue} from '../TaskQueue.js';
-import {Thread} from '../Thread.js';
-import {ThreadFetcher} from '../ThreadFetcher.js';
+import {Priority, ThreadMetadataUpdate} from '../Thread.js';
+import {Thread, ThreadMetadata} from '../Thread.js';
 
 import {Model} from './Model.js';
 
 interface TriageResult {
   thread: Thread;
-  removed: string[];
-  added: string[];
+  state: ThreadMetadataUpdate;
 }
 
 export class UndoEvent extends Event {
@@ -25,64 +24,79 @@ export class ThreadListChangedEvent extends Event {
   }
 }
 
-interface SerializedThreadData {
-  id: string;
-  historyId: string;
-}
-
 export abstract class ThreadListModel extends Model {
-  private undoableActions_!: Promise<TriageResult|null>[];
+  private undoableActions_!: TriageResult[];
   private threads_: Thread[];
-  private queuedRemoves_: Thread[];
-  private isUpdating_: boolean;
-  protected updatingStopped: boolean;
+  private snapshotToProcess_?: firebase.firestore.QuerySnapshot|null;
+  private processSnapshotTimeout_?: number;
 
-  constructor(protected labels: Labels, private serializationKey_: string) {
+  constructor(queryKey: string) {
     super();
 
     this.resetUndoableActions_();
     this.threads_ = [];
-    this.queuedRemoves_ = [];
-    this.isUpdating_ = false;
-    this.updatingStopped = false;
+    this.snapshotToProcess_ = null;
+
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    metadataCollection.where(queryKey, '==', true)
+        .onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
   }
 
-  protected abstract handleTriaged(destination: string|null, thread: Thread):
-      void;
-  protected abstract async fetch(): Promise<void>;
   protected abstract compareThreads(a: Thread, b: Thread): number;
   protected abstract shouldShowThread(thread: Thread): boolean;
   abstract getGroupName(thread: Thread): string;
 
-  stopUpdating() {
-    this.updatingStopped = true;
+  // onSnapshot is called sync for local changes. If we modify a bunch of things
+  // locally in rapid succession we want to debounce to avoid hammering the CPU.
+  private async queueProcessSnapshot(snapshot:
+                                         firebase.firestore.QuerySnapshot) {
+    // In the debounce case, intentionally only process the last snapshot since
+    // that has the most up to date data.
+    this.snapshotToProcess_ = snapshot;
+    window.clearTimeout(this.processSnapshotTimeout_);
+    this.processSnapshotTimeout_ = window.setTimeout(async () => {
+      if (!this.snapshotToProcess_)
+        return;
+      this.processSnapshot_();
+      // Intentionally do this after processing all the threads in the disk
+      // cache so that they show up atomically and so we spend less CPU
+      // rendering incremental frames.
+      // TODO: Should probably call this occasionaly in the above loop if that
+      // loop is taking too long to run.
+      this.threadListChanged_();
+      await this.updateMessages_();
+    }, 100);
   }
 
-  async loadFromDisk() {
-    let data = await IDBKeyVal.getDefault().get(this.serializationKey_);
-    if (!data)
-      return;
-
-    let threads = await Promise.all(
-        <Promise<Thread>[]>data.map(async (x: SerializedThreadData) => {
-          let fetcher = new ThreadFetcher(x.id, x.historyId, this.labels);
-          return await fetcher.fetch();
-        }));
-    this.setThreads(threads, true);
-  }
-
-  async update() {
-    // Updates can take a very long time if there's a lot of threads to process.
-    // Make sure two don't happen in parallel.
-    if (this.isUpdating_ || this.updatingStopped)
-      return;
-
-    this.isUpdating_ = true;
-    try {
-      await this.fetch();
-    } finally {
-      this.isUpdating_ = false;
+  private async updateMessages_() {
+    // First fetch all the threads from disk so we show the local data ASAP.
+    for (let thread of this.threads_) {
+      await thread.fetchFromDisk();
     }
+
+    // Then update the threads from the network.
+    // TODO: Use TaskQueue to do in parallel.
+    for (let thread of this.threads_) {
+      await thread.update();
+    }
+  }
+
+  private async processSnapshot_() {
+    let snapshot = assert(this.snapshotToProcess_);
+    this.snapshotToProcess_ = null;
+
+    this.threads_ = [];
+    for (let doc of snapshot.docs) {
+      let data = doc.data();
+      if (data.blocked || data.queued)
+        continue;
+
+      let thread = Thread.create(doc.id, data as ThreadMetadata);
+      this.threads_.push(thread);
+    };
+
+    this.threads_.sort(this.compareThreads.bind(this));
   }
 
   protected compareDates(a: Thread, b: Thread) {
@@ -90,96 +104,75 @@ export abstract class ThreadListModel extends Model {
   }
 
   getThreads() {
+    // Make sure any in progress snapshot updates get flushed.
+    if (this.snapshotToProcess_) {
+      this.processSnapshot_();
+      // Intentionally don't await this since we're on the critical path for
+      // putting up a frame.
+      this.updateMessages_();
+    }
     return this.threads_;
   }
 
-  async setThreads(threads: Thread[], skipSerialization?: boolean) {
-    let oldThreads = this.threads_.concat();
-
-    let queuedRemoves = this.queuedRemoves_;
-    this.queuedRemoves_ = [];
-
-    this.threads_ = threads.filter(
-        x => this.shouldShowThread(x) && !queuedRemoves.includes(x));
-    this.threads_.sort(this.compareThreads.bind(this));
-
-    let changed = oldThreads.length != this.threads_.length;
-    if (!changed) {
-      for (let i = 0; i < oldThreads.length; i++) {
-        if (!oldThreads[i].equals(this.threads_[i])) {
-          changed = true;
-          break;
-        }
-      }
-    }
-
-    if (skipSerialization || changed)
-      this.threadListChanged_(skipSerialization);
-  }
-
-  private async threadListChanged_(skipSerialization?: boolean) {
+  private async threadListChanged_() {
     this.dispatchEvent(new ThreadListChangedEvent());
-
-    if (skipSerialization)
-      return;
-
-    let data: SerializedThreadData[] = this.threads_.map(
-        (thread) =>
-            <SerializedThreadData>{id: thread.id, historyId: thread.historyId});
-    IDBKeyVal.getDefault().set(this.serializationKey_, data);
-  }
-
-  async addThread(thread: Thread) {
-    if (!this.shouldShowThread(thread))
-      return;
-    this.threads_.push(thread);
-    this.threads_.sort(this.compareThreads.bind(this));
-    this.threadListChanged_();
   }
 
   resetUndoableActions_() {
     this.undoableActions_ = [];
   }
 
-  private removeThreadInternal_(thread: Thread) {
-    // If an update is in progress, we need to make sure to apply this remove to
-    // that update as well as the current working thread list.
-    if (this.queuedRemoves_)
-      this.queuedRemoves_.push(thread);
-    var index = this.threads_.indexOf(thread);
-    assert(index !== -1, 'Attempted to remove thread not in the model.');
-    this.threads_.splice(index, 1);
-  }
-
-  private removeThreads_(threads: Thread[]) {
-    for (let thread of threads) {
-      this.removeThreadInternal_(thread);
+  protected destinationToPriority(destination: string|null) {
+    switch (destination) {
+      case Labels.MUST_DO_LABEL:
+        return Priority.MustDo;
+      case Labels.URGENT_LABEL:
+        return Priority.Urgent;
+      case Labels.BACKLOG_LABEL:
+        return Priority.Backlog;
+      case Labels.NEEDS_FILTER_LABEL:
+        return Priority.NeedsFilter;
+      default:
+        return null;
     }
-    this.threadListChanged_();
-  }
-
-  protected removeThread(thread: Thread) {
-    this.removeThreadInternal_(thread);
-    this.threadListChanged_();
   }
 
   private async markTriagedInternal_(
       thread: Thread, destination: string|null,
-      expectedNewMessageCount?: number) {
-    // Put the promises into the undoableActions_ list instead of the resolve
-    // promises to avoid a race there undoableActions_ is reset (e.g. due to
-    // another triage action) and we push the result to it anyways.
-    let triageAction = thread.markTriaged(destination, expectedNewMessageCount);
-    this.undoableActions_.push(triageAction);
-    await triageAction;
-    await this.handleTriaged(destination, thread);
+      _expectedNewMessageCount?: number) {
+    let priority = this.destinationToPriority(destination);
+    let oldState;
+    if (priority) {
+      oldState = await thread.setPriority(priority);
+    } else {
+      switch (destination) {
+        case null:
+          oldState = await thread.archive();
+          break;
+
+        case Labels.BLOCKED_LABEL:
+          oldState = await thread.setBlocked();
+          break;
+
+        case Labels.MUTED_LABEL:
+          oldState = await thread.setMuted();
+          break;
+
+        default:
+          assert(false, 'This should never happen.');
+      }
+    }
+
+    this.undoableActions_.push({
+      thread: thread,
+      state: oldState,
+    })
   }
 
   async markSingleThreadTriaged(
       thread: Thread, destination: string|null,
       expectedNewMessageCount?: number) {
     this.resetUndoableActions_();
-    this.removeThread(thread);
     await this.markTriagedInternal_(
         thread, destination, expectedNewMessageCount);
   }
@@ -192,21 +185,10 @@ export abstract class ThreadListModel extends Model {
     let progress = this.updateTitle(
         'ThreadListModel.markThreadsTriaged', threads.length,
         'Modifying threads...');
-
-    // Update the UI first and then archive one at a time.
-    this.removeThreads_(threads);
-
-    const taskQueue = new TaskQueue(3);
-    taskQueue.addEventListener(TASK_COMPLETED_EVENT_NAME, () => {
-      progress.incrementProgress();
-    });
-
     for (let thread of threads) {
-      taskQueue.queueTask(
-          () => this.markTriagedInternal_(
-              thread, destination, expectedNewMessageCount));
+      this.markTriagedInternal_(thread, destination, expectedNewMessageCount);
+      progress.incrementProgress();
     };
-    await taskQueue.flush();
   }
 
   async undoLastAction_() {
@@ -215,28 +197,22 @@ export abstract class ThreadListModel extends Model {
       return;
     }
 
-    let actionPromises = this.undoableActions_;
+    let actions = this.undoableActions_;
     this.resetUndoableActions_();
 
     let progress = this.updateTitle(
-        'ThreadListModel.undoLastAction_', actionPromises.length, 'Undoing...');
+        'ThreadListModel.undoLastAction_', actions.length, 'Undoing...');
 
-    let actions = await Promise.all(actionPromises);
     for (let i = 0; i < actions.length; i++) {
-      let action = actions[i];
-      if (action) {
-        await action.thread.modify(action.removed, action.added);
-        await action.thread.update();
-        await this.addThread(action.thread);
-
-        this.dispatchEvent(new UndoEvent(action.thread));
-      }
-
+      let newState = actions[i].state;
+      // TODO: We should also keep track of the messages we marked read so we
+      // can mark them unread again, and theoretically, we should only put the
+      // messages that we previously in the inbox back into the inbox, so we
+      // should keep track of the actual message IDs modified.
+      newState.moveToInbox = true;
+      await actions[i].thread.updateMetadata(newState);
+      this.dispatchEvent(new UndoEvent(actions[i].thread));
       progress.incrementProgress();
     }
-  }
-
-  hasBestEffortThreads() {
-    return false;
   }
 }

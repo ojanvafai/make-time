@@ -1,12 +1,12 @@
 import {getActionKey, getActions} from './Actions.js';
 import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById, showDialog} from './Base.js';
-// TODO: Clean up these dependencies to be less spaghetti.
 import {firestore, getLabels, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {LongTasks} from './LongTasks.js';
+import {MailProcessor} from './MailProcessor.js';
 import {ComposeModel} from './models/ComposeModel.js';
 import {Model} from './models/Model.js';
 import {ThreadListModel} from './models/ThreadListModel.js';
@@ -76,12 +76,6 @@ router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
 router.add('/todo', async (_params) => {
   await setView(VIEW.Todo);
-});
-// TODO: best-effort should not be a URL since it's not a proper view.
-// or should it be a view instead?
-router.add('/best-effort', async (_params) => {
-  (await getTriageModel()).triageBestEffort();
-  await router.run('/triage');
 });
 
 router.add('/calendar', async (_parans) => {
@@ -265,7 +259,7 @@ async function getTriageModel() {
   if (!triageModel_) {
     let settings = await getSettings();
     let vacation = settings.get(ServerStorage.KEYS.VACATION);
-    triageModel_ = new TriageModel(vacation, await getLabels(), settings);
+    triageModel_ = new TriageModel(vacation, settings);
   }
   return triageModel_;
 }
@@ -275,7 +269,7 @@ async function getTodoModel() {
   if (!todoModel_) {
     let settings = await getSettings();
     let vacation = settings.get(ServerStorage.KEYS.VACATION);
-    todoModel_ = new TodoModel(vacation, await getLabels());
+    todoModel_ = new TodoModel(vacation);
   }
   return todoModel_;
 }
@@ -329,6 +323,10 @@ async function onLoad() {
     await routeToCurrentLocation();
   });
 
+  // TODO: Delete this one all clients are upgraded.
+  let mailProcessor = new MailProcessor(await getSettings());
+  await mailProcessor.migrateThreadsToFirestore();
+
   appendMenu();
   await routeToCurrentLocation();
   await update();
@@ -360,14 +358,6 @@ async function setupReloadOnVersionChange() {
     let newVersion = defined(snapshot.data()).version;
     if (version_ == newVersion)
       return;
-
-    // Don't do updates if a new server version has been pushed and we will be
-    // reloading soon since we don't want conflicting updaters to run on
-    // different clients.
-    let todoModel = await getTodoModel();
-    let triageModel = await getTriageModel();
-    todoModel.stopUpdating();
-    triageModel.stopUpdating();
 
     let dialog: HTMLDialogElement;
 
@@ -427,7 +417,7 @@ async function gcStaleThreadData() {
 }
 
 export async function update() {
-  if (!shouldUpdate_)
+  if (!shouldUpdate_ || !navigator.onLine)
     return;
 
   // update can get called before any views are setup due to visibilitychange
@@ -438,17 +428,12 @@ export async function update() {
   isUpdating_ = true;
 
   try {
-    // Do the todo model first since it doens't need to send anything through
-    // MailProcessor, so is relatively constant time.
-    let todoModel = await getTodoModel();
-    let triageModel = await getTriageModel();
-    await Promise.all(
-        [todoModel.update(), triageModel.update(), view.update()]);
-
+    let mailProcessor = new MailProcessor(await getSettings());
+    await mailProcessor.process();
     await dailyLocalUpdates();
   } catch (e) {
-    // TODO: Move this to Net.js once we've made it so that all network requests
-    // that fail due to being offline get retried.
+    // TODO: Move this to Net.js once we've made it so that all network
+    // requests that fail due to being offline get retried.
     if (getErrorMessage(e) === NETWORK_OFFLINE_ERROR_MESSAGE) {
       updateTitle(
           CONNECTION_FAILURE_KEY, 'Having trouble connecting to internet...');
@@ -461,8 +446,8 @@ export async function update() {
 }
 
 window.addEventListener(CONNECTION_FAILURE_KEY, () => {
-  // Net.js fires this when a network request succeeds, which indicates we're no
-  // longer offline.
+  // Net.js fires this when a network request succeeds, which indicates we're
+  // no longer offline.
   updateTitle(CONNECTION_FAILURE_KEY);
 });
 
@@ -648,8 +633,8 @@ window.addEventListener('unhandledrejection', (e) => {
     window.location.reload();
 
   // Plain stringify will skip a bunch of things, so manually list out
-  // everything we might care about. Add to this list over time as we find other
-  // error types.
+  // everything we might care about. Add to this list over time as we find
+  // other error types.
   let details = JSON.stringify(
       reason, ['stack', 'message', 'body', 'result', 'error', 'code']);
 

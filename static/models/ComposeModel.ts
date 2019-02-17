@@ -46,6 +46,7 @@ export class ComposeModel extends Model {
     this.body_ = value;
   }
 
+  // TODO: Move this to firestore so it syncs across clients.
   async loadFromDisk() {
     return await IDBKeyVal.getDefault().get(AUTO_SAVE_KEY);
   }

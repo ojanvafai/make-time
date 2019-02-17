@@ -1,9 +1,20 @@
-import {assert, defined, getMyEmail, parseAddressList, serializeAddress, USER_ID} from './Base.js';
+import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
+
+import {assert, defined, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddressList, serializeAddress, USER_ID} from './Base.js';
+import {firestoreUserCollection, getLabels} from './BaseMain.js';
+import {IDBKeyVal} from './idb-keyval.js';
 import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {gapiFetch} from './Net.js';
 import {ProcessedMessageData} from './ProcessedMessageData.js';
-import {ThreadUtils} from './ThreadUtils.js';
+import {QueueNames} from './QueueNames.js';
+
+let memoryCache_: Map<string, Thread> = new Map();
+
+interface SerializedMessages {
+  historyId?: string;
+  messages?: gapi.client.gmail.Message[];
+}
 
 export class UpdatedEvent extends Event {
   static NAME = 'thread-updated';
@@ -18,6 +29,71 @@ export enum ReplyType {
   Forward = 'forward',
 }
 
+// Keep ThreadMetadataUpdate and ThreadMetadataKeys in sync with any changes
+// here.
+export interface ThreadMetadata {
+  historyId: string;
+  messageIds: string[];
+  timestamp?: number;
+  priorityId?: number;
+  labelId?: number;
+  // These booleans are so we can query for things that have a label but still
+  // orderBy timestamp. We can just priorityId>0 because firestore doesn't
+  // support range queries on a different field than the orderBy field.
+  hasLabel?: boolean;
+  hasPriority?: boolean;
+  queued?: boolean;
+  blocked?: boolean;
+  muted?: boolean;
+  needsFiltering?: boolean;
+  // Threads that were added back to the inbox in maketime, so syncWithGmail
+  // should move them into the inbox instead of clearing their metadata.
+  moveToInbox?: boolean;
+  countToArchive?: number;
+  countToMarkRead?: number;
+}
+
+// Want strong typing on all update calls, but don't want to write historyId and
+// messageIds on each of them and want to allow FieldValues without needing all
+// the getters to have to manage them.
+// TODO: Find a more don't-repeat-yourself way of doing this?
+export interface ThreadMetadataUpdate {
+  historyId?: string|firebase.firestore.FieldValue;
+  messageIds?: string[]|firebase.firestore.FieldValue;
+  timestamp?: number|firebase.firestore.FieldValue;
+  priorityId?: number|firebase.firestore.FieldValue;
+  labelId?: number|firebase.firestore.FieldValue;
+  hasLabel?: boolean|firebase.firestore.FieldValue;
+  hasPriority?: boolean|firebase.firestore.FieldValue;
+  queued?: boolean|firebase.firestore.FieldValue;
+  blocked?: boolean|firebase.firestore.FieldValue;
+  muted?: boolean|firebase.firestore.FieldValue;
+  needsFiltering?: boolean|firebase.firestore.FieldValue;
+  moveToInbox?: boolean|firebase.firestore.FieldValue;
+  countToArchive?: number|firebase.firestore.FieldValue;
+  countToMarkRead?: number|firebase.firestore.FieldValue;
+}
+
+// Firestore queries take the key as a string. Use an enum so we can avoid silly
+// typos in string literals.
+// TODO: Is there a way to do this without manually keeping things in sync?
+export enum ThreadMetadataKeys {
+  historyId = 'historyId',
+  messageIds = 'messageIds',
+  timestamp = 'timestamp',
+  priorityId = 'priorityId',
+  labelId = 'labelId',
+  hasLabel = 'hasLabel',
+  hasPriority = 'hasPriority',
+  queued = 'queued',
+  blocked = 'blocked',
+  muted = 'muted',
+  needsFiltering = 'needsFiltering',
+  moveToInbox = 'moveToInbox',
+  countToArchive = 'countToArchive',
+  countToMarkRead = 'countToMarkRead',
+}
+
 let FWD_THREAD_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
   month: 'short',
@@ -28,190 +104,270 @@ let FWD_THREAD_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
   timeZoneName: 'short',
 });
 
+// The number values get stored in firestore, so should never be changed.
+export enum Priority {
+  NeedsFilter = 1,
+  MustDo = 2,
+  Urgent = 3,
+  Backlog = 4,
+}
+
+export const NEEDS_FILTER_PRIORITY_NAME = '`Needs filter`';
+export const MUST_DO_PRIORITY_NAME = 'Must do';
+export const URGENT_PRIORITY_NAME = 'Urgent';
+export const BACKLOG_PRIORITY_NAME = 'Backlog';
+export const BLOCKED_LABEL_NAME = 'Blocked';
+
+export const PrioritySortOrder =
+    [Priority.NeedsFilter, Priority.MustDo, Priority.Urgent, Priority.Backlog];
+
+// Use negative values for built-in labels.
+export enum BuiltInLabels {
+  Blocked = -1,
+}
+
 export class Thread extends EventTarget {
-  constructor(
-      public id: string, public historyId: string,
-      private processed_: ProcessedMessageData, private allLabels_: Labels) {
+  private processed_: ProcessedMessageData;
+  private queueNames_: QueueNames;
+  private fetchPromise_:
+      Promise<gapi.client.Response<gapi.client.gmail.Thread>>|null = null;
+  // Keep track of messages sent until an update pulls them in properly so that
+  // we can queue up archives/mark-reads with the right count of messages to
+  // archive/mark-read.
+  private sentMessageIds_: string[];
+
+  constructor(public id: string, private metadata_: ThreadMetadata) {
     super();
-  }
 
-  equals(other: Thread) {
-    return this.id == other.id && this.historyId == other.historyId;
-  }
+    this.processed_ = new ProcessedMessageData();
+    this.queueNames_ = new QueueNames();
+    this.sentMessageIds_ = [];
 
-  async modify(
-      addLabelIds: string[], removeLabelIds: string[],
-      expectedNewMessageCount: number = 0) {
-    let currentLabelIds = this.processed_.ids;
-
-    // Only remove labels that are actually on the thread. That way
-    // undo will only reapply labels that were actually there.
-    // Make sure that any added labels are not also removed.
-    // Gmail API will fail if you try to add and remove the same label.
-    // Also, request will fail if the removeLabelIds list is too long (>100).
-    removeLabelIds = removeLabelIds.filter(
-        (item) => !addLabelIds.includes(item) && (currentLabelIds.has(item)));
-
-    // In theory this can happen legitimately due to race conditions, but
-    // usually represents a bug, so log a warning to the console instead of
-    // something user visible.
-    if (!removeLabelIds.length && !addLabelIds.length) {
-      console.warn(
-          `Modify call didn't remove or add any Labels for thread with subject: ${
-              this.getSubject()}`)
-      return null;
-    }
-
-    let request: any = {
-      'userId': USER_ID,
-      'id': this.id,
-      'addLabelIds': addLabelIds,
-      'removeLabelIds': removeLabelIds,
-    };
-    let response =
-        await gapiFetch(gapi.client.gmail.users.threads.modify, request);
-
-    // If the number of messages has changed from when we got the message
-    // details for this thread and when we did the modify call, that can be one
-    // of two causes:
-    //   1. The thread got a new messages in the interim and we need to mark the
-    // thread to be processed.
-    //   2. We are hitting a gmail bug, and should just ignore it. See
-    // https://issuetracker.google.com/issues/122167541. If not for this bug, we
-    // could just use messages.batchModify to only modify the messages we know
-    // about and avoid the race condition for cause #1 entirely.
-    let newMessageMetadata = defined(response.result.messages);
-    let hasUnexpectedNewMessages = newMessageMetadata.length >
-        this.processed_.messages.length + expectedNewMessageCount;
-
-    // The response to modify doesn't include historyIds, so we need to do a
-    // fetch to get the new historyId. While doing so, we also fetch the new
-    // labels in the very rare case when something else may also have modified
-    // the labels on this thread.
-    //
-    // It's frustrating to wait on this network roundtrip before proceeding, but
-    // better to have updated historyIds before we do anything like serializing
-    // to disk than to get in an inconsistent state and see need the count of
-    // new messages to identify if we're in the gmail bug case mentioned above.
-    await this.update();
-
-    // In the bug case, there will be more messages in the response from the
-    // modify call than in the response to the fetchMetadataOnly_ call. If we
-    // wanted to be 100% sure we could fetch the individual messages that are
-    // new and see that they 404, but that seems like overkill.
-    if (hasUnexpectedNewMessages &&
-        newMessageMetadata.length <= this.processed_.messages.length) {
-      // TODO: Handle the case where this network request fails.
-      await gapiFetch(gapi.client.gmail.users.threads.modify, {
-        'userId': USER_ID,
-        'id': this.id,
-        'addLabelIds': ['INBOX'],
-        'removeLabelIds': [await this.allLabels_.getId(Labels.PROCESSED_LABEL)],
-      });
-    }
-
-    return {
-      added: addLabelIds, removed: removeLabelIds, thread: this,
-    }
-  }
-
-  async markTriaged(
-      destination: string|null, expectedNewMessageCount?: number) {
-    if (destination && this.processed_.names.has(destination))
-      return null;
-
-    var addLabelIds: string[] = [];
-    if (destination)
-      addLabelIds.push(await this.allLabels_.getId(destination));
-
-    var removeLabelIds = ['UNREAD', 'INBOX'];
-    // If archiving, remove all make-time labels except unprocessed. Don't want
-    // archiving a thread to remove this label without actually processing it.
-    let unprocessedId = await this.allLabels_.getId(Labels.UNPROCESSED_LABEL);
-    let makeTimeIds = this.allLabels_.getMakeTimeLabelIds().filter((item) => {
-      return item != unprocessedId && !addLabelIds.includes(item);
+    let doc = this.getMetadataDocument_();
+    doc.onSnapshot((snapshot) => {
+      this.metadata_ = snapshot.data() as ThreadMetadata;
+      // Make callers update when metadata has changed.
+      this.dispatchEvent(new UpdatedEvent());
     });
-    removeLabelIds = removeLabelIds.concat(makeTimeIds);
-
-    return await this.modify(
-        addLabelIds, removeLabelIds, expectedNewMessageCount);
   }
 
-  isInInbox() {
-    return this.processed_.ids.has('INBOX');
+  private messageCount_() {
+    return this.metadata_.messageIds.length + this.sentMessageIds_.length;
   }
 
-  getLabelIds() {
-    return this.processed_.ids;
+  // Returns the old values for all the fields being updated so that undo can
+  // restore them.
+  async updateMetadata(updates: ThreadMetadataUpdate) {
+    let oldState: any = {};
+    let fullState = this.metadata_ as any;
+    for (let key in updates) {
+      if (key in fullState)
+        oldState[key] = fullState[key];
+      else
+        oldState[key] = firebase.firestore.FieldValue.delete();
+    }
+    await this.getMetadataDocument_().update(updates);
+    return oldState;
   }
 
-  getLabelNames() {
-    return this.processed_.names;
+  async setPriority(priority: Priority) {
+    return await this.updateMetadata({
+      hasPriority: true,
+      priorityId: priority,
+      hasLabel: firebase.firestore.FieldValue.delete(),
+      labelId: firebase.firestore.FieldValue.delete(),
+      queued: firebase.firestore.FieldValue.delete(),
+      countToMarkRead: this.messageCount_(),
+    } as ThreadMetadataUpdate);
+  }
+
+  static clearedMetatdata(): ThreadMetadataUpdate {
+    return {
+      blocked: firebase.firestore.FieldValue.delete(),
+          muted: firebase.firestore.FieldValue.delete(),
+          queued: firebase.firestore.FieldValue.delete(),
+          hasLabel: firebase.firestore.FieldValue.delete(),
+          labelId: firebase.firestore.FieldValue.delete(),
+          hasPriority: firebase.firestore.FieldValue.delete(),
+          priorityId: firebase.firestore.FieldValue.delete(),
+          moveToInbox: firebase.firestore.FieldValue.delete(),
+    }
+  }
+
+  static async clearMetadata(threadId: string) {
+    let update = this.clearedMetatdata();
+    await Thread.metadataCollection().doc(threadId).update(update);
+  }
+
+  static metadataCollection() {
+    return firestoreUserCollection().doc('threads').collection('metadata');
+  }
+
+  async archive() {
+    let update = Thread.clearedMetatdata();
+    update.countToArchive = this.messageCount_();
+    return await this.updateMetadata(update);
+  }
+
+  async setBlocked() {
+    let update = Thread.clearedMetatdata();
+    update.blocked = true;
+    update.countToMarkRead = this.messageCount_();
+    return await this.updateMetadata(update);
+  }
+
+  async setMuted() {
+    let update = Thread.clearedMetatdata();
+    update.muted = true;
+    update.countToArchive = this.messageCount_();
+    return await this.updateMetadata(update);
+  }
+
+  isBlocked() {
+    return this.metadata_.blocked;
   }
 
   getDate() {
-    let messages = this.processed_.messages;
-    let lastMessage = messages[messages.length - 1];
-    return lastMessage.date;
+    return new Date(defined(this.metadata_.timestamp));
   }
 
   getSubject() {
-    return this.processed_.messages[0].subject || '(no subject)';
+    return this.processed_.getSubject();
+  }
+
+  getMessageIds() {
+    return this.metadata_.messageIds;
   }
 
   getMessages() {
     return this.processed_.messages;
   }
 
-  getDisplayableQueue() {
-    let queue = this.getQueue();
-    return Labels.removeNeedsTriagePrefix(queue);
+  isQueued() {
+    return !!this.metadata_.queued;
   }
 
-  getQueue() {
-    return this.processed_.queue;
+  getLabelId() {
+    return this.metadata_.labelId;
   }
 
-  hasDefaultQueue() {
-    return this.processed_.hasDefaultQueue();
+  getLabel() {
+    let id = this.getLabelId();
+    if (!id)
+      return null;
+    if (id === BuiltInLabels.Blocked)
+      return BLOCKED_LABEL_NAME;
+    return this.queueNames_.getName(id);
+  }
+
+  getPriorityId() {
+    return this.metadata_.priorityId;
   }
 
   getPriority() {
-    return this.processed_.priority;
+    switch (this.getPriorityId()) {
+      case Priority.NeedsFilter:
+        return NEEDS_FILTER_PRIORITY_NAME;
+      case Priority.MustDo:
+        return MUST_DO_PRIORITY_NAME;
+      case Priority.Urgent:
+        return URGENT_PRIORITY_NAME;
+      case Priority.Backlog:
+        return BACKLOG_PRIORITY_NAME;
+    }
+    throw new Error('This should never happen.');
+  }
+
+  getHistoryId() {
+    return this.metadata_.historyId;
   }
 
   isMuted() {
-    return this.processed_.muted;
+    return this.metadata_.muted;
+  }
+
+  getFrom() {
+    return this.processed_.getFrom();
   }
 
   getSnippet() {
-    return this.processed_.snippet;
+    return this.processed_.getSnippet();
   }
 
   private getRawMessages_() {
     return this.processed_.messages.map(x => x.rawMessage);
   }
 
+  getMetadataDocument_() {
+    return Thread.metadataCollection().doc(this.id);
+  }
+
+  static async fetchMetadata(id: string) {
+    let doc = Thread.metadataCollection().doc(id);
+    let snapshot = await doc.get();
+    if (snapshot.exists) {
+      return snapshot.data() as ThreadMetadata;
+    }
+
+    let data = {
+      historyId: '',
+      messageIds: [],
+    };
+    await doc.set(data);
+    return data;
+  }
+
+  async setLabelAndQueued(shouldQueue: boolean, label: string) {
+    return await this.updateMetadata({
+      queued: shouldQueue,
+      labelId: await this.queueNames_.getId(label),
+      hasLabel: true,
+      needsFiltering: firebase.firestore.FieldValue.delete(),
+      blocked: firebase.firestore.FieldValue.delete(),
+    } as ThreadMetadataUpdate);
+  }
+
+  getData() {
+    return this.metadata_;
+  }
+
+  async setData(data: ThreadMetadata) {
+    let doc = this.getMetadataDocument_();
+    doc.set(data);
+  }
+
+  needsFiltering() {
+    return this.metadata_.needsFiltering;
+  }
+
   async update() {
-    let processed = this.processed_.messages;
+    // If we got here and this.processed_===undefined, that means we don't have
+    // message data on disk, so fetch the full thread from the network.
+    if (!this.processed_.messages.length) {
+      let data = await this.fetchFromNetwork_();
+      this.processed_.process(defined(data.messages));
+      this.dispatchEvent(new UpdatedEvent());
+      return;
+    }
+
+    let processedMessages = defined(this.processed_).messages;
 
     let resp = await gapiFetch(gapi.client.gmail.users.threads.get, {
       userId: USER_ID,
       id: this.id,
       format: 'minimal',
-      fields: 'historyId,messages(id,labelIds)',
+      fields: 'historyId,messages(id,labelIds,internalDate)',
     });
 
-    if (this.historyId == resp.result.historyId)
+    if (this.getHistoryId() === resp.result.historyId)
       return;
 
-    this.historyId = defined(resp.result.historyId);
-
+    let historyId = defined(resp.result.historyId);
     let messages = defined(resp.result.messages);
 
-    for (let i = 0; i < processed.length; i++) {
+    for (let i = 0; i < processedMessages.length; i++) {
       let labels = messages[i].labelIds || [];
-      processed[i].updateLabels(labels);
+      processedMessages[i].updateLabels(labels);
     }
 
     let allRawMessages = this.getRawMessages_();
@@ -226,12 +382,177 @@ export class Thread extends EventTarget {
       allRawMessages.push(resp.result);
     }
 
-    this.processed_ = await ThreadUtils.processMessages(
-        allRawMessages, this.processed_.messages, this.allLabels_);
-    await ThreadUtils.serializeMessageData(
-        allRawMessages, this.id, this.historyId);
-
+    this.processed_.process(allRawMessages);
+    this.saveMessageState_(historyId, allRawMessages);
     this.dispatchEvent(new UpdatedEvent());
+  }
+
+  async generateMetadataFromGmailState_(
+      historyId: string, messages: gapi.client.gmail.Message[]) {
+    let oldMetadata = this.getData();
+    let newMetadata = Object.assign({}, oldMetadata);
+
+    newMetadata.historyId = historyId;
+    newMetadata.messageIds = messages.flatMap(x => defined(x.id));
+
+    this.sentMessageIds_ =
+        this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
+
+    let lastMessage = messages[messages.length - 1];
+    let date = Number(defined(lastMessage.internalDate));
+    newMetadata.timestamp = new Date(date).getTime();
+
+    if (oldMetadata.needsFiltering ||
+        messages.length !== oldMetadata.messageIds.length) {
+      newMetadata.needsFiltering = true;
+    }
+    this.setData(newMetadata);
+  }
+
+  async fetchFromDisk() {
+    let data = await this.deserializeMessageData_();
+    if (!data)
+      return;
+    this.processed_.process(defined(data.messages));
+    this.dispatchEvent(new UpdatedEvent());
+  }
+
+  private async fetchFromNetwork_() {
+    if (!this.fetchPromise_) {
+      this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
+        userId: USER_ID,
+        id: this.id,
+      })
+    }
+    let resp = await this.fetchPromise_;
+    this.fetchPromise_ = null;
+
+    let historyId = defined(resp.result.historyId);
+    let messages = defined(resp.result.messages);
+    this.saveMessageState_(historyId, messages);
+    return resp.result;
+  }
+
+  async saveMessageState_(
+      historyId: string, messages: gapi.client.gmail.Message[]) {
+    await this.generateMetadataFromGmailState_(historyId, messages);
+    await this.serializeMessageData_(messages);
+  }
+
+  // Ensure there's only one Thread per id so that we can use reference equality
+  // and also not worry about multiple Thread with multiple onSnapshot
+  // listeners.
+  static create(id: string, metadata: ThreadMetadata) {
+    let entry = memoryCache_.get(id);
+    if (entry) {
+      entry.metadata_ = metadata;
+    } else {
+      entry = new Thread(id, metadata);
+      memoryCache_.set(id, entry);
+    }
+    return entry;
+  }
+
+  async migrateMaketimeLabelsToFirestore() {
+    let removeLabelPrefix = (labelName: string, prefix: string) => {
+      return labelName.replace(new RegExp(`^${prefix}/`), '');
+    };
+
+    let messages = this.getRawMessages_();
+    let metadata = this.getData();
+
+    let addToInbox = false;
+
+    let labelIds = new Set(messages.flatMap(x => defined(x.labelIds)));
+    for (let id of labelIds) {
+      let name = await (await getLabels()).getName(id);
+      if (!name) {
+        console.log(`Label id does not exist. WTF. ${id}`);
+        continue;
+      }
+
+      if (Labels.isNeedsTriageLabel(name)) {
+        let label = removeLabelPrefix(name, Labels.NEEDS_TRIAGE_LABEL);
+        metadata.labelId = await this.queueNames_.getId(label);
+        metadata.hasLabel = true;
+        addToInbox = true;
+      } else if (name === Labels.BLOCKED_LABEL) {
+        metadata.blocked = true;
+        addToInbox = true;
+      } else if (Labels.isQueuedLabel(name)) {
+        let label = removeLabelPrefix(name, Labels.QUEUED_LABEL);
+        metadata.labelId = await this.queueNames_.getId(label);
+        metadata.hasLabel = true;
+        metadata.queued = true;
+        addToInbox = true;
+      } else if (Labels.isPriorityLabel(name)) {
+        let priority;
+        switch (name) {
+          case Labels.MUST_DO_LABEL:
+            priority = Priority.MustDo;
+            break;
+
+          case Labels.URGENT_LABEL:
+            priority = Priority.Urgent;
+            break;
+
+          case Labels.BACKLOG_LABEL:
+            priority = Priority.Backlog;
+            break;
+
+          case Labels.NEEDS_FILTER_LABEL:
+            priority = Priority.NeedsFilter;
+            break;
+
+          default:
+            throw new Error('This should never happen.');
+        }
+        metadata.priorityId = priority;
+        metadata.hasPriority = true;
+        addToInbox = true;
+      } else if (name == Labels.MUTED_LABEL) {
+        metadata.muted = true;
+      }
+    }
+    this.setData(metadata);
+    return addToInbox;
+  }
+
+  private getKey_(weekNumber: number, threadId: string) {
+    return `thread-${weekNumber}-${threadId}`;
+  }
+
+  private async deserializeMessageData_(): Promise<SerializedMessages|null> {
+    let currentWeekKey = this.getKey_(getCurrentWeekNumber(), this.id);
+    let localData = await IDBKeyVal.getDefault().get(currentWeekKey);
+
+    let oldKey;
+    if (!localData) {
+      oldKey = this.getKey_(getPreviousWeekNumber(), this.id);
+      localData = await IDBKeyVal.getDefault().get(oldKey);
+    }
+
+    if (!localData)
+      return null;
+
+    if (oldKey) {
+      await IDBKeyVal.getDefault().del(oldKey);
+      await IDBKeyVal.getDefault().set(currentWeekKey, localData);
+    }
+
+    return JSON.parse(localData);
+  }
+
+  private async serializeMessageData_(messages: gapi.client.gmail.Message[]) {
+    let key = this.getKey_(getCurrentWeekNumber(), this.id);
+    try {
+      await IDBKeyVal.getDefault().set(key, JSON.stringify({
+        messages: messages,
+        historyId: this.getHistoryId(),
+      }));
+    } catch (e) {
+      console.log('Fail storing message details in IDB.', e);
+    }
   }
 
   async sendReply(
@@ -246,7 +567,8 @@ export class Thread extends EventTarget {
           extraEmails.length,
           'Add recipients by typing +email in the reply box.')
     } else {
-      // Gmail will remove dupes for us if the to and from fields have overlap.
+      // Gmail will remove dupes for us if the to and from fields have
+      // overlap.
       to = lastMessage.replyTo || lastMessage.from || '';
 
       if (replyType === ReplyType.ReplyAll && lastMessage.to) {
@@ -295,6 +617,10 @@ export class Thread extends EventTarget {
   </blockquote>`;
     }
 
-    await send(text, to, subject, sender, headers, this.id);
+    let message = await send(text, to, subject, sender, headers, this.id);
+    if (message.threadId === this.id) {
+      assert(replyType !== ReplyType.Forward);
+      this.sentMessageIds_.push(defined(message.id));
+    }
   }
 }

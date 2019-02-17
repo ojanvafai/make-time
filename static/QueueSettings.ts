@@ -1,10 +1,8 @@
-import {defined, assert} from './Base.js';
-import {Labels} from './Labels.js';
+import {assert, defined} from './Base.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
 
 export interface QueueData {
   queue: string;
-  goal: string;
   index: number;
 }
 
@@ -28,7 +26,6 @@ export class QueueSettings {
   static WEEKDAYS = [
     'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
   ];
-  static goals = ['Inbox Zero', 'Best Effort']
 
   constructor(private storage_: ServerStorage) {
     this.storage_.addEventListener(
@@ -48,18 +45,10 @@ export class QueueSettings {
 
   async resetQueueData_() {
     this.queueDatas_ = this.storage_.get(ServerStorage.KEYS.QUEUES);
-    if (!this.queueDatas_)
-      return;
-
-    // Blocked is a special label that dequeues daily, is not best effort, and
-    // is always put first.
-    this.queueDatas_[Labels.BLOCKED_SUFFIX] =
-        this.queueData_(QueueSettings.DAILY);
   }
 
-  get(labelSuffix: string) {
-    return defined(this.queueDatas_)[labelSuffix.toLowerCase()] ||
-        this.queueData_();
+  get(label: string) {
+    return defined(this.queueDatas_)[label.toLowerCase()] || this.queueData_();
   }
 
   queueComparator_(a: QueueListEntry, b: QueueListEntry) {
@@ -78,19 +67,16 @@ export class QueueSettings {
     return aIndex - bIndex;
   }
 
-  queueData_(opt_queue?: string, opt_goal?: string, opt_index?: number):
-      QueueData {
+  queueData_(opt_queue?: string, opt_index?: number): QueueData {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
-          goal: opt_goal || QueueSettings.goals[0],
           // For unknown queues, put them first.
           index: opt_index || 0,
     }
   }
 
   queueEntry_(label: string): QueueListEntry {
-    let suffix = Labels.removeNeedsTriagePrefix(label);
-    let data = this.get(suffix);
+    let data = this.get(label);
     return {label: label, data: data};
   }
 

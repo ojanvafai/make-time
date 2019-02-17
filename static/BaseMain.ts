@@ -13,16 +13,16 @@ import * as usedForSideEffects2 from '../third_party/firebasejs/5.8.2/firebase-f
 usedForSideEffects2;
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, getDefinitelyExistsElementById, USER_ID} from './Base.js';
+import {assert, getDefinitelyExistsElementById, USER_ID, notNull} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
-import {ThreadFetcher} from './ThreadFetcher.js';
 import {HelpDialog} from './views/HelpDialog.js';
 import {SendAs} from './SendAs.js';
+import {QueueNames} from './QueueNames.js';
 
 // Extract these before rendering any threads since the threads can have
 // elements with IDs in them.
@@ -168,8 +168,12 @@ async function login_() {
             return;
           }
 
-          await Promise.all(
-              [storage_.fetch(), labels_.fetch(), sendAs_.fetch()]);
+          await Promise.all([
+            storage_.fetch(),
+            labels_.fetch(),
+            sendAs_.fetch(),
+            new QueueNames().fetch(),
+          ]);
 
           // This has to happen after storage_.fetch().
           settings_ = new Settings(storage_);
@@ -216,6 +220,12 @@ export function firestore() {
 
 export function firebaseAuth() {
   return firebase.auth();
+}
+
+export function firestoreUserCollection() {
+  let db = firestore();
+  let uid = notNull(firebaseAuth().currentUser).uid;
+  return db.collection(uid);
 }
 
 export function updateTitle(key: string, ...opt_title: string[]) {
@@ -278,7 +288,7 @@ interface FetchRequestParameters {
 let MAX_RESULTS_CAP = 500;
 
 export async function fetchThreads(
-    forEachThread: (fetcher: ThreadFetcher) => void, query: string,
+    forEachThread: (thread: gapi.client.gmail.Thread) => void, query: string,
     maxResults: number = 0) {
   // If the query is empty or just whitespace, then we would fetch all mail by
   // accident.
@@ -309,9 +319,7 @@ export async function fetchThreads(
         await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
     let threads = resp.result.threads || [];
     for (let rawThread of threads) {
-      await forEachThread(new ThreadFetcher(
-          defined(rawThread.id), defined(rawThread.historyId),
-          await getLabels()));
+      await forEachThread(rawThread);
     }
 
     if (resultCountLeft <= 0)

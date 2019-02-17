@@ -6,7 +6,8 @@ import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {RadialProgress} from '../RadialProgress.js';
 import {SendAs} from '../SendAs.js';
-import {ReplyType, Thread} from '../Thread.js';
+import {BACKLOG_PRIORITY_NAME, BLOCKED_LABEL_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, ReplyType, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
@@ -46,16 +47,10 @@ let QUICK_REPLY_ACTION = {
 };
 
 let BLOCKED_ACTION = {
-  name: `Blocked`,
+  name: BLOCKED_LABEL_NAME,
   description:
       `Block on action from someone else. Shows up once a day to retriage.`,
   destination: Labels.BLOCKED_LABEL,
-};
-
-let SPAM_ACTION = {
-  name: `Spam`,
-  description: `Report spam. Same as reporting spam in gmail.`,
-  destination: 'SPAM',
 };
 
 let MUTE_ACTION = {
@@ -133,29 +128,29 @@ let UNDO_ACTION = {
 };
 
 let MUST_DO_ACTION = {
-  name: `Must do`,
+  name: MUST_DO_PRIORITY_NAME,
   description: `Must do today. Literally won't go home till it's done.`,
   destination: Labels.MUST_DO_LABEL,
   key: '1',
 };
 
 let URGENT_ACTION = {
-  name: `Urgent`,
+  name: URGENT_PRIORITY_NAME,
   description: `Needs to happen ASAP.`,
   destination: Labels.URGENT_LABEL,
   key: '2',
 };
 
 let BACKLOG_ACTION = {
-  name: `Backlog`,
+  name: BACKLOG_PRIORITY_NAME,
   description:
-      `Important for achieving my mission, but can be done at leisure. Aim to spend >60% of your time here.`,
+      `Important for achieving my mission, but can be done at leisure.`,
   destination: Labels.BACKLOG_LABEL,
   key: '3',
 };
 
 let NEEDS_FILTER_ACTION = {
-  name: `Needs filter`,
+  name: NEEDS_FILTER_PRIORITY_NAME,
   shortName: 'Filter',
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
@@ -167,7 +162,6 @@ let BASE_ACTIONS = [
   ARCHIVE_ACTION,
   BLOCKED_ACTION,
   MUTE_ACTION,
-  SPAM_ACTION,
   MUST_DO_ACTION,
   URGENT_ACTION,
   BACKLOG_ACTION,
@@ -202,7 +196,6 @@ export class ThreadListView extends View {
   private focusedRow_: ThreadRow|null;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
-  private bestEffortButton_: HTMLElement;
   private renderedRow_: ThreadRow|null;
   private autoFocusedRow_: ThreadRow|null;
   private renderedGroupName_: string|null;
@@ -261,20 +254,16 @@ export class ThreadListView extends View {
     `;
     this.append(this.singleThreadContainer_);
 
-    this.bestEffortButton_ = this.appendButton('/best-effort');
-    this.bestEffortButton_.style.display = 'none';
-    this.handleBestEffortChanged_();
-
     this.appendButton(bottomButtonUrl, bottomButtonText);
     this.updateActions_();
 
     this.addListenerToModel('thread-list-changed', this.render_.bind(this));
-    this.addListenerToModel(
-        'best-effort-changed', this.handleBestEffortChanged_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread);
     });
+
+    this.render_();
   }
 
   private getThreadRow_(thread: Thread) {
@@ -325,11 +314,6 @@ export class ThreadListView extends View {
 
   async goBack() {
     this.transitionToThreadList_(this.renderedRow_);
-  }
-
-  async update() {
-    if (this.renderedRow_)
-      await this.renderedRow_.thread.update();
   }
 
   updateActions_() {
@@ -419,8 +403,8 @@ export class ThreadListView extends View {
               align-items: center;
               justify-content: center;
               pointer-events: none;
-              transition: opacity 0.5s;
-              transition-delay: 2s;
+              transition: opacity 0.8s;
+              transition-delay: 3s;
               opacity: 0.8;
             `;
             let text = document.createElement('div');
@@ -475,15 +459,6 @@ export class ThreadListView extends View {
     rendered.style.bottom = '0';
     rendered.style.visibility = 'hidden';
     this.singleThreadContainer_.append(rendered);
-  }
-
-  private handleBestEffortChanged_() {
-    if (this.model_.hasBestEffortThreads()) {
-      this.bestEffortButton_.textContent = `Triage best effort threads`;
-      this.bestEffortButton_.style.display = '';
-    } else {
-      this.bestEffortButton_.style.display = 'none';
-    }
   }
 
   private setFocus_(row: ThreadRow|null) {
