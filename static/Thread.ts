@@ -34,7 +34,7 @@ export enum ReplyType {
 export interface ThreadMetadata {
   historyId: string;
   messageIds: string[];
-  timestamp?: number;
+  timestamp: number;
   priorityId?: number;
   labelId?: number;
   // These booleans are so we can query for things that have a label but still
@@ -312,6 +312,7 @@ export class Thread extends EventTarget {
     let data = {
       historyId: '',
       messageIds: [],
+      timestamp: 0,
     };
     await doc.set(data);
     return data;
@@ -387,6 +388,11 @@ export class Thread extends EventTarget {
     this.dispatchEvent(new UpdatedEvent());
   }
 
+  private static getTimestamp_(message: gapi.client.gmail.Message) {
+    let date = Number(defined(message.internalDate));
+    return new Date(date).getTime();
+  }
+
   async generateMetadataFromGmailState_(
       historyId: string, messages: gapi.client.gmail.Message[]) {
     let oldMetadata = this.getData();
@@ -399,8 +405,7 @@ export class Thread extends EventTarget {
         this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
 
     let lastMessage = messages[messages.length - 1];
-    let date = Number(defined(lastMessage.internalDate));
-    newMetadata.timestamp = new Date(date).getTime();
+    newMetadata.timestamp = Thread.getTimestamp_(lastMessage);
 
     if (oldMetadata.needsFiltering ||
         messages.length !== oldMetadata.messageIds.length) {
@@ -460,6 +465,9 @@ export class Thread extends EventTarget {
 
     let messages = this.getRawMessages_();
     let metadata = this.getData();
+
+    let lastMessage = messages[messages.length - 1];
+    metadata.timestamp = Thread.getTimestamp_(lastMessage);
 
     let addToInbox = false;
 

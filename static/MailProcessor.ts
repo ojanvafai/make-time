@@ -1,13 +1,14 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {defined, parseAddressList, ParsedAddress, USER_ID, showDialog} from './Base.js';
-import {fetchThreads, firestoreUserCollection, getServerStorage, getLabels} from './BaseMain.js';
+import {defined, parseAddressList, ParsedAddress, showDialog, USER_ID} from './Base.js';
+import {fetchThreads, firestoreUserCollection, getLabels, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {QueueNames} from './QueueNames.js';
 import {QueueSettings} from './QueueSettings.js';
+import {RadialProgress} from './RadialProgress.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {BuiltInLabels, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
@@ -41,8 +42,12 @@ export class MailProcessor {
     if (!threadsToMigrate.length)
       return;
 
-    let dialog = showDialog(`Migrating ${
-        threadsToMigrate.length} threads. This might take a while.`);
+    let progress = new RadialProgress();
+    progress.addToTotal(threadsToMigrate.length);
+    let dialogContents = document.createElement('div');
+    dialogContents.append(
+        `Migrating ${threadsToMigrate.length} threads.`, progress);
+    let dialog = showDialog(dialogContents);
 
     for (let gmailThread of threadsToMigrate) {
       let thread = await this.fetchFullThread_(
@@ -59,6 +64,8 @@ export class MailProcessor {
         'addLabelIds': addToInbox ? ['INBOX'] : [],
         'removeLabelIds': idsToRemove,
       });
+
+      progress.incrementProgress();
     };
 
     dialog.close();
