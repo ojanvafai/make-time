@@ -342,12 +342,13 @@ export class Thread extends EventTarget {
   }
 
   async update() {
-    // If we got here and this.processed_===undefined, that means we don't have
-    // message data on disk, so fetch the full thread from the network.
+    // If we don't have any messages yet, it's more efficient to fetch the full
+    // thread from the network and fetching the indivudal messages.
     if (!this.processed_.messages.length) {
       let data = await this.fetchFromNetwork_();
-      this.processed_.process(defined(data.messages));
-      this.dispatchEvent(new UpdatedEvent());
+      let historyId = defined(data.historyId);
+      let messages = defined(data.messages);
+      this.saveMessageState_(historyId, messages);
       return;
     }
 
@@ -383,9 +384,7 @@ export class Thread extends EventTarget {
       allRawMessages.push(resp.result);
     }
 
-    this.processed_.process(allRawMessages);
     this.saveMessageState_(historyId, allRawMessages);
-    this.dispatchEvent(new UpdatedEvent());
   }
 
   private static getTimestamp_(message: gapi.client.gmail.Message) {
@@ -415,6 +414,9 @@ export class Thread extends EventTarget {
   }
 
   async fetchFromDisk() {
+    if (this.processed_.messages.length)
+      return;
+
     let data = await this.deserializeMessageData_();
     if (!data)
       return;
@@ -431,15 +433,12 @@ export class Thread extends EventTarget {
     }
     let resp = await this.fetchPromise_;
     this.fetchPromise_ = null;
-
-    let historyId = defined(resp.result.historyId);
-    let messages = defined(resp.result.messages);
-    this.saveMessageState_(historyId, messages);
     return resp.result;
   }
 
   async saveMessageState_(
       historyId: string, messages: gapi.client.gmail.Message[]) {
+    this.processed_.process(messages);
     await this.generateMetadataFromGmailState_(historyId, messages);
     await this.serializeMessageData_(messages);
   }

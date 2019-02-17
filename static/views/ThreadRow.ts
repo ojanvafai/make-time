@@ -13,17 +13,29 @@ let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
   month: 'short',
   day: 'numeric',
-})
+});
 
 let DIFFERENT_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
   month: 'short',
   day: 'numeric',
-})
+});
 
 let SAME_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
   hour: 'numeric',
   minute: 'numeric',
-})
+});
+
+class RowState {
+  constructor(
+      public subject: string, public snippet: string, public from: string,
+      public count: number, public lastMessageId: string) {}
+
+  equals(other: RowState) {
+    return this.subject === other.subject && this.snippet === other.snippet &&
+        this.from === other.from && this.count === other.count &&
+        this.lastMessageId === other.lastMessageId;
+  }
+}
 
 export class ThreadRow extends HTMLElement {
   focused_: boolean;
@@ -34,6 +46,7 @@ export class ThreadRow extends HTMLElement {
   private checkBox_: HTMLInputElement;
   private label_: HTMLElement;
   private messageDetails_: HTMLElement;
+  private lastRowState_?: RowState;
 
   constructor(public thread: Thread) {
     super();
@@ -89,12 +102,10 @@ export class ThreadRow extends HTMLElement {
     };
     this.append(this.messageDetails_);
 
+    this.renderRow_();
+    this.rendered = new RenderedThread(thread);
     thread.addEventListener(
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
-
-    this.rendered = new RenderedThread(thread);
-    this.renderRow_();
-    this.thread.addEventListener(UpdatedEvent.NAME, () => this.renderRow_());
   }
 
   threadRowContainsSelection_() {
@@ -131,11 +142,23 @@ export class ThreadRow extends HTMLElement {
 
   private handleThreadUpdated_() {
     this.renderRow_();
-    this.rendered.render();
+    if (this.rendered.isRendered())
+      this.rendered.render();
   }
 
   renderRow_() {
-    let subject = this.thread.getSubject();
+    let snippetText = this.thread.getSnippet();
+    let messageIds = this.thread.getMessageIds();
+    let state = new RowState(
+        this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
+        messageIds.length, messageIds[messageIds.length - 1]);
+
+    // Keep track of the last state we used to render this row so we can avoid
+    // rendering new frames when nothing has changed.
+    if (this.lastRowState_ && this.lastRowState_.equals(state))
+      return;
+
+    this.lastRowState_ = state;
 
     let fromContainer = document.createElement('div');
     fromContainer.style.cssText = `
@@ -151,12 +174,11 @@ export class ThreadRow extends HTMLElement {
       overflow: hidden;
     `;
 
-    let fromText = this.thread.getFrom();
-    if (fromText) {
-      let parsed = parseAddressList(fromText)[0];
+    if (state.from) {
+      let parsed = parseAddressList(state.from)[0];
       from.textContent = parsed.name || parsed.address;
     } else {
-      from.textContent = '';
+      from.textContent = '\xa0';
     }
 
     let count = document.createElement('div');
@@ -166,19 +188,18 @@ export class ThreadRow extends HTMLElement {
       color: grey;
     `;
 
-    let messageIds = this.thread.getMessageIds();
-    if (messageIds.length > 1)
-      count.textContent = String(messageIds.length);
+    if (state.count > 1)
+      count.textContent = String(state.count);
 
     fromContainer.append(from, count);
 
     let snippet = document.createElement('span');
     snippet.style.color = '#666';
     // Snippet as returned by the gmail API is html escaped.
-    snippet.innerHTML = ` - ${this.thread.getSnippet()}`;
+    snippet.innerHTML = state.snippet;
 
     let title = document.createElement('div');
-    title.append(subject, snippet);
+    title.append(state.subject || '\xa0', snippet);
     title.style.cssText = `
       overflow: hidden;
       margin-right: 25px;
@@ -189,7 +210,7 @@ export class ThreadRow extends HTMLElement {
     date.textContent = this.dateString_(this.thread.getDate());
 
     let popoutButton = new ViewInGmailButton();
-    popoutButton.setMessageId(messageIds[messageIds.length - 1]);
+    popoutButton.setMessageId(state.lastMessageId);
     popoutButton.style.marginLeft = '4px';
     popoutButton.style.marginRight = '4px';
 

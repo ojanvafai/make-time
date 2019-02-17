@@ -23,7 +23,7 @@ export class ProcessedMessageData {
   getFrom() {
     if (!this.messages.length)
       return '';
-    return this.messages[this.messages.length - 1].from;
+    return this.messages[this.messages.length - 1].from || '';
   }
 
   process(rawMessages: gapi.client.gmail.Message[]) {

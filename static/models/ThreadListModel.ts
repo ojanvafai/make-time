@@ -24,6 +24,8 @@ export class ThreadListChangedEvent extends Event {
   }
 }
 
+const RENDER_THREAD_YIELD_TIME_MS = 50;
+
 export abstract class ThreadListModel extends Model {
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
@@ -58,6 +60,7 @@ export abstract class ThreadListModel extends Model {
     this.processSnapshotTimeout_ = window.setTimeout(async () => {
       if (!this.snapshotToProcess_)
         return;
+
       this.processSnapshot_();
       // Intentionally do this after processing all the threads in the disk
       // cache so that they show up atomically and so we spend less CPU
@@ -65,24 +68,10 @@ export abstract class ThreadListModel extends Model {
       // TODO: Should probably call this occasionaly in the above loop if that
       // loop is taking too long to run.
       this.threadListChanged_();
-      await this.updateMessages_();
     }, 100);
   }
 
-  private async updateMessages_() {
-    // First fetch all the threads from disk so we show the local data ASAP.
-    for (let thread of this.threads_) {
-      await thread.fetchFromDisk();
-    }
-
-    // Then update the threads from the network.
-    // TODO: Use TaskQueue to do in parallel.
-    for (let thread of this.threads_) {
-      await thread.update();
-    }
-  }
-
-  private async processSnapshot_() {
+  private processSnapshot_() {
     let snapshot = assert(this.snapshotToProcess_);
     this.snapshotToProcess_ = null;
 
@@ -97,6 +86,24 @@ export abstract class ThreadListModel extends Model {
     };
 
     this.threads_.sort(this.compareThreads.bind(this));
+
+    this.fetchFromDisk(this.getThreadsAsync());
+  }
+
+  async fetchFromDisk(generator: AsyncIterableIterator<Thread>) {
+    let start = window.performance.now();
+    for await (const thread of generator) {
+      await thread.fetchFromDisk();
+      if (window.performance.now() - start > RENDER_THREAD_YIELD_TIME_MS) {
+        setTimeout(() => this.fetchFromDisk(generator));
+        return;
+      }
+    };
+  }
+
+  async * getThreadsAsync() {
+    for (const thread of this.threads_)
+      yield thread;
   }
 
   protected compareDates(a: Thread, b: Thread) {
@@ -105,12 +112,8 @@ export abstract class ThreadListModel extends Model {
 
   getThreads() {
     // Make sure any in progress snapshot updates get flushed.
-    if (this.snapshotToProcess_) {
+    if (this.snapshotToProcess_)
       this.processSnapshot_();
-      // Intentionally don't await this since we're on the critical path for
-      // putting up a frame.
-      this.updateMessages_();
-    }
     return this.threads_;
   }
 
