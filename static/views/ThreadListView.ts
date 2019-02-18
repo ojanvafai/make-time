@@ -390,36 +390,8 @@ export class ThreadListView extends View {
       if (this.renderedRow_) {
         if (nextRow) {
           let nextGroupName = this.model_.getGroupName(nextRow.thread);
-          if (this.renderedGroupName_ !== nextGroupName) {
-            toast = document.createElement('div');
-            toast.style.cssText = `
-              position: fixed;
-              top: 50%;
-              right: 0;
-              bottom: 0;
-              left: 0;
-              font-size: 20px;
-              opacity: 0.5;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              pointer-events: none;
-              transition: opacity 0.8s;
-              transition-delay: 3s;
-              opacity: 0.8;
-            `;
-            let text = document.createElement('div');
-            text.style.cssText = `
-              background-color: black;
-              padding: 10px;
-              border-radius: 5px;
-              border: 1px solid grey;
-              color: white;
-            `;
-            setTimeout(() => defined(toast).style.opacity = '0');
-            text.append(`Now triaging: ${nextGroupName}`);
-            toast.append(text);
-          }
+          if (this.renderedGroupName_ !== nextGroupName)
+            toast = this.createToast_(nextGroupName);
           this.setRenderedRowInternal_(nextRow);
         } else {
           this.transitionToThreadList_(null);
@@ -460,6 +432,38 @@ export class ThreadListView extends View {
     rendered.style.bottom = '0';
     rendered.style.visibility = 'hidden';
     this.singleThreadContainer_.append(rendered);
+  }
+
+  private createToast_(nextGroupName: string) {
+    let toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed;
+      top: 50%;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      font-size: 20px;
+      opacity: 0.5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      transition: opacity 0.5s;
+      transition-delay: 3s;
+      opacity: 0.95;
+    `;
+    let text = document.createElement('div');
+    text.style.cssText = `
+      background-color: black;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid grey;
+      color: white;
+    `;
+    setTimeout(() => defined(toast).style.opacity = '0');
+    text.append(`Now triaging: ${nextGroupName}`);
+    toast.append(text);
+    return toast;
   }
 
   private setFocus_(row: ThreadRow|null) {
