@@ -1,4 +1,6 @@
-import {defined, USER_ID} from './Base.js';
+import {Address} from '../third_party/emailjs-addressparser/addressparser.js';
+
+import {defined, parseAddressList, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 
@@ -16,6 +18,11 @@ interface ImageAttachmentData {
 
 export class Message {
   static base64_ = new Base64();
+  private parsedFrom_?: Address[];
+  private parsedTo_?: Address[];
+  private parsedCc_?: Address[];
+  private parsedBcc_?: Address[];
+
   private plain_: string|undefined;
   private plainedHtml_: string|undefined;
   private html_: string|undefined;
@@ -120,6 +127,30 @@ export class Message {
 
   getLabelIds() {
     return defined(this.rawMessage.labelIds);
+  }
+
+  get parsedFrom() {
+    if (!this.parsedFrom_)
+      this.parsedFrom_ = this.from ? parseAddressList(this.from) : [];
+    return this.parsedFrom_;
+  }
+
+  get parsedTo() {
+    if (!this.parsedTo_)
+      this.parsedTo_ = this.to ? parseAddressList(this.to) : [];
+    return this.parsedTo_;
+  }
+
+  get parsedCc() {
+    if (!this.parsedCc_)
+      this.parsedCc_ = this.cc ? parseAddressList(this.cc) : [];
+    return this.parsedCc_;
+  }
+
+  get parsedBcc() {
+    if (!this.parsedBcc_)
+      this.parsedBcc_ = this.bcc ? parseAddressList(this.bcc) : [];
+    return this.parsedBcc_;
   }
 
   getPlain() {

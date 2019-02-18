@@ -1,6 +1,6 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, parseAddressList, serializeAddress, USER_ID} from './Base.js';
+import {assert, defined, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, serializeAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection, getLabels} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {Labels} from './Labels.js';
@@ -591,7 +591,7 @@ export class Thread extends EventTarget {
 
       if (replyType === ReplyType.ReplyAll && lastMessage.to) {
         let myEmail = await getMyEmail();
-        let addresses = parseAddressList(lastMessage.to);
+        let addresses = lastMessage.parsedTo;
         for (let address of addresses) {
           if (address.address !== myEmail) {
             if (to !== '')

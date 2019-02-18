@@ -1,4 +1,4 @@
-import {notNull, parseAddressList} from './Base.js';
+import {notNull} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 
@@ -119,8 +119,8 @@ export class RenderedThread extends HTMLElement {
     let from = document.createElement('div');
     from.style.cssText = `color: black`;
 
-    if (processedMessage.from) {
-      let parsed = parseAddressList(processedMessage.from)[0];
+    if (processedMessage.parsedFrom.length) {
+      let parsed = processedMessage.parsedFrom[0];
       if (parsed.name) {
         let b = document.createElement('b');
         b.append(parsed.name);

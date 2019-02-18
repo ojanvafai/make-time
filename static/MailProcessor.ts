@@ -1,6 +1,6 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {defined, parseAddressList, ParsedAddress, showDialog, USER_ID} from './Base.js';
+import {defined, ParsedAddress, showDialog, USER_ID} from './Base.js';
 import {fetchThreads, firestoreUserCollection, getLabels, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -310,11 +310,8 @@ export class MailProcessor {
       matches = true;
     }
 
-    let parsedFrom = message.from ? parseAddressList(message.from) : [];
-    let parsedTo = message.to ? parseAddressList(message.to) : [];
-    let parsedCc = message.cc ? parseAddressList(message.cc) : [];
-    let parsedBcc = message.bcc ? parseAddressList(message.bcc) : [];
-    let parsedToCcBcc = [...parsedTo, ...parsedCc, ...parsedBcc];
+    let parsedToCcBcc =
+        [...message.parsedTo, ...message.parsedCc, ...message.parsedBcc];
 
     if (rule.nocc) {
       if (parsedToCcBcc.length != 1)
@@ -327,7 +324,7 @@ export class MailProcessor {
       matches = true;
     }
     if (rule.from) {
-      if (!this.containsAddress(parsedFrom, rule.from))
+      if (!this.containsAddress(message.parsedFrom, rule.from))
         return false;
       matches = true;
     }
