@@ -413,7 +413,17 @@ export class Thread extends EventTarget {
     this.setData(newMetadata);
   }
 
-  async fetchFromDisk() {
+  async fetch() {
+    await this.fetchFromDisk_();
+    // The metadata in firestore has more messages than the data in local
+    // storage. Pull in the new messages so we're up to date.
+    // TODO: Pass the messageIds to update. Update does a fetch to get the new
+    // messageIds, but we know the messageIds already from firestore.
+    if (this.processed_.messages.length < this.metadata_.messageIds.length)
+      await this.update();
+  }
+
+  private async fetchFromDisk_() {
     if (this.processed_.messages.length)
       return;
 
@@ -422,14 +432,6 @@ export class Thread extends EventTarget {
       return;
     let messages = defined(data.messages);
     this.processed_.process(messages);
-
-    // The metadata in firestore has more messages than the data in local
-    // storage. Pull in the new messages so we're up to date.
-    // TODO: Pass the messageIds to update. Update does a fetch to get the new
-    // messageIds, but we know the messageIds already from firestore.
-    if (messages.length < this.metadata_.messageIds.length)
-      await this.update();
-
     this.dispatchEvent(new UpdatedEvent());
   }
 

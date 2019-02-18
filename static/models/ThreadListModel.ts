@@ -87,15 +87,17 @@ export abstract class ThreadListModel extends Model {
 
     this.threads_.sort(this.compareThreads.bind(this));
 
-    this.fetchFromDisk(this.getThreadsAsync());
+    this.fetchThreads(this.getThreadsAsync());
   }
 
-  async fetchFromDisk(generator: AsyncIterableIterator<Thread>) {
+  // TODO: Change this to separate out fetching from the disk and network so we
+  // do all the disk access first and then the network.
+  async fetchThreads(generator: AsyncIterableIterator<Thread>) {
     let start = window.performance.now();
     for await (const thread of generator) {
-      await thread.fetchFromDisk();
+      await thread.fetch();
       if (window.performance.now() - start > RENDER_THREAD_YIELD_TIME_MS) {
-        setTimeout(() => this.fetchFromDisk(generator));
+        setTimeout(() => this.fetchThreads(generator));
         return;
       }
     };

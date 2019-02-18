@@ -161,7 +161,7 @@ export class MailProcessor {
   private async fetchFullThread_(threadId: string, historyId: string) {
     let metadata = await Thread.fetchMetadata(threadId);
     let thread = Thread.create(threadId, metadata);
-    await thread.fetchFromDisk();
+    await thread.fetch();
     if (thread.getHistoryId() !== historyId)
       await thread.update();
     return thread;
