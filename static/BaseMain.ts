@@ -284,12 +284,8 @@ interface FetchRequestParameters {
   maxResults?: number;
 }
 
-// Gmail API only allows 500 as the cap for max results.
-let MAX_RESULTS_CAP = 500;
-
 export async function fetchThreads(
-    forEachThread: (thread: gapi.client.gmail.Thread) => void, query: string,
-    maxResults: number = 0) {
+    forEachThread: (thread: gapi.client.gmail.Thread) => void, query: string) {
   // If the query is empty or just whitespace, then we would fetch all mail by
   // accident.
   assert(query.trim() !== '');
@@ -297,20 +293,11 @@ export async function fetchThreads(
   // Chats don't expose their bodies in the gmail API, so just skip them.
   query = `(${query}) AND -in:chats`;
 
-  let resultCountLeft = maxResults || MAX_RESULTS_CAP;
-
   let getPageOfThreads = async (opt_pageToken?: string) => {
-    let maxForThisFetch = Math.min(resultCountLeft, MAX_RESULTS_CAP);
-    resultCountLeft -= maxForThisFetch;
-
     let requestParams = <FetchRequestParameters>{
       'userId': USER_ID,
       'q': query,
-      'maxResults': maxForThisFetch,
     };
-
-    if (maxResults)
-      requestParams.maxResults = maxResults;
 
     if (opt_pageToken)
       requestParams.pageToken = opt_pageToken;
@@ -322,9 +309,6 @@ export async function fetchThreads(
       await forEachThread(rawThread);
     }
 
-    if (resultCountLeft <= 0)
-      return;
-
     let nextPageToken = resp.result.nextPageToken;
     if (nextPageToken)
       await getPageOfThreads(nextPageToken);
@@ -332,6 +316,8 @@ export async function fetchThreads(
 
   await getPageOfThreads();
 }
+
+let MAX_RESULTS_CAP = 500;
 
 // TODO: Share some code with fetchThreads.
 export async function fetchMessages(
