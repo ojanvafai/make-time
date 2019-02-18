@@ -60,13 +60,11 @@ let MUTE_ACTION = {
   destination: Labels.MUTED_LABEL,
 };
 
-// Next row action is the only navigation action that's not hidden as it allows
-// for efficient sequential triaging in either threadlist or single thread views
-// using only the toolbar buttons.
 let NEXT_ROW_ACTION = {
-  name: `Skip`,
+  name: `Next row`,
   description: `Go to the next row/thread.`,
   key: 'j',
+  hidden: true,
   repeatable: true,
 };
 
@@ -167,12 +165,12 @@ let BASE_ACTIONS = [
   BACKLOG_ACTION,
   NEEDS_FILTER_ACTION,
   UNDO_ACTION,
-  NEXT_ROW_ACTION,
 ];
 
 let RENDER_ALL_ACTIONS = [
   PREVIOUS_ROW_ACTION,
   PREVIOUS_QUEUE_ACTION,
+  NEXT_ROW_ACTION,
   NEXT_QUEUE_ACTION,
   TOGGLE_FOCUSED_ACTION,
   TOGGLE_QUEUE_ACTION,
@@ -518,14 +516,9 @@ export class ThreadListView extends View {
     }
     switch (action) {
       case NEXT_ROW_ACTION: {
-        let currentRow = this.renderedRow_ || this.focusedRow_;
-        const nextRow = rowAtOffset(rows, currentRow, 1);
-        if (nextRow) {
-          if (this.renderedRow_)
-            this.setRenderedRow_(nextRow);
-          else
+        const nextRow = rowAtOffset(rows, this.focusedRow_, 1);
+        if (nextRow)
             this.setFocusAndScrollIntoView_(nextRow);
-        }
         break;
       }
       case PREVIOUS_ROW_ACTION: {
