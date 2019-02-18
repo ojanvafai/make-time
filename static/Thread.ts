@@ -420,7 +420,16 @@ export class Thread extends EventTarget {
     let data = await this.deserializeMessageData_();
     if (!data)
       return;
-    this.processed_.process(defined(data.messages));
+    let messages = defined(data.messages);
+    this.processed_.process(messages);
+
+    // The metadata in firestore has more messages than the data in local
+    // storage. Pull in the new messages so we're up to date.
+    // TODO: Pass the messageIds to update. Update does a fetch to get the new
+    // messageIds, but we know the messageIds already from firestore.
+    if (messages.length < this.metadata_.messageIds.length)
+      await this.update();
+
     this.dispatchEvent(new UpdatedEvent());
   }
 
