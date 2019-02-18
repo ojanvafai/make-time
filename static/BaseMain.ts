@@ -139,6 +139,14 @@ async function login_() {
   try {
     await firebase.initializeApp(firebaseConfig);
 
+    try {
+      await firebase.firestore().enablePersistence();
+    } catch (e) {
+      // Currently offline is only enabled for one tab at a time and also
+      // doesn't work on some browsers.
+      console.log(e)
+    }
+
     // getRedirectResult triggers onIdTokenChanged, so no need to handle the
     // result, but we do need to call it.
     await firebase.auth().getRedirectResult();

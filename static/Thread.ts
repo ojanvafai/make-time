@@ -361,11 +361,17 @@ export class Thread extends EventTarget {
       fields: 'historyId,messages(id,labelIds,internalDate)',
     });
 
-    if (this.getHistoryId() === resp.result.historyId)
-      return;
-
     let historyId = defined(resp.result.historyId);
     let messages = defined(resp.result.messages);
+
+    // The historyId is stored in firestore, so it could have come from a sync
+    // with a different client. Ensure that we have the same list of messages as
+    // well.
+    // TODO: Need to check the actual message IDs since drafts can turn into
+    // messages with a different ID.
+    if (this.getHistoryId() === historyId &&
+        processedMessages.length === messages.length)
+      return;
 
     for (let i = 0; i < processedMessages.length; i++) {
       let labels = messages[i].labelIds || [];
