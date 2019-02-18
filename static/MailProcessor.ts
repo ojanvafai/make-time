@@ -32,7 +32,7 @@ export class MailProcessor {
     ];
 
     if (!labelsToMigrate.length)
-      return;
+      return false;
 
     let idsToRemove = labelsToMigrate.map(x => labels.getId(x));
     let query = 'in:' + labelsToMigrate.join(' OR in:');
@@ -40,7 +40,7 @@ export class MailProcessor {
     await fetchThreads(x => threadsToMigrate.push(x), query);
 
     if (!threadsToMigrate.length)
-      return;
+      return false;
 
     let progress = new RadialProgress();
     progress.addToTotal(threadsToMigrate.length);
@@ -69,8 +69,8 @@ export class MailProcessor {
     };
 
     dialog.close();
+    return true;
   }
-
 
   // Only remove labels from messages that were seen by the user at the time
   // they took the action.

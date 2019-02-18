@@ -325,7 +325,10 @@ async function onLoad() {
 
   // TODO: Delete this one all clients are upgraded.
   let mailProcessor = new MailProcessor(await getSettings());
-  await mailProcessor.migrateThreadsToFirestore();
+  // This will process at most 500 threads at a time, so do in a loop until it's
+  // done. Returns true if there might be more threads to migrate.
+  while (await mailProcessor.migrateThreadsToFirestore()) {
+  }
 
   appendMenu();
   await routeToCurrentLocation();
