@@ -518,7 +518,7 @@ export class ThreadListView extends View {
       case NEXT_ROW_ACTION: {
         const nextRow = rowAtOffset(rows, this.focusedRow_, 1);
         if (nextRow)
-            this.setFocusAndScrollIntoView_(nextRow);
+          this.setFocusAndScrollIntoView_(nextRow);
         break;
       }
       case PREVIOUS_ROW_ACTION: {
@@ -651,9 +651,15 @@ export class ThreadListView extends View {
           if (child == this.focusedRow_)
             focusedRowIsSelected = true;
           threads.push(child.thread);
-          // ThreadRows get recycled, so clear the checked and focused state for
-          // future use.
+          // ThreadRows get recycled, so clear the checked and focused state
+          // for future use.
           child.resetState();
+          // The rows will get removed on the next frame anyways, but we don't
+          // want the user to see an intermediary state where the row is shown
+          // but unchecked and we don't want to move focus to the next row until
+          // these rows have been removed. So just removed them synchronously
+          // here purely for the visual effect.
+          child.remove();
         } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
           firstUnselectedRowAfterFocused = child;
         }
@@ -662,9 +668,9 @@ export class ThreadListView extends View {
       if (!threads.length)
         return;
 
-      // Move focus to the first unselected email. If we aren't able to find an
-      // unselected email, focusedEmail_ should end up null, so set it even if
-      // firstUnselectedRowAfterSelected is null.
+      // Move focus to the first unselected email. If we aren't able to find
+      // an unselected email, focusedEmail_ should end up null, so set it even
+      // if firstUnselectedRowAfterSelected is null.
       if (focusedRowIsSelected)
         this.setFocus_(firstUnselectedRowAfterFocused);
 
@@ -834,8 +840,8 @@ export class ThreadListView extends View {
         return;
       }
 
-      // Grab this before setting isSending_ to true to ensure that we don't get
-      // stuck unable to send when there are bugs.
+      // Grab this before setting isSending_ to true to ensure that we don't
+      // get stuck unable to send when there are bugs.
       let renderedRow = notNull(this.renderedRow_);
 
       if (this.isSending_)
