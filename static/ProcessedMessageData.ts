@@ -13,7 +13,7 @@ export class ProcessedMessageData {
   getSubject() {
     if (!this.messages.length)
       return '';
-    return defined(this.messages[0].subject);
+    return this.messages[0].subject || '(no subject)';
   }
 
   getSnippet() {
