@@ -86,13 +86,49 @@ export class MailProcessor {
       let messageIds = doc.data().messageIds;
       let count = doc.data()[firestoreKey];
       await gapiFetch(gapi.client.gmail.users.messages.batchModify, {
-        'userId': USER_ID,
-        'ids': messageIds.slice(0, count),
-        'removeLabelIds': removeLabelIds,
+        userId: USER_ID,
+        ids: messageIds.slice(0, count),
+        removeLabelIds: removeLabelIds,
       });
 
-      // TODO: Technically there's a race here from when we query to when we do
-      // the update. A new message could have come in and the user already
+      // Gmail has bugs where modifying individual messages fails silently with
+      // batchModify and 404s with modify. The only way to do the modify is to
+      // use threads.modify, which we don't want to do in the common case since
+      // it introduces race conditions with new threads coming in. This is
+      // different from https://issuetracker.google.com/issues/122167541 where
+      // there's messages that just don't exist. In this case, the message is
+      // there, and you can read it by calling threads.get, but messages.get
+      // 404s.
+      // TODO: Technically we should do this for countToMarkRead as well, but
+      // the consequences of a message not being marked read are less severe and
+      // it complicates the code, so meh.
+      if (firestoreKey === 'countToArchive') {
+        let newMessageData =
+            await gapiFetch(gapi.client.gmail.users.threads.get, {
+              userId: USER_ID,
+              id: doc.id,
+              fields: 'messages(labelIds)',
+            });
+
+        let newMessages = defined(newMessageData.result.messages);
+        if (newMessages.length === count) {
+          let modifyFailed =
+              newMessages.some(x => defined(x.labelIds).includes('INBOX'));
+          if (modifyFailed) {
+            // If new messages haven't come in, then we can safely archive the
+            // whole thread. If new messages have come in, then we can do
+            // nothing and leave the thread in the inbox.
+            await gapiFetch(gapi.client.gmail.users.threads.modify, {
+              'userId': USER_ID,
+              'id': doc.id,
+              'removeLabelIds': removeLabelIds,
+            });
+          }
+        }
+      }
+
+      // TODO: Technically there's a race here from when we query to when we
+      // do the update. A new message could have come in and the user already
       // archives it before this runs and that archive would get lost due to
       // this delete.
       let update: any = {};
@@ -110,9 +146,9 @@ export class MailProcessor {
 
     for (let doc of querySnapshot.docs) {
       await gapiFetch(gapi.client.gmail.users.threads.modify, {
-        'userId': USER_ID,
-        'id': doc.id,
-        'addLabelIds': ['INBOX'],
+        userId: USER_ID,
+        id: doc.id,
+        addLabelIds: ['INBOX'],
       });
 
       let update: ThreadMetadataUpdate = {
@@ -162,16 +198,16 @@ export class MailProcessor {
           await this.fetchFullThread_(threadId, defined(gmailThread.historyId));
       existingIds.delete(threadId);
 
-      // Gmail has phantom messages that keep threads in the inbox but that you
-      // can't access. Archive the whole thread for these messages. See
+      // Gmail has phantom messages that keep threads in the inbox but that
+      // you can't access. Archive the whole thread for these messages. See
       // https://issuetracker.google.com/issues/122167541.
       let messages = thread.getMessages();
       let inInbox = messages.some(x => x.getLabelIds().includes('INBOX'));
       if (!inInbox) {
         await gapiFetch(gapi.client.gmail.users.threads.modify, {
-          'userId': USER_ID,
-          'id': threadId,
-          'removeLabelIds': ['INBOX'],
+          userId: USER_ID,
+          id: threadId,
+          removeLabelIds: ['INBOX'],
         });
       }
 
@@ -195,8 +231,8 @@ export class MailProcessor {
 
   private async clearThreadMetadata_(ids: Iterable<string>) {
     for (let id of ids) {
-      // Do one last fetch to ensure a new message hasn't come in that puts the
-      // thread back in the inbox, then clear metadata.
+      // Do one last fetch to ensure a new message hasn't come in that puts
+      // the thread back in the inbox, then clear metadata.
       let response = await gapiFetch(gapi.client.gmail.users.threads.get, {
         'userId': USER_ID,
         'id': id,
@@ -355,8 +391,8 @@ export class MailProcessor {
       }
     }
 
-    // Ensure there's always some label to make sure bugs don't cause emails to
-    // get lost silently.
+    // Ensure there's always some label to make sure bugs don't cause emails
+    // to get lost silently.
     return Labels.FALLBACK_LABEL;
   }
 
