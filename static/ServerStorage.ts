@@ -31,8 +31,18 @@ export class ServerStorage extends EventTarget {
     }
 
     doc.onSnapshot((snapshot) => {
+      let oldData = this.data_;
       this.data_ = snapshot;
-      this.dispatchEvent(new Event(ServerStorageUpdateEventName));
+      if (!oldData)
+        return;
+
+      for (let key of KEYS_TO_DISPATCH_UPDATE_EVENT) {
+        if (JSON.stringify(oldData.get(key)) !==
+            JSON.stringify(this.data_.get(key))) {
+          this.dispatchEvent(new Event(ServerStorageUpdateEventName));
+          return;
+        }
+      }
     });
   }
 
@@ -86,6 +96,19 @@ let keys: KeyTypes = {
   TRACK_LONG_TASKS: 'track_long_tasks',
   QUEUES: 'queues',
 };
+
+// TODO: Setup a proper listening system for each key and make that the only way
+// to get at the key's value so callers are forced to handle updates.
+let KEYS_TO_DISPATCH_UPDATE_EVENT = [
+  keys.VACATION,
+  keys.TIMER_DURATION,
+  keys.AUTO_START_TIMER,
+  keys.ALLOWED_REPLY_LENGTH,
+  keys.DAYS_TO_SHOW,
+  keys.LOG_MATCHING_RULES,
+  keys.TRACK_LONG_TASKS,
+  keys.QUEUES,
+];
 
 // List of allowed keys.
 ServerStorage.KEYS = keys;
