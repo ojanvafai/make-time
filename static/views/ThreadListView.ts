@@ -282,8 +282,11 @@ export class ThreadListView extends View {
   }
 
   private handleUndo_(thread: Thread) {
+    let row = this.getThreadRow_(thread);
     if (this.renderedRow_)
-      this.setRenderedRow_(this.getThreadRow_(thread));
+      this.setRenderedRow_(row);
+    else
+      this.setFocus_(row);
   }
 
   appendButton(href: string, textContent = '') {
