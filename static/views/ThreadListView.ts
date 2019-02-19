@@ -467,10 +467,13 @@ export class ThreadListView extends View {
   }
 
   private setFocus_(row: ThreadRow|null) {
-    if (row)
-      row.focused = true;
-    else
+    if (row) {
+      let areAnyRowsChecked = this.getRows_().some(x => x.checked);
+      let focusImpliesSelected = !areAnyRowsChecked;
+      row.setFocus(true, focusImpliesSelected);
+    } else {
       this.clearFocus_();
+    }
   }
 
   clearFocus_() {
@@ -487,7 +490,7 @@ export class ThreadListView extends View {
       return;
 
     if (this.focusedRow_)
-      this.focusedRow_.focused = false;
+      this.focusedRow_.clearFocus();
     this.focusedRow_ = row;
   }
 

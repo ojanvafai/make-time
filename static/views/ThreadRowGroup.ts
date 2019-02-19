@@ -70,7 +70,7 @@ export class ThreadRowGroup extends HTMLElement {
 
     if (select) {
       let lastRow = rows[rows.length - 1];
-      lastRow.focused = true;
+      lastRow.setFocus(true, false);
     }
   }
 

@@ -57,7 +57,7 @@ export class ThreadRow extends HTMLElement {
 
     this.focused_ = false;
     this.checked_ = false;
-    this.focusImpliesSelected_ = true;
+    this.focusImpliesSelected_ = false;
 
     let label = document.createElement('div');
     this.label_ = label;
@@ -70,7 +70,7 @@ export class ThreadRow extends HTMLElement {
     `;
     label.addEventListener('click', () => {
       this.checked = !this.selected;
-      this.focused = true;
+      this.setFocus(true, false);
     });
 
     this.checkBox_ = document.createElement('input');
@@ -126,7 +126,7 @@ export class ThreadRow extends HTMLElement {
 
   resetState() {
     // Intentionally use the public setters so that styles are updated.
-    this.focused = false;
+    this.setFocus(false, false);
     this.checked = false;
   }
 
@@ -245,24 +245,20 @@ export class ThreadRow extends HTMLElement {
     return formatter.format(date);
   }
 
-  get focused() {
-    return this.focused_;
-  }
-
-  set focused(value) {
-    // Changing focus away from this row resets this bit so that later focusing
-    // it this checks it again.
-    if (!value)
-      this.focusImpliesSelected_ = true;
-
+  setFocus(value: boolean, focusImpliesSelected: boolean) {
+    this.focusImpliesSelected_ = focusImpliesSelected;
     this.focused_ = value;
-    this.label_.style.backgroundColor = this.focused ? '#ccc' : '';
+    this.label_.style.backgroundColor = this.focused_ ? '#ccc' : '';
     this.updateCheckbox_();
     // TODO: Technically we probably want a blur event as well for !value.
     if (value) {
       this.dispatchEvent(
           new Event(FOCUS_THREAD_ROW_EVENT_NAME, {bubbles: true}));
     }
+  }
+
+  clearFocus() {
+    this.setFocus(false, false);
   }
 
   get selected() {
@@ -277,7 +273,6 @@ export class ThreadRow extends HTMLElement {
     this.checked_ = value;
     this.style.backgroundColor =
         this.checked_ ? '#c2dbff' : UNCHECKED_BACKGROUND_COLOR;
-    this.focusImpliesSelected_ = false;
     this.updateCheckbox_();
   }
 
