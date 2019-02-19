@@ -375,33 +375,32 @@ export async function fetchMessages(
 }
 
 export function showHelp() {
-  new HelpDialog(
-      `make-time is an opinionated way of handling unreasonable amounts of email.
+  new HelpDialog(`make-time is an opinionated way of handling email.
 
 <b style='font-size:120%'>Disclaimers</b>
-Patches welcome, but otherwise, I built it for my needs. :) Feature requests are very welcome though. Often you'll think of something I want that I don't have and I'll build it. Contact ojan@ or file issues at https://github.com/ojanvafai/make-time if you want to contribute, give feedback, etc.
+Make-time is built in free time and <b>makes no guarantees about quality.</b> We use it for day to day email management, but you might not want to. It has bugs. Sometimes REALLY BAD bugs.
 
-<span style='color: red'>This is a side project. While I use it for my day to day email management, you might not want to. It has bugs.</span> They may be hard to deal with if you're not willing to dig into the code when they happen.
+Bugs, feature requests, and patches are very welcome. File issues, requests, random musings in the <a href='https://github.com/ojanvafai/make-time'>github repo</a>.
 
-<b style="font-size:120%">Keyboard shortcuts</b>
-Type '?' anywhere in make-time to see keyboard shortcuts.
+<b style="font-size:120%">Getting started</b> See this <a href="https://docs.google.com/presentation/d/1qwlKIQBnfDzzYdSQD-JE5cFGXiunV41uRQX0enBSoAU/edit">slide deck</a> for getting started with make-time.
+
+<b style="font-size:120%">Keyboard shortcuts</b> Type '?' anywhere in make-time to see keyboard shortcuts.
 
 <b style='font-size:120%'>Triage</b>
+Make-time only marks messages read when you take a triage action on them. Some actions also archive the thread in gmail. Aside from bugs, maketime will only archive messages and/or mark them as read.
 
-All the triage actions mark a thread as read, remove it from the inbox, and remove the maketime labels. <b>Aside from archiving messages (and bugs), maketime will only modify labels under the "maketime" parent label.</b> So you can do whatever you want with other labels.
-
-The goal of triage is to get in the flow of doing all the triage quickly. After triage is done, you enter make-time mode where you work through each thread in priority order. This helps avoid flip-flopping back and forth between quick triage and deep thinking.
+The goal of triage is to get in the flow of quickly prioritizing or archiving all your mail. Once triage is done, the Todo view shows your email in priority order. This helps avoid flip-flopping between quick triage and deep thinking.
 
 <b style='font-size:120%'>Filtering</b>
+Philosopy: labels are a triage tool, not a search/organization tool.
 
-Philosopy: Labels are a triage tool, not a search/organization tool. The goal is to have all your labels and inbox be empty when you're done with triage. The first filter that applies to a thread wins, so every thread gets exactly one label. This enables richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day. See the fillter settings dialog for more information.
+Make-time has it's own labelling and filtering system (totally independent from gmail labels). It processes all emails in your inbox. <b>Emails are only processed when MakeTime is open in a browser tab.</b> Some people choose to leave a maketime tab open (e.g. on a desktop computer) so their email is already processed when they open make-time.
 
-Make-time processes all emails in your inbox and all emails in the maketime/unprocessed label. You don't have to, but typically, people will delete all their gmail filters and just use make-time filtering. See the Settings dialog for adding filters and modifying queues. Queues can be setup to show up in a specific order and/or only show once a day/week/month. See the queues settings dialog for more information.
+The first filter that applies to a thread wins, so every thread gets exactly one label. This enables rich filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day. See the fillter settings dialog for more information.
 
-Whether you leave emails in your inbox by default or moved them into the unprocessed label so you don't see them in in gmail itself till they've been processed is up to you. If you want all your mail to be unprocessed by default, create a real gmail filter with:
-    Has the words: -in:chats -label:mute -from:me
-  Do this: Skip Inbox,
-      Apply label 'maketime/unprocessed'
+See the Settings dialog for adding filters and modifying queues. Queues can be setup to show up in a specific order and/or only show once a day/week/month. See the queues settings dialog for more information.
 
-<span style = 'color: red'>Emails are only processed when MakeTime is open in a browser tab. Otherwise, your mail will stay in the unprocessed label.Would love to move this to a server cron, but this is a side project and I can't be bothered to figure out how to manage server-side gmail API oauth. <b>Patches *very* welcome for this.</b></span> `);
+<b style='font-size:120%'>Privacy</b>
+In theory we could move email processing to the server, but then we would need to store private email data on the server. make-time only stores message data and email addresses in your local browser. make-time specific data (e.g. your make-time filters) and anonymous gmail data (e.g. thread and message IDs) are stored on the make-time server.
+`);
 }
