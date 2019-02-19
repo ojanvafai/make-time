@@ -1,6 +1,6 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {defined, ParsedAddress, showDialog, USER_ID} from './Base.js';
+import {assert, defined, ParsedAddress, showDialog, USER_ID} from './Base.js';
 import {fetchThreads, firestoreUserCollection, getLabels, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
@@ -206,13 +206,25 @@ export class MailProcessor {
       // you can't access. Archive the whole thread for these messages. See
       // https://issuetracker.google.com/issues/122167541.
       let messages = thread.getMessages();
+      assert(
+          messages.length,
+          'This should never happen. Please file a bug if you see this.');
       let inInbox = messages.some(x => x.getLabelIds().includes('INBOX'));
       if (!inInbox) {
-        await gapiFetch(gapi.client.gmail.users.threads.modify, {
-          userId: USER_ID,
-          id: threadId,
-          removeLabelIds: ['INBOX'],
-        });
+        ErrorLogger.log(
+            'Gmail says that this thread is in the inbox, but none of the ' +
+            'messages in the thread are. This is a gmail bug. You need to ' +
+            'archive this thread directly in gmail. If you are seeing this ' +
+            'for threads that are correctly in the inbox, please file a' +
+            'maketime bug. The subject of the thread is ' +
+            thread.getSubject());
+        // TODO: Reenable this code once we're confident it can't be hit
+        // incorrectly.
+        // await gapiFetch(gapi.client.gmail.users.threads.modify, {
+        //   userId: USER_ID,
+        //   id: threadId,
+        //   removeLabelIds: ['INBOX'],
+        // });
       }
 
       // Everything in the inbox should have a labelId and/or a priorityId.
