@@ -1,4 +1,4 @@
-import {notNull} from './Base.js';
+import {assert, notNull} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 
@@ -74,7 +74,8 @@ export class RenderedThread extends HTMLElement {
   }
 
   firstUnreadMessageHeader() {
-    let message = this.querySelector('.unread');
+    let messages = Array.from(this.children);
+    let message = messages.find(x => x.classList.contains('unread'));
     if (!message)
       return null;
     return this.getHeader_(message);
@@ -85,7 +86,9 @@ export class RenderedThread extends HTMLElement {
   }
 
   getHeader_(message: Element) {
-    return notNull(message.querySelector('.headers'));
+    let header = message.firstChild as HTMLElement;
+    assert(header.classList.contains('headers'));
+    return header;
   }
 
   renderMessage_(processedMessage: Message) {
