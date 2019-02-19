@@ -152,7 +152,11 @@ export class Thread extends EventTarget {
   }
 
   private messageCount_() {
-    return this.metadata_.messageIds.length + this.sentMessageIds_.length;
+    let count = this.metadata_.messageIds.length + this.sentMessageIds_.length;
+    assert(
+        count,
+        `Can't modify thread before message details have loaded. Please wait and try again.`);
+    return count;
   }
 
   // Returns the old values for all the fields being updated so that undo can

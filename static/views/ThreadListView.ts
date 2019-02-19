@@ -705,22 +705,10 @@ export class ThreadListView extends View {
   }
 
   renderOne_(toast?: HTMLElement) {
-    let renderedRow = notNull(this.renderedRow_);
-
     if (this.rowGroupContainer_.style.display != 'none')
       this.transitionToSingleThread_();
 
-    let thread = renderedRow.thread;
-    let messages = thread.getMessages();
-    let viewInGmailButton = new ViewInGmailButton();
-    viewInGmailButton.setMessageId(messages[messages.length - 1].id);
-    viewInGmailButton.style.display = 'inline-flex';
-
-    let subject = document.createElement('div');
-    subject.style.flex = '1';
-    subject.append(thread.getSubject());
-    this.setSubject_(subject, viewInGmailButton);
-
+    let renderedRow = notNull(this.renderedRow_);
     let rendered = renderedRow.rendered;
     assert(
         !rendered.isRendered() ||
@@ -728,7 +716,7 @@ export class ThreadListView extends View {
         'Tried to rerender already rendered thread. This should never happen.');
 
     if (!rendered.isRendered()) {
-      renderedRow.rendered.render();
+      rendered.render();
       this.singleThreadContainer_.append(rendered);
     }
 
@@ -738,6 +726,25 @@ export class ThreadListView extends View {
     this.updateActions_();
     if (toast)
       this.addToFooter(toast);
+
+    // If you click on a row before it's pulled in message details, handle it
+    // semi-gracefully.
+    // TODO: Once the message details load, call the code below to add the
+    // subject, etc.
+    let messages = renderedRow.thread.getMessages();
+    if (!messages.length) {
+      this.setSubject_('');
+      return;
+    }
+
+    let viewInGmailButton = new ViewInGmailButton();
+    viewInGmailButton.setMessageId(messages[messages.length - 1].id);
+    viewInGmailButton.style.display = 'inline-flex';
+
+    let subject = document.createElement('div');
+    subject.style.flex = '1';
+    subject.append(renderedRow.thread.getSubject());
+    this.setSubject_(subject, viewInGmailButton);
 
     var elementToScrollTo = rendered.firstUnreadMessageHeader();
     if (!elementToScrollTo)
