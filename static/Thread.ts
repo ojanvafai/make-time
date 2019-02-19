@@ -336,11 +336,6 @@ export class Thread extends EventTarget {
     return this.metadata_;
   }
 
-  async setData(data: ThreadMetadata) {
-    let doc = this.getMetadataDocument_();
-    doc.set(data);
-  }
-
   needsFiltering() {
     return this.metadata_.needsFiltering;
   }
@@ -404,23 +399,22 @@ export class Thread extends EventTarget {
 
   async generateMetadataFromGmailState_(
       historyId: string, messages: gapi.client.gmail.Message[]) {
-    let oldMetadata = this.getData();
-    let newMetadata = Object.assign({}, oldMetadata);
+    let lastMessage = messages[messages.length - 1];
 
-    newMetadata.historyId = historyId;
-    newMetadata.messageIds = messages.flatMap(x => defined(x.id));
+    let newMetadata: ThreadMetadata = {
+      historyId: historyId,
+      messageIds: messages.flatMap(x => defined(x.id)),
+      timestamp: Thread.getTimestamp_(lastMessage),
+    };
 
     this.sentMessageIds_ =
         this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
 
-    let lastMessage = messages[messages.length - 1];
-    newMetadata.timestamp = Thread.getTimestamp_(lastMessage);
-
-    if (oldMetadata.needsFiltering ||
-        messages.length !== oldMetadata.messageIds.length) {
+    if (this.metadata_.needsFiltering ||
+        messages.length !== this.metadata_.messageIds.length) {
       newMetadata.needsFiltering = true;
     }
-    this.setData(newMetadata);
+    this.updateMetadata(newMetadata);
   }
 
   async fetch() {
@@ -542,7 +536,7 @@ export class Thread extends EventTarget {
         metadata.muted = true;
       }
     }
-    this.setData(metadata);
+    this.getMetadataDocument_().set(metadata);
     return addToInbox;
   }
 
