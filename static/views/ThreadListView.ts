@@ -81,6 +81,7 @@ let TOGGLE_FOCUSED_ACTION = {
   description: `Toggle whether or not the focused element is selected.`,
   key: ' ',
   hidden: true,
+  repeatable: true,
 };
 
 let VIEW_FOCUSED_ACTION = {
