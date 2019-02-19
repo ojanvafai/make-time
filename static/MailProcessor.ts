@@ -161,9 +161,13 @@ export class MailProcessor {
   private async fetchFullThread_(threadId: string, historyId: string) {
     let metadata = await Thread.fetchMetadata(threadId);
     let thread = Thread.create(threadId, metadata);
-    await thread.fetch();
+    await thread.fetchFromDisk();
     if (thread.getHistoryId() !== historyId)
       await thread.update();
+    // It's possible to have the same historyId, but to not have the messages
+    // locally on disk, so make sure to fetch any messages firestore knows
+    // about.
+    await thread.syncMessagesInFirestore();
     return thread;
   }
 

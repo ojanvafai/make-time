@@ -24,8 +24,6 @@ export class ThreadListChangedEvent extends Event {
   }
 }
 
-const RENDER_THREAD_YIELD_TIME_MS = 50;
-
 export abstract class ThreadListModel extends Model {
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
@@ -86,26 +84,18 @@ export abstract class ThreadListModel extends Model {
     };
 
     this.threads_.sort(this.compareThreads.bind(this));
-
-    this.fetchThreads(this.getThreadsAsync());
+    this.fetchThreads();
   }
 
-  // TODO: Change this to separate out fetching from the disk and network so we
-  // do all the disk access first and then the network.
-  async fetchThreads(generator: AsyncIterableIterator<Thread>) {
-    let start = window.performance.now();
-    for await (const thread of generator) {
-      await thread.fetch();
-      if (window.performance.now() - start > RENDER_THREAD_YIELD_TIME_MS) {
-        setTimeout(() => this.fetchThreads(generator));
-        return;
-      }
+  async fetchThreads() {
+    for (const thread of this.threads_) {
+      await thread.fetchFromDisk();
     };
-  }
 
-  async * getThreadsAsync() {
-    for (const thread of this.threads_)
-      yield thread;
+    // Do network fetching after we've fetched everything off disk first.
+    for (const thread of this.threads_) {
+      await thread.syncMessagesInFirestore();
+    }
   }
 
   protected compareDates(a: Thread, b: Thread) {

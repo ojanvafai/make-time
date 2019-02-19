@@ -415,19 +415,13 @@ export class Thread extends EventTarget {
       newMetadata.needsFiltering = true;
     }
     this.updateMetadata(newMetadata);
+    // This is technically only needed in the case where updateMetadata didn't
+    // update anything. This happens when firestore is up to date, but the
+    // messages on local disk are stale.
+    this.dispatchEvent(new UpdatedEvent());
   }
 
-  async fetch() {
-    await this.fetchFromDisk_();
-    // The metadata in firestore has more messages than the data in local
-    // storage. Pull in the new messages so we're up to date.
-    // TODO: Pass the messageIds to update. Update does a fetch to get the new
-    // messageIds, but we know the messageIds already from firestore.
-    if (this.processed_.messages.length < this.metadata_.messageIds.length)
-      await this.update();
-  }
-
-  private async fetchFromDisk_() {
+  async fetchFromDisk() {
     if (this.processed_.messages.length)
       return;
 
@@ -437,6 +431,15 @@ export class Thread extends EventTarget {
     let messages = defined(data.messages);
     this.processed_.process(messages);
     this.dispatchEvent(new UpdatedEvent());
+  }
+
+  // The metadata in firestore has more messages than the data in local storage.
+  // Pull in the new messages so we're up to date.
+  async syncMessagesInFirestore() {
+    // TODO: Pass the messageIds to update. Update does a fetch to get the new
+    // messageIds, but we know the messageIds already from firestore.
+    if (this.processed_.messages.length < this.metadata_.messageIds.length)
+      await this.update();
   }
 
   private async fetchFromNetwork_() {

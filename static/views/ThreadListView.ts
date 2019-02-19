@@ -413,7 +413,8 @@ export class ThreadListView extends View {
       this.hasNewRenderedRow_ = false;
       this.renderOne_(toast);
     }
-    this.prerender_();
+    // Do this async so it doesn't block putting up the frame.
+    setTimeout(() => this.prerender_());
   }
 
   private prerender_() {
