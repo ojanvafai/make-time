@@ -4,10 +4,12 @@ import {Message} from './Message.js';
 export class ProcessedMessageData {
   messages: Message[];
   snippet: string;
+  historyId: string;
 
   constructor() {
     this.messages = [];
     this.snippet = '';
+    this.historyId = '';
   }
 
   getSubject() {
@@ -26,7 +28,8 @@ export class ProcessedMessageData {
     return this.messages[this.messages.length - 1].from || '';
   }
 
-  process(rawMessages: gapi.client.gmail.Message[]) {
+  process(historyId: string, rawMessages: gapi.client.gmail.Message[]) {
+    this.historyId = historyId;
     this.snippet = defined(rawMessages[rawMessages.length - 1].snippet);
 
     let oldMessageCount = this.messages.length;

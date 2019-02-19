@@ -12,8 +12,8 @@ import {QueueNames} from './QueueNames.js';
 let memoryCache_: Map<string, Thread> = new Map();
 
 interface SerializedMessages {
-  historyId?: string;
-  messages?: gapi.client.gmail.Message[];
+  historyId: string;
+  messages: gapi.client.gmail.Message[];
 }
 
 export class UpdatedEvent extends Event {
@@ -363,15 +363,11 @@ export class Thread extends EventTarget {
     let historyId = defined(resp.result.historyId);
     let messages = defined(resp.result.messages);
 
-    // The historyId is stored in firestore, so it could have come from a sync
-    // with a different client. Ensure that we have the same list of messages as
-    // well.
-    // TODO: Need to check the actual message IDs since drafts can turn into
-    // messages with a different ID.
-    if (this.getHistoryId() === historyId &&
-        processedMessages.length === messages.length)
+    if (defined(this.processed_).historyId === historyId)
       return;
 
+    // TODO: Need to refetch drafts that were sent. Make the loop below fetch
+    // the message if the messageId has changed.
     for (let i = 0; i < processedMessages.length; i++) {
       let labels = messages[i].labelIds || [];
       processedMessages[i].updateLabels(labels);
@@ -429,16 +425,14 @@ export class Thread extends EventTarget {
     if (!data)
       return;
     let messages = defined(data.messages);
-    this.processed_.process(messages);
+    this.processed_.process(data.historyId, messages);
     this.dispatchEvent(new UpdatedEvent());
   }
 
-  // The metadata in firestore has more messages than the data in local storage.
-  // Pull in the new messages so we're up to date.
+  // If the metadata in firestore doesn't match the one in local
+  // storage, pull in the new messages and labels so we're up to date.
   async syncMessagesInFirestore() {
-    // TODO: Pass the messageIds to update. Update does a fetch to get the new
-    // messageIds, but we know the messageIds already from firestore.
-    if (this.processed_.messages.length < this.metadata_.messageIds.length)
+    if (this.getHistoryId() != this.processed_.historyId)
       await this.update();
   }
 
@@ -456,9 +450,9 @@ export class Thread extends EventTarget {
 
   async saveMessageState_(
       historyId: string, messages: gapi.client.gmail.Message[]) {
-    this.processed_.process(messages);
+    this.processed_.process(historyId, messages);
     await this.generateMetadataFromGmailState_(historyId, messages);
-    await this.serializeMessageData_(messages);
+    await this.serializeMessageData_(historyId, messages);
   }
 
   // Ensure there's only one Thread per id so that we can use reference equality
@@ -568,12 +562,13 @@ export class Thread extends EventTarget {
     return JSON.parse(localData);
   }
 
-  private async serializeMessageData_(messages: gapi.client.gmail.Message[]) {
+  private async serializeMessageData_(
+      historyId: string, messages: gapi.client.gmail.Message[]) {
     let key = this.getKey_(getCurrentWeekNumber(), this.id);
     try {
       await IDBKeyVal.getDefault().set(key, JSON.stringify({
         messages: messages,
-        historyId: this.getHistoryId(),
+        historyId: historyId,
       }));
     } catch (e) {
       console.log('Fail storing message details in IDB.', e);
