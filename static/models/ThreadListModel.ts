@@ -89,6 +89,8 @@ export abstract class ThreadListModel extends Model {
       this.threads_.push(thread);
     };
 
+    // The favicon doesn't support showing 3 digets so cap at 99.
+    mustDoCount = Math.min(99, mustDoCount);
     if (this.faviconCount_ >= 0 && mustDoCount !== this.faviconCount_) {
       this.faviconCount_ = mustDoCount;
       this.updateFavicon_();
