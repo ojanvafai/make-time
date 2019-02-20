@@ -1,8 +1,8 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
-import {assert} from '../Base.js';
+import {assert, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {Labels} from '../Labels.js';
-import {Priority, ThreadMetadataUpdate} from '../Thread.js';
+import {Priority, ThreadMetadataKeys, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
 
 import {Model} from './Model.js';
@@ -29,6 +29,7 @@ export abstract class ThreadListModel extends Model {
   private threads_: Thread[];
   private snapshotToProcess_?: firebase.firestore.QuerySnapshot|null;
   private processSnapshotTimeout_?: number;
+  private faviconCount_: number;
 
   constructor(queryKey: string) {
     super();
@@ -36,6 +37,7 @@ export abstract class ThreadListModel extends Model {
     this.resetUndoableActions_();
     this.threads_ = [];
     this.snapshotToProcess_ = null;
+    this.faviconCount_ = queryKey === ThreadMetadataKeys.hasPriority ? 0 : -1;
 
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
@@ -73,18 +75,65 @@ export abstract class ThreadListModel extends Model {
     let snapshot = assert(this.snapshotToProcess_);
     this.snapshotToProcess_ = null;
 
+    let mustDoCount = 0;
     this.threads_ = [];
     for (let doc of snapshot.docs) {
-      let data = doc.data();
+      let data = doc.data() as ThreadMetadata;
       if (data.blocked || data.queued)
         continue;
+
+      if (data.priorityId === Priority.MustDo)
+        mustDoCount++;
 
       let thread = Thread.create(doc.id, data as ThreadMetadata);
       this.threads_.push(thread);
     };
 
+    if (this.faviconCount_ >= 0 && mustDoCount !== this.faviconCount_) {
+      this.faviconCount_ = mustDoCount;
+      this.updateFavicon_();
+    }
+
     this.threads_.sort(this.compareThreads.bind(this));
     this.fetchThreads();
+  }
+
+  updateFavicon_() {
+    // Don't update the favicon on mobile where it's not visibile in the tab
+    // strip and we want the regular favicon for add to homescreen.
+    if (navigator.userAgent.includes(' Mobile '))
+      return;
+
+    let faviconUrl;
+    if (this.faviconCount_) {
+      let canvas = document.createElement('canvas');
+      canvas.width = 48;
+      canvas.height = 48;
+      let ctx = notNull(canvas.getContext('2d'));
+
+      ctx.fillStyle = 'red';
+      ctx.beginPath();
+      ctx.arc(24, 24, 24, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.font = 'bold 32px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'white';
+      ctx.fillText(String(this.faviconCount_), 24, 24);
+      faviconUrl = canvas.toDataURL();
+    } else {
+      faviconUrl = '/favicon.ico';
+    }
+
+    var link = document.createElement('link');
+    var oldLink = document.getElementById('dynamic-favicon');
+    link.id = 'dynamic-favicon';
+    link.rel = 'shortcut icon';
+    link.href = faviconUrl;
+    if (oldLink)
+      document.head.removeChild(oldLink);
+    document.head.appendChild(link);
   }
 
   async fetchThreads() {
