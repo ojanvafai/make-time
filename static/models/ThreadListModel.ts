@@ -122,7 +122,10 @@ export abstract class ThreadListModel extends Model {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = 'white';
-      ctx.fillText(String(this.faviconCount_), 24, 24);
+      ctx.strokeStyle = 'white';
+      let text = String(this.faviconCount_);
+      ctx.strokeText(text, 24, 24);
+      ctx.fillText(text, 24, 24);
       faviconUrl = canvas.toDataURL();
     } else {
       faviconUrl = '/favicon.ico';
