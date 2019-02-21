@@ -35,7 +35,7 @@ interface ListenerData {
 let ARCHIVE_ACTION = {
   name: `Archive`,
   description: `Archive and remove from the current queue.`,
-  // Done is removing all labels. Use null as a sentinel for that.
+  // TODO: Make this use Labels.ARCHIVE.
   destination: null,
 };
 
@@ -50,14 +50,14 @@ let BLOCKED_ACTION = {
   name: BLOCKED_LABEL_NAME,
   description:
       `Block on action from someone else. Shows up once a day to retriage.`,
-  destination: Labels.BLOCKED_LABEL,
+  destination: Labels.Blocked,
 };
 
 let MUTE_ACTION = {
   name: `Mute`,
   description:
       `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
-  destination: Labels.MUTED_LABEL,
+  destination: Labels.Muted,
 };
 
 let NEXT_ROW_ACTION = {
@@ -129,14 +129,14 @@ let UNDO_ACTION = {
 let MUST_DO_ACTION = {
   name: MUST_DO_PRIORITY_NAME,
   description: `Must do today. Literally won't go home till it's done.`,
-  destination: Labels.MUST_DO_LABEL,
+  destination: Labels.MustDo,
   key: '1',
 };
 
 let URGENT_ACTION = {
   name: URGENT_PRIORITY_NAME,
   description: `Needs to happen ASAP.`,
-  destination: Labels.URGENT_LABEL,
+  destination: Labels.Urgent,
   key: '2',
 };
 
@@ -144,7 +144,7 @@ let BACKLOG_ACTION = {
   name: BACKLOG_PRIORITY_NAME,
   description:
       `Important for achieving my mission, but can be done at leisure.`,
-  destination: Labels.BACKLOG_LABEL,
+  destination: Labels.Backlog,
   key: '3',
 };
 
@@ -153,7 +153,7 @@ let NEEDS_FILTER_ACTION = {
   shortName: 'Filter',
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
-  destination: Labels.NEEDS_FILTER_LABEL,
+  destination: Labels.NeedsFilter,
   key: 'f',
 };
 
@@ -205,8 +205,7 @@ export class ThreadListView extends View {
   private sendAs_?: SendAs;
 
   constructor(
-      private model_: ThreadListModel, public allLabels: Labels,
-      private scrollContainer_: HTMLElement,
+      private model_: ThreadListModel, private scrollContainer_: HTMLElement,
       public updateTitle:
           (key: string, count: number,
            ...title: (HTMLElement|string)[]) => RadialProgress,

@@ -1,14 +1,13 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined, ParsedAddress, showDialog, USER_ID} from './Base.js';
-import {fetchThreads, firestoreUserCollection, getLabels, getServerStorage} from './BaseMain.js';
+import {assert, defined, ParsedAddress, USER_ID} from './Base.js';
+import {fetchThreads, firestoreUserCollection, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {QueueNames} from './QueueNames.js';
 import {QueueSettings} from './QueueSettings.js';
-import {RadialProgress} from './RadialProgress.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {BuiltInLabels, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
@@ -19,57 +18,6 @@ export class MailProcessor {
   async process() {
     await this.processQueues_();
     await this.syncWithGmail_();
-  }
-
-  // TODO: Delete this once all clients have upgraded.
-  async migrateThreadsToFirestore() {
-    let labels = await getLabels();
-    let labelsToMigrate = [
-      ...(labels.getNeedsTriageLabelNames()),
-      ...(labels.getQueuedLabelNames()),
-      ...(labels.getPriorityLabelNames()),
-      Labels.MUTED_LABEL,
-    ];
-
-    if (!labelsToMigrate.length)
-      return false;
-
-    let idsToRemove = labelsToMigrate.map(x => labels.getId(x));
-    let query = 'in:' + labelsToMigrate.join(' OR in:');
-    let threadsToMigrate: gapi.client.gmail.Thread[] = [];
-    await fetchThreads(x => threadsToMigrate.push(x), query);
-
-    if (!threadsToMigrate.length)
-      return false;
-
-    let progress = new RadialProgress();
-    progress.addToTotal(threadsToMigrate.length);
-    let dialogContents = document.createElement('div');
-    dialogContents.append(
-        `Migrating ${threadsToMigrate.length} threads.`, progress);
-    let dialog = showDialog(dialogContents);
-
-    for (let gmailThread of threadsToMigrate) {
-      let thread = await this.fetchFullThread_(
-          defined(gmailThread.id), defined(gmailThread.historyId));
-
-      // Migrate labels to firestore.
-      let addToInbox = await thread.migrateMaketimeLabelsToFirestore();
-      // Remove the labels from the thread so we don't keep migrating on each
-      // update and add everything but muted to the inbox since queued and
-      // prioritized threads are now also in the inbox.
-      await gapiFetch(gapi.client.gmail.users.threads.modify, {
-        'userId': USER_ID,
-        'id': thread.id,
-        'addLabelIds': addToInbox ? ['INBOX'] : [],
-        'removeLabelIds': idsToRemove,
-      });
-
-      progress.incrementProgress();
-    };
-
-    dialog.close();
-    return true;
   }
 
   // Only remove labels from messages that were seen by the user at the time
@@ -406,7 +354,7 @@ export class MailProcessor {
 
     // Ensure there's always some label to make sure bugs don't cause emails
     // to get lost silently.
-    return Labels.FALLBACK_LABEL;
+    return Labels.Fallback;
   }
 
   private async processThread_(thread: Thread) {
@@ -419,7 +367,7 @@ export class MailProcessor {
       let rules = await this.settings.getFilters();
       let label = this.getWinningLabel_(thread, rules);
 
-      if (label == Labels.ARCHIVE_LABEL) {
+      if (label == Labels.Archive) {
         await thread.archive();
         return;
       }

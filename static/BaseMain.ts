@@ -15,7 +15,6 @@ usedForSideEffects2;
 import {AsyncOnce} from './AsyncOnce.js';
 import {assert, getDefinitelyExistsElementById, USER_ID, notNull} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
-import {Labels} from './Labels.js';
 import {gapiFetch} from './Net.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
@@ -35,7 +34,6 @@ interface TitleEntry {
 }
 
 let storage_ = new ServerStorage();
-let labels_ = new Labels();
 let sendAs_ = new SendAs();
 let settings_: Settings;
 let titleStack_: TitleEntry[] = [];
@@ -79,11 +77,6 @@ let SCOPES = [
 ];
 
 let isSignedIn_ = false;
-
-export async function getLabels() {
-  await login();
-  return labels_;
-}
 
 export async function getSettings() {
   await login();
@@ -178,7 +171,6 @@ async function login_() {
 
           await Promise.all([
             storage_.fetch(),
-            labels_.fetch(),
             sendAs_.fetch(),
             new QueueNames().fetch(),
           ]);

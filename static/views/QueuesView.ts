@@ -122,8 +122,8 @@ export class QueuesView extends HTMLElement {
       queues.add(defined(rule.label));
     }
 
-    queues.delete(Labels.ARCHIVE_LABEL);
-    queues.add(Labels.FALLBACK_LABEL);
+    queues.delete(Labels.Archive);
+    queues.add(Labels.Fallback);
 
     // TODO: Show help text if there are no queues.
     let scrollable = document.createElement('div');

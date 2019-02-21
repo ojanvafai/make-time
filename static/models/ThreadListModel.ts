@@ -173,13 +173,13 @@ export abstract class ThreadListModel extends Model {
 
   protected destinationToPriority(destination: string|null) {
     switch (destination) {
-      case Labels.MUST_DO_LABEL:
+      case Labels.MustDo:
         return Priority.MustDo;
-      case Labels.URGENT_LABEL:
+      case Labels.Urgent:
         return Priority.Urgent;
-      case Labels.BACKLOG_LABEL:
+      case Labels.Backlog:
         return Priority.Backlog;
-      case Labels.NEEDS_FILTER_LABEL:
+      case Labels.NeedsFilter:
         return Priority.NeedsFilter;
       default:
         return null;
@@ -199,11 +199,11 @@ export abstract class ThreadListModel extends Model {
           oldState = await thread.archive();
           break;
 
-        case Labels.BLOCKED_LABEL:
+        case Labels.Blocked:
           oldState = await thread.setBlocked();
           break;
 
-        case Labels.MUTED_LABEL:
+        case Labels.Muted:
           oldState = await thread.setMuted();
           break;
 

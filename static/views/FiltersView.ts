@@ -187,7 +187,7 @@ export class FiltersView extends HTMLElement {
     label.disabled = true;
     label.classList.add('label');
     label.style.cssText = `width: 50px;`;
-    label.value = Labels.FALLBACK_LABEL;
+    label.value = Labels.Fallback;
     this.appendCell_(container, label);
 
     this.appendCell_(container, 'This label is applied when no filters match.');

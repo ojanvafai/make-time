@@ -1,9 +1,8 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {assert, defined, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, serializeAddress, USER_ID} from './Base.js';
-import {firestoreUserCollection, getLabels} from './BaseMain.js';
+import {firestoreUserCollection} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
-import {Labels} from './Labels.js';
 import {send} from './Mail.js';
 import {gapiFetch} from './Net.js';
 import {ProcessedMessageData} from './ProcessedMessageData.js';
@@ -467,74 +466,6 @@ export class Thread extends EventTarget {
       memoryCache_.set(id, entry);
     }
     return entry;
-  }
-
-  async migrateMaketimeLabelsToFirestore() {
-    let removeLabelPrefix = (labelName: string, prefix: string) => {
-      return labelName.replace(new RegExp(`^${prefix}/`), '');
-    };
-
-    let messages = this.getRawMessages_();
-    let metadata = this.getData();
-
-    let lastMessage = messages[messages.length - 1];
-    metadata.timestamp = Thread.getTimestamp_(lastMessage);
-
-    let addToInbox = false;
-
-    let labelIds = new Set(messages.flatMap(x => defined(x.labelIds)));
-    for (let id of labelIds) {
-      let name = await (await getLabels()).getName(id);
-      if (!name) {
-        console.log(`Label id does not exist. WTF. ${id}`);
-        continue;
-      }
-
-      if (Labels.isNeedsTriageLabel(name)) {
-        let label = removeLabelPrefix(name, Labels.NEEDS_TRIAGE_LABEL);
-        metadata.labelId = await this.queueNames_.getId(label);
-        metadata.hasLabel = true;
-        addToInbox = true;
-      } else if (name === Labels.BLOCKED_LABEL) {
-        metadata.blocked = true;
-        addToInbox = true;
-      } else if (Labels.isQueuedLabel(name)) {
-        let label = removeLabelPrefix(name, Labels.QUEUED_LABEL);
-        metadata.labelId = await this.queueNames_.getId(label);
-        metadata.hasLabel = true;
-        metadata.queued = true;
-        addToInbox = true;
-      } else if (Labels.isPriorityLabel(name)) {
-        let priority;
-        switch (name) {
-          case Labels.MUST_DO_LABEL:
-            priority = Priority.MustDo;
-            break;
-
-          case Labels.URGENT_LABEL:
-            priority = Priority.Urgent;
-            break;
-
-          case Labels.BACKLOG_LABEL:
-            priority = Priority.Backlog;
-            break;
-
-          case Labels.NEEDS_FILTER_LABEL:
-            priority = Priority.NeedsFilter;
-            break;
-
-          default:
-            throw new Error('This should never happen.');
-        }
-        metadata.priorityId = priority;
-        metadata.hasPriority = true;
-        addToInbox = true;
-      } else if (name == Labels.MUTED_LABEL) {
-        metadata.muted = true;
-      }
-    }
-    this.getMetadataDocument_().set(metadata);
-    return addToInbox;
   }
 
   private getKey_(weekNumber: number, threadId: string) {

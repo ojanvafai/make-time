@@ -1,6 +1,6 @@
 import {getActionKey, getActions} from './Actions.js';
 import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById, showDialog} from './Base.js';
-import {firestore, getLabels, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {firestore, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
@@ -244,9 +244,9 @@ async function createThreadListView(
       settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
   return new ThreadListView(
-      model, await getLabels(), content, updateLoaderTitle, setSubject,
-      showBackArrow, allowedReplyLength, autoStartTimer, countDown,
-      timerDuration, bottomButtonUrl, bottomButtonText);
+      model, content, updateLoaderTitle, setSubject, showBackArrow,
+      allowedReplyLength, autoStartTimer, countDown, timerDuration,
+      bottomButtonUrl, bottomButtonText);
 }
 
 async function resetModels() {
@@ -322,13 +322,6 @@ async function onLoad() {
     await resetModels();
     await routeToCurrentLocation();
   });
-
-  // TODO: Delete this one all clients are upgraded.
-  let mailProcessor = new MailProcessor(await getSettings());
-  // This will process at most 500 threads at a time, so do in a loop until it's
-  // done. Returns true if there might be more threads to migrate.
-  while (await mailProcessor.migrateThreadsToFirestore()) {
-  }
 
   appendMenu();
   await routeToCurrentLocation();
