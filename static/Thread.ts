@@ -278,7 +278,7 @@ export class Thread extends EventTarget {
       case Priority.Backlog:
         return BACKLOG_PRIORITY_NAME;
     }
-    throw new Error('This should never happen.');
+    return null;
   }
 
   getHistoryId() {

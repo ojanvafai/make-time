@@ -163,6 +163,7 @@ export class MailProcessor {
     let progress = updateLoaderTitle(
         'MailProcessor.processThreads_', threads.length, 'Updating...');
 
+    let processPromises_ = [];
     for (let thread of threads) {
       progress.incrementProgress();
       // If we got here, then the thread definitely needs updating in case new
@@ -202,9 +203,14 @@ export class MailProcessor {
       if (thread.needsFiltering() ||
           (!thread.getLabelId() && !thread.getPriorityId() &&
            !thread.isBlocked())) {
-        await this.processThread_(thread);
+        // Intentionally don't await this so that we start fetching the next
+        // thread in parallel with the CPU intensive work of processing this
+        // one.
+        processPromises_.push(this.processThread_(thread));
       }
     }
+    // Ensure all the processing is done before returning.
+    await Promise.all(processPromises_);
   }
 
   private async clearThreadMetadata_(ids: Iterable<string>) {

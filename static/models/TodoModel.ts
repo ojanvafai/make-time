@@ -1,4 +1,4 @@
-import {defined} from '../Base.js';
+import {defined, notNull} from '../Base.js';
 import {Priority, PrioritySortOrder, ThreadMetadataKeys} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
@@ -17,7 +17,7 @@ export class TodoModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    return thread.getPriority();
+    return notNull(thread.getPriority());
   }
 
   showPriorityLabel() {
