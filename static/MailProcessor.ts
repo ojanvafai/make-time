@@ -1,7 +1,7 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {assert, defined, ParsedAddress, USER_ID} from './Base.js';
-import {fetchThreads, firestoreUserCollection, getServerStorage} from './BaseMain.js';
+import {fetchThreads, firestoreUserCollection, getServerStorage, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -106,19 +106,6 @@ export class MailProcessor {
     }
   }
 
-  private async fetchFullThread_(threadId: string, historyId: string) {
-    let metadata = await Thread.fetchMetadata(threadId);
-    let thread = Thread.create(threadId, metadata);
-    await thread.fetchFromDisk();
-    if (thread.getHistoryId() !== historyId)
-      await thread.update();
-    // It's possible to have the same historyId, but to not have the messages
-    // locally on disk, so make sure to fetch any messages firestore knows
-    // about.
-    await thread.syncMessagesInFirestore();
-    return thread;
-  }
-
   private async syncWithGmail_() {
     // Add back in threads that were archived and then undone.
     await this.moveToInbox_();
@@ -142,13 +129,45 @@ export class MailProcessor {
     let hasPriorityIds = prioritySnapshot.docs.map(x => x.id);
 
     let existingIds = new Set([...hasLabelIds, ...hasPriorityIds]);
+    let threadsToUpdate: Thread[] = [];
 
-    // Update maketime with anything in the inbox.
+    // Fetch everything in the inbox pulling in the thread state off disk so we
+    // can check historyIds to see if we need to update the thread. Generate the
+    // list of threads that need updating first and then update in a second pass
+    // so that we can show the user a progress indicator for the slow step that
+    // involves network and CPU processing. Don't show a progress indicator for
+    // this first fetchThreads call as the common case will be that there are no
+    // threads that need updating, so don't want to flicker the UI.
     await fetchThreads(async (gmailThread: gapi.client.gmail.Thread) => {
       let threadId = defined(gmailThread.id);
-      let thread =
-          await this.fetchFullThread_(threadId, defined(gmailThread.historyId));
       existingIds.delete(threadId);
+
+      let metadata = await Thread.fetchMetadata(threadId);
+      let thread = Thread.create(threadId, metadata);
+      await thread.fetchFromDisk();
+
+      if (thread.mightNeedUpdate(defined(gmailThread.historyId)))
+        threadsToUpdate.push(thread);
+    }, `in:inbox`);
+
+    if (threadsToUpdate.length)
+      this.processThreads_(threadsToUpdate);
+
+    // For anything that used to be in the inbox, but isn't anymore (e.g. the
+    // user archived from gmail), clear it's metadata so it doesn't show up in
+    // maketime either.
+    await this.clearThreadMetadata_(existingIds);
+  }
+
+  private async processThreads_(threads: Thread[]) {
+    let progress = updateLoaderTitle(
+        'MailProcessor.processThreads_', threads.length, 'Updating...');
+
+    for (let thread of threads) {
+      progress.incrementProgress();
+      // If we got here, then the thread definitely needs updating in case new
+      // messages came in.
+      await thread.update();
 
       // Gmail has phantom messages that keep threads in the inbox but that
       // you can't access. Archive the whole thread for these messages. See
@@ -185,12 +204,7 @@ export class MailProcessor {
            !thread.isBlocked())) {
         await this.processThread_(thread);
       }
-    }, `in:inbox`);
-
-    // For anything that used to be in the inbox, but isn't anymore (e.g. the
-    // user archived from gmail), clear it's metadata so it doesn't show up in
-    // maketime either.
-    await this.clearThreadMetadata_(existingIds);
+    }
   }
 
   private async clearThreadMetadata_(ids: Iterable<string>) {
