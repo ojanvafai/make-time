@@ -48,6 +48,7 @@ export abstract class ThreadListModel extends Model {
   protected abstract compareThreads(a: Thread, b: Thread): number;
   protected abstract shouldShowThread(thread: Thread): boolean;
   abstract getGroupName(thread: Thread): string;
+  abstract showPriorityLabel(): boolean;
 
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.

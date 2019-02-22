@@ -34,6 +34,10 @@ export class TriageModel extends ThreadListModel {
     return notNull(thread.getLabel());
   }
 
+  showPriorityLabel() {
+    return true;
+  }
+
   protected compareThreads(a: Thread, b: Thread) {
     // Sort by queue, then by date.
     let aGroup = notNull(a.getLabel());

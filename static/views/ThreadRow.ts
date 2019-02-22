@@ -28,12 +28,14 @@ let SAME_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
 class RowState {
   constructor(
       public subject: string, public snippet: string, public from: string,
-      public count: number, public lastMessageId: string) {}
+      public count: number, public lastMessageId: string,
+      public label: string|null) {}
 
   equals(other: RowState) {
     return this.subject === other.subject && this.snippet === other.snippet &&
         this.from === other.from && this.count === other.count &&
-        this.lastMessageId === other.lastMessageId;
+        this.lastMessageId === other.lastMessageId &&
+        this.label === other.label;
   }
 }
 
@@ -48,7 +50,7 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
 
-  constructor(public thread: Thread) {
+  constructor(public thread: Thread, private labelIsPriority_: boolean) {
     super();
     this.style.cssText = `
       display: flex;
@@ -149,9 +151,11 @@ export class ThreadRow extends HTMLElement {
   renderRow_() {
     let snippetText = this.thread.getSnippet();
     let messageIds = this.thread.getMessageIds();
+    let secondaryName = this.labelIsPriority_ ? this.thread.getPriority() :
+                                                this.thread.getLabel();
     let state = new RowState(
         this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
-        messageIds.length, messageIds[messageIds.length - 1]);
+        messageIds.length, messageIds[messageIds.length - 1], secondaryName);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -190,21 +194,36 @@ export class ThreadRow extends HTMLElement {
 
     if (state.count > 1)
       count.textContent = String(state.count);
-
     fromContainer.append(from, count);
 
-    let snippet = document.createElement('span');
-    snippet.style.color = '#666';
-    // Snippet as returned by the gmail API is html escaped.
-    snippet.innerHTML = state.snippet;
-
     let title = document.createElement('div');
-    title.append(state.subject || '\xa0', snippet);
     title.style.cssText = `
       overflow: hidden;
       margin-right: 25px;
       flex: 1;
     `;
+
+    if (state.label) {
+      let label = document.createElement('div');
+      label.style.cssText = `
+        display: inline-block;
+        color: #666;
+        background-color: #ddd;
+        font-size: 0.75rem;
+        line-height: 18px;
+        border-radius: 4px;
+        padding: 0 4px;
+        margin-right: 4px;
+      `;
+      label.append(state.label);
+      title.append(label);
+    }
+
+    let snippet = document.createElement('span');
+    snippet.style.color = '#666';
+    // Snippet as returned by the gmail API is html escaped.
+    snippet.innerHTML = state.snippet;
+    title.append(state.subject || '\xa0', snippet);
 
     let date = document.createElement('div');
     date.textContent = this.dateString_(this.thread.getDate());

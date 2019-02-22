@@ -20,6 +20,10 @@ export class TodoModel extends ThreadListModel {
     return thread.getPriority();
   }
 
+  showPriorityLabel() {
+    return false;
+  }
+
   protected compareThreads(a: Thread, b: Thread) {
     let aPriority = defined(a.getPriorityId());
     let bPriority = defined(b.getPriorityId());
