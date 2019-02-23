@@ -1,7 +1,7 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {assert, defined, ParsedAddress, USER_ID} from './Base.js';
-import {fetchThreads, firestoreUserCollection, getServerStorage, updateLoaderTitle} from './BaseMain.js';
+import {FetchRequestParameters, firestoreUserCollection, getServerStorage, updateLoaderTitle} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -107,28 +107,25 @@ export class MailProcessor {
   }
 
   private async syncWithGmail_() {
-    // Add back in threads that were archived and then undone.
-    await this.moveToInbox_();
-
-    // Flush any pending archives/markReads from maketime.
-    await this.removeGmailLabels_(
-        ThreadMetadataKeys.countToArchive, ['INBOX', 'UNREAD']);
-    await this.removeGmailLabels_(
-        ThreadMetadataKeys.countToMarkRead, ['UNREAD']);
-
+    // Add back in threads that were archived and then undone and
+    // flush any pending archives/markReads from maketime.
+    // Do these in parallel to minimize network round trips.
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
-    let labelSnapshot =
-        await metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true)
-            .get();
-    let hasLabelIds = labelSnapshot.docs.map(x => x.id);
-    let prioritySnapshot =
-        await metadataCollection
-            .where(ThreadMetadataKeys.hasPriority, '==', true)
-            .get();
-    let hasPriorityIds = prioritySnapshot.docs.map(x => x.id);
+    let [labelSnapshot, prioritySnapshot] = await Promise.all([
+      metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true).get(),
+      metadataCollection.where(ThreadMetadataKeys.hasPriority, '==', true)
+          .get(),
+      this.moveToInbox_(),
+      this.removeGmailLabels_(
+          ThreadMetadataKeys.countToArchive, ['INBOX', 'UNREAD']),
+      this.removeGmailLabels_(ThreadMetadataKeys.countToMarkRead, ['UNREAD'])
+    ]);
 
-    let existingIds = new Set([...hasLabelIds, ...hasPriorityIds]);
+    let existingIds = new Set([
+      ...labelSnapshot.docs.map(x => x.id),
+      ...prioritySnapshot.docs.map(x => x.id)
+    ]);
     let threadsToUpdate: Thread[] = [];
 
     // Fetch everything in the inbox pulling in the thread state off disk so we
@@ -138,18 +135,25 @@ export class MailProcessor {
     // involves network and CPU processing. Don't show a progress indicator for
     // this first fetchThreads call as the common case will be that there are no
     // threads that need updating, so don't want to flicker the UI.
-    await fetchThreads(async (gmailThread: gapi.client.gmail.Thread) => {
-      let threadId = defined(gmailThread.id);
+    // This has to happen after the removeGmailLabels_ calls above as those
+    // calls remove threads from the inbox.
+    let threads = await this.fetchInboxThreads_();
+
+    // Do these in parallel instead of in a for loop so that we saturate both
+    // network and disk fetches instead of serializing them.
+    let metadataFetches = threads.map(async x => {
+      let threadId = defined(x.id);
       existingIds.delete(threadId);
 
       let metadata = await Thread.fetchMetadata(threadId);
       let thread = Thread.create(threadId, metadata);
       await thread.fetchFromDisk();
 
-      if (thread.mightNeedUpdate(defined(gmailThread.historyId)))
+      if (thread.mightNeedUpdate(defined(x.historyId)))
         threadsToUpdate.push(thread);
-    }, `in:inbox`);
+    });
 
+    await Promise.all(metadataFetches);
     if (threadsToUpdate.length)
       this.processThreads_(threadsToUpdate);
 
@@ -157,6 +161,32 @@ export class MailProcessor {
     // user archived from gmail), clear it's metadata so it doesn't show up in
     // maketime either.
     await this.clearThreadMetadata_(existingIds);
+  }
+
+  async fetchInboxThreads_() {
+    // Chats don't expose their bodies in the gmail API, so just skip them.
+    let query = `in:inbox AND -in:chats`;
+    let threads: gapi.client.gmail.Thread[] = [];
+
+    let getPageOfThreads = async (opt_pageToken?: string) => {
+      let requestParams = <FetchRequestParameters>{
+        'userId': USER_ID,
+        'q': query,
+      };
+
+      if (opt_pageToken)
+        requestParams.pageToken = opt_pageToken;
+
+      let resp =
+          await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
+      threads = threads.concat(resp.result.threads || []);
+
+      if (resp.result.nextPageToken)
+        await getPageOfThreads(resp.result.nextPageToken);
+    };
+
+    await getPageOfThreads();
+    return threads;
   }
 
   private async processThreads_(threads: Thread[]) {

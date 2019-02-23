@@ -277,44 +277,11 @@ function updateTitleBase(
     node.append(...stack[stack.length - 1].title);
 }
 
-interface FetchRequestParameters {
+export interface FetchRequestParameters {
   userId: string;
   q: string;
   pageToken?: string;
   maxResults?: number;
-}
-
-export async function fetchThreads(
-    forEachThread: (thread: gapi.client.gmail.Thread) => void, query: string) {
-  // If the query is empty or just whitespace, then we would fetch all mail by
-  // accident.
-  assert(query.trim() !== '');
-
-  // Chats don't expose their bodies in the gmail API, so just skip them.
-  query = `(${query}) AND -in:chats`;
-
-  let getPageOfThreads = async (opt_pageToken?: string) => {
-    let requestParams = <FetchRequestParameters>{
-      'userId': USER_ID,
-      'q': query,
-    };
-
-    if (opt_pageToken)
-      requestParams.pageToken = opt_pageToken;
-
-    let resp =
-        await gapiFetch(gapi.client.gmail.users.threads.list, requestParams);
-    let threads = resp.result.threads || [];
-    for (let rawThread of threads) {
-      await forEachThread(rawThread);
-    }
-
-    let nextPageToken = resp.result.nextPageToken;
-    if (nextPageToken)
-      await getPageOfThreads(nextPageToken);
-  };
-
-  await getPageOfThreads();
 }
 
 let MAX_RESULTS_CAP = 500;

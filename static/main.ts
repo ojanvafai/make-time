@@ -495,7 +495,7 @@ function isEditable(element: Element) {
   return false;
 }
 
-document.addEventListener('visibilitychange', function() {
+document.addEventListener('visibilitychange', () => {
   if (document.visibilityState == 'visible')
     update();
 });
