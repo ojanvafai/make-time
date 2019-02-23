@@ -577,9 +577,10 @@ export class Thread extends EventTarget {
     }
 
     let message = await send(text, to, subject, sender, headers, this.id);
-    if (message.threadId === this.id) {
-      assert(replyType !== ReplyType.Forward);
+    // If the message is in this same thread, then account for it appropriately
+    // in the message counts. This can happen even if it's a forward, e.g. if
+    // you forward to yourself.
+    if (message.threadId === this.id)
       this.sentMessageIds_.push(defined(message.id));
-    }
   }
 }
