@@ -117,26 +117,27 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
       addDuration(TYPE_UNBOOKED_LARGE, unbookedDuration);
   };
 
-  let minutesMap = new Map();
-  let addMinutesPerType = (day: Date) => {
-    minutesPerType = new Map()
+  let getMinutesPerType = (day: Date) => {
     let cloned = new Date(day);
     cloned.setHours(0, 0, 0);
-    minutesMap.set(cloned.getTime(), minutesPerType);
+    return minutesMap.get(cloned.getTime());
   };
 
+  let minutesMap = new Map();
   let setMinutesPerType = (day: Date) => {
-    let cloned = new Date(day);
-    cloned.setHours(0, 0, 0);
-    minutesPerType = minutesMap.get(cloned.getTime());
-    if (!minutesPerType)
+    minutesPerType = getMinutesPerType(day);
+    if (!minutesPerType) {
       minutesPerType = new Map();
+      let cloned = new Date(day);
+      cloned.setHours(0, 0, 0);
+      minutesMap.set(cloned.getTime(), minutesPerType);
+    }
   };
 
   let currentDay = new Date(events[0].start);
   currentDay.setHours(WORKING_DAY_START, 0, 0);
   let unbookedStart = currentDay;
-  addMinutesPerType(currentDay);
+  setMinutesPerType(currentDay);
 
   events.sort(sortEvents);
   for (let event of events) {
@@ -154,7 +155,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
       addUnbookedDuration(duration);
       currentDay = tsDay;
       unbookedStart = tsDay;
-      addMinutesPerType(currentDay);
+      setMinutesPerType(currentDay);
     }
 
     let start = event.start;
@@ -170,10 +171,18 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
       getDurationOverlappingWorkDay(unbookedStart, currentDay, currentDay);
   addUnbookedDuration(duration);
 
+  const WHOLE_DAY_DURATION_MS =
+      60 * 60 * 1000 * (WORKING_DAY_END - WORKING_DAY_START);
   // TODO - insert a change at the beginning and end of each day
   // and handle empty event change regions.
   for (const curDay = firstDay; curDay.getTime() <= lastDay.getTime();
        curDay.setDate(curDay.getDate() + 1)) {
+    // Any day that doesn't have a minutePerType entry is a day with no events
+    // at all in it, so mark the whole day as unbooked.
+    if (!getMinutesPerType(curDay)) {
+      setMinutesPerType(curDay);
+      addUnbookedDuration(WHOLE_DAY_DURATION_MS);
+    }
     const dayStart = new Date(curDay);
     dayStart.setHours(WORKING_DAY_START, 0, 0);
     const dayEnd = new Date(curDay);
