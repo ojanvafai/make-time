@@ -19,7 +19,7 @@ export class Aggregate {
         notMeTime += value;
     }
     if (total > 0)
-      return Math.ceil(100 * (total - notMeTime) / total) + '%';
+      return Math.ceil(100 * notMeTime / total) + '%';
     return '';
   }
 }
