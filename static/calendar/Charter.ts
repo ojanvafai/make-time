@@ -12,6 +12,13 @@ function hexToRGB(hex: string): string {
 
 type DateRange = [number, number];
 
+interface PlotlySeries {
+  x: (Date|number)[], y: (number|string)[], name: string, type: string,
+      marker: {
+        color: string,
+      },
+}
+
 export class Charter {
   private colors: AsyncOnce<any>;
 
@@ -25,16 +32,28 @@ export class Charter {
     });
   }
 
+  // In theory we can use Dates directly in plotly, but the annotations go crazy
+  // when we do. They all get bunched up at the start of the x-axis at
+  // positon 2.5 (note...not a date!). Passing the date as a timestamp and
+  // annotating the type as a date in the layout seems to resolve it.
+  getTimestamp(date: Date) {
+    return new Date(date.getUTCFullYear(), date.getMonth(), date.getDate())
+        .getTime();
+  }
+
   async chartData(aggregates: Aggregate[], divId: string, range: DateRange) {
     let colors = await this.colors.do();
-    const dates = aggregates.map(day => day.start);
-
-    interface PlotlySeries {
-      x: Date[], y: (number|string)[], name: string, type: string, marker: {
-        color: string,
-      }
-    }
+    const dates = aggregates.map(day => this.getTimestamp(day.start));
     const data: PlotlySeries[] = [];
+
+    let annotations = aggregates.map((day) => {
+      let date = this.getTimestamp(day.start);
+      let percent = day.bookedPercentage();
+      return {
+        x: date, xref: 'x', textangle: 270, yref: 'paper', text: percent,
+            showarrow: false, bgcolor: 'white', opacity: 0.8,
+      }
+    });
 
     for (let type of TYPES.keys()) {
       const calendarColor = colors[TYPES.get(type)!];
@@ -60,8 +79,11 @@ export class Charter {
     }
 
     // @ts-ignore
-    Plotly.newPlot(
-        divId, data,
-        {barmode: 'stack', yaxis: {title: 'Hours'}, xaxis: {range: range}});
+    Plotly.newPlot(divId, data, {
+      barmode: 'stack',
+      yaxis: {title: 'Hours'},
+      xaxis: {type: 'date', range: range},
+      annotations: annotations,
+    });
   }
 }
