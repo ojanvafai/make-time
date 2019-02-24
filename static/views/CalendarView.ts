@@ -1,4 +1,5 @@
 import {Action, registerActions} from '../Actions.js';
+import {Aggregate} from '../calendar/Aggregate.js';
 import {Calendar} from '../calendar/Calendar.js';
 import {Charter} from '../calendar/Charter.js';
 
@@ -42,23 +43,25 @@ export class CalendarView extends View {
   async init() {
     await this.model_.init();
     const charter = new Charter();
+
     const days = await this.model_.getDayAggregates();
-    const weeks = await this.model_.getWeekAggregates();
+    await this.chartData_(charter, this.dayPlot.id, days, 14)
 
+    // Do this async so we show the day chart ASAP.
+    setTimeout(async () => {
+      const weeks = await this.model_.getWeekAggregates();
+      await this.chartData_(charter, this.weekPlot.id, weeks, 90);
+    });
+  }
+
+  private async chartData_(
+      charter: Charter, plotId: string, data: Aggregate[], buffer: number) {
     let startDate = new Date();
-    startDate.setDate(startDate.getDate() - 14);
+    startDate.setDate(startDate.getDate() - buffer);
     let endDate = new Date();
-    endDate.setDate(endDate.getDate() + 14);
-    charter.chartData(
-        days, this.dayPlot.id, [startDate.getTime(), endDate.getTime()]);
-
-    let weekStartDate = new Date();
-    weekStartDate.setDate(weekStartDate.getDate() - 90);
-    let weekEndDate = new Date();
-    weekEndDate.setDate(weekEndDate.getDate() + 90);
-    charter.chartData(
-        weeks, this.weekPlot.id,
-        [weekStartDate.getTime(), weekEndDate.getTime()]);
+    endDate.setDate(endDate.getDate() + buffer);
+    await charter.chartData(
+        data, plotId, [startDate.getTime(), endDate.getTime()]);
   }
 
   async takeAction(action: Action) {
