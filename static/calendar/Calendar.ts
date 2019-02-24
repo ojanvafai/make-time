@@ -177,12 +177,6 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   // and handle empty event change regions.
   for (const curDay = firstDay; curDay.getTime() <= lastDay.getTime();
        curDay.setDate(curDay.getDate() + 1)) {
-    // Any day that doesn't have a minutePerType entry is a day with no events
-    // at all in it, so mark the whole day as unbooked.
-    if (!getMinutesPerType(curDay)) {
-      setMinutesPerType(curDay);
-      addUnbookedDuration(WHOLE_DAY_DURATION_MS);
-    }
     const dayStart = new Date(curDay);
     dayStart.setHours(WORKING_DAY_START, 0, 0);
     const dayEnd = new Date(curDay);
@@ -243,8 +237,13 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
     const tsDay = new Date(ts);
     tsDay.setHours(0, 0, 0);
     if (tsDay.getTime() != day.getTime()) {
-      if (day.getDay() != 0 && day.getDay() != 6)
+      if (day.getDay() != 0 && day.getDay() != 6) {
+        // If there are no events on this day, then consider the whole day
+        // unbooked.
+        if (!minutesPerType!.size)
+          addUnbookedDuration(WHOLE_DAY_DURATION_MS);
         aggregates.push(new Aggregate(new Date(day), minutesPerType!));
+      }
       day.setDate(day.getDate() + 1);
       setMinutesPerType(day);
     }
