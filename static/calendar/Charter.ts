@@ -48,7 +48,7 @@ export class Charter {
 
     let annotations = aggregates.map((day) => {
       let date = this.getTimestamp(day.start);
-      let percent = day.bookedPercentage();
+      let percent = day.meTimePercentage();
       return {
         x: date, xref: 'x', textangle: 270, yref: 'paper', text: percent,
             showarrow: false, bgcolor: 'white', opacity: 0.8,

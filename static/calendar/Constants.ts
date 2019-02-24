@@ -11,9 +11,17 @@ export const TYPE_FOCUS_NON_RECURRING = 'Non-recurring focus block';
 export const TYPE_UNBOOKED_SMALL = 'Unbooked time (<= 30m)';
 export const TYPE_UNBOOKED_MEDIUM = 'Unbooked time (30m-60m)';
 export const TYPE_UNBOOKED_LARGE = 'Unbooked time (> 60m)';
-export const TYPE_OOO = 'OOO'
-export const TYPE_EMAIL = 'Email'
-export const TYPE_INTERVIEW = 'Interview'
+export const TYPE_OOO = 'OOO';
+export const TYPE_EMAIL = 'Email';
+export const TYPE_INTERVIEW = 'Interview';
+
+// Event types that don't count against the total of time considered booked.
+// TYPE_OOO is excluded here because it's special and doesn't count as booked or
+// unbooked.
+export const ME_TIME_BLOCKS = [
+  TYPE_FOCUS_RECURRING, TYPE_FOCUS_NON_RECURRING, TYPE_UNBOOKED_SMALL,
+  TYPE_UNBOOKED_MEDIUM, TYPE_UNBOOKED_LARGE
+];
 
 export const CALENDAR_ID = 'primary';
 
