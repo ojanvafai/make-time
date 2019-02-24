@@ -6,19 +6,6 @@ const OOO_REGEX = /.*(OOO|Holiday).*/;
 const EMAIL_REGEX = /.*(Email).*/;
 const INTERVIEW_REGEX = /.*(Interview).*/;
 
-interface GCalAttendee {
-  id: string;
-  email: string;
-  displayName?: string|undefined;
-  organizer: boolean;
-  self: boolean;
-  resource: boolean;
-  optional?: boolean|undefined;
-  responseStatus: gapi.client.calendar.AttendeeResponseStatus;
-  comment?: string|undefined;
-  additionalGuests?: number|undefined;
-}
-
 export class CalendarEvent {
   eventId: string;
   colorId: number|undefined;
@@ -69,14 +56,16 @@ export class CalendarEvent {
     this.shouldIgnore = gcalEvent.transparency === 'transparent' ||
         gcalEvent.guestsCanSeeOtherGuests === false || !gcalEvent.summary;
 
-    let attendees = gcalEvent.attendees;
+    // Ignore events I've declined.
+    if (!this.shouldIgnore && gcalEvent.attendees) {
+      let iAmAttending = gcalEvent.attendees.some(
+          x => x.self && x.responseStatus !== 'declined');
+      this.shouldIgnore = !iAmAttending;
+    }
 
-    if (!attendees)
-      attendees = [];
-
-    attendees = attendees.filter(
-        (attendee: GCalAttendee) => !attendee.resource && !attendee.self);
-    this.attendeeCount = attendees.length;
+    this.attendeeCount = gcalEvent.attendees ?
+        gcalEvent.attendees.filter(x => !x.resource && !x.self).length :
+        0;
 
     if (gcalEvent.attendeesOmitted)
       this.attendeeCount = Infinity;
