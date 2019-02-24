@@ -362,7 +362,13 @@ export class Thread extends EventTarget {
     let historyId = defined(resp.result.historyId);
     let messages = defined(resp.result.messages);
 
-    if (defined(this.processed_).historyId === historyId)
+    // If the historyId both on disk and in firestore matches what gmail
+    // returns, then there's no work to do. In theory, what's in firestore
+    // should match what's on disk if what's on disk matches gmail, but due to
+    // races with different clients, it's possible for an older client's write
+    // to override a newer client's write.
+    if (defined(this.processed_).historyId === historyId &&
+        this.getHistoryId() === historyId)
       return;
 
     // TODO: Need to refetch drafts that were sent. Make the loop below fetch

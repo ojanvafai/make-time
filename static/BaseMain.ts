@@ -133,7 +133,8 @@ async function login_() {
     await firebase.initializeApp(firebaseConfig);
 
     try {
-      await firebase.firestore().enablePersistence();
+      await firebase.firestore().enablePersistence(
+          {experimentalTabSynchronization: true});
     } catch (e) {
       // Currently offline is only enabled for one tab at a time and also
       // doesn't work on some browsers.
