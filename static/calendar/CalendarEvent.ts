@@ -89,17 +89,6 @@ export class CalendarEvent {
     if (this.shouldIgnore)
       return;
 
-    // Other people scheduling me 1:1's appears to
-    // always be interviews, or weird bugs in the calendar API.
-    if (!gcalEvent.creator.self &&
-        this.summary.match(INTERVIEW_REGEX) === null &&
-        this.attendeeCount == 0) {
-      console.log('IGNORING USELESS LOOKING EVENT');
-      console.log(gcalEvent);
-      this.shouldIgnore = true;
-      return;
-    }
-
     if (this.attendeeCount == 0) {
       if (this.isOOOEvent())
         this.type = TYPE_OOO;
