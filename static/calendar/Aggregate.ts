@@ -11,8 +11,10 @@ export class Aggregate {
     let total = 0;
     let unbooked = 0;
     for (let [type, value] of this.minutesPerType) {
-      if (type !== TYPE_OOO)
-        total += value;
+      if (type === TYPE_OOO)
+        continue;
+
+      total += value;
       switch (type) {
         case TYPE_UNBOOKED_SMALL:
         case TYPE_UNBOOKED_MEDIUM:
