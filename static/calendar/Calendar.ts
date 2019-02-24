@@ -10,6 +10,7 @@ import {CALENDAR_ID, TYPE_UNBOOKED_LARGE, TYPE_UNBOOKED_MEDIUM, TYPE_UNBOOKED_SM
 
 const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
+const WHOLE_DAY_DURATION_MINS = 60 * (WORKING_DAY_END - WORKING_DAY_START);
 
 function getStartOfWeek(date: Date): Date {
   const x = new Date(date);
@@ -171,8 +172,6 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
       getDurationOverlappingWorkDay(unbookedStart, currentDay, currentDay);
   addUnbookedDuration(duration);
 
-  const WHOLE_DAY_DURATION_MS =
-      60 * 60 * 1000 * (WORKING_DAY_END - WORKING_DAY_START);
   // TODO - insert a change at the beginning and end of each day
   // and handle empty event change regions.
   for (const curDay = firstDay; curDay.getTime() <= lastDay.getTime();
@@ -238,10 +237,14 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
     tsDay.setHours(0, 0, 0);
     if (tsDay.getTime() != day.getTime()) {
       if (day.getDay() != 0 && day.getDay() != 6) {
-        // If there are no events on this day, then consider the whole day
-        // unbooked.
-        if (!minutesPerType!.size)
-          addUnbookedDuration(WHOLE_DAY_DURATION_MS);
+        // Fill in unbooked time. This can happen if a day has no events or if
+        // events overlap the start/end of the day.
+        let totalMinutes = Array.from(minutesPerType!.values())
+                               .reduce((total, value) => total + value, 0);
+        if (totalMinutes < WHOLE_DAY_DURATION_MINS) {
+          let durationMs = 60 * 1000 * (WHOLE_DAY_DURATION_MINS - totalMinutes);
+          addUnbookedDuration(durationMs);
+        }
         aggregates.push(new Aggregate(new Date(day), minutesPerType!));
       }
       day.setDate(day.getDate() + 1);
