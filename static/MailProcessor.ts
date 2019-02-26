@@ -200,29 +200,28 @@ export class MailProcessor {
       // messages came in.
       await thread.update();
 
-      // Gmail has phantom messages that keep threads in the inbox but that
-      // you can't access. Archive the whole thread for these messages. See
-      // https://issuetracker.google.com/issues/122167541.
       let messages = thread.getMessages();
       assert(
           messages.length,
           'This should never happen. Please file a bug if you see this.');
+
+      // Gmail has phantom messages that keep threads in the inbox but that
+      // you can't access. Archive the whole thread for these messages. See
+      // https://issuetracker.google.com/issues/122167541.
       let inInbox = messages.some(x => x.getLabelIds().includes('INBOX'));
+      // Check via local storage whether the thread is in the inbox. If local
+      // storage says it's not, then double check by talking directly to the
+      // gmail API to ensure bugs in thread caching don't cause us to
+      // accidentally archive threads.
       if (!inInbox) {
-        ErrorLogger.log(
-            'Gmail says that this thread is in the inbox, but none of the ' +
-            'messages in the thread are. This is a gmail bug. You need to ' +
-            'archive this thread directly in gmail. If you are seeing this ' +
-            'for threads that are correctly in the inbox, please file a' +
-            'maketime bug. The subject of the thread is ' +
-            thread.getSubject());
-        // TODO: Reenable this code once we're confident it can't be hit
-        // incorrectly.
-        // await gapiFetch(gapi.client.gmail.users.threads.modify, {
-        //   userId: USER_ID,
-        //   id: threadId,
-        //   removeLabelIds: ['INBOX'],
-        // });
+        let reallyInInbox = await this.refetchIsInInbox_(thread.id);
+        if (!reallyInInbox) {
+          await gapiFetch(gapi.client.gmail.users.threads.modify, {
+            userId: USER_ID,
+            id: thread.id,
+            removeLabelIds: ['INBOX'],
+          });
+        }
       }
 
       // Everything in the inbox should have a labelId and/or a priorityId.
@@ -243,18 +242,22 @@ export class MailProcessor {
     await Promise.all(processPromises_);
   }
 
+  private async refetchIsInInbox_(threadId: string) {
+    let response = await gapiFetch(gapi.client.gmail.users.threads.get, {
+      'userId': USER_ID,
+      'id': threadId,
+      fields: 'messages(labelIds)',
+    });
+    let messages = defined(defined(defined(response).result).messages);
+    return messages.some(x => defined(x.labelIds).includes('INBOX'));
+  }
+
   private async clearThreadMetadata_(ids: Iterable<string>) {
     for (let id of ids) {
       // Do one last fetch to ensure a new message hasn't come in that puts
       // the thread back in the inbox, then clear metadata.
-      let response = await gapiFetch(gapi.client.gmail.users.threads.get, {
-        'userId': USER_ID,
-        'id': id,
-        fields: 'messages(labelIds)',
-      });
-      let messages = defined(defined(defined(response).result).messages);
-      let isInInbox = messages.some(x => defined(x.labelIds).includes('INBOX'));
-      if (!isInInbox)
+      let inInbox = await this.refetchIsInInbox_(id);
+      if (!inInbox)
         Thread.clearMetadata(id);
     }
   }
