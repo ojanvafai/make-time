@@ -12,10 +12,36 @@ import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {BuiltInLabels, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 
+let MAKE_TIME_LABEL_NAME = 'mktime';
+
 export class MailProcessor {
-  constructor(public settings: Settings) {}
+  private makeTimeLabelId_?: string;
+
+  constructor(private settings_: Settings) {}
+
+  private async fetchMakeTimeLabel_() {
+    if (this.makeTimeLabelId_)
+      return;
+
+    var response = await gapiFetch(
+        gapi.client.gmail.users.labels.list, {'userId': USER_ID});
+    let labels = defined(response.result.labels);
+    let label = labels.find(x => x.name === MAKE_TIME_LABEL_NAME);
+    if (!label) {
+      let resp = await gapiFetch(gapi.client.gmail.users.labels.create, {
+        name: MAKE_TIME_LABEL_NAME,
+        messageListVisibility: 'hide',
+        labelListVisibility: 'labelHide',
+        userId: USER_ID,
+      });
+      label = resp.result;
+    }
+
+    this.makeTimeLabelId_ = label.id;
+  }
 
   async process() {
+    await this.fetchMakeTimeLabel_();
     await this.processQueues_();
     await this.syncWithGmail_();
   }
@@ -92,13 +118,9 @@ export class MailProcessor {
                             .where(ThreadMetadataKeys.moveToInbox, '==', true)
                             .get();
 
+    // TODO: Use TaskQueue.
     for (let doc of querySnapshot.docs) {
-      await gapiFetch(gapi.client.gmail.users.threads.modify, {
-        userId: USER_ID,
-        id: doc.id,
-        addLabelIds: ['INBOX'],
-      });
-
+      await this.addLabels_(doc.id, ['INBOX']);
       let update: ThreadMetadataUpdate = {
         moveToInbox: firebase.firestore.FieldValue.delete(),
       };
@@ -106,66 +128,78 @@ export class MailProcessor {
     }
   }
 
+  private async modifyLabels_(
+      threadId: string, addLabelIds: string[], removeLabelIds: string[]) {
+    await gapiFetch(gapi.client.gmail.users.threads.modify, {
+      userId: USER_ID,
+      id: threadId,
+      addLabelIds: addLabelIds,
+      removeLabelIds: removeLabelIds,
+    });
+  }
+
+  private async addLabels_(threadId: string, labels: string[]) {
+    await this.modifyLabels_(threadId, labels, []);
+  }
+
+  private async removeLabels_(threadId: string, labels: string[]) {
+    await this.modifyLabels_(threadId, [], labels);
+  }
+
+  private async addMakeTimeLabel_(id: string) {
+    await this.addLabels_(id, [defined(this.makeTimeLabelId_)]);
+  }
+
+  private async removeMakeTimeLabel_(id: string) {
+    await this.removeLabels_(id, [defined(this.makeTimeLabelId_)]);
+  }
+
   private async syncWithGmail_() {
     // Add back in threads that were archived and then undone and
     // flush any pending archives/markReads from maketime.
     // Do these in parallel to minimize network round trips.
-    let metadataCollection =
-        firestoreUserCollection().doc('threads').collection('metadata');
-    let [labelSnapshot, prioritySnapshot] = await Promise.all([
-      metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true).get(),
-      metadataCollection.where(ThreadMetadataKeys.hasPriority, '==', true)
-          .get(),
+    await Promise.all([
       this.moveToInbox_(),
       this.removeGmailLabels_(
-          ThreadMetadataKeys.countToArchive, ['INBOX', 'UNREAD']),
+          ThreadMetadataKeys.countToArchive,
+          ['INBOX', 'UNREAD', defined(this.makeTimeLabelId_)]),
       this.removeGmailLabels_(ThreadMetadataKeys.countToMarkRead, ['UNREAD'])
     ]);
 
-    let existingIds = new Set([
-      ...labelSnapshot.docs.map(x => x.id),
-      ...prioritySnapshot.docs.map(x => x.id)
-    ]);
-    let threadsToUpdate: Thread[] = [];
-
-    // Fetch everything in the inbox pulling in the thread state off disk so we
-    // can check historyIds to see if we need to update the thread. Generate the
-    // list of threads that need updating first and then update in a second pass
-    // so that we can show the user a progress indicator for the slow step that
-    // involves network and CPU processing. Don't show a progress indicator for
-    // this first fetchThreads call as the common case will be that there are no
-    // threads that need updating, so don't want to flicker the UI.
     // This has to happen after the removeGmailLabels_ calls above as those
     // calls remove threads from the inbox.
-    let threads = await this.fetchInboxThreads_();
-
-    // Do these in parallel instead of in a for loop so that we saturate both
-    // network and disk fetches instead of serializing them.
-    let metadataFetches = threads.map(async x => {
-      let threadId = defined(x.id);
-      existingIds.delete(threadId);
-
-      let metadata = await Thread.fetchMetadata(threadId);
-      let thread = Thread.create(threadId, metadata);
-      await thread.fetchFromDisk();
-
-      if (thread.mightNeedUpdate(defined(x.historyId)))
-        threadsToUpdate.push(thread);
-    });
-
-    await Promise.all(metadataFetches);
-    if (threadsToUpdate.length)
-      this.processThreads_(threadsToUpdate);
+    this.forEachThread_(
+        'in:inbox -in:mktime', (thread) => this.processThread_(thread),
+        'Updating...');
 
     // For anything that used to be in the inbox, but isn't anymore (e.g. the
     // user archived from gmail), clear it's metadata so it doesn't show up in
     // maketime either.
-    await this.clearThreadMetadata_(existingIds);
+    this.forEachThread_(
+        '-in:inbox in:mktime', (thread) => this.clearMetadata_(thread),
+        'Removing messages archived from gmail...');
   }
 
-  async fetchInboxThreads_() {
+  async forEachThread_(
+      query: string,
+      callback: (thread: gapi.client.gmail.Thread) => Promise<void>,
+      title: string) {
+    let threads = await this.fetchThreads_(query);
+    if (!threads.length)
+      return;
+
+    let progress = updateLoaderTitle(
+        'MailProcessor.forEachThread_', threads.length, title);
+    // TODO: Use TaskQueue.
+    for (let rawThread of threads) {
+      progress.incrementProgress();
+      await callback(rawThread);
+    }
+  }
+
+  async fetchThreads_(query: string) {
     // Chats don't expose their bodies in the gmail API, so just skip them.
-    let query = `in:inbox AND -in:chats`;
+    query = `(${query}) AND -in:chats`;
     let threads: gapi.client.gmail.Thread[] = [];
 
     let getPageOfThreads = async (opt_pageToken?: string) => {
@@ -189,57 +223,56 @@ export class MailProcessor {
     return threads;
   }
 
-  private async processThreads_(threads: Thread[]) {
-    let progress = updateLoaderTitle(
-        'MailProcessor.processThreads_', threads.length, 'Updating...');
+  private async processThread_(rawThread: gapi.client.gmail.Thread) {
+    let threadId = defined(rawThread.id);
+    let metadata = await Thread.fetchMetadata(threadId);
+    let thread = Thread.create(threadId, metadata);
+    await thread.fetchFromDisk();
 
-    let processPromises_ = [];
-    for (let thread of threads) {
-      progress.incrementProgress();
-      // If we got here, then the thread definitely needs updating in case new
-      // messages came in.
-      await thread.update();
+    if (!thread.mightNeedUpdate(defined(rawThread.historyId))) {
+      await this.addMakeTimeLabel_(threadId);
+      return;
+    }
 
-      let messages = thread.getMessages();
-      assert(
-          messages.length,
-          'This should never happen. Please file a bug if you see this.');
+    // If we got here, then the thread definitely needs updating in case new
+    // messages came in.
+    await thread.update();
 
-      // Gmail has phantom messages that keep threads in the inbox but that
-      // you can't access. Archive the whole thread for these messages. See
-      // https://issuetracker.google.com/issues/122167541.
-      let inInbox = messages.some(x => x.getLabelIds().includes('INBOX'));
-      // Check via local storage whether the thread is in the inbox. If local
-      // storage says it's not, then double check by talking directly to the
-      // gmail API to ensure bugs in thread caching don't cause us to
-      // accidentally archive threads.
-      if (!inInbox) {
-        let reallyInInbox = await this.refetchIsInInbox_(thread.id);
-        if (!reallyInInbox) {
-          await gapiFetch(gapi.client.gmail.users.threads.modify, {
-            userId: USER_ID,
-            id: thread.id,
-            removeLabelIds: ['INBOX'],
-          });
-        }
-      }
+    let messages = thread.getMessages();
+    assert(
+        messages.length,
+        'This should never happen. Please file a bug if you see this.');
 
-      // Everything in the inbox should have a labelId and/or a priorityId.
-      // This can happen if something had been processed, then archived, then
-      // the user manually puts it back in the inbox. The thread metadata in
-      // firestore shows doesn't indicate new messages since there aren't
-      // actually new messages, but we still want to filter it.
-      if (thread.needsFiltering() ||
-          (!thread.getLabelId() && !thread.getPriorityId() &&
-           !thread.isBlocked())) {
-        // Intentionally don't await this so that we start fetching the next
-        // thread in parallel with the CPU intensive work of processing this
-        // one.
-        processPromises_.push(this.processThread_(thread));
+    // Gmail has phantom messages that keep threads in the inbox but that
+    // you can't access. Archive the whole thread for these messages. See
+    // https://issuetracker.google.com/issues/122167541.
+    let inInbox = messages.some(x => x.getLabelIds().includes('INBOX'));
+    // Check via local storage whether the thread is in the inbox. If local
+    // storage says it's not, then double check by talking directly to the
+    // gmail API to ensure bugs in thread caching don't cause us to
+    // accidentally archive threads.
+    if (!inInbox) {
+      let reallyInInbox = await this.refetchIsInInbox_(thread.id);
+      if (!reallyInInbox) {
+        await gapiFetch(gapi.client.gmail.users.threads.modify, {
+          userId: USER_ID,
+          id: thread.id,
+          removeLabelIds: ['INBOX'],
+        });
+        return;
       }
     }
-    // Ensure all the processing is done before returning.
-    await Promise.all(processPromises_);
+
+    // Everything in the inbox should have a labelId and/or a priorityId.
+    // This can happen if something had been processed, then archived, then
+    // the user manually puts it back in the inbox. The thread metadata in
+    // firestore shows doesn't indicate new messages since there aren't
+    // actually new messages, but we still want to filter it.
+    if (thread.needsFiltering() ||
+        (!thread.getLabelId() && !thread.getPriorityId() &&
+         !thread.isBlocked())) {
+      await this.applyFilters_(thread);
+    }
   }
 
   private async refetchIsInInbox_(threadId: string) {
@@ -252,13 +285,19 @@ export class MailProcessor {
     return messages.some(x => defined(x.labelIds).includes('INBOX'));
   }
 
-  private async clearThreadMetadata_(ids: Iterable<string>) {
-    for (let id of ids) {
-      // Do one last fetch to ensure a new message hasn't come in that puts
-      // the thread back in the inbox, then clear metadata.
-      let inInbox = await this.refetchIsInInbox_(id);
-      if (!inInbox)
-        Thread.clearMetadata(id);
+  private async clearMetadata_(thread: gapi.client.gmail.Thread) {
+    let id = defined(thread.id);
+    // Do one last fetch to ensure a new message hasn't come in that puts
+    // the thread back in the inbox, then clear metadata.
+    let inInbox = await this.refetchIsInInbox_(id);
+    if (!inInbox) {
+      await Thread.clearMetadata(id);
+      await this.removeMakeTimeLabel_(id);
+    } else {
+      // If one of the messages is in the inbox, move them all to the inbox so
+      // that gmail doesn't keep returning this thread for a "-in:inbox"
+      // query.
+      await this.addLabels_(id, ['INBOX']);
     }
   }
 
@@ -374,7 +413,7 @@ export class MailProcessor {
 
   // TODO: Also log which message matched.
   logMatchingRule_(thread: Thread, rule: FilterRule) {
-    if (this.settings.get(ServerStorage.KEYS.LOG_MATCHING_RULES)) {
+    if (this.settings_.get(ServerStorage.KEYS.LOG_MATCHING_RULES)) {
       console.log(`Thread with subject "${thread.getSubject()}" matched rule ${
           JSON.stringify(rule)}`);
     }
@@ -410,14 +449,14 @@ export class MailProcessor {
     return Labels.Fallback;
   }
 
-  private async processThread_(thread: Thread) {
+  private async applyFilters_(thread: Thread) {
     try {
       if (thread.isMuted()) {
         await thread.archive();
         return;
       }
 
-      let rules = await this.settings.getFilters();
+      let rules = await this.settings_.getFilters();
       let label = this.getWinningLabel_(thread, rules);
 
       if (label == Labels.Archive) {
@@ -429,11 +468,12 @@ export class MailProcessor {
       // labelId, don't queue it.
       let shouldQueue = !thread.getPriorityId() &&
           (!thread.getLabelId() || thread.isQueued()) &&
-          (this.settings.getQueueSettings().get(label).queue !=
+          (this.settings_.getQueueSettings().get(label).queue !=
            QueueSettings.IMMEDIATE);
 
       // Need to clear needsFiltering
-      thread.setLabelAndQueued(shouldQueue, label);
+      await thread.setLabelAndQueued(shouldQueue, label);
+      await this.addMakeTimeLabel_(thread.id);
     } catch (e) {
       ErrorLogger.log(`Failed to process message.\n\n${JSON.stringify(e)}`);
     }
@@ -473,7 +513,7 @@ export class MailProcessor {
       await this.dequeueBlocked_();
 
     let queueNames = new QueueNames();
-    let queueDatas = this.settings.getQueueSettings().entries();
+    let queueDatas = this.settings_.getQueueSettings().entries();
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)
         await this.dequeue(await queueNames.getId(queueData[0]));

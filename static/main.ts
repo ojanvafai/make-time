@@ -23,6 +23,7 @@ import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
 
 let currentView_: View;
+let mailProcessor_: MailProcessor;
 
 // Extract these before rendering any threads since the threads can have
 // elements with IDs in them.
@@ -325,6 +326,8 @@ async function onLoad() {
 
   appendMenu();
   await routeToCurrentLocation();
+
+  mailProcessor_ = new MailProcessor(await getSettings());
   await update();
   // Wait until we've fetched all the threads before trying to process updates
   // regularly.
@@ -424,8 +427,7 @@ export async function update() {
   isUpdating_ = true;
 
   try {
-    let mailProcessor = new MailProcessor(await getSettings());
-    await mailProcessor.process();
+    await mailProcessor_.process();
     await dailyLocalUpdates();
   } catch (e) {
     // TODO: Move this to Net.js once we've made it so that all network
