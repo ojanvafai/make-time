@@ -168,14 +168,14 @@ export class MailProcessor {
 
     // This has to happen after the removeGmailLabels_ calls above as those
     // calls remove threads from the inbox.
-    this.forEachThread_(
+    await this.forEachThread_(
         'in:inbox -in:mktime', (thread) => this.processThread_(thread),
         'Updating...');
 
     // For anything that used to be in the inbox, but isn't anymore (e.g. the
     // user archived from gmail), clear it's metadata so it doesn't show up in
     // maketime either.
-    this.forEachThread_(
+    await this.forEachThread_(
         '-in:inbox in:mktime', (thread) => this.clearMetadata_(thread),
         'Removing messages archived from gmail...');
   }
