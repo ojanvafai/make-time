@@ -329,6 +329,11 @@ async function onLoad() {
 
   mailProcessor_ = new MailProcessor(await getSettings());
   await update();
+
+  // Instantiate the TodoModel even if we're not in the Todo view so that the
+  // favicon is updated with the must do count.
+  await getTodoModel();
+
   // Wait until we've fetched all the threads before trying to process updates
   // regularly.
   setInterval(update, 1000 * 60);

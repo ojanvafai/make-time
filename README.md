@@ -49,7 +49,7 @@ bundling.
 If you use VS Code you can get autoformatting of TS code on save with:
 
 1. Install the clang-format extension: https://marketplace.visualstudio.com/items?itemName=xaver.clang-format
-2. Added the following to your VSCode settings:
+2. Added the following to your VSCode settings (change linux_x64 to darwin_x64 on mac):
   "clang-format.executable": "${workspaceRoot}/node_modules/clang-format/bin/linux_x64/clang-format",
   "[typescript]": {
     "editor.formatOnSave": true,
