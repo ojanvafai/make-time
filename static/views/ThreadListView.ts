@@ -665,12 +665,18 @@ export class ThreadListView extends View {
           // ThreadRows get recycled, so clear the checked and focused state
           // for future use.
           child.resetState();
+
+          let parentGroup = child.getGroup();
           // The rows will get removed on the next frame anyways, but we don't
           // want the user to see an intermediary state where the row is shown
           // but unchecked and we don't want to move focus to the next row until
           // these rows have been removed. So just removed them synchronously
           // here purely for the visual effect.
           child.remove();
+          // Remove the parent group if it's now empty so the user doens't see a
+          // flicker where the row is removed without it's parent group also
+          // being removed.
+          parentGroup.removeIfEmpty();
         } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
           firstUnselectedRowAfterFocused = child;
         }

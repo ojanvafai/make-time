@@ -45,6 +45,11 @@ export class ThreadRowGroup extends HTMLElement {
     this.rowContainer_.append(row);
   }
 
+  removeIfEmpty() {
+    if (!this.rowContainer_.childElementCount)
+      this.remove();
+  }
+
   createSelector_(textContent: string, callback: () => void) {
     let selector = document.createElement('span');
     selector.textContent = textContent;
