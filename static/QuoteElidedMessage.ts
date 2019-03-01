@@ -14,6 +14,16 @@ export class QuoteElidedMessage {
   private dom_!: HTMLElement;
 
   constructor(currentMessage: string, previousMessage: Message|undefined) {
+    // Someone got a message with the following image in the message body that
+    // would cause gmail to log the user out!
+    // <img
+    // src="https://mail.google.com/mail/u/0/?ik=8aab3eccbe&amp;view=snatt">
+    // Gmail turns this into a googleusercontent.com url that still 404s, so
+    // until we see a reason to do otherwise, just mangle the URL to make it
+    // 404. It needs both the ik and view parameters to force the logout.
+    currentMessage =
+        currentMessage.replace('src="https://mail.google.com/', 'src="');
+
     this.dom_ = document.createElement('div');
     this.dom_.innerHTML = currentMessage;
     this.sanitizeContent_();
