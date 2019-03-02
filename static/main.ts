@@ -459,6 +459,22 @@ document.body.addEventListener('click', async (e) => {
   for (let node of e.path) {
     if (node.tagName == 'A') {
       let anchor = <HTMLAnchorElement>node;
+      // For navigations will just change the hash scroll the item into view
+      // (e.g. for links in a newsletter). In theory we could allow the default
+      // action to go through, but that would call onpopstate and we'd need to
+      // get onpopstate to not route to the current location. This seems easier.
+      // This doesn't update the url with the hash, but that might be better
+      // anyways.
+      if (location.hash !== anchor.hash && location.origin === anchor.origin &&
+          location.pathname === anchor.pathname) {
+        e.preventDefault();
+        let id = anchor.hash.replace('#', '');
+        let target = document.getElementById(id);
+        if (target)
+          target.scrollIntoView();
+        return;
+      }
+
       let willHandlePromise = router.run(anchor);
       if (willHandlePromise) {
         // Need to preventDefault before the await, otherwise the browsers
@@ -467,6 +483,7 @@ document.body.addEventListener('click', async (e) => {
         await willHandlePromise;
         return;
       }
+
       anchor.target = '_blank';
       anchor.rel = 'noopener';
     }
