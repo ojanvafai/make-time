@@ -283,6 +283,7 @@ export interface FetchRequestParameters {
   q: string;
   pageToken?: string;
   maxResults?: number;
+  includeSpamTrash?: boolean;
 }
 
 let MAX_RESULTS_CAP = 500;

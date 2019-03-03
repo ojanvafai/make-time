@@ -174,17 +174,18 @@ export class MailProcessor {
 
     // For anything that used to be in the inbox, but isn't anymore (e.g. the
     // user archived from gmail), clear it's metadata so it doesn't show up in
-    // maketime either.
+    // maketime either. Include spam and trash in this query since we want to
+    // remove messages that were marked as spam/trash in gmail as well.
     await this.forEachThread_(
         '-in:inbox in:mktime', (thread) => this.clearMetadata_(thread),
-        'Removing messages archived from gmail...');
+        'Removing messages archived from gmail...', true);
   }
 
   async forEachThread_(
       query: string,
       callback: (thread: gapi.client.gmail.Thread) => Promise<void>,
-      title: string) {
-    let threads = await this.fetchThreads_(query);
+      title: string, includeSpamTrash?: boolean) {
+    let threads = await this.fetchThreads_(query, includeSpamTrash);
     if (!threads.length)
       return;
 
@@ -197,7 +198,7 @@ export class MailProcessor {
     }
   }
 
-  async fetchThreads_(query: string) {
+  async fetchThreads_(query: string, includeSpamTrash?: boolean) {
     // Chats don't expose their bodies in the gmail API, so just skip them.
     query = `(${query}) AND -in:chats`;
     let threads: gapi.client.gmail.Thread[] = [];
@@ -207,6 +208,9 @@ export class MailProcessor {
         'userId': USER_ID,
         'q': query,
       };
+
+      if (includeSpamTrash)
+        requestParams.includeSpamTrash = includeSpamTrash;
 
       if (opt_pageToken)
         requestParams.pageToken = opt_pageToken;
