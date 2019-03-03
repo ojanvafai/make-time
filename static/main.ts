@@ -1,5 +1,5 @@
 import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById, showDialog} from './Base.js';
-import {firestore, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {firestore, getServerStorage, getSettings, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
@@ -14,6 +14,7 @@ import {TriageModel} from './models/TriageModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
+import {AppShell, BackEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
 import {KeyboardShortcutsDialog} from './views/KeyboardShortcutsDialog.js';
@@ -23,15 +24,11 @@ import {View} from './views/View.js';
 
 let currentView_: View;
 let mailProcessor_: MailProcessor;
+let appShell_: AppShell;
 
 // Extract these before rendering any threads since the threads can have
 // elements with IDs in them.
 const content = getDefinitelyExistsElementById('content');
-const drawer = getDefinitelyExistsElementById('drawer');
-const hammburgerMenuToggle =
-    getDefinitelyExistsElementById('hamburger-menu-toggle');
-const backArrow = getDefinitelyExistsElementById('back-arrow');
-const mainContent = getDefinitelyExistsElementById('main-content');
 const subject = getDefinitelyExistsElementById('subject');
 
 const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
@@ -148,7 +145,7 @@ let viewGeneration = 0;
 async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
   let thisViewGeneration = ++viewGeneration;
 
-  showMenuButton(shouldHideMenu);
+  appShell_.showMenuButton(shouldHideMenu);
 
   if (currentView_)
     currentView_.tearDown();
@@ -180,60 +177,6 @@ function preventUpdates() {
   shouldUpdate_ = false;
 }
 
-function showMenuButton(hide?: boolean) {
-  hammburgerMenuToggle.style.visibility = hide ? 'hidden' : 'visible';
-}
-
-let DRAWER_OPEN = 'drawer-open';
-let CURRENT_PAGE_CLASS = 'current-page';
-
-function showBackArrow(show: boolean) {
-  hammburgerMenuToggle.style.display = show ? 'none' : '';
-  backArrow.style.display = show ? '' : 'none';
-}
-
-function openMenu() {
-  let menuItems =
-      <NodeListOf<HTMLAnchorElement>>drawer.querySelectorAll('a.item');
-  for (let item of menuItems) {
-    if (item.pathname == location.pathname) {
-      item.classList.add(CURRENT_PAGE_CLASS);
-    } else {
-      item.classList.remove(CURRENT_PAGE_CLASS);
-    }
-  }
-
-  mainContent.classList.add(DRAWER_OPEN);
-}
-
-function closeMenu() {
-  mainContent.classList.remove(DRAWER_OPEN);
-}
-
-function toggleMenu() {
-  if (mainContent.classList.contains(DRAWER_OPEN))
-    closeMenu();
-  else
-    openMenu();
-}
-
-backArrow.addEventListener('click', async () => {
-  if (getView().goBack)
-    await getView().goBack();
-});
-
-hammburgerMenuToggle.addEventListener('click', (e) => {
-  e.stopPropagation();
-  toggleMenu();
-});
-
-mainContent.addEventListener('click', (e) => {
-  if (mainContent.classList.contains(DRAWER_OPEN)) {
-    e.preventDefault();
-    closeMenu();
-  }
-})
-
 async function createThreadListView(
     model: ThreadListModel, countDown: boolean, bottomButtonUrl: string,
     bottomButtonText: string) {
@@ -244,9 +187,10 @@ async function createThreadListView(
       settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
   return new ThreadListView(
-      model, content, updateLoaderTitle, setSubject, showBackArrow,
-      allowedReplyLength, autoStartTimer, countDown, timerDuration,
-      bottomButtonUrl, bottomButtonText);
+      model, content, updateLoaderTitle, setSubject,
+      (show: boolean) => appShell_.showBackArrow(show), allowedReplyLength,
+      autoStartTimer, countDown, timerDuration, bottomButtonUrl,
+      bottomButtonText);
 }
 
 async function resetModels() {
@@ -279,40 +223,6 @@ function setSubject(...items: (string|Node)[]) {
   subject.append(...items);
 }
 
-function createMenuItem(name: string, options: any) {
-  let a = document.createElement('a');
-  a.append(name);
-  a.className = 'item';
-
-  if (options.nested)
-    a.classList.add('nested');
-
-  if (options.href)
-    a.href = options.href;
-
-  if (options.onclick)
-    a.onclick = options.onclick;
-
-  a.addEventListener('click', closeMenu);
-  return a;
-}
-
-function appendMenu() {
-  let helpButton = createMenuItem('Help', {
-    onclick: async () => showHelp(),
-  });
-
-  let menuTitle = document.createElement('div');
-  menuTitle.append('MakeTime phases');
-
-  drawer.append(
-      menuTitle, createMenuItem('Compose', {href: '/compose', nested: true}),
-      createMenuItem('Triage', {href: '/triage', nested: true}),
-      createMenuItem('Todo', {href: '/todo', nested: true}),
-      createMenuItem('Calendar (alpha)', {href: '/calendar'}),
-      createMenuItem('Settings', {href: '/settings'}), helpButton);
-}
-
 async function onLoad() {
   let serverStorage = await getServerStorage();
   serverStorage.addEventListener(ServerStorageUpdateEventName, async () => {
@@ -323,7 +233,13 @@ async function onLoad() {
     await routeToCurrentLocation();
   });
 
-  appendMenu();
+  appShell_ = new AppShell();
+  appShell_.addEventListener(BackEvent.NAME, async () => {
+    if (getView().goBack)
+      await getView().goBack();
+  });
+  document.body.append(appShell_);
+
   await routeToCurrentLocation();
 
   mailProcessor_ = new MailProcessor(await getSettings());
