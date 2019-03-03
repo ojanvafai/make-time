@@ -98,15 +98,6 @@ window.update = update;`;
       .queue-row:hover {
         background-color: lightgrey !important;
       }
-      #main-content {
-        will-change: transform;
-        background-color: #eee;
-        display: flex;
-        flex-direction: column;
-      }
-      #main-content.drawer-open {
-        transform: translateX(250px);
-      }
       .panel {
         transition: transform 0.3s ease;
         position: absolute;
@@ -140,10 +131,6 @@ window.update = update;`;
       }
       #drawer > .nested {
         text-indent: 20px;
-      }
-      #subject {
-        text-align: center;
-        flex: 1;
       }
       #content {
         flex: 1;
@@ -179,15 +166,6 @@ window.update = update;`;
       }
       .toggler:hover {
         background-color: #bbb;
-      }
-      #loader {
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        background-color: black;
-        display: flex;
-        align-items: center;
       }
       mt-view-one {
         border: 1px solid #ccc;
@@ -235,14 +213,6 @@ window.update = update;`;
         color: black;
         background-color: white;
         border-radius: 2px;
-      }
-      #hamburger-menu-toggle {
-        visibility: hidden;
-      }
-      #back-arrow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
       }
     </style>
   </head>

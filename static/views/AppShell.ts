@@ -11,7 +11,6 @@ interface TitleEntry {
 }
 
 let CURRENT_PAGE_CLASS = 'current-page';
-let DRAWER_OPEN = 'drawer-open';
 
 export class BackEvent extends Event {
   static NAME = 'back';
@@ -27,6 +26,8 @@ export class AppShell extends HTMLElement {
   private backArrow_: HTMLElement;
   private menuToggle_: SVGSVGElement;
   private subject_: HTMLElement;
+  private drawerOpen_: boolean;
+
   // TODO: Make these not static.
   private static title_: HTMLElement;
   private static loader_: HTMLElement;
@@ -34,12 +35,19 @@ export class AppShell extends HTMLElement {
 
   constructor() {
     super();
+    this.drawerOpen_ = false;
+
     this.drawer_ = document.createElement('div');
     this.drawer_.id = 'drawer';
     this.drawer_.className = 'panel';
 
     this.mainContent_ = document.createElement('div');
-    this.mainContent_.id = 'main-content';
+    this.mainContent_.style.cssText = `
+      will-change: transform;
+      background-color: #eee;
+      display: flex;
+      flex-direction: column;
+    `;
     this.mainContent_.className = 'panel';
 
     document.body.append(this.drawer_, this.mainContent_);
@@ -53,14 +61,17 @@ export class AppShell extends HTMLElement {
     this.mainContent_.append(toolbar, this.content_, AppShell.footer_);
 
     this.backArrow_ = document.createElement('div');
-    this.backArrow_.id = 'back-arrow';
+    this.backArrow_.style.cssText = `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    `;
     this.backArrow_.className = 'menu-open-button';
-    this.backArrow_.style.display = 'none';
     this.backArrow_.textContent = '⬅';
 
     this.menuToggle_ =
         document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.menuToggle_.id = 'hamburger-menu-toggle';
     this.menuToggle_.classList.add('menu-open-button');
     this.menuToggle_.setAttribute('viewBox', '0 0 32 32');
     let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -70,11 +81,23 @@ export class AppShell extends HTMLElement {
     this.menuToggle_.append(path);
 
     this.subject_ = document.createElement('div');
-    this.subject_.id = 'subject';
+    this.subject_.style.cssText = `
+      text-align: center;
+      flex: 1;
+    `;
+
     AppShell.title_ = document.createElement('div');
     AppShell.title_.id = 'title';
     AppShell.loader_ = document.createElement('div');
-    AppShell.loader_.id = 'loader';
+    AppShell.loader_.style.cssText = `
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background-color: black;
+      display: flex;
+      align-items: center;
+    `;
 
     toolbar.append(
         this.backArrow_, this.menuToggle_, AppShell.title_, this.subject_,
@@ -87,7 +110,7 @@ export class AppShell extends HTMLElement {
     });
 
     this.mainContent_.addEventListener('click', (e) => {
-      if (this.mainContent_.classList.contains(DRAWER_OPEN)) {
+      if (this.drawerOpen_) {
         e.preventDefault();
         this.closeMenu();
       }
@@ -229,15 +252,17 @@ export class AppShell extends HTMLElement {
       }
     }
 
-    this.mainContent_.classList.add(DRAWER_OPEN);
+    this.drawerOpen_ = true;
+    this.mainContent_.style.transform = 'translateX(250px)';
   }
 
   private closeMenu() {
-    this.mainContent_.classList.remove(DRAWER_OPEN);
+    this.drawerOpen_ = false;
+    this.mainContent_.style.transform = '';
   }
 
   private toggleMenu() {
-    if (this.mainContent_.classList.contains(DRAWER_OPEN))
+    if (this.drawerOpen_)
       this.closeMenu();
     else
       this.openMenu();
