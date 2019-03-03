@@ -392,8 +392,15 @@ export class ThreadListView extends View {
       if (this.renderedRow_) {
         if (nextRow) {
           let nextGroupName = this.model_.getGroupName(nextRow.thread);
-          if (this.renderedGroupName_ !== nextGroupName)
-            toast = this.createToast_(nextGroupName);
+          if (this.renderedGroupName_ !== nextGroupName) {
+            // If the next group is collapsed, go back to the thread list.
+            if (this.model_.isCollapsed(nextGroupName))
+              nextRow = null;
+            else
+              toast = this.createToast_(nextGroupName);
+          }
+        }
+        if (nextRow) {
           this.setRenderedRowInternal_(nextRow);
         } else {
           this.transitionToThreadList_(null);
