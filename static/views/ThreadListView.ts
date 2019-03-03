@@ -890,7 +890,7 @@ export class ThreadListView extends View {
         // TODO: Handle if sending fails in such a way that the user can at
         // least save their message text.
         await renderedRow.thread.sendReply(
-            compose.value, compose.getEmails(), type, sender);
+            compose.value, compose.getEmails(), type, defined(sender));
       } finally {
         this.isSending_ = false;
         progress.incrementProgress();

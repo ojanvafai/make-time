@@ -1,6 +1,6 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, serializeAddress, USER_ID} from './Base.js';
+import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, serializeAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {send} from './Mail.js';
@@ -522,7 +522,7 @@ export class Thread extends EventTarget {
 
   async sendReply(
       replyText: string, extraEmails: string[], replyType: ReplyType,
-      sender?: gapi.client.gmail.SendAs) {
+      sender: gapi.client.gmail.SendAs) {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
@@ -537,10 +537,9 @@ export class Thread extends EventTarget {
       to = lastMessage.replyTo || lastMessage.from || '';
 
       if (replyType === ReplyType.ReplyAll && lastMessage.to) {
-        let myEmail = await getMyEmail();
         let addresses = lastMessage.parsedTo;
         for (let address of addresses) {
-          if (address.address !== myEmail) {
+          if (address.address !== sender.sendAsEmail) {
             if (to !== '')
               to += ',';
             to += serializeAddress(address);
