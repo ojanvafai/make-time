@@ -101,7 +101,3 @@ export function serializeAddress(address: ParsedAddress) {
   let name = address.name.includes(',') ? `"${address.name}"` : address.name;
   return `${name} <${address.address}>`;
 }
-
-export function getDefinitelyExistsElementById(id: string) {
-  return notNull(document.getElementById(id));
-}

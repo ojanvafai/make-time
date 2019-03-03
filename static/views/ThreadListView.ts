@@ -11,10 +11,10 @@ import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
+import {AppShell} from './AppShell.js';
 import {FocusRowEvent, SelectRowEvent as CheckRowEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
-import { AppShell } from './AppShell.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
     ThreadRow|null) => {
@@ -210,9 +210,6 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      public updateTitle:
-          (key: string, count: number,
-           ...title: (HTMLElement|string)[]) => RadialProgress,
       private allowedReplyLength_: number, private autoStartTimer_: boolean,
       private countDown_: boolean, private timerDuration_: number,
       bottomButtonUrl: string, bottomButtonText: string) {
@@ -332,7 +329,7 @@ export class ThreadListView extends View {
     let timer = new Timer(
         this.autoStartTimer_, this.countDown_, this.timerDuration_,
         this.singleThreadContainer_);
-    this.addToFooter(timer);
+    AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;
   }
 
@@ -760,7 +757,7 @@ export class ThreadListView extends View {
 
     this.updateActions_();
     if (toast)
-      this.addToFooter(toast);
+      AppShell.addToFooter(toast);
 
     // If you click on a row before it's pulled in message details, handle it
     // semi-gracefully.
@@ -896,8 +893,8 @@ export class ThreadListView extends View {
       if (this.isSending_)
         return;
       this.isSending_ = true;
-      let progress =
-          this.updateTitle('ThreadListView.sendReply', 1, 'Sending reply...');
+      let progress = AppShell.updateLoaderTitle(
+          'ThreadListView.sendReply', 1, 'Sending reply...');
 
       let sender: gapi.client.gmail.SendAs|undefined;
       if (sendAs.senders && sendAs.senders.length) {
@@ -949,7 +946,7 @@ export class ThreadListView extends View {
     });
 
     this.setActions([]);
-    this.setFooter(container);
+    AppShell.setFooter(container);
     this.addTimer_();
 
     compose.focus();

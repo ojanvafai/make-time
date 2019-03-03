@@ -13,31 +13,19 @@ import * as usedForSideEffects2 from '../third_party/firebasejs/5.8.2/firebase-f
 usedForSideEffects2;
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, getDefinitelyExistsElementById, USER_ID, notNull} from './Base.js';
+import {assert, USER_ID, notNull} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {gapiFetch} from './Net.js';
-import {COMPLETED_EVENT_NAME, RadialProgress} from './RadialProgress.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {HelpDialog} from './views/HelpDialog.js';
 import {SendAs} from './SendAs.js';
 import {QueueNames} from './QueueNames.js';
-
-// Extract these before rendering any threads since the threads can have
-// elements with IDs in them.
-const title = getDefinitelyExistsElementById('title');
-const loader = getDefinitelyExistsElementById('loader');
-
-interface TitleEntry {
-  key: string;
-  title: (HTMLElement|string)[];
-}
+import { AppShell } from './views/AppShell.js';
 
 let storage_ = new ServerStorage();
 let sendAs_ = new SendAs();
 let settings_: Settings;
-let titleStack_: TitleEntry[] = [];
-let loaderTitleStack_: TitleEntry[] = [];
 
 // Client ID and API key from the Developer Console
 let clientId: string;
@@ -124,7 +112,7 @@ async function login_() {
   if (isSignedIn_)
     return;
 
-  let progress = updateLoaderTitle('login', 1, 'Logging in...');
+  let progress = AppShell.updateLoaderTitle('login', 1, 'Logging in...');
 
   // Assert that we're not initializing firebase more than once.
   assert(!firebase.apps.length);
@@ -227,55 +215,6 @@ export function firestoreUserCollection() {
   let db = firestore();
   let uid = notNull(firebaseAuth().currentUser).uid;
   return db.collection(uid);
-}
-
-export function updateTitle(key: string, ...opt_title: string[]) {
-  updateTitleBase(titleStack_, title, key, ...opt_title);
-}
-
-let progressElements: Map<string, RadialProgress> = new Map();
-
-export function updateLoaderTitle(
-    key: string, count: number, ...opt_title: (HTMLElement|string)[]) {
-  let progress = progressElements.get(key);
-  if (!progress) {
-    progress = new RadialProgress();
-    progressElements.set(key, progress);
-    progress.addEventListener(COMPLETED_EVENT_NAME, () => {
-      clearLoaderTitle(key);
-    });
-  }
-
-  progress.addToTotal(count);
-
-  updateTitleBase(loaderTitleStack_, loader, key, ...opt_title, progress);
-  return progress;
-}
-
-function clearLoaderTitle(key: string) {
-  updateTitleBase(loaderTitleStack_, loader, key);
-}
-
-function updateTitleBase(
-    stack: TitleEntry[], node: HTMLElement, key: string,
-    ...opt_title: (HTMLElement|string)[]) {
-  let index = stack.findIndex((item) => item.key == key);
-  if (!opt_title[0]) {
-    if (index != -1)
-      stack.splice(index, 1);
-  } else if (index == -1) {
-    stack.push({
-      key: key,
-      title: opt_title,
-    });
-  } else {
-    let entry = stack[index];
-    entry.title = opt_title;
-  }
-
-  node.textContent = '';
-  if (stack.length)
-    node.append(...stack[stack.length - 1].title);
 }
 
 export interface FetchRequestParameters {

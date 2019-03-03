@@ -1,5 +1,5 @@
 import {defined, getCurrentWeekNumber, showDialog} from './Base.js';
-import {firestore, getServerStorage, getSettings, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {firestore, getServerStorage, getSettings} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
@@ -179,9 +179,8 @@ async function createThreadListView(
       settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
   return new ThreadListView(
-      model, appShell_, updateLoaderTitle, allowedReplyLength,
-      autoStartTimer, countDown, timerDuration, bottomButtonUrl,
-      bottomButtonText);
+      model, appShell_, allowedReplyLength, autoStartTimer, countDown,
+      timerDuration, bottomButtonUrl, bottomButtonText);
 }
 
 async function resetModels() {
@@ -339,7 +338,7 @@ export async function update() {
     // TODO: Move this to Net.js once we've made it so that all network
     // requests that fail due to being offline get retried.
     if (getErrorMessage(e) === NETWORK_OFFLINE_ERROR_MESSAGE) {
-      updateTitle(
+      AppShell.updateTitle(
           CONNECTION_FAILURE_KEY, 'Having trouble connecting to internet...');
     } else {
       throw e;
@@ -352,7 +351,7 @@ export async function update() {
 window.addEventListener(CONNECTION_FAILURE_KEY, () => {
   // Net.js fires this when a network request succeeds, which indicates we're
   // no longer offline.
-  updateTitle(CONNECTION_FAILURE_KEY);
+  AppShell.updateTitle(CONNECTION_FAILURE_KEY);
 });
 
 // Make sure links open in new tabs.
@@ -491,10 +490,10 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 window.addEventListener('offline', () => {
-  updateTitle('main.offline', 'No network connection...');
+  AppShell.updateTitle('main.offline', 'No network connection...');
 });
 
 window.addEventListener('online', () => {
-  updateTitle('main.offline');
+  AppShell.updateTitle('main.offline');
   update();
 });

@@ -1,7 +1,7 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {assert, defined, ParsedAddress, USER_ID} from './Base.js';
-import {FetchRequestParameters, firestoreUserCollection, getServerStorage, updateLoaderTitle} from './BaseMain.js';
+import {FetchRequestParameters, firestoreUserCollection, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -12,6 +12,7 @@ import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {TaskQueue} from './TaskQueue.js';
 import {BuiltInLabels, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
+import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
 
@@ -208,7 +209,7 @@ export class MailProcessor {
     if (!threads.length)
       return;
 
-    let progress = updateLoaderTitle(
+    let progress = AppShell.updateLoaderTitle(
         'MailProcessor.forEachThread_', threads.length, title);
 
     await this.doInParallel_<gapi.client.gmail.Thread>(
