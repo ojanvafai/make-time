@@ -27,6 +27,7 @@ export class ThreadListChangedEvent extends Event {
 export abstract class ThreadListModel extends Model {
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
+  private collapsedGroupNames_: Map<string, boolean>;
   private snapshotToProcess_?: firebase.firestore.QuerySnapshot|null;
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
@@ -36,6 +37,7 @@ export abstract class ThreadListModel extends Model {
 
     this.resetUndoableActions_();
     this.threads_ = [];
+    this.collapsedGroupNames_ = new Map();
     this.snapshotToProcess_ = null;
     this.faviconCount_ = queryKey === ThreadMetadataKeys.hasPriority ? 0 : -1;
 
@@ -49,6 +51,16 @@ export abstract class ThreadListModel extends Model {
   protected abstract shouldShowThread(thread: Thread): boolean;
   abstract getGroupName(thread: Thread): string;
   abstract showPriorityLabel(): boolean;
+
+  toggleCollapsed(groupName: string) {
+    let isCollapsed = this.collapsedGroupNames_.get(groupName);
+    this.collapsedGroupNames_.set(groupName, !isCollapsed);
+    this.dispatchEvent(new ThreadListChangedEvent());
+  }
+
+  isCollapsed(groupName: string) {
+    return this.collapsedGroupNames_.get(groupName) || false;
+  }
 
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.

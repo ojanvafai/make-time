@@ -366,7 +366,7 @@ export class ThreadListView extends View {
     for (let thread of threads) {
       let groupName = this.model_.getGroupName(thread);
       if (!currentGroup || currentGroup.name != groupName) {
-        currentGroup = new ThreadRowGroup(groupName);
+        currentGroup = new ThreadRowGroup(groupName, this.model_);
         this.rowGroupContainer_.append(currentGroup);
       }
       currentGroup.push(this.getThreadRow_(thread));
