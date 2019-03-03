@@ -14,6 +14,7 @@ import {ViewInGmailButton} from '../ViewInGmailButton.js';
 import {FocusRowEvent, SelectRowEvent as CheckRowEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
+import { AppShell } from './AppShell.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
     ThreadRow|null) => {
@@ -208,12 +209,10 @@ export class ThreadListView extends View {
   private sendAs_?: SendAs;
 
   constructor(
-      private model_: ThreadListModel, private scrollContainer_: HTMLElement,
+      private model_: ThreadListModel, private appShell_: AppShell,
       public updateTitle:
           (key: string, count: number,
            ...title: (HTMLElement|string)[]) => RadialProgress,
-      private setSubject_: (...subject: (Node|string)[]) => void,
-      private showBackArrow_: (show: boolean) => void,
       private allowedReplyLength_: number, private autoStartTimer_: boolean,
       private countDown_: boolean, private timerDuration_: number,
       bottomButtonUrl: string, bottomButtonText: string) {
@@ -307,8 +306,8 @@ export class ThreadListView extends View {
     for (let listener of this.modelListeners_) {
       this.model_.removeEventListener(listener.name, listener.handler);
     }
-    this.setSubject_('');
-    this.showBackArrow_(false);
+    this.appShell_.setSubject('');
+    this.appShell_.showBackArrow(false);
   }
 
   async init() {
@@ -652,24 +651,24 @@ export class ThreadListView extends View {
   }
 
   transitionToThreadList_(focusedRow: ThreadRow|null) {
-    this.showBackArrow_(false);
+    this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
     this.singleThreadContainer_.textContent = '';
-    this.scrollContainer_.scrollTop = this.scrollOffset_ || 0;
+    this.appShell_.contentScrollTop = this.scrollOffset_ || 0;
 
     this.setFocusAndScrollIntoView_(focusedRow);
     this.setRenderedRow_(null);
-    this.setSubject_('');
+    this.appShell_.setSubject('');
     this.updateActions_();
 
     this.render_();
   }
 
   transitionToSingleThread_() {
-    this.showBackArrow_(true);
+    this.appShell_.showBackArrow(true);
 
-    this.scrollOffset_ = this.scrollContainer_.scrollTop;
+    this.scrollOffset_ = this.appShell_.contentScrollTop;
     this.rowGroupContainer_.style.display = 'none';
   }
 
@@ -769,7 +768,7 @@ export class ThreadListView extends View {
     // subject, etc.
     let messages = renderedRow.thread.getMessages();
     if (!messages.length) {
-      this.setSubject_('');
+      this.appShell_.setSubject('');
       return;
     }
 
@@ -780,7 +779,7 @@ export class ThreadListView extends View {
     let subject = document.createElement('div');
     subject.style.flex = '1';
     subject.append(renderedRow.thread.getSubject());
-    this.setSubject_(subject, viewInGmailButton);
+    this.appShell_.setSubject(subject, viewInGmailButton);
 
     rendered.focusFirstUnread();
     // Check if new messages have come in since we last fetched from the

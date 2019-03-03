@@ -1,4 +1,4 @@
-import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById, showDialog} from './Base.js';
+import {defined, getCurrentWeekNumber, showDialog} from './Base.js';
 import {firestore, getServerStorage, getSettings, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
@@ -25,11 +25,6 @@ import {View} from './views/View.js';
 let currentView_: View;
 let mailProcessor_: MailProcessor;
 let appShell_: AppShell;
-
-// Extract these before rendering any threads since the threads can have
-// elements with IDs in them.
-const content = getDefinitelyExistsElementById('content');
-const subject = getDefinitelyExistsElementById('subject');
 
 const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
@@ -163,10 +158,7 @@ async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
   }
 
   currentView_ = view;
-
-  content.textContent = '';
-  content.append(currentView_);
-
+  appShell_.setContent(currentView_);
   await currentView_.init();
 }
 
@@ -187,8 +179,7 @@ async function createThreadListView(
       settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
   return new ThreadListView(
-      model, content, updateLoaderTitle, setSubject,
-      (show: boolean) => appShell_.showBackArrow(show), allowedReplyLength,
+      model, appShell_, updateLoaderTitle, allowedReplyLength,
       autoStartTimer, countDown, timerDuration, bottomButtonUrl,
       bottomButtonText);
 }
@@ -216,11 +207,6 @@ async function getTodoModel() {
     todoModel_ = new TodoModel(vacation);
   }
   return todoModel_;
-}
-
-function setSubject(...items: (string|Node)[]) {
-  subject.textContent = '';
-  subject.append(...items);
 }
 
 async function onLoad() {
