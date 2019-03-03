@@ -1,5 +1,5 @@
 import {defined, notNull} from '../Base.js';
-import {MUST_DO_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys} from '../Thread.js';
+import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
@@ -17,7 +17,8 @@ export class TodoModel extends ThreadListModel {
   }
 
   defaultCollapsedState(groupName: string) {
-    return groupName !== MUST_DO_PRIORITY_NAME;
+    return groupName !== MUST_DO_PRIORITY_NAME &&
+        groupName !== NEEDS_FILTER_PRIORITY_NAME;
   }
 
   getGroupName(thread: Thread) {
