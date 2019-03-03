@@ -1,5 +1,5 @@
 import {defined, notNull} from '../Base.js';
-import {Priority, PrioritySortOrder, ThreadMetadataKeys} from '../Thread.js';
+import {MUST_DO_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
@@ -14,6 +14,10 @@ export class TodoModel extends ThreadListModel {
     // Only threads with a priority should be added and only show MUST_DO_LABEL
     // when on vacation.
     return !!(priority && (!this.vacation_ || priority == Priority.MustDo));
+  }
+
+  defaultCollapsedState(groupName: string) {
+    return groupName !== MUST_DO_PRIORITY_NAME;
   }
 
   getGroupName(thread: Thread) {

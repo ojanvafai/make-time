@@ -1,4 +1,5 @@
 import {notNull} from '../Base.js';
+import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Thread, ThreadMetadataKeys} from '../Thread.js';
@@ -17,6 +18,12 @@ export class TriageModel extends ThreadListModel {
     // TODO: Make this respect day boundaries instead of just doing 24 hours.
     let oneDay = 24 * 60 * 60 * 1000;
     return (Date.now() - thread.getDate().getTime()) / (oneDay);
+  }
+
+  defaultCollapsedState(groupName: string) {
+    let queueType = this.settings_.getQueueSettings().get(groupName).queue;
+    return queueType === QueueSettings.WEEKLY ||
+        queueType === QueueSettings.MONTHLY;
   }
 
   shouldShowThread(thread: Thread) {

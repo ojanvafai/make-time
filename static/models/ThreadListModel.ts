@@ -47,19 +47,23 @@ export abstract class ThreadListModel extends Model {
         .onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
   }
 
+  protected abstract defaultCollapsedState(groupName: string): boolean;
   protected abstract compareThreads(a: Thread, b: Thread): number;
   protected abstract shouldShowThread(thread: Thread): boolean;
   abstract getGroupName(thread: Thread): string;
   abstract showPriorityLabel(): boolean;
 
   toggleCollapsed(groupName: string) {
-    let isCollapsed = this.collapsedGroupNames_.get(groupName);
+    let isCollapsed = this.isCollapsed(groupName);
     this.collapsedGroupNames_.set(groupName, !isCollapsed);
     this.dispatchEvent(new ThreadListChangedEvent());
   }
 
   isCollapsed(groupName: string) {
-    return this.collapsedGroupNames_.get(groupName) || false;
+    let isCollapsed = this.collapsedGroupNames_.get(groupName);
+    if (isCollapsed === undefined)
+      return this.defaultCollapsedState(groupName);
+    return isCollapsed;
   }
 
   // onSnapshot is called sync for local changes. If we modify a bunch of things
