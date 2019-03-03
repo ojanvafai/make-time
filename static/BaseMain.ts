@@ -13,9 +13,8 @@ import * as usedForSideEffects2 from '../third_party/firebasejs/5.8.2/firebase-f
 usedForSideEffects2;
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, USER_ID, notNull} from './Base.js';
+import {assert, notNull} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
-import {gapiFetch} from './Net.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {HelpDialog} from './views/HelpDialog.js';
@@ -223,55 +222,6 @@ export interface FetchRequestParameters {
   pageToken?: string;
   maxResults?: number;
   includeSpamTrash?: boolean;
-}
-
-let MAX_RESULTS_CAP = 500;
-
-// TODO: Share some code with fetchThreads.
-export async function fetchMessages(
-    forEachMessage: (message: gapi.client.gmail.Message) => void, query: string,
-    maxResults: number = 0) {
-  // If the query is empty or just whitespace, then we would fetch all mail by
-  // accident.
-  assert(query.trim() !== '');
-
-  // Chats don't expose their bodies in the gmail API, so just skip them.
-  query = `(${query}) AND -in:chats`;
-
-  let resultCountLeft = maxResults || MAX_RESULTS_CAP;
-
-  let getPageOfThreads = async (opt_pageToken?: string) => {
-    let maxForThisFetch = Math.min(resultCountLeft, MAX_RESULTS_CAP);
-    resultCountLeft -= maxForThisFetch;
-
-    let requestParams = <FetchRequestParameters>{
-      'userId': USER_ID,
-      'q': query,
-      'maxResults': maxForThisFetch,
-    };
-
-    if (maxResults)
-      requestParams.maxResults = maxResults;
-
-    if (opt_pageToken)
-      requestParams.pageToken = opt_pageToken;
-
-    let resp =
-        await gapiFetch(gapi.client.gmail.users.messages.list, requestParams);
-    let messages = resp.result.messages || [];
-    for (let message of messages) {
-      await forEachMessage(message);
-    }
-
-    if (resultCountLeft <= 0)
-      return;
-
-    let nextPageToken = resp.result.nextPageToken;
-    if (nextPageToken)
-      await getPageOfThreads(nextPageToken);
-  };
-
-  await getPageOfThreads();
 }
 
 export function showHelp() {
