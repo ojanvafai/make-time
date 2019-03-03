@@ -53,8 +53,6 @@ export class Actions extends HTMLElement {
     `;
     this.append(buttonContainer);
 
-    let backgroundColor = '#ddd';
-
     for (let action of this.actions_) {
       if (action.hidden)
         continue;
@@ -64,7 +62,6 @@ export class Actions extends HTMLElement {
         white-space: nowrap;
         overflow: hidden;
         position: relative;
-        background-color: ${backgroundColor};
         user-select: none;
         min-width: 3em;
       `;
