@@ -1,4 +1,3 @@
-import {getActionKey, getActions} from './Actions.js';
 import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById, showDialog} from './Base.js';
 import {firestore, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
@@ -17,7 +16,7 @@ import {Router} from './Router.js';
 import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
-import {HelpDialog} from './views/HelpDialog.js';
+import {KeyboardShortcutsDialog} from './views/KeyboardShortcutsDialog.js';
 import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
@@ -524,82 +523,6 @@ document.addEventListener('visibilitychange', () => {
     update();
 });
 
-function showKeyboardShorcuts() {
-  let table = document.createElement('table');
-
-  let actions = getActions();
-  let isFirst = true;
-  for (let entry of actions) {
-    let viewName = entry[0];
-    let actions = entry[1];
-
-    let headerRow = document.createElement('tr');
-    if (!isFirst) {
-      headerRow.style.cssText = `
-        height: 40px;
-        vertical-align: bottom;
-      `;
-    }
-    isFirst = false;
-    table.append(headerRow);
-
-    headerRow.append(document.createElement('td'));
-
-    let headerCell = document.createElement('td');
-    headerCell.style.cssText = `
-      font-weight: bold;
-    `;
-    headerCell.append(viewName);
-    headerRow.append(headerCell);
-
-    // TODO: These should probably be presented in a deliberate order and
-    // grouped, e.g. navigation actions adjacent to each other.
-    for (let action of actions) {
-      let row = document.createElement('tr');
-      table.append(row);
-
-      let key = getActionKey(action);
-      switch (key) {
-        case ' ':
-          key = '<space>';
-          break;
-        case 'Escape':
-          key = '<esc>';
-          break;
-        case 'Enter':
-          key = '<enter>';
-          break;
-      }
-
-      let shortcut = document.createElement('td');
-      shortcut.style.cssText = `
-        font-weight: bold;
-        color: green;
-        text-align: right;
-        padding-right: 4px;
-      `;
-      shortcut.append(key);
-      row.append(shortcut);
-
-      let name = document.createElement('td');
-      name.style.cssText = `
-        white-space: nowrap;
-        padding-right: 10px;
-      `;
-      name.append(action.name);
-      row.append(name);
-
-      let description = document.createElement('td');
-      description.append(action.description);
-      row.append(description);
-    }
-  }
-
-  let container = document.createElement('div');
-  container.append('Keyboard Shortcuts', document.createElement('hr'), table);
-  new HelpDialog(container);
-}
-
 document.body.addEventListener('keydown', async (e) => {
   if (!getView())
     return;
@@ -608,7 +531,7 @@ document.body.addEventListener('keydown', async (e) => {
     return;
 
   if (e.key == '?') {
-    showKeyboardShorcuts();
+    new KeyboardShortcutsDialog();
     return;
   }
 
