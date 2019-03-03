@@ -11,7 +11,7 @@ import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
-import {FOCUS_THREAD_ROW_EVENT_NAME, ThreadRow} from './ThreadRow.js';
+import {FocusRowEvent, SelectRowEvent as CheckRowEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
@@ -199,6 +199,7 @@ export class ThreadListView extends View {
   private singleThreadContainer_: HTMLElement;
   private renderedRow_: ThreadRow|null;
   private autoFocusedRow_: ThreadRow|null;
+  private lastCheckedRow_: ThreadRow|null;
   private renderedGroupName_: string|null;
   private scrollOffset_: number|undefined;
   private isSending_: boolean|undefined;
@@ -228,6 +229,7 @@ export class ThreadListView extends View {
     this.focusedRow_ = null;
     this.renderedRow_ = null;
     this.autoFocusedRow_ = null;
+    this.lastCheckedRow_ = null;
     this.renderedGroupName_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
@@ -242,11 +244,12 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.addEventListener('renderThread', (e: Event) => {
       this.setRenderedRow_(<ThreadRow>e.target);
     });
-
-    this.rowGroupContainer_.addEventListener(
-        FOCUS_THREAD_ROW_EVENT_NAME, (e: Event) => {
-          this.handleFocusRow_(<ThreadRow>e.target);
-        });
+    this.rowGroupContainer_.addEventListener(FocusRowEvent.NAME, (e: Event) => {
+      this.handleFocusRow_(<ThreadRow>e.target);
+    });
+    this.rowGroupContainer_.addEventListener(CheckRowEvent.NAME, (e: Event) => {
+      this.handleCheckRow_(<ThreadRow>e.target, (e as CheckRowEvent).shiftKey);
+    });
 
     this.singleThreadContainer_ = document.createElement('div');
     this.singleThreadContainer_.style.cssText = `
@@ -491,7 +494,7 @@ export class ThreadListView extends View {
     this.autoFocusedRow_ = null;
   }
 
-  private handleFocusRow_(row: ThreadRow|null) {
+  private handleFocusRow_(row: ThreadRow) {
     // Once a row gets manually focused, stop auto-focusing.
     if (row !== this.autoFocusedRow_)
       this.autoFocusedRow_ = null;
@@ -502,6 +505,21 @@ export class ThreadListView extends View {
     if (this.focusedRow_)
       this.focusedRow_.clearFocus();
     this.focusedRow_ = row;
+  }
+
+  private handleCheckRow_(row: ThreadRow, rangeSelect: boolean) {
+    // Double check that the last selected row is still actually selected.
+    if (rangeSelect && this.lastCheckedRow_ && this.lastCheckedRow_.checked) {
+      let rows = this.getRows_();
+      let lastIndex = rows.indexOf(this.lastCheckedRow_);
+      let newIndex = rows.indexOf(row);
+      let start = (lastIndex < newIndex) ? lastIndex : newIndex;
+      let end = (lastIndex < newIndex) ? newIndex : lastIndex;
+      for (var i = start; i < end; i++) {
+        rows[i].checked = true;
+      }
+    }
+    this.lastCheckedRow_ = row;
   }
 
   private setFocusAndScrollIntoView_(row: ThreadRow|null) {

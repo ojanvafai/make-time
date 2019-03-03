@@ -85,7 +85,8 @@ export class MailProcessor {
     // 404s.
     // TODO: Technically we should do this for countToMarkRead as well, but
     // the consequences of a message not being marked read are less severe and
-    // it complicates the code, so meh.
+    // it complicates the code and makes remove labels slower due to the extra
+    // network request, so meh.
     if (firestoreKey === 'countToArchive') {
       let newMessageData =
           await gapiFetch(gapi.client.gmail.users.threads.get, {

@@ -5,8 +5,6 @@ import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 
-export const FOCUS_THREAD_ROW_EVENT_NAME = 'focus-thread-row';
-
 let UNCHECKED_BACKGROUND_COLOR = 'white';
 
 let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -24,6 +22,20 @@ let SAME_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
   hour: 'numeric',
   minute: 'numeric',
 });
+
+export class FocusRowEvent extends Event {
+  static NAME = 'focus-row';
+  constructor() {
+    super(FocusRowEvent.NAME, {bubbles: true});
+  }
+}
+
+export class SelectRowEvent extends Event {
+  static NAME = 'select-row';
+  constructor(public shiftKey: boolean) {
+    super(SelectRowEvent.NAME, {bubbles: true});
+  }
+}
 
 class RowState {
   constructor(
@@ -70,8 +82,18 @@ export class ThreadRow extends HTMLElement {
       justify-content: center;
       align-items: center;
     `;
-    label.addEventListener('click', () => {
+
+    // Pevent the default behavior of text selection on shift+click this is used
+    // for range selections. Need to do it on mousedown unfortunately since
+    // that's when the selection is modified on some platforms (e.g. mac).
+    label.addEventListener('mousedown', (e: Event) => {
+      if ((e as MouseEvent).shiftKey)
+        e.preventDefault();
+    });
+    label.addEventListener('click', (e) => {
       this.checked = !this.selected;
+      if (this.checked)
+        this.dispatchEvent(new SelectRowEvent(e.shiftKey));
       this.setFocus(true, false);
     });
 
@@ -270,10 +292,8 @@ export class ThreadRow extends HTMLElement {
     this.label_.style.backgroundColor = this.focused_ ? '#ccc' : '';
     this.updateCheckbox_();
     // TODO: Technically we probably want a blur event as well for !value.
-    if (value) {
-      this.dispatchEvent(
-          new Event(FOCUS_THREAD_ROW_EVENT_NAME, {bubbles: true}));
-    }
+    if (value)
+      this.dispatchEvent(new FocusRowEvent());
   }
 
   clearFocus() {
