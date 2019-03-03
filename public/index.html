@@ -36,23 +36,6 @@ window.update = update;`;
       body {
         margin: 0px;
       }
-      #toolbar {
-        display: flex;
-        align-items: center;
-        background-color: black;
-        color: white;
-        padding: 6px;
-        position: relative;
-      }
-      #toolbar > * {
-        margin-right: 4px;
-        display: flex;
-        align-items:center;
-      }
-      a {
-        color: black;
-        text-decoration: underline;
-      }
       button, .label-button {
         margin: 4px;
         padding: 12px;
@@ -62,6 +45,8 @@ window.update = update;`;
         text-align: center;
       }
       .label-button {
+        color: black;
+        text-decoration: underline;
         align-self: center;
         background-color: white;
       }
@@ -98,23 +83,6 @@ window.update = update;`;
       .queue-row:hover {
         background-color: lightgrey !important;
       }
-      #main-content {
-        will-change: transform;
-        background-color: #eee;
-        display: flex;
-        flex-direction: column;
-      }
-      #main-content.drawer-open {
-        transform: translateX(250px);
-      }
-      .panel {
-        transition: transform 0.3s ease;
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-      }
       #drawer,
       #drawer > .item {
         color: #ddd;
@@ -141,35 +109,11 @@ window.update = update;`;
       #drawer > .nested {
         text-indent: 20px;
       }
-      #subject {
-        text-align: center;
-        flex: 1;
-      }
-      #content {
-        flex: 1;
-        overflow: auto;
-        height: 100%;
-      }
-      #content > * {
-        width: 100%;
-        max-width: 1000px;
-        margin: auto;
-      }
       blockquote {
         min-width: 300px;
       }
-      .close-button::before {
-        content: "Ⓧ";
-      }
-      .close-button:hover::before {
-        content: "🅧";
-      }
       .expander:hover {
         background-color: white;
-      }
-      .shortcut {
-        font-weight: bold;
-        text-decoration: underline;
       }
       .toggler {
         display: inline-block;
@@ -180,19 +124,6 @@ window.update = update;`;
       .toggler:hover {
         background-color: #bbb;
       }
-      #loader {
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        background-color: black;
-        display: flex;
-        align-items: center;
-      }
-      mt-view-one {
-        border: 1px solid #ccc;
-        border-width: 0px 1px;
-      }
       mt-thread-row:hover {
         background-color: #eee !important;
       }
@@ -201,22 +132,6 @@ window.update = update;`;
         border: 1px solid #ddd;
         border-bottom: none;
         white-space: nowrap;
-      }
-      mt-thread-row-group {
-        border-bottom: 1px solid #ddd;
-      }
-      #footer {
-        position: sticky;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: center;
-        /* Don't eat clicks in the transparent background of the footer. */
-        pointer-events: none;
-      }
-      #footer > * {
-        pointer-events: all;
       }
       div[contenteditable]::before {
         content: attr(placeholder);
@@ -235,14 +150,6 @@ window.update = update;`;
         color: black;
         background-color: white;
         border-radius: 2px;
-      }
-      #hamburger-menu-toggle {
-        visibility: hidden;
-      }
-      #back-arrow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
       }
     </style>
   </head>

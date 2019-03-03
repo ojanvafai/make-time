@@ -15,7 +15,10 @@ export class ThreadRowGroup extends HTMLElement {
 
   constructor(private groupName_: string, private model_: ThreadListModel) {
     super();
-    this.style.display = 'block';
+    this.style.cssText = `
+      display: block;
+      border-bottom: 1px solid #ddd;
+    `;
 
     let groupNameContainer = document.createElement('span')
     groupNameContainer.style.cssText = `

@@ -112,7 +112,8 @@ export class Actions extends HTMLElement {
         let key = action.key || action.name.charAt(0);
         let name = action.key ? `:${action.name}` : action.name.slice(1);
         button.innerHTML =
-            `<span class="shortcut">${key.toUpperCase()}</span>${name}`;
+            `<span style="font-weight: bold; text-decoration: underline;">${
+                key.toUpperCase()}</span>${name}`;
       }
 
       buttonContainer.append(button);

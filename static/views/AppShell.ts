@@ -11,7 +11,6 @@ interface TitleEntry {
 }
 
 let CURRENT_PAGE_CLASS = 'current-page';
-let DRAWER_OPEN = 'drawer-open';
 
 export class BackEvent extends Event {
   static NAME = 'back';
@@ -27,6 +26,8 @@ export class AppShell extends HTMLElement {
   private backArrow_: HTMLElement;
   private menuToggle_: SVGSVGElement;
   private subject_: HTMLElement;
+  private drawerOpen_: boolean;
+
   // TODO: Make these not static.
   private static title_: HTMLElement;
   private static loader_: HTMLElement;
@@ -34,33 +35,75 @@ export class AppShell extends HTMLElement {
 
   constructor() {
     super();
+    this.drawerOpen_ = false;
+
+    let panelStyle = `
+      transition: transform 0.3s ease;
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    `;
+
     this.drawer_ = document.createElement('div');
     this.drawer_.id = 'drawer';
-    this.drawer_.className = 'panel';
+    this.drawer_.style.cssText = panelStyle;
 
     this.mainContent_ = document.createElement('div');
-    this.mainContent_.id = 'main-content';
-    this.mainContent_.className = 'panel';
+    this.mainContent_.style.cssText = `
+      will-change: transform;
+      background-color: #eee;
+      display: flex;
+      flex-direction: column;
+      ${panelStyle}
+    `;
 
     document.body.append(this.drawer_, this.mainContent_);
 
     let toolbar = document.createElement('div');
-    toolbar.id = 'toolbar';
+    toolbar.style.cssText = `
+      display: flex;
+      align-items: center;
+      background-color: black;
+      color: white;
+      padding: 6px;
+      position: relative;
+    `;
+
     this.content_ = document.createElement('div');
-    this.content_.id = 'content';
+    this.content_.style.cssText = `
+      flex: 1;
+      overflow: auto;
+      height: 100%;
+    `;
+
     AppShell.footer_ = document.createElement('div');
-    AppShell.footer_.id = 'footer';
+    AppShell.footer_.style.cssText = `
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      /* Don't eat clicks in the transparent background of the footer. */
+      pointer-events: none;
+    `;
+
     this.mainContent_.append(toolbar, this.content_, AppShell.footer_);
 
     this.backArrow_ = document.createElement('div');
-    this.backArrow_.id = 'back-arrow';
+    this.backArrow_.style.cssText = `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    `;
     this.backArrow_.className = 'menu-open-button';
-    this.backArrow_.style.display = 'none';
     this.backArrow_.textContent = '⬅';
 
     this.menuToggle_ =
         document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.menuToggle_.id = 'hamburger-menu-toggle';
     this.menuToggle_.classList.add('menu-open-button');
     this.menuToggle_.setAttribute('viewBox', '0 0 32 32');
     let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -69,12 +112,30 @@ export class AppShell extends HTMLElement {
         `M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2  s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2  S29.104,22,28,22z`);
     this.menuToggle_.append(path);
 
-    this.subject_ = document.createElement('div');
-    this.subject_.id = 'subject';
+    let toolbarChildStyle = `
+      margin-right: 4px;
+      display: flex;
+      align-items:center;
+    `;
+
     AppShell.title_ = document.createElement('div');
     AppShell.title_.id = 'title';
+    AppShell.title_.style.cssText = `
+      margin-left: 4px;
+      ${toolbarChildStyle}
+    `;
+
+    this.subject_ = document.createElement('div');
+    this.subject_.style.cssText = `
+      text-align: center;
+      flex: 1;
+      ${toolbarChildStyle}
+    `;
+
     AppShell.loader_ = document.createElement('div');
-    AppShell.loader_.id = 'loader';
+    AppShell.loader_.style.cssText = `
+      ${toolbarChildStyle}
+    `;
 
     toolbar.append(
         this.backArrow_, this.menuToggle_, AppShell.title_, this.subject_,
@@ -87,7 +148,7 @@ export class AppShell extends HTMLElement {
     });
 
     this.mainContent_.addEventListener('click', (e) => {
-      if (this.mainContent_.classList.contains(DRAWER_OPEN)) {
+      if (this.drawerOpen_) {
         e.preventDefault();
         this.closeMenu();
       }
@@ -100,10 +161,11 @@ export class AppShell extends HTMLElement {
   static setFooter(dom?: HTMLElement) {
     AppShell.footer_.textContent = '';
     if (dom)
-      AppShell.footer_.append(dom);
+      AppShell.addToFooter(dom);
   }
 
   static addToFooter(dom: HTMLElement) {
+    dom.style.pointerEvents = 'all';
     AppShell.footer_.append(dom);
   }
 
@@ -156,8 +218,11 @@ export class AppShell extends HTMLElement {
   }
 
 
-  setContent(newContent: string|Node) {
+  setContent(newContent: HTMLElement) {
     this.content_.textContent = '';
+    newContent.style.width = '100%';
+    newContent.style.maxWidth = '1000px';
+    newContent.style.margin = 'auto';
     this.content_.append(newContent);
   }
 
@@ -229,15 +294,17 @@ export class AppShell extends HTMLElement {
       }
     }
 
-    this.mainContent_.classList.add(DRAWER_OPEN);
+    this.drawerOpen_ = true;
+    this.mainContent_.style.transform = 'translateX(250px)';
   }
 
   private closeMenu() {
-    this.mainContent_.classList.remove(DRAWER_OPEN);
+    this.drawerOpen_ = false;
+    this.mainContent_.style.transform = '';
   }
 
   private toggleMenu() {
-    if (this.mainContent_.classList.contains(DRAWER_OPEN))
+    if (this.drawerOpen_)
       this.closeMenu();
     else
       this.openMenu();
