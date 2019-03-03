@@ -87,7 +87,7 @@ export class Settings extends EventTarget {
       key: ServerStorage.KEYS.VACATION,
       name: 'Vacation',
       description:
-          `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
+          `Label to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
     },
     {
       key: ServerStorage.KEYS.TIMER_DURATION,

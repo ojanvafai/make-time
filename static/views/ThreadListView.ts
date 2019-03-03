@@ -34,7 +34,7 @@ interface ListenerData {
 
 let ARCHIVE_ACTION = {
   name: `Archive`,
-  description: `Archive and remove from the current queue.`,
+  description: `Archive and remove from the current group.`,
   // TODO: Make this use Labels.ARCHIVE.
   destination: null,
 };
@@ -77,26 +77,26 @@ export let PREVIOUS_ACTION = {
 };
 
 export let NEXT_FULL_ACTION = {
-  name: `Next queue or last message`,
+  name: `Next group or last message`,
   description:
-      `Focus the first email of the next queue or scroll thread to the last message.`,
+      `Focus the first email of the next group or scroll thread to the last message.`,
   key: 'n',
   hidden: true,
   repeatable: true,
 };
 
 export let PREVIOUS_FULL_ACTION = {
-  name: `Previous queue or first message`,
+  name: `Previous group or first message`,
   description:
-      `Focus the first email of the previous queue or scroll thread to the first message..`,
+      `Focus the first email of the previous group or scroll thread to the first message..`,
   key: 'p',
   hidden: true,
   repeatable: true,
 };
 
-let TOGGLE_QUEUE_ACTION = {
-  name: `Toggle queue`,
-  description: `Toggle all items in the current queue.`,
+let TOGGLE_GROUP_ACTION = {
+  name: `Toggle group`,
+  description: `Toggle all items in the current group.`,
   key: 'g',
   hidden: true,
 };
@@ -176,7 +176,7 @@ let BASE_ACTIONS = [
 
 let RENDER_ALL_ACTIONS = [
   TOGGLE_FOCUSED_ACTION,
-  TOGGLE_QUEUE_ACTION,
+  TOGGLE_GROUP_ACTION,
   VIEW_FOCUSED_ACTION,
 ];
 
@@ -611,7 +611,7 @@ export class ThreadListView extends View {
         this.toggleFocused_();
         return;
 
-      case TOGGLE_QUEUE_ACTION:
+      case TOGGLE_GROUP_ACTION:
         this.toggleQueue_();
         return;
 

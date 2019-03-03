@@ -9,10 +9,14 @@ const CURSOR_SENTINEL = '!!!!!!!!';
 const DIRECTIVE_SEPARATOR_ = ':';
 const QUERY_SEPARATOR_ = '&&';
 export const HELP_TEXT = `<b>Help</b>
-Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "archive" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
+Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "${
+    Labels
+        .Archive}" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
 
  - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
- - "archive" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
+ - "${
+    Labels
+        .Archive}" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
  - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
  - The first rule that matches is the one that applies, so order matters.
  - Label is the label that will apply qhen the rule matches. This is *not* the full label name. The full label name gets prefixed as maketime/.../labelname. Put just the last bit here.
@@ -20,8 +24,10 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
  - Match All Messages will required the rule to match all the messages in the thread to be considered a match. Otherwise, any message in the thread matching will mean the whole thread matches.
  - No List-ID matches messages that are not sent to an email list.
  - No CCs matches messages that have exactly one email address in the union of the to/cc/bcc fields.
- - Gmail filters match only the newly incoming message. make-time matches all messages in the thread each time the thread is processed.
- - Every thread in the unprocessed queue gets exactly one needstriage label applied. If none of your filters apply to a thread, then make-time will apply a "needsfilter" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
+ - Make-time matches all messages in the thread each time the thread is processed, unlike gmail filters which only match the new message.
+ - If none of your filters apply to a thread, then make-time will apply a "${
+    Labels
+        .Fallback}" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
 
 <b>Rule directives</b>
  - <b>$anything:</b> Matches the raw email header "anything". So, $from matches the From header as plain text instead of the structure match that "from:" below does. You can view raw email headers in gmail by going to a message and opening "Show Original" from the "..." menu.
@@ -30,8 +36,6 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
  - <b>subject:</b> Matches if the subject of the email includes this text.
  - <b>plaintext:</b> Matches if the plain text of the email includes this text.
  - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
-
-If there's a bug in the filtering code, emails should remain in the unprocessed label.
 `;
 
 export class FiltersView extends HTMLElement {

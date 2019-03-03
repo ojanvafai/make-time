@@ -7,8 +7,8 @@ import {HelpDialog} from './HelpDialog.js';
 import {QueuesView} from './QueuesView.js';
 import {View} from './View.js';
 
-let HELP_TEXT = `<b>Reordering queues:</b>
-Use ctrl+up/down or cmd+up/down to reorder the focused queue. Hold shift to move 10 rows at a time.
+let HELP_TEXT = `<b>Reordering labels:</b>
+Use ctrl+up/down or cmd+up/down to reorder the focused label. Hold shift to move 10 rows at a time.
 
 Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
 `;
@@ -52,7 +52,7 @@ export class SettingsView extends View {
     this.queues_.addEventListener('change', () => this.handleChange_());
 
     let queuesContainer = document.createElement('fieldset');
-    queuesContainer.innerHTML = '<legend>Queue sort order</legend>';
+    queuesContainer.innerHTML = '<legend>Label sort order</legend>';
     queuesContainer.append(this.queues_);
     this.scrollable_.append(queuesContainer);
 
