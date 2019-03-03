@@ -1,7 +1,7 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined, ParsedAddress, USER_ID} from './Base.js';
-import {FetchRequestParameters, firestoreUserCollection, getServerStorage} from './BaseMain.js';
+import {assert, defined, ParsedAddress, USER_ID, FetchRequestParameters} from './Base.js';
+import {firestoreUserCollection, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';

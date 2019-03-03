@@ -29,6 +29,14 @@ export function assert<T>(x: T|null|undefined, message?: string): T {
   return x;
 }
 
+export interface FetchRequestParameters {
+  userId: string;
+  q: string;
+  pageToken?: string;
+  maxResults?: number;
+  includeSpamTrash?: boolean;
+}
+
 export function getCurrentWeekNumber() {
   return getWeekNumber(new Date());
 }

@@ -1,5 +1,5 @@
 import {defined, parseAddressList, USER_ID} from './Base.js';
-import {FetchRequestParameters} from './BaseMain.js';
+import {FetchRequestParameters} from './Base.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {gapiFetch} from './Net.js';
 

@@ -216,14 +216,6 @@ export function firestoreUserCollection() {
   return db.collection(uid);
 }
 
-export interface FetchRequestParameters {
-  userId: string;
-  q: string;
-  pageToken?: string;
-  maxResults?: number;
-  includeSpamTrash?: boolean;
-}
-
 export function showHelp() {
   new HelpDialog(`make-time is an opinionated way of handling email.
 
