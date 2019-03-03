@@ -675,6 +675,9 @@ export class ThreadListView extends View {
           // for future use.
           child.resetState();
 
+          // TODO: Instead of removing rows outside of model changes, which
+          // causes races, move focus state into the model so that it all
+          // updates atomically.
           let parentGroup = child.getGroup();
           // The rows will get removed on the next frame anyways, but we don't
           // want the user to see an intermediary state where the row is shown

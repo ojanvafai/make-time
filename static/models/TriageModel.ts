@@ -34,7 +34,7 @@ export class TriageModel extends ThreadListModel {
         this.threadDays_(thread) > this.daysToShow_)
       return false;
 
-    return true;
+    return super.shouldShowThread(thread);
   }
 
   getGroupName(thread: Thread) {

@@ -49,9 +49,21 @@ export abstract class ThreadListModel extends Model {
 
   protected abstract defaultCollapsedState(groupName: string): boolean;
   protected abstract compareThreads(a: Thread, b: Thread): number;
-  protected abstract shouldShowThread(thread: Thread): boolean;
   abstract getGroupName(thread: Thread): string;
   abstract showPriorityLabel(): boolean;
+
+  protected shouldShowThread(thread: Thread) {
+    // If we have archived all the messages but the change hasn't been
+    // propagated to gmail yet, don't show them. This avoids threads
+    // disappearing from view in ThreadListView.markTriaged_ only to show up
+    // again a frame later. Long-term, don't remove rows from markTriaged_ at
+    // all and just rely on firebase changes, but that will depend on first
+    // moving focus state into ThreadListModel so focus updates don't read stale
+    // state of whether any rows are checked.
+    if (thread.getMessageIds().length === thread.getCountToArchive())
+      return false;
+    return true;
+  }
 
   toggleCollapsed(groupName: string) {
     let isCollapsed = this.isCollapsed(groupName);

@@ -242,6 +242,10 @@ export class Thread extends EventTarget {
     return this.metadata_.messageIds;
   }
 
+  getCountToArchive() {
+    return this.metadata_.countToArchive;
+  }
+
   getMessages() {
     return this.processed_.messages;
   }

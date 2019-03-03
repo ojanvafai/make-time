@@ -11,9 +11,11 @@ export class TodoModel extends ThreadListModel {
 
   shouldShowThread(thread: Thread) {
     let priority = thread.getPriorityId();
-    // Only threads with a priority should be added and only show MUST_DO_LABEL
-    // when on vacation.
-    return !!(priority && (!this.vacation_ || priority == Priority.MustDo));
+    if (!priority)
+      return false;
+    if (this.vacation_ && priority !== Priority.MustDo)
+      return false;
+    return super.shouldShowThread(thread);
   }
 
   defaultCollapsedState(groupName: string) {
