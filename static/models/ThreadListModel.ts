@@ -104,24 +104,25 @@ export abstract class ThreadListModel extends Model {
     let snapshot = assert(this.snapshotToProcess_);
     this.snapshotToProcess_ = null;
 
-    let mustDoCount = 0;
+    let faviconCount = 0;
     this.threads_ = [];
     for (let doc of snapshot.docs) {
       let data = doc.data() as ThreadMetadata;
       if (data.blocked || data.queued)
         continue;
 
-      if (data.priorityId === Priority.MustDo)
-        mustDoCount++;
+      if (data.priorityId === Priority.MustDo ||
+          data.priorityId === Priority.NeedsFilter)
+        faviconCount++;
 
       let thread = Thread.create(doc.id, data as ThreadMetadata);
       this.threads_.push(thread);
     };
 
     // The favicon doesn't support showing 3 digets so cap at 99.
-    mustDoCount = Math.min(99, mustDoCount);
-    if (this.faviconCount_ >= 0 && mustDoCount !== this.faviconCount_) {
-      this.faviconCount_ = mustDoCount;
+    faviconCount = Math.min(99, faviconCount);
+    if (this.faviconCount_ >= 0 && faviconCount !== this.faviconCount_) {
+      this.faviconCount_ = faviconCount;
       this.updateFavicon_();
     }
 
