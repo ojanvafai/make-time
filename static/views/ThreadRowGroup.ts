@@ -1,11 +1,24 @@
+import {ThreadListModel} from '../models/ThreadListModel';
+
 import {ThreadRow} from './ThreadRow';
+
+export class ToggleCollapsedEvent extends Event {
+  static NAME = 'toggle-collapsed';
+  constructor() {
+    super(ToggleCollapsedEvent.NAME);
+  }
+}
 
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
+  private rowCountWhenCollapsed_: number;
 
-  constructor(private groupName_: string) {
+  constructor(private groupName_: string, private model_: ThreadListModel) {
     super();
-    this.style.display = 'block';
+    this.style.cssText = `
+      display: block;
+      border-bottom: 1px solid #ddd;
+    `;
 
     let groupNameContainer = document.createElement('span')
     groupNameContainer.style.cssText = `
@@ -14,19 +27,46 @@ export class ThreadRowGroup extends HTMLElement {
     `;
     groupNameContainer.append(groupName_);
 
-    let header = document.createElement('div');
-    header.append(
-        groupNameContainer, ' select ',
-        this.createSelector_('all', this.selectAll_),
-        this.createSelector_('none', this.selectNone_));
+    let toggler = document.createElement('div');
+    toggler.style.cssText = `
+      display: inline-block;
+      text-decoration: underline;
+    `;
+    toggler.append(this.isCollapsed_() ? 'expand' : 'collapse');
+    toggler.addEventListener('click', () => this.toggleCollapsed_());
 
+    let header = document.createElement('div');
     header.style.cssText = `
       margin-left: 5px;
       padding-top: 10px;
     `;
 
+    header.append(
+        groupNameContainer, ' select ',
+        this.createSelector_('all', this.selectAll_),
+        this.createSelector_('none', this.selectNone_), toggler);
+
+    this.rowCountWhenCollapsed_ = 0;
     this.rowContainer_ = document.createElement('div');
+    if (this.isCollapsed_()) {
+      this.rowContainer_.style.cssText = `
+      background-color: white;
+      padding: 5px;
+      text-decoration: underline;
+    `;
+      this.rowContainer_.addEventListener(
+          'click', () => this.toggleCollapsed_());
+    }
+
     this.append(header, this.rowContainer_);
+  }
+
+  isCollapsed_() {
+    return this.model_.isCollapsed(this.groupName_);
+  }
+
+  toggleCollapsed_() {
+    this.model_.toggleCollapsed(this.groupName_);
   }
 
   getRows() {
@@ -42,7 +82,12 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   push(row: ThreadRow) {
-    this.rowContainer_.append(row);
+    if (this.isCollapsed_()) {
+      this.rowContainer_.textContent =
+          `Show ${++this.rowCountWhenCollapsed_} threads`;
+    } else {
+      this.rowContainer_.append(row);
+    }
   }
 
   removeIfEmpty() {

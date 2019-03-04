@@ -53,8 +53,6 @@ export class Actions extends HTMLElement {
     `;
     this.append(buttonContainer);
 
-    let backgroundColor = '#ddd';
-
     for (let action of this.actions_) {
       if (action.hidden)
         continue;
@@ -64,7 +62,6 @@ export class Actions extends HTMLElement {
         white-space: nowrap;
         overflow: hidden;
         position: relative;
-        background-color: ${backgroundColor};
         user-select: none;
         min-width: 3em;
       `;
@@ -112,7 +109,8 @@ export class Actions extends HTMLElement {
         let key = action.key || action.name.charAt(0);
         let name = action.key ? `:${action.name}` : action.name.slice(1);
         button.innerHTML =
-            `<span class="shortcut">${key.toUpperCase()}</span>${name}`;
+            `<span style="font-weight: bold; text-decoration: underline;">${
+                key.toUpperCase()}</span>${name}`;
       }
 
       buttonContainer.append(button);

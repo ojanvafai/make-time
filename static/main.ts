@@ -1,6 +1,5 @@
-import {getActionKey, getActions} from './Actions.js';
-import {defined, getCurrentWeekNumber, getDefinitelyExistsElementById, showDialog} from './Base.js';
-import {firestore, getServerStorage, getSettings, showHelp, updateLoaderTitle, updateTitle} from './BaseMain.js';
+import {defined, getCurrentWeekNumber, showDialog} from './Base.js';
+import {firestore, getServerStorage, getSettings} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
 import {ErrorLogger} from './ErrorLogger.js';
@@ -15,25 +14,18 @@ import {TriageModel} from './models/TriageModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
+import {AppShell, BackEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
-import {HelpDialog} from './views/HelpDialog.js';
+import {HiddenView} from './views/HiddenView.js';
+import {KeyboardShortcutsDialog} from './views/KeyboardShortcutsDialog.js';
 import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
 
 let currentView_: View;
 let mailProcessor_: MailProcessor;
-
-// Extract these before rendering any threads since the threads can have
-// elements with IDs in them.
-const content = getDefinitelyExistsElementById('content');
-const drawer = getDefinitelyExistsElementById('drawer');
-const hammburgerMenuToggle =
-    getDefinitelyExistsElementById('hamburger-menu-toggle');
-const backArrow = getDefinitelyExistsElementById('back-arrow');
-const mainContent = getDefinitelyExistsElementById('main-content');
-const subject = getDefinitelyExistsElementById('subject');
+let appShell_: AppShell;
 
 const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
@@ -54,6 +46,7 @@ updateLongTaskTracking();
 enum VIEW {
   Calendar,
   Compose,
+  Hidden,
   Settings,
   Todo,
   Triage,
@@ -78,11 +71,12 @@ router.add('/triage', routeToTriage);
 router.add('/todo', async (_params) => {
   await setView(VIEW.Todo);
 });
-
+router.add('/hidden', async (_params) => {
+  await setView(VIEW.Hidden);
+});
 router.add('/calendar', async (_parans) => {
   await setView(VIEW.Calendar);
 });
-
 router.add('/settings', async (_parans) => {
   await setView(VIEW.Settings);
 });
@@ -112,6 +106,9 @@ async function createModel(viewType: VIEW) {
     case VIEW.Settings:
       return null;
 
+    case VIEW.Hidden:
+      return null;
+
     default:
       // Throw instead of asserting here so that TypeScript knows that this
       // function never returns undefined.
@@ -122,10 +119,10 @@ async function createModel(viewType: VIEW) {
 async function createView(viewType: VIEW, model: Model|null, params?: any) {
   switch (viewType) {
     case VIEW.Calendar:
-      return new CalendarView(<Calendar>model);
+      return new CalendarView(model as Calendar);
 
     case VIEW.Compose:
-      return new ComposeView(<ComposeModel>model, params);
+      return new ComposeView(model as ComposeModel, params);
 
     case VIEW.Todo:
       return await createThreadListView(
@@ -138,6 +135,9 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
     case VIEW.Settings:
       return new SettingsView(await getSettings());
 
+    case VIEW.Hidden:
+      return new HiddenView(appShell_, await getSettings());
+
     default:
       // Throw instead of asserting here so that TypeScript knows that this
       // function never returns undefined.
@@ -149,7 +149,7 @@ let viewGeneration = 0;
 async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
   let thisViewGeneration = ++viewGeneration;
 
-  showMenuButton(shouldHideMenu);
+  appShell_.showMenuButton(shouldHideMenu);
 
   if (currentView_)
     currentView_.tearDown();
@@ -167,10 +167,7 @@ async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
   }
 
   currentView_ = view;
-
-  content.textContent = '';
-  content.append(currentView_);
-
+  appShell_.setContent(currentView_);
   await currentView_.init();
 }
 
@@ -181,73 +178,12 @@ function preventUpdates() {
   shouldUpdate_ = false;
 }
 
-function showMenuButton(hide?: boolean) {
-  hammburgerMenuToggle.style.visibility = hide ? 'hidden' : 'visible';
-}
-
-let DRAWER_OPEN = 'drawer-open';
-let CURRENT_PAGE_CLASS = 'current-page';
-
-function showBackArrow(show: boolean) {
-  hammburgerMenuToggle.style.display = show ? 'none' : '';
-  backArrow.style.display = show ? '' : 'none';
-}
-
-function openMenu() {
-  let menuItems =
-      <NodeListOf<HTMLAnchorElement>>drawer.querySelectorAll('a.item');
-  for (let item of menuItems) {
-    if (item.pathname == location.pathname) {
-      item.classList.add(CURRENT_PAGE_CLASS);
-    } else {
-      item.classList.remove(CURRENT_PAGE_CLASS);
-    }
-  }
-
-  mainContent.classList.add(DRAWER_OPEN);
-}
-
-function closeMenu() {
-  mainContent.classList.remove(DRAWER_OPEN);
-}
-
-function toggleMenu() {
-  if (mainContent.classList.contains(DRAWER_OPEN))
-    closeMenu();
-  else
-    openMenu();
-}
-
-backArrow.addEventListener('click', async () => {
-  if (getView().goBack)
-    await getView().goBack();
-});
-
-hammburgerMenuToggle.addEventListener('click', (e) => {
-  e.stopPropagation();
-  toggleMenu();
-});
-
-mainContent.addEventListener('click', (e) => {
-  if (mainContent.classList.contains(DRAWER_OPEN)) {
-    e.preventDefault();
-    closeMenu();
-  }
-})
-
 async function createThreadListView(
     model: ThreadListModel, countDown: boolean, bottomButtonUrl: string,
     bottomButtonText: string) {
-  let settings = await getSettings();
-  let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
-  let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
-  let allowedReplyLength =
-      settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-
   return new ThreadListView(
-      model, content, updateLoaderTitle, setSubject, showBackArrow,
-      allowedReplyLength, autoStartTimer, countDown, timerDuration,
-      bottomButtonUrl, bottomButtonText);
+      model, appShell_, await getSettings(), countDown, bottomButtonUrl,
+      bottomButtonText);
 }
 
 async function resetModels() {
@@ -275,45 +211,6 @@ async function getTodoModel() {
   return todoModel_;
 }
 
-function setSubject(...items: (string|Node)[]) {
-  subject.textContent = '';
-  subject.append(...items);
-}
-
-function createMenuItem(name: string, options: any) {
-  let a = document.createElement('a');
-  a.append(name);
-  a.className = 'item';
-
-  if (options.nested)
-    a.classList.add('nested');
-
-  if (options.href)
-    a.href = options.href;
-
-  if (options.onclick)
-    a.onclick = options.onclick;
-
-  a.addEventListener('click', closeMenu);
-  return a;
-}
-
-function appendMenu() {
-  let helpButton = createMenuItem('Help', {
-    onclick: async () => showHelp(),
-  });
-
-  let menuTitle = document.createElement('div');
-  menuTitle.append('MakeTime phases');
-
-  drawer.append(
-      menuTitle, createMenuItem('Compose', {href: '/compose', nested: true}),
-      createMenuItem('Triage', {href: '/triage', nested: true}),
-      createMenuItem('Todo', {href: '/todo', nested: true}),
-      createMenuItem('Calendar (alpha)', {href: '/calendar'}),
-      createMenuItem('Settings', {href: '/settings'}), helpButton);
-}
-
 async function onLoad() {
   let serverStorage = await getServerStorage();
   serverStorage.addEventListener(ServerStorageUpdateEventName, async () => {
@@ -324,7 +221,13 @@ async function onLoad() {
     await routeToCurrentLocation();
   });
 
-  appendMenu();
+  appShell_ = new AppShell();
+  appShell_.addEventListener(BackEvent.NAME, async () => {
+    if (getView().goBack)
+      await getView().goBack();
+  });
+  document.body.append(appShell_);
+
   await routeToCurrentLocation();
 
   mailProcessor_ = new MailProcessor(await getSettings());
@@ -438,7 +341,7 @@ export async function update() {
     // TODO: Move this to Net.js once we've made it so that all network
     // requests that fail due to being offline get retried.
     if (getErrorMessage(e) === NETWORK_OFFLINE_ERROR_MESSAGE) {
-      updateTitle(
+      AppShell.updateTitle(
           CONNECTION_FAILURE_KEY, 'Having trouble connecting to internet...');
     } else {
       throw e;
@@ -451,7 +354,7 @@ export async function update() {
 window.addEventListener(CONNECTION_FAILURE_KEY, () => {
   // Net.js fires this when a network request succeeds, which indicates we're
   // no longer offline.
-  updateTitle(CONNECTION_FAILURE_KEY);
+  AppShell.updateTitle(CONNECTION_FAILURE_KEY);
 });
 
 // Make sure links open in new tabs.
@@ -459,6 +362,22 @@ document.body.addEventListener('click', async (e) => {
   for (let node of e.path) {
     if (node.tagName == 'A') {
       let anchor = <HTMLAnchorElement>node;
+      // For navigations will just change the hash scroll the item into view
+      // (e.g. for links in a newsletter). In theory we could allow the default
+      // action to go through, but that would call onpopstate and we'd need to
+      // get onpopstate to not route to the current location. This seems easier.
+      // This doesn't update the url with the hash, but that might be better
+      // anyways.
+      if (location.hash !== anchor.hash && location.origin === anchor.origin &&
+          location.pathname === anchor.pathname) {
+        e.preventDefault();
+        let id = anchor.hash.replace('#', '');
+        let target = document.getElementById(id);
+        if (target)
+          target.scrollIntoView();
+        return;
+      }
+
       let willHandlePromise = router.run(anchor);
       if (willHandlePromise) {
         // Need to preventDefault before the await, otherwise the browsers
@@ -467,6 +386,7 @@ document.body.addEventListener('click', async (e) => {
         await willHandlePromise;
         return;
       }
+
       anchor.target = '_blank';
       anchor.rel = 'noopener';
     }
@@ -507,82 +427,6 @@ document.addEventListener('visibilitychange', () => {
     update();
 });
 
-function showKeyboardShorcuts() {
-  let table = document.createElement('table');
-
-  let actions = getActions();
-  let isFirst = true;
-  for (let entry of actions) {
-    let viewName = entry[0];
-    let actions = entry[1];
-
-    let headerRow = document.createElement('tr');
-    if (!isFirst) {
-      headerRow.style.cssText = `
-        height: 40px;
-        vertical-align: bottom;
-      `;
-    }
-    isFirst = false;
-    table.append(headerRow);
-
-    headerRow.append(document.createElement('td'));
-
-    let headerCell = document.createElement('td');
-    headerCell.style.cssText = `
-      font-weight: bold;
-    `;
-    headerCell.append(viewName);
-    headerRow.append(headerCell);
-
-    // TODO: These should probably be presented in a deliberate order and
-    // grouped, e.g. navigation actions adjacent to each other.
-    for (let action of actions) {
-      let row = document.createElement('tr');
-      table.append(row);
-
-      let key = getActionKey(action);
-      switch (key) {
-        case ' ':
-          key = '<space>';
-          break;
-        case 'Escape':
-          key = '<esc>';
-          break;
-        case 'Enter':
-          key = '<enter>';
-          break;
-      }
-
-      let shortcut = document.createElement('td');
-      shortcut.style.cssText = `
-        font-weight: bold;
-        color: green;
-        text-align: right;
-        padding-right: 4px;
-      `;
-      shortcut.append(key);
-      row.append(shortcut);
-
-      let name = document.createElement('td');
-      name.style.cssText = `
-        white-space: nowrap;
-        padding-right: 10px;
-      `;
-      name.append(action.name);
-      row.append(name);
-
-      let description = document.createElement('td');
-      description.append(action.description);
-      row.append(description);
-    }
-  }
-
-  let container = document.createElement('div');
-  container.append('Keyboard Shortcuts', document.createElement('hr'), table);
-  new HelpDialog(container);
-}
-
 document.body.addEventListener('keydown', async (e) => {
   if (!getView())
     return;
@@ -591,7 +435,7 @@ document.body.addEventListener('keydown', async (e) => {
     return;
 
   if (e.key == '?') {
-    showKeyboardShorcuts();
+    new KeyboardShortcutsDialog();
     return;
   }
 
@@ -649,10 +493,10 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 window.addEventListener('offline', () => {
-  updateTitle('main.offline', 'No network connection...');
+  AppShell.updateTitle('main.offline', 'No network connection...');
 });
 
 window.addEventListener('online', () => {
-  updateTitle('main.offline');
+  AppShell.updateTitle('main.offline');
   update();
 });

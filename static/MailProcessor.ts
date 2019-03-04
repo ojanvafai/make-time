@@ -1,7 +1,7 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined, ParsedAddress, USER_ID} from './Base.js';
-import {FetchRequestParameters, firestoreUserCollection, getServerStorage, updateLoaderTitle} from './BaseMain.js';
+import {assert, defined, FetchRequestParameters, ParsedAddress, USER_ID} from './Base.js';
+import {firestoreUserCollection, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Labels} from './Labels.js';
 import {Message} from './Message.js';
@@ -10,7 +10,9 @@ import {QueueNames} from './QueueNames.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
+import {TaskQueue} from './TaskQueue.js';
 import {BuiltInLabels, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
+import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
 
@@ -55,60 +57,69 @@ export class MailProcessor {
     let querySnapshot =
         await metadataCollection.where(firestoreKey, '>', 0).get();
 
-    // TODO: Use a TaskQueue and or gapi batch to make this faster?
-    for (let doc of querySnapshot.docs) {
-      let messageIds = doc.data().messageIds;
-      let count = doc.data()[firestoreKey];
-      await gapiFetch(gapi.client.gmail.users.messages.batchModify, {
-        userId: USER_ID,
-        ids: messageIds.slice(0, count),
-        removeLabelIds: removeLabelIds,
-      });
+    await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
+        querySnapshot.docs,
+        async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          await this.removeGmailLabelsFromDoc_(
+              doc, firestoreKey, removeLabelIds);
+        });
+  }
 
-      // Gmail has bugs where modifying individual messages fails silently with
-      // batchModify and 404s with modify. The only way to do the modify is to
-      // use threads.modify, which we don't want to do in the common case since
-      // it introduces race conditions with new threads coming in. This is
-      // different from https://issuetracker.google.com/issues/122167541 where
-      // there's messages that just don't exist. In this case, the message is
-      // there, and you can read it by calling threads.get, but messages.get
-      // 404s.
-      // TODO: Technically we should do this for countToMarkRead as well, but
-      // the consequences of a message not being marked read are less severe and
-      // it complicates the code, so meh.
-      if (firestoreKey === 'countToArchive') {
-        let newMessageData =
-            await gapiFetch(gapi.client.gmail.users.threads.get, {
-              userId: USER_ID,
-              id: doc.id,
-              fields: 'messages(labelIds)',
-            });
+  private async removeGmailLabelsFromDoc_(
+      doc: firebase.firestore.QueryDocumentSnapshot, firestoreKey: string,
+      removeLabelIds: string[]) {
+    let messageIds = doc.data().messageIds;
+    let count = doc.data()[firestoreKey];
+    await gapiFetch(gapi.client.gmail.users.messages.batchModify, {
+      userId: USER_ID,
+      ids: messageIds.slice(0, count),
+      removeLabelIds: removeLabelIds,
+    });
 
-        let newMessages = defined(newMessageData.result.messages);
-        if (newMessages.length === count) {
-          let modifyFailed =
-              newMessages.some(x => defined(x.labelIds).includes('INBOX'));
-          if (modifyFailed) {
-            // If new messages haven't come in, then we can safely archive the
-            // whole thread. If new messages have come in, then we can do
-            // nothing and leave the thread in the inbox.
-            await gapiFetch(gapi.client.gmail.users.threads.modify, {
-              'userId': USER_ID,
-              'id': doc.id,
-              'removeLabelIds': removeLabelIds,
-            });
-          }
+    // Gmail has bugs where modifying individual messages fails silently with
+    // batchModify and 404s with modify. The only way to do the modify is to
+    // use threads.modify, which we don't want to do in the common case since
+    // it introduces race conditions with new threads coming in. This is
+    // different from https://issuetracker.google.com/issues/122167541 where
+    // there's messages that just don't exist. In this case, the message is
+    // there, and you can read it by calling threads.get, but messages.get
+    // 404s.
+    // TODO: Technically we should do this for countToMarkRead as well, but
+    // the consequences of a message not being marked read are less severe and
+    // it complicates the code and makes remove labels slower due to the extra
+    // network request, so meh.
+    if (firestoreKey === 'countToArchive') {
+      let newMessageData =
+          await gapiFetch(gapi.client.gmail.users.threads.get, {
+            userId: USER_ID,
+            id: doc.id,
+            fields: 'messages(labelIds)',
+          });
+
+      let newMessages = defined(newMessageData.result.messages);
+      if (newMessages.length === count) {
+        let modifyFailed =
+            newMessages.some(x => defined(x.labelIds).includes('INBOX'));
+        if (modifyFailed) {
+          // If new messages haven't come in, then we can safely archive the
+          // whole thread. If new messages have come in, then we can do
+          // nothing and leave the thread in the inbox.
+          await gapiFetch(gapi.client.gmail.users.threads.modify, {
+            'userId': USER_ID,
+            'id': doc.id,
+            'removeLabelIds': removeLabelIds,
+          });
         }
       }
-
-      // TODO: Technically there's a race here from when we query to when we
-      // do the update. A new message could have come in and the user already
-      // archives it before this runs and that archive would get lost due to
-      // this delete.
-      let update: any = {};
-      update[firestoreKey] = firebase.firestore.FieldValue.delete();
-      await doc.ref.update(update);
     }
+
+    // TODO: Technically there's a race here from when we query to when we
+    // do the update. A new message could have come in and the user already
+    // archives it before this runs and that archive would get lost due to
+    // this delete.
+    let update: any = {};
+    update[firestoreKey] = firebase.firestore.FieldValue.delete();
+    await doc.ref.update(update);
   }
 
   private async moveToInbox_() {
@@ -118,14 +129,15 @@ export class MailProcessor {
                             .where(ThreadMetadataKeys.moveToInbox, '==', true)
                             .get();
 
-    // TODO: Use TaskQueue.
-    for (let doc of querySnapshot.docs) {
-      await this.addLabels_(doc.id, ['INBOX']);
-      let update: ThreadMetadataUpdate = {
-        moveToInbox: firebase.firestore.FieldValue.delete(),
-      };
-      await doc.ref.update(update);
-    }
+    await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
+        querySnapshot.docs,
+        async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          await this.addLabels_(doc.id, ['INBOX']);
+          let update: ThreadMetadataUpdate = {
+            moveToInbox: firebase.firestore.FieldValue.delete(),
+          };
+          await doc.ref.update(update);
+        });
   }
 
   private async modifyLabels_(
@@ -174,30 +186,40 @@ export class MailProcessor {
 
     // For anything that used to be in the inbox, but isn't anymore (e.g. the
     // user archived from gmail), clear it's metadata so it doesn't show up in
-    // maketime either.
+    // maketime either. Include spam and trash in this query since we want to
+    // remove messages that were marked as spam/trash in gmail as well.
     await this.forEachThread_(
         '-in:inbox in:mktime', (thread) => this.clearMetadata_(thread),
-        'Removing messages archived from gmail...');
+        'Removing messages archived from gmail...', true);
+  }
+
+  private async doInParallel_<T>(items: T[], callback: (t: T) => void) {
+    const taskQueue = new TaskQueue(3);
+    for (let item of items) {
+      taskQueue.queueTask(async () => callback(item));
+    }
+    await taskQueue.flush();
   }
 
   async forEachThread_(
       query: string,
       callback: (thread: gapi.client.gmail.Thread) => Promise<void>,
-      title: string) {
-    let threads = await this.fetchThreads_(query);
+      title: string, includeSpamTrash?: boolean) {
+    let threads = await this.fetchThreads_(query, includeSpamTrash);
     if (!threads.length)
       return;
 
-    let progress = updateLoaderTitle(
+    let progress = AppShell.updateLoaderTitle(
         'MailProcessor.forEachThread_', threads.length, title);
-    // TODO: Use TaskQueue.
-    for (let rawThread of threads) {
-      progress.incrementProgress();
-      await callback(rawThread);
-    }
+
+    await this.doInParallel_<gapi.client.gmail.Thread>(
+        threads, async (thread: gapi.client.gmail.Thread) => {
+          progress.incrementProgress();
+          await callback(thread);
+        });
   }
 
-  async fetchThreads_(query: string) {
+  async fetchThreads_(query: string, includeSpamTrash?: boolean) {
     // Chats don't expose their bodies in the gmail API, so just skip them.
     query = `(${query}) AND -in:chats`;
     let threads: gapi.client.gmail.Thread[] = [];
@@ -207,6 +229,9 @@ export class MailProcessor {
         'userId': USER_ID,
         'q': query,
       };
+
+      if (includeSpamTrash)
+        requestParams.includeSpamTrash = includeSpamTrash;
 
       if (opt_pageToken)
         requestParams.pageToken = opt_pageToken;
@@ -460,7 +485,7 @@ export class MailProcessor {
       let label = this.getWinningLabel_(thread, rules);
 
       if (label == Labels.Archive) {
-        await thread.archive();
+        await thread.archive(true);
         return;
       }
 
@@ -486,11 +511,14 @@ export class MailProcessor {
                             .where(ThreadMetadataKeys.labelId, '==', labelId)
                             .where(ThreadMetadataKeys.queued, '==', true)
                             .get();
-    for (let doc of querySnapshot.docs) {
-      await doc.ref.update({
-        queued: firebase.firestore.FieldValue.delete(),
-      });
-    }
+
+    await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
+        querySnapshot.docs,
+        async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          await doc.ref.update({
+            queued: firebase.firestore.FieldValue.delete(),
+          });
+        });
   }
 
   async dequeueBlocked_() {
@@ -499,13 +527,16 @@ export class MailProcessor {
     let querySnapshot =
         await metadataCollection.where(ThreadMetadataKeys.blocked, '==', true)
             .get();
-    for (let doc of querySnapshot.docs) {
-      await doc.ref.update({
-        blocked: firebase.firestore.FieldValue.delete(),
-        labelId: BuiltInLabels.Blocked,
-        hasLabel: true,
-      } as ThreadMetadataUpdate);
-    }
+
+    await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
+        querySnapshot.docs,
+        async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          await doc.ref.update({
+            blocked: firebase.firestore.FieldValue.delete(),
+            labelId: BuiltInLabels.Blocked,
+            hasLabel: true,
+          } as ThreadMetadataUpdate);
+        });
   }
 
   async processSingleQueue(queue: string) {

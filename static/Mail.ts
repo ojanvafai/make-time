@@ -12,9 +12,8 @@ function isAscii(str: string) {
 }
 
 export async function send(
-    text: string, to: string, subject: string,
-    sender?: gapi.client.gmail.SendAs, opt_extraHeaders?: string,
-    opt_threadId?: string) {
+    text: string, to: string, subject: string, sender: gapi.client.gmail.SendAs,
+    opt_extraHeaders?: string, opt_threadId?: string) {
   let base64 = new Base64();
 
   // See https://ncona.com/2011/06/using-utf-8-characters-on-an-e-mail-subject/

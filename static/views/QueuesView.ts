@@ -1,7 +1,7 @@
 import {defined, notNull} from '../Base.js';
 import {Labels} from '../Labels.js';
 import {AllQueueDatas, QueueListEntry, QueueSettings} from '../QueueSettings.js';
-import {Settings} from '../Settings.js';
+import {FiltersChangedEvent, Settings} from '../Settings.js';
 
 export class QueuesView extends HTMLElement {
   private immediate_: HTMLElement|undefined;
@@ -21,6 +21,8 @@ export class QueuesView extends HTMLElement {
     `;
 
     this.onkeydown = (e) => this.handleKeyDown_(e);
+    this.settings_.addEventListener(
+        FiltersChangedEvent.NAME, () => this.render_());
     this.render_();
   }
 
@@ -115,7 +117,9 @@ export class QueuesView extends HTMLElement {
     return group;
   }
 
-  async render_() {
+  private async render_() {
+    this.textContent = '';
+
     let filters = await this.settings_.getFilters();
     let queues: Set<string> = new Set();
     for (let rule of filters) {

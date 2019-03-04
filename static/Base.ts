@@ -29,6 +29,14 @@ export function assert<T>(x: T|null|undefined, message?: string): T {
   return x;
 }
 
+export interface FetchRequestParameters {
+  userId: string;
+  q: string;
+  pageToken?: string;
+  maxResults?: number;
+  includeSpamTrash?: boolean;
+}
+
 export function getCurrentWeekNumber() {
   return getWeekNumber(new Date());
 }
@@ -100,8 +108,4 @@ export function serializeAddress(address: ParsedAddress) {
     return address.address || address.name;
   let name = address.name.includes(',') ? `"${address.name}"` : address.name;
   return `${name} <${address.address}>`;
-}
-
-export function getDefinitelyExistsElementById(id: string) {
-  return notNull(document.getElementById(id));
 }

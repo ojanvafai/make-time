@@ -1,6 +1,8 @@
-import {assert, notNull} from './Base.js';
+import {Action} from './Actions.js';
+import {assert, defined, notNull} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
+import {NEXT_ACTION, NEXT_FULL_ACTION, PREVIOUS_ACTION, PREVIOUS_FULL_ACTION} from './views/ThreadListView.js';
 
 let formattingOptions: {
   year?: string;
@@ -25,8 +27,11 @@ formattingOptions.year = 'numeric';
 let DIFFERENT_YEAR_FORMATTER =
     new Intl.DateTimeFormat(undefined, formattingOptions);
 
+let HEADER_BACKGROUND_COLOR = '#ddd';
+
 export class RenderedThread extends HTMLElement {
-  private spinner_: HTMLElement|undefined;
+  private spinner_?: HTMLElement;
+  private focused_: HTMLElement|null;
 
   constructor(public thread: Thread) {
     super();
@@ -37,6 +42,7 @@ export class RenderedThread extends HTMLElement {
       right: 0;
       max-width: 1000px;
     `;
+    this.focused_ = null;
   }
 
   isRendered() {
@@ -73,6 +79,51 @@ export class RenderedThread extends HTMLElement {
     }
   }
 
+  focusFirstUnread() {
+    this.focused_ = this.firstUnreadMessageHeader();
+    if (!this.focused_)
+      this.focused_ = this.lastMessageHeader();
+    this.focused_.scrollIntoView({'block': 'center'});
+  }
+
+  moveFocus(action: Action, options?: ScrollIntoViewOptions) {
+    let message;
+    switch (action) {
+      case NEXT_ACTION:
+        message = this.getMessageFromHeader_(notNull(this.focused_))
+                      .nextElementSibling;
+        if (!message)
+          return;
+        break;
+
+      case NEXT_FULL_ACTION:
+        message = notNull(this.lastElementChild);
+        break;
+
+      case PREVIOUS_ACTION:
+        message = this.getMessageFromHeader_(notNull(this.focused_))
+                      .previousElementSibling;
+        if (!message)
+          return;
+        break;
+
+      case PREVIOUS_FULL_ACTION:
+        message = notNull(this.firstElementChild);
+        break;
+    }
+
+    this.clearFocus_();
+    this.focused_ = this.getHeader_(defined(message));
+    this.focused_.style.backgroundColor = '#c2dbff';
+    this.focused_.scrollIntoView(options);
+  }
+
+  private clearFocus_() {
+    if (!this.focused_)
+      return;
+    this.focused_.style.backgroundColor = HEADER_BACKGROUND_COLOR;
+  }
+
   firstUnreadMessageHeader() {
     let messages = Array.from(this.children);
     let message = messages.find(x => x.classList.contains('unread'));
@@ -83,6 +134,10 @@ export class RenderedThread extends HTMLElement {
 
   lastMessageHeader() {
     return this.getHeader_(notNull(this.lastElementChild));
+  }
+
+  getMessageFromHeader_(header: Element) {
+    return notNull(notNull(header).parentElement);
   }
 
   getHeader_(message: Element) {
@@ -109,7 +164,7 @@ export class RenderedThread extends HTMLElement {
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
     headerDiv.style.cssText = `
-      background-color: #ddd;
+      background-color: ${HEADER_BACKGROUND_COLOR};
       padding: 8px;
       margin: 0 -8px;
       border-top: 1px solid;

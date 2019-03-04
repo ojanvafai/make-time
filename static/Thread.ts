@@ -1,6 +1,6 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined, getCurrentWeekNumber, getMyEmail, getPreviousWeekNumber, serializeAddress, USER_ID} from './Base.js';
+import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, serializeAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {send} from './Mail.js';
@@ -44,6 +44,7 @@ export interface ThreadMetadata {
   queued?: boolean;
   blocked?: boolean;
   muted?: boolean;
+  archivedByFilter?: boolean;
   needsFiltering?: boolean;
   // Threads that were added back to the inbox in maketime, so syncWithGmail
   // should move them into the inbox instead of clearing their metadata.
@@ -67,6 +68,7 @@ export interface ThreadMetadataUpdate {
   queued?: boolean|firebase.firestore.FieldValue;
   blocked?: boolean|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
+  archivedByFilter?: boolean|firebase.firestore.FieldValue;
   needsFiltering?: boolean|firebase.firestore.FieldValue;
   moveToInbox?: boolean|firebase.firestore.FieldValue;
   countToArchive?: number|firebase.firestore.FieldValue;
@@ -87,6 +89,7 @@ export enum ThreadMetadataKeys {
   queued = 'queued',
   blocked = 'blocked',
   muted = 'muted',
+  archivedByFilter = 'archivedByFilter',
   needsFiltering = 'needsFiltering',
   moveToInbox = 'moveToInbox',
   countToArchive = 'countToArchive',
@@ -173,27 +176,16 @@ export class Thread extends EventTarget {
     return oldState;
   }
 
-  async setPriority(priority: Priority) {
-    return await this.updateMetadata({
-      hasPriority: true,
-      priorityId: priority,
-      hasLabel: firebase.firestore.FieldValue.delete(),
-      labelId: firebase.firestore.FieldValue.delete(),
-      queued: firebase.firestore.FieldValue.delete(),
-      countToMarkRead: this.messageCount_(),
-    } as ThreadMetadataUpdate);
-  }
-
   static clearedMetatdata(): ThreadMetadataUpdate {
     return {
       blocked: firebase.firestore.FieldValue.delete(),
           muted: firebase.firestore.FieldValue.delete(),
+          archivedByFilter: firebase.firestore.FieldValue.delete(),
           queued: firebase.firestore.FieldValue.delete(),
           hasLabel: firebase.firestore.FieldValue.delete(),
           labelId: firebase.firestore.FieldValue.delete(),
           hasPriority: firebase.firestore.FieldValue.delete(),
           priorityId: firebase.firestore.FieldValue.delete(),
-          moveToInbox: firebase.firestore.FieldValue.delete(),
     }
   }
 
@@ -206,23 +198,47 @@ export class Thread extends EventTarget {
     return firestoreUserCollection().doc('threads').collection('metadata');
   }
 
-  async archive() {
+  removeFromInboxMetadata_() {
     let update = Thread.clearedMetatdata();
     update.countToArchive = this.messageCount_();
-    return await this.updateMetadata(update);
+    // Override this here instead of in clearedMetadata so we don't accidentally
+    // override this in other methods that should keep this so the message is
+    // moved back to the inbox after an undo.
+    update.moveToInbox = firebase.firestore.FieldValue.delete();
+    return update;
   }
 
-  async setBlocked() {
-    let update = Thread.clearedMetatdata();
-    update.blocked = true;
-    update.countToMarkRead = this.messageCount_();
+  async archive(archivedByFilter?: boolean) {
+    let update = this.removeFromInboxMetadata_();
+    if (archivedByFilter)
+      update.archivedByFilter = true;
     return await this.updateMetadata(update);
   }
 
   async setMuted() {
-    let update = Thread.clearedMetatdata();
+    let update = this.removeFromInboxMetadata_();
     update.muted = true;
-    update.countToArchive = this.messageCount_();
+    return await this.updateMetadata(update);
+  }
+
+  keepInInboxMetadata_(moveToInbox?: boolean) {
+    let update = Thread.clearedMetatdata();
+    update.countToMarkRead = this.messageCount_();
+    if (moveToInbox)
+      update.moveToInbox = true;
+    return update;
+  }
+
+  async setPriority(priority: Priority, moveToInbox?: boolean) {
+    let update = this.keepInInboxMetadata_(moveToInbox);
+    update.hasPriority = true;
+    update.priorityId = priority;
+    return await this.updateMetadata(update);
+  }
+
+  async setBlocked(moveToInbox?: boolean) {
+    let update = this.keepInInboxMetadata_(moveToInbox);
+    update.blocked = true;
     return await this.updateMetadata(update);
   }
 
@@ -240,6 +256,10 @@ export class Thread extends EventTarget {
 
   getMessageIds() {
     return this.metadata_.messageIds;
+  }
+
+  getCountToArchive() {
+    return this.metadata_.countToArchive;
   }
 
   getMessages() {
@@ -522,7 +542,7 @@ export class Thread extends EventTarget {
 
   async sendReply(
       replyText: string, extraEmails: string[], replyType: ReplyType,
-      sender?: gapi.client.gmail.SendAs) {
+      sender: gapi.client.gmail.SendAs) {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
@@ -537,10 +557,9 @@ export class Thread extends EventTarget {
       to = lastMessage.replyTo || lastMessage.from || '';
 
       if (replyType === ReplyType.ReplyAll && lastMessage.to) {
-        let myEmail = await getMyEmail();
         let addresses = lastMessage.parsedTo;
         for (let address of addresses) {
-          if (address.address !== myEmail) {
+          if (address.address !== sender.sendAsEmail) {
             if (to !== '')
               to += ',';
             to += serializeAddress(address);

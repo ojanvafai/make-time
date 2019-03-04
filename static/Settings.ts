@@ -66,7 +66,14 @@ export function setFilterStringField(
 
 let FILTERS_KEY = 'filters';
 
-export class Settings {
+export class FiltersChangedEvent extends Event {
+  static NAME = 'filters-changed';
+  constructor() {
+    super(FiltersChangedEvent.NAME);
+  }
+}
+
+export class Settings extends EventTarget {
   private filters_?: firebase.firestore.DocumentSnapshot;
   private queueSettings_?: QueueSettings;
 
@@ -80,7 +87,7 @@ export class Settings {
       key: ServerStorage.KEYS.VACATION,
       name: 'Vacation',
       description:
-          `Queue name to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
+          `Label to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
     },
     {
       key: ServerStorage.KEYS.TIMER_DURATION,
@@ -130,7 +137,9 @@ export class Settings {
     },
   ];
 
-  constructor(private storage_: ServerStorage) {}
+  constructor(private storage_: ServerStorage) {
+    super();
+  }
 
   has(setting: string) {
     let value = this.storage_.get(setting);
@@ -192,6 +201,7 @@ export class Settings {
 
       doc.onSnapshot((snapshot) => {
         this.filters_ = snapshot;
+        this.dispatchEvent(new FiltersChangedEvent());
       });
     }
 

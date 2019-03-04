@@ -1,4 +1,5 @@
 import {notNull} from '../Base.js';
+import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Thread, ThreadMetadataKeys} from '../Thread.js';
@@ -19,6 +20,12 @@ export class TriageModel extends ThreadListModel {
     return (Date.now() - thread.getDate().getTime()) / (oneDay);
   }
 
+  defaultCollapsedState(groupName: string) {
+    let queueType = this.settings_.getQueueSettings().get(groupName).queue;
+    return queueType === QueueSettings.WEEKLY ||
+        queueType === QueueSettings.MONTHLY;
+  }
+
   shouldShowThread(thread: Thread) {
     if (this.vacation_ && (this.vacation_ !== thread.getLabel()))
       return false;
@@ -27,7 +34,7 @@ export class TriageModel extends ThreadListModel {
         this.threadDays_(thread) > this.daysToShow_)
       return false;
 
-    return true;
+    return super.shouldShowThread(thread);
   }
 
   getGroupName(thread: Thread) {

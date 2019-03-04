@@ -7,7 +7,7 @@ import {Thread, ThreadMetadata} from '../Thread.js';
 
 import {Model} from './Model.js';
 
-interface TriageResult {
+export interface TriageResult {
   thread: Thread;
   state: ThreadMetadataUpdate;
 }
@@ -27,15 +27,17 @@ export class ThreadListChangedEvent extends Event {
 export abstract class ThreadListModel extends Model {
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
+  private collapsedGroupNames_: Map<string, boolean>;
   private snapshotToProcess_?: firebase.firestore.QuerySnapshot|null;
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
 
-  constructor(queryKey: string) {
+  constructor(queryKey: string, private showHiddenThreads_?: boolean) {
     super();
 
     this.resetUndoableActions_();
     this.threads_ = [];
+    this.collapsedGroupNames_ = new Map();
     this.snapshotToProcess_ = null;
     this.faviconCount_ = queryKey === ThreadMetadataKeys.hasPriority ? 0 : -1;
 
@@ -45,10 +47,36 @@ export abstract class ThreadListModel extends Model {
         .onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
   }
 
+  protected abstract defaultCollapsedState(groupName: string): boolean;
   protected abstract compareThreads(a: Thread, b: Thread): number;
-  protected abstract shouldShowThread(thread: Thread): boolean;
   abstract getGroupName(thread: Thread): string;
   abstract showPriorityLabel(): boolean;
+
+  protected shouldShowThread(thread: Thread) {
+    // If we have archived all the messages but the change hasn't been
+    // propagated to gmail yet, don't show them. This avoids threads
+    // disappearing from view in ThreadListView.markTriaged_ only to show up
+    // again a frame later. Long-term, don't remove rows from markTriaged_ at
+    // all and just rely on firebase changes, but that will depend on first
+    // moving focus state into ThreadListModel so focus updates don't read stale
+    // state of whether any rows are checked.
+    if (thread.getMessageIds().length === thread.getCountToArchive())
+      return false;
+    return true;
+  }
+
+  toggleCollapsed(groupName: string) {
+    let isCollapsed = this.isCollapsed(groupName);
+    this.collapsedGroupNames_.set(groupName, !isCollapsed);
+    this.dispatchEvent(new ThreadListChangedEvent());
+  }
+
+  isCollapsed(groupName: string) {
+    let isCollapsed = this.collapsedGroupNames_.get(groupName);
+    if (isCollapsed === undefined)
+      return this.defaultCollapsedState(groupName);
+    return isCollapsed;
+  }
 
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.
@@ -76,24 +104,25 @@ export abstract class ThreadListModel extends Model {
     let snapshot = assert(this.snapshotToProcess_);
     this.snapshotToProcess_ = null;
 
-    let mustDoCount = 0;
+    let faviconCount = 0;
     this.threads_ = [];
     for (let doc of snapshot.docs) {
       let data = doc.data() as ThreadMetadata;
-      if (data.blocked || data.queued)
+      if (!this.showHiddenThreads_ && (data.blocked || data.queued))
         continue;
 
-      if (data.priorityId === Priority.MustDo)
-        mustDoCount++;
+      if (data.priorityId === Priority.MustDo ||
+          data.priorityId === Priority.NeedsFilter)
+        faviconCount++;
 
       let thread = Thread.create(doc.id, data as ThreadMetadata);
       this.threads_.push(thread);
     };
 
     // The favicon doesn't support showing 3 digets so cap at 99.
-    mustDoCount = Math.min(99, mustDoCount);
-    if (this.faviconCount_ >= 0 && mustDoCount !== this.faviconCount_) {
-      this.faviconCount_ = mustDoCount;
+    faviconCount = Math.min(99, faviconCount);
+    if (this.faviconCount_ >= 0 && faviconCount !== this.faviconCount_) {
+      this.faviconCount_ = faviconCount;
       this.updateFavicon_();
     }
 
@@ -187,13 +216,12 @@ export abstract class ThreadListModel extends Model {
     }
   }
 
-  private async markTriagedInternal_(
-      thread: Thread, destination: string|null,
-      _expectedNewMessageCount?: number) {
+  protected async markTriagedInternal(
+      thread: Thread, destination: string|null, moveToInboxAgain?: boolean) {
     let priority = this.destinationToPriority(destination);
     let oldState;
     if (priority) {
-      oldState = await thread.setPriority(priority);
+      oldState = await thread.setPriority(priority, moveToInboxAgain);
     } else {
       switch (destination) {
         case null:
@@ -201,7 +229,7 @@ export abstract class ThreadListModel extends Model {
           break;
 
         case Labels.Blocked:
-          oldState = await thread.setBlocked();
+          oldState = await thread.setBlocked(moveToInboxAgain);
           break;
 
         case Labels.Muted:
@@ -219,29 +247,34 @@ export abstract class ThreadListModel extends Model {
     })
   }
 
-  async markSingleThreadTriaged(
-      thread: Thread, destination: string|null,
-      expectedNewMessageCount?: number) {
+  async markSingleThreadTriaged(thread: Thread, destination: string|null) {
     this.resetUndoableActions_();
-    await this.markTriagedInternal_(
-        thread, destination, expectedNewMessageCount);
+    await this.markTriagedInternal(thread, destination);
   }
 
-  async markThreadsTriaged(
-      threads: Thread[], destination: string|null,
-      expectedNewMessageCount?: number) {
+  async markThreadsTriaged(threads: Thread[], destination: string|null) {
     this.resetUndoableActions_();
 
     let progress = this.updateTitle(
         'ThreadListModel.markThreadsTriaged', threads.length,
         'Modifying threads...');
     for (let thread of threads) {
-      this.markTriagedInternal_(thread, destination, expectedNewMessageCount);
+      this.markTriagedInternal(thread, destination);
       progress.incrementProgress();
     };
   }
 
-  async undoLastAction_() {
+  async handleUndoAction(action: TriageResult) {
+    let newState = action.state;
+    // TODO: We should also keep track of the messages we marked read so we
+    // can mark them unread again, and theoretically, we should only put the
+    // messages that we previously in the inbox back into the inbox, so we
+    // should keep track of the actual message IDs modified.
+    newState.moveToInbox = true;
+    await action.thread.updateMetadata(newState);
+  }
+
+  async undoLastAction() {
     if (!this.undoableActions_ || !this.undoableActions_.length) {
       alert('Nothing left to undo.');
       return;
@@ -254,13 +287,7 @@ export abstract class ThreadListModel extends Model {
         'ThreadListModel.undoLastAction_', actions.length, 'Undoing...');
 
     for (let i = 0; i < actions.length; i++) {
-      let newState = actions[i].state;
-      // TODO: We should also keep track of the messages we marked read so we
-      // can mark them unread again, and theoretically, we should only put the
-      // messages that we previously in the inbox back into the inbox, so we
-      // should keep track of the actual message IDs modified.
-      newState.moveToInbox = true;
-      await actions[i].thread.updateMetadata(newState);
+      this.handleUndoAction(actions[i]);
       this.dispatchEvent(new UndoEvent(actions[i].thread));
       progress.incrementProgress();
     }

@@ -1,16 +1,12 @@
 import {Action, Actions} from '../Actions.js';
-import {getDefinitelyExistsElementById} from '../Base.js';
-
-// Extract this before rendering any threads since the threads can have
-// elements with IDs in them.
-const footer = getDefinitelyExistsElementById('footer');
+import {AppShell} from './AppShell.js';
 
 export abstract class View extends HTMLElement {
   private actions_: Actions;
 
   constructor() {
     super();
-    this.setFooter();
+    AppShell.setFooter();
     this.actions_ = new Actions(this);
   }
 
@@ -31,16 +27,6 @@ export abstract class View extends HTMLElement {
 
   protected setActions(actions: Action[]) {
     this.actions_.setActions(actions);
-    this.setFooter(this.actions_);
-  }
-
-  protected setFooter(dom?: HTMLElement) {
-    footer.textContent = '';
-    if (dom)
-      footer.append(dom);
-  }
-
-  protected addToFooter(dom: HTMLElement) {
-    footer.append(dom);
+    AppShell.setFooter(this.actions_);
   }
 }

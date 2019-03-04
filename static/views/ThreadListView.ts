@@ -6,12 +6,15 @@ import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {RadialProgress} from '../RadialProgress.js';
 import {SendAs} from '../SendAs.js';
+import {ServerStorage} from '../ServerStorage.js';
+import {Settings} from '../Settings.js';
 import {BACKLOG_PRIORITY_NAME, BLOCKED_LABEL_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, ReplyType, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
-import {FOCUS_THREAD_ROW_EVENT_NAME, ThreadRow} from './ThreadRow.js';
+import {AppShell} from './AppShell.js';
+import {FocusRowEvent, SelectRowEvent as CheckRowEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
@@ -34,7 +37,7 @@ interface ListenerData {
 
 let ARCHIVE_ACTION = {
   name: `Archive`,
-  description: `Archive and remove from the current queue.`,
+  description: `Archive and remove from the current group.`,
   // TODO: Make this use Labels.ARCHIVE.
   destination: null,
 };
@@ -60,20 +63,45 @@ let MUTE_ACTION = {
   destination: Labels.Muted,
 };
 
-let NEXT_ROW_ACTION = {
-  name: `Next row`,
-  description: `Go to the next row/thread.`,
+export let NEXT_ACTION = {
+  name: `Next`,
+  description: `Go to the next row/thread/message.`,
   key: 'j',
   hidden: true,
   repeatable: true,
 };
 
-let PREVIOUS_ROW_ACTION = {
-  name: `Previous row`,
-  description: `Go to the previous row.`,
+export let PREVIOUS_ACTION = {
+  name: `Previous`,
+  description: `Go to the previous row/thread/message.`,
   key: 'k',
   hidden: true,
   repeatable: true,
+};
+
+export let NEXT_FULL_ACTION = {
+  name: `Next group or last message`,
+  description:
+      `Focus the first email of the next group or scroll thread to the last message.`,
+  key: 'n',
+  hidden: true,
+  repeatable: true,
+};
+
+export let PREVIOUS_FULL_ACTION = {
+  name: `Previous group or first message`,
+  description:
+      `Focus the first email of the previous group or scroll thread to the first message..`,
+  key: 'p',
+  hidden: true,
+  repeatable: true,
+};
+
+let TOGGLE_GROUP_ACTION = {
+  name: `Toggle group`,
+  description: `Toggle all items in the current group.`,
+  key: 'g',
+  hidden: true,
 };
 
 let TOGGLE_FOCUSED_ACTION = {
@@ -88,29 +116,6 @@ let VIEW_FOCUSED_ACTION = {
   name: `View focused`,
   description: `View the focused email.`,
   key: 'Enter',
-  hidden: true,
-};
-
-let NEXT_QUEUE_ACTION = {
-  name: `Next queue`,
-  description: `Focus the first email of the next queue.`,
-  key: 'n',
-  hidden: true,
-  repeatable: true,
-};
-
-let PREVIOUS_QUEUE_ACTION = {
-  name: `Previous queue`,
-  description: `Focus the first email of the previous queue.`,
-  key: 'p',
-  hidden: true,
-  repeatable: true,
-};
-
-let TOGGLE_QUEUE_ACTION = {
-  name: `Toggle queue`,
-  description: `Toggle all items in the current queue.`,
-  key: 'g',
   hidden: true,
 };
 
@@ -166,15 +171,15 @@ let BASE_ACTIONS = [
   BACKLOG_ACTION,
   NEEDS_FILTER_ACTION,
   UNDO_ACTION,
+  PREVIOUS_ACTION,
+  PREVIOUS_FULL_ACTION,
+  NEXT_ACTION,
+  NEXT_FULL_ACTION,
 ];
 
 let RENDER_ALL_ACTIONS = [
-  PREVIOUS_ROW_ACTION,
-  PREVIOUS_QUEUE_ACTION,
-  NEXT_ROW_ACTION,
-  NEXT_QUEUE_ACTION,
   TOGGLE_FOCUSED_ACTION,
-  TOGGLE_QUEUE_ACTION,
+  TOGGLE_GROUP_ACTION,
   VIEW_FOCUSED_ACTION,
 ];
 
@@ -190,6 +195,9 @@ registerActions('Triage or Todo', [
 ]);
 
 export class ThreadListView extends View {
+  private autoStartTimer_: boolean;
+  private timerDuration_: number;
+  private allowedReplyLength_: number;
   private modelListeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
@@ -197,6 +205,7 @@ export class ThreadListView extends View {
   private singleThreadContainer_: HTMLElement;
   private renderedRow_: ThreadRow|null;
   private autoFocusedRow_: ThreadRow|null;
+  private lastCheckedRow_: ThreadRow|null;
   private renderedGroupName_: string|null;
   private scrollOffset_: number|undefined;
   private isSending_: boolean|undefined;
@@ -205,15 +214,9 @@ export class ThreadListView extends View {
   private sendAs_?: SendAs;
 
   constructor(
-      private model_: ThreadListModel, private scrollContainer_: HTMLElement,
-      public updateTitle:
-          (key: string, count: number,
-           ...title: (HTMLElement|string)[]) => RadialProgress,
-      private setSubject_: (...subject: (Node|string)[]) => void,
-      private showBackArrow_: (show: boolean) => void,
-      private allowedReplyLength_: number, private autoStartTimer_: boolean,
-      private countDown_: boolean, private timerDuration_: number,
-      bottomButtonUrl: string, bottomButtonText: string) {
+      private model_: ThreadListModel, private appShell_: AppShell,
+      settings: Settings, private countDown_?: boolean, bottomButtonUrl?: string,
+      bottomButtonText?: string) {
     super();
 
     this.style.cssText = `
@@ -221,11 +224,17 @@ export class ThreadListView extends View {
       flex-direction: column;
     `;
 
+    this.autoStartTimer_ = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
+    this.timerDuration_ = settings.get(ServerStorage.KEYS.TIMER_DURATION);
+    this.allowedReplyLength_ =
+        settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+
     this.modelListeners_ = [];
     this.threadToRow_ = new WeakMap();
     this.focusedRow_ = null;
     this.renderedRow_ = null;
     this.autoFocusedRow_ = null;
+    this.lastCheckedRow_ = null;
     this.renderedGroupName_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
@@ -240,11 +249,12 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.addEventListener('renderThread', (e: Event) => {
       this.setRenderedRow_(<ThreadRow>e.target);
     });
-
-    this.rowGroupContainer_.addEventListener(
-        FOCUS_THREAD_ROW_EVENT_NAME, (e: Event) => {
-          this.handleFocusRow_(<ThreadRow>e.target);
-        });
+    this.rowGroupContainer_.addEventListener(FocusRowEvent.NAME, (e: Event) => {
+      this.handleFocusRow_(<ThreadRow>e.target);
+    });
+    this.rowGroupContainer_.addEventListener(CheckRowEvent.NAME, (e: Event) => {
+      this.handleCheckRow_(<ThreadRow>e.target, (e as CheckRowEvent).shiftKey);
+    });
 
     this.singleThreadContainer_ = document.createElement('div');
     this.singleThreadContainer_.style.cssText = `
@@ -252,7 +262,8 @@ export class ThreadListView extends View {
     `;
     this.append(this.singleThreadContainer_);
 
-    this.appendButton(bottomButtonUrl, bottomButtonText);
+    if (bottomButtonUrl && bottomButtonText)
+      this.appendButton(bottomButtonUrl, bottomButtonText);
     this.updateActions_();
 
     this.addListenerToModel('thread-list-changed', this.render_.bind(this));
@@ -302,8 +313,8 @@ export class ThreadListView extends View {
     for (let listener of this.modelListeners_) {
       this.model_.removeEventListener(listener.name, listener.handler);
     }
-    this.setSubject_('');
-    this.showBackArrow_(false);
+    this.appShell_.setSubject('');
+    this.appShell_.showBackArrow(false);
   }
 
   async init() {
@@ -326,9 +337,9 @@ export class ThreadListView extends View {
 
   addTimer_() {
     let timer = new Timer(
-        this.autoStartTimer_, this.countDown_, this.timerDuration_,
+        this.autoStartTimer_, !!this.countDown_, this.timerDuration_,
         this.singleThreadContainer_);
-    this.addToFooter(timer);
+    AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;
   }
 
@@ -364,7 +375,7 @@ export class ThreadListView extends View {
     for (let thread of threads) {
       let groupName = this.model_.getGroupName(thread);
       if (!currentGroup || currentGroup.name != groupName) {
-        currentGroup = new ThreadRowGroup(groupName);
+        currentGroup = new ThreadRowGroup(groupName, this.model_);
         this.rowGroupContainer_.append(currentGroup);
       }
       currentGroup.push(this.getThreadRow_(thread));
@@ -390,8 +401,15 @@ export class ThreadListView extends View {
       if (this.renderedRow_) {
         if (nextRow) {
           let nextGroupName = this.model_.getGroupName(nextRow.thread);
-          if (this.renderedGroupName_ !== nextGroupName)
-            toast = this.createToast_(nextGroupName);
+          if (this.renderedGroupName_ !== nextGroupName) {
+            // If the next group is collapsed, go back to the thread list.
+            if (this.model_.isCollapsed(nextGroupName))
+              nextRow = null;
+            else
+              toast = this.createToast_(nextGroupName);
+          }
+        }
+        if (nextRow) {
           this.setRenderedRowInternal_(nextRow);
         } else {
           this.transitionToThreadList_(null);
@@ -483,7 +501,7 @@ export class ThreadListView extends View {
     this.autoFocusedRow_ = null;
   }
 
-  private handleFocusRow_(row: ThreadRow|null) {
+  private handleFocusRow_(row: ThreadRow) {
     // Once a row gets manually focused, stop auto-focusing.
     if (row !== this.autoFocusedRow_)
       this.autoFocusedRow_ = null;
@@ -494,6 +512,21 @@ export class ThreadListView extends View {
     if (this.focusedRow_)
       this.focusedRow_.clearFocus();
     this.focusedRow_ = row;
+  }
+
+  private handleCheckRow_(row: ThreadRow, rangeSelect: boolean) {
+    // Double check that the last selected row is still actually selected.
+    if (rangeSelect && this.lastCheckedRow_ && this.lastCheckedRow_.checked) {
+      let rows = this.getRows_();
+      let lastIndex = rows.indexOf(this.lastCheckedRow_);
+      let newIndex = rows.indexOf(row);
+      let start = (lastIndex < newIndex) ? lastIndex : newIndex;
+      let end = (lastIndex < newIndex) ? newIndex : lastIndex;
+      for (var i = start; i < end; i++) {
+        rows[i].checked = true;
+      }
+    }
+    this.lastCheckedRow_ = row;
   }
 
   private setFocusAndScrollIntoView_(row: ThreadRow|null) {
@@ -509,16 +542,16 @@ export class ThreadListView extends View {
 
     if (this.focusedRow_ == null) {
       switch (action) {
-        case NEXT_ROW_ACTION:
-        case NEXT_QUEUE_ACTION: {
+        case NEXT_ACTION:
+        case NEXT_FULL_ACTION: {
           this.setFocusAndScrollIntoView_(rows[0]);
           break;
         }
-        case PREVIOUS_ROW_ACTION: {
+        case PREVIOUS_ACTION: {
           this.setFocusAndScrollIntoView_(rows[rows.length - 1]);
           break;
         }
-        case PREVIOUS_QUEUE_ACTION: {
+        case PREVIOUS_FULL_ACTION: {
           let lastGroup = rows[rows.length - 1].getGroup();
           this.focusFirstRowOfGroup_(lastGroup);
           break;
@@ -527,25 +560,25 @@ export class ThreadListView extends View {
       return;
     }
     switch (action) {
-      case NEXT_ROW_ACTION: {
+      case NEXT_ACTION: {
         const nextRow = rowAtOffset(rows, this.focusedRow_, 1);
         if (nextRow)
           this.setFocusAndScrollIntoView_(nextRow);
         break;
       }
-      case PREVIOUS_ROW_ACTION: {
+      case PREVIOUS_ACTION: {
         const previousRow = rowAtOffset(rows, this.focusedRow_, -1);
         if (previousRow)
           this.setFocusAndScrollIntoView_(previousRow);
         break;
       }
-      case NEXT_QUEUE_ACTION: {
+      case NEXT_FULL_ACTION: {
         let currentGroup = this.focusedRow_.getGroup();
         this.focusFirstRowOfGroup_(
             <ThreadRowGroup>currentGroup.nextElementSibling);
         break;
       }
-      case PREVIOUS_QUEUE_ACTION: {
+      case PREVIOUS_FULL_ACTION: {
         let currentGroup = this.focusedRow_.getGroup();
         this.focusFirstRowOfGroup_(
             <ThreadRowGroup>currentGroup.previousElementSibling);
@@ -562,88 +595,88 @@ export class ThreadListView extends View {
   }
 
   async takeAction(action: Action) {
-    if (action == UNDO_ACTION) {
-      this.model_.undoLastAction_();
-      return;
-    }
-    if (action == QUICK_REPLY_ACTION) {
-      await this.showQuickReply();
-      return;
-    }
-    if (action == NEXT_ROW_ACTION || action == PREVIOUS_ROW_ACTION) {
-      this.moveFocus_(action);
-      return;
-    }
-    if (action == TOGGLE_FOCUSED_ACTION) {
-      // If nothing is focused, pretend the first email was focused.
-      if (!this.focusedRow_)
-        this.moveFocus_(NEXT_ROW_ACTION);
-      if (!this.focusedRow_)
+    switch (action) {
+      case UNDO_ACTION:
+        this.model_.undoLastAction();
         return;
 
-      this.focusedRow_.checked = !this.focusedRow_.checked;
-      this.moveFocus_(NEXT_ROW_ACTION);
-      return;
-    }
-    if (action == TOGGLE_QUEUE_ACTION) {
-      // If nothing is focused, pretend the first email was focused.
-      if (!this.focusedRow_)
-        this.moveFocus_(NEXT_ROW_ACTION);
-      if (!this.focusedRow_)
+      case QUICK_REPLY_ACTION:
+        await this.showQuickReply();
         return;
-      const checking = !this.focusedRow_.checked;
 
-      let rows = this.focusedRow_.getGroup().getRows();
-      for (let row of rows) {
-        row.checked = checking;
-      }
-    }
-    if (action == NEXT_QUEUE_ACTION) {
-      this.moveFocus_(action);
-      return;
-    }
-    if (action == PREVIOUS_QUEUE_ACTION) {
-      this.moveFocus_(action);
-      return;
-    }
-    if (action == TOGGLE_QUEUE_ACTION) {
-      return;
-    }
-    if (action == VIEW_THREADLIST_ACTION) {
-      this.transitionToThreadList_(this.renderedRow_);
-      return;
-    }
-    if (action == VIEW_FOCUSED_ACTION) {
-      if (!this.focusedRow_)
-        this.moveFocus_(NEXT_ROW_ACTION);
-      if (!this.focusedRow_)
+      case NEXT_FULL_ACTION:
+      case PREVIOUS_FULL_ACTION:
+      case NEXT_ACTION:
+      case PREVIOUS_ACTION:
+        if (this.renderedRow_)
+          this.renderedRow_.rendered.moveFocus(action);
+        else
+          this.moveFocus_(action);
         return;
-      this.setRenderedRow_(this.focusedRow_);
-      return;
-    }
 
-    await this.markTriaged_(defined(action.destination));
+      case TOGGLE_FOCUSED_ACTION:
+        this.toggleFocused_();
+        return;
+
+      case TOGGLE_GROUP_ACTION:
+        this.toggleQueue_();
+        return;
+
+      case VIEW_THREADLIST_ACTION:
+        this.transitionToThreadList_(this.renderedRow_);
+        return;
+
+      case VIEW_FOCUSED_ACTION:
+        this.viewFocused_();
+        return;
+
+      default:
+        await this.markTriaged_(defined(action.destination));
+    }
+  }
+
+  toggleFocused_() {
+    let focused = notNull(this.focusedRow_);
+    focused.checked = !focused.checked;
+    this.moveFocus_(NEXT_ACTION);
+  }
+
+  toggleQueue_() {
+    let focused = notNull(this.focusedRow_);
+    const checking = !focused.checked;
+    let rows = focused.getGroup().getRows();
+    for (let row of rows) {
+      row.checked = checking;
+    }
+  }
+
+  viewFocused_() {
+    if (!this.focusedRow_)
+      this.moveFocus_(NEXT_ACTION);
+    if (!this.focusedRow_)
+      return;
+    this.setRenderedRow_(this.focusedRow_);
   }
 
   transitionToThreadList_(focusedRow: ThreadRow|null) {
-    this.showBackArrow_(false);
+    this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
     this.singleThreadContainer_.textContent = '';
-    this.scrollContainer_.scrollTop = this.scrollOffset_ || 0;
+    this.appShell_.contentScrollTop = this.scrollOffset_ || 0;
 
     this.setFocusAndScrollIntoView_(focusedRow);
     this.setRenderedRow_(null);
-    this.setSubject_('');
+    this.appShell_.setSubject('');
     this.updateActions_();
 
     this.render_();
   }
 
   transitionToSingleThread_() {
-    this.showBackArrow_(true);
+    this.appShell_.showBackArrow(true);
 
-    this.scrollOffset_ = this.scrollContainer_.scrollTop;
+    this.scrollOffset_ = this.appShell_.contentScrollTop;
     this.rowGroupContainer_.style.display = 'none';
   }
 
@@ -667,6 +700,9 @@ export class ThreadListView extends View {
           // for future use.
           child.resetState();
 
+          // TODO: Instead of removing rows outside of model changes, which
+          // causes races, move focus state into the model so that it all
+          // updates atomically.
           let parentGroup = child.getGroup();
           // The rows will get removed on the next frame anyways, but we don't
           // want the user to see an intermediary state where the row is shown
@@ -732,7 +768,7 @@ export class ThreadListView extends View {
 
     this.updateActions_();
     if (toast)
-      this.addToFooter(toast);
+      AppShell.addToFooter(toast);
 
     // If you click on a row before it's pulled in message details, handle it
     // semi-gracefully.
@@ -740,7 +776,7 @@ export class ThreadListView extends View {
     // subject, etc.
     let messages = renderedRow.thread.getMessages();
     if (!messages.length) {
-      this.setSubject_('');
+      this.appShell_.setSubject('');
       return;
     }
 
@@ -751,13 +787,9 @@ export class ThreadListView extends View {
     let subject = document.createElement('div');
     subject.style.flex = '1';
     subject.append(renderedRow.thread.getSubject());
-    this.setSubject_(subject, viewInGmailButton);
+    this.appShell_.setSubject(subject, viewInGmailButton);
 
-    var elementToScrollTo = rendered.firstUnreadMessageHeader();
-    if (!elementToScrollTo)
-      elementToScrollTo = rendered.lastMessageHeader();
-    elementToScrollTo.scrollIntoView({'block': 'center'});
-
+    rendered.focusFirstUnread();
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to
     // make renderOne_ async.
@@ -872,8 +904,8 @@ export class ThreadListView extends View {
       if (this.isSending_)
         return;
       this.isSending_ = true;
-      let progress =
-          this.updateTitle('ThreadListView.sendReply', 1, 'Sending reply...');
+      let progress = AppShell.updateLoaderTitle(
+          'ThreadListView.sendReply', 1, 'Sending reply...');
 
       let sender: gapi.client.gmail.SendAs|undefined;
       if (sendAs.senders && sendAs.senders.length) {
@@ -893,7 +925,7 @@ export class ThreadListView extends View {
         // TODO: Handle if sending fails in such a way that the user can at
         // least save their message text.
         await renderedRow.thread.sendReply(
-            compose.value, compose.getEmails(), type, sender);
+            compose.value, compose.getEmails(), type, defined(sender));
       } finally {
         this.isSending_ = false;
         progress.incrementProgress();
@@ -911,10 +943,9 @@ export class ThreadListView extends View {
         renderedRow.rendered.showSpinner(false);
 
         // The user can change the rendered row while the thread is updating.
-        if (renderedRow === this.renderedRow_) {
-          let lastMessage = renderedRow.rendered.lastMessageHeader();
-          lastMessage.scrollIntoView({behavior: 'smooth'});
-        }
+        if (renderedRow === this.renderedRow_)
+          renderedRow.rendered.moveFocus(
+              NEXT_FULL_ACTION, {behavior: 'smooth'});
       }
     })
 
@@ -926,7 +957,7 @@ export class ThreadListView extends View {
     });
 
     this.setActions([]);
-    this.setFooter(container);
+    AppShell.setFooter(container);
     this.addTimer_();
 
     compose.focus();

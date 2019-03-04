@@ -1,6 +1,7 @@
 import {defined, parseAddressList, USER_ID} from './Base.js';
-import {fetchMessages} from './BaseMain.js';
+import {FetchRequestParameters} from './Base.js';
 import {IDBKeyVal} from './idb-keyval.js';
+import {gapiFetch} from './Net.js';
 
 let CONTACT_STORAGE_KEY = 'contacts';
 let SEND_COUNT_STORAGE_KEY = 'send-counts';
@@ -9,6 +10,8 @@ let MESSAGE_TO_EMAILS_STORAGE_KEY = 'message-to-emails';
 // sorting autocomplete results.
 let NUMBER_SENT_MESSAGES_TO_FETCH = 1000;
 let MESSAGE_FETCH_BATCH_SIZE = 50;
+// Gmail API caps maxResults at 500.
+let MAX_RESULTS_CAP = 500;
 
 interface Contact {
   name: string;
@@ -130,6 +133,44 @@ export class Contacts {
     return out;
   }
 
+  private async fetchSentMessages_(
+      forEachMessage: (message: gapi.client.gmail.Message) => void) {
+    // Chats don't expose their bodies in the gmail API, so just skip them.
+    let query = `in:sent AND -in:chats`;
+
+    let resultCountLeft = NUMBER_SENT_MESSAGES_TO_FETCH;
+
+    let getPageOfThreads = async (opt_pageToken?: string) => {
+      let maxForThisFetch = Math.min(resultCountLeft, MAX_RESULTS_CAP);
+      resultCountLeft -= maxForThisFetch;
+
+      let requestParams = <FetchRequestParameters>{
+        'userId': USER_ID,
+        'q': query,
+        'maxResults': maxForThisFetch,
+      };
+
+      if (opt_pageToken)
+        requestParams.pageToken = opt_pageToken;
+
+      let resp =
+          await gapiFetch(gapi.client.gmail.users.messages.list, requestParams);
+      let messages = resp.result.messages || [];
+      for (let message of messages) {
+        await forEachMessage(message);
+      }
+
+      if (resultCountLeft <= 0)
+        return;
+
+      let nextPageToken = resp.result.nextPageToken;
+      if (nextPageToken)
+        await getPageOfThreads(nextPageToken);
+    };
+
+    await getPageOfThreads();
+  }
+
   async fetchCountsFromNetwork_() {
     let cacheData =
         await IDBKeyVal.getDefault().get(MESSAGE_TO_EMAILS_STORAGE_KEY);
@@ -150,14 +191,14 @@ export class Contacts {
         }
 
     let needsFetch: string[] = [];
-    await fetchMessages(async (message) => {
+    await this.fetchSentMessages_(async (message) => {
       let id = defined(message.id);
       let addresses = cache.get(id);
       if (addresses)
         processAddresses(id, addresses);
       else
         needsFetch.push(id);
-    }, 'in:sent', NUMBER_SENT_MESSAGES_TO_FETCH);
+    });
 
     while (needsFetch.length) {
       let thisBatch = [];
