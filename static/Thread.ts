@@ -44,6 +44,7 @@ export interface ThreadMetadata {
   queued?: boolean;
   blocked?: boolean;
   muted?: boolean;
+  archivedByFilter?: boolean;
   needsFiltering?: boolean;
   // Threads that were added back to the inbox in maketime, so syncWithGmail
   // should move them into the inbox instead of clearing their metadata.
@@ -67,6 +68,7 @@ export interface ThreadMetadataUpdate {
   queued?: boolean|firebase.firestore.FieldValue;
   blocked?: boolean|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
+  archivedByFilter?: boolean|firebase.firestore.FieldValue;
   needsFiltering?: boolean|firebase.firestore.FieldValue;
   moveToInbox?: boolean|firebase.firestore.FieldValue;
   countToArchive?: number|firebase.firestore.FieldValue;
@@ -87,6 +89,7 @@ export enum ThreadMetadataKeys {
   queued = 'queued',
   blocked = 'blocked',
   muted = 'muted',
+  archivedByFilter = 'archivedByFilter',
   needsFiltering = 'needsFiltering',
   moveToInbox = 'moveToInbox',
   countToArchive = 'countToArchive',
@@ -177,6 +180,7 @@ export class Thread extends EventTarget {
     return {
       blocked: firebase.firestore.FieldValue.delete(),
           muted: firebase.firestore.FieldValue.delete(),
+          archivedByFilter: firebase.firestore.FieldValue.delete(),
           queued: firebase.firestore.FieldValue.delete(),
           hasLabel: firebase.firestore.FieldValue.delete(),
           labelId: firebase.firestore.FieldValue.delete(),
@@ -204,8 +208,10 @@ export class Thread extends EventTarget {
     return update;
   }
 
-  async archive() {
+  async archive(archivedByFilter?: boolean) {
     let update = this.removeFromInboxMetadata_();
+    if (archivedByFilter)
+      update.archivedByFilter = true;
     return await this.updateMetadata(update);
   }
 

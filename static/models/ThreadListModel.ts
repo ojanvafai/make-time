@@ -7,7 +7,7 @@ import {Thread, ThreadMetadata} from '../Thread.js';
 
 import {Model} from './Model.js';
 
-interface TriageResult {
+export interface TriageResult {
   thread: Thread;
   state: ThreadMetadataUpdate;
 }
@@ -32,9 +32,7 @@ export abstract class ThreadListModel extends Model {
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
 
-  constructor(
-      queryKey: string, private showHiddenThreads_?: boolean,
-      private isMuteModel_?: boolean) {
+  constructor(queryKey: string, private showHiddenThreads_?: boolean) {
     super();
 
     this.resetUndoableActions_();
@@ -218,13 +216,12 @@ export abstract class ThreadListModel extends Model {
     }
   }
 
-  private async markTriagedInternal_(
-      thread: Thread, destination: string|null,
-      _expectedNewMessageCount?: number) {
+  protected async markTriagedInternal(
+      thread: Thread, destination: string|null, moveToInboxAgain?: boolean) {
     let priority = this.destinationToPriority(destination);
     let oldState;
     if (priority) {
-      oldState = await thread.setPriority(priority, this.isMuteModel_);
+      oldState = await thread.setPriority(priority, moveToInboxAgain);
     } else {
       switch (destination) {
         case null:
@@ -232,7 +229,7 @@ export abstract class ThreadListModel extends Model {
           break;
 
         case Labels.Blocked:
-          oldState = await thread.setBlocked(this.isMuteModel_);
+          oldState = await thread.setBlocked(moveToInboxAgain);
           break;
 
         case Labels.Muted:
@@ -250,26 +247,31 @@ export abstract class ThreadListModel extends Model {
     })
   }
 
-  async markSingleThreadTriaged(
-      thread: Thread, destination: string|null,
-      expectedNewMessageCount?: number) {
+  async markSingleThreadTriaged(thread: Thread, destination: string|null) {
     this.resetUndoableActions_();
-    await this.markTriagedInternal_(
-        thread, destination, expectedNewMessageCount);
+    await this.markTriagedInternal(thread, destination);
   }
 
-  async markThreadsTriaged(
-      threads: Thread[], destination: string|null,
-      expectedNewMessageCount?: number) {
+  async markThreadsTriaged(threads: Thread[], destination: string|null) {
     this.resetUndoableActions_();
 
     let progress = this.updateTitle(
         'ThreadListModel.markThreadsTriaged', threads.length,
         'Modifying threads...');
     for (let thread of threads) {
-      this.markTriagedInternal_(thread, destination, expectedNewMessageCount);
+      this.markTriagedInternal(thread, destination);
       progress.incrementProgress();
     };
+  }
+
+  async handleUndoAction(action: TriageResult) {
+    let newState = action.state;
+    // TODO: We should also keep track of the messages we marked read so we
+    // can mark them unread again, and theoretically, we should only put the
+    // messages that we previously in the inbox back into the inbox, so we
+    // should keep track of the actual message IDs modified.
+    newState.moveToInbox = true;
+    await action.thread.updateMetadata(newState);
   }
 
   async undoLastAction() {
@@ -285,17 +287,7 @@ export abstract class ThreadListModel extends Model {
         'ThreadListModel.undoLastAction_', actions.length, 'Undoing...');
 
     for (let i = 0; i < actions.length; i++) {
-      if (this.isMuteModel_) {
-        await actions[i].thread.setMuted();
-      } else {
-        let newState = actions[i].state;
-        // TODO: We should also keep track of the messages we marked read so we
-        // can mark them unread again, and theoretically, we should only put the
-        // messages that we previously in the inbox back into the inbox, so we
-        // should keep track of the actual message IDs modified.
-        newState.moveToInbox = true;
-        await actions[i].thread.updateMetadata(newState);
-      }
+      this.handleUndoAction(actions[i]);
       this.dispatchEvent(new UndoEvent(actions[i].thread));
       progress.incrementProgress();
     }

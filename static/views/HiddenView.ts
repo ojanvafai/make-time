@@ -1,20 +1,25 @@
 import {Action} from '../Actions.js';
 import {defined} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {ThreadListModel} from '../models/ThreadListModel.js';
+import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
 import {Settings} from '../Settings.js';
-import {Thread} from '../Thread.js';
+import {Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {AppShell} from './AppShell.js';
 import {ThreadListView} from './ThreadListView.js';
 import {View} from './View.js';
 
-let FIRESTORE_KEYS = ['muted', 'blocked', 'queued'];
+let FIRESTORE_KEYS = [
+  ThreadMetadataKeys.blocked,
+  ThreadMetadataKeys.queued,
+  ThreadMetadataKeys.muted,
+  ThreadMetadataKeys.archivedByFilter,
+];
 
 class HiddenModel extends ThreadListModel {
   constructor(private keyIndex_: number) {
     // For muted, don't put undo items back in the inbox.
-    super(FIRESTORE_KEYS[keyIndex_], true, keyIndex_ === 0);
+    super(FIRESTORE_KEYS[keyIndex_], true);
   }
 
   defaultCollapsedState(_groupName: string) {
@@ -33,6 +38,36 @@ class HiddenModel extends ThreadListModel {
   // show the group so you can see which group it's queued into.
   showPriorityLabel() {
     return false;
+  }
+
+  // Moving one of these types out of hidden into a priority or blocked means we
+  // need to mvoe it back into the inbox.
+  triageMovesToInbox_() {
+    return FIRESTORE_KEYS[this.keyIndex_] === ThreadMetadataKeys.muted ||
+        FIRESTORE_KEYS[this.keyIndex_] === ThreadMetadataKeys.archivedByFilter;
+  }
+
+  protected async markTriagedInternal(
+      thread: Thread, destination: string|null) {
+    super.markTriagedInternal(thread, destination, this.triageMovesToInbox_());
+  }
+
+  // Override the undo action for muted and archive since we need to have them
+  // set the appropriate state for removeing the thread from the inbox again if
+  // the thread was already put back in the inbox.
+  async handleUndoAction(action: TriageResult) {
+    switch (FIRESTORE_KEYS[this.keyIndex_]) {
+      case ThreadMetadataKeys.muted:
+        await action.thread.setMuted();
+        return;
+
+      case ThreadMetadataKeys.archivedByFilter:
+        await action.thread.archive(true);
+        return;
+
+      default:
+        await super.handleUndoAction(action);
+    }
   }
 }
 
