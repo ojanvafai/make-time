@@ -452,6 +452,7 @@ export class ThreadListView extends View {
       transition: opacity 0.5s;
       transition-delay: 3s;
       opacity: 0.95;
+      pointer-events: none;
     `;
     let text = document.createElement('div');
     text.style.cssText = `
