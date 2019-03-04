@@ -32,7 +32,9 @@ export abstract class ThreadListModel extends Model {
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
 
-  constructor(queryKey: string) {
+  constructor(
+      queryKey: string, private showHiddenThreads_?: boolean,
+      private isMuteModel_?: boolean) {
     super();
 
     this.resetUndoableActions_();
@@ -108,7 +110,7 @@ export abstract class ThreadListModel extends Model {
     this.threads_ = [];
     for (let doc of snapshot.docs) {
       let data = doc.data() as ThreadMetadata;
-      if (data.blocked || data.queued)
+      if (!this.showHiddenThreads_ && (data.blocked || data.queued))
         continue;
 
       if (data.priorityId === Priority.MustDo ||
@@ -222,7 +224,7 @@ export abstract class ThreadListModel extends Model {
     let priority = this.destinationToPriority(destination);
     let oldState;
     if (priority) {
-      oldState = await thread.setPriority(priority);
+      oldState = await thread.setPriority(priority, this.isMuteModel_);
     } else {
       switch (destination) {
         case null:
@@ -230,7 +232,7 @@ export abstract class ThreadListModel extends Model {
           break;
 
         case Labels.Blocked:
-          oldState = await thread.setBlocked();
+          oldState = await thread.setBlocked(this.isMuteModel_);
           break;
 
         case Labels.Muted:
@@ -270,7 +272,7 @@ export abstract class ThreadListModel extends Model {
     };
   }
 
-  async undoLastAction_() {
+  async undoLastAction() {
     if (!this.undoableActions_ || !this.undoableActions_.length) {
       alert('Nothing left to undo.');
       return;
@@ -283,13 +285,17 @@ export abstract class ThreadListModel extends Model {
         'ThreadListModel.undoLastAction_', actions.length, 'Undoing...');
 
     for (let i = 0; i < actions.length; i++) {
-      let newState = actions[i].state;
-      // TODO: We should also keep track of the messages we marked read so we
-      // can mark them unread again, and theoretically, we should only put the
-      // messages that we previously in the inbox back into the inbox, so we
-      // should keep track of the actual message IDs modified.
-      newState.moveToInbox = true;
-      await actions[i].thread.updateMetadata(newState);
+      if (this.isMuteModel_) {
+        await actions[i].thread.setMuted();
+      } else {
+        let newState = actions[i].state;
+        // TODO: We should also keep track of the messages we marked read so we
+        // can mark them unread again, and theoretically, we should only put the
+        // messages that we previously in the inbox back into the inbox, so we
+        // should keep track of the actual message IDs modified.
+        newState.moveToInbox = true;
+        await actions[i].thread.updateMetadata(newState);
+      }
       this.dispatchEvent(new UndoEvent(actions[i].thread));
       progress.incrementProgress();
     }

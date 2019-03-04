@@ -6,6 +6,8 @@ import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {RadialProgress} from '../RadialProgress.js';
 import {SendAs} from '../SendAs.js';
+import {ServerStorage} from '../ServerStorage.js';
+import {Settings} from '../Settings.js';
 import {BACKLOG_PRIORITY_NAME, BLOCKED_LABEL_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, ReplyType, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
@@ -193,6 +195,9 @@ registerActions('Triage or Todo', [
 ]);
 
 export class ThreadListView extends View {
+  private autoStartTimer_: boolean;
+  private timerDuration_: number;
+  private allowedReplyLength_: number;
   private modelListeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
@@ -210,15 +215,19 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      private allowedReplyLength_: number, private autoStartTimer_: boolean,
-      private countDown_: boolean, private timerDuration_: number,
-      bottomButtonUrl: string, bottomButtonText: string) {
+      settings: Settings, private countDown_?: boolean, bottomButtonUrl?: string,
+      bottomButtonText?: string) {
     super();
 
     this.style.cssText = `
       display: flex;
       flex-direction: column;
     `;
+
+    this.autoStartTimer_ = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
+    this.timerDuration_ = settings.get(ServerStorage.KEYS.TIMER_DURATION);
+    this.allowedReplyLength_ =
+        settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
     this.modelListeners_ = [];
     this.threadToRow_ = new WeakMap();
@@ -253,7 +262,8 @@ export class ThreadListView extends View {
     `;
     this.append(this.singleThreadContainer_);
 
-    this.appendButton(bottomButtonUrl, bottomButtonText);
+    if (bottomButtonUrl && bottomButtonText)
+      this.appendButton(bottomButtonUrl, bottomButtonText);
     this.updateActions_();
 
     this.addListenerToModel('thread-list-changed', this.render_.bind(this));
@@ -327,7 +337,7 @@ export class ThreadListView extends View {
 
   addTimer_() {
     let timer = new Timer(
-        this.autoStartTimer_, this.countDown_, this.timerDuration_,
+        this.autoStartTimer_, !!this.countDown_, this.timerDuration_,
         this.singleThreadContainer_);
     AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;
@@ -586,7 +596,7 @@ export class ThreadListView extends View {
   async takeAction(action: Action) {
     switch (action) {
       case UNDO_ACTION:
-        this.model_.undoLastAction_();
+        this.model_.undoLastAction();
         return;
 
       case QUICK_REPLY_ACTION:

@@ -173,17 +173,6 @@ export class Thread extends EventTarget {
     return oldState;
   }
 
-  async setPriority(priority: Priority) {
-    return await this.updateMetadata({
-      hasPriority: true,
-      priorityId: priority,
-      hasLabel: firebase.firestore.FieldValue.delete(),
-      labelId: firebase.firestore.FieldValue.delete(),
-      queued: firebase.firestore.FieldValue.delete(),
-      countToMarkRead: this.messageCount_(),
-    } as ThreadMetadataUpdate);
-  }
-
   static clearedMetatdata(): ThreadMetadataUpdate {
     return {
       blocked: firebase.firestore.FieldValue.delete(),
@@ -193,7 +182,6 @@ export class Thread extends EventTarget {
           labelId: firebase.firestore.FieldValue.delete(),
           hasPriority: firebase.firestore.FieldValue.delete(),
           priorityId: firebase.firestore.FieldValue.delete(),
-          moveToInbox: firebase.firestore.FieldValue.delete(),
     }
   }
 
@@ -206,23 +194,45 @@ export class Thread extends EventTarget {
     return firestoreUserCollection().doc('threads').collection('metadata');
   }
 
-  async archive() {
+  removeFromInboxMetadata_() {
     let update = Thread.clearedMetatdata();
     update.countToArchive = this.messageCount_();
-    return await this.updateMetadata(update);
+    // Override this here instead of in clearedMetadata so we don't accidentally
+    // override this in other methods that should keep this so the message is
+    // moved back to the inbox after an undo.
+    update.moveToInbox = firebase.firestore.FieldValue.delete();
+    return update;
   }
 
-  async setBlocked() {
-    let update = Thread.clearedMetatdata();
-    update.blocked = true;
-    update.countToMarkRead = this.messageCount_();
+  async archive() {
+    let update = this.removeFromInboxMetadata_();
     return await this.updateMetadata(update);
   }
 
   async setMuted() {
-    let update = Thread.clearedMetatdata();
+    let update = this.removeFromInboxMetadata_();
     update.muted = true;
-    update.countToArchive = this.messageCount_();
+    return await this.updateMetadata(update);
+  }
+
+  keepInInboxMetadata_(moveToInbox?: boolean) {
+    let update = Thread.clearedMetatdata();
+    update.countToMarkRead = this.messageCount_();
+    if (moveToInbox)
+      update.moveToInbox = true;
+    return update;
+  }
+
+  async setPriority(priority: Priority, moveToInbox?: boolean) {
+    let update = this.keepInInboxMetadata_(moveToInbox);
+    update.hasPriority = true;
+    update.priorityId = priority;
+    return await this.updateMetadata(update);
+  }
+
+  async setBlocked(moveToInbox?: boolean) {
+    let update = this.keepInInboxMetadata_(moveToInbox);
+    update.blocked = true;
     return await this.updateMetadata(update);
   }
 

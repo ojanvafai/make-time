@@ -17,6 +17,7 @@ import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
 import {AppShell, BackEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
+import {HiddenView} from './views/HiddenView.js';
 import {KeyboardShortcutsDialog} from './views/KeyboardShortcutsDialog.js';
 import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
@@ -45,6 +46,7 @@ updateLongTaskTracking();
 enum VIEW {
   Calendar,
   Compose,
+  Hidden,
   Settings,
   Todo,
   Triage,
@@ -69,11 +71,12 @@ router.add('/triage', routeToTriage);
 router.add('/todo', async (_params) => {
   await setView(VIEW.Todo);
 });
-
+router.add('/hidden', async (_params) => {
+  await setView(VIEW.Hidden);
+});
 router.add('/calendar', async (_parans) => {
   await setView(VIEW.Calendar);
 });
-
 router.add('/settings', async (_parans) => {
   await setView(VIEW.Settings);
 });
@@ -103,6 +106,9 @@ async function createModel(viewType: VIEW) {
     case VIEW.Settings:
       return null;
 
+    case VIEW.Hidden:
+      return null;
+
     default:
       // Throw instead of asserting here so that TypeScript knows that this
       // function never returns undefined.
@@ -113,10 +119,10 @@ async function createModel(viewType: VIEW) {
 async function createView(viewType: VIEW, model: Model|null, params?: any) {
   switch (viewType) {
     case VIEW.Calendar:
-      return new CalendarView(<Calendar>model);
+      return new CalendarView(model as Calendar);
 
     case VIEW.Compose:
-      return new ComposeView(<ComposeModel>model, params);
+      return new ComposeView(model as ComposeModel, params);
 
     case VIEW.Todo:
       return await createThreadListView(
@@ -128,6 +134,9 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
+
+    case VIEW.Hidden:
+      return new HiddenView(appShell_, await getSettings());
 
     default:
       // Throw instead of asserting here so that TypeScript knows that this
@@ -172,15 +181,9 @@ function preventUpdates() {
 async function createThreadListView(
     model: ThreadListModel, countDown: boolean, bottomButtonUrl: string,
     bottomButtonText: string) {
-  let settings = await getSettings();
-  let autoStartTimer = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
-  let timerDuration = settings.get(ServerStorage.KEYS.TIMER_DURATION);
-  let allowedReplyLength =
-      settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
-
   return new ThreadListView(
-      model, appShell_, allowedReplyLength, autoStartTimer, countDown,
-      timerDuration, bottomButtonUrl, bottomButtonText);
+      model, appShell_, await getSettings(), countDown, bottomButtonUrl,
+      bottomButtonText);
 }
 
 async function resetModels() {
