@@ -30,11 +30,12 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
 
 <b>Rule directives</b>
  - <b>$anything:</b> Matches the raw email header "anything". So, $from matches the From header as plain text instead of the structure match that "from:" below does. You can view raw email headers in gmail by going to a message and opening "Show Original" from the "..." menu.
- - <b>to:</b> Matches the to/cc/bcc fields of the email. "foo" will match foo+anything@anything.com, "foo@gmail.com" will match foo@gmail.com and foo+anything@gmail.com, "gmail.com" will match anything@gmail.com.
+ - <b>to:</b> Matches the to/cc/bcc fields of the email. It just checks if the name or email address includes the value. Take a comma separated list of values so you don't have to make a different rule for each address you want to match.
  - <b>from:</b> Matches the from field of the email. Same matching rules as the "to" directive.
  - <b>subject:</b> Matches if the subject of the email includes this text.
  - <b>plaintext:</b> Matches if the plain text of the email includes this text.
  - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
+ - All rules are case insensitive and can be done as regular expressions by prefixing the value with regexp:, so from:regexp:foo will do a regexp on the from field with the value "foo".
 `;
 
 export class FiltersView extends HTMLElement {
