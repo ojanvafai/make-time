@@ -1,4 +1,4 @@
-import {Action, registerActions} from '../Actions.js';
+import {Action, Actions, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {getSendAs, login} from '../BaseMain.js';
 import {EmailCompose, SubmitEvent} from '../EmailCompose.js';
@@ -48,11 +48,11 @@ let QUICK_REPLY_ACTION = {
 
 export let BLOCKED_ACTION = {
   name: BLOCKED_LABEL_NAME,
-  description: `Block on action from someone else. Shows up tomorrow retriage.`,
+  description: `Show the blocked buttons.`,
 };
 
 export let BLOCKED_1D_ACTION = {
-  name: BLOCKED_LABEL_NAME,
+  name: '1 day',
   description:
       `Block on action from someone else. Shows up tomorrow to retriage.`,
   key: '5',
@@ -60,7 +60,7 @@ export let BLOCKED_1D_ACTION = {
 };
 
 export let BLOCKED_2D_ACTION = {
-  name: BLOCKED_LABEL_NAME,
+  name: '2 days',
   description:
       `Block on action from someone else. Shows up in 2 days to retriage.`,
   key: '6',
@@ -68,7 +68,7 @@ export let BLOCKED_2D_ACTION = {
 };
 
 export let BLOCKED_7D_ACTION = {
-  name: BLOCKED_LABEL_NAME,
+  name: '7 days',
   description:
       `Block on action from someone else. Shows up in 7 days to retriage.`,
   key: '7',
@@ -76,7 +76,7 @@ export let BLOCKED_7D_ACTION = {
 };
 
 export let BLOCKED_14D_ACTION = {
-  name: BLOCKED_LABEL_NAME,
+  name: '14 days',
   description:
       `Block on action from someone else. Shows up in 14 days to retriage.`,
   key: '8',
@@ -84,7 +84,7 @@ export let BLOCKED_14D_ACTION = {
 };
 
 export let BLOCKED_30D_ACTION = {
-  name: BLOCKED_LABEL_NAME,
+  name: '30 days',
   description:
       `Block on action from someone else. Shows up in 30 days to retriage.`,
   key: '9',
@@ -194,14 +194,18 @@ export let NEEDS_FILTER_ACTION = {
   key: 'f',
 };
 
-let BASE_ACTIONS = [
-  ARCHIVE_ACTION,
-  BLOCKED_ACTION,
+let BLOCKED_BUTTONS = [
   BLOCKED_1D_ACTION,
   BLOCKED_2D_ACTION,
   BLOCKED_7D_ACTION,
   BLOCKED_14D_ACTION,
   BLOCKED_30D_ACTION,
+];
+
+let BASE_ACTIONS = [
+  ARCHIVE_ACTION,
+  BLOCKED_ACTION,
+  ...BLOCKED_BUTTONS,
   MUTE_ACTION,
   MUST_DO_ACTION,
   URGENT_ACTION,
@@ -249,6 +253,7 @@ export class ThreadListView extends View {
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
   private sendAs_?: SendAs;
+  private blockedToolbar_?: Actions;
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
@@ -631,8 +636,26 @@ export class ThreadListView extends View {
     this.setFocusAndScrollIntoView_(firstRow);
   }
 
+  private toggleBlockedToolbar_() {
+    if (this.blockedToolbar_) {
+      this.blockedToolbar_.remove();
+      this.blockedToolbar_ = undefined;
+    } else {
+      this.blockedToolbar_ = new Actions(this, true);
+      this.blockedToolbar_.setActions(BLOCKED_BUTTONS);
+      this.blockedToolbar_.style.position = 'absolute';
+      AppShell.addToFooter(this.blockedToolbar_);
+      this.blockedToolbar_.style.top =
+          `-${this.blockedToolbar_.offsetHeight}px`;
+    }
+  }
+
   async takeAction(action: Action) {
     switch (action) {
+      case BLOCKED_ACTION:
+        this.toggleBlockedToolbar_();
+        return;
+
       case UNDO_ACTION:
         this.model_.undoLastAction();
         return;

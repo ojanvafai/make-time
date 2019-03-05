@@ -3,7 +3,7 @@ import {Action} from '../Actions.js';
 import {assert, notNull} from '../Base.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, BLOCKED_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
 
 import {Model} from './Model.js';
 
@@ -228,9 +228,6 @@ export abstract class ThreadListModel extends Model {
           oldState = await thread.archive();
           break;
 
-        // TODO: Make BLOCKED_ACTION show the blocked toolbar instead of
-        // actually blocking.
-        case BLOCKED_ACTION:
         case BLOCKED_1D_ACTION:
           oldState = await thread.setBlocked(1, moveToInboxAgain);
           break;

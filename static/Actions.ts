@@ -28,7 +28,7 @@ export function getActionKey(action: Action) {
 export class Actions extends HTMLElement {
   private actions_: Action[];
 
-  constructor(private view_: View) {
+  constructor(private view_: View, private showHiddenActions_?: boolean) {
     super();
     this.style.display = 'flex';
     this.actions_ = [];
@@ -53,7 +53,7 @@ export class Actions extends HTMLElement {
     this.append(buttonContainer);
 
     for (let action of this.actions_) {
-      if (action.hidden)
+      if (!this.showHiddenActions_ && action.hidden)
         continue;
 
       let button = document.createElement('button');
