@@ -48,14 +48,55 @@ let QUICK_REPLY_ACTION = {
 
 export let BLOCKED_ACTION = {
   name: BLOCKED_LABEL_NAME,
+  description: `Block on action from someone else. Shows up tomorrow retriage.`,
+};
+
+export let BLOCKED_1D_ACTION = {
+  name: BLOCKED_LABEL_NAME,
   description:
-      `Block on action from someone else. Shows up once a day to retriage.`,
+      `Block on action from someone else. Shows up tomorrow to retriage.`,
+  key: '5',
+  hidden: true,
+};
+
+export let BLOCKED_2D_ACTION = {
+  name: BLOCKED_LABEL_NAME,
+  description:
+      `Block on action from someone else. Shows up in 2 days to retriage.`,
+  key: '6',
+  hidden: true,
+};
+
+export let BLOCKED_7D_ACTION = {
+  name: BLOCKED_LABEL_NAME,
+  description:
+      `Block on action from someone else. Shows up in 7 days to retriage.`,
+  key: '7',
+  hidden: true,
+};
+
+export let BLOCKED_14D_ACTION = {
+  name: BLOCKED_LABEL_NAME,
+  description:
+      `Block on action from someone else. Shows up in 14 days to retriage.`,
+  key: '8',
+  hidden: true,
+};
+
+export let BLOCKED_30D_ACTION = {
+  name: BLOCKED_LABEL_NAME,
+  description:
+      `Block on action from someone else. Shows up in 30 days to retriage.`,
+  key: '9',
+  hidden: true,
 };
 
 export let MUTE_ACTION = {
   name: `Mute`,
   description:
       `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
+  key: 'k',
+  hidden: true,
 };
 
 export let NEXT_ACTION = {
@@ -156,6 +197,11 @@ export let NEEDS_FILTER_ACTION = {
 let BASE_ACTIONS = [
   ARCHIVE_ACTION,
   BLOCKED_ACTION,
+  BLOCKED_1D_ACTION,
+  BLOCKED_2D_ACTION,
+  BLOCKED_7D_ACTION,
+  BLOCKED_14D_ACTION,
+  BLOCKED_30D_ACTION,
   MUTE_ACTION,
   MUST_DO_ACTION,
   URGENT_ACTION,
@@ -269,7 +315,7 @@ export class ThreadListView extends View {
   private getThreadRow_(thread: Thread) {
     let row = this.threadToRow_.get(thread);
     if (!row) {
-      row = new ThreadRow(thread, this.model_.showPriorityLabel());
+      row = new ThreadRow(thread, this.model_);
       this.threadToRow_.set(thread, row);
     }
     return row;

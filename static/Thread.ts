@@ -42,7 +42,7 @@ export interface ThreadMetadata {
   hasLabel?: boolean;
   hasPriority?: boolean;
   queued?: boolean;
-  blocked?: boolean;
+  blocked?: boolean|number;
   muted?: boolean;
   archivedByFilter?: boolean;
   needsFiltering?: boolean;
@@ -66,7 +66,7 @@ export interface ThreadMetadataUpdate {
   hasLabel?: boolean|firebase.firestore.FieldValue;
   hasPriority?: boolean|firebase.firestore.FieldValue;
   queued?: boolean|firebase.firestore.FieldValue;
-  blocked?: boolean|firebase.firestore.FieldValue;
+  blocked?: boolean|number|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
   needsFiltering?: boolean|firebase.firestore.FieldValue;
@@ -236,9 +236,14 @@ export class Thread extends EventTarget {
     return await this.updateMetadata(update);
   }
 
-  async setBlocked(moveToInbox?: boolean) {
+  async setBlocked(days: number, moveToInbox?: boolean) {
     let update = this.keepInInboxMetadata_(moveToInbox);
-    update.blocked = true;
+    let date = new Date();
+    // Set the time to midnight to ensure consistency since we only care about
+    // day boundaries.
+    date.setHours(0, 0, 0);
+    date.setDate(date.getDate() + days);
+    update.blocked = date.getTime();
     return await this.updateMetadata(update);
   }
 
@@ -248,6 +253,19 @@ export class Thread extends EventTarget {
 
   getDate() {
     return new Date(defined(this.metadata_.timestamp));
+  }
+
+  getBlockedDate() {
+    let blocked = defined(this.metadata_.blocked);
+    // TODO: Remove this once blocked can no longer be a boolean.
+    if (blocked === true) {
+      let today = new Date();
+      today.setDate(today.getDate() + 1);
+      return today;
+    }
+    if (blocked === false)
+      assert(false);
+    return new Date(blocked as number);
   }
 
   getSubject() {

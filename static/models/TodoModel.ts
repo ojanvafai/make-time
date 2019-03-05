@@ -1,4 +1,5 @@
 import {defined, notNull} from '../Base.js';
+import {firestoreUserCollection} from '../BaseMain.js';
 import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
@@ -6,7 +7,11 @@ import {ThreadListModel} from './ThreadListModel.js';
 
 export class TodoModel extends ThreadListModel {
   constructor(private vacation_: string) {
-    super(ThreadMetadataKeys.hasPriority);
+    super(true);
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    this.setQuery(
+        metadataCollection.where(ThreadMetadataKeys.hasPriority, '==', true));
   }
 
   shouldShowThread(thread: Thread) {
@@ -23,12 +28,12 @@ export class TodoModel extends ThreadListModel {
         groupName !== NEEDS_FILTER_PRIORITY_NAME;
   }
 
-  getGroupName(thread: Thread) {
-    return notNull(thread.getPriority());
+  getThreadRowLabel(thread: Thread) {
+    return thread.getLabel() || '';
   }
 
-  showPriorityLabel() {
-    return false;
+  getGroupName(thread: Thread) {
+    return notNull(thread.getPriority());
   }
 
   protected compareThreads(a: Thread, b: Thread) {

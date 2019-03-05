@@ -1,4 +1,5 @@
 import {assert, parseAddressList} from '../Base.js';
+import {ThreadListModel} from '../models/ThreadListModel.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -62,7 +63,7 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
 
-  constructor(public thread: Thread, private labelIsPriority_: boolean) {
+  constructor(public thread: Thread, private model_: ThreadListModel) {
     super();
     this.style.cssText = `
       display: flex;
@@ -173,8 +174,7 @@ export class ThreadRow extends HTMLElement {
   renderRow_() {
     let snippetText = this.thread.getSnippet();
     let messageIds = this.thread.getMessageIds();
-    let secondaryName = this.labelIsPriority_ ? this.thread.getPriority() :
-                                                this.thread.getLabel();
+    let secondaryName = this.model_.getThreadRowLabel(this.thread);
     let state = new RowState(
         this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
         messageIds.length, messageIds[messageIds.length - 1], secondaryName);

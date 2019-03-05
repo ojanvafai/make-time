@@ -1,10 +1,9 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action} from '../Actions.js';
 import {assert, notNull} from '../Base.js';
-import {firestoreUserCollection} from '../BaseMain.js';
-import {Priority, ThreadMetadataKeys, ThreadMetadataUpdate} from '../Thread.js';
+import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, BLOCKED_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
 
 import {Model} from './Model.js';
 
@@ -33,25 +32,25 @@ export abstract class ThreadListModel extends Model {
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
 
-  constructor(queryKey: string, private showHiddenThreads_?: boolean) {
+  constructor(
+      showFaviconCount?: boolean, private showHiddenThreads_?: boolean) {
     super();
 
     this.resetUndoableActions_();
     this.threads_ = [];
     this.collapsedGroupNames_ = new Map();
     this.snapshotToProcess_ = null;
-    this.faviconCount_ = queryKey === ThreadMetadataKeys.hasPriority ? 0 : -1;
-
-    let metadataCollection =
-        firestoreUserCollection().doc('threads').collection('metadata');
-    metadataCollection.where(queryKey, '==', true)
-        .onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
+    this.faviconCount_ = showFaviconCount ? 0 : -1;
   }
 
   protected abstract defaultCollapsedState(groupName: string): boolean;
   protected abstract compareThreads(a: Thread, b: Thread): number;
+  abstract getThreadRowLabel(thread: Thread): string;
   abstract getGroupName(thread: Thread): string;
-  abstract showPriorityLabel(): boolean;
+
+  protected setQuery(query: firebase.firestore.Query) {
+    query.onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
+  }
 
   protected shouldShowThread(thread: Thread) {
     // If we have archived all the messages but the change hasn't been
@@ -229,8 +228,27 @@ export abstract class ThreadListModel extends Model {
           oldState = await thread.archive();
           break;
 
+        // TODO: Make BLOCKED_ACTION show the blocked toolbar instead of
+        // actually blocking.
         case BLOCKED_ACTION:
-          oldState = await thread.setBlocked(moveToInboxAgain);
+        case BLOCKED_1D_ACTION:
+          oldState = await thread.setBlocked(1, moveToInboxAgain);
+          break;
+
+        case BLOCKED_2D_ACTION:
+          oldState = await thread.setBlocked(2, moveToInboxAgain);
+          break;
+
+        case BLOCKED_7D_ACTION:
+          oldState = await thread.setBlocked(7, moveToInboxAgain);
+          break;
+
+        case BLOCKED_14D_ACTION:
+          oldState = await thread.setBlocked(14, moveToInboxAgain);
+          break;
+
+        case BLOCKED_30D_ACTION:
+          oldState = await thread.setBlocked(30, moveToInboxAgain);
           break;
 
         case MUTE_ACTION:

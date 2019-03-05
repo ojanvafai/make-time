@@ -1,6 +1,6 @@
 import {Action} from '../Actions.js';
-import {defined} from '../Base.js';
-import {login} from '../BaseMain.js';
+import {defined, notNull} from '../Base.js';
+import {firestoreUserCollection, login} from '../BaseMain.js';
 import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
 import {Settings} from '../Settings.js';
 import {Thread, ThreadMetadataKeys} from '../Thread.js';
@@ -16,10 +16,37 @@ let FIRESTORE_KEYS = [
   ThreadMetadataKeys.archivedByFilter,
 ];
 
+let formattingOptions: {
+  year?: string;
+  month?: string;
+  day?: string;
+  hour?: string;
+  minute?: string;
+} = {
+  month: 'short',
+  day: 'numeric',
+}
+
+let DAY_MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
+
 class HiddenModel extends ThreadListModel {
   constructor(private keyIndex_: number) {
     // For muted, don't put undo items back in the inbox.
-    super(FIRESTORE_KEYS[keyIndex_], true);
+    super(false, true);
+
+    if (this.queryKey_() === ThreadMetadataKeys.blocked) {
+      let metadataCollection =
+          firestoreUserCollection().doc('threads').collection('metadata');
+      this.setQuery(metadataCollection.orderBy('blocked', 'asc'));
+    } else {
+      let metadataCollection =
+          firestoreUserCollection().doc('threads').collection('metadata');
+      this.setQuery(metadataCollection.where(this.queryKey_(), '==', true));
+    }
+  }
+
+  private queryKey_() {
+    return FIRESTORE_KEYS[this.keyIndex_];
   }
 
   defaultCollapsedState(_groupName: string) {
@@ -30,14 +57,27 @@ class HiddenModel extends ThreadListModel {
     return this.compareDates(a, b);
   }
 
-  getGroupName(_thread: Thread) {
-    return FIRESTORE_KEYS[this.keyIndex_];
+  // There's no priorities to show, but when in queued, we want the label to
+  // show the group so you can see which group it's queued into and in blocked
+  // want to see what date it's blocked until.
+  getThreadRowLabel(thread: Thread) {
+    switch (this.queryKey_()) {
+      case ThreadMetadataKeys.blocked:
+        // If we load the page and blocked threads are removed while viewing,
+        // then the thread will be unblocked in some cases while still
+        // temporarily being visible in this view.
+        if (thread.isBlocked())
+          return DAY_MONTH_FORMATTER.format(thread.getBlockedDate());
+        return '';
+
+      case ThreadMetadataKeys.queued:
+        return notNull(thread.getLabel());
+    }
+    return '';
   }
 
-  // There's no priorities to show, but when in queued, we want the label to
-  // show the group so you can see which group it's queued into.
-  showPriorityLabel() {
-    return false;
+  getGroupName(_thread: Thread) {
+    return FIRESTORE_KEYS[this.keyIndex_];
   }
 
   // Moving one of these types out of hidden into a priority or blocked means we
@@ -47,8 +87,7 @@ class HiddenModel extends ThreadListModel {
         FIRESTORE_KEYS[this.keyIndex_] === ThreadMetadataKeys.archivedByFilter;
   }
 
-  protected async markTriagedInternal(
-      thread: Thread, destination: Action) {
+  protected async markTriagedInternal(thread: Thread, destination: Action) {
     super.markTriagedInternal(thread, destination, this.triageMovesToInbox_());
   }
 

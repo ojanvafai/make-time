@@ -1,4 +1,5 @@
 import {notNull} from '../Base.js';
+import {firestoreUserCollection} from '../BaseMain.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
@@ -10,8 +11,12 @@ export class TriageModel extends ThreadListModel {
   private daysToShow_: number|null;
 
   constructor(private vacation_: string, private settings_: Settings) {
-    super(ThreadMetadataKeys.hasLabel);
+    super();
     this.daysToShow_ = settings_.get(ServerStorage.KEYS.DAYS_TO_SHOW);
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    this.setQuery(
+        metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true));
   }
 
   private threadDays_(thread: Thread) {
@@ -37,12 +42,12 @@ export class TriageModel extends ThreadListModel {
     return super.shouldShowThread(thread);
   }
 
-  getGroupName(thread: Thread) {
-    return notNull(thread.getLabel());
+  getThreadRowLabel(thread: Thread) {
+    return thread.getPriority() || '';
   }
 
-  showPriorityLabel() {
-    return true;
+  getGroupName(thread: Thread) {
+    return notNull(thread.getLabel());
   }
 
   protected compareThreads(a: Thread, b: Thread) {

@@ -521,10 +521,16 @@ export class MailProcessor {
   }
 
   async dequeueBlocked_() {
+    // TODO: Remove this once all boolean blocked values are gone.
+    await this.dequeueBlockedForValue_(true);
+    await this.dequeueBlockedForValue_(Date.now());
+  }
+
+  async dequeueBlockedForValue_(value: number|boolean) {
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
     let querySnapshot =
-        await metadataCollection.where(ThreadMetadataKeys.blocked, '==', true)
+        await metadataCollection.where(ThreadMetadataKeys.blocked, '<=', value)
             .get();
 
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
