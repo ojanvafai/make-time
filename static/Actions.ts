@@ -7,7 +7,6 @@ export interface Action {
   key?: string;
   hidden?: boolean;
   repeatable?: boolean;
-  destination?: string|null;
 }
 
 let actions_: Map<string, Action[]> = new Map();

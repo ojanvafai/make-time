@@ -1,5 +1,4 @@
-import {defined, showDialog} from '../Base.js';
-import {Labels} from '../Labels.js';
+import {defined, Labels, showDialog} from '../Base.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';

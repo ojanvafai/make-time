@@ -1,9 +1,10 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
+import {Action} from '../Actions.js';
 import {assert, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
-import {Labels} from '../Labels.js';
 import {Priority, ThreadMetadataKeys, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
 
 import {Model} from './Model.js';
 
@@ -201,15 +202,15 @@ export abstract class ThreadListModel extends Model {
     this.undoableActions_ = [];
   }
 
-  protected destinationToPriority(destination: string|null) {
+  protected destinationToPriority(destination: Action) {
     switch (destination) {
-      case Labels.MustDo:
+      case MUST_DO_ACTION:
         return Priority.MustDo;
-      case Labels.Urgent:
+      case URGENT_ACTION:
         return Priority.Urgent;
-      case Labels.Backlog:
+      case BACKLOG_ACTION:
         return Priority.Backlog;
-      case Labels.NeedsFilter:
+      case NEEDS_FILTER_ACTION:
         return Priority.NeedsFilter;
       default:
         return null;
@@ -217,22 +218,22 @@ export abstract class ThreadListModel extends Model {
   }
 
   protected async markTriagedInternal(
-      thread: Thread, destination: string|null, moveToInboxAgain?: boolean) {
+      thread: Thread, destination: Action, moveToInboxAgain?: boolean) {
     let priority = this.destinationToPriority(destination);
     let oldState;
     if (priority) {
       oldState = await thread.setPriority(priority, moveToInboxAgain);
     } else {
       switch (destination) {
-        case null:
+        case ARCHIVE_ACTION:
           oldState = await thread.archive();
           break;
 
-        case Labels.Blocked:
+        case BLOCKED_ACTION:
           oldState = await thread.setBlocked(moveToInboxAgain);
           break;
 
-        case Labels.Muted:
+        case MUTE_ACTION:
           oldState = await thread.setMuted();
           break;
 
@@ -247,12 +248,12 @@ export abstract class ThreadListModel extends Model {
     })
   }
 
-  async markSingleThreadTriaged(thread: Thread, destination: string|null) {
+  async markSingleThreadTriaged(thread: Thread, destination: Action) {
     this.resetUndoableActions_();
     await this.markTriagedInternal(thread, destination);
   }
 
-  async markThreadsTriaged(threads: Thread[], destination: string|null) {
+  async markThreadsTriaged(threads: Thread[], destination: Action) {
     this.resetUndoableActions_();
 
     let progress = this.updateTitle(

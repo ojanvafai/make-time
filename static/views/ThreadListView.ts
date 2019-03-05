@@ -2,7 +2,6 @@ import {Action, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {getSendAs, login} from '../BaseMain.js';
 import {EmailCompose, SubmitEvent} from '../EmailCompose.js';
-import {Labels} from '../Labels.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {RadialProgress} from '../RadialProgress.js';
 import {SendAs} from '../SendAs.js';
@@ -35,11 +34,9 @@ interface ListenerData {
   name: string, handler: (e: Event) => void,
 }
 
-let ARCHIVE_ACTION = {
+export let ARCHIVE_ACTION = {
   name: `Archive`,
   description: `Archive and remove from the current group.`,
-  // TODO: Make this use Labels.ARCHIVE.
-  destination: null,
 };
 
 let QUICK_REPLY_ACTION = {
@@ -49,18 +46,16 @@ let QUICK_REPLY_ACTION = {
   key: 'r',
 };
 
-let BLOCKED_ACTION = {
+export let BLOCKED_ACTION = {
   name: BLOCKED_LABEL_NAME,
   description:
       `Block on action from someone else. Shows up once a day to retriage.`,
-  destination: Labels.Blocked,
 };
 
-let MUTE_ACTION = {
+export let MUTE_ACTION = {
   name: `Mute`,
   description:
       `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
-  destination: Labels.Muted,
 };
 
 export let NEXT_ACTION = {
@@ -131,34 +126,30 @@ let UNDO_ACTION = {
   description: `Undoes the last action taken.`,
 };
 
-let MUST_DO_ACTION = {
+export let MUST_DO_ACTION = {
   name: MUST_DO_PRIORITY_NAME,
   description: `Must do today. Literally won't go home till it's done.`,
-  destination: Labels.MustDo,
   key: '1',
 };
 
-let URGENT_ACTION = {
+export let URGENT_ACTION = {
   name: URGENT_PRIORITY_NAME,
   description: `Needs to happen ASAP.`,
-  destination: Labels.Urgent,
   key: '2',
 };
 
-let BACKLOG_ACTION = {
+export let BACKLOG_ACTION = {
   name: BACKLOG_PRIORITY_NAME,
   description:
       `Important for achieving my mission, but can be done at leisure.`,
-  destination: Labels.Backlog,
   key: '3',
 };
 
-let NEEDS_FILTER_ACTION = {
+export let NEEDS_FILTER_ACTION = {
   name: NEEDS_FILTER_PRIORITY_NAME,
   shortName: 'Filter',
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
-  destination: Labels.NeedsFilter,
   key: 'f',
 };
 
@@ -631,7 +622,7 @@ export class ThreadListView extends View {
         return;
 
       default:
-        await this.markTriaged_(defined(action.destination));
+        await this.markTriaged_(action);
     }
   }
 
@@ -680,7 +671,7 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.style.display = 'none';
   }
 
-  private async markTriaged_(destination: string|null) {
+  private async markTriaged_(destination: Action) {
     if (this.renderedRow_) {
       await this.model_.markSingleThreadTriaged(
           this.renderedRow_.thread, destination);
@@ -932,7 +923,7 @@ export class ThreadListView extends View {
       this.updateActions_();
 
       if (submitEvent.ctrlKey) {
-        await this.markTriaged_(ARCHIVE_ACTION.destination);
+        await this.markTriaged_(ARCHIVE_ACTION);
       } else if (type !== ReplyType.Forward) {
         renderedRow.rendered.showSpinner(true);
         await renderedRow.thread.update();

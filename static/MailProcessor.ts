@@ -1,9 +1,8 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined, FetchRequestParameters, ParsedAddress, USER_ID} from './Base.js';
+import {assert, defined, FetchRequestParameters, Labels, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
-import {Labels} from './Labels.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {QueueNames} from './QueueNames.js';
@@ -11,7 +10,7 @@ import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
 import {TaskQueue} from './TaskQueue.js';
-import {BuiltInLabels, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
+import {BuiltInLabelIds, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
@@ -533,7 +532,7 @@ export class MailProcessor {
         async (doc: firebase.firestore.QueryDocumentSnapshot) => {
           await doc.ref.update({
             blocked: firebase.firestore.FieldValue.delete(),
-            labelId: BuiltInLabels.Blocked,
+            labelId: BuiltInLabelIds.Blocked,
             hasLabel: true,
           } as ThreadMetadataUpdate);
         });

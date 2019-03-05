@@ -124,7 +124,7 @@ export const PrioritySortOrder =
     [Priority.NeedsFilter, Priority.MustDo, Priority.Urgent, Priority.Backlog];
 
 // Use negative values for built-in labels.
-export enum BuiltInLabels {
+export enum BuiltInLabelIds {
   Blocked = -1,
 }
 
@@ -278,7 +278,7 @@ export class Thread extends EventTarget {
     let id = this.getLabelId();
     if (!id)
       return null;
-    if (id === BuiltInLabels.Blocked)
+    if (id === BuiltInLabelIds.Blocked)
       return BLOCKED_LABEL_NAME;
     return this.queueNames_.getName(id);
   }

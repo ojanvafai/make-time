@@ -109,3 +109,8 @@ export function serializeAddress(address: ParsedAddress) {
   let name = address.name.includes(',') ? `"${address.name}"` : address.name;
   return `${name} <${address.address}>`;
 }
+
+export enum Labels {
+  Fallback = 'unfiltered',
+  Archive = 'archive',
+}

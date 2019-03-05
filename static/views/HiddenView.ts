@@ -48,7 +48,7 @@ class HiddenModel extends ThreadListModel {
   }
 
   protected async markTriagedInternal(
-      thread: Thread, destination: string|null) {
+      thread: Thread, destination: Action) {
     super.markTriagedInternal(thread, destination, this.triageMovesToInbox_());
   }
 

@@ -1,5 +1,4 @@
-import {defined, notNull} from '../Base.js';
-import {Labels} from '../Labels.js';
+import {defined, Labels, notNull} from '../Base.js';
 import {AllQueueDatas, QueueListEntry, QueueSettings} from '../QueueSettings.js';
 import {FiltersChangedEvent, Settings} from '../Settings.js';
 
