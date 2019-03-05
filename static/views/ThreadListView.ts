@@ -95,8 +95,6 @@ export let MUTE_ACTION = {
   name: `Mute`,
   description:
       `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
-  key: 'k',
-  hidden: true,
 };
 
 export let NEXT_ACTION = {
