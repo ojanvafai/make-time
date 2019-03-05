@@ -215,8 +215,8 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      settings: Settings, private countDown_?: boolean, bottomButtonUrl?: string,
-      bottomButtonText?: string) {
+      settings: Settings, private countDown_?: boolean,
+      bottomButtonUrl?: string, bottomButtonText?: string) {
     super();
 
     this.style.cssText = `
@@ -680,11 +680,10 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.style.display = 'none';
   }
 
-  private async markTriaged_(
-      destination: string|null, expectedNewMessageCount?: number) {
+  private async markTriaged_(destination: string|null) {
     if (this.renderedRow_) {
       await this.model_.markSingleThreadTriaged(
-          this.renderedRow_.thread, destination, expectedNewMessageCount);
+          this.renderedRow_.thread, destination);
     } else {
       let threads: Thread[] = [];
       let firstUnselectedRowAfterFocused = null;
@@ -728,8 +727,7 @@ export class ThreadListView extends View {
       if (focusedRowIsSelected)
         this.setFocus_(firstUnselectedRowAfterFocused);
 
-      await this.model_.markThreadsTriaged(
-          threads, destination, expectedNewMessageCount);
+      await this.model_.markThreadsTriaged(threads, destination);
     }
   }
 
@@ -934,9 +932,7 @@ export class ThreadListView extends View {
       this.updateActions_();
 
       if (submitEvent.ctrlKey) {
-        let expectedNewMessageCount = type === ReplyType.Forward ? 0 : 1;
-        await this.markTriaged_(
-            ARCHIVE_ACTION.destination, expectedNewMessageCount);
+        await this.markTriaged_(ARCHIVE_ACTION.destination);
       } else if (type !== ReplyType.Forward) {
         renderedRow.rendered.showSpinner(true);
         await renderedRow.thread.update();
