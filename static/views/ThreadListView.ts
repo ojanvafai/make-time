@@ -506,7 +506,6 @@ export class ThreadListView extends View {
       display: flex;
       align-items: center;
       justify-content: center;
-      pointer-events: none;
       transition: opacity 0.5s;
       transition-delay: 3s;
       opacity: 0.95;
