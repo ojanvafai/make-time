@@ -14,6 +14,7 @@ import {BuiltInLabelIds, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from 
 import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
+let REGEXP_PREFIX = 'regexp:';
 
 export class MailProcessor {
   private makeTimeLabelId_?: string;
@@ -325,34 +326,6 @@ export class MailProcessor {
     }
   }
 
-  endsWithAddress(addresses: ParsedAddress[], filterAddress: string) {
-    for (var j = 0; j < addresses.length; j++) {
-      if (addresses[j].address.endsWith(filterAddress))
-        return true;
-    }
-    return false;
-  }
-
-  matchesRegexp(regex: string, str: string) {
-    return (new RegExp(regex, 'm')).test(str);
-  }
-
-  // This is to avoid triggering regexps accidentally on plain test things
-  // being run through this.matchesRegexp
-  escapeRegExp(str: string) {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  startsWithAddress(addresses: ParsedAddress[], filterAddress: string) {
-    var parts = this.escapeRegExp(filterAddress).split('@');
-    var regexp = '^' + parts[0] + '(?:\\+[^@]*?)?@' + parts[1];
-    for (var j = 0; j < addresses.length; j++) {
-      if (this.matchesRegexp(regexp, addresses[j].address))
-        return true;
-    }
-    return false;
-  }
-
   containsAddress(addresses: ParsedAddress[], filterAddressCsv: string) {
     if (!addresses.length)
       return false;
@@ -361,16 +334,20 @@ export class MailProcessor {
         filterAddressCsv.split(',').map((item) => item.trim());
     for (var i = 0; i < filterAddresses.length; i++) {
       var filterAddress = filterAddresses[i];
-      // If there's no @ symbol, we don't know if it's a username or a domain.
-      // Try both.
-      if (filterAddress.includes('@')) {
-        if (this.startsWithAddress(addresses, filterAddress))
-          return true;
+      let re = this.ruleRegexp_(filterAddress);
+      if (re) {
+        for (let address of addresses) {
+          if (re.test(address.address.toLowerCase()) ||
+              re.test(address.name.toLowerCase()))
+            return true;
+        }
       } else {
-        if (this.startsWithAddress(addresses, filterAddress + '@'))
-          return true;
-        if (this.endsWithAddress(addresses, '@' + filterAddress))
-          return true;
+        for (let address of addresses) {
+          let lowerCase = filterAddress.toLowerCase();
+          if (address.address.toLowerCase().includes(lowerCase) ||
+              address.name.toLowerCase().includes(lowerCase))
+            return true;
+        }
       }
     }
     return false;
@@ -378,8 +355,24 @@ export class MailProcessor {
 
   matchesHeader_(message: Message, header: HeaderFilterRule) {
     let headerValue = message.getHeaderValue(header.name);
-    return headerValue &&
-        headerValue.toLowerCase().trim().includes(header.value);
+    return headerValue && this.matchesRuleText_(header.value, headerValue);
+  }
+
+  ruleRegexp_(ruleText: string) {
+    if (ruleText.startsWith(REGEXP_PREFIX)) {
+      let reText = ruleText.replace(REGEXP_PREFIX, '');
+      return new RegExp(reText, 'mi');
+    }
+    return null;
+  }
+
+  matchesRuleText_(ruleText: string, value: string) {
+    let re = this.ruleRegexp_(ruleText);
+    if (re) {
+      return re.test(value);
+    } else {
+      return value.toLowerCase().includes(ruleText.toLowerCase());
+    }
   }
 
   matchesRule(rule: FilterRule, message: Message) {
@@ -418,17 +411,17 @@ export class MailProcessor {
     // TODO: only need to do this once per thread.
     if (rule.subject) {
       if (!message.subject ||
-          !message.subject.toLowerCase().includes(rule.subject))
+          !this.matchesRuleText_(rule.subject, message.subject))
         return false;
       matches = true;
     }
     if (rule.plaintext) {
-      if (!message.getPlain().toLowerCase().includes(rule.plaintext))
+      if (!this.matchesRuleText_(rule.plaintext, message.getPlain()))
         return false;
       matches = true;
     }
     if (rule.htmlcontent) {
-      if (!message.getHtmlOrPlain().toLowerCase().includes(rule.htmlcontent))
+      if (!this.matchesRuleText_(message.getHtmlOrPlain(), rule.htmlcontent))
         return false;
       matches = true;
     }
