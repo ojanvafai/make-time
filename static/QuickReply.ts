@@ -40,6 +40,7 @@ export class QuickReply extends HTMLElement {
     super();
     this.style.cssText = `
       display: flex;
+      flex-direction: column;
       flex-wrap: wrap;
       width: 100%;
     `;
@@ -54,18 +55,11 @@ export class QuickReply extends HTMLElement {
     `;
 
     let sendAs = defined(this.sendAs_);
-    let from;
     if (sendAs.senders && sendAs.senders.length > 1) {
-      from = document.createElement('div');
-      from.style.cssText = `
-        white-space: nowrap;
-        margin: 0 6px;
-      `;
       this.senders_ = document.createElement('select');
       this.senders_.style.cssText = `
-        margin-left: 2px;
+        margin: 0 6px;
       `;
-      from.append('From', this.senders_);
 
       let messages = this.thread.getMessages();
       let lastMessage = messages[messages.length - 1];
@@ -73,8 +67,10 @@ export class QuickReply extends HTMLElement {
 
       for (let sender of sendAs.senders) {
         let option = document.createElement('option');
-        option.append(defined(sender.sendAsEmail));
-        if (deliveredTo ? sender.sendAsEmail === deliveredTo : sender.isDefault)
+        let email = defined(sender.sendAsEmail);
+        option.value = email;
+        option.append(`From: ${email}`);
+        if (deliveredTo ? email === deliveredTo : sender.isDefault)
           option.setAttribute('selected', 'true');
         this.senders_.append(option);
       }
@@ -101,10 +97,9 @@ export class QuickReply extends HTMLElement {
       align-items: center;
       justify-content: center;
     `;
-    controls.append(cancel, this.replyType_);
-    if (from)
-      controls.append(from);
-    controls.append(this.count_, this.progress_);
+    if (this.senders_)
+      controls.append(this.senders_);
+    controls.append(this.replyType_, cancel, this.count_, this.progress_);
 
     this.append(this.compose_, controls);
   }
