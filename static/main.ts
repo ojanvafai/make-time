@@ -35,8 +35,12 @@ async function updateLongTaskTracking() {
   // Read this setting out of local storage so we don't block on reading
   // settings from the network to set this up.
   if (await IDBKeyVal.getDefault().get(ServerStorage.KEYS.TRACK_LONG_TASKS)) {
-    longTasks_ = new LongTasks();
-    document.body.append(longTasks_);
+    // Since updateLongTaskTracking is called multiple times, there can be a
+    // race with the above await call, so ensure we don't create it twice.
+    if (!longTasks_) {
+      longTasks_ = new LongTasks();
+      document.body.append(longTasks_);
+    }
   } else if (longTasks_) {
     longTasks_.remove();
   }
