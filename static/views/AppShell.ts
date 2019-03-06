@@ -64,6 +64,7 @@ export class AppShell extends HTMLElement {
     let toolbar = document.createElement('div');
     toolbar.style.cssText = `
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       background-color: black;
       color: white;
@@ -250,7 +251,7 @@ export class AppShell extends HTMLElement {
 
   showBackArrow(show: boolean) {
     this.menuToggle_.style.display = show ? 'none' : '';
-    this.backArrow_.style.display = show ? '' : 'none';
+    this.backArrow_.style.display = show ? 'flex' : 'none';
   }
 
   private createMenuItem_(name: string, options: any) {

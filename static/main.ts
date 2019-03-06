@@ -229,10 +229,7 @@ async function onLoad() {
   document.body.append(appShell_);
 
   await routeToCurrentLocation();
-
-  mailProcessor_ = new MailProcessor(await getSettings());
   await update();
-
   // Instantiate the TodoModel even if we're not in the Todo view so that the
   // favicon is updated with the must do count.
   await getTodoModel();
@@ -335,6 +332,8 @@ export async function update() {
   isUpdating_ = true;
 
   try {
+    if (!mailProcessor_)
+      mailProcessor_ = new MailProcessor(await getSettings());
     await mailProcessor_.process();
     await dailyLocalUpdates();
   } catch (e) {
