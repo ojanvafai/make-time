@@ -137,7 +137,12 @@ export class HiddenView extends View {
   }
 
   render_() {
+    // If we're in view one mode, hide the back arrow since we're going back to
+    // the threadlist, but with a new ThreadListView.
+    this.appShell_.showBackArrow(false);
+
     let model = new HiddenModel(this.select_.selectedIndex);
+
     if (this.threadListView_)
       this.threadListView_.remove();
     this.threadListView_ =
