@@ -34,19 +34,20 @@ export class SettingsView extends View {
     `;
     this.append(this.scrollable_);
 
+    this.basicSettings_ = document.createElement('table');
+    this.populateSettings_(this.basicSettings_);
+    this.scrollable_.append(this.basicSettings_);
+
     let filtersLinkContainer = document.createElement('div');
     filtersLinkContainer.style.cssText = `
-      margin-bottom: 16px;
+      margin: 16px 0;
     `;
     let filtersLink = document.createElement('a');
+    filtersLink.classList.add('label-button');
     filtersLink.append('Modify email filters');
     filtersLink.onclick = () => this.showFilterDialog_();
     filtersLinkContainer.append(filtersLink);
     this.scrollable_.append(filtersLinkContainer);
-
-    this.basicSettings_ = document.createElement('table');
-    this.populateSettings_(this.basicSettings_);
-    this.scrollable_.append(this.basicSettings_);
 
     this.queues_ = new QueuesView(this.settings_);
     this.queues_.addEventListener('change', () => this.handleChange_());

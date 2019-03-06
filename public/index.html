@@ -36,10 +36,6 @@ window.update = update;`;
       body {
         margin: 0px;
       }
-      /* TODO: Remove this. Why is this needed to underline links in the Settings page. */
-      a {
-        text-decoration: underline;
-      }
       button, .label-button {
         margin: 4px;
         padding: 12px;
@@ -50,9 +46,13 @@ window.update = update;`;
         color: black;
         background-color: white;
       }
+      button:disabled {
+        color: grey;
+      }
       .label-button {
-        text-decoration: underline;
+        text-decoration: none;
         align-self: center;
+        display: inline-block;
       }
       .label-button:hover, button:hover {
         background-color: #ccc;
