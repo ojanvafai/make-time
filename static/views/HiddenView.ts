@@ -1,5 +1,5 @@
 import {Action} from '../Actions.js';
-import {defined, notNull} from '../Base.js';
+import {defined} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
 import {Settings} from '../Settings.js';
@@ -71,7 +71,7 @@ class HiddenModel extends ThreadListModel {
         return '';
 
       case ThreadMetadataKeys.queued:
-        return notNull(thread.getLabel());
+        return thread.getLabel() || '';
     }
     return '';
   }
