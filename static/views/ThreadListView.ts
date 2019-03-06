@@ -95,8 +95,6 @@ export let MUTE_ACTION = {
   name: `Mute`,
   description:
       `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
-  key: 'k',
-  hidden: true,
 };
 
 export let NEXT_ACTION = {
@@ -508,7 +506,6 @@ export class ThreadListView extends View {
       display: flex;
       align-items: center;
       justify-content: center;
-      pointer-events: none;
       transition: opacity 0.5s;
       transition-delay: 3s;
       opacity: 0.95;

@@ -165,7 +165,12 @@ export class AppShell extends HTMLElement {
   }
 
   static addToFooter(dom: HTMLElement) {
-    dom.style.pointerEvents = 'all';
+    // Set pointerEvents if it's not already set so that the pointer-events:none
+    // on the footer itself doesn't prevent clicks.
+    // TODO: This is brittle (e.g. doens't work with stylesheets). Find a better
+    // way.
+    if (!dom.style.pointerEvents)
+      dom.style.pointerEvents = 'all';
     AppShell.footer_.append(dom);
   }
 
