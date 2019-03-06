@@ -56,15 +56,11 @@ export class QuickReply extends HTMLElement {
 
     let sendAs = defined(this.sendAs_);
     if (sendAs.senders && sendAs.senders.length > 1) {
-      this.senders_ = document.createElement('select');
-      this.senders_.style.cssText = `
-        margin: 0 6px;
-      `;
-
       let messages = this.thread.getMessages();
       let lastMessage = messages[messages.length - 1];
       let deliveredTo = lastMessage.deliveredTo;
 
+      this.senders_ = document.createElement('select');
       for (let sender of sendAs.senders) {
         let option = document.createElement('option');
         let email = defined(sender.sendAsEmail);
@@ -79,11 +75,12 @@ export class QuickReply extends HTMLElement {
     this.progress_ = new RadialProgress(true);
     this.progress_.addToTotal(this.allowedReplyLength_);
 
-    this.count_ = document.createElement('div');
+    this.count_ = document.createElement('button');
     this.count_.style.cssText = `
-      margin: 4px;
       color: red;
+      display: none;
     `;
+    this.count_.addEventListener('click', () => this.handleAllowMore_());
 
     let cancel = document.createElement('button');
     cancel.textContent = 'cancel';
@@ -117,15 +114,33 @@ export class QuickReply extends HTMLElement {
     compose.addEventListener(
         CancelEvent.NAME, () => this.dispatchEvent(new ReplyCloseEvent()));
     compose.addEventListener(SubmitEvent.NAME, () => this.handleSubmit_());
-    compose.addEventListener('input', () => this.handleInput_());
+    compose.addEventListener('input', () => this.updateProgress_());
     return compose;
   }
 
-  private handleInput_() {
+  private updateProgress_() {
     let textLength = this.compose_.plainText.length;
     this.progress_.setProgress(textLength);
     let lengthDiff = this.allowedReplyLength_ - textLength;
-    this.count_.textContent = (lengthDiff < 10) ? String(lengthDiff) : '';
+    if (lengthDiff < 10) {
+      this.count_.style.display = '';
+      this.count_.textContent = String(lengthDiff);
+    } else {
+      this.count_.style.display = 'none';
+    }
+  }
+
+  private handleAllowMore_() {
+    if (confirm(`Allow ${this.allowedReplyLength_} more characters?`) &&
+        confirm(`Are you sure?`) &&
+        confirm(
+            `Yes, this is annoying on purpose to help you resist the verbosity urge! Still want to move forward`) &&
+        confirm(`Last one! You sure?`)) {
+      alert(`JK lol. Ok...really last one now. Enjoy!`);
+      this.progress_.addToTotal(this.allowedReplyLength_);
+      this.allowedReplyLength_ += this.allowedReplyLength_;
+      this.updateProgress_();
+    }
   }
 
   private async handleSubmit_() {
