@@ -1,13 +1,12 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {getSendAs, login} from '../BaseMain.js';
-import {EmailCompose, SubmitEvent} from '../EmailCompose.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
-import {RadialProgress} from '../RadialProgress.js';
+import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {BACKLOG_PRIORITY_NAME, BLOCKED_LABEL_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, ReplyType, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {BACKLOG_PRIORITY_NAME, BLOCKED_LABEL_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -247,7 +246,6 @@ export class ThreadListView extends View {
   private lastCheckedRow_: ThreadRow|null;
   private renderedGroupName_: string|null;
   private scrollOffset_: number|undefined;
-  private isSending_: boolean|undefined;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
   private sendAs_?: SendAs;
@@ -851,169 +849,30 @@ export class ThreadListView extends View {
     renderedRow.thread.update();
   }
 
-  // TODO: Make a proper QuickReply element. This function is getting unweildy
-  // and ThreadListView shouldn't know all these details about compose and
-  // sending.
   async showQuickReply() {
-    let container = document.createElement('div');
-    container.style.cssText = `
-      display: flex;
-      flex-wrap: wrap;
-      width: 100%;
-    `;
+    let reply = new QuickReply(
+        notNull(this.renderedRow_).thread, this.allowedReplyLength_,
+        defined(this.sendAs_));
+    reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActions_());
 
-    let compose = new EmailCompose(true);
-    compose.style.cssText = `
-      flex: 1;
-      margin: 4px;
-      display: flex;
-      background-color: white;
-    `;
-    compose.placeholder =
-        'Hit <enter> to send, <ctrl+enter> to send and archive, <esc> to cancel. Allowed length is configurable in Settings.';
-
-    let replyType = document.createElement('select');
-    replyType.innerHTML = `
-      <option>${ReplyType.ReplyAll}</option>
-      <option>${ReplyType.Reply}</option>
-      <option>${ReplyType.Forward}</option>
-    `;
-
-    let sendAs = defined(this.sendAs_);
-    let from;
-    let senders: HTMLSelectElement;
-    if (sendAs.senders && sendAs.senders.length > 1) {
-      from = document.createElement('div');
-      from.style.cssText = `
-        white-space: nowrap;
-        margin: 0 6px;
-      `;
-      senders = document.createElement('select');
-      senders.style.cssText = `
-        margin-left: 2px;
-      `;
-      from.append('From', senders);
-
-      let messages = notNull(this.renderedRow_).thread.getMessages();
-      let lastMessage = messages[messages.length - 1];
-      let deliveredTo = lastMessage.deliveredTo;
-
-      for (let sender of sendAs.senders) {
-        let option = document.createElement('option');
-        option.append(defined(sender.sendAsEmail));
-        if (deliveredTo ? sender.sendAsEmail === deliveredTo : sender.isDefault)
-          option.setAttribute('selected', 'true');
-        senders.append(option);
-      }
-    }
-
-    let progress = new RadialProgress(true);
-    progress.addToTotal(this.allowedReplyLength_);
-
-    let count = document.createElement('div');
-    count.style.cssText = `
-      margin: 4px;
-      color: red;
-    `;
-
-    let onClose = this.updateActions_.bind(this);
-
-    let cancel = document.createElement('button');
-    cancel.textContent = 'cancel';
-    cancel.onclick = onClose;
-
-    // Group these together so they wrap atomically.
-    let controls = document.createElement('div');
-    controls.style.cssText = `
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-    `;
-    controls.append(cancel, replyType);
-    if (from)
-      controls.append(from);
-    controls.append(count, progress);
-
-    container.append(compose, controls);
-
-    compose.addEventListener('cancel', onClose);
-
-    compose.addEventListener('submit', async (e: Event) => {
-      let submitEvent = <SubmitEvent>e;
-
-      let textLength = compose.plainText.length;
-      if (!textLength)
+    reply.addEventListener(ReplyScrollEvent.NAME, async () => {
+      if (!this.renderedRow_)
         return;
 
-      if (textLength > this.allowedReplyLength_) {
-        alert(`Email is longer than the allowed length of ${
-            this.allowedReplyLength_} characters. Allowed length is configurable in Settings.`);
-        return;
+      let row = this.renderedRow_;
+      if (row.thread === reply.thread) {
+        row.rendered.showSpinner(true);
+        await row.thread.update();
+        row.rendered.showSpinner(false);
+        row.rendered.moveFocus(NEXT_FULL_ACTION, {behavior: 'smooth'});
       }
-
-      // Grab this before setting isSending_ to true to ensure that we don't
-      // get stuck unable to send when there are bugs.
-      let renderedRow = notNull(this.renderedRow_);
-
-      if (this.isSending_)
-        return;
-      this.isSending_ = true;
-      let progress = AppShell.updateLoaderTitle(
-          'ThreadListView.sendReply', 1, 'Sending reply...');
-
-      let sender: gapi.client.gmail.SendAs|undefined;
-      if (sendAs.senders && sendAs.senders.length) {
-        // Even if there's only one sendAs sender, we should use it since it
-        // could have a custom reply-to.
-        if (sendAs.senders.length == 1) {
-          sender = sendAs.senders[0];
-        } else {
-          let sendAsEmail = senders.selectedOptions[0].value;
-          sender =
-              defined(sendAs.senders.find(x => x.sendAsEmail == sendAsEmail));
-        }
-      }
-
-      let type = replyType.selectedOptions[0].value as ReplyType;
-      try {
-        // TODO: Handle if sending fails in such a way that the user can at
-        // least save their message text.
-        await renderedRow.thread.sendReply(
-            compose.value, compose.getEmails(), type, defined(sender));
-      } finally {
-        this.isSending_ = false;
-        progress.incrementProgress();
-      }
-
-      this.updateActions_();
-
-      if (submitEvent.ctrlKey) {
-        await this.markTriaged_(ARCHIVE_ACTION);
-      } else if (type !== ReplyType.Forward) {
-        renderedRow.rendered.showSpinner(true);
-        await renderedRow.thread.update();
-        renderedRow.rendered.showSpinner(false);
-
-        // The user can change the rendered row while the thread is updating.
-        if (renderedRow === this.renderedRow_)
-          renderedRow.rendered.moveFocus(
-              NEXT_FULL_ACTION, {behavior: 'smooth'});
-      }
-    })
-
-    compose.addEventListener('input', () => {
-      let textLength = compose.plainText.length;
-      progress.setProgress(textLength);
-      let lengthDiff = this.allowedReplyLength_ - textLength;
-      count.textContent = (lengthDiff < 10) ? String(lengthDiff) : '';
     });
 
     this.setActions([]);
-    AppShell.setFooter(container);
+    AppShell.setFooter(reply);
     this.addTimer_();
 
-    compose.focus();
+    reply.focus();
   }
 }
 window.customElements.define('mt-thread-list-view', ThreadListView);

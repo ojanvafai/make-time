@@ -5,8 +5,16 @@ const SEPARATOR = ' ';
 const EMAIL_CLASS_NAME = 'mk-email';
 
 export class SubmitEvent extends Event {
-  constructor(public ctrlKey: boolean) {
-    super('submit');
+  static NAME = 'submit';
+  constructor() {
+    super(SubmitEvent.NAME);
+  }
+}
+
+export class CancelEvent extends Event {
+  static NAME = 'cancel';
+  constructor() {
+    super(CancelEvent.NAME);
   }
 }
 
@@ -189,7 +197,7 @@ export class EmailCompose extends HTMLElement {
         if (this.updateIsAutocompleting()) {
           this.cancelAutocomplete_();
         } else {
-          this.dispatchEvent(new Event('cancel'));
+          this.dispatchEvent(new CancelEvent());
           // Prevent the escape in quick reply both closing quick reply and
           // taking you back to the threadlist.
           // TODO: Technically we should only do this if stopPropagation is
@@ -208,7 +216,7 @@ export class EmailCompose extends HTMLElement {
           this.submitAutocomplete_();
           e.preventDefault();
         } else if (this.isSingleline_) {
-          this.dispatchEvent(new SubmitEvent(e.ctrlKey));
+          this.dispatchEvent(new SubmitEvent());
           e.preventDefault();
         }
         return;
