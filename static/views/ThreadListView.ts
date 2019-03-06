@@ -300,8 +300,13 @@ export class ThreadListView extends View {
     `;
     this.append(this.singleThreadContainer_);
 
-    if (bottomButtonUrl && bottomButtonText)
-      this.appendButton(bottomButtonUrl, bottomButtonText);
+    if (bottomButtonUrl) {
+      let button = document.createElement('a');
+      button.className = 'label-button';
+      button.href = bottomButtonUrl;
+      button.textContent = defined(bottomButtonText);
+      this.append(button);
+    }
     this.updateActions_();
 
     this.addListenerToModel('thread-list-changed', this.render_.bind(this));
@@ -336,15 +341,6 @@ export class ThreadListView extends View {
       this.setRenderedRow_(row);
     else
       this.setFocus_(row);
-  }
-
-  appendButton(href: string, textContent = '') {
-    let button = document.createElement('a');
-    button.className = 'label-button';
-    button.href = href;
-    button.textContent = textContent;
-    this.append(button);
-    return button;
   }
 
   tearDown() {
