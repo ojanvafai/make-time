@@ -24,9 +24,9 @@ export class TriageModel extends ThreadListModel {
   }
 
   defaultCollapsedState(groupName: string) {
-    let queueType = this.settings_.getQueueSettings().get(groupName).queue;
-    return queueType === QueueSettings.WEEKLY ||
-        queueType === QueueSettings.MONTHLY;
+    let queue = this.settings_.getQueueSettings().get(groupName).queue;
+    return QueueSettings.WEEKDAYS.includes(queue) ||
+        queue === QueueSettings.MONTHLY;
   }
 
   shouldShowThread(thread: Thread) {
