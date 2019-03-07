@@ -74,6 +74,11 @@ export class ComposeView extends View {
     `;
 
     this.from_ = document.createElement('select');
+    this.from_.style.cssText = `
+      padding: 3px;
+      border-radius: 0;
+      font-size: small;
+    `;
     this.from_.addEventListener(
         'change', this.debounceHandleUpdates_.bind(this));
     this.appendLine_('From:\xa0', this.from_);
@@ -81,6 +86,7 @@ export class ComposeView extends View {
     this.to_ = new AddressCompose();
     this.to_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
     this.to_.style.flex = '1';
+    this.to_.style.fontSize = 'small';
     this.appendLine_('To:\xa0', this.to_);
 
     this.subject_ = document.createElement('input');
@@ -92,6 +98,7 @@ export class ComposeView extends View {
       flex: 1;
       outline: none;
       padding: 4px;
+      font-size: small;
     `;
     this.appendLine_(this.subject_);
 

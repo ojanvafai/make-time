@@ -267,12 +267,12 @@ export class AddressCompose extends HTMLElement {
     if (!relatedTarget || !this.containsNode_(relatedTarget as Node) ||
         this.getContainingChip_(relatedTarget as Node)) {
       this.submitAutoComplete_(true);
-      this.input_.style.width = '0px';
+      this.input_.style.width = '1px';
     }
   }
 
   focusInput_() {
-    if (this.input_.clientWidth === 0)
+    if (this.input_.style.width === '1px')
       this.input_.style.width = 'auto';
     this.input_.focus();
   }
@@ -342,6 +342,9 @@ export class AddressCompose extends HTMLElement {
   }
 
   handleFocus_(_e: FocusEvent) {
+    // If we have an autocomplete dropdown open when the user clicks in the to
+    // field, submit it before focusing the new input.
+    this.submitAutoComplete_();
     this.focusInput_();
   }
 
