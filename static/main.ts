@@ -8,7 +8,6 @@ import {LongTasks} from './LongTasks.js';
 import {MailProcessor} from './MailProcessor.js';
 import {ComposeModel} from './models/ComposeModel.js';
 import {Model} from './models/Model.js';
-import {ThreadListModel} from './models/ThreadListModel.js';
 import {TodoModel} from './models/TodoModel.js';
 import {TriageModel} from './models/TriageModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
@@ -129,12 +128,14 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
       return new ComposeView(model as ComposeModel, params);
 
     case VIEW.Todo:
-      return await createThreadListView(
-          <TodoModel>model, false, '/triage', 'Back to Triaging');
+      return new ThreadListView(
+          <TodoModel>model, appShell_, await getSettings(), '/triage',
+          'Back to Triaging');
 
     case VIEW.Triage:
-      return await createThreadListView(
-          <TriageModel>model, true, '/todo', 'Go to todo list');
+      return new ThreadListView(
+          <TriageModel>model, appShell_, await getSettings(), '/todo',
+          'Go to todo list');
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
@@ -182,14 +183,6 @@ function preventUpdates() {
   shouldUpdate_ = false;
 }
 
-async function createThreadListView(
-    model: ThreadListModel, countDown: boolean, bottomButtonUrl: string,
-    bottomButtonText: string) {
-  return new ThreadListView(
-      model, appShell_, await getSettings(), countDown, bottomButtonUrl,
-      bottomButtonText);
-}
-
 async function resetModels() {
   triageModel_ = undefined;
   todoModel_ = undefined;
@@ -197,11 +190,8 @@ async function resetModels() {
 
 let triageModel_: TriageModel|undefined;
 async function getTriageModel() {
-  if (!triageModel_) {
-    let settings = await getSettings();
-    let vacation = settings.get(ServerStorage.KEYS.VACATION);
-    triageModel_ = new TriageModel(vacation, settings);
-  }
+  if (!triageModel_)
+    triageModel_ = new TriageModel(await getSettings());
   return triageModel_;
 }
 
@@ -209,8 +199,7 @@ let todoModel_: TodoModel|undefined;
 async function getTodoModel() {
   if (!todoModel_) {
     let settings = await getSettings();
-    let vacation = settings.get(ServerStorage.KEYS.VACATION);
-    todoModel_ = new TodoModel(vacation);
+    todoModel_ = new TodoModel(settings.get(ServerStorage.KEYS.VACATION));
   }
   return todoModel_;
 }

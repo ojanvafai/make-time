@@ -8,11 +8,9 @@ import {Thread, ThreadMetadataKeys} from '../Thread.js';
 import {ThreadListModel} from './ThreadListModel.js';
 
 export class TriageModel extends ThreadListModel {
-  private daysToShow_: number|null;
-
-  constructor(private vacation_: string, private settings_: Settings) {
+  constructor(private settings_: Settings) {
     super();
-    this.daysToShow_ = settings_.get(ServerStorage.KEYS.DAYS_TO_SHOW);
+    this.timerCountsDown = true;
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
     this.setQuery(
@@ -32,11 +30,12 @@ export class TriageModel extends ThreadListModel {
   }
 
   shouldShowThread(thread: Thread) {
-    if (this.vacation_ && (this.vacation_ !== thread.getLabel()))
+    let vacation = this.settings_.get(ServerStorage.KEYS.VACATION);
+    if (vacation && (vacation !== thread.getLabel()))
       return false;
 
-    if (this.daysToShow_ !== null &&
-        this.threadDays_(thread) > this.daysToShow_)
+    let daysToShow = this.settings_.get(ServerStorage.KEYS.DAYS_TO_SHOW);
+    if (daysToShow !== null && this.threadDays_(thread) > daysToShow)
       return false;
 
     return super.shouldShowThread(thread);

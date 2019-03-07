@@ -25,6 +25,7 @@ export class ThreadListChangedEvent extends Event {
 }
 
 export abstract class ThreadListModel extends Model {
+  public timerCountsDown: boolean;
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
   private collapsedGroupNames_: Map<string, boolean>;
@@ -36,6 +37,7 @@ export abstract class ThreadListModel extends Model {
       showFaviconCount?: boolean, private showHiddenThreads_?: boolean) {
     super();
 
+    this.timerCountsDown = false;
     this.resetUndoableActions_();
     this.threads_ = [];
     this.collapsedGroupNames_ = new Map();

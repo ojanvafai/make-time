@@ -253,8 +253,7 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      settings: Settings, private countDown_?: boolean,
-      bottomButtonUrl?: string, bottomButtonText?: string) {
+      settings: Settings, bottomButtonUrl?: string, bottomButtonText?: string) {
     super();
 
     this.style.cssText = `
@@ -371,8 +370,8 @@ export class ThreadListView extends View {
 
   addTimer_() {
     let timer = new Timer(
-        this.autoStartTimer_, !!this.countDown_, this.timerDuration_,
-        this.singleThreadContainer_);
+        this.autoStartTimer_, !!this.model_.timerCountsDown,
+        this.timerDuration_, this.singleThreadContainer_);
     AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;
   }
