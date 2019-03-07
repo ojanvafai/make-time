@@ -37,16 +37,19 @@ window.update = update;`;
         margin: 0px;
       }
       select, button, .label-button {
+        padding: 3px;
         -webkit-appearance: none;
         border-radius: 5px;
+        border: 1px solid black;
+        color: black;
+        background-color: white;
+      }
+      select.button, button, .label-button {
         margin: 4px;
         padding: 12px;
         font-size: 16px;
-        border: 1px solid black;
         display: block;
         text-align: center;
-        color: black;
-        background-color: white;
       }
       button:disabled {
         color: grey;

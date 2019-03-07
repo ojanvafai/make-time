@@ -41,8 +41,9 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
 export class FiltersView extends HTMLElement {
   // TODO: Stop using an element for maintaining cursor position. Do what
   // AddressCompose does with Ranges instead.
-  private cursorSentinelElement_: HTMLElement|undefined;
-  private dialog_: HTMLDialogElement|undefined;
+  private cursorSentinelElement_?: HTMLElement;
+  private dialog_?: HTMLDialogElement;
+  private labelSelect_?: HTMLSelectElement;
 
   constructor(private settings_: Settings) {
     super();
@@ -52,6 +53,7 @@ export class FiltersView extends HTMLElement {
       width: 800px;
       max-width: 95vw;
     `;
+
     this.onkeydown = (e) => this.handleKeyDown_(e);
     this.render_();
   }
@@ -109,6 +111,20 @@ export class FiltersView extends HTMLElement {
     focused.focus();
   }
 
+  async getLabelSelect_() {
+    if (!this.labelSelect_) {
+      this.labelSelect_ = document.createElement('select');
+      let labels = Array.from(await this.settings_.getLabels()).sort();
+      labels.push('Create new...');
+      for (let label of labels) {
+        let option = document.createElement('option');
+        option.append(label);
+        this.labelSelect_.append(option);
+      }
+    }
+    return this.labelSelect_.cloneNode(true) as HTMLSelectElement;
+  }
+
   async render_() {
     let rules = await this.settings_.getFilters();
 
@@ -122,13 +138,13 @@ export class FiltersView extends HTMLElement {
 
     let body = document.createElement('tbody');
     for (let rule of rules) {
-      body.append(this.createRule_(rule));
+      body.append(await this.createRule_(rule));
     }
 
     // Ensure there's at least one row since there's no other way to add the
     // first row.
     if (!rules.length)
-      body.append(this.createRule_({}));
+      body.append(await this.createRule_({}));
 
     body.append(this.createUnfileredRule_());
     container.append(body);
@@ -181,17 +197,21 @@ export class FiltersView extends HTMLElement {
     let addButton = document.createElement('span');
     addButton.append('+');
     addButton.classList.add('row-button');
-    addButton.onclick = () => {
-      let emptyRule = this.createRule_({});
+    addButton.onclick = async () => {
+      let emptyRule = await this.createRule_({});
       container.before(emptyRule);
     };
     buttons.append(addButton);
 
-    let label = document.createElement('input');
+    let label = document.createElement('select');
     label.disabled = true;
-    label.classList.add('label');
-    label.style.cssText = `width: 50px;`;
-    label.value = Labels.Fallback;
+    label.style.cssText = `
+      background-color: #ddd;
+      color: dimgrey;
+    `;
+    let option = document.createElement('option');
+    option.append(Labels.Fallback);
+    label.append(option);
     this.appendCell_(container, label);
 
     this.appendCell_(container, 'This label is applied when no filters match.');
@@ -232,9 +252,8 @@ export class FiltersView extends HTMLElement {
         return;
       }
 
-      let label = <HTMLInputElement>row.querySelector('.label');
-
-      rule.label = label.value;
+      let label = <HTMLSelectElement>row.querySelector('select');
+      rule.label = label.selectedOptions[0].value;
 
       if (rule.label === '') {
         alert('Filter rule has no label. Not saving filters.');
@@ -272,7 +291,7 @@ export class FiltersView extends HTMLElement {
     return td;
   }
 
-  createRule_(rule: any) {
+  async createRule_(rule: any) {
     let container = document.createElement('tr');
     container.style.cssText = `
       line-height: 1.7em;
@@ -285,8 +304,8 @@ export class FiltersView extends HTMLElement {
     let addButton = document.createElement('span');
     addButton.append('+');
     addButton.classList.add('row-button');
-    addButton.onclick = () => {
-      let emptyRule = this.createRule_({});
+    addButton.onclick = async () => {
+      let emptyRule = await this.createRule_({});
       container.before(emptyRule);
     };
     buttons.append(addButton);
@@ -299,11 +318,23 @@ export class FiltersView extends HTMLElement {
     };
     buttons.append(minusButton);
 
-    let label = document.createElement('input');
-    label.classList.add('label');
-    label.style.cssText = `width: 50px;`;
-    if (rule.label)
-      label.value = rule.label;
+    // Add a "new label" option that prompts and then adds that option to all
+    // the filter rows.
+    let label = await this.getLabelSelect_();
+    for (let option of label.options) {
+      if (option.value === rule.label) {
+        option.selected = true;
+        break;
+      }
+    }
+    label.addEventListener('change', () => {
+      // The last item is the "Create new" label option.
+      if (label.selectedIndex !== label.options.length - 1)
+        return;
+      this.createLabel_();
+      // createLabel_ prepends the new label as the first item.
+      label.selectedIndex = 0;
+    });
     this.appendCell_(container, label);
 
     let queryParts: any = {};
@@ -329,6 +360,23 @@ export class FiltersView extends HTMLElement {
     this.appendCheckbox_(container, 'nocc', rule.nocc);
 
     return container;
+  }
+
+  createLabel_() {
+    let newLabel = prompt(`Type the new label name`);
+    if (!newLabel)
+      return;
+
+    newLabel = newLabel.replace(/\s+/g, '');
+    if (!newLabel)
+      return;
+
+    let option = document.createElement('option');
+    option.append(newLabel);
+    let allLabels = this.querySelectorAll('select');
+    for (let label of allLabels) {
+      label.prepend(option.cloneNode(true));
+    }
   }
 
   appendCheckbox_(container: HTMLElement, className: string, checked: boolean) {

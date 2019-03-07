@@ -1,6 +1,6 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined} from './Base.js';
+import {assert, defined, Labels} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
@@ -215,5 +215,15 @@ export class Settings extends EventTarget {
       assert(!invalidField && rule.label !== '');
     }
     this.getFiltersDocument_().update(this.filtersObject_(rules));
+  }
+
+  async getLabels() {
+    let filters = await this.getFilters();
+    let labels: Set<string> = new Set();
+    for (let rule of filters) {
+      labels.add(defined(rule.label));
+    }
+    labels.add(Labels.Fallback);
+    return labels;
   }
 }

@@ -119,14 +119,8 @@ export class QueuesView extends HTMLElement {
   private async render_() {
     this.textContent = '';
 
-    let filters = await this.settings_.getFilters();
-    let queues: Set<string> = new Set();
-    for (let rule of filters) {
-      queues.add(defined(rule.label));
-    }
-
-    queues.delete(Labels.Archive);
-    queues.add(Labels.Fallback);
+    let labels = await this.settings_.getLabels();
+    labels.delete(Labels.Archive);
 
     // TODO: Show help text if there are no queues.
     let scrollable = document.createElement('div');
@@ -144,7 +138,7 @@ export class QueuesView extends HTMLElement {
     scrollable.append(
         this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
-    let queueDatas = this.settings_.getQueueSettings().getSorted(queues);
+    let queueDatas = this.settings_.getQueueSettings().getSorted(labels);
     for (let queueData of queueDatas) {
       this.appendRow_(queueData);
     }

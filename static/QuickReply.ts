@@ -48,6 +48,7 @@ export class QuickReply extends HTMLElement {
     this.compose_ = this.createCompose_();
 
     this.replyType_ = document.createElement('select');
+    this.replyType_.classList.add('button');
     this.replyType_.innerHTML = `
       <option>${ReplyType.ReplyAll}</option>
       <option>${ReplyType.Reply}</option>
@@ -61,6 +62,7 @@ export class QuickReply extends HTMLElement {
       let deliveredTo = lastMessage.deliveredTo;
 
       this.senders_ = document.createElement('select');
+      this.senders_.classList.add('button');
       for (let sender of sendAs.senders) {
         let option = document.createElement('option');
         let email = defined(sender.sendAsEmail);
