@@ -1,6 +1,6 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action} from '../Actions.js';
-import {assert, notNull} from '../Base.js';
+import {assert, compareDates, notNull} from '../Base.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
 import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
@@ -183,7 +183,7 @@ export abstract class ThreadListModel extends Model {
   }
 
   protected compareDates(a: Thread, b: Thread) {
-    return -(a.getDate() > b.getDate()) || +(a.getDate() < b.getDate());
+    return compareDates(a.getDate(), b.getDate());
   }
 
   getThreads() {

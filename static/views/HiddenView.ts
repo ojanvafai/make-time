@@ -1,5 +1,5 @@
 import {Action} from '../Actions.js';
-import {defined} from '../Base.js';
+import {compareDates, defined} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
 import {Settings} from '../Settings.js';
@@ -54,7 +54,11 @@ class HiddenModel extends ThreadListModel {
   }
 
   compareThreads(a: Thread, b: Thread) {
-    return this.compareDates(a, b);
+    // Reverse sort by blocked date for the blocked view.
+    if (this.queryKey_() === ThreadMetadataKeys.blocked)
+      return compareDates(b.getBlockedDate(), a.getBlockedDate());
+    else
+      return this.compareDates(a, b);
   }
 
   // There's no priorities to show, but when in queued, we want the label to

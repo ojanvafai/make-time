@@ -114,3 +114,7 @@ export enum Labels {
   Fallback = 'unfiltered',
   Archive = 'archive',
 }
+
+export function compareDates(a: Date, b: Date) {
+  return -(a > b) || +(a < b);
+}
