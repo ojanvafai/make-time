@@ -118,3 +118,44 @@ export enum Labels {
 export function compareDates(a: Date, b: Date) {
   return -(a > b) || +(a < b);
 }
+
+export function setFaviconCount(count: number) {
+  // Don't update the favicon on mobile where it's not visibile in the tab
+  // strip and we want the regular favicon for add to homescreen.
+  if (navigator.userAgent.includes(' Mobile '))
+    return;
+
+  let faviconUrl;
+  if (count) {
+    let canvas = document.createElement('canvas');
+    canvas.width = 48;
+    canvas.height = 48;
+    let ctx = notNull(canvas.getContext('2d'));
+
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.arc(24, 24, 24, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.font = 'bold 32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'white';
+    let text = String(count);
+    ctx.strokeText(text, 24, 24);
+    ctx.fillText(text, 24, 24);
+    faviconUrl = canvas.toDataURL();
+  } else {
+    faviconUrl = '/favicon.ico';
+  }
+
+  var link = document.createElement('link');
+  var oldLink = document.getElementById('dynamic-favicon');
+  link.id = 'dynamic-favicon';
+  link.rel = 'shortcut icon';
+  link.href = faviconUrl;
+  if (oldLink)
+    document.head.removeChild(oldLink);
+  document.head.appendChild(link);
+}

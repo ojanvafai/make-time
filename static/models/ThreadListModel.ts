@@ -1,6 +1,6 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action} from '../Actions.js';
-import {assert, compareDates, notNull} from '../Base.js';
+import {assert, compareDates, setFaviconCount as setFavicon} from '../Base.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
 import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
@@ -123,52 +123,11 @@ export abstract class ThreadListModel extends Model {
     faviconCount = Math.min(99, faviconCount);
     if (this.faviconCount_ >= 0 && faviconCount !== this.faviconCount_) {
       this.faviconCount_ = faviconCount;
-      this.updateFavicon_();
+      setFavicon(faviconCount);
     }
 
     this.threads_.sort(this.compareThreads.bind(this));
     this.fetchThreads();
-  }
-
-  updateFavicon_() {
-    // Don't update the favicon on mobile where it's not visibile in the tab
-    // strip and we want the regular favicon for add to homescreen.
-    if (navigator.userAgent.includes(' Mobile '))
-      return;
-
-    let faviconUrl;
-    if (this.faviconCount_) {
-      let canvas = document.createElement('canvas');
-      canvas.width = 48;
-      canvas.height = 48;
-      let ctx = notNull(canvas.getContext('2d'));
-
-      ctx.fillStyle = 'red';
-      ctx.beginPath();
-      ctx.arc(24, 24, 24, 0, 2 * Math.PI);
-      ctx.fill();
-
-      ctx.font = 'bold 32px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'white';
-      ctx.strokeStyle = 'white';
-      let text = String(this.faviconCount_);
-      ctx.strokeText(text, 24, 24);
-      ctx.fillText(text, 24, 24);
-      faviconUrl = canvas.toDataURL();
-    } else {
-      faviconUrl = '/favicon.ico';
-    }
-
-    var link = document.createElement('link');
-    var oldLink = document.getElementById('dynamic-favicon');
-    link.id = 'dynamic-favicon';
-    link.rel = 'shortcut icon';
-    link.href = faviconUrl;
-    if (oldLink)
-      document.head.removeChild(oldLink);
-    document.head.appendChild(link);
   }
 
   async fetchThreads() {
