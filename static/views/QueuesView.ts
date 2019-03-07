@@ -180,6 +180,7 @@ export class QueuesView extends HTMLElement {
 
   createSelect_(list: string[], opt_selectedItem?: string) {
     let select = document.createElement('select');
+    select.style.padding = '2px';
     select.addEventListener('change', () => this.dispatchChange_());
     for (let item of list) {
       let option = this.createOption_(item);
@@ -207,6 +208,8 @@ export class QueuesView extends HTMLElement {
     let label = document.createElement('label')
     label.style.cssText = `
       flex: 1;
+      display: flex;
+      align-items: center;
     `;
     label.className = 'label';
 
