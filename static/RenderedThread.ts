@@ -27,7 +27,10 @@ formattingOptions.year = 'numeric';
 let DIFFERENT_YEAR_FORMATTER =
     new Intl.DateTimeFormat(undefined, formattingOptions);
 
-let HEADER_BACKGROUND_COLOR = '#ddd';
+// Kinda gross that we need to expose the typescript output directory in the
+// code. :(
+// @ts-ignore
+CSS.paintWorklet.addModule('./gen/HeaderFocusPainter.js');
 
 export class RenderedThread extends HTMLElement {
   private spinner_?: HTMLElement;
@@ -80,14 +83,15 @@ export class RenderedThread extends HTMLElement {
   }
 
   focusFirstUnread() {
-    this.focused_ = this.firstUnreadMessageHeader();
-    if (!this.focused_)
-      this.focused_ = this.lastMessageHeader();
-    this.focused_.scrollIntoView({'block': 'center'});
+    let messages = Array.from(this.children);
+    let message = messages.find(x => x.classList.contains('unread'));
+    if (!message)
+      message = notNull(this.lastElementChild);
+    this.focusMessage_(message, {'block': 'center'});
   }
 
   moveFocus(action: Action, options?: ScrollIntoViewOptions) {
-    let message;
+    let message: Element|null;
     switch (action) {
       case NEXT_ACTION:
         message = this.getMessageFromHeader_(notNull(this.focused_))
@@ -110,30 +114,26 @@ export class RenderedThread extends HTMLElement {
       case PREVIOUS_FULL_ACTION:
         message = notNull(this.firstElementChild);
         break;
+
+      default:
+        throw new Error('This should never happen.');
     }
 
+    if (message)
+      this.focusMessage_(message, options);
+  }
+
+  focusMessage_(message: Element, options?: ScrollIntoViewOptions) {
     this.clearFocus_();
     this.focused_ = this.getHeader_(defined(message));
-    this.focused_.style.backgroundColor = '#c2dbff';
+    this.focused_.style.backgroundImage = 'paint(header-focus)';
     this.focused_.scrollIntoView(options);
   }
 
   private clearFocus_() {
     if (!this.focused_)
       return;
-    this.focused_.style.backgroundColor = HEADER_BACKGROUND_COLOR;
-  }
-
-  firstUnreadMessageHeader() {
-    let messages = Array.from(this.children);
-    let message = messages.find(x => x.classList.contains('unread'));
-    if (!message)
-      return null;
-    return this.getHeader_(message);
-  }
-
-  lastMessageHeader() {
-    return this.getHeader_(notNull(this.lastElementChild));
+    this.focused_.style.backgroundImage = '';
   }
 
   getMessageFromHeader_(header: Element) {
@@ -164,7 +164,7 @@ export class RenderedThread extends HTMLElement {
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
     headerDiv.style.cssText = `
-      background-color: ${HEADER_BACKGROUND_COLOR};
+      background-color: #ddd;
       padding: 8px;
       margin: 0 -8px;
       border-top: 1px solid;
