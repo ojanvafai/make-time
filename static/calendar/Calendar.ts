@@ -9,7 +9,7 @@ import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
 import {CALENDAR_ID, TYPE_EMAIL, TYPE_FOCUS_NON_RECURRING, TYPE_FOCUS_RECURRING, TYPE_INTERVIEW, TYPE_MEETING_NON_RECURRING, TYPE_MEETING_RECURRING, TYPE_ONE_ON_ONE_NON_RECURRING, TYPE_ONE_ON_ONE_RECURRING, TYPE_OOO, TYPE_UNBOOKED_LARGE, TYPE_UNBOOKED_MEDIUM, TYPE_UNBOOKED_SMALL, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
 
-const OOO_REGEX = 'regexp:.*(OOO|Holiday).*';
+const OOO_REGEX = 'regexp:.*(OOO|Holiday|Out of office).*';
 const EMAIL_REGEX = 'regexp:.*(Email).*';
 const INTERVIEW_REGEX = 'regexp:.*(Interview).*';
 
@@ -21,7 +21,7 @@ export interface RuleMetadata {
   label: string, color: string,
 }
 
-let BuiltInRules: CalendarRule[] = [
+export let BuiltInRules: CalendarRule[] = [
   {
     label: TYPE_OOO,
     title: OOO_REGEX,

@@ -1,4 +1,5 @@
 import {defined, Labels, showDialog} from '../Base.js';
+import {BuiltInRules} from '../calendar/Calendar.js';
 import {AttendeeCount, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -96,6 +97,7 @@ export class CalendarFiltersView extends HTMLElement {
       this.labelSelect_ = document.createElement('select');
       this.labelSelect_.className = 'label';
       let labels = Array.from(await this.settings_.getCalendarLabels()).sort();
+      labels = [...labels, ...BuiltInRules.map(x => x.label)];
       labels.push('Create new...');
       for (let label of labels) {
         let option = document.createElement('option');
@@ -120,6 +122,10 @@ export class CalendarFiltersView extends HTMLElement {
     let body = document.createElement('tbody');
     for (let rule of rules) {
       body.append(await this.createRule_(rule));
+    }
+
+    for (let rule of BuiltInRules) {
+      body.append(await this.createRule_(rule, true));
     }
 
     // Ensure there's at least one row since there's no other way to add the
@@ -261,36 +267,45 @@ export class CalendarFiltersView extends HTMLElement {
     return td;
   }
 
-  async createRule_(rule?: CalendarRule) {
+  async createRule_(rule?: CalendarRule, isBuiltIn?: boolean) {
     let container = document.createElement('tr');
     container.style.cssText = `
       line-height: 1.7em;
     `;
 
+    if (isBuiltIn) {
+      container.toggleAttribute('fallback');
+      container.style.opacity = '0.5';
+    }
+
     let buttons = document.createElement('div');
     buttons.style.display = 'flex';
     this.appendCell_(container, buttons);
 
-    let addButton = document.createElement('span');
-    addButton.append('+');
-    addButton.classList.add('row-button');
-    addButton.onclick = async () => {
-      let emptyRule = await this.createRule_();
-      container.before(emptyRule);
-    };
-    buttons.append(addButton);
+    if (!isBuiltIn) {
+      let addButton = document.createElement('span');
+      addButton.append('+');
+      addButton.classList.add('row-button');
+      addButton.onclick = async () => {
+        let emptyRule = await this.createRule_();
+        container.before(emptyRule);
+      };
+      buttons.append(addButton);
 
-    let minusButton = document.createElement('span');
-    minusButton.append('-');
-    minusButton.classList.add('row-button');
-    minusButton.onclick = () => {
-      container.remove();
-    };
-    buttons.append(minusButton);
+      let minusButton = document.createElement('span');
+      minusButton.append('-');
+      minusButton.classList.add('row-button');
+      minusButton.onclick = () => {
+        container.remove();
+      };
+      buttons.append(minusButton);
+    }
 
     // Add a "new label" option that prompts and then adds that option to all
     // the filter rows.
     let label = await this.getLabelSelect_();
+    if (isBuiltIn)
+      label.disabled = true;
     for (let option of label.options) {
       if (rule && option.value === rule.label) {
         option.selected = true;
@@ -328,22 +343,26 @@ export class CalendarFiltersView extends HTMLElement {
       queryParts[field] = rule[field];
     }
 
-    let editor = this.createQueryEditor_(queryParts);
+    let editor = this.createQueryEditor_(queryParts, isBuiltIn);
     editor.classList.add('query');
     this.appendCell_(container, editor);
 
     this.appendSelect_(
-        container, 'frequency', Frequency, rule && rule.frequency);
+        container, 'frequency', Frequency, rule && rule.frequency, isBuiltIn);
     this.appendSelect_(
-        container, 'attendees', AttendeeCount, rule && rule.attendees);
+        container, 'attendees', AttendeeCount, rule && rule.attendees,
+        isBuiltIn);
 
     return container;
   }
 
   // TODO: Fix the types. Getting the types right proved to be really hard.
   appendSelect_(
-      container: HTMLElement, className: string, types: any, value: any) {
+      container: HTMLElement, className: string, types: any, value: any,
+      isDisabled?: boolean) {
     let attendees = document.createElement('select');
+    if (isDisabled)
+      attendees.disabled = true;
     attendees.classList.add(className);
     for (let item of Object.values(types)) {
       if (isNaN(Number(item)))
@@ -509,9 +528,8 @@ export class CalendarFiltersView extends HTMLElement {
     return content;
   }
 
-  createQueryEditor_(queryParts: any) {
+  createQueryEditor_(queryParts: any, isDisabled?: boolean) {
     let editor = document.createElement('div');
-    editor.contentEditable = 'plaintext-only';
     editor.style.cssText = `
       border: 1px solid #eee;
       padding: 1px;
@@ -520,6 +538,14 @@ export class CalendarFiltersView extends HTMLElement {
       word-break: break-word;
     `;
     this.appendQueryParts_(editor, queryParts);
+
+    if (isDisabled) {
+      if (!editor.textContent)
+        editor.textContent = '\xA0';
+      return editor;
+    }
+
+    editor.contentEditable = 'plaintext-only';
 
     let undoStack: string[] = [];
     let redoStack_: string[] = [];
