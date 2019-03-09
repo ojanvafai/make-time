@@ -1,7 +1,7 @@
 import {Action, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
 import {defined, getMyEmail} from '../Base.js';
-import {getSendAs, login} from '../BaseMain.js';
+import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 import {SendAs} from '../SendAs.js';
@@ -123,7 +123,7 @@ export class ComposeView extends View {
   }
 
   async setFrom_(selected?: gapi.client.gmail.SendAs) {
-    this.sendAs_ = defined(await getSendAs());
+    this.sendAs_ = await SendAs.getDefault();
     let senders = defined(
         this.sendAs_.senders,
         `Gmail didn't give make-time a list of from addresses. This should never happen. Please file a make-time bug. `)
@@ -147,6 +147,9 @@ export class ComposeView extends View {
     if (!localData)
       localData = this.params_;
 
+    // TODO: Make it possible to set the sender via query parameter.
+    await this.setFrom_(localData.sender);
+
     if (localData.to)
       this.to_.value = localData.to;
     if (localData.inlineTo)
@@ -162,8 +165,6 @@ export class ComposeView extends View {
     }
 
     await login();
-    // TODO: Make it possible to set the sender via query parameter.
-    await this.setFrom_(localData.sender);
 
     if (this.shouldAutoSend()) {
       this.handleUpdates_(true);

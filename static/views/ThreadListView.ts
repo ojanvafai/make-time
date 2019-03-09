@@ -1,6 +1,6 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
-import {getSendAs, login} from '../BaseMain.js';
+import { login} from '../BaseMain.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
@@ -248,7 +248,6 @@ export class ThreadListView extends View {
   private scrollOffset_: number|undefined;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
-  private sendAs_?: SendAs;
   private blockedToolbar_?: Actions;
 
   constructor(
@@ -352,7 +351,6 @@ export class ThreadListView extends View {
 
   async init() {
     await login();
-    this.sendAs_ = await getSendAs();
     await this.model_.loadFromDisk();
     await this.model_.update();
   }
@@ -847,7 +845,7 @@ export class ThreadListView extends View {
   async showQuickReply() {
     let reply = new QuickReply(
         notNull(this.renderedRow_).thread, this.allowedReplyLength_,
-        defined(this.sendAs_));
+        await SendAs.getDefault());
     reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActions_());
 
     reply.addEventListener(ReplyScrollEvent.NAME, async () => {

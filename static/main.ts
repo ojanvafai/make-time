@@ -12,6 +12,7 @@ import {TodoModel} from './models/TodoModel.js';
 import {TriageModel} from './models/TriageModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
+import {SendAs} from './SendAs.js';
 import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
 import {AppShell, BackEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
@@ -290,6 +291,7 @@ async function dailyLocalUpdates() {
   if (lastUpdateTime && (Date.now() - lastUpdateTime) < oneDay)
     return;
 
+  await (await SendAs.getDefault()).update();
   await Contacts.getDefault().update();
   await gcStaleThreadData();
 

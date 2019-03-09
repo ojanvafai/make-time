@@ -18,12 +18,10 @@ import {ErrorLogger} from './ErrorLogger.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {HelpDialog} from './views/HelpDialog.js';
-import {SendAs} from './SendAs.js';
 import {QueueNames} from './QueueNames.js';
 import { AppShell } from './views/AppShell.js';
 
 let storage_ = new ServerStorage();
-let sendAs_ = new SendAs();
 let settings_: Settings;
 
 // Client ID and API key from the Developer Console
@@ -68,11 +66,6 @@ let isSignedIn_ = false;
 export async function getSettings() {
   await login();
   return settings_;
-}
-
-export async function getSendAs() {
-  await login();
-  return sendAs_;
 }
 
 // Intentionally don't fetch here so that the onload sequence can listen to
@@ -159,7 +152,6 @@ async function login_() {
 
           await Promise.all([
             storage_.fetch(),
-            sendAs_.fetch(),
             new QueueNames().fetch(),
           ]);
 
