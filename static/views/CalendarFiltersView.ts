@@ -1,44 +1,24 @@
 import {defined, Labels, showDialog} from '../Base.js';
-import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
+import {AttendeeCount, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
-const CSV_FIELDS = ['from', 'to'];
 const CURSOR_SENTINEL = '!!!!!!!!';
 const DIRECTIVE_SEPARATOR_ = ':';
 const QUERY_SEPARATOR_ = '&&';
 export const HELP_TEXT = `<b>Help</b>
-Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "${
-    Labels
-        .Archive}" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
-
- - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
- - "${
-    Labels
-        .Archive}" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
  - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
  - The first rule that matches is the one that applies, so order matters.
- - Label is the label that will apply qhen the rule matches.
- - Rule is the rule to match.
- - Match All Messages will required the rule to match all the messages in the thread to be considered a match. Otherwise, any message in the thread matching will mean the whole thread matches.
- - No List-ID matches messages that are not sent to an email list.
- - No CCs matches messages that have exactly one email address in the union of the to/cc/bcc fields.
- - Make-time matches all messages in the thread each time the thread is processed, unlike gmail filters which only match the new message.
- - If none of your filters apply to a thread, then make-time will apply a "${
-    Labels
-        .Fallback}" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
-
+ - Label is the text that will be shown in teh graph.
+ - Frequency matches events that are recurring.
+ - Attendees is the number of attendees other than yourself
+ 
 <b>Rule directives</b>
- - <b>$anything:</b> Matches the raw email header "anything". So, $from matches the From header as plain text instead of the structure match that "from:" below does. You can view raw email headers in gmail by going to a message and opening "Show Original" from the "..." menu.
- - <b>to:</b> Matches the to/cc/bcc fields of the email. It just checks if the name or email address includes the value. Take a comma separated list of values so you don't have to make a different rule for each address you want to match.
- - <b>from:</b> Matches the from field of the email. Same matching rules as the "to" directive.
- - <b>subject:</b> Matches if the subject of the email includes this text.
- - <b>plaintext:</b> Matches if the plain text of the email includes this text.
- - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
- - All rules are case insensitive and can be done as regular expressions by prefixing the value with regexp:, so from:regexp:foo will do a regexp on the from field with the value "foo".
+ - <b>title:</b> Matches the to/cc/bcc fields of the email. It just checks if the name or email address includes the value. Take a comma separated list of values so you don't have to make a different rule for each address you want to match.
+ - All rules are case insensitive and can be done as regular expressions by prefixing the value with regexp:, so title:regexp:foo will do a regexp on the title field with the value "foo".
 `;
 
-export class FiltersView extends HTMLElement {
+export class CalendarFiltersView extends HTMLElement {
   // TODO: Stop using an element for maintaining cursor position. Do what
   // AddressCompose does with Ranges instead.
   private cursorSentinelElement_?: HTMLElement;
@@ -114,7 +94,8 @@ export class FiltersView extends HTMLElement {
   async getLabelSelect_() {
     if (!this.labelSelect_) {
       this.labelSelect_ = document.createElement('select');
-      let labels = Array.from(await this.settings_.getLabels()).sort();
+      this.labelSelect_.className = 'label';
+      let labels = Array.from(await this.settings_.getCalendarLabels()).sort();
       labels.push('Create new...');
       for (let label of labels) {
         let option = document.createElement('option');
@@ -126,14 +107,14 @@ export class FiltersView extends HTMLElement {
   }
 
   async render_() {
-    let rules = await this.settings_.getFilters();
+    let rules = await this.settings_.getCalendarFilters();
 
     let container = document.createElement('table');
     container.style.cssText = `font-size: 13px;`;
 
     let header = document.createElement('thead');
     header.innerHTML =
-        `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th><th>No List-ID</th><th>No CCs</th>`;
+        `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Frequency</th><th>Attendees</th>`;
     container.append(header);
 
     let body = document.createElement('tbody');
@@ -144,9 +125,11 @@ export class FiltersView extends HTMLElement {
     // Ensure there's at least one row since there's no other way to add the
     // first row.
     if (!rules.length)
-      body.append(await this.createRule_({}));
+      body.append(await this.createRule_());
 
-    body.append(this.createUnfileredRule_());
+    // TODO: Move all the built-in rules here instead of hard coding anything
+    // body.append(this.createUnfileredRule_());
+
     container.append(body);
 
     let scrollable = document.createElement('div');
@@ -198,7 +181,7 @@ export class FiltersView extends HTMLElement {
     addButton.append('+');
     addButton.classList.add('row-button');
     addButton.onclick = async () => {
-      let emptyRule = await this.createRule_({});
+      let emptyRule = await this.createRule_();
       container.before(emptyRule);
     };
     buttons.append(addButton);
@@ -219,27 +202,20 @@ export class FiltersView extends HTMLElement {
   }
 
   convertToFilterRule(obj: any) {
-    let rule: FilterRule = {
+    let rule: CalendarRule = {
       label: obj.label,
     };
-    let headerRules: HeaderFilterRule[] = [];
     for (let key in obj) {
-      if (isHeaderFilterField(key)) {
-        headerRules.push({name: key.substring(1), value: String(obj[key])});
-      } else {
-        let validField = setFilterStringField(rule, key, obj[key]);
-        if (!validField)
-          return null;
-      }
+      let validField = setCalendarFilterStringField(rule, key, obj[key]);
+      if (!validField)
+        return null;
     }
-    if (headerRules.length)
-      rule.header = headerRules;
     return rule;
   }
 
   async save_() {
     let rows = this.querySelectorAll('tbody > tr');
-    let rules: FilterRule[] = [];
+    let rules: CalendarRule[] = [];
 
     for (let row of rows) {
       if (row.hasAttribute('fallback'))
@@ -260,21 +236,15 @@ export class FiltersView extends HTMLElement {
         return;
       }
 
-      let matchAll = <HTMLInputElement>row.querySelector('.matchallmessages');
-      if (matchAll.checked)
-        rule.matchallmessages = true;
+      let frequency = <HTMLSelectElement>row.querySelector('.frequency');
+      rule.frequency = Number(frequency.selectedOptions[0].value);
 
-      let noListId = <HTMLInputElement>row.querySelector('.nolistid');
-      if (noListId.checked)
-        rule.nolistid = true;
-
-      let noCc = <HTMLInputElement>row.querySelector('.nocc');
-      if (noCc.checked)
-        rule.nocc = true;
+      let attendees = <HTMLSelectElement>row.querySelector('.attendees');
+      rule.attendees = Number(attendees.selectedOptions[0].value);
 
       rules.push(rule);
     }
-    await this.settings_.writeFilters(rules);
+    await this.settings_.writeCalendarFilters(rules);
 
     defined(this.dialog_).close();
   }
@@ -291,7 +261,7 @@ export class FiltersView extends HTMLElement {
     return td;
   }
 
-  async createRule_(rule: any) {
+  async createRule_(rule?: CalendarRule) {
     let container = document.createElement('tr');
     container.style.cssText = `
       line-height: 1.7em;
@@ -305,7 +275,7 @@ export class FiltersView extends HTMLElement {
     addButton.append('+');
     addButton.classList.add('row-button');
     addButton.onclick = async () => {
-      let emptyRule = await this.createRule_({});
+      let emptyRule = await this.createRule_();
       container.before(emptyRule);
     };
     buttons.append(addButton);
@@ -322,44 +292,72 @@ export class FiltersView extends HTMLElement {
     // the filter rows.
     let label = await this.getLabelSelect_();
     for (let option of label.options) {
-      if (option.value === rule.label) {
+      if (rule && option.value === rule.label) {
         option.selected = true;
         break;
       }
     }
-    label.addEventListener('change', () => {
-      // The last item is the "Create new" label option.
-      if (label.selectedIndex !== label.options.length - 1)
-        return;
+
+    let createLabel = () => {
       this.createLabel_();
       // createLabel_ prepends the new label as the first item.
       label.selectedIndex = 0;
+    };
+    label.addEventListener('click', () => {
+      // The only item is the "Create new" label option.
+      if (label.options.length === 1) {
+        // TODO: Remove this once we stop using prompt().
+        // The dropdown for the select element being open prevents the prompt
+        // from getting focus.
+        label.blur();
+        createLabel();
+      }
+    });
+    label.addEventListener('change', () => {
+      // The last item is the "Create new" label option.
+      if (label.selectedIndex === label.options.length - 1)
+        createLabel();
     });
     this.appendCell_(container, label);
 
     let queryParts: any = {};
     for (let field in rule) {
-      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(field))
+      if (!Settings.CALENDAR_RULE_DIRECTIVES.includes(field))
         continue;
-      if (field == 'header') {
-        let headers = <HeaderFilterRule[]>rule[field];
-        for (let header of headers) {
-          queryParts[`${HEADER_FILTER_PREFIX}${header.name}`] = header.value;
-        }
-      } else {
-        queryParts[field] = rule[field];
-      }
+      // @ts-ignore Not quite sure how to handle rule[field] in a typesafe way.
+      queryParts[field] = rule[field];
     }
 
     let editor = this.createQueryEditor_(queryParts);
     editor.classList.add('query');
     this.appendCell_(container, editor);
 
-    this.appendCheckbox_(container, 'matchallmessages', rule.matchallmessages);
-    this.appendCheckbox_(container, 'nolistid', rule.nolistid);
-    this.appendCheckbox_(container, 'nocc', rule.nocc);
+    this.appendSelect_(
+        container, 'frequency', Frequency, rule && rule.frequency);
+    this.appendSelect_(
+        container, 'attendees', AttendeeCount, rule && rule.attendees);
 
     return container;
+  }
+
+  // TODO: Fix the types. Getting the types right proved to be really hard.
+  appendSelect_(
+      container: HTMLElement, className: string, types: any, value: any) {
+    let attendees = document.createElement('select');
+    attendees.classList.add(className);
+    for (let item of Object.values(types)) {
+      if (isNaN(Number(item)))
+        continue;
+
+      let option = document.createElement('option');
+      option.value = item as any;
+      option.append(types[item as any]);
+      if (value === item)
+        option.selected = true;
+
+      attendees.append(option);
+    }
+    this.appendCell_(container, attendees);
   }
 
   createLabel_() {
@@ -373,19 +371,10 @@ export class FiltersView extends HTMLElement {
 
     let option = document.createElement('option');
     option.append(newLabel);
-    let allLabels = this.querySelectorAll('select');
+    let allLabels = this.querySelectorAll('.label');
     for (let label of allLabels) {
       label.prepend(option.cloneNode(true));
     }
-  }
-
-  appendCheckbox_(container: HTMLElement, className: string, checked: boolean) {
-    let checkbox = document.createElement('input');
-    checkbox.classList.add(className);
-    checkbox.type = 'checkbox';
-    checkbox.checked = checked;
-    let cell = this.appendCell_(container, checkbox);
-    cell.style.textAlign = 'center';
   }
 
   appendWithSentinel_(container: HTMLElement, text: string) {
@@ -442,8 +431,7 @@ export class FiltersView extends HTMLElement {
 
       let fieldTextWithoutSentinel =
           fieldText.replace(CURSOR_SENTINEL, '').trim();
-      if (!isHeaderFilterField(fieldTextWithoutSentinel) &&
-          !Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
+      if (!Settings.CALENDAR_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
         fieldElement.classList.add('invalid-directive');
 
       this.appendWithSentinel_(fieldElement, fieldText);
@@ -454,21 +442,7 @@ export class FiltersView extends HTMLElement {
           value && value.charAt(value.length - 1) == space;
       if (value) {
         fieldElement.append(DIRECTIVE_SEPARATOR_);
-
-        if (CSV_FIELDS.includes(field)) {
-          let values = value.split(',');
-          for (var i = 0; i < values.length; i++) {
-            this.appendValue_(container, values[i]);
-            if (i + 1 < values.length) {
-              let comma = document.createElement('span');
-              comma.append(',');
-              comma.style.marginRight = '2px';
-              container.append(comma);
-            }
-          }
-        } else {
-          this.appendValue_(container, value);
-        }
+        this.appendValue_(container, value);
       }
     }
   }
@@ -500,8 +474,6 @@ export class FiltersView extends HTMLElement {
       if (trimWhitespace) {
         field = field.trim();
         value = value.trim();
-        if (CSV_FIELDS.includes(field))
-          value = value.split(',').map(x => x.trim()).join(',');
       }
 
       if (hasColon && !value)
@@ -599,4 +571,4 @@ export class FiltersView extends HTMLElement {
   }
 }
 
-window.customElements.define('mt-filters', FiltersView);
+window.customElements.define('mt-calendar-filters', CalendarFiltersView);

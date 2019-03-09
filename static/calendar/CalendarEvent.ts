@@ -1,10 +1,7 @@
 import {assert, notNull} from '../Base.js';
+import {AttendeeCount, CalendarRule, Frequency, stringFilterMatches} from '../Settings.js';
 
-import {CALENDAR_ID, TYPE_EMAIL, TYPE_FOCUS_NON_RECURRING, TYPE_FOCUS_RECURRING, TYPE_INTERVIEW, TYPE_MEETING_NON_RECURRING, TYPE_MEETING_RECURRING, TYPE_ONE_ON_ONE_NON_RECURRING, TYPE_ONE_ON_ONE_RECURRING, TYPE_OOO, TYPES,} from './Constants.js';
-
-const OOO_REGEX = /.*(OOO|Holiday).*/;
-const EMAIL_REGEX = /.*(Email).*/;
-const INTERVIEW_REGEX = /.*(Interview).*/;
+import {CALENDAR_ID, TYPES,} from './Constants.js';
 
 export class CalendarEvent {
   eventId: string;
@@ -17,14 +14,6 @@ export class CalendarEvent {
   attendeeCount: number;
   recurringEventId: string|undefined;
   shouldIgnore: boolean;
-
-  static async fetchEventWithId(eventId: string) {
-    const response = await gapi.client.calendar.events.get({
-      calendarId: CALENDAR_ID,
-      eventId: eventId,
-    });
-    return new CalendarEvent(response.result);
-  }
 
   getTargetColorId(): number {
     const targetColorId = TYPES.get(notNull(this.type));
@@ -39,15 +28,11 @@ export class CalendarEvent {
     return new Date(parts.join(' '));
   }
 
-  isOOOEvent() {
-    return this.summary.match(OOO_REGEX) !== null;
-  }
-
   getShouldIgnore() {
     return this.shouldIgnore;
   }
 
-  constructor(gcalEvent: gapi.client.calendar.Event) {
+  constructor(gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
     this.eventId = gcalEvent.id;
     if (gcalEvent.colorId)
       this.colorId = TYPES.get(gcalEvent.colorId);
@@ -89,28 +74,77 @@ export class CalendarEvent {
     if (this.shouldIgnore)
       return;
 
-    if (this.attendeeCount == 0) {
-      if (this.isOOOEvent())
-        this.type = TYPE_OOO;
-      else if (this.summary.match(INTERVIEW_REGEX) !== null) {
-        this.type = TYPE_INTERVIEW;
-      } else if (this.summary.match(EMAIL_REGEX) !== null)
-        this.type = TYPE_EMAIL;
-      else if (gcalEvent.recurringEventId !== undefined)
-        this.type = TYPE_FOCUS_RECURRING;
-      else
-        this.type = TYPE_FOCUS_NON_RECURRING;
-    } else if (this.attendeeCount == 1) {
-      if (gcalEvent.recurringEventId !== undefined)
-        this.type = TYPE_ONE_ON_ONE_RECURRING;
-      else
-        this.type = TYPE_ONE_ON_ONE_NON_RECURRING;
-    } else {
-      if (gcalEvent.recurringEventId !== undefined)
-        this.type = TYPE_MEETING_RECURRING;
-      else
-        this.type = TYPE_MEETING_NON_RECURRING
+    for (let rule of rules) {
+      if (this.ruleMatches_(rule)) {
+        this.type = rule.label;
+        break;
+      }
     }
+  }
+
+  ruleMatches_(rule: CalendarRule) {
+    let matches = false;
+    if (rule.title) {
+      if (!stringFilterMatches(rule.title, this.summary))
+        return false;
+      matches = true;
+    }
+
+    switch (rule.attendees) {
+      case AttendeeCount.Any:
+        matches = true;
+        break;
+
+      case AttendeeCount.Many:
+        if (this.attendeeCount <= 1)
+          return false;
+        matches = true;
+        break;
+
+      case AttendeeCount.None:
+        if (this.attendeeCount !== 0)
+          return false;
+        matches = true;
+        break;
+
+      case AttendeeCount.One:
+        if (this.attendeeCount !== 1)
+          return false;
+        matches = true;
+        break;
+
+      case undefined:
+        break;
+
+      default:
+        throw new Error();
+    }
+
+    switch (rule.frequency) {
+      case Frequency.Either:
+        matches = true;
+        break;
+
+      case Frequency.Recurring:
+        if (this.recurringEventId === undefined)
+          return false;
+        matches = true;
+        break;
+
+      case Frequency.NotRecurring:
+        if (this.recurringEventId !== undefined)
+          return false;
+        matches = true;
+        break;
+
+      case undefined:
+        break;
+
+      default:
+        throw new Error();
+    }
+
+    return matches;
   }
 
   async setToTargetColor() {

@@ -1,7 +1,5 @@
-import {AsyncOnce} from '../AsyncOnce.js';
-
 import {Aggregate} from './Aggregate.js'
-import {CALENDAR_ID, TYPE_TO_COLOR, TYPES} from './Constants.js'
+import {RuleMetadata} from './Calendar.js';
 
 function hexToRGB(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -20,17 +18,7 @@ interface PlotlySeries {
 }
 
 export class Charter {
-  private colors: AsyncOnce<any>;
-
-  constructor() {
-    this.colors = new AsyncOnce<any>(async () => {
-      //@ts-ignore
-      let response = await gapi.client.calendar.colors.get({
-        calendarId: CALENDAR_ID,
-      });
-      return response.result.event;
-    });
-  }
+  constructor(private ruleMetadata_: RuleMetadata[]) {}
 
   // In theory we can use Dates directly in plotly, but the annotations go crazy
   // when we do. They all get bunched up at the start of the x-axis at
@@ -42,7 +30,6 @@ export class Charter {
   }
 
   async chartData(aggregates: Aggregate[], divId: string, range: DateRange) {
-    let colors = await this.colors.do();
     const dates = aggregates.map(day => this.getTimestamp(day.start));
     const data: PlotlySeries[] = [];
 
@@ -55,13 +42,11 @@ export class Charter {
       }
     });
 
-    for (let type of TYPES.keys()) {
-      const calendarColor = colors[TYPES.get(type)!];
-      const color = hexToRGB(
-          calendarColor ? calendarColor.background : TYPE_TO_COLOR.get(type));
+    for (let ruleMetadata of this.ruleMetadata_) {
+      const color = hexToRGB(ruleMetadata.color);
       // Show hours with 1 degree of precision.
       const ys = aggregates.map((day) => {
-        let minutes = day.minutesPerType.get(type);
+        let minutes = day.minutesPerType.get(ruleMetadata.label);
         // TODO: This shouldn't happen, but it does.
         if (minutes === undefined)
           minutes = 0;
@@ -70,7 +55,7 @@ export class Charter {
       data.push({
         x: dates,
         y: ys,
-        name: type,
+        name: ruleMetadata.label,
         type: 'bar',
         marker: {
           color: color,

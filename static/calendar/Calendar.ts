@@ -2,22 +2,82 @@ import {AsyncOnce} from '../AsyncOnce.js';
 import {defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {Model} from '../models/Model.js';
+import {AttendeeCount, CalendarRule, Frequency, Settings} from '../Settings.js';
 import {TaskQueue} from '../TaskQueue.js'
 
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
-import {CALENDAR_ID, TYPE_UNBOOKED_LARGE, TYPE_UNBOOKED_MEDIUM, TYPE_UNBOOKED_SMALL, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+import {CALENDAR_ID, TYPE_EMAIL, TYPE_FOCUS_NON_RECURRING, TYPE_FOCUS_RECURRING, TYPE_INTERVIEW, TYPE_MEETING_NON_RECURRING, TYPE_MEETING_RECURRING, TYPE_ONE_ON_ONE_NON_RECURRING, TYPE_ONE_ON_ONE_RECURRING, TYPE_OOO, TYPE_UNBOOKED_LARGE, TYPE_UNBOOKED_MEDIUM, TYPE_UNBOOKED_SMALL, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+
+const OOO_REGEX = 'regexp:.*(OOO|Holiday).*';
+const EMAIL_REGEX = 'regexp:.*(Email).*';
+const INTERVIEW_REGEX = 'regexp:.*(Interview).*';
 
 const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
 const WHOLE_DAY_DURATION_MINS = 60 * (WORKING_DAY_END - WORKING_DAY_START);
+
+export interface RuleMetadata {
+  label: string, color: string,
+}
+
+let BuiltInRules: CalendarRule[] = [
+  {
+    label: TYPE_OOO,
+    title: OOO_REGEX,
+    attendees: AttendeeCount.None,
+    frequency: Frequency.Either,
+  },
+  {
+    label: TYPE_INTERVIEW,
+    title: INTERVIEW_REGEX,
+    attendees: AttendeeCount.None,
+    frequency: Frequency.Either,
+  },
+  {
+    label: TYPE_EMAIL,
+    title: EMAIL_REGEX,
+    attendees: AttendeeCount.None,
+    frequency: Frequency.Either,
+  },
+  {
+    label: TYPE_FOCUS_RECURRING,
+    attendees: AttendeeCount.None,
+    frequency: Frequency.Recurring,
+  },
+  {
+    label: TYPE_FOCUS_NON_RECURRING,
+    attendees: AttendeeCount.None,
+    frequency: Frequency.NotRecurring,
+  },
+  {
+    label: TYPE_ONE_ON_ONE_RECURRING,
+    attendees: AttendeeCount.One,
+    frequency: Frequency.Recurring,
+  },
+  {
+    label: TYPE_ONE_ON_ONE_NON_RECURRING,
+    attendees: AttendeeCount.One,
+    frequency: Frequency.NotRecurring,
+  },
+  {
+    label: TYPE_MEETING_RECURRING,
+    attendees: AttendeeCount.Many,
+    frequency: Frequency.Recurring,
+  },
+  {
+    label: TYPE_MEETING_NON_RECURRING,
+    attendees: AttendeeCount.Many,
+    frequency: Frequency.NotRecurring,
+  },
+];
 
 function getStartOfWeek(date: Date): Date {
   const x = new Date(date);
   x.setHours(0, 0, 0);
   x.setDate(x.getDate() - x.getDay());
   return x;
-}
+};
 
 function getDurationOverlappingWorkDay(start: Date, end: Date, day: Date) {
   const startOfDay = new Date(day);
@@ -31,9 +91,9 @@ function getDurationOverlappingWorkDay(start: Date, end: Date, day: Date) {
   if (endTime - startTime < 0)
     return 0;
   return endTime - startTime;
-}
+};
 
-function aggregateByWeek(aggregates: Aggregate[]) {
+function aggregateByWeek(aggregates: Aggregate[], types: string[]) {
   const weekly: Aggregate[] = [];
   let currentWeekStart = getStartOfWeek(aggregates[0].start);
   let minutesPerType: Map<string, number> = new Map();
@@ -45,7 +105,7 @@ function aggregateByWeek(aggregates: Aggregate[]) {
       minutesPerType = new Map();
       currentWeekStart = aggregateWeekStart;
     }
-    for (let type of TYPES.keys()) {
+    for (let type of types) {
       if (!minutesPerType.has(type))
         minutesPerType.set(type, 0);
 
@@ -58,7 +118,7 @@ function aggregateByWeek(aggregates: Aggregate[]) {
   }
   weekly.push(new Aggregate(new Date(currentWeekStart), minutesPerType));
   return weekly;
-}
+};
 
 function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   enum EVENT_CHANGE {
@@ -200,7 +260,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   for (let eventChange of eventChanges) {
     let primaryInProgressEvents = Array.from(inProgressEvents);
     // OOO events take priority.
-    const ooo = primaryInProgressEvents.filter(e => e.isOOOEvent());
+    const ooo = primaryInProgressEvents.filter(e => e.type === TYPE_OOO);
     if (ooo.length !== 0) {
       primaryInProgressEvents = ooo;
     } else {
@@ -237,8 +297,8 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
     tsDay.setHours(0, 0, 0);
     if (tsDay.getTime() != day.getTime()) {
       if (day.getDay() != 0 && day.getDay() != 6) {
-        // Fill in unbooked time. This can happen if a day has no events or if
-        // events overlap the start/end of the day.
+        // Fill in unbooked time. This can happen if a day has no events or
+        // if events overlap the start/end of the day.
         let totalMinutes = Array.from(minutesPerType!.values())
                                .reduce((total, value) => total + value, 0);
         if (totalMinutes < WHOLE_DAY_DURATION_MINS) {
@@ -253,9 +313,10 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   }
 
   return aggregates;
-}
+};
 
 export class Calendar extends Model {
+  private ruleMetadata_?: RuleMetadata[];
   private events: CalendarEvent[] = [];
   private dayAggregates: AsyncOnce<Aggregate[]>;
   private weekAggregates: AsyncOnce<Aggregate[]>;
@@ -263,7 +324,7 @@ export class Calendar extends Model {
   private fetchingEvents: boolean = true;
   private onReceiveEventsChunkResolves: ((cs: CalendarEvent[]) => void)[] = [];
 
-  constructor() {
+  constructor(private settings_: Settings) {
     super();
 
     this.dayAggregates = new AsyncOnce<Aggregate[]>(async () => {
@@ -276,7 +337,8 @@ export class Calendar extends Model {
     });
     this.weekAggregates = new AsyncOnce<Aggregate[]>(async () => {
       let dayAggregates = await this.dayAggregates.do();
-      return aggregateByWeek(dayAggregates);
+      return aggregateByWeek(
+          dayAggregates, defined(this.ruleMetadata_).map(x => x.label));
     });
   }
 
@@ -303,6 +365,11 @@ export class Calendar extends Model {
     this.onReceiveEventsChunkResolves.push(resolve);
   })}
 
+  async getRules() {
+    let rules: CalendarRule[] = await this.settings_.getCalendarFilters();
+    return [...rules, ...BuiltInRules];
+  }
+
   async fetchEvents() {
     let weeks = 26;
     let days = weeks * 7;
@@ -313,6 +380,7 @@ export class Calendar extends Model {
 
     let pageToken = null;
     let pendingEvents: CalendarEvent[] = [];
+    let rules = await this.getRules();
 
     while (true) {
       const request = {
@@ -330,8 +398,9 @@ export class Calendar extends Model {
 
       let response = await gapi.client.calendar.events.list(request);
 
-      pendingEvents = response.result.items.map(i => new CalendarEvent(i))
-                          .filter(e => !e.getShouldIgnore());
+      pendingEvents =
+          response.result.items.map(i => new CalendarEvent(i, rules))
+              .filter(e => !e.getShouldIgnore());
 
       this.gotEventsChunk(pendingEvents);
 
@@ -352,7 +421,31 @@ export class Calendar extends Model {
 
   async init() {
     await login();
+
+    let colorFetcher = new AsyncOnce<any>(async () => {
+      //@ts-ignore
+      let response = await gapi.client.calendar.colors.get({
+        calendarId: CALENDAR_ID,
+      });
+      return response.result.event;
+    });
+    let colors = await colorFetcher.do();
+
+    let rules = await this.getRules();
+    this.ruleMetadata_ = rules.map<RuleMetadata>(x => {
+      let index = TYPES.get(x.label);
+      let color = index !== undefined ? colors[index].background : 'blue';
+      return {label: x.label, color: color};
+    });
+    this.ruleMetadata_.push({label: TYPE_UNBOOKED_SMALL, color: '#af1085'});
+    this.ruleMetadata_.push({label: TYPE_UNBOOKED_MEDIUM, color: '#0e3e2e'});
+    this.ruleMetadata_.push({label: TYPE_UNBOOKED_LARGE, color: '#fbd75b'});
+
     await this.fetchEvents();
+  }
+
+  ruleMetadata() {
+    return defined(this.ruleMetadata_);
   }
 
   async * getEvents() {

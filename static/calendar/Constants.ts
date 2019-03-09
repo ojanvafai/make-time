@@ -64,10 +64,3 @@ export const TYPES: Map<string, number> =
                             ] as [string, number]}));
 
 export const TYPE_TO_COLOR = new Map(TYPE_COLORS);
-
-// 10: #51b749, 2: #7ae7bf,
-// 3:  #dbadff, 1: #a4bdfc
-// 11: #dc2127, 4: #ff887c
-// 6:  #ffb878, 5:  #fbd75b
-// 9:  #5484ed, 7:  #46d6db
-// 8:  #e1e1e1

@@ -96,7 +96,7 @@ function getView() {
 async function createModel(viewType: VIEW) {
   switch (viewType) {
     case VIEW.Calendar:
-      return new Calendar();
+      return new Calendar(await getSettings());
 
     case VIEW.Compose:
       return new ComposeModel();

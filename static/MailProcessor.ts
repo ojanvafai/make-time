@@ -8,13 +8,12 @@ import {gapiFetch} from './Net.js';
 import {QueueNames} from './QueueNames.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
-import {FilterRule, HeaderFilterRule, Settings} from './Settings.js';
+import {FilterRule, HeaderFilterRule, ruleRegexp, Settings, stringFilterMatches} from './Settings.js';
 import {TaskQueue} from './TaskQueue.js';
 import {BuiltInLabelIds, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
-let REGEXP_PREFIX = 'regexp:';
 
 export class MailProcessor {
   private makeTimeLabelId_?: string;
@@ -334,7 +333,7 @@ export class MailProcessor {
         filterAddressCsv.split(',').map((item) => item.trim());
     for (var i = 0; i < filterAddresses.length; i++) {
       var filterAddress = filterAddresses[i];
-      let re = this.ruleRegexp_(filterAddress);
+      let re = ruleRegexp(filterAddress);
       if (re) {
         for (let address of addresses) {
           if (re.test(address.address.toLowerCase()) ||
@@ -355,24 +354,7 @@ export class MailProcessor {
 
   matchesHeader_(message: Message, header: HeaderFilterRule) {
     let headerValue = message.getHeaderValue(header.name);
-    return headerValue && this.matchesRuleText_(header.value, headerValue);
-  }
-
-  ruleRegexp_(ruleText: string) {
-    if (ruleText.startsWith(REGEXP_PREFIX)) {
-      let reText = ruleText.replace(REGEXP_PREFIX, '');
-      return new RegExp(reText, 'mi');
-    }
-    return null;
-  }
-
-  matchesRuleText_(ruleText: string, value: string) {
-    let re = this.ruleRegexp_(ruleText);
-    if (re) {
-      return re.test(value);
-    } else {
-      return value.toLowerCase().includes(ruleText.toLowerCase());
-    }
+    return headerValue && stringFilterMatches(header.value, headerValue);
   }
 
   matchesRule(rule: FilterRule, message: Message) {
@@ -411,17 +393,17 @@ export class MailProcessor {
     // TODO: only need to do this once per thread.
     if (rule.subject) {
       if (!message.subject ||
-          !this.matchesRuleText_(rule.subject, message.subject))
+          !stringFilterMatches(rule.subject, message.subject))
         return false;
       matches = true;
     }
     if (rule.plaintext) {
-      if (!this.matchesRuleText_(rule.plaintext, message.getPlain()))
+      if (!stringFilterMatches(rule.plaintext, message.getPlain()))
         return false;
       matches = true;
     }
     if (rule.htmlcontent) {
-      if (!this.matchesRuleText_(message.getHtmlOrPlain(), rule.htmlcontent))
+      if (!stringFilterMatches(message.getHtmlOrPlain(), rule.htmlcontent))
         return false;
       matches = true;
     }

@@ -42,7 +42,7 @@ export class CalendarView extends View {
 
   async init() {
     await this.model_.init();
-    const charter = new Charter();
+    const charter = new Charter(this.model_.ruleMetadata());
 
     const days = await this.model_.getDayAggregates();
     await this.chartData_(charter, this.dayPlot.id, days, 14)

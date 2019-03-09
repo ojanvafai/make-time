@@ -2,6 +2,7 @@ import {assert, notNull} from '../Base.js';
 import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
+import {CalendarFiltersView} from './CalendarFiltersView.js';
 import {FiltersView} from './FiltersView.js';
 import {HelpDialog} from './HelpDialog.js';
 import {QueuesView} from './QueuesView.js';
@@ -42,11 +43,17 @@ export class SettingsView extends View {
     filtersLinkContainer.style.cssText = `
       margin: 16px 0;
     `;
-    let filtersLink = document.createElement('a');
-    filtersLink.classList.add('label-button');
-    filtersLink.append('Modify email filters');
-    filtersLink.onclick = () => this.showFilterDialog_();
-    filtersLinkContainer.append(filtersLink);
+    let mailFilters = document.createElement('a');
+    mailFilters.classList.add('label-button');
+    mailFilters.append('Modify email filters');
+    mailFilters.onclick = () => new FiltersView(this.settings_);
+
+    let calendarFilters = document.createElement('a');
+    calendarFilters.classList.add('label-button');
+    calendarFilters.append('Modify calendar filters');
+    calendarFilters.onclick = () => new CalendarFiltersView(this.settings_);
+
+    filtersLinkContainer.append(mailFilters, calendarFilters);
     this.scrollable_.append(filtersLinkContainer);
 
     this.queues_ = new QueuesView(this.settings_);
@@ -85,10 +92,6 @@ export class SettingsView extends View {
 
   handleChange_() {
     this.saveButton_.disabled = false;
-  }
-
-  showFilterDialog_() {
-    new FiltersView(this.settings_);
   }
 
   populateSettings_(container: HTMLElement) {

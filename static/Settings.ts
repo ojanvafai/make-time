@@ -23,10 +23,54 @@ export interface FilterRule {
   header?: HeaderFilterRule[];
 }
 
+export enum Frequency {
+  Either,
+  Recurring,
+  NotRecurring,
+}
+
+export enum AttendeeCount {
+  Any,
+  None,
+  One,
+  Many,
+}
+
+export interface CalendarRule {
+  label: string;
+  title?: string;
+  attendees?: AttendeeCount;
+  frequency?: Frequency;
+}
+
+export interface Filters {
+  filters?: FilterRule[], calendar?: CalendarRule[],
+}
+
+export const REGEXP_PREFIX = 'regexp:';
 export const HEADER_FILTER_PREFIX = '$';
+const FILTERS_KEY = 'filters';
+const CALENDAR_FILTERS_KEY = 'calendar';
 
 export function isHeaderFilterField(fieldName: string) {
   return fieldName.indexOf(HEADER_FILTER_PREFIX) == 0;
+}
+
+export function stringFilterMatches(ruleText: string, value: string) {
+  let re = ruleRegexp(ruleText);
+  if (re) {
+    return re.test(value);
+  } else {
+    return value.toLowerCase().includes(ruleText.toLowerCase());
+  }
+}
+
+export function ruleRegexp(ruleText: string) {
+  if (ruleText.startsWith(REGEXP_PREFIX)) {
+    let reText = ruleText.replace(REGEXP_PREFIX, '');
+    return new RegExp(reText, 'mi');
+  }
+  return null;
 }
 
 // TODO: Is there a less verbose way to do this while still having strict
@@ -64,7 +108,22 @@ export function setFilterStringField(
   return true;
 }
 
-let FILTERS_KEY = 'filters';
+export function setCalendarFilterStringField(
+    rule: CalendarRule, name: string, value: string) {
+  switch (name) {
+    case 'label':
+      rule.label = value;
+      break;
+
+    case 'title':
+      rule.title = value;
+      break;
+
+    default:
+      return false;
+  }
+  return true;
+}
 
 export class FiltersChangedEvent extends Event {
   static NAME = 'filters-changed';
@@ -77,6 +136,9 @@ export class Settings extends EventTarget {
   private filters_?: firebase.firestore.DocumentSnapshot;
   private queueSettings_?: QueueSettings;
 
+  static CALENDAR_RULE_DIRECTIVES = ['title'];
+  private static CALENDAR_RULE_FIELDS_ = ['label'].concat(
+      Settings.CALENDAR_RULE_DIRECTIVES, 'frequency', 'attendees');
   static FILTERS_RULE_DIRECTIVES =
       ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
   private static FILTER_RULE_FIELDS_ = ['label'].concat(
@@ -175,6 +237,8 @@ export class Settings extends EventTarget {
     await this.queueSettings_.fetch();
   }
 
+  // TODO: Add equivalent to this for calendar labels so you can pick the colors
+  // yourself.
   getQueueSettings() {
     return defined(this.queueSettings_);
   }
@@ -183,19 +247,22 @@ export class Settings extends EventTarget {
     return firestoreUserCollection().doc('filters');
   }
 
-  filtersObject_(rules: FilterRule[]) {
-    return {
-      filters: rules,
-    }
+  filtersObject_(rules?: FilterRule[], calendarRules?: CalendarRule[]) {
+    let obj: Filters = {};
+    if (rules)
+      obj[FILTERS_KEY] = rules;
+    if (calendarRules)
+      obj[CALENDAR_FILTERS_KEY] = calendarRules;
+    return obj;
   }
 
-  async getFilters() {
+  async filtersData_() {
     if (!this.filters_) {
       let doc = this.getFiltersDocument_();
       this.filters_ = await doc.get();
 
       if (!this.filters_.exists) {
-        await doc.set(this.filtersObject_([]));
+        await doc.set(this.filtersObject_([], []));
         this.filters_ = await doc.get();
       }
 
@@ -204,8 +271,26 @@ export class Settings extends EventTarget {
         this.dispatchEvent(new FiltersChangedEvent());
       });
     }
+    return this.filters_;
+  }
 
-    return this.filters_.get(FILTERS_KEY);
+  async getFilters() {
+    let filtersData = await this.filtersData_();
+    return filtersData.get(FILTERS_KEY);
+  }
+
+  async getCalendarFilters() {
+    let filtersData = await this.filtersData_();
+    return filtersData.get(CALENDAR_FILTERS_KEY) || [];
+  }
+
+  async writeCalendarFilters(rules: CalendarRule[]) {
+    for (let rule of rules) {
+      let invalidField = Object.keys(rule).find(
+          x => !Settings.CALENDAR_RULE_FIELDS_.includes(x));
+      assert(!invalidField && rule.label !== '');
+    }
+    this.getFiltersDocument_().update(this.filtersObject_(undefined, rules));
   }
 
   async writeFilters(rules: FilterRule[]) {
@@ -215,6 +300,17 @@ export class Settings extends EventTarget {
       assert(!invalidField && rule.label !== '');
     }
     this.getFiltersDocument_().update(this.filtersObject_(rules));
+  }
+
+  async getCalendarLabels() {
+    let filters = await this.getCalendarFilters();
+    let labels: Set<string> = new Set();
+    for (let rule of filters) {
+      labels.add(defined(rule.label));
+    }
+    // TODO: Add built-ins here instead of hard coding?
+    // labels.add(Labels.Fallback);
+    return labels;
   }
 
   async getLabels() {
