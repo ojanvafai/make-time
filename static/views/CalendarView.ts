@@ -1,4 +1,5 @@
 import {Action, registerActions} from '../Actions.js';
+import {showDialog} from '../Base.js';
 import {Aggregate} from '../calendar/Aggregate.js';
 import {Calendar} from '../calendar/Calendar.js';
 import {Charter} from '../calendar/Charter.js';
@@ -66,7 +67,12 @@ export class CalendarView extends View {
 
   async takeAction(action: Action) {
     if (action == COLORIZE_ACTION) {
-      this.model_.colorizeEvents();
+      // Colorize is not safe to be called multiple times, so remove the button
+      // after the first call, forcing the user to reload to call it again.
+      this.setActions([]);
+      let dialog = showDialog('Colorizing...this takes a while.');
+      await this.model_.colorizeEvents();
+      dialog.close();
       return;
     }
 

@@ -1,7 +1,7 @@
-import {assert, notNull} from '../Base.js';
+import {assert} from '../Base.js';
 import {AttendeeCount, CalendarRule, Frequency, stringFilterMatches} from '../Settings.js';
 
-import {CALENDAR_ID, EventType, TYPES_TO_CALENDAR_INDEX,} from './Constants.js';
+import {EventType,} from './Constants.js';
 
 export class CalendarEvent {
   eventId: string;
@@ -14,13 +14,6 @@ export class CalendarEvent {
   attendeeCount: number;
   recurringEventId: string|undefined;
   shouldIgnore: boolean;
-
-  getTargetColorId(): number {
-    const targetColorId = TYPES_TO_CALENDAR_INDEX.get(notNull(this.type));
-    if (targetColorId === undefined)
-      throw ('No color id found for type.');
-    return targetColorId;
-  }
 
   static parseDate(dateString: string): Date {
     let parts = dateString.split('T');
@@ -35,7 +28,7 @@ export class CalendarEvent {
   constructor(gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
     this.eventId = gcalEvent.id;
     if (gcalEvent.colorId)
-      this.colorId = TYPES_TO_CALENDAR_INDEX.get(gcalEvent.colorId);
+      this.colorId = Number(gcalEvent.colorId);
     this.summary = gcalEvent.summary;
     this.recurringEventId = gcalEvent.recurringEventId;
     this.shouldIgnore = gcalEvent.transparency === 'transparent' ||
@@ -145,25 +138,5 @@ export class CalendarEvent {
     }
 
     return matches;
-  }
-
-  async setToTargetColor() {
-    const targetColorId = this.getTargetColorId();
-    if (targetColorId == this.colorId)
-      return;
-
-    try {
-      // @ts-ignore
-      const response = await gapi.client.calendar.events.patch({
-        calendarId: CALENDAR_ID,
-        eventId: this.eventId,
-        resource: {
-          colorId: targetColorId.toString(),
-        }
-      });
-    } catch (e) {
-      console.log('FAILED TO PATCH ' + this.eventId);
-      console.log(this);
-    }
   }
 }

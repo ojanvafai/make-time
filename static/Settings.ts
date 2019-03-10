@@ -48,7 +48,7 @@ export interface Filters {
   filters?: FilterRule[], calendar?: CalendarRule[],
 }
 
-// TODO: Move all these calendar types out of here.
+// TODO: Settings shouldn't have all this calendar specific knowledge.
 export let BuiltInRules: CalendarRule[] = [
   {
     label: EventType.OutOfOffice,

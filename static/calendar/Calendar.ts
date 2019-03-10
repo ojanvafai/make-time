@@ -2,12 +2,13 @@ import {AsyncOnce} from '../AsyncOnce.js';
 import {defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {Model} from '../models/Model.js';
+import {gapiFetch} from '../Net.js';
 import {BuiltInRules, CalendarRule, Settings} from '../Settings.js';
 import {TaskQueue} from '../TaskQueue.js'
 
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
-import {CALENDAR_ID, CalendarSortListEntry, EventType, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+import {CALENDAR_ID, CalendarSortListEntry, EventType, TYPES_TO_CALENDAR_INDEX, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
 
 const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
@@ -355,10 +356,44 @@ export class Calendar extends Model {
   }
 
   async colorizeEvents() {
-    const taskQueue = new TaskQueue(3);
+    let eventIdToColorId: {[property: string]: number} = {};
     for await (const event of this.getEvents()) {
-      taskQueue.queueTask(() => event.setToTargetColor());
-    };
+      // Prefer recurringEventId so we modify the root for recurring events
+      // instead of the instances. This is both 10x less network activity and a
+      // better user experience.
+      let id = event.recurringEventId || event.eventId;
+      if (eventIdToColorId[id])
+        continue;
+
+      let targetColorId =
+          defined(TYPES_TO_CALENDAR_INDEX.get(notNull(event.type)));
+      if (event.colorId === targetColorId)
+        continue;
+
+      eventIdToColorId[id] = targetColorId;
+    }
+
+    let taskQueue = new TaskQueue(2);
+    for (let entry of Object.entries(eventIdToColorId)) {
+      taskQueue.queueTask(async () => {
+        let eventId = entry[0];
+        let colorId = entry[1];
+        try {
+          // @ts-ignore
+          const response = await gapiFetch(gapi.client.calendar.events.patch, {
+            calendarId: CALENDAR_ID,
+            eventId: eventId,
+            resource: {
+              colorId: String(colorId),
+            }
+          });
+        } catch (e) {
+          console.log(`FAILED TO PATCH eventID:${eventId} colorId:${colorId}`);
+        }
+      });
+    }
+
+    await taskQueue.flush();
   }
 
   async init() {

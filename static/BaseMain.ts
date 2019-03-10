@@ -19,7 +19,7 @@ import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {HelpDialog} from './views/HelpDialog.js';
 import {QueueNames} from './QueueNames.js';
-import { AppShell } from './views/AppShell.js';
+import {AppShell} from './views/AppShell.js';
 
 let storage_ = new ServerStorage();
 let settings_: Settings;
@@ -58,7 +58,7 @@ let DISCOVERY_DOCS = [
 let SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.google.com/m8/feeds',
-  'https://www.googleapis.com/auth/calendar.readonly',
+  'https://www.googleapis.com/auth/calendar.events',
 ];
 
 let isSignedIn_ = false;
