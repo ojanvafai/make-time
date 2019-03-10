@@ -1,4 +1,5 @@
 import {USER_ID} from './Base.js';
+import {login} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {gapiFetch} from './Net.js';
 
@@ -25,6 +26,9 @@ export class SendAs {
   }
 
   async update() {
+    // Need to login before calling out to gmail API. Usually we'll already be
+    // logged in, but not always if we get here from fetch_.
+    await login();
     var response = await gapiFetch(
         gapi.client.gmail.users.settings.sendAs.list, {'userId': USER_ID});
     this.senders = response.result.sendAs;
