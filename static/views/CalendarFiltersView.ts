@@ -124,14 +124,20 @@ export class CalendarFiltersView extends HTMLElement {
       body.append(await this.createRule_(rule));
     }
 
-    for (let rule of BuiltInRules) {
-      body.append(await this.createRule_(rule, true));
-    }
-
     // Ensure there's at least one row since there's no other way to add the
     // first row.
     if (!rules.length)
       body.append(await this.createRule_());
+
+    let builtInHeader = document.createElement('tr');
+    builtInHeader.toggleAttribute('fallback');
+    builtInHeader.innerHTML =
+        '<td colspan="5" style="font-weight: bold">Built in rules:</td>';
+    body.append(builtInHeader);
+
+    for (let rule of BuiltInRules) {
+      body.append(await this.createRule_(rule, true));
+    }
 
     // TODO: Move all the built-in rules here instead of hard coding anything
     // body.append(this.createUnfileredRule_());
@@ -313,25 +319,14 @@ export class CalendarFiltersView extends HTMLElement {
       }
     }
 
-    let createLabel = () => {
+    label.addEventListener('change', () => {
+      // The last item is the "Create new" label option.
+      if (label.selectedIndex !== label.options.length - 1)
+        return;
+
       this.createLabel_();
       // createLabel_ prepends the new label as the first item.
       label.selectedIndex = 0;
-    };
-    label.addEventListener('click', () => {
-      // The only item is the "Create new" label option.
-      if (label.options.length === 1) {
-        // TODO: Remove this once we stop using prompt().
-        // The dropdown for the select element being open prevents the prompt
-        // from getting focus.
-        label.blur();
-        createLabel();
-      }
-    });
-    label.addEventListener('change', () => {
-      // The last item is the "Create new" label option.
-      if (label.selectedIndex === label.options.length - 1)
-        createLabel();
     });
     this.appendCell_(container, label);
 
