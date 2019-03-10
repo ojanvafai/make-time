@@ -82,6 +82,7 @@ interface KeyTypes {
   LOG_MATCHING_RULES: string;
   TRACK_LONG_TASKS: string;
   QUEUES: string;
+  CALENDAR_SORT: string;
 }
 
 let keys: KeyTypes = {
@@ -95,6 +96,7 @@ let keys: KeyTypes = {
   LOG_MATCHING_RULES: 'log_matching_rules',
   TRACK_LONG_TASKS: 'track_long_tasks',
   QUEUES: 'queues',
+  CALENDAR_SORT: 'calendar_sort',
 };
 
 // TODO: Setup a proper listening system for each key and make that the only way
@@ -108,6 +110,7 @@ let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.LOG_MATCHING_RULES,
   keys.TRACK_LONG_TASKS,
   keys.QUEUES,
+  keys.CALENDAR_SORT,
 ];
 
 // List of allowed keys.

@@ -33,10 +33,12 @@ export class QueuesView extends HTMLElement {
 
     switch (e.key) {
       case 'ArrowUp':
+        e.preventDefault();
         this.moveRow_(e.key, e.shiftKey);
         break;
 
       case 'ArrowDown':
+        e.preventDefault();
         this.moveRow_(e.key, e.shiftKey);
         break;
     }

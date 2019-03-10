@@ -1,12 +1,12 @@
 import {assert, notNull} from '../Base.js';
 import {AttendeeCount, CalendarRule, Frequency, stringFilterMatches} from '../Settings.js';
 
-import {CALENDAR_ID, TYPES,} from './Constants.js';
+import {CALENDAR_ID, EventType, TYPES_TO_CALENDAR_INDEX,} from './Constants.js';
 
 export class CalendarEvent {
   eventId: string;
   colorId: number|undefined;
-  type: string|null;
+  type: EventType|null;
   summary: string;
   start: Date;
   end: Date;
@@ -16,7 +16,7 @@ export class CalendarEvent {
   shouldIgnore: boolean;
 
   getTargetColorId(): number {
-    const targetColorId = TYPES.get(notNull(this.type));
+    const targetColorId = TYPES_TO_CALENDAR_INDEX.get(notNull(this.type));
     if (targetColorId === undefined)
       throw ('No color id found for type.');
     return targetColorId;
@@ -35,7 +35,7 @@ export class CalendarEvent {
   constructor(gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
     this.eventId = gcalEvent.id;
     if (gcalEvent.colorId)
-      this.colorId = TYPES.get(gcalEvent.colorId);
+      this.colorId = TYPES_TO_CALENDAR_INDEX.get(gcalEvent.colorId);
     this.summary = gcalEvent.summary;
     this.recurringEventId = gcalEvent.recurringEventId;
     this.shouldIgnore = gcalEvent.transparency === 'transparent' ||
@@ -76,7 +76,7 @@ export class CalendarEvent {
 
     for (let rule of rules) {
       if (this.ruleMatches_(rule)) {
-        this.type = rule.label;
+        this.type = rule.label as EventType;
         break;
       }
     }

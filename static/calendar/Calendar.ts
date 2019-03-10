@@ -2,75 +2,16 @@ import {AsyncOnce} from '../AsyncOnce.js';
 import {defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {Model} from '../models/Model.js';
-import {AttendeeCount, CalendarRule, Frequency, Settings} from '../Settings.js';
+import {BuiltInRules, CalendarRule, Settings} from '../Settings.js';
 import {TaskQueue} from '../TaskQueue.js'
 
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
-import {CALENDAR_ID, TYPE_EMAIL, TYPE_FOCUS_NON_RECURRING, TYPE_FOCUS_RECURRING, TYPE_INTERVIEW, TYPE_MEETING_NON_RECURRING, TYPE_MEETING_RECURRING, TYPE_ONE_ON_ONE_NON_RECURRING, TYPE_ONE_ON_ONE_RECURRING, TYPE_OOO, TYPE_UNBOOKED_LARGE, TYPE_UNBOOKED_MEDIUM, TYPE_UNBOOKED_SMALL, TYPES, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
-
-const OOO_REGEX = 'regexp:.*(OOO|Holiday|Out of office).*';
-const EMAIL_REGEX = 'Email';
-const INTERVIEW_REGEX = 'Interview';
+import {CALENDAR_ID, CalendarSortListEntry, EventType, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
 
 const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
 const WHOLE_DAY_DURATION_MINS = 60 * (WORKING_DAY_END - WORKING_DAY_START);
-
-export interface RuleMetadata {
-  label: string, color: string,
-}
-
-export let BuiltInRules: CalendarRule[] = [
-  {
-    label: TYPE_OOO,
-    title: OOO_REGEX,
-    attendees: AttendeeCount.None,
-    frequency: Frequency.Either,
-  },
-  {
-    label: TYPE_INTERVIEW,
-    title: INTERVIEW_REGEX,
-    attendees: AttendeeCount.None,
-    frequency: Frequency.Either,
-  },
-  {
-    label: TYPE_EMAIL,
-    title: EMAIL_REGEX,
-    attendees: AttendeeCount.None,
-    frequency: Frequency.Either,
-  },
-  {
-    label: TYPE_FOCUS_RECURRING,
-    attendees: AttendeeCount.None,
-    frequency: Frequency.Recurring,
-  },
-  {
-    label: TYPE_FOCUS_NON_RECURRING,
-    attendees: AttendeeCount.None,
-    frequency: Frequency.NotRecurring,
-  },
-  {
-    label: TYPE_ONE_ON_ONE_RECURRING,
-    attendees: AttendeeCount.One,
-    frequency: Frequency.Recurring,
-  },
-  {
-    label: TYPE_ONE_ON_ONE_NON_RECURRING,
-    attendees: AttendeeCount.One,
-    frequency: Frequency.NotRecurring,
-  },
-  {
-    label: TYPE_MEETING_RECURRING,
-    attendees: AttendeeCount.Many,
-    frequency: Frequency.Recurring,
-  },
-  {
-    label: TYPE_MEETING_NON_RECURRING,
-    attendees: AttendeeCount.Many,
-    frequency: Frequency.NotRecurring,
-  },
-];
 
 function getStartOfWeek(date: Date): Date {
   const x = new Date(date);
@@ -93,10 +34,10 @@ function getDurationOverlappingWorkDay(start: Date, end: Date, day: Date) {
   return endTime - startTime;
 };
 
-function aggregateByWeek(aggregates: Aggregate[], types: string[]) {
+function aggregateByWeek(aggregates: Aggregate[], types: EventType[]) {
   const weekly: Aggregate[] = [];
   let currentWeekStart = getStartOfWeek(aggregates[0].start);
-  let minutesPerType: Map<string, number> = new Map();
+  let minutesPerType: Map<EventType, number> = new Map();
 
   for (let aggregate of aggregates) {
     const aggregateWeekStart = getStartOfWeek(aggregate.start);
@@ -157,9 +98,9 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   const firstDay = new Date(events[0].start);
   const lastDay = new Date(events[events.length - 1].start);
 
-  let minutesPerType: Map<string, number>;
+  let minutesPerType: Map<EventType, number>;
 
-  let addDuration = (type: string, duration: number) => {
+  let addDuration = (type: EventType, duration: number) => {
     if (!minutesPerType.has(type)) {
       minutesPerType.set(type, 0);
     }
@@ -171,11 +112,11 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
       return;
     let unbookedDuration = durationMs / 60 / 1000;
     if (unbookedDuration < SMALL_DURATION_MINS)
-      addDuration(TYPE_UNBOOKED_SMALL, unbookedDuration);
+      addDuration(EventType.UnbookedSmall, unbookedDuration);
     else if (unbookedDuration < MEDIUM_DURATION_MINS)
-      addDuration(TYPE_UNBOOKED_MEDIUM, unbookedDuration);
+      addDuration(EventType.UnbookedMedium, unbookedDuration);
     else
-      addDuration(TYPE_UNBOOKED_LARGE, unbookedDuration);
+      addDuration(EventType.UnbookedLarge, unbookedDuration);
   };
 
   let getMinutesPerType = (day: Date) => {
@@ -260,7 +201,8 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   for (let eventChange of eventChanges) {
     let primaryInProgressEvents = Array.from(inProgressEvents);
     // OOO events take priority.
-    const ooo = primaryInProgressEvents.filter(e => e.type === TYPE_OOO);
+    const ooo =
+        primaryInProgressEvents.filter(e => e.type === EventType.OutOfOffice);
     if (ooo.length !== 0) {
       primaryInProgressEvents = ooo;
     } else {
@@ -316,7 +258,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
 };
 
 export class Calendar extends Model {
-  private ruleMetadata_?: RuleMetadata[];
+  private ruleMetadata_?: CalendarSortListEntry[];
   private events: CalendarEvent[] = [];
   private dayAggregates: AsyncOnce<Aggregate[]>;
   private weekAggregates: AsyncOnce<Aggregate[]>;
@@ -421,26 +363,7 @@ export class Calendar extends Model {
 
   async init() {
     await login();
-
-    let colorFetcher = new AsyncOnce<any>(async () => {
-      //@ts-ignore
-      let response = await gapi.client.calendar.colors.get({
-        calendarId: CALENDAR_ID,
-      });
-      return response.result.event;
-    });
-    let colors = await colorFetcher.do();
-
-    let rules = await this.getRules();
-    this.ruleMetadata_ = rules.map<RuleMetadata>(x => {
-      let index = TYPES.get(x.label);
-      let color = index !== undefined ? colors[index].background : 'blue';
-      return {label: x.label, color: color};
-    });
-    this.ruleMetadata_.push({label: TYPE_UNBOOKED_SMALL, color: '#af1085'});
-    this.ruleMetadata_.push({label: TYPE_UNBOOKED_MEDIUM, color: '#0e3e2e'});
-    this.ruleMetadata_.push({label: TYPE_UNBOOKED_LARGE, color: '#fbd75b'});
-
+    this.ruleMetadata_ = await this.settings_.getCalendarSortData();
     await this.fetchEvents();
   }
 

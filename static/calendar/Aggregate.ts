@@ -1,9 +1,9 @@
-import {ME_TIME_BLOCKS, TYPE_OOO} from './Constants.js';
+import {EventType, ME_TIME_TYPES} from './Constants.js';
 
 export class Aggregate {
   start: Date;
-  minutesPerType: Map<string, number> = new Map();
-  constructor(start: Date, minutesPerType: Map<string, number>) {
+  minutesPerType: Map<EventType, number> = new Map();
+  constructor(start: Date, minutesPerType: Map<EventType, number>) {
     this.start = start;
     this.minutesPerType = minutesPerType;
   }
@@ -11,11 +11,11 @@ export class Aggregate {
     let total = 0;
     let notMeTime = 0;
     for (let [type, value] of this.minutesPerType) {
-      if (type === TYPE_OOO)
+      if (type === EventType.OutOfOffice)
         continue;
 
       total += value;
-      if (!ME_TIME_BLOCKS.includes(type))
+      if (!ME_TIME_TYPES.includes(type))
         notMeTime += value;
     }
     if (total > 0)

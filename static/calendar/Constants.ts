@@ -1,26 +1,45 @@
-export const CLIENT_ID =
-    '960408234665-mr7v9joc0ckj65eju460e04mji08dsd7.apps.googleusercontent.com';
-export const API_KEY = 'AIzaSyDZ2rBkT9mfS-zSrkovKw74hd_HmNBSahQ';
+import {assert} from '../Base.js';
 
-export const TYPE_MEETING_RECURRING = 'Recurring meeting';
-export const TYPE_MEETING_NON_RECURRING = 'Non-recurring meeting';
-export const TYPE_ONE_ON_ONE_RECURRING = 'Recurring one on one';
-export const TYPE_ONE_ON_ONE_NON_RECURRING = 'Non-recurring one on one';
-export const TYPE_FOCUS_RECURRING = 'Recurring focus block';
-export const TYPE_FOCUS_NON_RECURRING = 'Non-recurring focus block';
-export const TYPE_UNBOOKED_SMALL = 'Unbooked time (<= 30m)';
-export const TYPE_UNBOOKED_MEDIUM = 'Unbooked time (30m-60m)';
-export const TYPE_UNBOOKED_LARGE = 'Unbooked time (> 60m)';
-export const TYPE_OOO = 'OOO';
-export const TYPE_EMAIL = 'Email';
-export const TYPE_INTERVIEW = 'Interview';
+export interface CalendarSortData {
+  color: string;
+  index: number;
+}
+
+export interface CalendarSortListEntry {
+  label: EventType;
+  data: CalendarSortData;
+}
+
+export interface AllCalendarSortDatas {
+  [property: string]: CalendarSortData;
+}
+
+export enum EventType {
+  MeetingRecurring = 'Recurring meeting',
+  MeetingNonRecurring = 'Non-recurring meeting',
+  OneOnOneRecurring = 'Recurring one on one',
+  OneOnOneNonRecurring = 'Non-recurring one on one',
+  FocusRecurring = 'Recurring focus block',
+  FocusNonRecurring = 'Non-recurring focus block',
+  UnbookedSmall = 'Unbooked time (<= 30m)',
+  UnbookedMedium = 'Unbooked time (30m-60m)',
+  UnbookedLarge = 'Unbooked time (> 60m)',
+  OutOfOffice = 'OOO',
+  Email = 'Email',
+  Interview = 'Interview',
+}
+
+export const UNBOOKED_TYPES = [
+  EventType.UnbookedSmall, EventType.UnbookedMedium, EventType.UnbookedLarge
+];
 
 // Event types that don't count against the total of time considered booked.
-// TYPE_OOO is excluded here because it's special and doesn't count as booked or
-// unbooked.
-export const ME_TIME_BLOCKS = [
-  TYPE_FOCUS_RECURRING, TYPE_FOCUS_NON_RECURRING, TYPE_UNBOOKED_SMALL,
-  TYPE_UNBOOKED_MEDIUM, TYPE_UNBOOKED_LARGE
+// TYPE_OOO is excluded here because it's special and doesn't count as
+// booked or unbooked.
+export const ME_TIME_TYPES = [
+  EventType.FocusRecurring,
+  EventType.FocusNonRecurring,
+  ...UNBOOKED_TYPES,
 ];
 
 export const CALENDAR_ID = 'primary';
@@ -28,39 +47,56 @@ export const CALENDAR_ID = 'primary';
 export const WORKING_DAY_START = 9;
 export const WORKING_DAY_END = 17;
 
-const COLORS = [
-  '#a4bdfc',
-  '#7ae7bf',
-  '#dbadff',
-  '#ff887c',
-  '#fbd75b',
-  '#ffb878',
-  '#46d6db',
-  '#e1e1e1',
-  '#5484ed',
-  '#51b749',
-  '#dc2127',
-];
+// Apparently these are the only allowed colors for events via the API. The
+// human readable names come from
+// https://developers.google.com/apps-script/reference/calendar/event-color.
+// Don't reorder. The order of these needs to match what Calendar API returns!
+export const CALENDAR_ALLOWED_COLORS: {[property: string]: string} = {
+  'Pale Blue': '#a4bdfc',
+  'Pale Green': '#7ae7bf',
+  'Mauve': '#dbadff',
+  'Pale Red': '#ff887c',
+  'Yellow': '#fbd75b',
+  'Orange': '#ffb878',
+  'Cyan': '#46d6db',
+  'Gray': '#e1e1e1',
+  'Blue': '#5484ed',
+  'Green': '#51b749',
+  'Red': '#dc2127',
+};
 
-const TYPE_COLORS: [string, string][] = [
-  [TYPE_MEETING_RECURRING, '#ff887c'],
-  [TYPE_MEETING_NON_RECURRING, '#dc2127'],
-  [TYPE_ONE_ON_ONE_RECURRING, '#7ae7bf'],
-  [TYPE_ONE_ON_ONE_NON_RECURRING, '#51b749'],
-  [TYPE_FOCUS_RECURRING, '#a4bdfc'],
-  [TYPE_FOCUS_NON_RECURRING, '#dbadff'],
-  [TYPE_EMAIL, '#5484ed'],
-  [TYPE_INTERVIEW, '#46d6db'],
-  [TYPE_UNBOOKED_SMALL, '#af1085'],
-  [TYPE_UNBOOKED_MEDIUM, '#0e3e2e'],
-  [TYPE_UNBOOKED_LARGE, '#fbd75b'],
-  [TYPE_OOO, '#e1e1e1'],
-];
+export const DEFAULT_CALENDAR_DATA: AllCalendarSortDatas = {};
 
-export const TYPES: Map<string, number> =
-    new Map(TYPE_COLORS.map(type_color => {return [
-                              type_color[0],
-                              COLORS.indexOf(type_color[1]) + 1,
-                            ] as [string, number]}));
+function addData(type: EventType, color: string, index: number) {
+  DEFAULT_CALENDAR_DATA[type] = {
+    color: CALENDAR_ALLOWED_COLORS[color] || color,
+    index: index,
+  };
+};
 
-export const TYPE_TO_COLOR = new Map(TYPE_COLORS);
+addData(EventType.MeetingRecurring, 'Pale Blue', 12);
+addData(EventType.MeetingNonRecurring, 'Blue', 11);
+addData(EventType.OneOnOneRecurring, 'Pale Green', 10);
+addData(EventType.OneOnOneNonRecurring, 'Green', 9);
+addData(EventType.FocusRecurring, 'Pale Red', 8);
+addData(EventType.FocusNonRecurring, 'Red', 7);
+addData(EventType.Email, 'Mauve', 6);
+addData(EventType.Interview, 'Orange', 5);
+addData(EventType.OutOfOffice, 'Gray', 1);
+
+// Unbooked times don't need to be restricted to calendar supported colors since
+// there's no events we'll ever need to color. Use hard coded colors so that
+// more colors are available to use for other event types.
+addData(EventType.UnbookedSmall, '#CCB091', 4);
+addData(EventType.UnbookedMedium, '#926C44', 3);
+addData(EventType.UnbookedLarge, '#362819', 2);
+
+let entries = Object.entries(DEFAULT_CALENDAR_DATA);
+let calendarColors = Object.values(CALENDAR_ALLOWED_COLORS);
+
+export const TYPES_TO_CALENDAR_INDEX: Map<string, number> = new Map(
+    entries.filter(x => !UNBOOKED_TYPES.includes(x[0] as EventType)).map(x => {
+      let index = calendarColors.indexOf(x[1].color);
+      assert(index !== -1);
+      return [x[0], index + 1] as [string, number];
+    }));

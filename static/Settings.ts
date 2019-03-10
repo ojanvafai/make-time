@@ -2,6 +2,7 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {assert, defined, Labels} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
+import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, DEFAULT_CALENDAR_DATA, EventType, UNBOOKED_TYPES} from './calendar/Constants.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 
@@ -46,6 +47,58 @@ export interface CalendarRule {
 export interface Filters {
   filters?: FilterRule[], calendar?: CalendarRule[],
 }
+
+// TODO: Move all these calendar types out of here.
+export let BuiltInRules: CalendarRule[] = [
+  {
+    label: EventType.OutOfOffice,
+    title: 'regexp:.*(OOO|Holiday|Out of office).*',
+    attendees: AttendeeCount.None,
+    frequency: Frequency.Either,
+  },
+  {
+    label: EventType.Interview,
+    title: 'Interview',
+    attendees: AttendeeCount.None,
+    frequency: Frequency.Either,
+  },
+  {
+    label: EventType.Email,
+    title: 'Email',
+    attendees: AttendeeCount.None,
+    frequency: Frequency.Either,
+  },
+  {
+    label: EventType.FocusRecurring,
+    attendees: AttendeeCount.None,
+    frequency: Frequency.Recurring,
+  },
+  {
+    label: EventType.FocusNonRecurring,
+    attendees: AttendeeCount.None,
+    frequency: Frequency.NotRecurring,
+  },
+  {
+    label: EventType.OneOnOneRecurring,
+    attendees: AttendeeCount.One,
+    frequency: Frequency.Recurring,
+  },
+  {
+    label: EventType.OneOnOneNonRecurring,
+    attendees: AttendeeCount.One,
+    frequency: Frequency.NotRecurring,
+  },
+  {
+    label: EventType.MeetingRecurring,
+    attendees: AttendeeCount.Many,
+    frequency: Frequency.Recurring,
+  },
+  {
+    label: EventType.MeetingNonRecurring,
+    attendees: AttendeeCount.Many,
+    frequency: Frequency.NotRecurring,
+  },
+];
 
 export const REGEXP_PREFIX = 'regexp:';
 export const HEADER_FILTER_PREFIX = '$';
@@ -237,10 +290,44 @@ export class Settings extends EventTarget {
     await this.queueSettings_.fetch();
   }
 
-  // TODO: Add equivalent to this for calendar labels so you can pick the colors
-  // yourself.
   getQueueSettings() {
     return defined(this.queueSettings_);
+  }
+
+  // TODO: Extract this out of Settings.
+  async getCalendarSortData(useDefaults?: boolean) {
+    let labels = Array.from(await this.getCalendarLabels()).sort();
+
+    let allData: AllCalendarSortDatas =
+        this.storage_.get(ServerStorage.KEYS.CALENDAR_SORT);
+
+    let calendarSortListEntries: CalendarSortListEntry[] = labels.map(x => {
+      let data =
+          useDefaults || !allData ? DEFAULT_CALENDAR_DATA[x] : allData[x];
+      let color = data ? data.color : CALENDAR_ALLOWED_COLORS.Red;
+      let index = data ? data.index : 0;
+      let eventType = x as EventType;
+      return {label: eventType, data: {color: color, index: index}};
+    });
+
+    calendarSortListEntries.sort(
+        (a: CalendarSortListEntry, b: CalendarSortListEntry) => {
+          let aIndex = a.data.index;
+          let bIndex = b.data.index;
+
+          // If they have the same index, sort lexicographically.
+          if (aIndex == bIndex) {
+            if (a.label < b.label)
+              return -1;
+            else if (a.label > b.label)
+              return 1;
+            return 0
+          }
+
+          return aIndex - bIndex;
+        });
+
+    return calendarSortListEntries;
   }
 
   getFiltersDocument_() {
@@ -308,9 +395,7 @@ export class Settings extends EventTarget {
     for (let rule of filters) {
       labels.add(defined(rule.label));
     }
-    // TODO: Add built-ins here instead of hard coding?
-    // labels.add(Labels.Fallback);
-    return labels;
+    return [...labels, ...BuiltInRules.map(x => x.label), ...UNBOOKED_TYPES];
   }
 
   async getLabels() {

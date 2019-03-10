@@ -3,6 +3,7 @@ import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
 import {CalendarFiltersView} from './CalendarFiltersView.js';
+import {CalendarSortView} from './CalendarSortView.js';
 import {FiltersView} from './FiltersView.js';
 import {HelpDialog} from './HelpDialog.js';
 import {QueuesView} from './QueuesView.js';
@@ -18,6 +19,7 @@ export class SettingsView extends View {
   private scrollable_: HTMLElement;
   private basicSettings_: HTMLElement;
   private queues_: QueuesView;
+  private calendarSortView_: CalendarSortView;
   private saveButton_: HTMLButtonElement;
 
   constructor(private settings_: Settings) {
@@ -60,9 +62,25 @@ export class SettingsView extends View {
     this.queues_.addEventListener('change', () => this.handleChange_());
 
     let queuesContainer = document.createElement('fieldset');
-    queuesContainer.innerHTML = '<legend>Label sort order</legend>';
+    queuesContainer.style.cssText = `
+      margin-bottom: 16px;
+    `;
+    queuesContainer.innerHTML = '<legend>Email label sort order</legend>';
     queuesContainer.append(this.queues_);
     this.scrollable_.append(queuesContainer);
+
+    this.calendarSortView_ = new CalendarSortView(this.settings_);
+    this.calendarSortView_.addEventListener(
+        'change', () => this.handleChange_());
+
+    let calendarSortContainer = document.createElement('fieldset');
+    calendarSortContainer.style.cssText = `
+      margin-bottom: 16px;
+    `;
+    calendarSortContainer.innerHTML =
+        '<legend>Calendar label sort order</legend>';
+    calendarSortContainer.append(this.calendarSortView_);
+    this.scrollable_.append(calendarSortContainer);
 
     let helpButton = document.createElement('button');
     helpButton.append('Help');
@@ -185,6 +203,8 @@ export class SettingsView extends View {
     }
 
     updates[ServerStorage.KEYS.QUEUES] = this.queues_.getAllQueueDatas();
+    updates[ServerStorage.KEYS.CALENDAR_SORT] =
+        this.calendarSortView_.getAllCalendarSortDatas();
 
     await this.settings_.writeUpdates(updates);
     this.saveButton_.disabled = true;

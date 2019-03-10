@@ -1,5 +1,5 @@
 import {Aggregate} from './Aggregate.js'
-import {RuleMetadata} from './Calendar.js';
+import {CalendarSortListEntry} from './Constants.js';
 
 function hexToRGB(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -18,7 +18,7 @@ interface PlotlySeries {
 }
 
 export class Charter {
-  constructor(private ruleMetadata_: RuleMetadata[]) {}
+  constructor(private ruleMetadata_: CalendarSortListEntry[]) {}
 
   // In theory we can use Dates directly in plotly, but the annotations go crazy
   // when we do. They all get bunched up at the start of the x-axis at
@@ -43,7 +43,8 @@ export class Charter {
     });
 
     for (let ruleMetadata of this.ruleMetadata_) {
-      const color = hexToRGB(ruleMetadata.color);
+      let rawColor = ruleMetadata.data.color;
+      const color = rawColor.startsWith('rgb') ? rawColor : hexToRGB(rawColor);
       // Show hours with 1 degree of precision.
       const ys = aggregates.map((day) => {
         let minutes = day.minutesPerType.get(ruleMetadata.label);
@@ -62,6 +63,8 @@ export class Charter {
         }
       });
     }
+
+    data.reverse();
 
     // @ts-ignore
     Plotly.newPlot(divId, data, {

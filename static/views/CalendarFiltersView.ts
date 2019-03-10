@@ -1,6 +1,5 @@
 import {defined, Labels, showDialog} from '../Base.js';
-import {BuiltInRules} from '../calendar/Calendar.js';
-import {AttendeeCount, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
+import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
@@ -47,10 +46,12 @@ export class CalendarFiltersView extends HTMLElement {
 
     switch (e.key) {
       case 'ArrowUp':
+        e.preventDefault();
         this.moveRow_(e.key, e.shiftKey);
         break;
 
       case 'ArrowDown':
+        e.preventDefault();
         this.moveRow_(e.key, e.shiftKey);
         break;
     }
@@ -97,7 +98,6 @@ export class CalendarFiltersView extends HTMLElement {
       this.labelSelect_ = document.createElement('select');
       this.labelSelect_.className = 'label';
       let labels = Array.from(await this.settings_.getCalendarLabels()).sort();
-      labels = [...labels, ...BuiltInRules.map(x => x.label)];
       labels.push('Create new...');
       for (let label of labels) {
         let option = document.createElement('option');
