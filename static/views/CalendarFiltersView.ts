@@ -216,6 +216,9 @@ export class CalendarFiltersView extends HTMLElement {
   convertToFilterRule(obj: any) {
     let rule: CalendarRule = {
       label: obj.label,
+      title: '',
+      attendees: AttendeeCount.Any,
+      frequency: Frequency.Either,
     };
     for (let key in obj) {
       let validField = setCalendarFilterStringField(rule, key, obj[key]);
@@ -233,6 +236,10 @@ export class CalendarFiltersView extends HTMLElement {
       if (row.hasAttribute('fallback'))
         continue;
       let query = (<HTMLElement>row.querySelector('.query')).textContent;
+      if (!query) {
+        alert('Rule field is empty. Not saving filters.');
+        return;
+      }
       let parsed = this.parseQuery_(query, true);
       let rule = this.convertToFilterRule(parsed);
       if (!rule) {

@@ -1,5 +1,5 @@
 import {assert} from '../Base.js';
-import {AttendeeCount, CalendarRule, Frequency, stringFilterMatches} from '../Settings.js';
+import {ANY_TITLE, AttendeeCount, CalendarRule, Frequency, stringFilterMatches} from '../Settings.js';
 
 import {EventType,} from './Constants.js';
 
@@ -77,7 +77,7 @@ export class CalendarEvent {
 
   ruleMatches_(rule: CalendarRule) {
     let matches = false;
-    if (rule.title) {
+    if (rule.title !== ANY_TITLE) {
       if (!stringFilterMatches(rule.title, this.summary))
         return false;
       matches = true;

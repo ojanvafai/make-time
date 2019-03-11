@@ -39,14 +39,16 @@ export enum AttendeeCount {
 
 export interface CalendarRule {
   label: string;
-  title?: string;
-  attendees?: AttendeeCount;
-  frequency?: Frequency;
+  title: string;
+  attendees: AttendeeCount;
+  frequency: Frequency;
 }
 
 export interface Filters {
   filters?: FilterRule[], calendar?: CalendarRule[],
 }
+
+export const ANY_TITLE = '<any>';
 
 // TODO: Settings shouldn't have all this calendar specific knowledge.
 export let BuiltInRules: CalendarRule[] = [
@@ -70,31 +72,37 @@ export let BuiltInRules: CalendarRule[] = [
   },
   {
     label: EventType.FocusRecurring,
+    title: ANY_TITLE,
     attendees: AttendeeCount.None,
     frequency: Frequency.Recurring,
   },
   {
     label: EventType.FocusNonRecurring,
+    title: ANY_TITLE,
     attendees: AttendeeCount.None,
     frequency: Frequency.NotRecurring,
   },
   {
     label: EventType.OneOnOneRecurring,
+    title: ANY_TITLE,
     attendees: AttendeeCount.One,
     frequency: Frequency.Recurring,
   },
   {
     label: EventType.OneOnOneNonRecurring,
+    title: ANY_TITLE,
     attendees: AttendeeCount.One,
     frequency: Frequency.NotRecurring,
   },
   {
     label: EventType.MeetingRecurring,
+    title: ANY_TITLE,
     attendees: AttendeeCount.Many,
     frequency: Frequency.Recurring,
   },
   {
     label: EventType.MeetingNonRecurring,
+    title: ANY_TITLE,
     attendees: AttendeeCount.Many,
     frequency: Frequency.NotRecurring,
   },
