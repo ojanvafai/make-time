@@ -391,11 +391,12 @@ export class Settings extends EventTarget {
 
   async getCalendarLabels() {
     let filters = await this.getCalendarFilters();
-    let labels: Set<string> = new Set();
+    let labels: Set<string> =
+        new Set([...BuiltInRules.map(x => x.label), ...UNBOOKED_TYPES]);
     for (let rule of filters) {
       labels.add(defined(rule.label));
     }
-    return [...labels, ...BuiltInRules.map(x => x.label), ...UNBOOKED_TYPES];
+    return labels;
   }
 
   async getLabels() {

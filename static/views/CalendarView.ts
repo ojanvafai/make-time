@@ -67,6 +67,8 @@ export class CalendarView extends View {
 
   async takeAction(action: Action) {
     if (action == COLORIZE_ACTION) {
+      if (!confirm('This sets colors to all events on your calendar. Proceed?'))
+        return;
       // Colorize is not safe to be called multiple times, so remove the button
       // after the first call, forcing the user to reload to call it again.
       this.setActions([]);

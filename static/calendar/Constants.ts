@@ -1,5 +1,3 @@
-import {assert} from '../Base.js';
-
 export interface CalendarSortData {
   color: string;
   index: number;
@@ -65,6 +63,8 @@ export const CALENDAR_ALLOWED_COLORS: {[property: string]: string} = {
   'Red': '#dc2127',
 };
 
+export const CALENDAR_HEX_COLORS = Object.values(CALENDAR_ALLOWED_COLORS);
+
 export const DEFAULT_CALENDAR_DATA: AllCalendarSortDatas = {};
 
 function addData(type: EventType, color: string, index: number) {
@@ -90,13 +90,3 @@ addData(EventType.OutOfOffice, 'Gray', 1);
 addData(EventType.UnbookedSmall, '#CCB091', 4);
 addData(EventType.UnbookedMedium, '#926C44', 3);
 addData(EventType.UnbookedLarge, '#362819', 2);
-
-let entries = Object.entries(DEFAULT_CALENDAR_DATA);
-let calendarColors = Object.values(CALENDAR_ALLOWED_COLORS);
-
-export const TYPES_TO_CALENDAR_INDEX: Map<string, number> = new Map(
-    entries.filter(x => !UNBOOKED_TYPES.includes(x[0] as EventType)).map(x => {
-      let index = calendarColors.indexOf(x[1].color);
-      assert(index !== -1);
-      return [x[0], index + 1] as [string, number];
-    }));

@@ -8,7 +8,7 @@ import {TaskQueue} from '../TaskQueue.js'
 
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
-import {CALENDAR_ID, CalendarSortListEntry, EventType, TYPES_TO_CALENDAR_INDEX, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+import {CALENDAR_HEX_COLORS, CALENDAR_ID, CalendarSortListEntry, EventType, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
 
 const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
@@ -356,6 +356,13 @@ export class Calendar extends Model {
   }
 
   async colorizeEvents() {
+    let calendarSortData = await this.settings_.getCalendarSortData();
+    let eventTypeToColorId: {[property: string]: number} = {};
+    for (let data of calendarSortData) {
+      eventTypeToColorId[data.label] =
+          CALENDAR_HEX_COLORS.indexOf(data.data.color) + 1;
+    }
+
     let eventIdToColorId: {[property: string]: number} = {};
     for await (const event of this.getEvents()) {
       // Prefer recurringEventId so we modify the root for recurring events
@@ -365,8 +372,7 @@ export class Calendar extends Model {
       if (eventIdToColorId[id])
         continue;
 
-      let targetColorId =
-          defined(TYPES_TO_CALENDAR_INDEX.get(notNull(event.type)));
+      let targetColorId = defined(eventTypeToColorId[notNull(event.type)]);
       if (event.colorId === targetColorId)
         continue;
 
