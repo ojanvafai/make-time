@@ -1,5 +1,5 @@
 import {AsyncOnce} from '../AsyncOnce.js';
-import {defined, notNull} from '../Base.js';
+import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {Model} from '../models/Model.js';
 import {gapiFetch} from '../Net.js';
@@ -274,8 +274,9 @@ export class Calendar extends Model {
       const events = [];
       // TODO - is there any easier way to convert an async iterable into an
       // array?
-      for await (let event of this.getEvents())
+      for await (let event of this.getEvents()) {
         events.push(event);
+      }
       return eventsToAggregates(events);
     });
     this.weekAggregates = new AsyncOnce<Aggregate[]>(async () => {
@@ -363,6 +364,12 @@ export class Calendar extends Model {
           CALENDAR_HEX_COLORS.indexOf(data.data.color) + 1;
     }
 
+    // Recurring events where you only have access to one of the events don't
+    // let you modify the color by recurringEventId, so keep track of the
+    // eventIds for each recurringEventId so we can handle them individually of
+    // modifying the recurring event 404s.
+    let recurringToNonRecurring: {[property: string]: string[]} = {};
+
     let eventIdToColorId: {[property: string]: number} = {};
     for await (const event of this.getEvents()) {
       // Prefer recurringEventId so we modify the root for recurring events
@@ -372,6 +379,12 @@ export class Calendar extends Model {
       if (eventIdToColorId[id])
         continue;
 
+      if (event.recurringEventId) {
+        if (!recurringToNonRecurring[event.recurringEventId])
+          recurringToNonRecurring[event.recurringEventId] = [];
+        recurringToNonRecurring[event.recurringEventId].push(event.eventId);
+      }
+
       let targetColorId = defined(eventTypeToColorId[notNull(event.type)]);
       if (event.colorId === targetColorId)
         continue;
@@ -379,8 +392,27 @@ export class Calendar extends Model {
       eventIdToColorId[id] = targetColorId;
     }
 
+    let eventsToTryAgain =
+        await this.colorizeEventIds_(Object.entries(eventIdToColorId));
+
+    let entriesToTry: [string, number][] = [];
+    for (let failedEventId of eventsToTryAgain) {
+      let eventIds = recurringToNonRecurring[failedEventId];
+      assert(eventIds, 'Non recurring events 404ed. This should never happen.');
+      for (let id of eventIds) {
+        entriesToTry.push([id, eventIdToColorId[failedEventId]]);
+      }
+    }
+
+    let notFoundIds = await this.colorizeEventIds_(entriesToTry);
+    assert(notFoundIds.length === 0);
+  }
+
+  private async colorizeEventIds_(entries: [string, number][]) {
+    let toTryAgain: string[] = [];
     let taskQueue = new TaskQueue(2);
-    for (let entry of Object.entries(eventIdToColorId)) {
+
+    for (let entry of entries) {
       taskQueue.queueTask(async () => {
         let eventId = entry[0];
         let colorId = entry[1];
@@ -394,12 +426,16 @@ export class Calendar extends Model {
             }
           });
         } catch (e) {
-          console.log(`FAILED TO PATCH eventID:${eventId} colorId:${colorId}`);
+          if (e.status === 404)
+            toTryAgain.push(eventId);
+          else
+            console.log(`FAILED to make eventID:${eventId} ${colorId}`);
         }
       });
     }
 
     await taskQueue.flush();
+    return toTryAgain;
   }
 
   async init() {

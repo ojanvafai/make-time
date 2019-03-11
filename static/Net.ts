@@ -31,6 +31,9 @@ export async function gapiFetch<T>(
       window.dispatchEvent(new Event(CONNECTION_FAILURE_KEY));
       return response;
     } catch (e) {
+      // Don't retry 404s as they should never work on retry.
+      if (e.status === 404)
+        throw e;
       console.log('Response failed.');
       if (i == numRetries - 1)
         throw e;

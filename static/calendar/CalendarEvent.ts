@@ -25,7 +25,7 @@ export class CalendarEvent {
     return this.shouldIgnore;
   }
 
-  constructor(gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
+  constructor(public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
     this.eventId = gcalEvent.id;
     if (gcalEvent.colorId)
       this.colorId = Number(gcalEvent.colorId);
