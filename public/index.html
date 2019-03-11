@@ -40,7 +40,8 @@ window.update = update;`;
         padding: 3px;
         -webkit-appearance: none;
         border-radius: 5px;
-        border: 1px solid black;
+        /* Intentionally leave out the color so the border matches the text color. */
+        border: 1px solid;
         color: black;
         background-color: white;
       }
@@ -53,6 +54,7 @@ window.update = update;`;
       }
       button:disabled {
         color: grey;
+        background-color: #eee;
       }
       .label-button {
         text-decoration: none;

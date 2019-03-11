@@ -2,6 +2,7 @@ import {assert, notNull} from '../Base.js';
 import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
+import {AppShell} from './AppShell.js';
 import {CalendarFiltersView} from './CalendarFiltersView.js';
 import {CalendarSortView} from './CalendarSortView.js';
 import {FiltersView} from './FiltersView.js';
@@ -99,13 +100,13 @@ export class SettingsView extends View {
       justify-content: center;
     `;
     buttonContainer.append(this.saveButton_, helpButton);
-    this.append(buttonContainer);
+    AppShell.setFooter(buttonContainer);
 
-    this.addEventListener('change', () => this.handleChange_(), true);
+    this.addEventListener('change', () => this.handleChange_());
     // change only fires on text inputs after the field is blurred, so also
     // listen to input so we can enable the savechanges button without having to
     // blur the input.
-    this.addEventListener('input', () => this.handleChange_(), true);
+    this.addEventListener('input', () => this.handleChange_());
   }
 
   handleChange_() {

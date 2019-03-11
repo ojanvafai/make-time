@@ -212,7 +212,17 @@ export class QueuesView extends HTMLElement {
     let checkbox = document.createElement('input');
     checkbox.type = 'radio';
     checkbox.name = 'row';
-    checkbox.onchange = () => this.updateHighlights_();
+    checkbox.addEventListener('input', (e) => {
+      // Don't want the checkbox getting checked to mark the settings as dirtied
+      // and enabling the save changes button since no setting has changed.
+      e.stopPropagation();
+    });
+    checkbox.addEventListener('change', (e) => {
+      // Don't want the checkbox getting checked to mark the settings as dirtied
+      // and enabling the save changes button since no setting has changed.
+      e.stopPropagation();
+      this.updateHighlights_();
+    });
 
     label.append(checkbox, queueData.label);
     row.append(label);
