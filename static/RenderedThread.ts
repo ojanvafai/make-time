@@ -239,7 +239,8 @@ export class RenderedThread extends HTMLElement {
     var bodyContainer = document.createElement('div');
     bodyContainer.classList.add('message-body');
     // Rather than have nested scrollbars, clip overflow. This matches gmail.
-    bodyContainer.style.overflow = 'hidden';
+    bodyContainer.style.overflowY = 'hidden';
+    bodyContainer.style.overflowX = 'auto';
     bodyContainer.append(processedMessage.getQuoteElidedMessage().getDom());
 
     messageDiv.append(headerDiv, bodyContainer);
