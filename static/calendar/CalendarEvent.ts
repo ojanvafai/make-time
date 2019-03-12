@@ -14,6 +14,7 @@ export class CalendarEvent {
   attendeeCount: number;
   recurringEventId: string|undefined;
   shouldIgnore: boolean;
+  status?: 'confirmed'|'tentative'|'cancelled';
 
   static parseDate(dateString: string): Date {
     let parts = dateString.split('T');
@@ -25,8 +26,10 @@ export class CalendarEvent {
     return this.shouldIgnore;
   }
 
-  constructor(public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
+  constructor(
+      public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
     this.eventId = gcalEvent.id;
+    this.status = gcalEvent.status;
     if (gcalEvent.colorId)
       this.colorId = Number(gcalEvent.colorId);
     this.summary = gcalEvent.summary;

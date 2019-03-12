@@ -407,10 +407,16 @@ export class Calendar extends Model {
   private async mergeNewEvents_(events: CalendarEvent[]) {
     for (let event of events) {
       let index = this.events.findIndex(x => x.eventId === event.eventId);
-      if (index === -1)
-        this.events.push(event);
-      else
-        this.events[index] = event;
+      let isDeleted = event.status === 'cancelled';
+      if (index === -1) {
+        if (!isDeleted)
+          this.events.push(event);
+      } else {
+        if (isDeleted)
+          this.events.splice(index, 1);
+        else
+          this.events[index] = event;
+      }
     }
 
     if (this.events.length) {
