@@ -14,6 +14,13 @@ const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
 const WHOLE_DAY_DURATION_MINS = 60 * (WORKING_DAY_END - WORKING_DAY_START);
 
+export class EventListChangeEvent extends Event {
+  static NAME = 'event-list-change';
+  constructor() {
+    super(EventListChangeEvent.NAME);
+  }
+}
+
 function getStartOfWeek(date: Date): Date {
   const x = new Date(date);
   x.setHours(0, 0, 0);
@@ -261,15 +268,20 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
 export class Calendar extends Model {
   private ruleMetadata_?: CalendarSortListEntry[];
   private events: CalendarEvent[] = [];
-  private dayAggregates: AsyncOnce<Aggregate[]>;
-  private weekAggregates: AsyncOnce<Aggregate[]>;
+  private dayAggregates!: AsyncOnce<Aggregate[]>;
+  private weekAggregates!: AsyncOnce<Aggregate[]>;
+  private nextSyncToken_?: gapi.client.calendar.SyncToken;
 
-  private fetchingEvents: boolean = true;
+  private fetchingEvents_: boolean = true;
+  private isColorizing_: boolean = false;
   private onReceiveEventsChunkResolves: ((cs: CalendarEvent[]) => void)[] = [];
 
   constructor(private settings_: Settings) {
     super();
+    this.setupAggregates_();
+  }
 
+  setupAggregates_() {
     this.dayAggregates = new AsyncOnce<Aggregate[]>(async () => {
       const events = [];
       // TODO - is there any easier way to convert an async iterable into an
@@ -314,7 +326,10 @@ export class Calendar extends Model {
     return [...rules, ...BuiltInRules];
   }
 
-  async fetchEvents() {
+  private async initialFetch_() {
+    if (!this.fetchingEvents_)
+      return;
+
     let weeks = 26;
     let days = weeks * 7;
     const startDate = new Date();
@@ -322,41 +337,97 @@ export class Calendar extends Model {
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + days);
 
+    await this.fetchEvents_(
+        (events: CalendarEvent[]) => this.gotEventsChunk(events),
+        {startDate, endDate});
+
+    this.events.sort((a, b) => a.start.getTime() - b.start.getTime());
+    this.fetchingEvents_ = false;
+  }
+
+  private async fetchEvents_(
+      callback: (events: CalendarEvent[]) => void, options: {
+        startDate?: Date,
+        endDate?: Date,
+        nextSyncToken?: gapi.client.calendar.SyncToken,
+      }) {
     let pageToken = null;
     let pendingEvents: CalendarEvent[] = [];
     let rules = await this.getRules();
 
     while (true) {
-      const request = {
+      const request: gapi.client.calendar.EventsListParameters = {
         calendarId: CALENDAR_ID,
-        timeMin: startDate.toISOString(),
-        timeMax: endDate.toISOString(),
         showDeleted: false,
         singleEvents: true,
         maxResults: 2500,  // Max is 2500.
-        orderBy: 'startTime' as 'startTime',
-        pageToken: undefined as string | undefined,
       };
+
+      if (options.startDate)
+        request.timeMin = options.startDate.toISOString();
+      if (options.endDate)
+        request.timeMax = options.endDate.toISOString();
       if (pageToken)
         request.pageToken = pageToken;
+      if (options.nextSyncToken) {
+        // Calendar API doens't allow setting showDeleted=false with a
+        // syncToken.
+        request.showDeleted = true;
+        request.syncToken = options.nextSyncToken;
+      }
 
       let response = await gapi.client.calendar.events.list(request);
+      if (response.result.nextSyncToken) {
+        this.nextSyncToken_ =
+            response.result.nextSyncToken as gapi.client.calendar.SyncToken;
+      }
 
       pendingEvents =
           response.result.items.map(i => new CalendarEvent(i, rules))
               .filter(e => !e.getShouldIgnore());
 
-      this.gotEventsChunk(pendingEvents);
+      callback(pendingEvents);
 
       pageToken = response.result.nextPageToken;
       if (!pageToken)
         break;
     }
-    this.events.sort((a, b) => a.start.getTime() - b.start.getTime());
-    this.fetchingEvents = false;
+  }
+
+  async updateEvents() {
+    // TODO: If we're not either colorizing or actually showing the calendar
+    // right now, then we can early return here since we don't need to keep the
+    // model up to date.
+    let nextSyncToken = defined(this.nextSyncToken_);
+    await this.fetchEvents_(
+        (events: CalendarEvent[]) => this.mergeNewEvents_(events),
+        {nextSyncToken});
+  }
+
+  private async mergeNewEvents_(events: CalendarEvent[]) {
+    for (let event of events) {
+      let index = this.events.findIndex(x => x.eventId === event.eventId);
+      if (index === -1)
+        this.events.push(event);
+      else
+        this.events[index] = event;
+    }
+
+    if (this.events.length) {
+      if (this.isColorizing_)
+        this.colorizeEvents_(events);
+
+      this.setupAggregates_();
+      this.dispatchEvent(new EventListChangeEvent());
+    }
   }
 
   async colorizeEvents() {
+    this.isColorizing_ = true;
+    await this.colorizeEvents_(this.events);
+  }
+
+  private async colorizeEvents_(events: CalendarEvent[]) {
     let calendarSortData = await this.settings_.getCalendarSortData();
     let eventTypeToColorId: {[property: string]: number} = {};
     for (let data of calendarSortData) {
@@ -371,7 +442,7 @@ export class Calendar extends Model {
     let recurringToNonRecurring: {[property: string]: string[]} = {};
 
     let eventIdToColorId: {[property: string]: number} = {};
-    for await (const event of this.getEvents()) {
+    for (const event of events) {
       // Prefer recurringEventId so we modify the root for recurring events
       // instead of the instances. This is both 10x less network activity and a
       // better user experience.
@@ -439,9 +510,12 @@ export class Calendar extends Model {
   }
 
   async init() {
+    // Don't init if we've already initted.
+    if (!this.fetchingEvents_)
+      return;
     await login();
     this.ruleMetadata_ = await this.settings_.getCalendarSortData();
-    await this.fetchEvents();
+    await this.initialFetch_();
   }
 
   ruleMetadata() {
@@ -453,7 +527,7 @@ export class Calendar extends Model {
       yield event;
 
     while (true) {
-      if (!this.fetchingEvents)
+      if (!this.fetchingEvents_)
         return;
       let events: CalendarEvent[] = await this.getEventsChunk();
       for (const event of events)

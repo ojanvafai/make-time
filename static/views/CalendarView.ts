@@ -1,7 +1,7 @@
 import {Action, registerActions} from '../Actions.js';
 import {showDialog} from '../Base.js';
 import {Aggregate} from '../calendar/Aggregate.js';
-import {Calendar} from '../calendar/Calendar.js';
+import {Calendar, EventListChangeEvent} from '../calendar/Calendar.js';
 import {Charter} from '../calendar/Charter.js';
 
 import {View} from './View.js'
@@ -15,8 +15,11 @@ let ACTIONS = [COLORIZE_ACTION];
 registerActions('Calendar', ACTIONS);
 
 export class CalendarView extends View {
-  private dayPlot: HTMLElement;
-  private weekPlot: HTMLElement;
+  private loading_: HTMLElement;
+  private dayPlot_: HTMLElement;
+  private weekPlot_: HTMLElement;
+  private plotlyLoadPromise_: Promise<void>;
+  private boundRender_: () => void;
 
   constructor(private model_: Calendar) {
     super();
@@ -28,45 +31,71 @@ export class CalendarView extends View {
 
     this.setActions(ACTIONS);
 
-    this.dayPlot = document.createElement('div');
-    this.dayPlot.id = 'day_plot';
-    this.append('Day summaries:', this.dayPlot);
+    this.loading_ = document.createElement('div');
+    this.loading_.append('Loading...this can take a couple minutes...');
+    this.append(this.loading_);
 
-    this.weekPlot = document.createElement('div');
-    this.weekPlot.id = 'week_plot';
-    this.append('Week summaries:', this.weekPlot);
+    this.dayPlot_ = document.createElement('div');
+    this.dayPlot_.id = 'day_plot';
+    this.append('Day summaries:', this.dayPlot_);
 
-    let plotlyScript = document.createElement('script');
-    plotlyScript.src = 'https://cdn.plot.ly/plotly-1.4.1.min.js';
-    this.append(plotlyScript);
+    this.weekPlot_ = document.createElement('div');
+    this.weekPlot_.id = 'week_plot';
+    this.append('Week summaries:', this.weekPlot_);
+
+    this.plotlyLoadPromise_ = new Promise((resolve) => {
+      let plotlyScript = document.createElement('script');
+      plotlyScript.addEventListener('load', () => resolve());
+      plotlyScript.src = 'https://cdn.plot.ly/plotly-1.4.1.min.js';
+      this.append(plotlyScript);
+    });
+
+    this.boundRender_ = () => this.render_();
   }
 
   async init() {
     await this.model_.init();
-    const charter = new Charter(this.model_.ruleMetadata());
+    await this.render_();
+  }
 
+  connectedCallback() {
+    this.model_.addEventListener(EventListChangeEvent.NAME, this.boundRender_);
+  }
+
+  disconnectedCallback() {
+    this.model_.removeEventListener(
+        EventListChangeEvent.NAME, this.boundRender_);
+  }
+
+  private async render_() {
+    const charter = new Charter(this.model_.ruleMetadata());
     const days = await this.model_.getDayAggregates();
-    await this.chartData_(charter, this.dayPlot.id, days, 14)
+
+    // Ensure plotly has loaded before trying to chart anything.
+    await this.plotlyLoadPromise_;
+    this.loading_.remove();
+
+    await this.chartData_(charter, this.dayPlot_, days, 14)
 
     // Do this async so we show the day chart ASAP.
     setTimeout(async () => {
       const weeks = await this.model_.getWeekAggregates();
-      await this.chartData_(charter, this.weekPlot.id, weeks, 90);
+      await this.chartData_(charter, this.weekPlot_, weeks, 90);
     });
   }
 
   private async chartData_(
-      charter: Charter, plotId: string, data: Aggregate[], buffer: number) {
+      charter: Charter, container: Node, data: Aggregate[], buffer: number) {
     let startDate = new Date();
     startDate.setDate(startDate.getDate() - buffer);
     let endDate = new Date();
     endDate.setDate(endDate.getDate() + buffer);
     await charter.chartData(
-        data, plotId, [startDate.getTime(), endDate.getTime()]);
+        data, container, [startDate.getTime(), endDate.getTime()]);
   }
 
   async takeAction(action: Action) {
-    if (action == COLORIZE_ACTION) {
+    if (action === COLORIZE_ACTION) {
       if (!confirm('This sets colors to all events on your calendar. Proceed?'))
         return;
       // Colorize is not safe to be called multiple times, so remove the button

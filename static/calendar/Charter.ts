@@ -29,7 +29,7 @@ export class Charter {
         .getTime();
   }
 
-  async chartData(aggregates: Aggregate[], divId: string, range: DateRange) {
+  async chartData(aggregates: Aggregate[], node: Node, range: DateRange) {
     const dates = aggregates.map(day => this.getTimestamp(day.start));
     const data: PlotlySeries[] = [];
 
@@ -67,7 +67,7 @@ export class Charter {
     data.reverse();
 
     // @ts-ignore
-    Plotly.newPlot(divId, data, {
+    Plotly.newPlot(node, data, {
       barmode: 'stack',
       yaxis: {title: 'Hours'},
       xaxis: {type: 'date', range: range},

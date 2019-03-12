@@ -96,7 +96,7 @@ function getView() {
 async function createModel(viewType: VIEW) {
   switch (viewType) {
     case VIEW.Calendar:
-      return new Calendar(await getSettings());
+      return await getCalendarModel();
 
     case VIEW.Compose:
       return new ComposeModel();
@@ -185,8 +185,16 @@ function preventUpdates() {
 }
 
 async function resetModels() {
+  calendarModel_ = undefined;
   triageModel_ = undefined;
   todoModel_ = undefined;
+}
+
+let calendarModel_: Calendar|undefined;
+async function getCalendarModel() {
+  if (!calendarModel_)
+    calendarModel_ = new Calendar(await getSettings());
+  return calendarModel_;
 }
 
 let triageModel_: TriageModel|undefined;
@@ -330,6 +338,14 @@ export async function update() {
     if (!mailProcessor_)
       mailProcessor_ = new MailProcessor(await getSettings());
     await mailProcessor_.process();
+
+    // Don't init the calendar model here as we don't want to force load all the
+    // calendar events every time someone loads maketime. But once they've
+    // viewed the calendar onces, then pull in event updates from then on since
+    // those are cheap and are needed to do continual colorizing.
+    if (calendarModel_)
+      calendarModel_.updateEvents();
+
     await dailyLocalUpdates();
   } catch (e) {
     // TODO: Move this to Net.js once we've made it so that all network
