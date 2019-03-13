@@ -1,4 +1,4 @@
-import {parseAddressList, defined} from '../Base.js';
+import {defined, parseAddressList} from '../Base.js';
 import {IDBKeyVal} from '../idb-keyval.js';
 import {send} from '../Mail.js';
 
@@ -106,11 +106,14 @@ export class ComposeModel extends Model {
     this.sending_ = true;
 
     let progress = this.updateTitle('ComposeModel.send', 1, 'Sending...');
-    await send(this.body_, to, this.subject_, defined(this.sender_));
-    await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
-    progress.incrementProgress();
 
-    this.sending_ = false;
+    try {
+      await send(this.body_, to, this.subject_, defined(this.sender_));
+      await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
+    } finally {
+      this.sending_ = false;
+      progress.incrementProgress();
+    }
 
     return {
       to: to, subject: this.subject_, body: sanitizedBodyText,
