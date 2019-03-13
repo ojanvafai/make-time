@@ -72,7 +72,7 @@ export class Actions extends HTMLElement {
       }
 
       button.setAttribute('tooltip', action.description);
-      button.onclick = () => this.takeAction(action);
+      button.onclick = () => this.view_.takeAction(action);
 
       let tooltipElement: HTMLElement;
       button.onmouseenter = () => {
@@ -117,7 +117,7 @@ export class Actions extends HTMLElement {
     }
   }
 
-  dispatchShortcut(e: KeyboardEvent) {
+  async dispatchShortcut(e: KeyboardEvent) {
     let test = (action: Action) => {
       // Don't allow certain actions to apply in rapid succession for each
       // thread. This prevents accidents of archiving a lot of threads at once
@@ -129,23 +129,10 @@ export class Actions extends HTMLElement {
     };
 
     let action = this.actions_.find(test);
-    if (action)
-      this.takeAction(action, e);
-  }
-
-  async takeAction(action: Action, opt_e?: KeyboardEvent) {
-    if (this.view_.shouldSuppressActions())
-      return;
-
-    if (!navigator.onLine) {
-      alert(`This action requires a network connection.`);
-      return;
+    if (action) {
+      e.preventDefault();
+      await this.view_.takeAction(action);
     }
-
-    if (opt_e)
-      opt_e.preventDefault();
-
-    await this.view_.takeAction(action);
   }
 }
 window.customElements.define('mt-actions', Actions);

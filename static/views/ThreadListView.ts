@@ -374,10 +374,6 @@ export class ThreadListView extends View {
     timer.style.top = `-${timer.offsetHeight}px`;
   }
 
-  shouldSuppressActions() {
-    return false;
-  }
-
   private render_() {
     if (this.hasQueuedFrame_)
       return;

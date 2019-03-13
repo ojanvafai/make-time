@@ -18,12 +18,8 @@ export abstract class View extends HTMLElement {
 
   async dispatchShortcut(e: KeyboardEvent) {
     if (this.actions_)
-      this.actions_.dispatchShortcut(e);
+      await this.actions_.dispatchShortcut(e);
   };
-
-  shouldSuppressActions() {
-    return false;
-  }
 
   protected setActions(actions: Action[]) {
     this.actions_.setActions(actions);
