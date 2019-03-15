@@ -62,6 +62,13 @@ export class QuickReply extends HTMLElement {
       let deliveredTo = lastMessage.deliveredTo;
 
       this.senders_ = document.createElement('select');
+      // Shrink this button if we can't fit the whole toolbar on one row, but
+      // don't shrink below 100px;
+      this.senders_.style.cssText = `
+        flex: 1;
+        width: 100px;
+        max-width: max-content;
+      `;
       this.senders_.classList.add('button');
       for (let sender of sendAs.senders) {
         let option = document.createElement('option');
