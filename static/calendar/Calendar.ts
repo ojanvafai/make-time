@@ -395,13 +395,14 @@ export class Calendar extends Model {
   }
 
   async updateEvents() {
+    if (!this.nextSyncToken_)
+      return;
     // TODO: If we're not either colorizing or actually showing the calendar
     // right now, then we can early return here since we don't need to keep the
     // model up to date.
-    let nextSyncToken = defined(this.nextSyncToken_);
     await this.fetchEvents_(
         (events: CalendarEvent[]) => this.mergeNewEvents_(events),
-        {nextSyncToken});
+        {nextSyncToken: this.nextSyncToken_});
   }
 
   private async mergeNewEvents_(events: CalendarEvent[]) {
