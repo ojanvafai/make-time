@@ -2,7 +2,6 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {assert, defined, FetchRequestParameters, Labels, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection, getServerStorage} from './BaseMain.js';
-import {ErrorLogger} from './ErrorLogger.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {QueueNames} from './QueueNames.js';
