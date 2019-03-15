@@ -449,33 +449,29 @@ export class MailProcessor {
   }
 
   private async applyFilters_(thread: Thread) {
-    try {
-      if (thread.isMuted()) {
-        await thread.archive();
-        return;
-      }
-
-      let rules = await this.settings_.getFilters();
-      let label = this.getWinningLabel_(thread, rules);
-
-      if (label == Labels.Archive) {
-        await thread.archive(true);
-        return;
-      }
-
-      // If it already has a priority, or it's already in dequeued with a
-      // labelId, don't queue it.
-      let shouldQueue = !thread.getPriorityId() &&
-          (!thread.getLabelId() || thread.isQueued()) &&
-          (this.settings_.getQueueSettings().get(label).queue !=
-           QueueSettings.IMMEDIATE);
-
-      // Need to clear needsFiltering
-      await thread.setLabelAndQueued(shouldQueue, label);
-      await this.addMakeTimeLabel_(thread.id);
-    } catch (e) {
-      ErrorLogger.log(`Failed to process message.\n\n${JSON.stringify(e)}`);
+    if (thread.isMuted()) {
+      await thread.archive();
+      return;
     }
+
+    let rules = await this.settings_.getFilters();
+    let label = this.getWinningLabel_(thread, rules);
+
+    if (label == Labels.Archive) {
+      await thread.archive(true);
+      return;
+    }
+
+    // If it already has a priority, or it's already in dequeued with a
+    // labelId, don't queue it.
+    let shouldQueue = !thread.getPriorityId() &&
+        (!thread.getLabelId() || thread.isQueued()) &&
+        (this.settings_.getQueueSettings().get(label).queue !=
+         QueueSettings.IMMEDIATE);
+
+    // Need to clear needsFiltering
+    await thread.setLabelAndQueued(shouldQueue, label);
+    await this.addMakeTimeLabel_(thread.id);
   }
 
   async dequeue(labelId: number) {
