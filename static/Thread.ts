@@ -384,7 +384,7 @@ export class Thread extends EventTarget {
       let data = await this.fetchFromNetwork_();
       let historyId = defined(data.historyId);
       let messages = defined(data.messages);
-      this.saveMessageState_(historyId, messages);
+      await this.saveMessageState_(historyId, messages);
       return;
     }
 
@@ -428,7 +428,7 @@ export class Thread extends EventTarget {
       allRawMessages.push(resp.result);
     }
 
-    this.saveMessageState_(historyId, allRawMessages);
+    await this.saveMessageState_(historyId, allRawMessages);
   }
 
   private static getTimestamp_(message: gapi.client.gmail.Message) {
