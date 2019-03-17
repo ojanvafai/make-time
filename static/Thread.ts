@@ -453,7 +453,7 @@ export class Thread extends EventTarget {
         messages.length !== this.metadata_.messageIds.length) {
       newMetadata.needsFiltering = true;
     }
-    this.updateMetadata(newMetadata);
+    await this.updateMetadata(newMetadata);
     // This is technically only needed in the case where updateMetadata didn't
     // update anything. This happens when firestore is up to date, but the
     // messages on local disk are stale.
