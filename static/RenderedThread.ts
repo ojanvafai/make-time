@@ -30,7 +30,9 @@ let DIFFERENT_YEAR_FORMATTER =
 // Kinda gross that we need to expose the typescript output directory in the
 // code. :(
 // @ts-ignore
-CSS.paintWorklet.addModule('./gen/HeaderFocusPainter.js');
+if (CSS && CSS.paintWorklet)
+  // @ts-ignore
+  CSS.paintWorklet.addModule('./gen/HeaderFocusPainter.js');
 
 export class RenderedThread extends HTMLElement {
   private spinner_?: HTMLElement;

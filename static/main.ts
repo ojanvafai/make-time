@@ -369,8 +369,8 @@ window.addEventListener(CONNECTION_FAILURE_KEY, () => {
 
 // Make sure links open in new tabs.
 document.body.addEventListener('click', async (e) => {
-  for (let node of e.path) {
-    if (node.tagName == 'A') {
+  for (let node of e.composedPath()) {
+    if ((node as Element).tagName === 'A') {
       let anchor = <HTMLAnchorElement>node;
       // For navigations will just change the hash scroll the item into view
       // (e.g. for links in a newsletter). In theory we could allow the default

@@ -12,7 +12,12 @@ export class LongTasks extends HTMLElement {
         }
       }
     });
-    observer.observe({entryTypes: ['longtask']});
+
+    try {
+      observer.observe({entryTypes: ['longtask']});
+    } catch (e) {
+      // This happens when a browser doesn't support longtask entryTypes.
+    }
   }
 
   connectedCallback() {

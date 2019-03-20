@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+      // Safari doesn't support EventTarget constructor, so polyfill it.
+      if (!navigator.userAgent.includes('AppleWebKit/537.36') && navigator.userAgent.includes('AppleWebKit/'))
+        document.write('<script src="third_party/eventtarget/EventTarget.js"></scr' + 'ipt>');
+    </script>
     <script type=module>
       let shouldBundle = window.location.search.includes('bundle=1');
       if (!shouldBundle) {
