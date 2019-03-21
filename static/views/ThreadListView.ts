@@ -1,6 +1,6 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
-import {login} from '../BaseMain.js';
+import { login} from '../BaseMain.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
@@ -410,18 +410,7 @@ export class ThreadListView extends View {
 
     let newRows = this.getRows_();
     let removedRows = oldRows.filter(x => !newRows.includes(x));
-    this.handleRowsRemoved_(removedRows, oldRows);
 
-    if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
-      this.autoFocusedRow_ = newRows[0];
-      this.setFocus_(this.autoFocusedRow_);
-    }
-
-    // Do this async so it doesn't block putting up the frame.
-    setTimeout(() => this.prerender_());
-  }
-
-  private handleRowsRemoved_(removedRows: ThreadRow[], oldRows: ThreadRow[]) {
     let toast: HTMLElement|undefined;
     let focused = this.renderedRow_ || this.focusedRow_;
     if (focused && removedRows.find(x => x == focused)) {
@@ -459,12 +448,18 @@ export class ThreadListView extends View {
       }
     }
 
+    if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
+      this.autoFocusedRow_ = newRows[0];
+      this.setFocus_(this.autoFocusedRow_);
+    }
+
     if (this.hasNewRenderedRow_) {
       this.hasNewRenderedRow_ = false;
       this.renderOne_(toast);
     }
+    // Do this async so it doesn't block putting up the frame.
+    setTimeout(() => this.prerender_());
   }
-
 
   private prerender_() {
     let row;
@@ -731,7 +726,6 @@ export class ThreadListView extends View {
 
   private async markTriaged_(destination: Action) {
     if (this.renderedRow_) {
-      this.handleRowsRemoved_([this.renderedRow_], this.getRows_());
       await this.model_.markSingleThreadTriaged(
           this.renderedRow_.thread, destination);
     } else {
@@ -757,8 +751,7 @@ export class ThreadListView extends View {
           // want the user to see an intermediary state where the row is shown
           // but unchecked and we don't want to move focus to the next row until
           // these rows have been removed. So just removed them synchronously
-          // here purely for the visual effect. This also has the important side
-          // effect of not blocking the UI changes on network activity.
+          // here purely for the visual effect.
           child.remove();
           // Remove the parent group if it's now empty so the user doens't see a
           // flicker where the row is removed without it's parent group also
