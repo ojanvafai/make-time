@@ -116,7 +116,6 @@ export class ThreadRow extends HTMLElement {
     this.messageDetails_ = document.createElement('div');
     this.messageDetails_.style.cssText = `
       display: flex;
-      align-items: center;
       overflow: hidden;
       flex: 1;
     `;
@@ -258,6 +257,8 @@ export class ThreadRow extends HTMLElement {
 
     this.messageDetails_.textContent = '';
     if (window.innerWidth < 600) {
+      this.messageDetails_.style.alignItems = '';
+
       let topRow = document.createElement('div');
       topRow.style.display = 'flex';
       topRow.append(fromContainer, date, popoutButton);
@@ -268,6 +269,7 @@ export class ThreadRow extends HTMLElement {
       title.style.fontSize = '12px';
       title.style.margin = '5px 5px 0 5px';
     } else {
+      this.messageDetails_.style.alignItems = 'center';
       this.messageDetails_.append(fromContainer, title, date, popoutButton);
     }
   }

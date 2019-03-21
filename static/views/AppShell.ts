@@ -53,7 +53,7 @@ export class AppShell extends HTMLElement {
     this.mainContent_ = document.createElement('div');
     this.mainContent_.style.cssText = `
       will-change: transform;
-      background-color: #eee;
+      background: #eee;
       display: flex;
       flex-direction: column;
       ${panelStyle}
