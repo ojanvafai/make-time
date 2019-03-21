@@ -171,7 +171,6 @@ export class RenderedThread extends HTMLElement {
       margin: 0 -8px;
       border-top: 1px solid;
       white-space: pre-wrap;
-      font-size: 90%;
       color: grey;
       display: flex;
     `;
@@ -192,7 +191,6 @@ export class RenderedThread extends HTMLElement {
 
     let to = document.createElement('div');
     to.style.cssText = `
-      font-size: 90%;
       display: -webkit-box;
       -webkit-line-clamp: 1;
       -webkit-box-orient: vertical;

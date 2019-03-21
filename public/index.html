@@ -38,6 +38,7 @@ window.update = update;`;
         font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
         height: 100%;
       }
+
       body {
         margin: 0px;
       }
@@ -166,6 +167,14 @@ window.update = update;`;
         color: black;
         background-color: white;
         border-radius: 2px;
+      }
+
+      /* Regular font-size looks good on mobile but large on desktop. */
+      html.desktop,
+      html.desktop select.button,
+      html.desktop button,
+      html.desktop .label-button {
+        font-size: 0.875rem;
       }
     </style>
   </head>

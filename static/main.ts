@@ -23,6 +23,9 @@ import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {View} from './views/View.js';
 
+if (!navigator.userAgent.includes('Mobile'))
+  document.documentElement.classList.add('desktop');
+
 let currentView_: View;
 let mailProcessor_: MailProcessor;
 let appShell_: AppShell;

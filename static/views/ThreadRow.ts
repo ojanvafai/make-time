@@ -116,6 +116,7 @@ export class ThreadRow extends HTMLElement {
     this.messageDetails_ = document.createElement('div');
     this.messageDetails_.style.cssText = `
       display: flex;
+      align-items: center;
       overflow: hidden;
       flex: 1;
     `;
