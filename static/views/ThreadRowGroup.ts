@@ -120,6 +120,8 @@ export class ThreadRowGroup extends HTMLElement {
     let rows = <NodeListOf<ThreadRow>>this.rowContainer_.childNodes;
     for (let child of rows) {
       child.checked = select;
+      if (!select)
+        child.clearFocusImpliesSelected();
     }
 
     if (select) {

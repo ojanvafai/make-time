@@ -303,6 +303,10 @@ export class ThreadRow extends HTMLElement {
     this.setFocus(false, false);
   }
 
+  clearFocusImpliesSelected() {
+    this.setFocus(this.focused_, false);
+  }
+
   get selected() {
     return this.checked_ || (this.focused_ && this.focusImpliesSelected_);
   }
