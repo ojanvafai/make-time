@@ -31,6 +31,7 @@ export class ThreadRowGroup extends HTMLElement {
     toggler.style.cssText = `
       display: inline-block;
       text-decoration: underline;
+      margin: 0 10px;
     `;
     toggler.append(this.isCollapsed_() ? 'expand' : 'collapse');
     toggler.addEventListener('click', () => this.toggleCollapsed_());
@@ -41,10 +42,13 @@ export class ThreadRowGroup extends HTMLElement {
       padding-top: 10px;
     `;
 
-    header.append(
-        groupNameContainer, ' select ',
-        this.createSelector_('all', this.selectAll_),
-        this.createSelector_('none', this.selectNone_), toggler);
+    header.append(groupNameContainer, toggler)
+
+    if (!this.isCollapsed_()) {
+      header.append(
+          ' select ', this.createSelector_('all', this.selectAll_),
+          this.createSelector_('none', this.selectNone_));
+    }
 
     this.rowCountWhenCollapsed_ = 0;
     this.rowContainer_ = document.createElement('div');
