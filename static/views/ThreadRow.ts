@@ -151,7 +151,7 @@ export class ThreadRow extends HTMLElement {
 
   resetState() {
     // Intentionally use the public setters so that styles are updated.
-    this.setFocus(false, false);
+    this.clearFocus();
     this.checked = false;
   }
 

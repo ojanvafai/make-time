@@ -523,14 +523,24 @@ export class ThreadListView extends View {
       let areAnyRowsChecked = this.getRows_().some(x => x.checked);
       let focusImpliesSelected = !areAnyRowsChecked;
       row.setFocus(true, focusImpliesSelected);
+      // If the row isn't actually in the tree, then it's focus event won't
+      // bubble up to the ThreadListView, so manually set this.focusedRow_.
+      if (!row.parentNode)
+        this.setFocusInternal_(row);
     } else {
       this.clearFocus_();
     }
   }
 
   clearFocus_() {
-    this.focusedRow_ = null;
     this.autoFocusedRow_ = null;
+    this.setFocusInternal_(null);
+  }
+
+  private setFocusInternal_(row: ThreadRow|null) {
+    if (this.focusedRow_)
+      this.focusedRow_.clearFocus();
+    this.focusedRow_ = row;
   }
 
   private handleFocusRow_(row: ThreadRow) {
@@ -538,12 +548,8 @@ export class ThreadListView extends View {
     if (row !== this.autoFocusedRow_)
       this.autoFocusedRow_ = null;
 
-    if (row === this.focusedRow_)
-      return;
-
-    if (this.focusedRow_)
-      this.focusedRow_.clearFocus();
-    this.focusedRow_ = row;
+    if (row !== this.focusedRow_)
+      this.setFocusInternal_(row);
   }
 
   private handleCheckRow_(row: ThreadRow, rangeSelect: boolean) {
