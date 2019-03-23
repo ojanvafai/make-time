@@ -1,6 +1,6 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
-import { login} from '../BaseMain.js';
+import {login} from '../BaseMain.js';
 import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
@@ -310,7 +310,7 @@ export class ThreadListView extends View {
     this.addListenerToModel('thread-list-changed', this.render_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
-      this.handleUndo_(undoEvent.thread);
+      this.handleUndo_(undoEvent.thread, undoEvent.groupName);
     });
 
     this.render_();
@@ -333,10 +333,10 @@ export class ThreadListView extends View {
     this.model_.addEventListener(eventName, handler);
   }
 
-  private handleUndo_(thread: Thread) {
+  private handleUndo_(thread: Thread, groupName: string) {
     let row = this.getThreadRow_(thread);
     if (this.renderedRow_)
-      this.setRenderedRow_(row);
+      this.setRenderedRow_(row, groupName);
     else
       this.setFocus_(row);
   }
@@ -775,16 +775,19 @@ export class ThreadListView extends View {
     }
   }
 
-  setRenderedRowInternal_(row: ThreadRow|null) {
+  setRenderedRowInternal_(row: ThreadRow|null, groupName?: string) {
     this.hasNewRenderedRow_ = !!row;
     if (this.renderedRow_)
       this.renderedRow_.rendered.remove();
     this.renderedRow_ = row;
-    this.renderedGroupName_ = row ? this.model_.getGroupName(row.thread) : null;
+    // This is read in renderFrame_. At that point, the rendered row will have
+    // already been triaged and will no longer have a group name.
+    this.renderedGroupName_ =
+        groupName || (row ? this.model_.getGroupName(row.thread) : null);
   }
 
-  setRenderedRow_(row: ThreadRow|null) {
-    this.setRenderedRowInternal_(row);
+  setRenderedRow_(row: ThreadRow|null, groupName?: string) {
+    this.setRenderedRowInternal_(row, groupName);
     if (row)
       this.render_();
   }
