@@ -45,7 +45,6 @@ export interface ThreadMetadata {
   blocked?: boolean|number;
   muted?: boolean;
   archivedByFilter?: boolean;
-  needsFiltering?: boolean;
   // Threads that were added back to the inbox in maketime, so syncWithGmail
   // should move them into the inbox instead of clearing their metadata.
   moveToInbox?: boolean;
@@ -69,7 +68,6 @@ export interface ThreadMetadataUpdate {
   blocked?: boolean|number|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
-  needsFiltering?: boolean|firebase.firestore.FieldValue;
   moveToInbox?: boolean|firebase.firestore.FieldValue;
   countToArchive?: number|firebase.firestore.FieldValue;
   countToMarkRead?: number|firebase.firestore.FieldValue;
@@ -90,7 +88,6 @@ export enum ThreadMetadataKeys {
   blocked = 'blocked',
   muted = 'muted',
   archivedByFilter = 'archivedByFilter',
-  needsFiltering = 'needsFiltering',
   moveToInbox = 'moveToInbox',
   countToArchive = 'countToArchive',
   countToMarkRead = 'countToMarkRead',
@@ -354,7 +351,7 @@ export class Thread extends EventTarget {
       historyId: '',
       messageIds: [],
       timestamp: 0,
-    };
+    } as ThreadMetadata;
     await doc.set(data);
     return data;
   }
@@ -364,17 +361,12 @@ export class Thread extends EventTarget {
       queued: shouldQueue,
       labelId: await this.queueNames_.getId(label),
       hasLabel: true,
-      needsFiltering: firebase.firestore.FieldValue.delete(),
       blocked: firebase.firestore.FieldValue.delete(),
     } as ThreadMetadataUpdate);
   }
 
   getData() {
     return this.metadata_;
-  }
-
-  needsFiltering() {
-    return this.metadata_.needsFiltering;
   }
 
   async update() {
@@ -449,10 +441,6 @@ export class Thread extends EventTarget {
     this.sentMessageIds_ =
         this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
 
-    if (this.metadata_.needsFiltering ||
-        messages.length !== this.metadata_.messageIds.length) {
-      newMetadata.needsFiltering = true;
-    }
     await this.updateMetadata(newMetadata);
     // This is technically only needed in the case where updateMetadata didn't
     // update anything. This happens when firestore is up to date, but the

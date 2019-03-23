@@ -182,6 +182,17 @@ export class MailProcessor {
         'in:inbox -in:mktime', (thread) => this.processThread_(thread),
         'Updating...');
 
+    // TODO: Delete this once all clients have upgraded.
+    // When we transitioned to using mktime labels for processing messages, some
+    // threads got left behind in the inbox.
+    await this.forEachThread_('in:inbox', async (thread) => {
+      let threadId = defined(thread.id);
+      let metadata = await Thread.fetchMetadata(threadId);
+      // Everything in the inbox should have a label or a priority.
+      if (!metadata.labelId && !metadata.priorityId)
+        await this.processThread_(thread);
+    }, 'Updating...');
+
     // For anything that used to be in the inbox, but isn't anymore (e.g. the
     // user archived from gmail), clear it's metadata so it doesn't show up in
     // maketime either. Include spam and trash in this query since we want to
@@ -291,9 +302,8 @@ export class MailProcessor {
     // the user manually puts it back in the inbox. The thread metadata in
     // firestore shows doesn't indicate new messages since there aren't
     // actually new messages, but we still want to filter it.
-    if (thread.needsFiltering() ||
-        (!thread.getLabelId() && !thread.getPriorityId() &&
-         !thread.isBlocked())) {
+    if (!thread.getLabelId() && !thread.getPriorityId() &&
+        !thread.isBlocked()) {
       await this.applyFilters_(thread);
     }
   }
@@ -468,7 +478,6 @@ export class MailProcessor {
         (this.settings_.getQueueSettings().get(label).queue !=
          QueueSettings.IMMEDIATE);
 
-    // Need to clear needsFiltering
     await thread.setLabelAndQueued(shouldQueue, label);
     await this.addMakeTimeLabel_(thread.id);
   }
