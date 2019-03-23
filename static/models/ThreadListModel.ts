@@ -144,7 +144,7 @@ export abstract class ThreadListModel extends Model {
     }
   }
 
-  protected compareDates(a: Thread, b: Thread) {
+  static compareDates(a: Thread, b: Thread) {
     return compareDates(a.getDate(), b.getDate());
   }
 

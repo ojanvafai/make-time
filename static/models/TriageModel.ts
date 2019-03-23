@@ -42,20 +42,31 @@ export class TriageModel extends ThreadListModel {
   }
 
   getThreadRowLabel(thread: Thread) {
+    return TriageModel.getThreadRowLabel(thread);
+  }
+
+  static getThreadRowLabel(thread: Thread) {
     return thread.getPriority() || '';
   }
 
   getGroupName(thread: Thread) {
+    return TriageModel.getGroupName(thread);
+  }
+
+  static getGroupName(thread: Thread) {
     return notNull(thread.getLabel());
   }
 
   protected compareThreads(a: Thread, b: Thread) {
+    return TriageModel.compareThreads(this.settings_, a, b);
+  }
+
+  static compareThreads(settings: Settings, a: Thread, b: Thread) {
     // Sort by queue, then by date.
     let aGroup = notNull(a.getLabel());
     let bGroup = notNull(b.getLabel());
     if (aGroup == bGroup)
-      return this.compareDates(a, b);
-    return this.settings_.getQueueSettings().queueNameComparator(
-        aGroup, bGroup);
+      return ThreadListModel.compareDates(a, b);
+    return settings.getQueueSettings().queueNameComparator(aGroup, bGroup);
   }
 }

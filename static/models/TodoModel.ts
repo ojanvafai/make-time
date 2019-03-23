@@ -42,7 +42,7 @@ export class TodoModel extends ThreadListModel {
 
     // Sort by priority, then by date.
     if (aPriority == bPriority)
-      return this.compareDates(a, b);
+      return ThreadListModel.compareDates(a, b);
     return this.comparePriorities_(aPriority, bPriority);
   }
 
