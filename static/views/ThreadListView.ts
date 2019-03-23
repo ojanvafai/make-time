@@ -395,6 +395,12 @@ export class ThreadListView extends View {
     let threads = this.model_.getThreads();
     let oldRows = this.getRows_();
 
+    // This happens when an undo has happened, but the model hasn't yet seen the
+    // update from the undo.
+    if (this.renderedRow_ && !oldRows.includes(this.renderedRow_) &&
+        !threads.includes(this.renderedRow_.thread))
+      return;
+
     this.rowGroupContainer_.textContent = '';
     let currentGroup = null;
     // Threads should be in sorted order already and all threads in the
