@@ -23,11 +23,9 @@ compile typescript after every change. You can run both with the following comma
 $ ./gulp serve
 ```
 
-Now http://localhost:5000 serves make-time the same as consumer.
+Start http://localhost:5000 serves make-time for consumer accounts, and http://localhost:8000 for google.com accounts.
 
 ### Flags for serving
---google to use google.com credentials and serve from localhost:8000.
-
 --bundle to also generate the bundled/minified JS on each file change.
 
 ## Deploying

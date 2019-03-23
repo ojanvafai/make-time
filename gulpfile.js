@@ -98,9 +98,10 @@ gulp.task('symlink-node-modules', (done) => {
 
 gulp.task('npm-install', gulp.series([shell.task('npm install'), 'symlink-node-modules']));
 
-let port = process.argv.includes('--google') ? '8000' : '5000';
-let firebaseServe = `./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time --port=${port}`;
-gulp.task('firebase-serve', shell.task(firebaseServe));
+function firebaseServeCommand(port) {
+  return shell.task(`./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time --port=${port}`)
+}
+gulp.task('firebase-serve', gulp.parallel([firebaseServeCommand(5000), firebaseServeCommand(8000)]));
 
 gulp.task('tsc-watch', shell.task('./node_modules/typescript/bin/tsc --project tsconfig.json --watch'));
 
