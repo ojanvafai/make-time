@@ -250,15 +250,9 @@ export class MailProcessor {
     let threadId = defined(rawThread.id);
     let metadata = await Thread.fetchMetadata(threadId);
     let thread = Thread.create(threadId, metadata);
+    // Grab the messages we have off disk first to avoid sending those bytes
+    // down the wire if we already have them.
     await thread.fetchFromDisk();
-
-    if (!thread.mightNeedUpdate(defined(rawThread.historyId))) {
-      await this.addMakeTimeLabel_(threadId);
-      return;
-    }
-
-    // If we got here, then the thread definitely needs updating in case new
-    // messages came in.
     await thread.update();
 
     let messages = thread.getMessages();
@@ -291,10 +285,8 @@ export class MailProcessor {
     // the user manually puts it back in the inbox. The thread metadata in
     // firestore shows doesn't indicate new messages since there aren't
     // actually new messages, but we still want to filter it.
-    if (!thread.getLabelId() && !thread.getPriorityId() &&
-        !thread.isBlocked()) {
+    if (!thread.getLabelId() && !thread.getPriorityId())
       await this.applyFilters_(thread);
-    }
   }
 
   private async refetchIsInInbox_(threadId: string) {
