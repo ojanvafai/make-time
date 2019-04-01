@@ -460,14 +460,6 @@ export class Thread extends EventTarget {
     this.dispatchEvent(new UpdatedEvent());
   }
 
-  mightNeedUpdate(freshGmailHistoryId: string) {
-    // It's possible to have the the firestore and gmail historyIds match, but
-    // to not have the messages locally on disk, so make sure to fetch any
-    // messages firestore knows about.
-    return this.getHistoryId() !== freshGmailHistoryId ||
-        this.getHistoryId() != this.processed_.historyId;
-  }
-
   // If the metadata in firestore doesn't match the one in local
   // storage, pull in the new messages and labels so we're up to date.
   async syncMessagesInFirestore() {
