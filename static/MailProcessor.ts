@@ -280,13 +280,7 @@ export class MailProcessor {
       }
     }
 
-    // Everything in the inbox should have a labelId and/or a priorityId.
-    // This can happen if something had been processed, then archived, then
-    // the user manually puts it back in the inbox. The thread metadata in
-    // firestore shows doesn't indicate new messages since there aren't
-    // actually new messages, but we still want to filter it.
-    if (!thread.getLabelId() && !thread.getPriorityId())
-      await this.applyFilters_(thread);
+    await this.applyFilters_(thread);
   }
 
   private async refetchIsInInbox_(threadId: string) {
