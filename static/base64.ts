@@ -1,11 +1,9 @@
-
-let b64u =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';  // base64url
-                                                                         // dictionary
+// base64url dictionary
+let b64u = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 let b64pad = '=';
 
 export class Base64 {
-  base64decode(data: string) {
+  decode(data: string) {
     var dst = ''
     var i, a, b, c, d;
 
@@ -24,41 +22,53 @@ export class Base64 {
     return escape(dst);
   }
 
+  encode(str: string) {
+    // base64 dictionary
+    var b64c =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    return this.encode_(str, b64c);
+  }
+
   /**
    * Decode a  base64url string to a JavaScript string.
    * Input is assumed to be a base64url encoded UTF-8 string.
    * Returned result is a JavaScript (UCS-2) string.
    */
-  decode(data: string) {
-    let dst = this.base64decode(data);
+  urlDecode(data: string) {
+    let dst = this.decode(data);
     return decodeURIComponent(dst);
   }
 
-  encode(str: string) {
-    var data = unescape(encodeURIComponent(str));
+  urlEncode(str: string) {
+    return this.encode_(str, b64u);
+  }
+
+  private encode_(str: string, dict: string) {
+    let data = unescape(encodeURIComponent(str));
     var len = data.length;
 
     var dst = '';
     var i;
 
     for (i = 0; i <= len - 3; i += 3) {
-      dst += b64u.charAt(data.charCodeAt(i) >>> 2);
-      dst += b64u.charAt(
-        ((data.charCodeAt(i) & 3) << 4) | (data.charCodeAt(i + 1) >>> 4));
-      dst += b64u.charAt(
-        ((data.charCodeAt(i + 1) & 15) << 2) | (data.charCodeAt(i + 2) >>> 6));
-      dst += b64u.charAt(data.charCodeAt(i + 2) & 63);
+      dst += dict.charAt(data.charCodeAt(i) >>> 2);
+      dst += dict.charAt(
+          ((data.charCodeAt(i) & 3) << 4) | (data.charCodeAt(i + 1) >>> 4));
+      dst += dict.charAt(
+          ((data.charCodeAt(i + 1) & 15) << 2) |
+          (data.charCodeAt(i + 2) >>> 6));
+      dst += dict.charAt(data.charCodeAt(i + 2) & 63);
     }
 
     if (len % 3 == 2) {
-      dst += b64u.charAt(data.charCodeAt(i) >>> 2);
-      dst += b64u.charAt(
-        ((data.charCodeAt(i) & 3) << 4) | (data.charCodeAt(i + 1) >>> 4));
-      dst += b64u.charAt(((data.charCodeAt(i + 1) & 15) << 2));
+      dst += dict.charAt(data.charCodeAt(i) >>> 2);
+      dst += dict.charAt(
+          ((data.charCodeAt(i) & 3) << 4) | (data.charCodeAt(i + 1) >>> 4));
+      dst += dict.charAt(((data.charCodeAt(i + 1) & 15) << 2));
       dst += b64pad;
     } else if (len % 3 == 1) {
-      dst += b64u.charAt(data.charCodeAt(i) >>> 2);
-      dst += b64u.charAt(((data.charCodeAt(i) & 3) << 4));
+      dst += dict.charAt(data.charCodeAt(i) >>> 2);
+      dst += dict.charAt(((data.charCodeAt(i) & 3) << 4));
       dst += b64pad;
       dst += b64pad;
     }
