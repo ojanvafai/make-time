@@ -191,6 +191,20 @@ export let NEEDS_FILTER_ACTION = {
   key: 'f',
 };
 
+let MOVE_UP_ACTION = {
+  name: `Move row up`,
+  shortName: '⬆',
+  description: `Moves the row up in sort order in the Todo view.`,
+  key: '[',
+};
+
+let MOVE_DOWN_ACTION = {
+  name: `Move row down`,
+  shortName: '⬇',
+  description: `Moves the row down in sort order in the Todo view.`,
+  key: ']',
+};
+
 let BLOCKED_BUTTONS = [
   BLOCKED_1D_ACTION,
   BLOCKED_2D_ACTION,
@@ -215,6 +229,11 @@ let BASE_ACTIONS = [
   NEXT_FULL_ACTION,
 ];
 
+let SORT_ACTIONS = [
+  MOVE_UP_ACTION,
+  MOVE_DOWN_ACTION,
+];
+
 let RENDER_ALL_ACTIONS = [
   TOGGLE_FOCUSED_ACTION,
   TOGGLE_GROUP_ACTION,
@@ -228,6 +247,7 @@ let RENDER_ONE_ACTIONS = [
 
 registerActions('Triage or Todo', [
   ...BASE_ACTIONS,
+  ...SORT_ACTIONS,
   ...RENDER_ALL_ACTIONS,
   ...RENDER_ONE_ACTIONS,
 ]);
@@ -252,7 +272,8 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      settings: Settings, bottomButtonUrl?: string, bottomButtonText?: string) {
+      settings: Settings, bottomButtonUrl?: string, bottomButtonText?: string,
+      private includeSortActions_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -360,8 +381,12 @@ export class ThreadListView extends View {
   }
 
   updateActions_() {
-    let actions = this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
-    this.setActions([...BASE_ACTIONS, ...actions]);
+    let viewSpecific =
+        this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
+    let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
+    let sortActions = includeSortActions ? SORT_ACTIONS : [];
+    this.setActions([...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
+
     if (this.renderedRow_)
       this.addTimer_();
   }
@@ -543,10 +568,14 @@ export class ThreadListView extends View {
     this.focusedRow_ = row;
   }
 
+  private preventAutoFocusFirstRow_() {
+    this.autoFocusedRow_ = null;
+  }
+
   private handleFocusRow_(row: ThreadRow) {
     // Once a row gets manually focused, stop auto-focusing.
     if (row !== this.autoFocusedRow_)
-      this.autoFocusedRow_ = null;
+      this.preventAutoFocusFirstRow_();
 
     if (row !== this.focusedRow_)
       this.setFocusInternal_(row);
@@ -571,6 +600,45 @@ export class ThreadListView extends View {
     this.setFocus_(row);
     if (this.focusedRow_)
       this.focusedRow_.scrollIntoView({'block': 'center'});
+  }
+
+  private moveRow_(action: Action) {
+    let selectedRows = this.getRows_().filter(x => x.selected);
+    if (!selectedRows.length)
+      return;
+
+    // If the first row is auto selected because it's the first row, make sure
+    // it stays focused after it's moved.
+    this.preventAutoFocusFirstRow_();
+
+    let firstSelected = selectedRows[0];
+    let group = firstSelected.getGroup();
+    let rows = group.getRows();
+
+    let beforeFirstSelected = [];
+    let selected = [];
+    let afterFirstSelected = [];
+    for (let row of rows) {
+      if (row.selected)
+        selected.push(row);
+      else if (selected.length)
+        afterFirstSelected.push(row);
+      else
+        beforeFirstSelected.push(row);
+    }
+
+    if (action === MOVE_UP_ACTION) {
+      let itemToMove = beforeFirstSelected.pop();
+      if (itemToMove)
+        afterFirstSelected.splice(0, 0, itemToMove);
+    } else {
+      let itemToMove = afterFirstSelected.shift();
+      if (itemToMove)
+        beforeFirstSelected.push(itemToMove);
+    }
+
+    let sorted = [...beforeFirstSelected, ...selected, ...afterFirstSelected];
+    this.model_.setSortOrder(sorted.map(x => x.thread));
   }
 
   private moveFocus_(action: Action) {
@@ -658,6 +726,11 @@ export class ThreadListView extends View {
 
       case QUICK_REPLY_ACTION:
         await this.showQuickReply();
+        return;
+
+      case MOVE_DOWN_ACTION:
+      case MOVE_UP_ACTION:
+        this.moveRow_(action);
         return;
 
       case NEXT_FULL_ACTION:

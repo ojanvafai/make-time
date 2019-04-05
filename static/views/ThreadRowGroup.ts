@@ -81,10 +81,6 @@ export class ThreadRowGroup extends HTMLElement {
     return !!this.rowContainer_.childElementCount;
   }
 
-  rows(): ThreadRow[] {
-    return Array.prototype.slice.call(this.rowContainer_.children);
-  }
-
   push(row: ThreadRow) {
     if (this.isCollapsed_()) {
       this.rowContainer_.textContent =

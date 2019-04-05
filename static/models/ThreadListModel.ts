@@ -51,6 +51,10 @@ export abstract class ThreadListModel extends Model {
   abstract getThreadRowLabel(thread: Thread): string;
   abstract getGroupName(thread: Thread): string;
 
+  setSortOrder(_threads: Thread[]) {
+    assert(false);
+  }
+
   protected setQuery(query: firebase.firestore.Query) {
     query.onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
   }
@@ -129,8 +133,12 @@ export abstract class ThreadListModel extends Model {
       setFavicon(faviconCount);
     }
 
-    this.threads_.sort(this.compareThreads.bind(this));
+    this.sort();
     this.fetchThreads();
+  }
+
+  protected sort() {
+    this.threads_.sort(this.compareThreads.bind(this));
   }
 
   async fetchThreads() {
