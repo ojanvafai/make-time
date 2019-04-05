@@ -8,15 +8,28 @@ import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
 
 export class TodoModel extends ThreadListModel {
   private threadsData_?: firebase.firestore.DocumentData;
+  private sortCount_: number;
 
   constructor(private vacation_: string) {
     super(true);
+    this.sortCount_ = 0;
+
     let threadsDoc = firestoreUserCollection().doc('threads');
     let metadataCollection = threadsDoc.collection('metadata');
     this.setQuery(
         metadataCollection.where(ThreadMetadataKeys.hasPriority, '==', true));
 
     threadsDoc.onSnapshot((snapshot) => {
+      // Don't want snapshot updates to get called in response to local sort
+      // changes since we modify the in memory data locally. The downside to
+      // this is that we technically have a race if the sort order changes on a
+      // different client at the same time as this one.
+      if (this.sortCount_ > 0)
+        this.sortCount_--;
+
+      if (this.sortCount_)
+        return;
+
       this.threadsData_ = snapshot.data();
       this.handleSortChanged_();
     });
@@ -95,7 +108,16 @@ export class TodoModel extends ThreadListModel {
     let sortKey = this.getSortKey_(priorityId);
     update[sortKey] = threadIds;
 
+    // Update the in memory model right away so the UI is updated immediately.
+    if (this.threadsData_) {
+      this.threadsData_[sortKey] = threadIds;
+      this.handleSortChanged_();
+    }
+
+    this.sortCount_++;
     let threadsDoc = firestoreUserCollection().doc('threads');
+    // TODO: Should probably debounce this so that holding down the sort key
+    // doesn't result in a flurry of network activity.
     threadsDoc.set(update, {merge: true})
   }
 }
