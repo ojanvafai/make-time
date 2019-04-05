@@ -18,9 +18,13 @@ export class TodoModel extends ThreadListModel {
 
     threadsDoc.onSnapshot((snapshot) => {
       this.threadsData_ = snapshot.data();
-      this.sort();
-      this.dispatchEvent(new ThreadListChangedEvent());
+      this.handleSortChanged_();
     });
+  }
+
+  handleSortChanged_() {
+    this.sort();
+    this.dispatchEvent(new ThreadListChangedEvent());
   }
 
   shouldShowThread(thread: Thread) {
@@ -84,9 +88,12 @@ export class TodoModel extends ThreadListModel {
   }
 
   setSortOrder(threads: Thread[]) {
+    let threadIds = threads.map(x => x.id);
+
     let update: any = {};
     let priorityId = defined(threads[0].getPriorityId());
-    update[this.getSortKey_(priorityId)] = threads.map(x => x.id);
+    let sortKey = this.getSortKey_(priorityId);
+    update[sortKey] = threadIds;
 
     let threadsDoc = firestoreUserCollection().doc('threads');
     threadsDoc.set(update, {merge: true})

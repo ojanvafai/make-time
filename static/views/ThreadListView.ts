@@ -1,7 +1,7 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
+import {ThreadListModel, UndoEvent, ThreadListChangedEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
@@ -196,6 +196,7 @@ let MOVE_UP_ACTION = {
   shortName: '⬆',
   description: `Moves the row up in sort order in the Todo view.`,
   key: '[',
+  repeatable: true,
 };
 
 let MOVE_DOWN_ACTION = {
@@ -203,6 +204,7 @@ let MOVE_DOWN_ACTION = {
   shortName: '⬇',
   description: `Moves the row down in sort order in the Todo view.`,
   key: ']',
+  repeatable: true,
 };
 
 let BLOCKED_BUTTONS = [
@@ -328,7 +330,7 @@ export class ThreadListView extends View {
     }
     this.updateActions_();
 
-    this.addListenerToModel('thread-list-changed', this.render_.bind(this));
+    this.addListenerToModel(ThreadListChangedEvent.NAME, this.render_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread, undoEvent.groupName);

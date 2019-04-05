@@ -20,8 +20,9 @@ export class UndoEvent extends Event {
 }
 
 export class ThreadListChangedEvent extends Event {
+  static NAME = 'thread-list-changed';
   constructor() {
-    super('thread-list-changed');
+    super(ThreadListChangedEvent.NAME);
   }
 }
 
