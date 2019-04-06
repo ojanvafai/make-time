@@ -192,7 +192,7 @@ export let NEEDS_FILTER_ACTION = {
 };
 
 let MOVE_UP_ACTION = {
-  name: `Move row up`,
+  name: `Move up`,
   shortName: '⬆',
   description: `Moves the row up in sort order in the Todo view.`,
   key: '[',
@@ -200,7 +200,7 @@ let MOVE_UP_ACTION = {
 };
 
 let MOVE_DOWN_ACTION = {
-  name: `Move row down`,
+  name: `Move down`,
   shortName: '⬇',
   description: `Moves the row down in sort order in the Todo view.`,
   key: ']',
