@@ -66,8 +66,8 @@ export class AppShell extends HTMLElement {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      background-color: black;
-      color: white;
+      background-color: #000000bb;
+      color: #ffffffbb;
       padding: 6px;
       position: relative;
     `;
@@ -157,6 +157,10 @@ export class AppShell extends HTMLElement {
 
     this.backArrow_.addEventListener(
         'click', () => this.dispatchEvent(new BackEvent()));
+  }
+
+  setBackground(background: string) {
+    this.mainContent_.style.background = background;
   }
 
   static setFooter(dom?: HTMLElement) {

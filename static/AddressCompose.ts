@@ -44,7 +44,7 @@ export class AddressCompose extends HTMLElement {
       return;
     }
 
-    this.style.backgroundColor = 'white';
+    this.style.backgroundColor = '#ffffffbb';
     this.tabIndex = 0;
     this.addEventListener('focus', (e) => this.handleFocus_(e));
     this.addEventListener('click', (e) => this.handleClick_(e));
@@ -66,6 +66,7 @@ export class AddressCompose extends HTMLElement {
       outline: 0;
       margin: 2px;
       box-sizing: content-box;
+      background: transparent;
     `;
     this.input_.setAttribute('inputmode', 'email');
     this.input_.addEventListener(
@@ -172,7 +173,7 @@ export class AddressCompose extends HTMLElement {
       display: inline-flex;
       height: 20px;
       margin: 2px;
-      background-color: white;
+      background-color: #ffffffbb;
     `;
     outer.addEventListener(
         'mouseenter', () => outer.style.backgroundColor = '#eee');

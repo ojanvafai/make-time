@@ -8,8 +8,8 @@ class Logger extends HTMLElement {
       position: fixed;
       bottom: 10px;
       right: 10px;
-      border: 1px solid black;
-      background-color: white;
+      border: 1px solid #000000bb;
+      background-color: #ffffffbb;
       max-width: 50%;
       max-height: 50%;
       display: flex;
@@ -45,11 +45,11 @@ class Logger extends HTMLElement {
       document.body.append(this);
     let container = document.createElement('div');
     container.style.cssText = `
-      border-bottom: 1px solid black;
+      border-bottom: 1px solid #000000bb;
       padding: 3px;
     `;
     container.append(
-      `${this.messageContainer_.children.length + 1}: ${message}`);
+        `${this.messageContainer_.children.length + 1}: ${message}`);
 
     if (details) {
       let detailsElement = document.createElement('details');

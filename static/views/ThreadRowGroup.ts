@@ -54,7 +54,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.rowContainer_ = document.createElement('div');
     if (this.isCollapsed_()) {
       this.rowContainer_.style.cssText = `
-      background-color: white;
+      background-color: #ffffffbb;
       padding: 5px;
       text-decoration: underline;
     `;

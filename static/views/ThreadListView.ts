@@ -538,11 +538,11 @@ export class ThreadListView extends View {
     `;
     let text = document.createElement('div');
     text.style.cssText = `
-      background-color: black;
+      background-color: #000000bb;
       padding: 10px;
       border-radius: 5px;
       border: 1px solid grey;
-      color: white;
+      color: #ffffffbb;
     `;
     setTimeout(() => defined(toast).style.opacity = '0');
     text.append(`Now triaging: ${nextGroupName}`);

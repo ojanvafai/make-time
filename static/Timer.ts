@@ -115,7 +115,7 @@ export class Timer extends HTMLElement {
       right: 0;
       bottom: 0;
       left: 0;
-      background-color: black;
+      background-color: #000000bb;
       opacity: 0.5;
     `;
     let text = document.createElement('div');
@@ -124,7 +124,7 @@ export class Timer extends HTMLElement {
     text.style.cssText = `
       position: absolute;
       padding: 5px;
-      background-color: white;
+      background-color: #ffffffbb;
     `;
     this.overlay_.append(background, text);
     this.overlayContainer_.append(this.overlay_);

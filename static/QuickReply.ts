@@ -116,7 +116,7 @@ export class QuickReply extends HTMLElement {
       flex: 1;
       margin: 4px;
       display: flex;
-      background-color: white;
+      background-color: #ffffffbb;
     `;
     compose.placeholder =
         'Hit <enter> to send, <esc> to cancel. Allowed length is configurable in Settings.';
