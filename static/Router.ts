@@ -2,19 +2,23 @@
 export class Router {
   private rules_: any[];
   private extraQueryParams_: string;
+  private baseParams_: any;
 
   // universalQueryParameters_ is parameters that should survive navigations.
   // This is useful for developer time parameters like whether to bundle JS.
   constructor(universalQueryParameters?: string[]) {
     this.rules_ = [];
+    this.baseParams_ = {};
 
     let windowParams = [];
     if (universalQueryParameters && location.search) {
       let windowQueryParts = window.location.search.substring(1).split('&');
       for (let part of windowQueryParts) {
         var nameValuePair = part.split('=', 2);
-        if (universalQueryParameters.includes(nameValuePair[0]))
+        if (universalQueryParameters.includes(nameValuePair[0])) {
+          this.baseParams_[nameValuePair[0]] = nameValuePair[1];
           windowParams.push(part);
+        }
       }
     }
 
@@ -24,6 +28,8 @@ export class Router {
 
   getParams_(rule: any, pathParts: string[], queryParts: string[]) {
     var params: any = {};
+    Object.assign(params, this.baseParams_);
+
     var missingParams: any = {};
 
     // Don't match if fixed rule is longer than path

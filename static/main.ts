@@ -30,7 +30,7 @@ let currentView_: View;
 let mailProcessor_: MailProcessor;
 let appShell_: AppShell;
 
-const UNIVERSAL_QUERY_PARAMETERS = ['bundle'];
+const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'filter'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 let longTasks_: LongTasks;
@@ -68,15 +68,23 @@ window.onpopstate = () => {
 };
 
 router.add('/compose', async (params) => {
-  let shouldHideMenu = !!Object.keys(params).length;
+  let shouldHideMenu = false;
+  for (let param of Object.entries(params)) {
+    // TODO: Directly check for the compose parameters instead of doing this.
+    if (!UNIVERSAL_QUERY_PARAMETERS.includes(param[0])) {
+      shouldHideMenu = true;
+      break;
+    }
+  }
+
   if (shouldHideMenu)
     preventUpdates();
   await setView(VIEW.Compose, params, shouldHideMenu);
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
-router.add('/todo', async (_params) => {
-  await setView(VIEW.Todo);
+router.add('/todo', async (params) => {
+  await setView(VIEW.Todo, params);
 });
 router.add('/hidden', async (_params) => {
   await setView(VIEW.Hidden);
@@ -96,7 +104,7 @@ function getView() {
   return currentView_;
 }
 
-async function createModel(viewType: VIEW) {
+async function createModel(viewType: VIEW, params?: any) {
   switch (viewType) {
     case VIEW.Calendar:
       return await getCalendarModel();
@@ -105,7 +113,9 @@ async function createModel(viewType: VIEW) {
       return new ComposeModel();
 
     case VIEW.Todo:
-      return await getTodoModel();
+      let model = await getTodoModel();
+      model.setFilter(params.filter);
+      return model;
 
     case VIEW.Triage:
       return await getTriageModel();
@@ -163,7 +173,7 @@ async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
   if (currentView_)
     currentView_.tearDown();
 
-  let model = defined(await createModel(viewType));
+  let model = defined(await createModel(viewType, params));
   // Abort if we transitioned to a new view while this one was being created.
   if (thisViewGeneration !== viewGeneration)
     return;

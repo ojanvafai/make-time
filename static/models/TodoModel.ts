@@ -9,6 +9,7 @@ import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
 export class TodoModel extends ThreadListModel {
   private threadsData_?: firebase.firestore.DocumentData;
   private sortCount_: number;
+  private filter_?: string;
 
   constructor(private vacation_: string) {
     super(true);
@@ -40,12 +41,22 @@ export class TodoModel extends ThreadListModel {
     this.dispatchEvent(new ThreadListChangedEvent());
   }
 
+  setFilter(filter: string) {
+    this.filter_ = filter && filter.toLowerCase();
+    this.dispatchEvent(new ThreadListChangedEvent());
+  }
+
   protected shouldShowThread(thread: Thread) {
     let priority = thread.getPriorityId();
     if (!priority)
       return false;
     if (this.vacation_ && priority !== Priority.MustDo)
       return false;
+
+    let label = thread.getLabel();
+    if (this.filter_ && (!label || this.filter_ !== label.toLowerCase()))
+      return false;
+
     return super.shouldShowThread(thread);
   }
 
