@@ -475,26 +475,23 @@ export class MailProcessor {
   }
 
   async dequeueBlocked_() {
-    // TODO: Remove this once all boolean blocked values are gone.
-    await this.dequeueBlockedForValue_(true);
-    await this.dequeueBlockedForValue_(Date.now());
-  }
-
-  async dequeueBlockedForValue_(value: number|boolean) {
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
-    let querySnapshot =
-        await metadataCollection.where(ThreadMetadataKeys.blocked, '<=', value)
-            .get();
+    let querySnapshot = await metadataCollection
+                            .where(ThreadMetadataKeys.blocked, '<=', Date.now())
+                            .get();
 
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
         querySnapshot.docs,
         async (doc: firebase.firestore.QueryDocumentSnapshot) => {
-          await doc.ref.update({
-            blocked: firebase.firestore.FieldValue.delete(),
-            labelId: BuiltInLabelIds.Blocked,
+          let update: ThreadMetadataUpdate = {
             hasLabel: true,
-          } as ThreadMetadataUpdate);
+          };
+          // TODO: Remove this once all clients have flushed all their blocked
+          // threads that don't have labels.
+          if (!doc.data().labelId)
+            update.labelId = BuiltInLabelIds.Blocked;
+          await doc.ref.update(update);
         });
   }
 
@@ -557,7 +554,15 @@ export class MailProcessor {
   private async processQueues_() {
     let storage = await getServerStorage();
     await storage.fetch();
+
     let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
+    // Leaving in for easy manual testing of dequeuing code. Delete if this is
+    // in the way of a code change.
+    //
+    // let time = new Date(lastDequeueTime);
+    // let DAYS_BACK = 10;
+    // time.setDate(time.getDate() - DAYS_BACK);
+    // lastDequeueTime = time.getTime();
     const categories = this.categoriesToDequeue(lastDequeueTime);
 
     if (!categories.length)

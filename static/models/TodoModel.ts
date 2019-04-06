@@ -40,7 +40,7 @@ export class TodoModel extends ThreadListModel {
     this.dispatchEvent(new ThreadListChangedEvent());
   }
 
-  shouldShowThread(thread: Thread) {
+  protected shouldShowThread(thread: Thread) {
     let priority = thread.getPriorityId();
     if (!priority)
       return false;

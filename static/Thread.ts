@@ -309,6 +309,11 @@ export class Thread extends EventTarget {
     return this.queueNames_.getName(id);
   }
 
+  needsTriage() {
+    // TODO: Rename hasLabel to needsTriage in firestore.
+    return this.metadata_.hasLabel;
+  }
+
   getPriorityId() {
     return this.metadata_.priorityId;
   }

@@ -35,8 +35,7 @@ export abstract class ThreadListModel extends Model {
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
 
-  constructor(
-      showFaviconCount?: boolean, private showHiddenThreads_?: boolean) {
+  constructor(showFaviconCount?: boolean) {
     super();
 
     this.timerCountsDown = false;
@@ -60,7 +59,10 @@ export abstract class ThreadListModel extends Model {
     query.onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
   }
 
-  protected shouldShowThread(thread: Thread) {
+  protected shouldShowThread(thread: Thread, showQueued?: boolean) {
+    if (!showQueued && thread.isQueued())
+      return false;
+
     // If we have archived all the messages but the change hasn't been
     // propagated to gmail yet, don't show them. This avoids threads
     // disappearing from view in ThreadListView.markTriaged_ only to show up
@@ -116,14 +118,15 @@ export abstract class ThreadListModel extends Model {
     this.threads_ = [];
     for (let doc of snapshot.docs) {
       let data = doc.data() as ThreadMetadata;
-      if (!this.showHiddenThreads_ && (data.blocked || data.queued))
+      let thread = Thread.create(doc.id, data as ThreadMetadata);
+
+      if (!this.shouldShowThread(thread))
         continue;
 
       if (data.priorityId === Priority.MustDo ||
           data.priorityId === Priority.NeedsFilter)
         faviconCount++;
 
-      let thread = Thread.create(doc.id, data as ThreadMetadata);
       this.threads_.push(thread);
     };
 
