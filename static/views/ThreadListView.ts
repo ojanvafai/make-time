@@ -1,7 +1,7 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {ThreadListModel, UndoEvent, ThreadListChangedEvent} from '../models/ThreadListModel.js';
+import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
@@ -330,7 +330,8 @@ export class ThreadListView extends View {
     }
     this.updateActions_();
 
-    this.addListenerToModel(ThreadListChangedEvent.NAME, this.render_.bind(this));
+    this.addListenerToModel(
+        ThreadListChangedEvent.NAME, this.render_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread, undoEvent.groupName);
@@ -443,7 +444,18 @@ export class ThreadListView extends View {
 
     let newRows = this.getRows_();
     let removedRows = oldRows.filter(x => !newRows.includes(x));
+    this.handleRowsRemoved_(removedRows, oldRows);
 
+    if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
+      this.autoFocusedRow_ = newRows[0];
+      this.setFocus_(this.autoFocusedRow_);
+    }
+
+    // Do this async so it doesn't block putting up the frame.
+    setTimeout(() => this.prerender_());
+  }
+
+  private handleRowsRemoved_(removedRows: ThreadRow[], oldRows: ThreadRow[]) {
     let toast: HTMLElement|undefined;
     let focused = this.renderedRow_ || this.focusedRow_;
     if (focused && removedRows.find(x => x == focused)) {
@@ -481,17 +493,10 @@ export class ThreadListView extends View {
       }
     }
 
-    if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
-      this.autoFocusedRow_ = newRows[0];
-      this.setFocus_(this.autoFocusedRow_);
-    }
-
     if (this.hasNewRenderedRow_) {
       this.hasNewRenderedRow_ = false;
       this.renderOne_(toast);
     }
-    // Do this async so it doesn't block putting up the frame.
-    setTimeout(() => this.prerender_());
   }
 
   private prerender_() {
@@ -813,8 +818,11 @@ export class ThreadListView extends View {
 
   private async markTriaged_(destination: Action) {
     if (this.renderedRow_) {
-      await this.model_.markSingleThreadTriaged(
-          this.renderedRow_.thread, destination);
+      // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in
+      // some cases.
+      let row = this.renderedRow_;
+      this.handleRowsRemoved_([row], this.getRows_());
+      await this.model_.markSingleThreadTriaged(row.thread, destination);
     } else {
       let threads: Thread[] = [];
       let firstUnselectedRowAfterFocused = null;
@@ -838,7 +846,8 @@ export class ThreadListView extends View {
           // want the user to see an intermediary state where the row is shown
           // but unchecked and we don't want to move focus to the next row until
           // these rows have been removed. So just removed them synchronously
-          // here purely for the visual effect.
+          // here purely for the visual effect. This also has the important side
+          // effect of not blocking the UI changes on network activity.
           child.remove();
           // Remove the parent group if it's now empty so the user doens't see a
           // flicker where the row is removed without it's parent group also
