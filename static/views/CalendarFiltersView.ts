@@ -392,6 +392,10 @@ export class CalendarFiltersView extends HTMLElement {
 
     let option = document.createElement('option');
     option.append(newLabel);
+
+    // Add to the template so that newly created rows get the new label as well.
+    defined(this.labelSelect_).prepend(option.cloneNode(true));
+
     let allLabels = this.querySelectorAll('.label');
     for (let label of allLabels) {
       label.prepend(option.cloneNode(true));

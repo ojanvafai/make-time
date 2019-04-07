@@ -6,7 +6,7 @@ import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 
-let UNCHECKED_BACKGROUND_COLOR = 'white';
+let UNCHECKED_BACKGROUND_COLOR = '#ffffffbb';
 
 let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',

@@ -3,7 +3,7 @@ import {firestoreUserCollection} from '../BaseMain.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {Thread, ThreadMetadataKeys} from '../Thread.js';
+import {BLOCKED_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
@@ -29,7 +29,7 @@ export class TriageModel extends ThreadListModel {
         queue === QueueSettings.MONTHLY;
   }
 
-  shouldShowThread(thread: Thread) {
+  protected shouldShowThread(thread: Thread) {
     let vacation = this.settings_.get(ServerStorage.KEYS.VACATION);
     if (vacation && (vacation !== thread.getLabel()))
       return false;
@@ -46,6 +46,9 @@ export class TriageModel extends ThreadListModel {
   }
 
   static getThreadRowLabel(thread: Thread) {
+    // TODO: Show both the label and priority for blocked threads.
+    if (thread.isBlocked())
+      return notNull(thread.getLabel());
     return thread.getPriority() || '';
   }
 
@@ -54,6 +57,8 @@ export class TriageModel extends ThreadListModel {
   }
 
   static getGroupName(thread: Thread) {
+    if (thread.isBlocked())
+      return BLOCKED_LABEL_NAME;
     return notNull(thread.getLabel());
   }
 
@@ -63,8 +68,8 @@ export class TriageModel extends ThreadListModel {
 
   static compareThreads(settings: Settings, a: Thread, b: Thread) {
     // Sort by queue, then by date.
-    let aGroup = notNull(a.getLabel());
-    let bGroup = notNull(b.getLabel());
+    let aGroup = TriageModel.getGroupName(a);
+    let bGroup = TriageModel.getGroupName(b);
     if (aGroup == bGroup)
       return ThreadListModel.compareDates(a, b);
     return settings.getQueueSettings().queueNameComparator(aGroup, bGroup);

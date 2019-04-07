@@ -51,7 +51,6 @@ export class EmailCompose extends HTMLElement {
       border: 1px solid;
       padding: 8px;
       outline: none;
-      background-color: white;
       word-break: break-word;
       /* Match gmail default style of tiny text in compose to avoid different sizes on copy-paste. */
       font-family: Arial, Helvetica, sans-serif;

@@ -220,9 +220,20 @@ export class Thread extends EventTarget {
 
   keepInInboxMetadata_(moveToInbox?: boolean) {
     let update = Thread.clearedMetatdata();
+
+    // Keep label information so we can show what label a thread came from even
+    // after it's been triaged. Intentionally keep only the labelId and not the
+    // hasLabel bit since the latter is for deciding whether to show the thread
+    // in the TriageModel.
+    // TODO: Rename hasLabel to needsTriage.
+    if (this.metadata_.labelId)
+      update.labelId = this.metadata_.labelId;
+
     update.countToMarkRead = this.messageCount_();
+
     if (moveToInbox)
       update.moveToInbox = true;
+
     return update;
   }
 
@@ -296,6 +307,11 @@ export class Thread extends EventTarget {
     if (id === BuiltInLabelIds.Blocked)
       return BLOCKED_LABEL_NAME;
     return this.queueNames_.getName(id);
+  }
+
+  needsTriage() {
+    // TODO: Rename hasLabel to needsTriage in firestore.
+    return this.metadata_.hasLabel;
   }
 
   getPriorityId() {

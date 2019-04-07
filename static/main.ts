@@ -134,7 +134,7 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
     case VIEW.Todo:
       return new ThreadListView(
           <TodoModel>model, appShell_, await getSettings(), '/triage',
-          'Back to Triaging');
+          'Back to Triaging', true);
 
     case VIEW.Triage:
       return new ThreadListView(
@@ -216,9 +216,16 @@ async function getTodoModel() {
   return todoModel_;
 }
 
+async function updateBackground() {
+  let settings = await getSettings();
+  let background = settings.get(ServerStorage.KEYS.BACKGROUND) || 'lavender';
+  appShell_.setBackground(background);
+}
+
 async function onLoad() {
   let serverStorage = await getServerStorage();
   serverStorage.addEventListener(ServerStorageUpdateEventName, async () => {
+    updateBackground();
     // Rerender the current view on settings changes in case a setting would
     // change it's behavior, e.g. duration of the countdown timer or sort order
     // of queues.
@@ -234,6 +241,7 @@ async function onLoad() {
   document.body.append(appShell_);
 
   await routeToCurrentLocation();
+  updateBackground();
   await update();
   // Instantiate the TodoModel even if we're not in the Todo view so that the
   // favicon is updated with the must do count.

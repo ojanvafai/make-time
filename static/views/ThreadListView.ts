@@ -1,7 +1,7 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
+import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
@@ -191,6 +191,22 @@ export let NEEDS_FILTER_ACTION = {
   key: 'f',
 };
 
+let MOVE_UP_ACTION = {
+  name: `Move up`,
+  shortName: '⬆',
+  description: `Moves the row up in sort order in the Todo view.`,
+  key: '[',
+  repeatable: true,
+};
+
+let MOVE_DOWN_ACTION = {
+  name: `Move down`,
+  shortName: '⬇',
+  description: `Moves the row down in sort order in the Todo view.`,
+  key: ']',
+  repeatable: true,
+};
+
 let BLOCKED_BUTTONS = [
   BLOCKED_1D_ACTION,
   BLOCKED_2D_ACTION,
@@ -215,6 +231,11 @@ let BASE_ACTIONS = [
   NEXT_FULL_ACTION,
 ];
 
+let SORT_ACTIONS = [
+  MOVE_UP_ACTION,
+  MOVE_DOWN_ACTION,
+];
+
 let RENDER_ALL_ACTIONS = [
   TOGGLE_FOCUSED_ACTION,
   TOGGLE_GROUP_ACTION,
@@ -228,6 +249,7 @@ let RENDER_ONE_ACTIONS = [
 
 registerActions('Triage or Todo', [
   ...BASE_ACTIONS,
+  ...SORT_ACTIONS,
   ...RENDER_ALL_ACTIONS,
   ...RENDER_ONE_ACTIONS,
 ]);
@@ -252,7 +274,8 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      settings: Settings, bottomButtonUrl?: string, bottomButtonText?: string) {
+      settings: Settings, bottomButtonUrl?: string, bottomButtonText?: string,
+      private includeSortActions_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -307,7 +330,8 @@ export class ThreadListView extends View {
     }
     this.updateActions_();
 
-    this.addListenerToModel('thread-list-changed', this.render_.bind(this));
+    this.addListenerToModel(
+        ThreadListChangedEvent.NAME, this.render_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread, undoEvent.groupName);
@@ -360,8 +384,12 @@ export class ThreadListView extends View {
   }
 
   updateActions_() {
-    let actions = this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
-    this.setActions([...BASE_ACTIONS, ...actions]);
+    let viewSpecific =
+        this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
+    let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
+    let sortActions = includeSortActions ? SORT_ACTIONS : [];
+    this.setActions([...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
+
     if (this.renderedRow_)
       this.addTimer_();
   }
@@ -416,7 +444,18 @@ export class ThreadListView extends View {
 
     let newRows = this.getRows_();
     let removedRows = oldRows.filter(x => !newRows.includes(x));
+    this.handleRowsRemoved_(removedRows, oldRows);
 
+    if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
+      this.autoFocusedRow_ = newRows[0];
+      this.setFocus_(this.autoFocusedRow_);
+    }
+
+    // Do this async so it doesn't block putting up the frame.
+    setTimeout(() => this.prerender_());
+  }
+
+  private handleRowsRemoved_(removedRows: ThreadRow[], oldRows: ThreadRow[]) {
     let toast: HTMLElement|undefined;
     let focused = this.renderedRow_ || this.focusedRow_;
     if (focused && removedRows.find(x => x == focused)) {
@@ -454,17 +493,10 @@ export class ThreadListView extends View {
       }
     }
 
-    if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
-      this.autoFocusedRow_ = newRows[0];
-      this.setFocus_(this.autoFocusedRow_);
-    }
-
     if (this.hasNewRenderedRow_) {
       this.hasNewRenderedRow_ = false;
       this.renderOne_(toast);
     }
-    // Do this async so it doesn't block putting up the frame.
-    setTimeout(() => this.prerender_());
   }
 
   private prerender_() {
@@ -506,11 +538,11 @@ export class ThreadListView extends View {
     `;
     let text = document.createElement('div');
     text.style.cssText = `
-      background-color: black;
+      background-color: #000000bb;
       padding: 10px;
       border-radius: 5px;
       border: 1px solid grey;
-      color: white;
+      color: #ffffffbb;
     `;
     setTimeout(() => defined(toast).style.opacity = '0');
     text.append(`Now triaging: ${nextGroupName}`);
@@ -543,10 +575,14 @@ export class ThreadListView extends View {
     this.focusedRow_ = row;
   }
 
+  private preventAutoFocusFirstRow_() {
+    this.autoFocusedRow_ = null;
+  }
+
   private handleFocusRow_(row: ThreadRow) {
     // Once a row gets manually focused, stop auto-focusing.
     if (row !== this.autoFocusedRow_)
-      this.autoFocusedRow_ = null;
+      this.preventAutoFocusFirstRow_();
 
     if (row !== this.focusedRow_)
       this.setFocusInternal_(row);
@@ -571,6 +607,45 @@ export class ThreadListView extends View {
     this.setFocus_(row);
     if (this.focusedRow_)
       this.focusedRow_.scrollIntoView({'block': 'center'});
+  }
+
+  private moveRow_(action: Action) {
+    let selectedRows = this.getRows_().filter(x => x.selected);
+    if (!selectedRows.length)
+      return;
+
+    // If the first row is auto selected because it's the first row, make sure
+    // it stays focused after it's moved.
+    this.preventAutoFocusFirstRow_();
+
+    let firstSelected = selectedRows[0];
+    let group = firstSelected.getGroup();
+    let rows = group.getRows();
+
+    let beforeFirstSelected = [];
+    let selected = [];
+    let afterFirstSelected = [];
+    for (let row of rows) {
+      if (row.selected)
+        selected.push(row);
+      else if (selected.length)
+        afterFirstSelected.push(row);
+      else
+        beforeFirstSelected.push(row);
+    }
+
+    if (action === MOVE_UP_ACTION) {
+      let itemToMove = beforeFirstSelected.pop();
+      if (itemToMove)
+        afterFirstSelected.splice(0, 0, itemToMove);
+    } else {
+      let itemToMove = afterFirstSelected.shift();
+      if (itemToMove)
+        beforeFirstSelected.push(itemToMove);
+    }
+
+    let sorted = [...beforeFirstSelected, ...selected, ...afterFirstSelected];
+    this.model_.setSortOrder(sorted.map(x => x.thread));
   }
 
   private moveFocus_(action: Action) {
@@ -660,6 +735,11 @@ export class ThreadListView extends View {
         await this.showQuickReply();
         return;
 
+      case MOVE_DOWN_ACTION:
+      case MOVE_UP_ACTION:
+        this.moveRow_(action);
+        return;
+
       case NEXT_FULL_ACTION:
       case PREVIOUS_FULL_ACTION:
       case NEXT_ACTION:
@@ -738,8 +818,11 @@ export class ThreadListView extends View {
 
   private async markTriaged_(destination: Action) {
     if (this.renderedRow_) {
-      await this.model_.markSingleThreadTriaged(
-          this.renderedRow_.thread, destination);
+      // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in
+      // some cases.
+      let row = this.renderedRow_;
+      this.handleRowsRemoved_([row], this.getRows_());
+      await this.model_.markSingleThreadTriaged(row.thread, destination);
     } else {
       let threads: Thread[] = [];
       let firstUnselectedRowAfterFocused = null;
@@ -763,7 +846,8 @@ export class ThreadListView extends View {
           // want the user to see an intermediary state where the row is shown
           // but unchecked and we don't want to move focus to the next row until
           // these rows have been removed. So just removed them synchronously
-          // here purely for the visual effect.
+          // here purely for the visual effect. This also has the important side
+          // effect of not blocking the UI changes on network activity.
           child.remove();
           // Remove the parent group if it's now empty so the user doens't see a
           // flicker where the row is removed without it's parent group also

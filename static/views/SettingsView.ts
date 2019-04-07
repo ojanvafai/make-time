@@ -27,7 +27,7 @@ export class SettingsView extends View {
     super();
 
     this.style.cssText = `
-      background: white;
+      background: #ffffffbb;
       display: block;
     `;
 
@@ -139,7 +139,7 @@ export class SettingsView extends View {
           position: fixed;
           top: ${rect.bottom + 2}px;
           width: 300px;
-          background-color: white;
+          background-color: #ffffffbb;
           border: 1px solid;
           padding: 4px;
           z-index: 100;

@@ -207,6 +207,12 @@ export class Settings extends EventTarget {
 
   static fields = [
     {
+      key: ServerStorage.KEYS.BACKGROUND,
+      name: 'Background',
+      description:
+          `Set the maketime background. Can be any <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/background">CSS background</a> including URLs to images.`,
+    },
+    {
       key: ServerStorage.KEYS.VACATION,
       name: 'Vacation',
       description:
@@ -371,7 +377,7 @@ export class Settings extends EventTarget {
 
   async getFilters() {
     let filtersData = await this.filtersData_();
-    return filtersData.get(FILTERS_KEY);
+    return filtersData.get(FILTERS_KEY) || [];
   }
 
   async getCalendarFilters() {

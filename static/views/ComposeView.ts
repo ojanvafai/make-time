@@ -98,6 +98,7 @@ export class ComposeView extends View {
       flex: 1;
       outline: none;
       padding: 4px;
+      background-color: #ffffffbb;
       font-size: small;
     `;
     this.appendLine_(this.subject_);
@@ -107,7 +108,7 @@ export class ComposeView extends View {
       flex: 1 1 0;
       margin: 4px;
       display: flex;
-      background-color: white;
+      background-color: #ffffffbb;
       min-height: 50px;
     `;
 

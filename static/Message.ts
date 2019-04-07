@@ -217,7 +217,7 @@ export class Message {
       this.getMessageBody_(payload.parts);
     } else {
       let body = defined(payload.body);
-      let messageText = Message.base64_.decode(defined(body.data));
+      let messageText = Message.base64_.urlDecode(defined(body.data));
       if (payload.mimeType == 'text/html')
         this.html_ = messageText;
       else
@@ -299,7 +299,7 @@ export class Message {
         'messageId': this.id,
         'userId': USER_ID,
       });
-      let data = Message.base64_.base64decode(fetched.result.data || '');
+      let data = Message.base64_.decode(fetched.result.data || '');
       attachmentData.image.src =
           `data:${attachmentData.attachment.contentType},${data}`;
     }
@@ -341,10 +341,10 @@ export class Message {
 
       switch (part.mimeType) {
         case 'text/plain':
-          this.plain_ = Message.base64_.decode(defined(body.data));
+          this.plain_ = Message.base64_.urlDecode(defined(body.data));
           break;
         case 'text/html':
-          this.html_ = Message.base64_.decode(defined(body.data));
+          this.html_ = Message.base64_.urlDecode(defined(body.data));
           break;
       }
     }

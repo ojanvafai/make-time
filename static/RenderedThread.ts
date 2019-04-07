@@ -176,7 +176,7 @@ export class RenderedThread extends HTMLElement {
     `;
 
     let from = document.createElement('div');
-    from.style.cssText = `color: black`;
+    from.style.cssText = `color: #000000bb`;
 
     if (processedMessage.parsedFrom.length) {
       let parsed = processedMessage.parsedFrom[0];
@@ -228,7 +228,7 @@ export class RenderedThread extends HTMLElement {
     if (processedMessage.isDraft) {
       let draft = document.createElement('div');
       draft.style.cssText = `
-        color: black;
+        color: #000000bb;
         font-weight: bold;
         margin-top: 10px;
       `;

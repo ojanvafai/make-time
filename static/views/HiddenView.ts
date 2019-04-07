@@ -33,9 +33,10 @@ let DAY_MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
 class HiddenModel extends ThreadListModel {
   constructor(private settings_: Settings, private keyIndex_: number) {
     // For muted, don't put undo items back in the inbox.
-    super(false, true);
+    super(false);
 
     if (this.queryKey_() === ThreadMetadataKeys.blocked) {
+      // TODO: Exclude hasLabel threads
       let metadataCollection =
           firestoreUserCollection().doc('threads').collection('metadata');
       this.setQuery(metadataCollection.orderBy('blocked', 'asc'));
@@ -66,6 +67,21 @@ class HiddenModel extends ThreadListModel {
       default:
         return ThreadListModel.compareDates(a, b);
     }
+  }
+
+  protected shouldShowThread(thread: Thread) {
+    switch (this.queryKey_()) {
+      case ThreadMetadataKeys.blocked:
+        if (this.queryKey_() === ThreadMetadataKeys.blocked &&
+            thread.needsTriage())
+          return false;
+        break;
+
+      case ThreadMetadataKeys.queued:
+        return super.shouldShowThread(thread, true);
+    }
+
+    return super.shouldShowThread(thread);
   }
 
   // There's no priorities to show, but when in queued, we want the label to

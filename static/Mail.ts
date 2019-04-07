@@ -18,7 +18,7 @@ export async function send(
 
   // See https://ncona.com/2011/06/using-utf-8-characters-on-an-e-mail-subject/
   if (!isAscii(subject))
-    subject = `=?utf-8?B?${base64.encode(subject)}?=`;
+    subject = `=?UTF-8?B?${base64.encode(subject)}?=`;
 
   let email = `Subject: ${subject}
 To: ${to}
@@ -41,7 +41,7 @@ Content-Type: text/html; charset="UTF-8"
   email += `
 ${text}`;
 
-  let resource: Resource = {'raw': base64.encode(email)};
+  let resource: Resource = {'raw': base64.urlEncode(email)};
   if (opt_threadId)
     resource.threadId = opt_threadId;
 
