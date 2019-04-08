@@ -41,6 +41,10 @@ export class TodoModel extends ThreadListModel {
     this.dispatchEvent(new ThreadListChangedEvent());
   }
 
+  labelHref(label: string) {
+    return `todo?filter=${label}`;
+  }
+
   setFilter(filter: string) {
     this.filter_ = filter && filter.toLowerCase();
     this.dispatchEvent(new ThreadListChangedEvent());

@@ -55,6 +55,10 @@ export abstract class ThreadListModel extends Model {
     assert(false);
   }
 
+  labelHref(_label: string) {
+    return '';
+  }
+
   protected setQuery(query: firebase.firestore.Query) {
     query.onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
   }
@@ -164,7 +168,8 @@ export abstract class ThreadListModel extends Model {
     // Make sure any in progress snapshot updates get flushed.
     if (this.snapshotToProcess_)
       this.processSnapshot_();
-    return this.threads_;
+    return this.threads_.filter(
+        (thread: Thread) => this.shouldShowThread(thread));
   }
 
   private async threadListChanged_() {

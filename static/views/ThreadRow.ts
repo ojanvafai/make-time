@@ -226,7 +226,7 @@ export class ThreadRow extends HTMLElement {
     `;
 
     if (state.label) {
-      let label = document.createElement('div');
+      let label = document.createElement('a');
       label.style.cssText = `
         display: inline-block;
         color: #666;
@@ -238,6 +238,11 @@ export class ThreadRow extends HTMLElement {
         margin-right: 4px;
       `;
       label.append(state.label);
+
+      let labelHref = this.model_.labelHref(state.label);
+      if (labelHref)
+        label.href = labelHref;
+
       title.append(label);
     }
 
