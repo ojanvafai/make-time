@@ -93,10 +93,10 @@ export class TodoModel extends ThreadListModel {
     if (sortData) {
       let aIndex = sortData.indexOf(a.id);
       let bIndex = sortData.indexOf(b.id);
-      if (aIndex !== undefined || bIndex !== undefined) {
-        if (aIndex === undefined)
+      if (aIndex !== -1 || bIndex !== -1) {
+        if (aIndex === -1)
           return -1;
-        if (bIndex === undefined)
+        if (bIndex === -1)
           return 1;
         return aIndex - bIndex;
       }
