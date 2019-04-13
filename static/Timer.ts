@@ -115,7 +115,7 @@ export class Timer extends HTMLElement {
       right: 0;
       bottom: 0;
       left: 0;
-      background-color: #000000bb;
+      background-color: #000000;
       opacity: 0.5;
     `;
     let text = document.createElement('div');
@@ -146,12 +146,15 @@ export class Timer extends HTMLElement {
 
     if (this.countDown_) {
       this.timeLeft_--;
-      if (this.timeLeft_ > 20) {
+      if (this.timeLeft_ > 30) {
         this.timeDisplay_.style.color = '#ddd';
-      } else if (this.timeLeft_ > 5) {
+      } else if (this.timeLeft_ > 9) {
         this.timeDisplay_.style.color = 'black';
+      } else if (this.timeLeft_ === 0) {
+        this.timeDisplay_.style.animation = '';
       } else {
         this.timeDisplay_.style.color = 'red';
+        this.timeDisplay_.style.animation = 'blinker 1s steps(1, end) infinite';
       }
     } else {
       this.timeLeft_++;

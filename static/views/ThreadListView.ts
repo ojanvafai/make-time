@@ -714,10 +714,7 @@ export class ThreadListView extends View {
     } else {
       this.blockedToolbar_ = new Actions(this, true);
       this.blockedToolbar_.setActions(BLOCKED_BUTTONS);
-      this.blockedToolbar_.style.position = 'absolute';
       AppShell.addToFooter(this.blockedToolbar_);
-      this.blockedToolbar_.style.top =
-          `-${this.blockedToolbar_.offsetHeight}px`;
     }
   }
 

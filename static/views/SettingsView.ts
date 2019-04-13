@@ -139,7 +139,7 @@ export class SettingsView extends View {
           position: fixed;
           top: ${rect.bottom + 2}px;
           width: 300px;
-          background-color: #ffffffbb;
+          background-color: #ffffff;
           border: 1px solid;
           padding: 4px;
           z-index: 100;

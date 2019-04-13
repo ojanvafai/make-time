@@ -88,7 +88,7 @@ export class Actions extends HTMLElement {
 
         let text = document.createElement('div');
         text.style.cssText = `
-          background-color: #ffffffbb;
+          background-color: #ffffff;
           border: 1px solid;
           padding: 4px;
           width: 300px;
