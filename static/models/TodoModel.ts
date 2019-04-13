@@ -1,7 +1,7 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {defined, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
-import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys} from '../Thread.js';
+import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
@@ -75,6 +75,11 @@ export class TodoModel extends ThreadListModel {
 
   getGroupName(thread: Thread) {
     return notNull(thread.getPriority());
+  }
+
+  showTopThreads(groupName: string) {
+    return groupName === MUST_DO_PRIORITY_NAME ||
+        groupName === URGENT_PRIORITY_NAME;
   }
 
   private getSortData_(priority: number) {

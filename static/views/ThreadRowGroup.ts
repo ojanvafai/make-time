@@ -1,6 +1,6 @@
-import {ThreadListModel} from '../models/ThreadListModel';
+import {ThreadListModel} from '../models/ThreadListModel.js';
 
-import {ThreadRow} from './ThreadRow';
+import {ThreadRow} from './ThreadRow.js';
 
 export class ToggleCollapsedEvent extends Event {
   static NAME = 'toggle-collapsed';
@@ -9,10 +9,12 @@ export class ToggleCollapsedEvent extends Event {
   }
 }
 
+const NUM_TOP_THREADS = 3;
+
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
   private rowCountWhenCollapsed_: number;
-  private toggler_: HTMLElement;
+  private expander_: HTMLElement;
 
   constructor(private groupName_: string, private model_: ThreadListModel) {
     super();
@@ -28,22 +30,24 @@ export class ThreadRowGroup extends HTMLElement {
     `;
     groupNameContainer.append(groupName_);
 
-    this.toggler_ = document.createElement('div');
-    this.toggler_.style.cssText = `
-      display: inline-block;
-      text-decoration: underline;
-      margin: 0 10px;
-    `;
-    this.toggler_.append(this.isCollapsed_() ? 'expand' : 'collapse');
-    this.toggler_.addEventListener('click', () => this.toggleCollapsed_());
-
     let header = document.createElement('div');
     header.style.cssText = `
       margin-left: 5px;
       padding-top: 10px;
     `;
+    header.append(groupNameContainer)
 
-    header.append(groupNameContainer, this.toggler_)
+    let toggler = document.createElement('div');
+    toggler.style.cssText = `
+      display: inline-block;
+      text-decoration: underline;
+      margin: 0 10px;
+    `;
+    toggler.append(this.isCollapsed_() ? 'expand' : 'collapse');
+    toggler.addEventListener('click', () => this.toggleCollapsed_());
+
+    this.expander_ = toggler;
+    header.append(toggler);
 
     if (!this.isCollapsed_()) {
       header.append(
@@ -54,10 +58,20 @@ export class ThreadRowGroup extends HTMLElement {
     this.rowCountWhenCollapsed_ = 0;
     this.rowContainer_ = document.createElement('div');
     this.append(header, this.rowContainer_);
+
+    if (this.isCollapsed_() && this.showTopThreads_()) {
+      this.expander_ = document.createElement('div');
+      this.expander_.addEventListener('click', () => this.toggleCollapsed_());
+      this.append(this.expander_);
+    }
   }
 
   isCollapsed_() {
     return this.model_.isCollapsed(this.groupName_);
+  }
+
+  showTopThreads_() {
+    return this.model_.showTopThreads(this.groupName_);
   }
 
   toggleCollapsed_() {
@@ -72,11 +86,29 @@ export class ThreadRowGroup extends HTMLElement {
     return !!this.rowContainer_.childElementCount;
   }
 
+  setExpanderText_(text: string) {
+    this.expander_.style.cssText = `
+      padding: 5px;
+      text-decoration: underline;
+    `;
+    this.expander_.textContent = text;
+  }
+
   push(row: ThreadRow) {
     if (this.isCollapsed_()) {
-      this.toggler_.textContent =
-          `expand ${++this.rowCountWhenCollapsed_} threads`;
-    } else {
+      let threadsElided = ++this.rowCountWhenCollapsed_;
+      if (this.showTopThreads_()) {
+        threadsElided -= NUM_TOP_THREADS;
+        if (threadsElided > 0)
+          this.setExpanderText_(`${threadsElided} more...`);
+      } else {
+        this.setExpanderText_(`expand ${threadsElided} threads`);
+      }
+    }
+
+    if (!this.isCollapsed_() ||
+        (this.showTopThreads_() &&
+         this.rowContainer_.childElementCount < NUM_TOP_THREADS)) {
       this.rowContainer_.append(row);
     }
   }
