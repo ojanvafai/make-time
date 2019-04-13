@@ -9,6 +9,7 @@ import {MailProcessor} from './MailProcessor.js';
 import {ComposeModel} from './models/ComposeModel.js';
 import {Model} from './models/Model.js';
 import {TodoModel} from './models/TodoModel.js';
+import {TrackingModel} from './models/TrackingModel.js';
 import {TriageModel} from './models/TriageModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
@@ -21,6 +22,7 @@ import {HiddenView} from './views/HiddenView.js';
 import {KeyboardShortcutsDialog} from './views/KeyboardShortcutsDialog.js';
 import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
+import {TrackingView} from './views/TrackingView.js';
 import {View} from './views/View.js';
 
 if (!navigator.userAgent.includes('Mobile'))
@@ -56,6 +58,7 @@ enum VIEW {
   Hidden,
   Settings,
   Todo,
+  Tracking,
   Triage,
 }
 
@@ -80,6 +83,9 @@ router.add('/compose', async (params) => {
   if (shouldHideMenu)
     preventUpdates();
   await setView(VIEW.Compose, params, shouldHideMenu);
+});
+router.add('/track', async (_params) => {
+  await setView(VIEW.Tracking);
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
@@ -112,6 +118,9 @@ async function createModel(viewType: VIEW, params?: any) {
     case VIEW.Compose:
       return new ComposeModel();
 
+    case VIEW.Tracking:
+      return new TrackingModel();
+
     case VIEW.Todo:
       let model = await getTodoModel();
       model.setFilter(params.filter);
@@ -140,6 +149,9 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Compose:
       return new ComposeView(model as ComposeModel, params);
+
+    case VIEW.Tracking:
+      return new TrackingView(model as TrackingModel);
 
     case VIEW.Todo:
       return new ThreadListView(

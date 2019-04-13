@@ -291,6 +291,7 @@ export class AppShell extends HTMLElement {
         this.createMenuItem_('Todo', {href: '/todo', nested: true}),
         this.createMenuItem_('Hidden', {href: '/hidden', nested: true}),
         this.createMenuItem_('Calendar (alpha)', {href: '/calendar'}),
+        this.createMenuItem_('Track (alpha)', {href: '/track'}),
         this.createMenuItem_('Settings', {href: '/settings'}), helpButton);
   }
 
