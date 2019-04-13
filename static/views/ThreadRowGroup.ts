@@ -12,6 +12,7 @@ export class ToggleCollapsedEvent extends Event {
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
   private rowCountWhenCollapsed_: number;
+  private toggler_: HTMLElement;
 
   constructor(private groupName_: string, private model_: ThreadListModel) {
     super();
@@ -27,14 +28,14 @@ export class ThreadRowGroup extends HTMLElement {
     `;
     groupNameContainer.append(groupName_);
 
-    let toggler = document.createElement('div');
-    toggler.style.cssText = `
+    this.toggler_ = document.createElement('div');
+    this.toggler_.style.cssText = `
       display: inline-block;
       text-decoration: underline;
       margin: 0 10px;
     `;
-    toggler.append(this.isCollapsed_() ? 'expand' : 'collapse');
-    toggler.addEventListener('click', () => this.toggleCollapsed_());
+    this.toggler_.append(this.isCollapsed_() ? 'expand' : 'collapse');
+    this.toggler_.addEventListener('click', () => this.toggleCollapsed_());
 
     let header = document.createElement('div');
     header.style.cssText = `
@@ -42,7 +43,7 @@ export class ThreadRowGroup extends HTMLElement {
       padding-top: 10px;
     `;
 
-    header.append(groupNameContainer, toggler)
+    header.append(groupNameContainer, this.toggler_)
 
     if (!this.isCollapsed_()) {
       header.append(
@@ -52,16 +53,6 @@ export class ThreadRowGroup extends HTMLElement {
 
     this.rowCountWhenCollapsed_ = 0;
     this.rowContainer_ = document.createElement('div');
-    if (this.isCollapsed_()) {
-      this.rowContainer_.style.cssText = `
-      background-color: #ffffffbb;
-      padding: 5px;
-      text-decoration: underline;
-    `;
-      this.rowContainer_.addEventListener(
-          'click', () => this.toggleCollapsed_());
-    }
-
     this.append(header, this.rowContainer_);
   }
 
@@ -83,8 +74,8 @@ export class ThreadRowGroup extends HTMLElement {
 
   push(row: ThreadRow) {
     if (this.isCollapsed_()) {
-      this.rowContainer_.textContent =
-          `Show ${++this.rowCountWhenCollapsed_} threads`;
+      this.toggler_.textContent =
+          `expand ${++this.rowCountWhenCollapsed_} threads`;
     } else {
       this.rowContainer_.append(row);
     }
