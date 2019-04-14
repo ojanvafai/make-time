@@ -39,11 +39,11 @@ export class ThreadRowGroup extends HTMLElement {
     header.append(groupNameContainer);
     this.append(header);
 
-    this.appendControls_(header);
-
     this.rowCountWhenCollapsed_ = 0;
     this.rowContainer_ = document.createElement('div');
     this.append(this.rowContainer_);
+
+    this.appendControls_(header);
   }
 
   appendControls_(header: HTMLElement) {
