@@ -3,7 +3,7 @@ import {Action} from '../Actions.js';
 import {assert, compareDates, setFaviconCount as setFavicon} from '../Base.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
 
 import {Model} from './Model.js';
 
@@ -96,6 +96,10 @@ export abstract class ThreadListModel extends Model {
     return false;
   }
 
+  hideGroupControls(_groupName: string) {
+    return false;
+  }
+
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.
   private async queueProcessSnapshot(snapshot:
@@ -172,8 +176,7 @@ export abstract class ThreadListModel extends Model {
     // Make sure any in progress snapshot updates get flushed.
     if (this.snapshotToProcess_)
       this.processSnapshot_();
-    return this.threads_.filter(
-        (thread: Thread) => this.shouldShowThread(thread));
+    return this.threads_.filter((thread: Thread) => this.shouldShowThread(thread));
   }
 
   private async threadListChanged_() {
@@ -186,6 +189,8 @@ export abstract class ThreadListModel extends Model {
 
   protected destinationToPriority(destination: Action) {
     switch (destination) {
+      case PIN_ACTION:
+        return Priority.Pin;
       case MUST_DO_ACTION:
         return Priority.MustDo;
       case URGENT_ACTION:

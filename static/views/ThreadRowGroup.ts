@@ -1,3 +1,4 @@
+import {defined} from '../Base.js';
 import {ThreadListModel} from '../models/ThreadListModel.js';
 
 import {ThreadRow} from './ThreadRow.js';
@@ -14,7 +15,7 @@ const NUM_TOP_THREADS = 3;
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
   private rowCountWhenCollapsed_: number;
-  private expander_: HTMLElement;
+  private expander_?: HTMLElement;
 
   constructor(private groupName_: string, private model_: ThreadListModel) {
     super();
@@ -28,14 +29,26 @@ export class ThreadRowGroup extends HTMLElement {
       font-weight: bold;
       font-size: 18px;
     `;
-    groupNameContainer.append(groupName_);
+    groupNameContainer.append(this.groupName_);
 
     let header = document.createElement('div');
     header.style.cssText = `
       margin-left: 5px;
       padding-top: 10px;
     `;
-    header.append(groupNameContainer)
+    header.append(groupNameContainer);
+    this.append(header);
+
+    this.appendControls_(header);
+
+    this.rowCountWhenCollapsed_ = 0;
+    this.rowContainer_ = document.createElement('div');
+    this.append(this.rowContainer_);
+  }
+
+  appendControls_(header: HTMLElement) {
+    if (this.hideControls_())
+      return;
 
     let toggler = document.createElement('div');
     toggler.style.cssText = `
@@ -55,10 +68,6 @@ export class ThreadRowGroup extends HTMLElement {
           this.createSelector_('none', this.selectNone_));
     }
 
-    this.rowCountWhenCollapsed_ = 0;
-    this.rowContainer_ = document.createElement('div');
-    this.append(header, this.rowContainer_);
-
     if (this.isCollapsed_() && this.showTopThreads_()) {
       this.expander_ = document.createElement('div');
       this.expander_.addEventListener('click', () => this.toggleCollapsed_());
@@ -74,6 +83,10 @@ export class ThreadRowGroup extends HTMLElement {
     return this.model_.showTopThreads(this.groupName_);
   }
 
+  hideControls_() {
+    return this.model_.hideGroupControls(this.groupName_);
+  }
+
   toggleCollapsed_() {
     this.model_.toggleCollapsed(this.groupName_);
   }
@@ -87,15 +100,16 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   setExpanderText_(text: string) {
-    this.expander_.style.cssText = `
+    let expander = defined(this.expander_);
+    expander.style.cssText = `
       padding: 5px;
       text-decoration: underline;
     `;
-    this.expander_.textContent = text;
+    expander.textContent = text;
   }
 
   push(row: ThreadRow) {
-    if (this.isCollapsed_()) {
+    if (!this.hideControls_() && this.isCollapsed_()) {
       let threadsElided = ++this.rowCountWhenCollapsed_;
       if (this.showTopThreads_()) {
         threadsElided -= NUM_TOP_THREADS;
@@ -106,7 +120,7 @@ export class ThreadRowGroup extends HTMLElement {
       }
     }
 
-    if (!this.isCollapsed_() ||
+    if (this.hideControls_() || !this.isCollapsed_() ||
         (this.showTopThreads_() &&
          this.rowContainer_.childElementCount < NUM_TOP_THREADS)) {
       this.rowContainer_.append(row);

@@ -109,16 +109,23 @@ export enum Priority {
   MustDo = 2,
   Urgent = 3,
   Backlog = 4,
+  Pin = 5,
 }
 
 export const NEEDS_FILTER_PRIORITY_NAME = 'Needs filter';
+export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
 export const URGENT_PRIORITY_NAME = 'Urgent';
 export const BACKLOG_PRIORITY_NAME = 'Backlog';
 export const BLOCKED_LABEL_NAME = 'Blocked';
 
-export const PrioritySortOrder =
-    [Priority.NeedsFilter, Priority.MustDo, Priority.Urgent, Priority.Backlog];
+export const PrioritySortOrder = [
+  Priority.Pin,
+  Priority.NeedsFilter,
+  Priority.MustDo,
+  Priority.Urgent,
+  Priority.Backlog,
+];
 
 // Use negative values for built-in labels.
 export enum BuiltInLabelIds {
@@ -320,6 +327,8 @@ export class Thread extends EventTarget {
 
   getPriority() {
     switch (this.getPriorityId()) {
+      case Priority.Pin:
+        return PINNED_PRIORITY_NAME;
       case Priority.NeedsFilter:
         return NEEDS_FILTER_PRIORITY_NAME;
       case Priority.MustDo:

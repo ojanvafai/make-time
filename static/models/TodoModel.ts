@@ -1,7 +1,7 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {defined, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
-import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
@@ -54,6 +54,11 @@ export class TodoModel extends ThreadListModel {
     let priority = thread.getPriorityId();
     if (!priority)
       return false;
+
+    // Always show pinned threads even if there's a vacation
+    if (priority === Priority.Pin)
+      return true;
+
     if (this.vacation_ && priority !== Priority.MustDo)
       return false;
 
@@ -80,6 +85,16 @@ export class TodoModel extends ThreadListModel {
   showTopThreads(groupName: string) {
     return groupName === MUST_DO_PRIORITY_NAME ||
         groupName === URGENT_PRIORITY_NAME;
+  }
+
+  hideGroupControls(groupName: string) {
+    return groupName === PINNED_PRIORITY_NAME;
+  }
+
+  pinnedCount() {
+    return this.getThreads()
+        .filter(x => x.getPriorityId() === Priority.Pin)
+        .length;
   }
 
   private getSortData_(priority: number) {

@@ -6,7 +6,7 @@ import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {BACKLOG_PRIORITY_NAME, BLOCKED_LABEL_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {BACKLOG_PRIORITY_NAME, BLOCKED_LABEL_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -32,6 +32,8 @@ let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
 interface ListenerData {
   name: string, handler: (e: Event) => void,
 }
+
+let MAX_PINNED_THREADS = 3;
 
 export let ARCHIVE_ACTION = {
   name: `Archive`,
@@ -191,6 +193,12 @@ export let NEEDS_FILTER_ACTION = {
   key: 'f',
 };
 
+export let PIN_ACTION = {
+  name: PINNED_PRIORITY_NAME,
+  description: `Pins to the top at the top of todo.`,
+  key: 'x',
+};
+
 let MOVE_UP_ACTION = {
   name: `Move up`,
   shortName: '⬆',
@@ -237,6 +245,7 @@ let SORT_ACTIONS = [
 ];
 
 let RENDER_ALL_ACTIONS = [
+  PIN_ACTION,
   TOGGLE_FOCUSED_ACTION,
   TOGGLE_GROUP_ACTION,
   VIEW_FOCUSED_ACTION,
@@ -274,7 +283,8 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      settings: Settings, bottomButtonUrl?: string, bottomButtonText?: string,
+      settings: Settings, private getPinnedCount_: () => Promise<number>,
+      bottomButtonUrl?: string, bottomButtonText?: string,
       private includeSortActions_?: boolean) {
     super();
 
@@ -814,6 +824,16 @@ export class ThreadListView extends View {
   }
 
   private async markTriaged_(destination: Action) {
+    if (destination === PIN_ACTION) {
+      assert(!this.renderedRow_);
+      let currentlyPinned = await this.getPinnedCount_();
+      let selectedCount = this.getRows_().filter(x => x.selected).length;
+      if (currentlyPinned + selectedCount > MAX_PINNED_THREADS) {
+        alert(`Cannot pin more than ${MAX_PINNED_THREADS} rows.`);
+        return;
+      }
+    }
+
     if (this.renderedRow_) {
       // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in
       // some cases.
@@ -841,13 +861,14 @@ export class ThreadListView extends View {
           let parentGroup = child.getGroup();
           // The rows will get removed on the next frame anyways, but we don't
           // want the user to see an intermediary state where the row is shown
-          // but unchecked and we don't want to move focus to the next row until
-          // these rows have been removed. So just removed them synchronously
-          // here purely for the visual effect. This also has the important side
-          // effect of not blocking the UI changes on network activity.
+          // but unchecked and we don't want to move focus to the next row
+          // until these rows have been removed. So just removed them
+          // synchronously here purely for the visual effect. This also has
+          // the important side effect of not blocking the UI changes on
+          // network activity.
           child.remove();
-          // Remove the parent group if it's now empty so the user doens't see a
-          // flicker where the row is removed without it's parent group also
+          // Remove the parent group if it's now empty so the user doens't see
+          // a flicker where the row is removed without it's parent group also
           // being removed.
           parentGroup.removeIfEmpty();
         } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {

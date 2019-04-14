@@ -155,19 +155,19 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Todo:
       return new ThreadListView(
-          <TodoModel>model, appShell_, await getSettings(), '/triage',
-          'Back to Triaging', true);
+          <TodoModel>model, appShell_, await getSettings(), getPinnedCount,
+          '/triage', 'Back to Triaging', true);
 
     case VIEW.Triage:
       return new ThreadListView(
-          <TriageModel>model, appShell_, await getSettings(), '/todo',
-          'Go to todo list');
+          <TriageModel>model, appShell_, await getSettings(), getPinnedCount,
+          '/todo', 'Go to todo list');
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
 
     case VIEW.Hidden:
-      return new HiddenView(appShell_, await getSettings());
+      return new HiddenView(appShell_, await getSettings(), getPinnedCount);
 
     default:
       // Throw instead of asserting here so that TypeScript knows that this
@@ -236,6 +236,10 @@ async function getTodoModel() {
     todoModel_ = new TodoModel(settings.get(ServerStorage.KEYS.VACATION));
   }
   return todoModel_;
+}
+
+async function getPinnedCount() {
+  return (await getTodoModel()).pinnedCount();
 }
 
 async function updateBackground() {
