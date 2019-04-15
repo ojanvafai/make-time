@@ -48,7 +48,6 @@ export abstract class ThreadListModel extends Model {
 
   protected abstract defaultCollapsedState(groupName: string): boolean;
   protected abstract compareThreads(a: Thread, b: Thread): number;
-  abstract getThreadRowLabel(thread: Thread): string;
   abstract getGroupName(thread: Thread): string;
 
   setSortOrder(_threads: Thread[]) {
@@ -176,7 +175,8 @@ export abstract class ThreadListModel extends Model {
     // Make sure any in progress snapshot updates get flushed.
     if (this.snapshotToProcess_)
       this.processSnapshot_();
-    return this.threads_.filter((thread: Thread) => this.shouldShowThread(thread));
+    return this.threads_.filter(
+        (thread: Thread) => this.shouldShowThread(thread));
   }
 
   private async threadListChanged_() {

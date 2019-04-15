@@ -17,19 +17,6 @@ let FIRESTORE_KEYS = [
   ThreadMetadataKeys.archivedByFilter,
 ];
 
-let formattingOptions: {
-  year?: string;
-  month?: string;
-  day?: string;
-  hour?: string;
-  minute?: string;
-} = {
-  month: 'short',
-  day: 'numeric',
-}
-
-let DAY_MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
-
 class HiddenModel extends ThreadListModel {
   constructor(private settings_: Settings, private keyIndex_: number) {
     // For muted, don't put undo items back in the inbox.
@@ -82,25 +69,6 @@ class HiddenModel extends ThreadListModel {
     }
 
     return super.shouldShowThread(thread);
-  }
-
-  // There's no priorities to show, but when in queued, we want the label to
-  // show the group so you can see which group it's queued into and in blocked
-  // want to see what date it's blocked until.
-  getThreadRowLabel(thread: Thread) {
-    switch (this.queryKey_()) {
-      case ThreadMetadataKeys.blocked:
-        // If we load the page and blocked threads are removed while viewing,
-        // then the thread will be unblocked in some cases while still
-        // temporarily being visible in this view.
-        if (thread.isBlocked())
-          return DAY_MONTH_FORMATTER.format(thread.getBlockedDate());
-        return '';
-
-      case ThreadMetadataKeys.queued:
-        return TriageModel.getThreadRowLabel(thread);
-    }
-    return '';
   }
 
   getGroupName(thread: Thread) {

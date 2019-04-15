@@ -74,10 +74,6 @@ export class TodoModel extends ThreadListModel {
         groupName !== NEEDS_FILTER_PRIORITY_NAME;
   }
 
-  getThreadRowLabel(thread: Thread) {
-    return thread.getLabel() || '';
-  }
-
   getGroupName(thread: Thread) {
     return notNull(thread.getPriority());
   }

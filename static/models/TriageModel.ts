@@ -43,17 +43,6 @@ export class TriageModel extends ThreadListModel {
     return super.shouldShowThread(thread);
   }
 
-  getThreadRowLabel(thread: Thread) {
-    return TriageModel.getThreadRowLabel(thread);
-  }
-
-  static getThreadRowLabel(thread: Thread) {
-    // TODO: Show both the label and priority for blocked threads.
-    if (thread.isBlocked())
-      return notNull(thread.getLabel());
-    return thread.getPriority() || '';
-  }
-
   getGroupName(thread: Thread) {
     return TriageModel.getGroupName(thread);
   }

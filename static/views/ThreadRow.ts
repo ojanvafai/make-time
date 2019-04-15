@@ -24,6 +24,19 @@ let SAME_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
   minute: 'numeric',
 });
 
+let formattingOptions: {
+  year?: string;
+  month?: string;
+  day?: string;
+  hour?: string;
+  minute?: string;
+} = {
+  month: 'short',
+  day: 'numeric',
+}
+
+let DAY_MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
+
 export class FocusRowEvent extends Event {
   static NAME = 'focus-row';
   constructor() {
@@ -42,13 +55,17 @@ class RowState {
   constructor(
       public subject: string, public snippet: string, public from: string,
       public count: number, public lastMessageId: string,
-      public label: string|null) {}
+      public label: string|null, public priority: string|null,
+      public blocked: Date|null) {}
 
   equals(other: RowState) {
     return this.subject === other.subject && this.snippet === other.snippet &&
         this.from === other.from && this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
-        this.label === other.label;
+        this.label === other.label && this.priority === other.priority &&
+        (this.blocked === other.blocked ||
+         this.blocked && other.blocked &&
+             this.blocked.getTime() === other.blocked.getTime());
   }
 }
 
@@ -174,10 +191,16 @@ export class ThreadRow extends HTMLElement {
   renderRow_() {
     let snippetText = this.thread.getSnippet();
     let messageIds = this.thread.getMessageIds();
-    let secondaryName = this.model_.getThreadRowLabel(this.thread);
+
+    let blockedDate =
+        this.thread.isBlocked() ? this.thread.getBlockedDate() : null;
+    let priority = this.thread.getPriority();
+    let label = this.thread.getLabel();
+
     let state = new RowState(
         this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
-        messageIds.length, messageIds[messageIds.length - 1], secondaryName);
+        messageIds.length, messageIds[messageIds.length - 1], label, priority,
+        blockedDate);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -225,24 +248,22 @@ export class ThreadRow extends HTMLElement {
       flex: 1;
     `;
 
-    if (state.label) {
-      let label = document.createElement('a');
-      label.style.cssText = `
-        display: inline-block;
-        color: #666;
-        background-color: #ddd;
-        font-size: 0.75rem;
-        line-height: 18px;
-        border-radius: 4px;
-        padding: 0 4px;
-        margin-right: 4px;
-      `;
-      label.append(state.label);
+    if (state.blocked) {
+      let blockedString = DAY_MONTH_FORMATTER.format(state.blocked);
+      let label = this.createLabel_(blockedString);
+      title.append(label);
+    }
 
+    if (state.priority) {
+      let label = this.createLabel_(state.priority);
+      title.append(label);
+    }
+
+    if (state.label) {
+      let label = this.createLabel_(state.label);
       let labelHref = this.model_.labelHref(state.label);
       if (labelHref)
         label.href = labelHref;
-
       title.append(label);
     }
 
@@ -277,6 +298,22 @@ export class ThreadRow extends HTMLElement {
       this.messageDetails_.style.alignItems = 'center';
       this.messageDetails_.append(fromContainer, title, date, popoutButton);
     }
+  }
+
+  private createLabel_(text: string) {
+    let label = document.createElement('a');
+    label.style.cssText = `
+      display: inline-block;
+      color: #666;
+      background-color: #ddd;
+      font-size: 0.75rem;
+      line-height: 18px;
+      border-radius: 4px;
+      padding: 0 4px;
+      margin-right: 4px;
+    `;
+    label.append(text);
+    return label;
   }
 
   private dateString_(date: Date) {
