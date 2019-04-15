@@ -193,6 +193,9 @@ export class ThreadRow extends HTMLElement {
   }
 
   renderRow_() {
+    if (!this.parentNode)
+      return;
+
     let snippetText = this.thread.getSnippet();
     let messageIds = this.thread.getMessageIds();
     let blockedDate =
