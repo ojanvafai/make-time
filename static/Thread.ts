@@ -34,8 +34,10 @@ export interface ThreadMetadata {
   historyId: string;
   messageIds: string[];
   timestamp: number;
+  retriageTimestamp?: number;
   priorityId?: number;
   labelId?: number;
+  needsRetriage?: boolean;
   // These booleans are so we can query for things that have a label but still
   // orderBy timestamp. We can just priorityId>0 because firestore doesn't
   // support range queries on a different field than the orderBy field.
@@ -60,8 +62,10 @@ export interface ThreadMetadataUpdate {
   historyId?: string|firebase.firestore.FieldValue;
   messageIds?: string[]|firebase.firestore.FieldValue;
   timestamp?: number|firebase.firestore.FieldValue;
+  retriageTimestamp?: number|firebase.firestore.FieldValue;
   priorityId?: number|firebase.firestore.FieldValue;
   labelId?: number|firebase.firestore.FieldValue;
+  needsRetriage?: boolean|firebase.firestore.FieldValue;
   hasLabel?: boolean|firebase.firestore.FieldValue;
   hasPriority?: boolean|firebase.firestore.FieldValue;
   queued?: boolean|firebase.firestore.FieldValue;
@@ -80,8 +84,10 @@ export enum ThreadMetadataKeys {
   historyId = 'historyId',
   messageIds = 'messageIds',
   timestamp = 'timestamp',
+  retriageTimestamp = 'retriageTimestamp',
   priorityId = 'priorityId',
   labelId = 'labelId',
+  needsRetriage = 'needsRetriage',
   hasLabel = 'hasLabel',
   hasPriority = 'hasPriority',
   queued = 'queued',
@@ -118,6 +124,7 @@ export const MUST_DO_PRIORITY_NAME = 'Must do';
 export const URGENT_PRIORITY_NAME = 'Urgent';
 export const BACKLOG_PRIORITY_NAME = 'Backlog';
 export const BLOCKED_LABEL_NAME = 'Blocked';
+export const FALLBACK_LABEL_NAME = 'No label';
 
 export const PrioritySortOrder = [
   Priority.Pin,
@@ -130,6 +137,7 @@ export const PrioritySortOrder = [
 // Use negative values for built-in labels.
 export enum BuiltInLabelIds {
   Blocked = -1,
+  Fallback = -2,
 }
 
 export class Thread extends EventTarget {
@@ -182,7 +190,8 @@ export class Thread extends EventTarget {
 
   static clearedMetatdata(): ThreadMetadataUpdate {
     return {
-      blocked: firebase.firestore.FieldValue.delete(),
+      needsRetriage: firebase.firestore.FieldValue.delete(),
+          blocked: firebase.firestore.FieldValue.delete(),
           muted: firebase.firestore.FieldValue.delete(),
           archivedByFilter: firebase.firestore.FieldValue.delete(),
           queued: firebase.firestore.FieldValue.delete(),
@@ -266,6 +275,10 @@ export class Thread extends EventTarget {
     return this.metadata_.blocked;
   }
 
+  needsRetriage() {
+    return this.metadata_.needsRetriage;
+  }
+
   getDate() {
     return new Date(defined(this.metadata_.timestamp));
   }
@@ -313,6 +326,8 @@ export class Thread extends EventTarget {
       return null;
     if (id === BuiltInLabelIds.Blocked)
       return BLOCKED_LABEL_NAME;
+    if (id === BuiltInLabelIds.Fallback)
+      return FALLBACK_LABEL_NAME;
     return this.queueNames_.getName(id);
   }
 

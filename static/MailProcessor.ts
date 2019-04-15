@@ -9,7 +9,7 @@ import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, ruleRegexp, Settings, stringFilterMatches} from './Settings.js';
 import {TaskQueue} from './TaskQueue.js';
-import {BuiltInLabelIds, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
+import {BuiltInLabelIds, Priority, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
@@ -495,9 +495,61 @@ export class MailProcessor {
         });
   }
 
+  async dequeueRetriage_(priority: Priority, retriageDays: number) {
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    let querySnapshot =
+        await metadataCollection
+            .where(ThreadMetadataKeys.priorityId, '==', priority)
+            .get();
+
+    let count = querySnapshot.docs.length;
+    let amountToRetriage = Math.ceil(count / retriageDays);
+    var oneDay = 24 * 60 * 60 * 1000;
+    let now = Date.now();
+
+    let lacksLabel = querySnapshot.docs.filter(x => {
+      let data = x.data();
+      if (data.hasLabel)
+        return false;
+      if (!data.retriageTimestamp)
+        return true;
+      let days = (now - data.retriageTimestamp) / oneDay;
+      return days < retriageDays;
+    });
+
+    // Shuffle the array.
+    for (let i = lacksLabel.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [lacksLabel[i], lacksLabel[j]] = [lacksLabel[j], lacksLabel[i]];
+    }
+
+    let retriage = lacksLabel.slice(0, amountToRetriage);
+
+    await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
+        retriage, async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          // Put the thread back in the triage queue (hasLabel) and denote when
+          // it was last marked for retriage so we avoid marking it again within
+          // the retriageDays buffer.
+          let update: ThreadMetadataUpdate = {
+            hasLabel: true,
+            needsRetriage: true,
+            retriageTimestamp: Date.now(),
+          };
+          // TODO: Remove this once all clients have flushed all their threads
+          // that don't have labels.
+          if (!doc.data().labelId)
+            update.labelId = BuiltInLabelIds.Fallback;
+          await doc.ref.update(update);
+        });
+  }
+
   async processSingleQueue(queue: string) {
-    if (queue === QueueSettings.DAILY)
+    if (queue === QueueSettings.DAILY) {
       await this.dequeueBlocked_();
+      await this.dequeueRetriage_(Priority.Urgent, 7);
+      await this.dequeueRetriage_(Priority.Backlog, 28);
+    }
 
     let queueNames = new QueueNames();
     let queueDatas = this.settings_.getQueueSettings().entries();
@@ -560,7 +612,7 @@ export class MailProcessor {
     // in the way of a code change.
     //
     // let time = new Date(lastDequeueTime);
-    // let DAYS_BACK = 10;
+    // let DAYS_BACK = 1;
     // time.setDate(time.getDate() - DAYS_BACK);
     // lastDequeueTime = time.getTime();
     const categories = this.categoriesToDequeue(lastDequeueTime);

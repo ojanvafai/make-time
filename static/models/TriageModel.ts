@@ -7,6 +7,8 @@ import {BLOCKED_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
+const RETRIAGE_LABEL_NAME = 'Retriage';
+
 export class TriageModel extends ThreadListModel {
   constructor(private settings_: Settings) {
     super();
@@ -59,6 +61,8 @@ export class TriageModel extends ThreadListModel {
   static getGroupName(thread: Thread) {
     if (thread.isBlocked())
       return BLOCKED_LABEL_NAME;
+    if (thread.needsRetriage())
+      return RETRIAGE_LABEL_NAME;
     return notNull(thread.getLabel());
   }
 
