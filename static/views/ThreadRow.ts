@@ -1,7 +1,7 @@
 import {assert, parseAddressList} from '../Base.js';
 import {ThreadListModel} from '../models/ThreadListModel.js';
 import {RenderedThread} from '../RenderedThread.js';
-import {Thread, UpdatedEvent} from '../Thread.js';
+import {BLOCKED_LABEL_NAME, Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
@@ -54,7 +54,7 @@ export class SelectRowEvent extends Event {
 class RowState {
   constructor(
       public subject: string, public snippet: string, public from: string,
-      public count: number, public lastMessageId: string,
+      public count: number, public lastMessageId: string, public group: string,
       public label: string|null, public priority: string|null,
       public blocked: Date|null) {}
 
@@ -62,7 +62,8 @@ class RowState {
     return this.subject === other.subject && this.snippet === other.snippet &&
         this.from === other.from && this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
-        this.label === other.label && this.priority === other.priority &&
+        this.group === other.group && this.label === other.label &&
+        this.priority === other.priority &&
         (this.blocked === other.blocked ||
          this.blocked && other.blocked &&
              this.blocked.getTime() === other.blocked.getTime());
@@ -144,7 +145,6 @@ export class ThreadRow extends HTMLElement {
     };
     this.append(this.messageDetails_);
 
-    this.renderRow_();
     this.rendered = new RenderedThread(thread);
     thread.addEventListener(
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
@@ -188,18 +188,20 @@ export class ThreadRow extends HTMLElement {
       this.rendered.render();
   }
 
+  connectedCallback() {
+    this.renderRow_();
+  }
+
   renderRow_() {
     let snippetText = this.thread.getSnippet();
     let messageIds = this.thread.getMessageIds();
-
     let blockedDate =
         this.thread.isBlocked() ? this.thread.getBlockedDate() : null;
-    let priority = this.thread.getPriority();
-    let label = this.thread.getLabel();
 
     let state = new RowState(
         this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
-        messageIds.length, messageIds[messageIds.length - 1], label, priority,
+        messageIds.length, messageIds[messageIds.length - 1],
+        this.getGroup().name, this.thread.getLabel(), this.thread.getPriority(),
         blockedDate);
 
     // Keep track of the last state we used to render this row so we can avoid
@@ -248,18 +250,18 @@ export class ThreadRow extends HTMLElement {
       flex: 1;
     `;
 
-    if (state.blocked) {
+    if (state.blocked && state.group !== BLOCKED_LABEL_NAME) {
       let blockedString = DAY_MONTH_FORMATTER.format(state.blocked);
       let label = this.createLabel_(blockedString);
       title.append(label);
     }
 
-    if (state.priority) {
+    if (state.priority && state.group !== state.priority) {
       let label = this.createLabel_(state.priority);
       title.append(label);
     }
 
-    if (state.label) {
+    if (state.label && state.group !== state.label) {
       let label = this.createLabel_(state.label);
       let labelHref = this.model_.labelHref(state.label);
       if (labelHref)

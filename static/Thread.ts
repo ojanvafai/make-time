@@ -324,11 +324,15 @@ export class Thread extends EventTarget {
     let id = this.getLabelId();
     if (!id)
       return null;
-    if (id === BuiltInLabelIds.Blocked)
-      return BLOCKED_LABEL_NAME;
-    if (id === BuiltInLabelIds.Fallback)
-      return FALLBACK_LABEL_NAME;
-    return this.queueNames_.getName(id);
+
+    switch (id) {
+      case BuiltInLabelIds.Blocked:
+        return BLOCKED_LABEL_NAME;
+      case BuiltInLabelIds.Fallback:
+        return FALLBACK_LABEL_NAME;
+      default:
+        return this.queueNames_.getName(id);
+    }
   }
 
   needsTriage() {
