@@ -50,6 +50,7 @@ export class Actions extends HTMLElement {
       flex-wrap: wrap;
       flex: 1;
       justify-content: center;
+      align-items: center;
     `;
     this.append(buttonContainer);
 
