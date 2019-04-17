@@ -1,4 +1,4 @@
-import {Action, Actions, registerActions} from '../Actions.js';
+import {Action, Actions, registerActions, Shortcut} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
@@ -121,6 +121,7 @@ export let NEXT_FULL_ACTION = {
   description:
       `Focus the first email of the next group or scroll thread to the last message.`,
   key: 'n',
+  secondaryKey: new Shortcut('ArrowDown', false, true),
   hidden: true,
   repeatable: true,
 };
@@ -130,6 +131,7 @@ export let PREVIOUS_FULL_ACTION = {
   description:
       `Focus the first email of the previous group or scroll thread to the first message..`,
   key: 'p',
+  secondaryKey: new Shortcut('ArrowUp', false, true),
   hidden: true,
   repeatable: true,
 };

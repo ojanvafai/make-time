@@ -486,8 +486,7 @@ document.body.addEventListener('keydown', async (e) => {
     return;
   }
 
-  if (getView().dispatchShortcut && !e.ctrlKey && !e.shiftKey && !e.altKey &&
-      !e.metaKey)
+  if (getView().dispatchShortcut && !e.altKey)
     await getView().dispatchShortcut(e);
 });
 

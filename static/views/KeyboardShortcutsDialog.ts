@@ -1,24 +1,6 @@
-import {getActionKey, getActions} from '../Actions.js';
+import {getPrimaryShortcut, getActions, shortcutString} from '../Actions.js';
 
 import {HelpDialog} from './HelpDialog.js';
-
-function humanReadableKeyName(key: string) {
-  switch (key) {
-    case ' ':
-      return '<space>';
-    case 'ArrowDown':
-      return '⬇';
-    case 'ArrowUp':
-      return '⬆';
-    case 'Escape':
-      return '<esc>';
-    case 'Enter':
-      return '<enter>';
-    default:
-      return key;
-  }
-}
-
 
 export class KeyboardShortcutsDialog {
   constructor() {
@@ -55,7 +37,7 @@ export class KeyboardShortcutsDialog {
         let row = document.createElement('tr');
         table.append(row);
 
-        let key = humanReadableKeyName(getActionKey(action));
+        let key = shortcutString(getPrimaryShortcut(action));
 
         let shortcut = document.createElement('td');
         shortcut.style.cssText = `
@@ -67,7 +49,7 @@ export class KeyboardShortcutsDialog {
         shortcut.append(key);
 
         if (action.secondaryKey)
-          shortcut.append(` or ${humanReadableKeyName(action.secondaryKey)}`);
+          shortcut.append(` OR ${shortcutString(action.secondaryKey)}`);
 
         row.append(shortcut);
 

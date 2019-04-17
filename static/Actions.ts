@@ -4,10 +4,52 @@ export interface Action {
   name: string;
   shortName?: string;
   description: string;
-  key?: string;
-  secondaryKey?: string;
+  key?: Shortcut|string;
+  secondaryKey?: Shortcut|string;
   hidden?: boolean;
   repeatable?: boolean;
+}
+
+export class Shortcut {
+  constructor(
+      public key: string, public ctrlMeta?: boolean, public shift?: boolean) {}
+
+  toString() {
+    let val = '';
+    if (this.ctrlMeta)
+      val += '<ctrl/cmd> + '
+      if (this.shift)
+      val += '<shift> + ';
+    return val + humanReadableKeyName(this.key);
+  }
+
+  matches(e: KeyboardEvent) {
+    return this.key === e.key && !!this.shift === e.shiftKey &&
+        (!!this.ctrlMeta === e.ctrlKey || !!this.ctrlMeta === e.metaKey);
+  }
+}
+
+function humanReadableKeyName(key: string) {
+  switch (key) {
+    case ' ':
+      return '<space>';
+    case 'ArrowDown':
+      return '⬇';
+    case 'ArrowUp':
+      return '⬆';
+    case 'Escape':
+      return '<esc>';
+    case 'Enter':
+      return '<enter>';
+    default:
+      return key;
+  }
+}
+
+export function shortcutString(shortcut: Shortcut|string) {
+  if (typeof shortcut === 'string')
+    return humanReadableKeyName(shortcut);
+  return shortcut.toString();
 }
 
 let actions_: Map<string, Action[]> = new Map();
@@ -20,7 +62,7 @@ export function getActions() {
 }
 
 // TODO: Should probably make Action a proper class and put this on Action.
-export function getActionKey(action: Action) {
+export function getPrimaryShortcut(action: Action) {
   if (action.key)
     return action.key;
   return action.name.charAt(0).toLowerCase();
@@ -108,7 +150,8 @@ export class Actions extends HTMLElement {
       if (renderMini) {
         button.innerHTML = action.shortName || action.name;
       } else {
-        let key = action.key || action.name.charAt(0);
+        let key =
+            action.key ? shortcutString(action.key) : action.name.charAt(0);
         let name = action.key ? `:${action.name}` : action.name.slice(1);
         button.innerHTML =
             `<span style="font-weight: bold; text-decoration: underline;">${
@@ -119,6 +162,15 @@ export class Actions extends HTMLElement {
     }
   }
 
+  matchesEvent_(e: KeyboardEvent, shortcut?: string|Shortcut) {
+    if (!shortcut)
+      return false;
+
+    if (typeof shortcut === 'string')
+      shortcut = new Shortcut(shortcut);
+    return shortcut.matches(e);
+  }
+
   async dispatchShortcut(e: KeyboardEvent) {
     let test = (action: Action) => {
       // Don't allow certain actions to apply in rapid succession for each
@@ -127,9 +179,9 @@ export class Actions extends HTMLElement {
       // #sigh
       if (!action.repeatable && e.repeat)
         return false;
-      if (getActionKey(action) === e.key)
-        return true;
-      return action.secondaryKey === e.key;
+
+      return this.matchesEvent_(e, getPrimaryShortcut(action)) ||
+          this.matchesEvent_(e, action.secondaryKey);
     };
 
     let action = this.actions_.find(test);
