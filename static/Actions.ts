@@ -5,6 +5,7 @@ export interface Action {
   shortName?: string;
   description: string;
   key?: string;
+  secondaryKey?: string;
   hidden?: boolean;
   repeatable?: boolean;
 }
@@ -126,7 +127,9 @@ export class Actions extends HTMLElement {
       // #sigh
       if (!action.repeatable && e.repeat)
         return false;
-      return getActionKey(action) == e.key;
+      if (getActionKey(action) === e.key)
+        return true;
+      return action.secondaryKey === e.key;
     };
 
     let action = this.actions_.find(test);

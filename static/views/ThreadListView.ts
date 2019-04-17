@@ -102,6 +102,7 @@ export let NEXT_ACTION = {
   name: `Next`,
   description: `Go to the next row/thread/message.`,
   key: 'j',
+  secondaryKey: 'ArrowDown',
   hidden: true,
   repeatable: true,
 };
@@ -110,6 +111,7 @@ export let PREVIOUS_ACTION = {
   name: `Previous`,
   description: `Go to the previous row/thread/message.`,
   key: 'k',
+  secondaryKey: 'ArrowUp',
   hidden: true,
   repeatable: true,
 };
