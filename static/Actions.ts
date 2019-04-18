@@ -10,6 +10,8 @@ export interface Action {
   repeatable?: boolean;
 }
 
+const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
+
 export class Shortcut {
   constructor(
       public key: string, public ctrlMeta?: boolean, public shift?: boolean) {}
@@ -17,15 +19,16 @@ export class Shortcut {
   toString() {
     let val = '';
     if (this.ctrlMeta)
-      val += '<ctrl/cmd> + '
-      if (this.shift)
+      val += USES_META_FOR_CTRL ? '<cmd> + ' : '<ctrl> + ';
+    if (this.shift)
       val += '<shift> + ';
     return val + humanReadableKeyName(this.key);
   }
 
   matches(e: KeyboardEvent) {
     return this.key === e.key && !!this.shift === e.shiftKey &&
-        (!!this.ctrlMeta === e.ctrlKey || !!this.ctrlMeta === e.metaKey);
+        (USES_META_FOR_CTRL ? !!this.ctrlMeta === e.metaKey :
+                              !!this.ctrlMeta === e.ctrlKey)
   }
 }
 
