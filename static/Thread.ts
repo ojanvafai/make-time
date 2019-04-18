@@ -156,13 +156,6 @@ export class Thread extends EventTarget {
     this.processed_ = new ProcessedMessageData();
     this.queueNames_ = new QueueNames();
     this.sentMessageIds_ = [];
-
-    let doc = this.getMetadataDocument_();
-    doc.onSnapshot((snapshot) => {
-      this.metadata_ = snapshot.data() as ThreadMetadata;
-      // Make callers update when metadata has changed.
-      this.dispatchEvent(new UpdatedEvent());
-    });
   }
 
   private messageCount_() {
@@ -495,6 +488,16 @@ export class Thread extends EventTarget {
   async fetchFromDisk() {
     if (this.processed_.messages.length)
       return;
+
+    // This does expensive work in firestore, so don't do this in the
+    // constructor as there are cases we want to proceed without waiting to
+    // setup the snapshot listener.
+    let doc = this.getMetadataDocument_();
+    doc.onSnapshot((snapshot) => {
+      this.metadata_ = snapshot.data() as ThreadMetadata;
+      // Make callers update when metadata has changed.
+      this.dispatchEvent(new UpdatedEvent());
+    });
 
     let data = await this.deserializeMessageData_();
     if (!data)

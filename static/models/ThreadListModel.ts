@@ -156,15 +156,45 @@ export abstract class ThreadListModel extends Model {
     this.threads_.sort(this.compareThreads.bind(this));
   }
 
-  async fetchThreads() {
-    for (const thread of this.threads_) {
-      await thread.fetchFromDisk();
-    };
+  * getThreadGenerator() {
+    for (const event of this.threads_)
+      yield event;
+  }
 
-    // Do network fetching after we've fetched everything off disk first.
-    for (const thread of this.threads_) {
-      await thread.syncMessagesInFirestore();
-    }
+  processInIdleTime_<T>(
+      items: IterableIterator<T>, callback: (item: T) => Promise<void>) {
+    return new Promise((resolve) => {
+      window.requestIdleCallback(async (deadline) => {
+        let handler = async () => {
+          let item = items.next();
+          while (!item.done) {
+            await callback(item.value);
+            if (deadline.timeRemaining() === 0) {
+              window.requestIdleCallback(() => handler());
+              return;
+            }
+            item = items.next();
+          }
+          resolve();
+        };
+        handler();
+      });
+    });
+  }
+
+  async fetchThreads() {
+    // Do this fetching in idle time so it doesn't block other work like
+    // switching views. If there's a lot of threads in this model, then we want
+    // to interleave work for the other view's model as well so it can make
+    // progress.
+    // TODO: When the view switches, deprioritize all these fetches until the
+    // new view is finished.
+    await this.processInIdleTime_(
+        this.getThreadGenerator(),
+        async (thread) => await thread.fetchFromDisk());
+    await this.processInIdleTime_(
+        this.getThreadGenerator(),
+        async (thread) => await thread.syncMessagesInFirestore());
   }
 
   static compareDates(a: Thread, b: Thread) {
