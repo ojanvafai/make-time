@@ -322,4 +322,4 @@ export class AppShell extends HTMLElement {
       this.openMenu();
   }
 }
-window.customElements.define('mk-appshell', AppShell);
+window.customElements.define('mt-appshell', AppShell);

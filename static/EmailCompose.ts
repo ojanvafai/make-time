@@ -44,7 +44,10 @@ export class EmailCompose extends HTMLElement {
     this.bubble_ = null;
 
     this.content = document.createElement('div');
+    // Put contain:content so things inside the email can't be positioned
+    // outside of it.
     this.content.style.cssText = `
+      contain: content;
       flex: 1;
       min-width: 200px;
       overflow: auto;
@@ -377,8 +380,13 @@ export class EmailCompose extends HTMLElement {
     // the contentEditable region will instantiate actual components and break
     // the page.
     // TODO: Technically we only need to do this on paste.
+    // TODO: Probably need to do this for rendering threads as well since
+    // someone could technicall sent maketime components in an email.
     value = value.replace(/\<mt-/g, '<inert-mt-');
+    value = value.replace(/\<\/mt-/g, '</inert-mt-');
+
     this.content.innerHTML = value;
+
     this.updatePlaceholder_();
     if (this.bubble_)
       this.bubble_.remove();
