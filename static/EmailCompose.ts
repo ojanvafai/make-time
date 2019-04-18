@@ -372,6 +372,12 @@ export class EmailCompose extends HTMLElement {
   }
 
   set value(value) {
+    // TODO: There's probably a more robust thing we should be doing here. If
+    // you end up copy-pasting out of make-time, then the elements pasted into
+    // the contentEditable region will instantiate actual components and break
+    // the page.
+    // TODO: Technically we only need to do this on paste.
+    value = value.replace(/\<mt-/g, '<inert-mt-');
     this.content.innerHTML = value;
     this.updatePlaceholder_();
     if (this.bubble_)
