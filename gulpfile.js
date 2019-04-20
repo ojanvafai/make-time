@@ -12,6 +12,7 @@ let stripJsonComments = require('strip-json-comments');
 let typescript = require('gulp-typescript');
 let terser = require('gulp-terser');
 let watch = require('gulp-watch');
+var jest = require('gulp-jest').default;
 
 let mainFilename = '/main.js';
 let bundleDir = '/bundle';
@@ -154,6 +155,15 @@ gulp.task('upload', () => {
     .pipe(replace(pathsToRewrite[0][1], pathsToRewrite[0][0]))
     .pipe(replace(pathsToRewrite[1][1], pathsToRewrite[1][0]))
     .pipe(gulp.dest('public'))
+});
+
+gulp.task('jest', function () {
+  return gulp.src('__tests__/**').pipe(jest({
+    //"preprocessorIgnorePatterns": [
+    //  "<rootDir>/dist/", "<rootDir>/node_modules/"
+    //],
+    "automock": false
+  }));
 });
 
 // TODO also deploy to google.com:mktime
