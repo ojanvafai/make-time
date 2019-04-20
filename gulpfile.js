@@ -158,7 +158,7 @@ gulp.task('upload', () => {
 });
 
 gulp.task('jest', function () {
-  return gulp.src('__tests__/**').pipe(jest({
+  return gulp.src('__tests__/').pipe(jest({
     //"preprocessorIgnorePatterns": [
     //  "<rootDir>/dist/", "<rootDir>/node_modules/"
     //],
