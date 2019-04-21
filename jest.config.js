@@ -2,6 +2,7 @@ module.exports = {
     "roots": [
       "<rootDir>",
     ],
+    "preset": "rollup-jest",
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
     },
@@ -11,7 +12,7 @@ module.exports = {
     ],
     "moduleDirectories": [
         "src",
-        "node_modules"
+        "node_modules",
     ],
     "moduleNameMapper": {
         "^(\.+)/([A-Z][A-Za-z]*)\.js": "$1/$2\.ts"
