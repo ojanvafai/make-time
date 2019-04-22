@@ -4,6 +4,7 @@ import 'css-paint-polyfill'
 import {firestoreUserCollection} from '../../../static/BaseMain.js';
 import {ThreadListModel} from '../../../static/models/ThreadListModel';
 import {Thread} from '../../../static/Thread';
+import {MUTE_ACTION} from '../../../static/views/ThreadListView.js';
 
 const fs = require('fs');
 const util = require('util');
@@ -25,7 +26,7 @@ class ThreadFactory {
     return {
       id: self.maxThreadId++, data: function() {
         return {
-          messageIds: [self.maxMessageId++, self.maxMessageId++]
+          messageIds: [self.maxMessageId++, self.maxMessageId++], muted: false
         }
       }
     }
@@ -62,8 +63,20 @@ test('Empty by default', () => {
   expect(testThreadListModel.getThreads().length).toBe(0);
 });
 
-test('Add thread', () => {
+test('Add threads', () => {
   const testThreadListModel = new TestThreadListModel();
   testThreadListModel.setFakeQuery();
   expect(testThreadListModel.getThreads().length).toBe(2);
+});
+
+test('Mute thread', () => {
+  const testThreadListModel = new TestThreadListModel();
+  testThreadListModel.setFakeQuery();
+  expect(testThreadListModel.getThreads().length).toBe(2);
+
+  const thread = testThreadListModel.getThreads()[0];
+
+  expect(thread.isMuted()).toBe(false);
+  testThreadListModel.markSingleThreadTriaged(thread, MUTE_ACTION);
+  // expect(thread.isMuted()).toBe(true);
 });
