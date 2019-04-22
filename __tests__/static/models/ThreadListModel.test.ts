@@ -1,7 +1,15 @@
+import 'document-register-element'
+import 'css-paint-polyfill'
+
 import {ThreadListModel} from '../../../static/models/ThreadListModel';
 // import {Base64} from '../../../static/base64';
 
-jest.mock('firebase', () => {
+// In theory, need to wait until WebComponents ready...
+/*window.addEventListener('WebComponentsReady', function() {
+  // window.customElements.define('fancy-button', FancyButton);
+});*/
+
+/*jest.mock('firebase', () => {
   const data = {name: 'unnamed'};
   const snapshot = {val: () => data};
   return {
@@ -12,7 +20,7 @@ jest.mock('firebase', () => {
       })
     })
   };
-});
+});*/
 
 test('sanity check', () => {
   expect(ThreadListModel).toBe(ThreadListModel);
