@@ -58,6 +58,12 @@
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
   },
   "exclude": [
-    "__tests__"
+    "__tests__",
+    "test_support"
   ]
 }
+
+
+// 300 good
+// 34 bad
+// 8f3b3e766c834f83b7b8758ae3a5966255367f12
