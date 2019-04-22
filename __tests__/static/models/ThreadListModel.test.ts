@@ -16,6 +16,24 @@ console.log = function(d: any) {
 // @ts-ignore
 window.requestIdleCallback = window.setTimeout;
 
+class ThreadFactory {
+  maxThreadId = 0;
+  maxMessageId = 0;
+
+  public makeThread(): {id: Number, data: any} {
+    const self = this;
+    return {
+      id: self.maxThreadId++, data: function() {
+        return {
+          messageIds: [self.maxMessageId++, self.maxMessageId++]
+        }
+      }
+    }
+  }
+}
+
+const threadFactory = new ThreadFactory();
+
 class TestThreadListModel extends ThreadListModel {
   public getGroupName() {
     return 'test';
@@ -31,6 +49,10 @@ class TestThreadListModel extends ThreadListModel {
   public setFakeQuery() {
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
+    metadataCollection.onSnapshot = function(onNext: any) {
+      return onNext(
+          {docs: [threadFactory.makeThread(), threadFactory.makeThread()]});
+    };
     this.setQuery(metadataCollection.orderBy('blocked', 'asc'));
   }
 }

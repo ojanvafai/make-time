@@ -6,3 +6,4 @@ node_modules/
 public/node_modules/
 public/gen/
 .DS_Store
+debug.log

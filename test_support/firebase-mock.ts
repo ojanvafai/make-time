@@ -7,27 +7,8 @@ export const firebase = {
             return {
               collection: function() {
                 return {
-                  onSnapshot: function(f: any) {
-                    f({
-                      docs: [
-                        {
-                          id: 0,
-                          data: function() {
-                            return {
-                              queued: false, messageIds: [1, 2, 3]
-                            }
-                          }
-                        },
-                        {
-                          id: 1,
-                          data: function() {
-                            return {
-                              queued: false, messageIds: [4, 5, 6]
-                            }
-                          }
-                        }
-                      ]
-                    });  // Needs to pass in a snapshot.
+                  onSnapshot: function(_onNext: any) {
+                    // This is defined per test.
                   }, orderBy: function() {
                     return this;
                   }
