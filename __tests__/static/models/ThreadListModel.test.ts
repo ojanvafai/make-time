@@ -1,27 +1,47 @@
 import 'document-register-element'
 import 'css-paint-polyfill'
 
+import {firestoreUserCollection} from '../../../static/BaseMain.js';
 import {ThreadListModel} from '../../../static/models/ThreadListModel';
-// import {Base64} from '../../../static/base64';
+import {Thread} from '../../../static/Thread';
 
-// In theory, need to wait until WebComponents ready...
-/*window.addEventListener('WebComponentsReady', function() {
-  // window.customElements.define('fancy-button', FancyButton);
-});*/
+const fs = require('fs');
+const util = require('util');
+const log_file = fs.createWriteStream('./debug.log', {flags: 'w'});
 
-/*jest.mock('firebase', () => {
-  const data = {name: 'unnamed'};
-  const snapshot = {val: () => data};
-  return {
-    initializeApp: jest.fn().mockReturnValue({
-      database: jest.fn().mockReturnValue({
-        ref: jest.fn().mockReturnThis(),
-        once: jest.fn(() => Promise.resolve(snapshot))
-      })
-    })
-  };
-});*/
+console.log = function(d: any) {
+  log_file.write(util.format(d) + '\n');
+};
 
-test('sanity check', () => {
-  expect(ThreadListModel).toBe(ThreadListModel);
+// @ts-ignore
+window.requestIdleCallback = window.setTimeout;
+
+class TestThreadListModel extends ThreadListModel {
+  public getGroupName() {
+    return 'test';
+  }
+  public compareThreads(_a: Thread, _b: Thread) {
+    return 0;
+  }
+
+  public defaultCollapsedState() {
+    return true;
+  }
+
+  public setFakeQuery() {
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+    this.setQuery(metadataCollection.orderBy('blocked', 'asc'));
+  }
+}
+
+test('Empty by default', () => {
+  const testThreadListModel = new TestThreadListModel();
+  expect(testThreadListModel.getThreads().length).toBe(0);
+});
+
+test('Add thread', () => {
+  const testThreadListModel = new TestThreadListModel();
+  testThreadListModel.setFakeQuery();
+  expect(testThreadListModel.getThreads().length).toBe(2);
 });
