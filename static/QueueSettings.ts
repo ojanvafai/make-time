@@ -1,4 +1,5 @@
 import {assert, defined} from './Base.js';
+import {RETRIAGE_LABEL_NAME} from './models/TriageModel.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
 
 export interface QueueData {
@@ -17,6 +18,7 @@ export interface AllQueueDatas {
 
 export class QueueSettings {
   private queueDatas_?: AllQueueDatas;
+  private retriageQueueData_: QueueListEntry;
 
   private static BUFFER_ = 10000;
   static MONTHLY = 'Monthly';
@@ -30,6 +32,17 @@ export class QueueSettings {
   constructor(private storage_: ServerStorage) {
     this.storage_.addEventListener(
         ServerStorageUpdateEventName, () => this.resetQueueData_());
+
+    // Gnarly hack to put retriage threads in between immediate/daily and
+    // weekly/monthly queues. This relies on QueueSettings.queueIndex
+    // multiplying weekly/monthly groups by a buffer. As such,
+    // QueueSettings.BUFFER_ * QueueSettings.BUFFER_ is the transition point
+    // from daily to weekly queues.
+    let maxDailyQueueIndex = QueueSettings.BUFFER_ * QueueSettings.BUFFER_ - 1;
+    this.retriageQueueData_ = {
+      label: RETRIAGE_LABEL_NAME,
+      data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex)
+    };
   }
 
   async fetch() {
@@ -76,6 +89,9 @@ export class QueueSettings {
   }
 
   queueEntry_(label: string): QueueListEntry {
+    if (label === RETRIAGE_LABEL_NAME)
+      return this.retriageQueueData_;
+
     let data = this.get(label);
     return {label: label, data: data};
   }

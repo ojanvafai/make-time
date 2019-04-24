@@ -7,7 +7,7 @@ import {BLOCKED_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
-const RETRIAGE_LABEL_NAME = 'Retriage';
+export const RETRIAGE_LABEL_NAME = 'Retriage';
 
 export class TriageModel extends ThreadListModel {
   constructor(private settings_: Settings) {
