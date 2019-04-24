@@ -489,16 +489,6 @@ export class Thread extends EventTarget {
     if (this.processed_.messages.length)
       return;
 
-    // This does expensive work in firestore, so don't do this in the
-    // constructor as there are cases we want to proceed without waiting to
-    // setup the snapshot listener.
-    let doc = this.getMetadataDocument_();
-    doc.onSnapshot((snapshot) => {
-      this.metadata_ = snapshot.data() as ThreadMetadata;
-      // Make callers update when metadata has changed.
-      this.dispatchEvent(new UpdatedEvent());
-    });
-
     let data = await this.deserializeMessageData_();
     if (!data)
       return;
@@ -533,9 +523,7 @@ export class Thread extends EventTarget {
     await this.serializeMessageData_(historyId, messages);
   }
 
-  // Ensure there's only one Thread per id so that we can use reference equality
-  // and also not worry about multiple Thread with multiple onSnapshot
-  // listeners.
+  // Ensure there's only one Thread per id so that we can use reference equality.
   static create(id: string, metadata: ThreadMetadata) {
     let entry = memoryCache_.get(id);
     if (entry) {
