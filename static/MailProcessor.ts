@@ -13,6 +13,8 @@ import {BuiltInLabelIds, Priority, Thread, ThreadMetadataKeys, ThreadMetadataUpd
 import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
+let URGENT_RETRIAGE_FREQUENCY_DAYS = 7;
+let BACKLOG_RETRIAGE_FREQUENCY_DAYS = 28;
 
 export class MailProcessor {
   private makeTimeLabelId_?: string;
@@ -498,6 +500,15 @@ export class MailProcessor {
   async dequeueRetriage_(priority: Priority, retriageDays: number) {
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
+
+    // If there are still untriaged needsRetriage threads, then don't add more
+    // to the pile.
+    let needsRetriage = await metadataCollection
+                            .where(ThreadMetadataKeys.needsRetriage, '==', true)
+                            .get();
+    if (needsRetriage.docs.length)
+      return;
+
     let querySnapshot =
         await metadataCollection
             .where(ThreadMetadataKeys.priorityId, '==', priority)
@@ -547,8 +558,8 @@ export class MailProcessor {
   async processSingleQueue(queue: string) {
     if (queue === QueueSettings.DAILY) {
       await this.dequeueBlocked_();
-      await this.dequeueRetriage_(Priority.Urgent, 7);
-      await this.dequeueRetriage_(Priority.Backlog, 28);
+      await this.dequeueRetriage_(Priority.Urgent, URGENT_RETRIAGE_FREQUENCY_DAYS);
+      await this.dequeueRetriage_(Priority.Backlog, BACKLOG_RETRIAGE_FREQUENCY_DAYS);
     }
 
     let queueNames = new QueueNames();
