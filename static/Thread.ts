@@ -316,7 +316,7 @@ export class Thread extends EventTarget {
   getLabel() {
     let id = this.getLabelId();
     if (!id)
-      return null;
+      return FALLBACK_LABEL_NAME;
 
     switch (id) {
       case BuiltInLabelIds.Blocked:
