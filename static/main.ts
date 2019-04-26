@@ -298,33 +298,35 @@ async function setupReloadOnVersionChange() {
     version_ = defined(data.data()).version;
 
   doc.onSnapshot(async (snapshot) => {
-    let newVersion = defined(snapshot.data()).version;
-    if (version_ == newVersion)
-      return;
-
-    let dialog: HTMLDialogElement;
-
-    let container = document.createElement('div');
-    container.append(
-        'A new version of maketime is available. This window will reload in 60 seconds.');
-    let close = document.createElement('button');
-    close.append('close');
-    close.onclick = () => dialog.close();
-
-    let buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
-        display: flex;
-        justify-content: flex-end;
-      `;
-    buttonContainer.append(close);
-    container.append(buttonContainer);
-    dialog = showDialog(container);
-
-    setTimeout(() => window.location.reload(), 60000);
+    if (version_ != defined(snapshot.data()).version)
+      reloadSoon();
   });
 }
 
+function reloadSoon() {
+  let dialog: HTMLDialogElement;
+
+  let container = document.createElement('div');
+  container.append(
+      'A new version of maketime is available. This window will reload in 60 seconds.');
+  let close = document.createElement('button');
+  close.append('close');
+  close.onclick = () => dialog.close();
+
+  let buttonContainer = document.createElement('div');
+  buttonContainer.style.cssText = `
+    display: flex;
+    justify-content: flex-end;
+  `;
+  buttonContainer.append(close);
+  container.append(buttonContainer);
+  dialog = showDialog(container);
+
+  setTimeout(() => window.location.reload(), 60000);
+}
+
 const DAILY_LOCAL_UPDATES_KEY = 'daily-local-updates';
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 // Updates to things stored in local storage. This should not be used for things
 // that should happen once per day globally since the user might have maketime
@@ -332,8 +334,7 @@ const DAILY_LOCAL_UPDATES_KEY = 'daily-local-updates';
 async function dailyLocalUpdates() {
   let lastUpdateTime: number|undefined =
       await IDBKeyVal.getDefault().get(DAILY_LOCAL_UPDATES_KEY);
-  let oneDay = 24 * 60 * 60 * 1000;
-  if (lastUpdateTime && (Date.now() - lastUpdateTime) < oneDay)
+  if (lastUpdateTime && (Date.now() - lastUpdateTime) < ONE_DAY_MS)
     return;
 
   await (await SendAs.getDefault()).update();
@@ -363,6 +364,14 @@ async function gcStaleThreadData() {
 export async function update() {
   if (!shouldUpdate_ || !navigator.onLine)
     return;
+
+  // Reload once a day at 3am to ensure people don't have excessively stale
+  // clients open.
+  let today = new Date();
+  let timeSinceNavigationStart =
+      today.getTime() - window.performance.timing.navigationStart;
+  if (timeSinceNavigationStart > ONE_DAY_MS && today.getHours() === 2)
+    reloadSoon();
 
   // update can get called before any views are setup due to visibilitychange
   // and online handlers
