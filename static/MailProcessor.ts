@@ -558,8 +558,10 @@ export class MailProcessor {
   async processSingleQueue(queue: string) {
     if (queue === QueueSettings.DAILY) {
       await this.dequeueBlocked_();
-      await this.dequeueRetriage_(Priority.Urgent, URGENT_RETRIAGE_FREQUENCY_DAYS);
-      await this.dequeueRetriage_(Priority.Backlog, BACKLOG_RETRIAGE_FREQUENCY_DAYS);
+      await this.dequeueRetriage_(
+          Priority.Urgent, URGENT_RETRIAGE_FREQUENCY_DAYS);
+      await this.dequeueRetriage_(
+          Priority.Backlog, BACKLOG_RETRIAGE_FREQUENCY_DAYS);
     }
 
     let queueNames = new QueueNames();

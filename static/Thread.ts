@@ -479,6 +479,14 @@ export class Thread extends EventTarget {
         this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
 
     await this.updateMetadata(newMetadata);
+
+    // Ensure metadata is correct after the update. An alternative would be to
+    // have an onsnapshot listener, but those are expensive to setup for every
+    // thread. Alternately, should updateMetadata just do this? Then we'd never
+    // have metadata_ be out of date, but it would come at the cost of an extra
+    // network fetch for each updateMetadata call.
+    this.metadata_ = await Thread.fetchMetadata(this.id);
+
     // This is technically only needed in the case where updateMetadata didn't
     // update anything. This happens when firestore is up to date, but the
     // messages on local disk are stale.
@@ -523,7 +531,8 @@ export class Thread extends EventTarget {
     await this.serializeMessageData_(historyId, messages);
   }
 
-  // Ensure there's only one Thread per id so that we can use reference equality.
+  // Ensure there's only one Thread per id so that we can use reference
+  // equality.
   static create(id: string, metadata: ThreadMetadata) {
     let entry = memoryCache_.get(id);
     if (entry) {
