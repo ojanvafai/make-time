@@ -12,7 +12,7 @@ import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {AppShell} from './AppShell.js';
-import {FocusRowEvent, SelectRowEvent as CheckRowEvent, ThreadRow} from './ThreadRow.js';
+import {FocusRowEvent, RenderThreadEvent, SelectRowEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
@@ -295,7 +295,7 @@ export class ThreadListView extends View {
       private model_: ThreadListModel, private appShell_: AppShell,
       settings: Settings, private getPinnedCount_: () => Promise<number>,
       bottomButtonUrl?: string, bottomButtonText?: string,
-      private includeSortActions_?: boolean, private includeSkimButton_?: boolean) {
+      private includeSortActions_?: boolean, private skimMode_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -325,15 +325,23 @@ export class ThreadListView extends View {
     `;
     this.append(this.rowGroupContainer_);
 
-    this.rowGroupContainer_.addEventListener('renderThread', (e: Event) => {
-      this.setRenderedRow_(<ThreadRow>e.target);
-    });
+    this.rowGroupContainer_.addEventListener(
+        RenderThreadEvent.NAME, (e: Event) => {
+          let row = e.target as ThreadRow;
+          if (this.skimMode_) {
+            row.select((e as RenderThreadEvent).shiftKey);
+            return;
+          }
+          this.setRenderedRow_(row);
+        });
     this.rowGroupContainer_.addEventListener(FocusRowEvent.NAME, (e: Event) => {
       this.handleFocusRow_(<ThreadRow>e.target);
     });
-    this.rowGroupContainer_.addEventListener(CheckRowEvent.NAME, (e: Event) => {
-      this.handleCheckRow_(<ThreadRow>e.target, (e as CheckRowEvent).shiftKey);
-    });
+    this.rowGroupContainer_.addEventListener(
+        SelectRowEvent.NAME, (e: Event) => {
+          this.handleCheckRow_(
+              <ThreadRow>e.target, (e as SelectRowEvent).shiftKey);
+        });
 
     this.singleThreadContainer_ = document.createElement('div');
     this.singleThreadContainer_.style.cssText = `
@@ -408,9 +416,10 @@ export class ThreadListView extends View {
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
-    let skimButton = this.includeSkimButton_ ? [SKIM_ACTION] : [];
+    let skimButton = this.skimMode_ ? [SKIM_ACTION] : [];
 
-    this.setActions([...skimButton, ...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
+    this.setActions(
+        [...skimButton, ...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
 
     if (this.renderedRow_)
       this.addTimer_();

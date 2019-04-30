@@ -51,6 +51,13 @@ export class SelectRowEvent extends Event {
   }
 }
 
+export class RenderThreadEvent extends Event {
+  static NAME = 'render-thread';
+  constructor(public shiftKey: boolean) {
+    super(RenderThreadEvent.NAME, {bubbles: true});
+  }
+}
+
 class RowState {
   constructor(
       public subject: string, public snippet: string, public from: string,
@@ -105,16 +112,11 @@ export class ThreadRow extends HTMLElement {
     // Pevent the default behavior of text selection on shift+click this is used
     // for range selections. Need to do it on mousedown unfortunately since
     // that's when the selection is modified on some platforms (e.g. mac).
-    label.addEventListener('mousedown', (e: Event) => {
-      if ((e as MouseEvent).shiftKey)
+    label.addEventListener('mousedown', e => {
+      if (e.shiftKey)
         e.preventDefault();
     });
-    label.addEventListener('click', (e) => {
-      this.checked = !this.selected;
-      if (this.checked)
-        this.dispatchEvent(new SelectRowEvent(e.shiftKey));
-      this.setFocus(true, false);
-    });
+    label.addEventListener('click', e => this.select(e.shiftKey));
 
     this.checkBox_ = document.createElement('input');
     this.checkBox_.type = 'checkbox';
@@ -137,17 +139,35 @@ export class ThreadRow extends HTMLElement {
       overflow: hidden;
       flex: 1;
     `;
-    this.messageDetails_.onclick = () => {
+
+    // Pevent the default behavior of text selection on shift+click this is used
+    // for range selections. Need to do it on mousedown unfortunately since
+    // that's when the selection is modified on some platforms (e.g. mac). Need
+    // to do this on messageDetails_ in additon to the label since the whole row
+    // is clickable in Skim view.
+    this.messageDetails_.addEventListener('mousedown', e => {
+      if (e.shiftKey)
+        e.preventDefault();
+    });
+
+    this.messageDetails_.addEventListener('click', (e) => {
       // If the user is selecting the subject line in the row, have that prevent
       // rendering the thread so they can copy-paste the subject.
       if (!this.threadRowContainsSelection_())
-        this.dispatchEvent(new Event('renderThread', {bubbles: true}));
-    };
+        this.dispatchEvent(new RenderThreadEvent(e.shiftKey));
+    });
     this.append(this.messageDetails_);
 
     this.rendered = new RenderedThread(thread);
     thread.addEventListener(
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
+  }
+
+  select(shiftKey: boolean) {
+    this.checked = !this.selected;
+    if (this.checked)
+      this.dispatchEvent(new SelectRowEvent(shiftKey));
+    this.setFocus(true, false);
   }
 
   threadRowContainsSelection_() {
