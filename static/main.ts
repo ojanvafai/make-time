@@ -8,6 +8,7 @@ import {LongTasks} from './LongTasks.js';
 import {MailProcessor} from './MailProcessor.js';
 import {ComposeModel} from './models/ComposeModel.js';
 import {Model} from './models/Model.js';
+import {SkimModel} from './models/SkimModel.js';
 import {TodoModel} from './models/TodoModel.js';
 import {TrackingModel} from './models/TrackingModel.js';
 import {TriageModel} from './models/TriageModel.js';
@@ -57,6 +58,7 @@ enum VIEW {
   Compose,
   Hidden,
   Settings,
+  Skim,
   Todo,
   Tracking,
   Triage,
@@ -89,6 +91,9 @@ router.add('/track', async (_params) => {
 });
 router.add('/', routeToTriage);
 router.add('/triage', routeToTriage);
+router.add('/skim', async (params) => {
+  await setView(VIEW.Skim, params);
+});
 router.add('/todo', async (params) => {
   await setView(VIEW.Todo, params);
 });
@@ -129,6 +134,9 @@ async function createModel(viewType: VIEW, params?: any) {
     case VIEW.Triage:
       return await getTriageModel();
 
+    case VIEW.Skim:
+      return await getSkimModel();
+
     case VIEW.Settings:
       return null;
 
@@ -162,6 +170,13 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
       return new ThreadListView(
           <TriageModel>model, appShell_, await getSettings(), getPinnedCount,
           '/todo', 'Go to todo list');
+
+    case VIEW.Skim:
+      // TODO: Make ThreadListView take a property bag for optional arguments.
+      // TODO: Show both the buttons for going to Todo and Triage view buttons?
+      return new ThreadListView(
+          <SkimModel>model, appShell_, await getSettings(), getPinnedCount,
+          undefined, undefined, false, true);
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
@@ -220,6 +235,13 @@ async function getCalendarModel() {
   if (!calendarModel_)
     calendarModel_ = new Calendar(await getSettings());
   return calendarModel_;
+}
+
+let skimModel_: SkimModel|undefined;
+async function getSkimModel() {
+  if (!skimModel_)
+    skimModel_ = new SkimModel(await getSettings());
+  return skimModel_;
 }
 
 let triageModel_: TriageModel|undefined;

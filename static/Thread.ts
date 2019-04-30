@@ -43,6 +43,7 @@ export interface ThreadMetadata {
   // support range queries on a different field than the orderBy field.
   hasLabel?: boolean;
   hasPriority?: boolean;
+  skimmed?: boolean;
   queued?: boolean;
   blocked?: boolean|number;
   muted?: boolean;
@@ -68,6 +69,7 @@ export interface ThreadMetadataUpdate {
   needsRetriage?: boolean|firebase.firestore.FieldValue;
   hasLabel?: boolean|firebase.firestore.FieldValue;
   hasPriority?: boolean|firebase.firestore.FieldValue;
+  skimmed?: boolean|firebase.firestore.FieldValue;
   queued?: boolean|firebase.firestore.FieldValue;
   blocked?: boolean|number|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
@@ -90,6 +92,7 @@ export enum ThreadMetadataKeys {
   needsRetriage = 'needsRetriage',
   hasLabel = 'hasLabel',
   hasPriority = 'hasPriority',
+  skimmed = 'skimmed',
   queued = 'queued',
   blocked = 'blocked',
   muted = 'muted',
@@ -184,6 +187,7 @@ export class Thread extends EventTarget {
   static clearedMetatdata(): ThreadMetadataUpdate {
     return {
       needsRetriage: firebase.firestore.FieldValue.delete(),
+          skimmed: firebase.firestore.FieldValue.delete(),
           blocked: firebase.firestore.FieldValue.delete(),
           muted: firebase.firestore.FieldValue.delete(),
           archivedByFilter: firebase.firestore.FieldValue.delete(),
@@ -253,6 +257,10 @@ export class Thread extends EventTarget {
     return await this.updateMetadata(update);
   }
 
+  async setSkimmed() {
+    return await this.updateMetadata({skimmed: true});
+  }
+
   async setBlocked(days: number, moveToInbox?: boolean) {
     let update = this.keepInInboxMetadata_(moveToInbox);
     let date = new Date();
@@ -262,6 +270,10 @@ export class Thread extends EventTarget {
     date.setDate(date.getDate() + days);
     update.blocked = date.getTime();
     return await this.updateMetadata(update);
+  }
+
+  skimmed() {
+    return this.metadata_.skimmed;
   }
 
   isBlocked() {
@@ -398,6 +410,7 @@ export class Thread extends EventTarget {
       queued: shouldQueue,
       labelId: await this.queueNames_.getId(label),
       hasLabel: true,
+      skimmed: firebase.firestore.FieldValue.delete(),
       blocked: firebase.firestore.FieldValue.delete(),
     } as ThreadMetadataUpdate);
   }

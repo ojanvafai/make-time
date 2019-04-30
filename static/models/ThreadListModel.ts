@@ -3,7 +3,7 @@ import {Action} from '../Actions.js';
 import {assert, compareDates, setFaviconCount as setFavicon} from '../Base.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, URGENT_ACTION} from '../views/ThreadListView.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, URGENT_ACTION, SKIM_ACTION} from '../views/ThreadListView.js';
 
 import {Model} from './Model.js';
 
@@ -271,6 +271,10 @@ export abstract class ThreadListModel extends Model {
 
         case MUTE_ACTION:
           oldState = await thread.setMuted();
+          break;
+
+        case SKIM_ACTION:
+          oldState = await thread.setSkimmed();
           break;
 
         default:

@@ -98,6 +98,12 @@ export let MUTE_ACTION = {
       `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
 };
 
+export let SKIM_ACTION = {
+  name: `Skimmed`,
+  description:
+      `Mare thread skimmed. Skimmed threads show in the Triage view, but not the Skim view.`,
+};
+
 export let NEXT_ACTION = {
   name: `Next`,
   description: `Go to the next row/thread/message.`,
@@ -289,7 +295,7 @@ export class ThreadListView extends View {
       private model_: ThreadListModel, private appShell_: AppShell,
       settings: Settings, private getPinnedCount_: () => Promise<number>,
       bottomButtonUrl?: string, bottomButtonText?: string,
-      private includeSortActions_?: boolean) {
+      private includeSortActions_?: boolean, private includeSkimButton_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -402,7 +408,9 @@ export class ThreadListView extends View {
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
-    this.setActions([...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
+    let skimButton = this.includeSkimButton_ ? [SKIM_ACTION] : [];
+
+    this.setActions([...skimButton, ...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
 
     if (this.renderedRow_)
       this.addTimer_();
