@@ -526,10 +526,18 @@ window.addEventListener('error', (e) => {
       e.error, JSON.stringify(e, ['body', 'error', 'message', 'stack']));
 });
 
+const FIRESTORE_INTERNAL_ERROR =
+    `INTERNAL ASSERTION FAILED: AsyncQueue is already failed: The transaction was aborted, so the request cannot be fulfilled`;
 const NETWORK_OFFLINE_ERROR_MESSAGE =
     'A network error occurred. Are you offline?';
 const FETCH_ERROR_MESSAGE =
     'A network error occurred, and the request could not be completed.';
+
+// See https://github.com/firebase/firebase-js-sdk/issues/1642.
+function reloadOnFirestoreInternalError(message: string) {
+  if (message.includes(FIRESTORE_INTERNAL_ERROR))
+    window.location.reload();
+}
 
 // Different promise types stow a human understandable message in different
 // places. :( Also, if we catch via a try/catch, then we need to pass the
@@ -547,6 +555,7 @@ function getErrorMessage(reason: any) {
   if (error && error.code === -1 && message === FETCH_ERROR_MESSAGE)
     message = NETWORK_OFFLINE_ERROR_MESSAGE;
 
+  reloadOnFirestoreInternalError(message);
   return message;
 }
 
@@ -563,6 +572,8 @@ window.addEventListener('unhandledrejection', (e) => {
       reason, ['stack', 'message', 'body', 'result', 'error', 'code']);
 
   let message = getErrorMessage(e.reason);
+  reloadOnFirestoreInternalError(message);
+
   if (message)
     ErrorLogger.log(message, details);
   else
