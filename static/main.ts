@@ -288,16 +288,25 @@ async function onLoad() {
   });
   document.body.append(appShell_);
 
-  await routeToCurrentLocation();
-  updateBackground();
-  await update();
-  // Instantiate the TodoModel even if we're not in the Todo view so that the
-  // favicon is updated with the must do count.
-  await getTodoModel();
+  // Show an indicator for the whole life of the initial update since
+  // routeToCurrentLocation can take a long time in some cases.
+  let progress = AppShell.updateLoaderTitle('Main.onLoad', 1, 'Updating...');
+  try {
+    await routeToCurrentLocation();
+    updateBackground();
+    await update();
+    // Instantiate the TodoModel even if we're not in the Todo view so that the
+    // favicon is updated with the must do count.
+    await getTodoModel();
+  } finally {
+    progress.incrementProgress();
+  }
 
   // Wait until we've fetched all the threads before trying to process updates
-  // regularly.
-  setInterval(update, 1000 * 60);
+  // regularly. Do these updates silently except when there are new threads to
+  // process, which is handled by MailProcessor.
+  setInterval(updateSilently, 1000 * 60);
+
   let settings = await getSettings();
   if (settings.get(ServerStorage.KEYS.TRACK_LONG_TASKS)) {
     await IDBKeyVal.getDefault().set(
@@ -384,6 +393,15 @@ async function gcStaleThreadData() {
 }
 
 export async function update() {
+  let progress = AppShell.updateLoaderTitle('Main.update', 1, 'Updating...');
+  try {
+    await updateSilently();
+  } finally {
+    progress.incrementProgress();
+  }
+}
+
+async function updateSilently() {
   if (!shouldUpdate_ || !navigator.onLine)
     return;
 
