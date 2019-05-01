@@ -684,48 +684,37 @@ export class ThreadListView extends View {
     if (!rows.length)
       return;
 
-    if (this.focusedRow_ == null) {
-      switch (action) {
-        case NEXT_ACTION:
-        case NEXT_FULL_ACTION: {
-          this.setFocusAndScrollIntoView_(rows[0]);
-          break;
-        }
-        case PREVIOUS_ACTION: {
-          this.setFocusAndScrollIntoView_(rows[rows.length - 1]);
-          break;
-        }
-        case PREVIOUS_FULL_ACTION: {
-          let lastGroup = rows[rows.length - 1].getGroup();
-          this.focusFirstRowOfGroup_(lastGroup);
-          break;
-        }
-      }
-      return;
-    }
+    let focused = assert(this.focusedRow_);
+
     switch (action) {
       case NEXT_ACTION: {
-        const nextRow = rowAtOffset(rows, this.focusedRow_, 1);
+        const nextRow = rowAtOffset(rows, focused, 1);
         if (nextRow)
           this.setFocusAndScrollIntoView_(nextRow);
         break;
       }
       case PREVIOUS_ACTION: {
-        const previousRow = rowAtOffset(rows, this.focusedRow_, -1);
+        const previousRow = rowAtOffset(rows, focused, -1);
         if (previousRow)
           this.setFocusAndScrollIntoView_(previousRow);
         break;
       }
       case NEXT_FULL_ACTION: {
-        let currentGroup = this.focusedRow_.getGroup();
-        this.focusFirstRowOfGroup_(
-            <ThreadRowGroup>currentGroup.nextElementSibling);
+        let currentGroup = focused.getGroup();
+        let newGroup = currentGroup.nextElementSibling as ThreadRowGroup;
+        while (newGroup && newGroup.isFullyCollapsed()) {
+          newGroup = newGroup.nextElementSibling as ThreadRowGroup;
+        }
+        this.focusFirstRowOfGroup_(newGroup);
         break;
       }
       case PREVIOUS_FULL_ACTION: {
-        let currentGroup = this.focusedRow_.getGroup();
-        this.focusFirstRowOfGroup_(
-            <ThreadRowGroup>currentGroup.previousElementSibling);
+        let currentGroup = focused.getGroup();
+        let newGroup = currentGroup.previousElementSibling as ThreadRowGroup;
+        while (newGroup && newGroup.isFullyCollapsed()) {
+          newGroup = newGroup.previousElementSibling as ThreadRowGroup;
+        }
+        this.focusFirstRowOfGroup_(newGroup);
         break;
       }
     }

@@ -46,7 +46,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.appendControls_(header);
   }
 
-  appendControls_(header: HTMLElement) {
+  private appendControls_(header: HTMLElement) {
     if (this.hideControls_())
       return;
 
@@ -75,19 +75,23 @@ export class ThreadRowGroup extends HTMLElement {
     }
   }
 
-  isCollapsed_() {
+  isFullyCollapsed() {
+    return this.isCollapsed_() && !this.showTopThreads_();
+  }
+
+  private isCollapsed_() {
     return this.model_.isCollapsed(this.groupName_);
   }
 
-  showTopThreads_() {
+  private showTopThreads_() {
     return this.model_.showTopThreads(this.groupName_);
   }
 
-  hideControls_() {
+  private hideControls_() {
     return this.model_.hideGroupControls(this.groupName_);
   }
 
-  toggleCollapsed_() {
+  private toggleCollapsed_() {
     this.model_.toggleCollapsed(this.groupName_);
   }
 
@@ -99,7 +103,7 @@ export class ThreadRowGroup extends HTMLElement {
     return !!this.rowContainer_.childElementCount;
   }
 
-  setExpanderText_(text: string) {
+  private setExpanderText_(text: string) {
     let expander = defined(this.expander_);
     expander.style.cssText = `
       padding: 5px;
@@ -132,7 +136,7 @@ export class ThreadRowGroup extends HTMLElement {
       this.remove();
   }
 
-  createSelector_(textContent: string, callback: () => void) {
+  private createSelector_(textContent: string, callback: () => void) {
     let selector = document.createElement('span');
     selector.textContent = textContent;
     selector.style.textDecoration = 'underline';
@@ -141,15 +145,15 @@ export class ThreadRowGroup extends HTMLElement {
     return selector;
   }
 
-  selectAll_() {
+  private selectAll_() {
     this.selectRows_(true);
   }
 
-  selectNone_() {
+  private selectNone_() {
     this.selectRows_(false);
   }
 
-  selectRows_(select: boolean) {
+  private selectRows_(select: boolean) {
     let rows = <NodeListOf<ThreadRow>>this.rowContainer_.childNodes;
     for (let child of rows) {
       child.checked = select;
