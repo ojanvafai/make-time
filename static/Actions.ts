@@ -122,7 +122,7 @@ export class Actions extends HTMLElement {
       button.onclick = () => this.view_.takeAction(action);
 
       let tooltipElement: HTMLElement;
-      button.onmouseenter = () => {
+      button.onpointerenter = () => {
         tooltipElement = document.createElement('div');
         tooltipElement.style.cssText = `
           position: absolute;
@@ -146,7 +146,7 @@ export class Actions extends HTMLElement {
         tooltipElement.append(text);
         this.append(tooltipElement);
       };
-      button.onmouseleave = () => {
+      button.onpointerleave = () => {
         tooltipElement.remove();
       };
 

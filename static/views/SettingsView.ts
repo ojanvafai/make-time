@@ -130,7 +130,7 @@ export class SettingsView extends View {
       helpButton.setAttribute('tooltip', field.description);
 
       let tooltipElement: HTMLElement;
-      helpButton.onmouseenter = () => {
+      helpButton.onpointerenter = () => {
         tooltipElement = document.createElement('div');
 
         let rect = helpButton.getBoundingClientRect();
@@ -149,7 +149,7 @@ export class SettingsView extends View {
         helpButton.after(tooltipElement);
       };
 
-      helpButton.onmouseleave = () => {
+      helpButton.onpointerleave = () => {
         tooltipElement.remove();
       };
 
