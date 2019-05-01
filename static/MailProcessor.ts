@@ -13,6 +13,7 @@ import {BuiltInLabelIds, Priority, Thread, ThreadMetadataKeys, ThreadMetadataUpd
 import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
+let MUST_DO_RETRIAGE_FREQUENCY_DAYS = 1;
 let URGENT_RETRIAGE_FREQUENCY_DAYS = 7;
 let BACKLOG_RETRIAGE_FREQUENCY_DAYS = 28;
 
@@ -20,6 +21,10 @@ export class MailProcessor {
   private makeTimeLabelId_?: string;
 
   constructor(private settings_: Settings) {}
+
+  private metadataCollection_() {
+    return firestoreUserCollection().doc('threads').collection('metadata');
+  }
 
   private async fetchMakeTimeLabel_() {
     if (this.makeTimeLabelId_)
@@ -52,10 +57,8 @@ export class MailProcessor {
   // they took the action.
   private async removeGmailLabels_(
       firestoreKey: string, removeLabelIds: string[]) {
-    let metadataCollection =
-        firestoreUserCollection().doc('threads').collection('metadata');
     let querySnapshot =
-        await metadataCollection.where(firestoreKey, '>', 0).get();
+        await this.metadataCollection_().where(firestoreKey, '>', 0).get();
 
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
         querySnapshot.docs,
@@ -123,9 +126,7 @@ export class MailProcessor {
   }
 
   private async moveToInbox_() {
-    let metadataCollection =
-        firestoreUserCollection().doc('threads').collection('metadata');
-    let querySnapshot = await metadataCollection
+    let querySnapshot = await this.metadataCollection_()
                             .where(ThreadMetadataKeys.moveToInbox, '==', true)
                             .get();
 
@@ -460,9 +461,7 @@ export class MailProcessor {
   }
 
   async dequeue(labelId: number) {
-    let metadataCollection =
-        firestoreUserCollection().doc('threads').collection('metadata');
-    let querySnapshot = await metadataCollection
+    let querySnapshot = await this.metadataCollection_()
                             .where(ThreadMetadataKeys.labelId, '==', labelId)
                             .where(ThreadMetadataKeys.queued, '==', true)
                             .get();
@@ -477,9 +476,7 @@ export class MailProcessor {
   }
 
   async dequeueBlocked_() {
-    let metadataCollection =
-        firestoreUserCollection().doc('threads').collection('metadata');
-    let querySnapshot = await metadataCollection
+    let querySnapshot = await this.metadataCollection_()
                             .where(ThreadMetadataKeys.blocked, '<=', Date.now())
                             .get();
 
@@ -498,19 +495,8 @@ export class MailProcessor {
   }
 
   async dequeueRetriage_(priority: Priority, retriageDays: number) {
-    let metadataCollection =
-        firestoreUserCollection().doc('threads').collection('metadata');
-
-    // If there are still untriaged needsRetriage threads, then don't add more
-    // to the pile.
-    let needsRetriage = await metadataCollection
-                            .where(ThreadMetadataKeys.needsRetriage, '==', true)
-                            .get();
-    if (needsRetriage.docs.length)
-      return;
-
     let querySnapshot =
-        await metadataCollection
+        await this.metadataCollection_()
             .where(ThreadMetadataKeys.priorityId, '==', priority)
             .get();
 
@@ -525,8 +511,8 @@ export class MailProcessor {
         return false;
       if (!data.retriageTimestamp)
         return true;
-      let days = (now - data.retriageTimestamp) / oneDay;
-      return days < retriageDays;
+      let daysSinceLastTriaged = (now - data.retriageTimestamp) / oneDay;
+      return daysSinceLastTriaged > retriageDays;
     });
 
     // Shuffle the array.
@@ -539,13 +525,11 @@ export class MailProcessor {
 
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
         retriage, async (doc: firebase.firestore.QueryDocumentSnapshot) => {
-          // Put the thread back in the triage queue (hasLabel) and denote when
-          // it was last marked for retriage so we avoid marking it again within
-          // the retriageDays buffer.
+          // Put the thread back in the triage queue (hasLabel) and denote
+          // needsTriage so it is grouped with the other retriage threads.
           let update: ThreadMetadataUpdate = {
             hasLabel: true,
             needsRetriage: true,
-            retriageTimestamp: Date.now(),
           };
           // TODO: Remove this once all clients have flushed all their threads
           // that don't have labels.
@@ -555,13 +539,26 @@ export class MailProcessor {
         });
   }
 
-  async processSingleQueue(queue: string) {
-    if (queue === QueueSettings.DAILY) {
-      await this.dequeueBlocked_();
+  private async processRetriage_() {
+    // If there are still untriaged needsRetriage threads, then don't add more
+    // to the pile.
+    let needsRetriage = await this.metadataCollection_()
+                            .where(ThreadMetadataKeys.needsRetriage, '==', true)
+                            .get();
+    if (!needsRetriage.docs.length) {
+      await this.dequeueRetriage_(
+          Priority.MustDo, MUST_DO_RETRIAGE_FREQUENCY_DAYS);
       await this.dequeueRetriage_(
           Priority.Urgent, URGENT_RETRIAGE_FREQUENCY_DAYS);
       await this.dequeueRetriage_(
           Priority.Backlog, BACKLOG_RETRIAGE_FREQUENCY_DAYS);
+    }
+  }
+
+  private async processSingleQueue_(queue: string) {
+    if (queue === QueueSettings.DAILY) {
+      await this.dequeueBlocked_();
+      await this.processRetriage_();
     }
 
     let queueNames = new QueueNames();
@@ -634,7 +631,7 @@ export class MailProcessor {
       return;
 
     for (const category of categories) {
-      await this.processSingleQueue(category);
+      await this.processSingleQueue_(category);
     }
 
     let updates: StorageUpdates = {};

@@ -242,6 +242,10 @@ export class Thread extends EventTarget {
     if (this.metadata_.labelId)
       update.labelId = this.metadata_.labelId;
 
+    // Mark the last time this thread was triaged so we don't retriage it too
+    // soon after that.
+    update.retriageTimestamp = Date.now();
+
     update.countToMarkRead = this.messageCount_();
 
     if (moveToInbox)
