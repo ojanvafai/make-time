@@ -1,6 +1,6 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
-import {defined, getMyEmail} from '../Base.js';
+import {defined, getMyEmail, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
@@ -76,6 +76,7 @@ export class ComposeView extends View {
   private sendAs_?: SendAs;
   private sent_?: HTMLElement;
   private sentThreadId_?: string;
+  private sentToolbar_?: Actions;
 
   constructor(
       private model_: ComposeModel, private params_: QueryParameters = {}) {
@@ -283,12 +284,14 @@ export class ComposeView extends View {
       container.append(this.sent_);
       this.prepend(container);
 
-      let toolbar = new Actions(this, true);
-      toolbar.setActions(SENT_ACTIONS);
-      container.append(toolbar);
+      this.sentToolbar_ = new Actions(this, true);
+      this.sentToolbar_.setActions(SENT_ACTIONS);
+      container.append(this.sentToolbar_);
     }
 
-    this.sent_.textContent = `Triage "${sent.subject}"`;
+    notNull(defined(this.sent_).parentElement).style.display = '';
+    this.sent_.textContent =
+        `Sent "${sent.subject}". Would you like to triage it for later?`;
 
     this.to_.value = this.params_.to || '';
     this.clearInlineTo_();
@@ -311,10 +314,25 @@ export class ComposeView extends View {
       if (!this.sentThreadId_)
         return;
 
-      let metadata = await Thread.fetchMetadata(this.sentThreadId_);
-      let thread = Thread.create(this.sentThreadId_, metadata);
-      await thread.update();
-      await takeAction(thread, action, true);
+      // Disable the toolbar while updating the thread to give an indication
+      // that the update is in progress.
+      let toolbar = defined(this.sentToolbar_);
+      toolbar.style.opacity = '0.5';
+      toolbar.style.pointerEvents = 'none';
+
+      try {
+        let metadata = await Thread.fetchMetadata(this.sentThreadId_);
+        let thread = Thread.create(this.sentThreadId_, metadata);
+        await thread.update();
+        await takeAction(thread, action, true);
+      } finally {
+        // Enable the toolbar again whether the update fails or succeeds.
+        toolbar.style.opacity = '';
+        toolbar.style.pointerEvents = '';
+      }
+
+      this.sentThreadId_ = undefined;
+      notNull(defined(this.sent_).parentElement).style.display = 'none';
       return;
     }
 

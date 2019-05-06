@@ -283,6 +283,15 @@ export class MailProcessor {
       }
     }
 
+    // If there's exactly one message, it has the sent label, and it already has
+    // a priority, then we know that this is the case where we sent the message
+    // using maketime and then immediately assigned a priority.
+    if (messages.length === 1 && messages[0].getLabelIds().includes('SENT') &&
+        (thread.getPriorityId() || thread.isBlocked())) {
+      await this.addMakeTimeLabel_(thread.id);
+      return;
+    }
+
     await this.applyFilters_(thread);
   }
 
