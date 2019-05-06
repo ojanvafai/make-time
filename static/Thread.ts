@@ -184,7 +184,7 @@ export class Thread extends EventTarget {
     return oldState;
   }
 
-  static clearedMetatdata(): ThreadMetadataUpdate {
+  static clearedMetadata(): ThreadMetadataUpdate {
     return {
       needsRetriage: firebase.firestore.FieldValue.delete(),
           skimmed: firebase.firestore.FieldValue.delete(),
@@ -200,7 +200,7 @@ export class Thread extends EventTarget {
   }
 
   static async clearMetadata(threadId: string) {
-    let update = this.clearedMetatdata();
+    let update = this.clearedMetadata();
     await Thread.metadataCollection().doc(threadId).update(update);
   }
 
@@ -209,7 +209,7 @@ export class Thread extends EventTarget {
   }
 
   removeFromInboxMetadata_() {
-    let update = Thread.clearedMetatdata();
+    let update = Thread.clearedMetadata();
     update.countToArchive = this.messageCount_();
     // Override this here instead of in clearedMetadata so we don't accidentally
     // override this in other methods that should keep this so the message is
@@ -232,7 +232,7 @@ export class Thread extends EventTarget {
   }
 
   keepInInboxMetadata_(moveToInbox?: boolean) {
-    let update = Thread.clearedMetatdata();
+    let update = Thread.clearedMetadata();
 
     // Keep label information so we can show what label a thread came from even
     // after it's been triaged. Intentionally keep only the labelId and not the

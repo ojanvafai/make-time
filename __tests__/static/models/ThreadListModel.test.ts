@@ -8,10 +8,9 @@ import {MUTE_ACTION} from '../../../static/views/ThreadListView.js';
 
 const fs = require('fs');
 const util = require('util');
-const log_file = fs.createWriteStream('./debug.log', {flags: 'w'});
 
 console.log = function(d: any) {
-  log_file.write(util.format(d) + '\n');
+  fs.appendFileSync('./debug.log', util.format(d) + '\n');
 };
 
 // @ts-ignore
@@ -48,6 +47,7 @@ class TestThreadListModel extends ThreadListModel {
   }
 
   public setFakeQuery() {
+    console.log(JSON.stringify(firestoreUserCollection()));
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
     metadataCollection.onSnapshot = function(onNext: any) {
@@ -69,7 +69,7 @@ test('Add threads', () => {
   expect(testThreadListModel.getThreads().length).toBe(2);
 });
 
-test('Mute thread', () => {
+test('Mute thread', async () => {
   const testThreadListModel = new TestThreadListModel();
   testThreadListModel.setFakeQuery();
   expect(testThreadListModel.getThreads().length).toBe(2);
@@ -77,6 +77,6 @@ test('Mute thread', () => {
   const thread = testThreadListModel.getThreads()[0];
 
   expect(thread.isMuted()).toBe(false);
-  testThreadListModel.markSingleThreadTriaged(thread, MUTE_ACTION);
+  await testThreadListModel.markSingleThreadTriaged(thread, MUTE_ACTION)
   // expect(thread.isMuted()).toBe(true);
 });
