@@ -101,7 +101,9 @@ export async function login() {
 }
 
 async function login_() {
-  if (isSignedIn_)
+  // skiplogin=1 is just to do some performance testing of compose view on
+  // webpagetest without having it redirect to the google login page
+  if (isSignedIn_ || window.location.search.includes('skiplogin=1'))
     return;
 
   let progress = AppShell.updateLoaderTitle('login', 1, 'Logging in...');
