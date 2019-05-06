@@ -95,11 +95,13 @@ export class ComposeModel extends Model {
       return;
     }
 
-    let to = '';
-    if (this.to_)
-      to += this.to_ + ',';
-    if (this.inlineTo_)
-      to += this.inlineTo_ + ',';
+    let to = this.to_ || '';
+
+    if (this.inlineTo_) {
+      if (to)
+        to += ', ';
+      to += this.inlineTo_;
+    }
 
     if (this.sending_)
       return;
@@ -107,8 +109,9 @@ export class ComposeModel extends Model {
 
     let progress = this.updateTitle('ComposeModel.send', 1, 'Sending...');
 
+    let sent;
     try {
-      await send(this.body_, to, this.subject_, defined(this.sender_));
+      sent = await send(this.body_, to, this.subject_, defined(this.sender_));
       await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
     } finally {
       this.sending_ = false;
@@ -116,7 +119,7 @@ export class ComposeModel extends Model {
     }
 
     return {
-      to: to, subject: this.subject_, body: sanitizedBodyText,
+      to: to, subject: this.subject_, body: sanitizedBodyText, response: sent
     }
   }
 }

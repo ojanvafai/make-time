@@ -6,8 +6,9 @@ import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {BACKLOG_PRIORITY_NAME, BLOCKED_LABEL_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {BLOCKED_LABEL_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, SKIM_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
@@ -35,11 +36,6 @@ interface ListenerData {
 
 let MAX_PINNED_THREADS = 3;
 
-export let ARCHIVE_ACTION = {
-  name: `Archive`,
-  description: `Archive and remove from the current group.`,
-};
-
 let QUICK_REPLY_ACTION = {
   name: `Quick reply`,
   shortName: `Reply`,
@@ -50,58 +46,6 @@ let QUICK_REPLY_ACTION = {
 export let BLOCKED_ACTION = {
   name: BLOCKED_LABEL_NAME,
   description: `Show the blocked buttons.`,
-};
-
-export let BLOCKED_1D_ACTION = {
-  name: '1 day',
-  description:
-      `Block on action from someone else. Shows up tomorrow to retriage.`,
-  key: '5',
-  hidden: true,
-};
-
-export let BLOCKED_2D_ACTION = {
-  name: '2 days',
-  description:
-      `Block on action from someone else. Shows up in 2 days to retriage.`,
-  key: '6',
-  hidden: true,
-};
-
-export let BLOCKED_7D_ACTION = {
-  name: '7 days',
-  description:
-      `Block on action from someone else. Shows up in 7 days to retriage.`,
-  key: '7',
-  hidden: true,
-};
-
-export let BLOCKED_14D_ACTION = {
-  name: '14 days',
-  description:
-      `Block on action from someone else. Shows up in 14 days to retriage.`,
-  key: '8',
-  hidden: true,
-};
-
-export let BLOCKED_30D_ACTION = {
-  name: '30 days',
-  description:
-      `Block on action from someone else. Shows up in 30 days to retriage.`,
-  key: '9',
-  hidden: true,
-};
-
-export let MUTE_ACTION = {
-  name: `Mute`,
-  description:
-      `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
-};
-
-export let SKIM_ACTION = {
-  name: `Skimmed`,
-  description:
-      `Mare thread skimmed. Skimmed threads show in the Triage view, but not the Skim view.`,
 };
 
 export let NEXT_ACTION = {
@@ -176,39 +120,6 @@ let UNDO_ACTION = {
   description: `Undoes the last action taken.`,
 };
 
-export let MUST_DO_ACTION = {
-  name: MUST_DO_PRIORITY_NAME,
-  description: `Must do today. Literally won't go home till it's done.`,
-  key: '1',
-};
-
-export let URGENT_ACTION = {
-  name: URGENT_PRIORITY_NAME,
-  description: `Needs to happen ASAP.`,
-  key: '2',
-};
-
-export let BACKLOG_ACTION = {
-  name: BACKLOG_PRIORITY_NAME,
-  description:
-      `Important for achieving my mission, but can be done at leisure.`,
-  key: '3',
-};
-
-export let NEEDS_FILTER_ACTION = {
-  name: NEEDS_FILTER_PRIORITY_NAME,
-  shortName: 'Filter',
-  description:
-      `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
-  key: 'f',
-};
-
-export let PIN_ACTION = {
-  name: PINNED_PRIORITY_NAME,
-  description: `Pins to the top at the top of todo.`,
-  key: 'x',
-};
-
 let MOVE_UP_ACTION = {
   name: `Move up`,
   shortName: '⬆',
@@ -224,14 +135,6 @@ let MOVE_DOWN_ACTION = {
   key: ']',
   repeatable: true,
 };
-
-let BLOCKED_BUTTONS = [
-  BLOCKED_1D_ACTION,
-  BLOCKED_2D_ACTION,
-  BLOCKED_7D_ACTION,
-  BLOCKED_14D_ACTION,
-  BLOCKED_30D_ACTION,
-];
 
 let BASE_ACTIONS = [
   ARCHIVE_ACTION,

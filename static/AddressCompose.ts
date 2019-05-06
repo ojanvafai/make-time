@@ -124,7 +124,8 @@ export class AddressCompose extends HTMLElement {
       else
         values.push(child.textContent);
     }
-    return values.join(', ');
+    // Filter out empty string values.
+    return values.filter(x => x).join(', ');
   }
 
   getSelectedAddress_() {

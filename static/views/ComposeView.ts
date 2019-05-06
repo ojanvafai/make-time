@@ -1,10 +1,12 @@
-import {Action, registerActions} from '../Actions.js';
+import {Action, Actions, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
 import {defined, getMyEmail} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 import {SendAs} from '../SendAs.js';
+import {Thread} from '../Thread.js';
+import {BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, PIN_ACTION, takeAction, URGENT_ACTION} from '../ThreadActions.js';
 
 import {HelpDialog} from './HelpDialog.js';
 import {View} from './View.js';
@@ -18,6 +20,16 @@ let HELP: Action = {
   name: 'Help',
   description: 'Help tips.',
 };
+
+// TODO: Ensure PIN is limted to 3 items here as well and not just in
+// ThreadListView.markTriaged_.
+let SENT_ACTIONS: Action[] = [
+  ...BLOCKED_BUTTONS,
+  MUST_DO_ACTION,
+  URGENT_ACTION,
+  BACKLOG_ACTION,
+  PIN_ACTION,
+];
 
 const ACTIONS = [SEND, HELP];
 
@@ -62,6 +74,8 @@ export class ComposeView extends View {
   private body_: EmailCompose;
   private inlineTo_: AddressCompose;
   private sendAs_?: SendAs;
+  private sent_?: HTMLElement;
+  private sentThreadId_?: string;
 
   constructor(
       private model_: ComposeModel, private params_: QueryParameters = {}) {
@@ -255,16 +269,26 @@ export class ComposeView extends View {
     if (!sent)
       return;
 
-    if (this.shouldAutoSend()) {
-      document.write(`<pre><h1>Sent</h1>
-<b>to:</b>${sent.to}
+    this.sentThreadId_ = defined(sent.response.threadId);
 
-<b>subject:</b>${sent.subject}
+    if (!this.sent_) {
+      this.sent_ = document.createElement('div');
 
-<b>body:</b>
-${sent.body}
-</pre>`);
+      let container = document.createElement('div');
+      container.style.cssText = `
+        background-color: #ffffffbb;
+        margin: 10px 4px;
+        text-align: center;
+      `;
+      container.append(this.sent_);
+      this.prepend(container);
+
+      let toolbar = new Actions(this, true);
+      toolbar.setActions(SENT_ACTIONS);
+      container.append(toolbar);
     }
+
+    this.sent_.textContent = `Triage "${sent.subject}"`;
 
     this.to_.value = this.params_.to || '';
     this.clearInlineTo_();
@@ -283,7 +307,18 @@ ${sent.body}
       return;
     }
 
-    throw `Invalid action: ${JSON.stringify(action)}`;
+    if (SENT_ACTIONS.includes(action)) {
+      if (!this.sentThreadId_)
+        return;
+
+      let metadata = await Thread.fetchMetadata(this.sentThreadId_);
+      let thread = Thread.create(this.sentThreadId_, metadata);
+      await thread.update();
+      await takeAction(thread, action, true);
+      return;
+    }
+
+    throw new Error(`Invalid action: ${JSON.stringify(action)}`);
   }
 }
 

@@ -3,7 +3,7 @@ import {Action} from '../Actions.js';
 import {assert, compareDates, setFaviconCount as setFavicon} from '../Base.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_14D_ACTION, BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_30D_ACTION, BLOCKED_7D_ACTION, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, URGENT_ACTION, SKIM_ACTION} from '../views/ThreadListView.js';
+import {takeAction} from '../ThreadActions.js';
 
 import {Model} from './Model.js';
 
@@ -217,74 +217,14 @@ export abstract class ThreadListModel extends Model {
     this.undoableActions_ = [];
   }
 
-  protected destinationToPriority(destination: Action) {
-    switch (destination) {
-      case PIN_ACTION:
-        return Priority.Pin;
-      case MUST_DO_ACTION:
-        return Priority.MustDo;
-      case URGENT_ACTION:
-        return Priority.Urgent;
-      case BACKLOG_ACTION:
-        return Priority.Backlog;
-      case NEEDS_FILTER_ACTION:
-        return Priority.NeedsFilter;
-      default:
-        return null;
-    }
-  }
-
   protected async markTriagedInternal(
       thread: Thread, destination: Action, moveToInboxAgain?: boolean) {
     // Save this off before we modify the thread and lose this state.
     let groupName = this.getGroupName(thread);
 
-    let priority = this.destinationToPriority(destination);
-    let oldState;
-    if (priority) {
-      oldState = await thread.setPriority(priority, moveToInboxAgain);
-    } else {
-      switch (destination) {
-        case ARCHIVE_ACTION:
-          oldState = await thread.archive();
-          break;
-
-        case BLOCKED_1D_ACTION:
-          oldState = await thread.setBlocked(1, moveToInboxAgain);
-          break;
-
-        case BLOCKED_2D_ACTION:
-          oldState = await thread.setBlocked(2, moveToInboxAgain);
-          break;
-
-        case BLOCKED_7D_ACTION:
-          oldState = await thread.setBlocked(7, moveToInboxAgain);
-          break;
-
-        case BLOCKED_14D_ACTION:
-          oldState = await thread.setBlocked(14, moveToInboxAgain);
-          break;
-
-        case BLOCKED_30D_ACTION:
-          oldState = await thread.setBlocked(30, moveToInboxAgain);
-          break;
-
-        case MUTE_ACTION:
-          oldState = await thread.setMuted();
-          break;
-
-        case SKIM_ACTION:
-          oldState = await thread.setSkimmed();
-          break;
-
-        default:
-          assert(false, 'This should never happen.');
-      }
-    }
-
     this.undoableActions_.push({
       thread: thread,
-      state: oldState,
+      state: await takeAction(thread, destination, moveToInboxAgain),
       // Save out the group name since it won't be on the thread synchronously
       // after the undo action due to needing to wait for the onSnapshot.
       groupName: groupName,
