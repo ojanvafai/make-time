@@ -292,6 +292,14 @@ export class Thread extends EventTarget {
     return new Date(defined(this.metadata_.timestamp));
   }
 
+  getLastTriagedDate() {
+    // Fallback to the timestamp of the last message in the thread if for some
+    // reason we don't have a retriageTimestamp (e.g. threads that are triaged
+    // before we added retriageTimestamps to them).
+    return new Date(
+        this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp));
+  }
+
   getBlockedDate() {
     let blocked = defined(this.metadata_.blocked);
     // TODO: Remove this once blocked can no longer be a boolean.

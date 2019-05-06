@@ -1,5 +1,5 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
-import {defined, notNull} from '../Base.js';
+import {defined, notNull, compareDates} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
@@ -118,7 +118,7 @@ export class TodoModel extends ThreadListModel {
       }
     }
 
-    return ThreadListModel.compareDates(a, b);
+    return compareDates(a.getLastTriagedDate(), b.getLastTriagedDate());
   }
 
   comparePriorities_(a: Priority, b: Priority) {
