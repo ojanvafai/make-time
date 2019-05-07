@@ -304,6 +304,9 @@ export class ComposeView extends View {
     this.clearInlineTo_();
     this.subject_.value = this.params_.subject || '';
     this.body_.value = this.params_.body || '';
+    // Flush the model so that sending doesn't try to send the same message
+    // again.
+    this.handleUpdates_();
   }
 
   async takeAction(action: Action) {
