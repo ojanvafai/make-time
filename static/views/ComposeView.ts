@@ -341,7 +341,9 @@ export class ComposeView extends View {
         // Technically this will happen automatically the next time we sync with
         // gmail, but do it proactively to minimize the window this thread has
         // no label.
-        await (await this.getMailProcessor_()).processThread(thread.id);
+        // Intentionally don't await processThread so the UI updates without
+        // waiting for this.
+        (await this.getMailProcessor_()).processThread(thread.id);
       } finally {
         // Enable the toolbar again whether the update fails or succeeds.
         toolbar.style.opacity = '';
