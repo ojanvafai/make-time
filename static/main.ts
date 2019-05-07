@@ -155,33 +155,34 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
       return new CalendarView(model as Calendar);
 
     case VIEW.Compose:
-      return new ComposeView(model as ComposeModel, params, getMailProcessor);
+      return new ComposeView(
+          model as ComposeModel, params, getMailProcessor, canPin);
 
     case VIEW.Tracking:
       return new TrackingView(model as TrackingModel);
 
     case VIEW.Todo:
       return new ThreadListView(
-          <TodoModel>model, appShell_, await getSettings(), getPinnedCount,
-          '/triage', 'Back to Triaging', true);
+          <TodoModel>model, appShell_, await getSettings(), canPin, '/triage',
+          'Back to Triaging', true);
 
     case VIEW.Triage:
       return new ThreadListView(
-          <TriageModel>model, appShell_, await getSettings(), getPinnedCount,
-          '/todo', 'Go to todo list');
+          <TriageModel>model, appShell_, await getSettings(), canPin, '/todo',
+          'Go to todo list');
 
     case VIEW.Skim:
       // TODO: Make ThreadListView take a property bag for optional arguments.
       // TODO: Show both the buttons for going to Todo and Triage view buttons?
       return new ThreadListView(
-          <SkimModel>model, appShell_, await getSettings(), getPinnedCount,
-          undefined, undefined, false, true);
+          <SkimModel>model, appShell_, await getSettings(), canPin, undefined,
+          undefined, false, true);
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
 
     case VIEW.Hidden:
-      return new HiddenView(appShell_, await getSettings(), getPinnedCount);
+      return new HiddenView(appShell_, await getSettings(), canPin);
 
     default:
       // Throw instead of asserting here so that TypeScript knows that this
@@ -266,8 +267,14 @@ async function getMailProcessor() {
   return mailProcessor_;
 }
 
-async function getPinnedCount() {
-  return (await getTodoModel()).pinnedCount();
+let MAX_PINNED_THREADS = 3;
+async function canPin(newPinCount: number) {
+  let currentlyPinned = (await getTodoModel()).pinnedCount();
+  if (currentlyPinned + newPinCount > MAX_PINNED_THREADS) {
+    alert(`Cannot pin more than ${MAX_PINNED_THREADS} rows.`);
+    return true;
+  }
+  return false;
 }
 
 async function updateBackground() {

@@ -113,7 +113,7 @@ export class HiddenView extends View {
 
   constructor(
       private appShell_: AppShell, private settings_: Settings,
-      private getPinnedCount_: () => Promise<number>) {
+      private canPin_: (newPinCount: number) => Promise<boolean>) {
     super();
 
     let container = document.createElement('div');
@@ -144,8 +144,8 @@ export class HiddenView extends View {
 
     if (this.threadListView_)
       this.threadListView_.remove();
-    this.threadListView_ = new ThreadListView(
-        model, this.appShell_, this.settings_, this.getPinnedCount_);
+    this.threadListView_ =
+        new ThreadListView(model, this.appShell_, this.settings_, this.canPin_);
     this.append(this.threadListView_);
   }
 

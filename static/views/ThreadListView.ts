@@ -34,8 +34,6 @@ interface ListenerData {
   name: string, handler: (e: Event) => void,
 }
 
-let MAX_PINNED_THREADS = 3;
-
 let QUICK_REPLY_ACTION = {
   name: `Quick reply`,
   shortName: `Reply`,
@@ -196,7 +194,8 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      settings: Settings, private getPinnedCount_: () => Promise<number>,
+      settings: Settings,
+      private canPin_: (newPinCount: number) => Promise<boolean>,
       bottomButtonUrl?: string, bottomButtonText?: string,
       private includeSortActions_?: boolean, private skimMode_?: boolean) {
     super();
@@ -739,12 +738,9 @@ export class ThreadListView extends View {
   private async markTriaged_(destination: Action) {
     if (destination === PIN_ACTION) {
       assert(!this.renderedRow_);
-      let currentlyPinned = await this.getPinnedCount_();
       let selectedCount = this.getRows_().filter(x => x.selected).length;
-      if (currentlyPinned + selectedCount > MAX_PINNED_THREADS) {
-        alert(`Cannot pin more than ${MAX_PINNED_THREADS} rows.`);
+      if (await this.canPin_(selectedCount))
         return;
-      }
     }
 
     if (this.renderedRow_) {
