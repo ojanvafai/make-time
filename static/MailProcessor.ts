@@ -455,13 +455,15 @@ export class MailProcessor {
          QueueSettings.IMMEDIATE);
 
 
-    // If there's exactly one message, it has the sent label, and it already has
-    // a priority, then we know that this is the case where we sent the message
-    // using maketime and then immediately assigned a priority. So it doesn't
-    // need to be triaged again.
-    let messages = thread.getMessages();
-    let needsTriage = messages.length !== 1 ||
-        !messages[0].getLabelIds().includes('SENT') ||
+    // If all the new messages have the sent label and the thread already has
+    // a priority, then don't make you retriage since you sent the messages
+    // yourself and could have retriaged at that point.
+    let makeTimeLabelId = defined(this.makeTimeLabelId_);
+    let newMessages = thread.getMessages().filter(x => {
+      let ids = x.getLabelIds()
+      return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
+    });
+    let needsTriage = newMessages.length !== 0 ||
         !(thread.getPriorityId() || thread.isBlocked());
 
     await thread.setLabelAndQueued(shouldQueue, label, needsTriage);
