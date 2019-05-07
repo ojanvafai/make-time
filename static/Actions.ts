@@ -73,15 +73,18 @@ export function getPrimaryShortcut(action: Action) {
 
 export class Actions extends HTMLElement {
   private actions_: Action[];
+  private supplementalActions_: Action[];
 
   constructor(private view_: View, private showHiddenActions_?: boolean) {
     super();
     this.style.display = 'flex';
     this.actions_ = [];
+    this.supplementalActions_ = [];
   }
 
-  setActions(actions: Action[]) {
+  setActions(actions: Action[], supplementalActions?: Action[]) {
     this.actions_ = actions;
+    this.supplementalActions_ = supplementalActions || [];
     this.render_();
   }
 
@@ -187,7 +190,8 @@ export class Actions extends HTMLElement {
           this.matchesEvent_(e, action.secondaryKey);
     };
 
-    let action = this.actions_.find(test);
+    let action =
+        this.actions_.find(test) || this.supplementalActions_.find(test);
     if (action) {
       e.preventDefault();
       await this.view_.takeAction(action);

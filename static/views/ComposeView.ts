@@ -34,14 +34,16 @@ let SENT_ACTIONS: Action[] = [
 
 const ACTIONS = [SEND, HELP];
 
-// TODO: Make actions that allow modifier keys and make insert link a proper
-// action on both ComposeView and ThreadListView's quick reply.
+// TODO: Make insert link a proper action on both ComposeView and
+// ThreadListView's quick reply.
 registerActions('Compose', [
-  ...ACTIONS, {
+  ...ACTIONS,
+  ...SENT_ACTIONS,
+  {
     key: '<ctrl>+k/<cmd>+k',
     name: 'Insert link',
     description: 'Converts selected text to be a link.',
-  }
+  },
 ]);
 
 async function getHelpText() {
@@ -140,7 +142,7 @@ export class ComposeView extends View {
     this.inlineTo_ = new AddressCompose(true);
     this.inlineTo_.style.flex = '1';
 
-    this.setActions(ACTIONS);
+    this.setActions(ACTIONS, SENT_ACTIONS);
   }
 
   async setFrom_(selected?: gapi.client.gmail.SendAs) {
