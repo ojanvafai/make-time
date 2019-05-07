@@ -26,7 +26,7 @@ export class MailProcessor {
     return firestoreUserCollection().doc('threads').collection('metadata');
   }
 
-  private async fetchMakeTimeLabel_() {
+  async init() {
     if (this.makeTimeLabelId_)
       return;
 
@@ -48,7 +48,6 @@ export class MailProcessor {
   }
 
   async process() {
-    await this.fetchMakeTimeLabel_();
     await this.processQueues_();
     await this.syncWithGmail_();
   }

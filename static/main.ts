@@ -262,8 +262,10 @@ async function getTodoModel() {
 
 let mailProcessor_: MailProcessor;
 async function getMailProcessor() {
-  if (!mailProcessor_)
+  if (!mailProcessor_) {
     mailProcessor_ = new MailProcessor(await getSettings());
+    await mailProcessor_.init();
+  }
   return mailProcessor_;
 }
 
