@@ -182,8 +182,8 @@ export class MailProcessor {
     // This has to happen after the removeGmailLabels_ calls above as those
     // calls remove threads from the inbox.
     await this.forEachThread_(
-        'in:inbox -in:mktime', (thread) => this.processThread_(thread),
-        'Updating...');
+        'in:inbox -in:mktime',
+        (thread) => this.processThread(defined(thread.id)), 'Updating...');
 
     // For anything that used to be in the inbox, but isn't anymore (e.g. the
     // user archived from gmail), clear it's metadata so it doesn't show up in
@@ -249,8 +249,7 @@ export class MailProcessor {
     return threads;
   }
 
-  private async processThread_(rawThread: gapi.client.gmail.Thread) {
-    let threadId = defined(rawThread.id);
+  async processThread(threadId: string) {
     let metadata = await Thread.fetchMetadata(threadId);
     let thread = Thread.create(threadId, metadata);
     // Grab the messages we have off disk first to avoid sending those bytes
@@ -281,15 +280,6 @@ export class MailProcessor {
         });
         return;
       }
-    }
-
-    // If there's exactly one message, it has the sent label, and it already has
-    // a priority, then we know that this is the case where we sent the message
-    // using maketime and then immediately assigned a priority.
-    if (messages.length === 1 && messages[0].getLabelIds().includes('SENT') &&
-        (thread.getPriorityId() || thread.isBlocked())) {
-      await this.addMakeTimeLabel_(thread.id);
-      return;
     }
 
     await this.applyFilters_(thread);
@@ -465,7 +455,17 @@ export class MailProcessor {
         (this.settings_.getQueueSettings().get(label).queue !=
          QueueSettings.IMMEDIATE);
 
-    await thread.setLabelAndQueued(shouldQueue, label);
+
+    // If there's exactly one message, it has the sent label, and it already has
+    // a priority, then we know that this is the case where we sent the message
+    // using maketime and then immediately assigned a priority. So it doesn't
+    // need to be triaged again.
+    let messages = thread.getMessages();
+    let needsTriage = messages.length !== 1 ||
+        !messages[0].getLabelIds().includes('SENT') ||
+        !(thread.getPriorityId() || thread.isBlocked());
+
+    await thread.setLabelAndQueued(shouldQueue, label, needsTriage);
     await this.addMakeTimeLabel_(thread.id);
   }
 

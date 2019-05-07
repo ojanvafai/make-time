@@ -417,11 +417,11 @@ export class Thread extends EventTarget {
     return data;
   }
 
-  async setLabelAndQueued(shouldQueue: boolean, label: string) {
+  async setLabelAndQueued(shouldQueue: boolean, label: string, hasLabel: boolean) {
     return await this.updateMetadata({
       queued: shouldQueue,
       labelId: await this.queueNames_.getId(label),
-      hasLabel: true,
+      hasLabel: hasLabel,
       skimmed: firebase.firestore.FieldValue.delete(),
       blocked: firebase.firestore.FieldValue.delete(),
     } as ThreadMetadataUpdate);

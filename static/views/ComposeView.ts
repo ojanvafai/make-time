@@ -3,6 +3,7 @@ import {AddressCompose} from '../AddressCompose.js';
 import {defined, getMyEmail, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
+import {MailProcessor} from '../MailProcessor.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 import {SendAs} from '../SendAs.js';
 import {Thread} from '../Thread.js';
@@ -79,7 +80,8 @@ export class ComposeView extends View {
   private sentToolbar_?: Actions;
 
   constructor(
-      private model_: ComposeModel, private params_: QueryParameters = {}) {
+      private model_: ComposeModel, private params_: QueryParameters = {},
+      private getMailProcessor_: () => Promise<MailProcessor>) {
     super();
 
     this.style.cssText = `
@@ -325,6 +327,10 @@ export class ComposeView extends View {
         let thread = Thread.create(this.sentThreadId_, metadata);
         await thread.update();
         await takeAction(thread, action, true);
+        // Technically this will happen automatically the next time we sync with
+        // gmail, but do it proactively to minimize the window this thread has
+        // no label.
+        await (await this.getMailProcessor_()).processThread(thread.id);
       } finally {
         // Enable the toolbar again whether the update fails or succeeds.
         toolbar.style.opacity = '';

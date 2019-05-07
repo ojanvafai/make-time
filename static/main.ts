@@ -30,7 +30,6 @@ if (!navigator.userAgent.includes('Mobile'))
   document.documentElement.classList.add('desktop');
 
 let currentView_: View;
-let mailProcessor_: MailProcessor;
 let appShell_: AppShell;
 
 const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'filter'];
@@ -156,7 +155,7 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
       return new CalendarView(model as Calendar);
 
     case VIEW.Compose:
-      return new ComposeView(model as ComposeModel, params);
+      return new ComposeView(model as ComposeModel, params, getMailProcessor);
 
     case VIEW.Tracking:
       return new TrackingView(model as TrackingModel);
@@ -258,6 +257,13 @@ async function getTodoModel() {
     todoModel_ = new TodoModel(settings.get(ServerStorage.KEYS.VACATION));
   }
   return todoModel_;
+}
+
+let mailProcessor_: MailProcessor;
+async function getMailProcessor() {
+  if (!mailProcessor_)
+    mailProcessor_ = new MailProcessor(await getSettings());
+  return mailProcessor_;
 }
 
 async function getPinnedCount() {
@@ -421,9 +427,7 @@ async function updateSilently() {
   isUpdating_ = true;
 
   try {
-    if (!mailProcessor_)
-      mailProcessor_ = new MailProcessor(await getSettings());
-    await mailProcessor_.process();
+    await (await getMailProcessor()).process();
 
     // Don't init the calendar model here as we don't want to force load all the
     // calendar events every time someone loads maketime. But once they've
