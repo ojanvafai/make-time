@@ -307,7 +307,10 @@ export class ThreadRow extends HTMLElement {
     popoutButton.style.marginRight = '4px';
 
     this.messageDetails_.textContent = '';
-    if (window.innerWidth < 600) {
+
+    // window.innerWidth makes more logical sense for this, but chrome has bugs.
+    // crbug.com/960803.
+    if (window.outerWidth < 600) {
       this.messageDetails_.style.alignItems = '';
 
       let topRow = document.createElement('div');

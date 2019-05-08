@@ -91,7 +91,9 @@ export class Actions extends HTMLElement {
   private render_() {
     this.textContent = '';
 
-    let renderMini = window.innerWidth < 600;
+    // window.innerWidth makes more logical sense for this, but chrome has bugs.
+    // crbug.com/960803.
+    let renderMini = window.outerWidth < 600;
 
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
