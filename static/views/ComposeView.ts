@@ -23,11 +23,11 @@ let HELP: Action = {
 };
 
 let SENT_ACTIONS: Action[] = [
-  // ...BLOCKED_BUTTONS,
   MUST_DO_ACTION,
   URGENT_ACTION,
   BACKLOG_ACTION,
   PIN_ACTION,
+  ...BLOCKED_BUTTONS,
 ];
 
 const ACTIONS = [SEND, HELP];
