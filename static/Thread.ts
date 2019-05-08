@@ -417,14 +417,21 @@ export class Thread extends EventTarget {
     return data;
   }
 
-  async setLabelAndQueued(shouldQueue: boolean, label: string, hasLabel: boolean) {
-    return await this.updateMetadata({
+  async setLabelAndQueued(
+      shouldQueue: boolean, label: string, hasLabel: boolean) {
+    let update: ThreadMetadataUpdate = {
       queued: shouldQueue,
       labelId: await this.queueNames_.getId(label),
       hasLabel: hasLabel,
       skimmed: firebase.firestore.FieldValue.delete(),
-      blocked: firebase.firestore.FieldValue.delete(),
-    } as ThreadMetadataUpdate);
+    };
+
+    // If we're not putting the item into the triage queue, then we should leave
+    // it's blocked state untouched as it is the case where the user sent
+    // themself a new message and then immediately marked it blocked.
+    if (hasLabel)
+      update.blocked = firebase.firestore.FieldValue.delete();
+    return await this.updateMetadata(update);
   }
 
   getData() {

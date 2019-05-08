@@ -22,10 +22,8 @@ let HELP: Action = {
   description: 'Help tips.',
 };
 
-// TODO: Ensure PIN is limted to 3 items here as well and not just in
-// ThreadListView.markTriaged_.
 let SENT_ACTIONS: Action[] = [
-  ...BLOCKED_BUTTONS,
+  // ...BLOCKED_BUTTONS,
   MUST_DO_ACTION,
   URGENT_ACTION,
   BACKLOG_ACTION,

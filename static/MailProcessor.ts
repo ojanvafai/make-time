@@ -454,7 +454,6 @@ export class MailProcessor {
         (this.settings_.getQueueSettings().get(label).queue !=
          QueueSettings.IMMEDIATE);
 
-
     // If all the new messages have the sent label and the thread already has
     // a priority, then don't make you retriage since you sent the messages
     // yourself and could have retriaged at that point.
