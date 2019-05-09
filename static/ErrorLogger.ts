@@ -9,7 +9,7 @@ class Logger extends HTMLElement {
       bottom: 10px;
       right: 10px;
       border: 1px solid #000000bb;
-      background-color: #ffffffbb;
+      background-color: #ffffffff;
       max-width: 50%;
       max-height: 50%;
       display: flex;

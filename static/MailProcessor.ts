@@ -11,6 +11,7 @@ import {FilterRule, HeaderFilterRule, ruleRegexp, Settings, stringFilterMatches}
 import {TaskQueue} from './TaskQueue.js';
 import {BuiltInLabelIds, Priority, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 import {AppShell} from './views/AppShell.js';
+import { ErrorLogger } from './ErrorLogger.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
 let MUST_DO_RETRIAGE_FREQUENCY_DAYS = 1;
@@ -196,7 +197,13 @@ export class MailProcessor {
   private async doInParallel_<T>(items: T[], callback: (t: T) => void) {
     const taskQueue = new TaskQueue(3);
     for (let item of items) {
-      taskQueue.queueTask(async () => callback(item));
+      taskQueue.queueTask(async () => {
+        try {
+          await callback(item);
+        } catch (e) {
+          ErrorLogger.log(e.message, e.stack);
+        }
+      });
     }
     await taskQueue.flush();
   }
