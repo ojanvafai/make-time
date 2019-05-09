@@ -2,6 +2,7 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {assert, defined, FetchRequestParameters, Labels, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection, getServerStorage} from './BaseMain.js';
+import {ErrorLogger} from './ErrorLogger.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {QueueNames} from './QueueNames.js';
@@ -11,7 +12,6 @@ import {FilterRule, HeaderFilterRule, ruleRegexp, Settings, stringFilterMatches}
 import {TaskQueue} from './TaskQueue.js';
 import {BuiltInLabelIds, Priority, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 import {AppShell} from './views/AppShell.js';
-import { ErrorLogger } from './ErrorLogger.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
 let MUST_DO_RETRIAGE_FREQUENCY_DAYS = 1;
@@ -198,6 +198,9 @@ export class MailProcessor {
     const taskQueue = new TaskQueue(3);
     for (let item of items) {
       taskQueue.queueTask(async () => {
+        // We don't want an error processing one thread to prevent processing
+        // all the other threads since usually those errors are specific to
+        // something unexpected with that specific thread.
         try {
           await callback(item);
         } catch (e) {
