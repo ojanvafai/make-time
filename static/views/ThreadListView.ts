@@ -251,13 +251,19 @@ export class ThreadListView extends View {
     `;
     this.append(this.singleThreadContainer_);
 
-    if (bottomButtonUrl) {
-      let button = document.createElement('a');
-      button.className = 'label-button';
-      button.href = bottomButtonUrl;
-      button.textContent = defined(bottomButtonText);
-      this.append(button);
+    if (bottomButtonUrl)
+      this.appendButton_(defined(bottomButtonText), bottomButtonUrl);
+
+    if (this.skimMode_) {
+      let button = this.appendButton_('Stop skimming');
+      button.title = 'View/respond to remaining threads like regular triage.';
+      button.addEventListener('click', () => {
+        this.skimMode_ = false;
+        button.remove();
+        this.updateActions_();
+      });
     }
+
     this.updateActions_();
 
     this.addListenerToModel(
@@ -268,6 +274,16 @@ export class ThreadListView extends View {
     });
 
     this.render_();
+  }
+
+  appendButton_(text: string, url?: string) {
+    let button = document.createElement('a');
+    button.className = 'label-button';
+    if (url)
+      button.href = url;
+    button.textContent = text;
+    this.append(button);
+    return button;
   }
 
   private getThreadRow_(thread: Thread) {
