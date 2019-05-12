@@ -80,11 +80,8 @@ export class ComposeView extends View {
   private sentToolbar_?: Actions;
 
   constructor(
-      private model_: ComposeModel,
-      private params_: QueryParameters = {},
-      private getMailProcessor_: () => Promise<MailProcessor>,
-      private canPin_: (newPinCount: number) => Promise<boolean>,
-  ) {
+      private model_: ComposeModel, private params_: QueryParameters = {},
+      private getMailProcessor_: () => Promise<MailProcessor>) {
     super();
 
     this.style.cssText = `
@@ -320,9 +317,6 @@ export class ComposeView extends View {
 
     if (SENT_ACTIONS.includes(action)) {
       if (!this.sentThreadId_)
-        return;
-
-      if (action === PIN_ACTION && await this.canPin_(1))
         return;
 
       // Disable the toolbar while updating the thread to give an indication

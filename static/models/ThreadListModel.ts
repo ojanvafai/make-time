@@ -91,6 +91,10 @@ export abstract class ThreadListModel extends Model {
     return isCollapsed;
   }
 
+  allowedCount(_groupName: string) {
+    return 0;
+  }
+
   showTopThreads(_groupName: string) {
     return false;
   }

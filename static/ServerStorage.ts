@@ -79,6 +79,9 @@ interface KeyTypes {
   TIMER_DURATION: string;
   AUTO_START_TIMER: string;
   ALLOWED_REPLY_LENGTH: string;
+  ALLOWED_PIN_COUNT: string;
+  ALLOWED_MUST_DO_COUNT: string;
+  ALLOWED_URGENT_COUNT: string;
   DAYS_TO_SHOW: string;
   LOG_MATCHING_RULES: string;
   TRACK_LONG_TASKS: string;
@@ -94,6 +97,9 @@ let keys: KeyTypes = {
   TIMER_DURATION: 'timeout',
   AUTO_START_TIMER: 'auto_start_timer',
   ALLOWED_REPLY_LENGTH: 'allowed_reply_length',
+  ALLOWED_PIN_COUNT: 'allowed_pin_count',
+  ALLOWED_MUST_DO_COUNT: 'allowed_must_do_count',
+  ALLOWED_URGENT_COUNT: 'allowed_urgent_count',
   DAYS_TO_SHOW: 'days_to_show',
   LOG_MATCHING_RULES: 'log_matching_rules',
   TRACK_LONG_TASKS: 'track_long_tasks',
@@ -109,6 +115,9 @@ let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.TIMER_DURATION,
   keys.AUTO_START_TIMER,
   keys.ALLOWED_REPLY_LENGTH,
+  keys.ALLOWED_PIN_COUNT,
+  keys.ALLOWED_MUST_DO_COUNT,
+  keys.ALLOWED_URGENT_COUNT,
   keys.DAYS_TO_SHOW,
   keys.LOG_MATCHING_RULES,
   keys.TRACK_LONG_TASKS,

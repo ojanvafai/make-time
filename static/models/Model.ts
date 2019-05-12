@@ -1,4 +1,4 @@
-import { AppShell } from '../views/AppShell.js';
+import {AppShell} from '../views/AppShell.js';
 
 export abstract class Model extends EventTarget {
   constructor() {
@@ -9,7 +9,12 @@ export abstract class Model extends EventTarget {
 
   async update() {}
 
-  protected updateTitle(key: string, count: number, ...title: (HTMLElement|string)[]) {
+  allowViewMessages() {
+    return true
+  }
+
+  protected updateTitle(
+      key: string, count: number, ...title: (HTMLElement|string)[]) {
     return AppShell.updateLoaderTitle(key, count, ...title);
   }
 }

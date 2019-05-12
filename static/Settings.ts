@@ -243,6 +243,30 @@ export class Settings extends EventTarget {
       type: 'number',
     },
     {
+      key: ServerStorage.KEYS.ALLOWED_PIN_COUNT,
+      name: 'Allowed pins',
+      description:
+          `Number of threads that can be marked pinned. Use 0 for no limit.`,
+      default: 3,
+      type: 'number',
+    },
+    {
+      key: ServerStorage.KEYS.ALLOWED_MUST_DO_COUNT,
+      name: 'Allowed must dos',
+      description:
+          `Number of threads that can be marked must do. Use 0 for no limit.`,
+      default: 9,
+      type: 'number',
+    },
+    {
+      key: ServerStorage.KEYS.ALLOWED_URGENT_COUNT,
+      name: 'Allowed urgents',
+      description:
+          `Number of threads that can be marked urgent. Use 0 for no limit.`,
+      default: 27,
+      type: 'number',
+    },
+    {
       key: ServerStorage.KEYS.DAYS_TO_SHOW,
       name: 'Wicked witch count',
       description:

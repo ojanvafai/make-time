@@ -1,5 +1,5 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
-import {defined, notNull, compareDates} from '../Base.js';
+import {compareDates, defined, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
@@ -11,7 +11,10 @@ export class TodoModel extends ThreadListModel {
   private sortCount_: number;
   private filter_?: string;
 
-  constructor(private vacation_: string) {
+  constructor(
+      private vacation_: string, private allowedPinCount_: number,
+      private allowedMustDoCount_: number,
+      private allowedUrgentCount_: number) {
     super(true);
     this.sortCount_ = 0;
 
@@ -71,6 +74,7 @@ export class TodoModel extends ThreadListModel {
 
   defaultCollapsedState(groupName: string) {
     return groupName !== MUST_DO_PRIORITY_NAME &&
+        groupName !== URGENT_PRIORITY_NAME &&
         groupName !== NEEDS_FILTER_PRIORITY_NAME;
   }
 
@@ -87,10 +91,41 @@ export class TodoModel extends ThreadListModel {
     return groupName === PINNED_PRIORITY_NAME;
   }
 
+  allowedCount(groupName: string) {
+    switch (groupName) {
+      case PINNED_PRIORITY_NAME:
+        return this.allowedPinCount_;
+      case MUST_DO_PRIORITY_NAME:
+        return this.allowedMustDoCount_;
+      case URGENT_PRIORITY_NAME:
+        return this.allowedUrgentCount_;
+    }
+    // 0 represents no limit.
+    return 0;
+  }
+
   pinnedCount() {
     return this.getThreads()
         .filter(x => x.getPriorityId() === Priority.Pin)
         .length;
+  }
+
+  mustDoCount() {
+    return this.getThreads()
+        .filter(x => x.getPriorityId() === Priority.MustDo)
+        .length;
+  }
+
+  urgentCount() {
+    return this.getThreads()
+        .filter(x => x.getPriorityId() === Priority.Urgent)
+        .length;
+  }
+
+  allowViewMessages() {
+    return this.pinnedCount() <= this.allowedPinCount_ &&
+        this.mustDoCount() <= this.allowedMustDoCount_ &&
+        this.urgentCount() <= this.allowedUrgentCount_;
   }
 
   private getSortData_(priority: number) {

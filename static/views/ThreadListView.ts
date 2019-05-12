@@ -195,9 +195,7 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      settings: Settings,
-      private canPin_: (newPinCount: number) => Promise<boolean>,
-      bottomButtonUrl?: string, bottomButtonText?: string,
+      settings: Settings, bottomButtonUrl?: string, bottomButtonText?: string,
       private includeSortActions_?: boolean,
       private includeSkimAction_?: boolean) {
     super();
@@ -229,15 +227,20 @@ export class ThreadListView extends View {
     `;
     this.append(this.rowGroupContainer_);
 
-    this.rowGroupContainer_.addEventListener(
-        RenderThreadEvent.NAME, (e: Event) => {
-          let row = e.target as ThreadRow;
-          if (this.allowViewMessages_) {
-            row.select((e as RenderThreadEvent).shiftKey);
-            return;
-          }
-          this.setRenderedRow_(row);
-        });
+    this.rowGroupContainer_.addEventListener(RenderThreadEvent.NAME, (e: Event) => {
+      let row = e.target as ThreadRow;
+      if (!this.allowViewMessages_) {
+        if (this.includeSkimAction_) {
+          row.select((e as RenderThreadEvent).shiftKey);
+        } else {
+          // TODO: Don't hard code this logic that is specific to the TodoView.
+          alert(
+              'There are too many pinned, urgent, or must do threads. Please reprioritize to stay below the limits.');
+        }
+        return;
+      }
+      this.setRenderedRow_(row);
+    });
     this.rowGroupContainer_.addEventListener(FocusRowEvent.NAME, (e: Event) => {
       this.handleFocusRow_(<ThreadRow>e.target);
     });
@@ -262,7 +265,7 @@ export class ThreadListView extends View {
       let button = this.appendButton_('Triage remaining');
       button.title = 'View/respond to remaining threads like regular triage.';
       button.addEventListener('click', () => {
-        this.setAllowViewMessages(false);
+        this.allowViewMessages_ = false;
         button.remove();
       });
     }
@@ -270,7 +273,7 @@ export class ThreadListView extends View {
     this.updateActions_();
 
     this.addListenerToModel(
-        ThreadListChangedEvent.NAME, this.render_.bind(this));
+        ThreadListChangedEvent.NAME, this.handleThreadListChanged_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread, undoEvent.groupName);
@@ -279,8 +282,9 @@ export class ThreadListView extends View {
     this.render_();
   }
 
-  setAllowViewMessages(allow: boolean) {
-    this.allowViewMessages_ = allow;
+  handleThreadListChanged_() {
+    this.allowViewMessages_ = this.model_.allowViewMessages();
+    this.render_();
   }
 
   appendButton_(text: string, url?: string) {
@@ -392,7 +396,8 @@ export class ThreadListView extends View {
     for (let thread of threads) {
       let groupName = this.model_.getGroupName(thread);
       if (!currentGroup || currentGroup.name != groupName) {
-        currentGroup = new ThreadRowGroup(groupName, this.model_);
+        let allowedCount = this.model_.allowedCount(groupName);
+        currentGroup = new ThreadRowGroup(groupName, this.model_, allowedCount);
         this.rowGroupContainer_.append(currentGroup);
       }
       currentGroup.push(this.getThreadRow_(thread));
@@ -759,13 +764,6 @@ export class ThreadListView extends View {
   }
 
   private async markTriaged_(destination: Action) {
-    if (destination === PIN_ACTION) {
-      assert(!this.renderedRow_);
-      let selectedCount = this.getRows_().filter(x => x.selected).length;
-      if (await this.canPin_(selectedCount))
-        return;
-    }
-
     if (this.renderedRow_) {
       // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in
       // some cases.

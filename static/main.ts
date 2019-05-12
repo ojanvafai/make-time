@@ -155,34 +155,33 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
       return new CalendarView(model as Calendar);
 
     case VIEW.Compose:
-      return new ComposeView(
-          model as ComposeModel, params, getMailProcessor, canPin);
+      return new ComposeView(model as ComposeModel, params, getMailProcessor);
 
     case VIEW.Tracking:
       return new TrackingView(model as TrackingModel);
 
     case VIEW.Todo:
       return new ThreadListView(
-          <TodoModel>model, appShell_, await getSettings(), canPin, '/triage',
+          <TodoModel>model, appShell_, await getSettings(), '/triage',
           'Back to Triaging', true);
 
     case VIEW.Triage:
       return new ThreadListView(
-          <TriageModel>model, appShell_, await getSettings(), canPin, '/todo',
+          <TriageModel>model, appShell_, await getSettings(), '/todo',
           'Go to todo list');
 
     case VIEW.Skim:
       // TODO: Make ThreadListView take a property bag for optional arguments.
       // TODO: Show both the buttons for going to Todo and Triage view buttons?
       return new ThreadListView(
-          <SkimModel>model, appShell_, await getSettings(), canPin, undefined,
+          <SkimModel>model, appShell_, await getSettings(), undefined,
           undefined, false, true);
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
 
     case VIEW.Hidden:
-      return new HiddenView(appShell_, await getSettings(), canPin);
+      return new HiddenView(appShell_, await getSettings());
 
     default:
       // Throw instead of asserting here so that TypeScript knows that this
@@ -255,7 +254,11 @@ let todoModel_: TodoModel|undefined;
 async function getTodoModel() {
   if (!todoModel_) {
     let settings = await getSettings();
-    todoModel_ = new TodoModel(settings.get(ServerStorage.KEYS.VACATION));
+    todoModel_ = new TodoModel(
+        settings.get(ServerStorage.KEYS.VACATION),
+        settings.get(ServerStorage.KEYS.ALLOWED_PIN_COUNT),
+        settings.get(ServerStorage.KEYS.ALLOWED_MUST_DO_COUNT),
+        settings.get(ServerStorage.KEYS.ALLOWED_URGENT_COUNT));
   }
   return todoModel_;
 }
@@ -267,16 +270,6 @@ async function getMailProcessor() {
     await mailProcessor_.init();
   }
   return mailProcessor_;
-}
-
-let MAX_PINNED_THREADS = 3;
-async function canPin(newPinCount: number) {
-  let currentlyPinned = (await getTodoModel()).pinnedCount();
-  if (currentlyPinned + newPinCount > MAX_PINNED_THREADS) {
-    alert(`Cannot pin more than ${MAX_PINNED_THREADS} rows.`);
-    return true;
-  }
-  return false;
 }
 
 async function updateBackground() {

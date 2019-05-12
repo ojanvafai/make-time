@@ -15,35 +15,55 @@ const NUM_TOP_THREADS = 3;
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
   private rowCountWhenCollapsed_: number;
+  private rowCount_: number;
+  private groupNameContainer_: HTMLElement;
   private expander_?: HTMLElement;
 
-  constructor(private groupName_: string, private model_: ThreadListModel) {
+  constructor(
+      private groupName_: string, private model_: ThreadListModel,
+      private allowedCount_?: number) {
     super();
     this.style.cssText = `
       display: block;
       border-bottom: 1px solid #ddd;
     `;
 
-    let groupNameContainer = document.createElement('span')
-    groupNameContainer.style.cssText = `
+    this.groupNameContainer_ = document.createElement('span');
+    this.groupNameContainer_.style.cssText = `
       font-weight: bold;
       font-size: 18px;
     `;
-    groupNameContainer.append(this.groupName_);
+    this.groupNameContainer_.append(this.groupName_);
 
     let header = document.createElement('div');
     header.style.cssText = `
       margin-left: 5px;
       padding-top: 10px;
     `;
-    header.append(groupNameContainer);
+    header.append(this.groupNameContainer_);
     this.append(header);
 
     this.rowCountWhenCollapsed_ = 0;
+    this.rowCount_ = 0;
     this.rowContainer_ = document.createElement('div');
     this.append(this.rowContainer_);
 
     this.appendControls_(header);
+  }
+
+  updateGroupNameText_() {
+    if (!this.allowedCount_)
+      return;
+
+    this.groupNameContainer_.textContent = '';
+    this.groupNameContainer_.append(this.groupName_);
+
+    if (this.allowedCount_) {
+      this.groupNameContainer_.append(
+          ` (${this.rowCount_}/${this.allowedCount_})`);
+      this.groupNameContainer_.style.color =
+          this.rowCount_ > this.allowedCount_ ? 'red' : '';
+    }
   }
 
   private appendControls_(header: HTMLElement) {
@@ -113,6 +133,9 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   push(row: ThreadRow) {
+    this.rowCount_++;
+    this.updateGroupNameText_();
+
     if (!this.hideControls_() && this.isCollapsed_()) {
       let threadsElided = ++this.rowCountWhenCollapsed_;
       if (this.showTopThreads_()) {
