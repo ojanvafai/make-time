@@ -190,6 +190,7 @@ export class ThreadListView extends View {
   private scrollOffset_: number|undefined;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
+  private allowViewMessages_: boolean;
   private blockedToolbar_?: Actions;
 
   constructor(
@@ -197,7 +198,8 @@ export class ThreadListView extends View {
       settings: Settings,
       private canPin_: (newPinCount: number) => Promise<boolean>,
       bottomButtonUrl?: string, bottomButtonText?: string,
-      private includeSortActions_?: boolean, private skimMode_?: boolean) {
+      private includeSortActions_?: boolean,
+      private includeSkimAction_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -230,7 +232,7 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.addEventListener(
         RenderThreadEvent.NAME, (e: Event) => {
           let row = e.target as ThreadRow;
-          if (this.skimMode_) {
+          if (this.allowViewMessages_) {
             row.select((e as RenderThreadEvent).shiftKey);
             return;
           }
@@ -254,13 +256,14 @@ export class ThreadListView extends View {
     if (bottomButtonUrl)
       this.appendButton_(defined(bottomButtonText), bottomButtonUrl);
 
-    if (this.skimMode_) {
-      let button = this.appendButton_('Stop skimming');
+    this.allowViewMessages_ = !!this.includeSkimAction_;
+
+    if (this.includeSkimAction_) {
+      let button = this.appendButton_('Triage remaining');
       button.title = 'View/respond to remaining threads like regular triage.';
       button.addEventListener('click', () => {
-        this.skimMode_ = false;
+        this.setAllowViewMessages(false);
         button.remove();
-        this.updateActions_();
       });
     }
 
@@ -274,6 +277,10 @@ export class ThreadListView extends View {
     });
 
     this.render_();
+  }
+
+  setAllowViewMessages(allow: boolean) {
+    this.allowViewMessages_ = allow;
   }
 
   appendButton_(text: string, url?: string) {
@@ -334,7 +341,7 @@ export class ThreadListView extends View {
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
-    let skimButton = this.skimMode_ ? [SKIM_ACTION] : [];
+    let skimButton = this.includeSkimAction_ ? [SKIM_ACTION] : [];
 
     this.setActions(
         [...skimButton, ...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
