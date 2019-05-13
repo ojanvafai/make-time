@@ -551,7 +551,7 @@ window.addEventListener('error', (e) => {
 });
 
 const FIRESTORE_INTERNAL_ERROR =
-    `INTERNAL ASSERTION FAILED: AsyncQueue is already failed: The transaction was aborted, so the request cannot be fulfilled`;
+    `INTERNAL ASSERTION FAILED: AsyncQueue is already failed`;
 const NETWORK_OFFLINE_ERROR_MESSAGE =
     'A network error occurred. Are you offline?';
 const FETCH_ERROR_MESSAGE =
