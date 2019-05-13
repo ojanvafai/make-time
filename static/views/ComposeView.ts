@@ -78,6 +78,7 @@ export class ComposeView extends View {
   private sent_?: HTMLElement;
   private sentThreadId_?: string;
   private sentToolbar_?: Actions;
+  private autoSend_: boolean;
 
   constructor(
       private model_: ComposeModel, private params_: QueryParameters = {},
@@ -89,6 +90,8 @@ export class ComposeView extends View {
       flex-direction: column;
       height: 100%;
     `;
+
+    this.autoSend_ = this.params_ && this.params_.autosend === '1';
 
     this.from_ = document.createElement('select');
     this.from_.style.cssText = `
@@ -156,10 +159,6 @@ export class ComposeView extends View {
     }
   }
 
-  shouldAutoSend() {
-    return this.params_ && this.params_.autosend === '1';
-  }
-
   async init() {
     let localData = await this.model_.loadFromDisk();
     if (!localData)
@@ -177,14 +176,14 @@ export class ComposeView extends View {
     if (localData.body)
       this.body_.value = localData.body;
 
-    if (!this.shouldAutoSend()) {
+    if (!this.autoSend_) {
       this.handleUpdates_(true);
       this.focusFirstEmpty_();
     }
 
     await login();
 
-    if (this.shouldAutoSend()) {
+    if (this.autoSend_) {
       this.handleUpdates_(true);
       this.send_();
     }
@@ -295,10 +294,15 @@ export class ComposeView extends View {
     this.sent_.textContent =
         `Sent "${sent.subject}". Would you like to triage it for later?`;
 
-    this.to_.value = this.params_.to || '';
+    this.to_.value = this.params_.to && !this.autoSend_ ? this.params_.to : '';
     this.clearInlineTo_();
-    this.subject_.value = this.params_.subject || '';
-    this.body_.value = this.params_.body || '';
+    this.subject_.value =
+        this.params_.subject && !this.autoSend_ ? this.params_.subject : '';
+    this.body_.value =
+        this.params_.body && !this.autoSend_ ? this.params_.body : '';
+
+    this.autoSend_ = false;
+
     // Flush the model so that sending doesn't try to send the same message
     // again.
     this.handleUpdates_();

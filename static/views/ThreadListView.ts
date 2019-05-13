@@ -1,6 +1,7 @@
 import {Action, Actions, registerActions, Shortcut} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
+import {SkimModel} from '../models/SkimModel.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
@@ -259,14 +260,17 @@ export class ThreadListView extends View {
     if (bottomButtonUrl)
       this.appendButton_(defined(bottomButtonText), bottomButtonUrl);
 
-    this.allowViewMessages_ = !!this.includeSkimAction_;
+    this.allowViewMessages_ = this.model_.allowViewMessages();
 
     if (this.includeSkimAction_) {
+      // TODO: Use a toggle switch.
       let button = this.appendButton_('Triage remaining');
       button.title = 'View/respond to remaining threads like regular triage.';
       button.addEventListener('click', () => {
-        this.allowViewMessages_ = false;
-        button.remove();
+        (this.model_ as SkimModel).toggleAllowViewMessages();
+        this.allowViewMessages_ = this.model_.allowViewMessages();
+        button.textContent =
+            this.allowViewMessages_ ? 'Back to skimming' : 'Triage remaining';
       });
     }
 
