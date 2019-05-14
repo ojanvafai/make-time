@@ -400,16 +400,28 @@ async function gcStaleThreadData() {
   }
 }
 
+let silentUpdatePromise: Promise<void>|null;
+async function updateSilently() {
+  silentUpdatePromise = doUpdate_();
+  await silentUpdatePromise;
+  silentUpdatePromise = null;
+}
+
 export async function update() {
   let progress = AppShell.updateLoaderTitle('Main.update', 1, 'Updating...');
   try {
-    await updateSilently();
+    // If there's a silent update in progress, still want to show the updating
+    // text when a non-silent update is attempted so there's some indication
+    // something is happening.
+    if (silentUpdatePromise)
+      await silentUpdatePromise;
+    await doUpdate_();
   } finally {
     progress.incrementProgress();
   }
 }
 
-async function updateSilently() {
+async function doUpdate_() {
   if (!shouldUpdate_ || !navigator.onLine)
     return;
 
