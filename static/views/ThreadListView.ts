@@ -36,8 +36,7 @@ interface ListenerData {
 }
 
 let QUICK_REPLY_ACTION = {
-  name: `Quick reply`,
-  shortName: `Reply`,
+  name: `Reply`,
   description: `Give a short reply.`,
   key: 'r',
 };
@@ -120,16 +119,14 @@ let UNDO_ACTION = {
 };
 
 let MOVE_UP_ACTION = {
-  name: `Move up`,
-  shortName: '⬆',
+  name: '⬆',
   description: `Moves the row up in sort order in the Todo view.`,
   key: '[',
   repeatable: true,
 };
 
 let MOVE_DOWN_ACTION = {
-  name: `Move down`,
-  shortName: '⬇',
+  name: '⬇',
   description: `Moves the row down in sort order in the Todo view.`,
   key: ']',
   repeatable: true,

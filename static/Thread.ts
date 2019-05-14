@@ -121,7 +121,7 @@ export enum Priority {
   Pin = 5,
 }
 
-export const NEEDS_FILTER_PRIORITY_NAME = 'Needs filter';
+export const NEEDS_FILTER_PRIORITY_NAME = 'Filter';
 export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
 export const URGENT_PRIORITY_NAME = 'Urgent';

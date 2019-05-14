@@ -2,7 +2,6 @@ import {View} from './views/View.js';
 
 export interface Action {
   name: string;
-  shortName?: string;
   description: string;
   key?: Shortcut|string;
   secondaryKey?: Shortcut|string;
@@ -146,8 +145,13 @@ export class Actions extends HTMLElement {
           width: 300px;
         `;
 
+        let key = action.key ? shortcutString(action.key) :
+                               action.name.charAt(0).toLowerCase();
+
         let tooltip = <string>button.getAttribute('tooltip');
-        text.append(tooltip);
+        let bold = document.createElement('b');
+        bold.append(`${key}: `);
+        text.append(bold, tooltip);
         tooltipElement.append(text);
         this.append(tooltipElement);
       };
@@ -155,17 +159,7 @@ export class Actions extends HTMLElement {
         tooltipElement.remove();
       };
 
-      if (renderMini) {
-        button.innerHTML = action.shortName || action.name;
-      } else {
-        let key =
-            action.key ? shortcutString(action.key) : action.name.charAt(0);
-        let name = action.key ? `:${action.name}` : action.name.slice(1);
-        button.innerHTML =
-            `<span style="font-weight: bold; text-decoration: underline;">${
-                key.toUpperCase()}</span>${name}`;
-      }
-
+      button.append(action.name);
       buttonContainer.append(button);
     }
   }

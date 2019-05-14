@@ -34,7 +34,6 @@ export let BACKLOG_ACTION = {
 
 export let NEEDS_FILTER_ACTION = {
   name: NEEDS_FILTER_PRIORITY_NAME,
-  shortName: 'Filter',
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   key: 'f',
