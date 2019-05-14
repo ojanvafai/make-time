@@ -138,10 +138,11 @@ export class QuoteElidedMessage {
   // security feature.
   removeDisallowedElements_() {
     // Behaviors to disallow:
-    // - Meta can mess with the viewport and other things.
-    // - Title will update the tab title for make time.
+    // - meta can mess with the viewport and other things.
+    // - title will update the tab title for make time.
     // - link rel=stylesheet and style modify maketime's UI.
-    let tagNames = ['meta', 'title', 'link', 'style', 'script'];
+    // - base causes maketime UI links to have a different base url.
+    let tagNames = ['meta', 'title', 'link', 'style', 'script', 'base'];
     for (let tagName of tagNames) {
       for (let node of this.dom_.querySelectorAll(tagName)) {
         node.remove();
