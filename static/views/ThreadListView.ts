@@ -228,20 +228,10 @@ export class ThreadListView extends View {
     `;
     this.append(this.rowGroupContainer_);
 
-    this.rowGroupContainer_.addEventListener(RenderThreadEvent.NAME, (e: Event) => {
-      let row = e.target as ThreadRow;
-      if (!this.allowViewMessages_) {
-        if (this.includeSkimAction_) {
-          row.select((e as RenderThreadEvent).shiftKey);
-        } else {
-          // TODO: Don't hard code this logic that is specific to the TodoView.
-          alert(
-              'There are too many pinned, urgent, or must do threads. Please reprioritize to stay below the limits.');
-        }
-        return;
-      }
-      this.setRenderedRow_(row);
-    });
+    this.rowGroupContainer_.addEventListener(
+        RenderThreadEvent.NAME, (e: Event) => {
+          this.setRenderedRowIfAllowed_(e.target as ThreadRow);
+        });
     this.rowGroupContainer_.addEventListener(FocusRowEvent.NAME, (e: Event) => {
       this.handleFocusRow_(<ThreadRow>e.target);
     });
@@ -728,7 +718,7 @@ export class ThreadListView extends View {
     this.moveFocus_(NEXT_ACTION);
   }
 
-  toggleQueue_() {
+  private toggleQueue_() {
     let focused = notNull(this.focusedRow_);
     const checking = !focused.checked;
     let rows = focused.getGroup().getRows();
@@ -737,15 +727,28 @@ export class ThreadListView extends View {
     }
   }
 
-  viewFocused_() {
+  private setRenderedRowIfAllowed_(row: ThreadRow) {
+    if (this.allowViewMessages_) {
+      this.setRenderedRow_(row);
+      return;
+    }
+
+    if (!this.includeSkimAction_) {
+      // TODO: Don't hard code this logic that is specific to the TodoView.
+      alert(
+          'There are too many pinned, urgent, or must do threads. Please reprioritize to stay below the limits.');
+    }
+  }
+
+  private viewFocused_() {
     if (!this.focusedRow_)
       this.moveFocus_(NEXT_ACTION);
     if (!this.focusedRow_)
       return;
-    this.setRenderedRow_(this.focusedRow_);
+    this.setRenderedRowIfAllowed_(this.focusedRow_);
   }
 
-  transitionToThreadList_(focusedRow: ThreadRow|null) {
+  private transitionToThreadList_(focusedRow: ThreadRow|null) {
     this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
