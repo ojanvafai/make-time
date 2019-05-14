@@ -1,5 +1,5 @@
 import {AutoComplete, AutoCompleteEntry, EntrySelectedEvent} from './AutoComplete.js';
-import {notNull} from './Base.js';
+import {notNull, ParsedAddress} from './Base.js';
 
 const SEPARATOR = ' ';
 const EMAIL_CLASS_NAME = 'mk-email';
@@ -336,19 +336,18 @@ export class EmailCompose extends HTMLElement {
     this.dispatchEvent(new Event('email-added'));
   }
 
-  // TODO: Return and pass around ParsedAddresses instead of strings.
   getEmails() {
     let links = <NodeListOf<HTMLLinkElement>>this.content.querySelectorAll(
         `a.${EMAIL_CLASS_NAME}`);
-    let results: string[] = [];
+    let results: ParsedAddress[] = [];
     for (let link of links) {
       let name = link.textContent;
       // Remove the leading +.
       name = name.substring(1, name.length);
-      let email = link.href.replace('mailto:', '');
+      let address = link.href.replace('mailto:', '');
       // TODO: This needs to use serializeAddress so it correclty quotes the
       // name if it has a comma.
-      results.push(name.includes('@') ? email : `${name} <${email}>`);
+      results.push(name.includes('@') ? {name: '', address} : {name, address});
     }
     return results;
   }

@@ -1,6 +1,6 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
-import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, serializeAddress, USER_ID} from './Base.js';
+import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {send} from './Mail.js';
@@ -615,12 +615,12 @@ export class Thread extends EventTarget {
   }
 
   async sendReply(
-      replyText: string, extraEmails: string[], replyType: ReplyType,
+      replyText: string, extraEmails: ParsedAddress[], replyType: ReplyType,
       sender: gapi.client.gmail.SendAs) {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
-    let to = '';
+    let to = [];
     if (replyType === ReplyType.Forward) {
       assert(
           extraEmails.length,
@@ -628,25 +628,19 @@ export class Thread extends EventTarget {
     } else {
       // Gmail will remove dupes for us if the to and from fields have
       // overlap.
-      to = lastMessage.replyTo || lastMessage.from || '';
+      let from = lastMessage.replyTo || lastMessage.from;
+      if (from)
+        to.push(...parseAddressList(from));
 
       if (replyType === ReplyType.ReplyAll && lastMessage.to) {
-        let addresses = lastMessage.parsedTo;
-        for (let address of addresses) {
-          if (address.address !== sender.sendAsEmail) {
-            if (to !== '')
-              to += ',';
-            to += serializeAddress(address);
-          }
-        }
+        let excludeMe =
+            lastMessage.parsedTo.filter(x => x.address !== sender.sendAsEmail);
+        to.push(...excludeMe);
       }
     }
 
-    if (extraEmails.length) {
-      if (to !== '')
-        to += ',';
-      to += extraEmails.join(',');
-    }
+    if (extraEmails.length)
+      to.push(...extraEmails);
 
     let subject = lastMessage.subject || '';
     let replyPrefix = replyType === ReplyType.Forward ? 'Fwd: ' : 'Re: ';

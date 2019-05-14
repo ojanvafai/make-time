@@ -111,7 +111,9 @@ export class ComposeModel extends Model {
 
     let sent;
     try {
-      sent = await send(this.body_, to, this.subject_, defined(this.sender_));
+      sent = await send(
+          this.body_, parseAddressList(to), this.subject_,
+          defined(this.sender_));
       await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
     } finally {
       this.sending_ = false;

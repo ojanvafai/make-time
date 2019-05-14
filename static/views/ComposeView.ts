@@ -1,6 +1,6 @@
 import {Action, Actions, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
-import {defined, getMyEmail, notNull} from '../Base.js';
+import {defined, getMyEmail, notNull, serializeAddress} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose} from '../EmailCompose.js';
 import {MailProcessor} from '../MailProcessor.js';
@@ -232,7 +232,8 @@ export class ComposeView extends View {
   async handleUpdates_(skipFlushToDisk?: boolean) {
     let emails = this.body_.getEmails();
     if (emails.length) {
-      this.getInlineTo_().value = emails.join(', ');
+      this.getInlineTo_().value =
+          emails.map(x => serializeAddress(x)).join(',');
     } else {
       this.clearInlineTo_();
     }

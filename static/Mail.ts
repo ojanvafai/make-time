@@ -1,4 +1,4 @@
-import {serializeAddress, USER_ID} from './Base.js';
+import {ParsedAddress, serializeAddress, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {gapiFetch} from './Net.js';
 
@@ -7,21 +7,32 @@ interface Resource {
   threadId?: string;
 }
 
+let base64 = new Base64();
+
 function isAscii(str: string) {
   return !!(str.match(/^[\p{ASCII}]*$/u));
 }
 
-export async function send(
-    text: string, to: string, subject: string, sender: gapi.client.gmail.SendAs,
-    opt_extraHeaders?: string, opt_threadId?: string) {
-  let base64 = new Base64();
-
+function encode(str: string) {
   // See https://ncona.com/2011/06/using-utf-8-characters-on-an-e-mail-subject/
-  if (!isAscii(subject))
-    subject = `=?UTF-8?B?${base64.encode(subject)}?=`;
+  if (isAscii(str))
+    return str;
+  return `=?UTF-8?B?${base64.encode(str)}?=`;
+}
 
-  let email = `Subject: ${subject}
-To: ${to}
+export async function send(
+    text: string, to: ParsedAddress[], subject: string,
+    sender: gapi.client.gmail.SendAs, opt_extraHeaders?: string,
+    opt_threadId?: string) {
+  let encodedTo =
+      to.map(x => serializeAddress({name: encode(x.name), address: x.address}))
+          .join(',');
+  // TODO: This doesn't work if there are unicode characters in the local or
+  // domain parts of the email address. Not quite sure what the fix is. Using
+  // the encode method above, even on just the parts of the address causes a 400
+  // from gmail API.
+  let email = `Subject: ${encode(subject)}
+To: ${encodedTo}
 Content-Type: text/html; charset="UTF-8"
 `;
 
@@ -32,7 +43,8 @@ Content-Type: text/html; charset="UTF-8"
     let displayName = sender.displayName || '';
     let sendAsEmail = sender.sendAsEmail || '';
     email += `From: ${
-        serializeAddress({name: displayName, address: sendAsEmail})}\n`;
+        serializeAddress({name: encode(displayName), address: sendAsEmail})}\n`;
+    // Gmail doesn't include names in reply-to headers, so we won't either.
     if (sender.replyToAddress)
       email += `Reply-To: ${sender.replyToAddress}\n`;
   }
