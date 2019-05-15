@@ -164,7 +164,7 @@ export class Actions extends HTMLElement {
     }
   }
 
-  matchesEvent_(e: KeyboardEvent, shortcut?: string|Shortcut) {
+  static matchesEvent_(e: KeyboardEvent, shortcut?: string|Shortcut) {
     if (!shortcut)
       return false;
 
@@ -173,8 +173,8 @@ export class Actions extends HTMLElement {
     return shortcut.matches(e);
   }
 
-  async dispatchShortcut(e: KeyboardEvent) {
-    let test = (action: Action) => {
+  static getMatchingAction(e: KeyboardEvent, actions: Action[]) {
+    return actions.find((action: Action) => {
       // Don't allow certain actions to apply in rapid succession for each
       // thread. This prevents accidents of archiving a lot of threads at once
       // when your stupid keyboard gets stuck holding the archive key down.
@@ -184,10 +184,12 @@ export class Actions extends HTMLElement {
 
       return this.matchesEvent_(e, getPrimaryShortcut(action)) ||
           this.matchesEvent_(e, action.secondaryKey);
-    };
+    });
+  }
 
-    let action =
-        this.actions_.find(test) || this.supplementalActions_.find(test);
+  async dispatchShortcut(e: KeyboardEvent) {
+    let action = Actions.getMatchingAction(e, this.actions_) ||
+        Actions.getMatchingAction(e, this.supplementalActions_);
     if (action) {
       e.preventDefault();
       await this.view_.takeAction(action);

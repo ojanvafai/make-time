@@ -1,8 +1,20 @@
+import {Action, Actions, Shortcut} from './Actions.js';
 import {AutoComplete, AutoCompleteEntry, EntrySelectedEvent} from './AutoComplete.js';
 import {notNull, ParsedAddress} from './Base.js';
 
 const SEPARATOR = ' ';
 const EMAIL_CLASS_NAME = 'mk-email';
+
+export const INSERT_LINK: Action = {
+  key: new Shortcut('k', true, false),
+  name: 'Insert link',
+  description: 'Converts selected text to be a link.',
+};
+
+export const INSERT_LINK_HIDDEN = Object.assign({}, INSERT_LINK);
+INSERT_LINK_HIDDEN.hidden = true;
+
+const ACTIONS = [INSERT_LINK, INSERT_LINK_HIDDEN];
 
 export class SubmitEvent extends Event {
   static NAME = 'submit';
@@ -185,16 +197,23 @@ export class EmailCompose extends HTMLElement {
     node.style.left = `${left}px`;
   }
 
-  async handleKeyDown_(e: KeyboardEvent) {
-    switch (e.key) {
-      case 'k':
-        // TODO: Just do metaKey on mac and ctrlKey elsewhere.
-        if (e.ctrlKey || e.metaKey) {
-          this.insertLink_();
-          e.preventDefault();
-        }
-        return;
+  async takeAction_(action: Action) {
+    if (action == INSERT_LINK || action == INSERT_LINK_HIDDEN) {
+      this.insertLink_();
+      return;
+    }
 
+    throw new Error(`Invalid action: ${JSON.stringify(action)}`);
+  }
+
+  private async handleKeyDown_(e: KeyboardEvent) {
+    let action = Actions.getMatchingAction(e, ACTIONS);
+    if (action) {
+      e.preventDefault();
+      this.takeAction_(action);
+    }
+
+    switch (e.key) {
       case 'Escape':
         if (this.updateIsAutocompleting()) {
           this.cancelAutocomplete_();
@@ -244,7 +263,7 @@ export class EmailCompose extends HTMLElement {
     }
   }
 
-  getContainingLink_(node: Node|null) {
+  private getContainingLink_(node: Node|null) {
     while (node) {
       if (node.nodeName === 'A')
         return node as HTMLAnchorElement;
@@ -253,7 +272,7 @@ export class EmailCompose extends HTMLElement {
     return null;
   }
 
-  insertLink_() {
+  private insertLink_() {
     let selection = window.getSelection();
     if (selection.rangeCount === 0)
       return;
@@ -276,7 +295,7 @@ export class EmailCompose extends HTMLElement {
     }
   }
 
-  updatePlaceholder_() {
+  private updatePlaceholder_() {
     let content = this.content;
     if (content.textContent.length) {
       content.removeAttribute('placeholder');

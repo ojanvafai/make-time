@@ -1,6 +1,7 @@
 import {Action, Actions, registerActions, Shortcut} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
+import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
 import {SkimModel} from '../models/SkimModel.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
@@ -146,6 +147,7 @@ let BASE_ACTIONS = [
   PREVIOUS_FULL_ACTION,
   NEXT_ACTION,
   NEXT_FULL_ACTION,
+  INSERT_LINK_HIDDEN,
 ];
 
 let SORT_ACTIONS = [

@@ -2,7 +2,7 @@ import {Action, Actions, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
 import {defined, getMyEmail, notNull, serializeAddress} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {EmailCompose} from '../EmailCompose.js';
+import {EmailCompose, INSERT_LINK} from '../EmailCompose.js';
 import {MailProcessor} from '../MailProcessor.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 import {SendAs} from '../SendAs.js';
@@ -37,11 +37,7 @@ const ACTIONS = [SEND, HELP];
 registerActions('Compose', [
   ...ACTIONS,
   ...SENT_ACTIONS,
-  {
-    key: '<ctrl>+k/<cmd>+k',
-    name: 'Insert link',
-    description: 'Converts selected text to be a link.',
-  },
+  INSERT_LINK
 ]);
 
 async function getHelpText() {
