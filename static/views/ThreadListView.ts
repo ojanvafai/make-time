@@ -123,6 +123,7 @@ let MOVE_UP_ACTION = {
   name: '⬆',
   description: `Moves the row up in sort order in the Todo view.`,
   key: '[',
+  secondaryKey: new Shortcut('ArrowUp', true, false),
   repeatable: true,
 };
 
@@ -130,6 +131,7 @@ let MOVE_DOWN_ACTION = {
   name: '⬇',
   description: `Moves the row down in sort order in the Todo view.`,
   key: ']',
+  secondaryKey: new Shortcut('ArrowDown', true, false),
   repeatable: true,
 };
 

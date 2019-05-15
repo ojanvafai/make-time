@@ -52,7 +52,7 @@ export class KeyboardShortcutsDialog {
         shortcut.append(key);
 
         if (action.secondaryKey)
-          shortcut.append(`\n${shortcutString(action.secondaryKey)}`);
+          shortcut.append(`\nOR\n${shortcutString(action.secondaryKey)}`);
 
         row.append(shortcut);
 
