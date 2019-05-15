@@ -5,6 +5,7 @@ import {HelpDialog} from './HelpDialog.js';
 export class KeyboardShortcutsDialog {
   constructor() {
     let table = document.createElement('table');
+    table.style.borderCollapse = 'collapse';
 
     let actions = getActions();
     let isFirst = true;
@@ -35,6 +36,7 @@ export class KeyboardShortcutsDialog {
       // grouped, e.g. navigation actions adjacent to each other.
       for (let action of actions) {
         let row = document.createElement('tr');
+        row.style.borderTop = '1px dotted #ddd';
         table.append(row);
 
         let key = shortcutString(getPrimaryShortcut(action));
@@ -45,11 +47,12 @@ export class KeyboardShortcutsDialog {
           color: green;
           text-align: right;
           padding-right: 4px;
+          white-space:pre;
         `;
         shortcut.append(key);
 
         if (action.secondaryKey)
-          shortcut.append(` OR ${shortcutString(action.secondaryKey)}`);
+          shortcut.append(`\n${shortcutString(action.secondaryKey)}`);
 
         row.append(shortcut);
 
