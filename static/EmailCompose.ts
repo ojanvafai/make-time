@@ -167,12 +167,18 @@ export class EmailCompose extends HTMLElement {
       this.dispatchEvent(new Event('input'));
     });
 
-    let deleteButton = document.createElement('span');
+    let deleteButton = document.createElement('a');
+    // Make this focusable so that clicking on it keeps focus inside the link
+    // bubble and bubbleIsFocused_ returns true on the selection change from the
+    // mousedown to prevent the bubble being closed before the click is
+    // completed.
+    deleteButton.tabIndex = -1;
     deleteButton.textContent = '[remove]';
     deleteButton.addEventListener('click', () => {
       link = notNull(link);
       link.before(link.textContent);
       link.remove();
+      notNull(this.bubble_).remove();
       this.dispatchEvent(new Event('input'));
     });
 

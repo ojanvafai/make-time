@@ -30,14 +30,13 @@ let SENT_ACTIONS: Action[] = [
   ...BLOCKED_BUTTONS,
 ];
 
-const ACTIONS = [SEND, HELP];
+const ACTIONS = [SEND, INSERT_LINK, HELP];
 
 // TODO: Make insert link a proper action on both ComposeView and
 // ThreadListView's quick reply.
 registerActions('Compose', [
   ...ACTIONS,
   ...SENT_ACTIONS,
-  INSERT_LINK
 ]);
 
 async function getHelpText() {
