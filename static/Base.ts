@@ -92,6 +92,22 @@ export async function getMyEmail() {
   return myEmail_;
 }
 
+let displayName_: string;
+export async function getPrimaryAccountDisplayName() {
+  if (!displayName_) {
+    // @ts-ignore TODO: pull in types for people api.
+    let resp = await gapiFetch(gapi.client.people.people.get, {
+      resourceName: 'people/me',
+      personFields: 'names',
+    });
+    // @ts-ignore TODO: Use a proper type.
+    let names: any[] = resp.result.names;
+    displayName_ = names.find(x => x.metadata.primary).displayName;
+  }
+  console.log(displayName_)
+  return displayName_;
+}
+
 export interface ParsedAddress {
   name: string, address: string,
 }

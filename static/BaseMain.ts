@@ -52,6 +52,7 @@ if (isGoogle) {
 let DISCOVERY_DOCS = [
   'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest',
   'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
+  'https://people.googleapis.com/$discovery/rest?version=v1',
 ];
 
 // Authorization scopes required by the Google API.
@@ -59,6 +60,7 @@ let SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.google.com/m8/feeds',
   'https://www.googleapis.com/auth/calendar.events',
+  'profile',
 ];
 
 let isSignedIn_ = false;

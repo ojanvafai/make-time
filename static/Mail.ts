@@ -1,4 +1,4 @@
-import {ParsedAddress, serializeAddress, USER_ID} from './Base.js';
+import {getPrimaryAccountDisplayName, ParsedAddress, serializeAddress, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {gapiFetch} from './Net.js';
 
@@ -41,9 +41,13 @@ Content-Type: text/html; charset="UTF-8"
 
   if (sender) {
     let displayName = sender.displayName || '';
+    if (!displayName && sender.isPrimary)
+      displayName = await getPrimaryAccountDisplayName();
+
     let sendAsEmail = sender.sendAsEmail || '';
     email += `From: ${
         serializeAddress({name: encode(displayName), address: sendAsEmail})}\n`;
+
     // Gmail doesn't include names in reply-to headers, so we won't either.
     if (sender.replyToAddress)
       email += `Reply-To: ${sender.replyToAddress}\n`;
