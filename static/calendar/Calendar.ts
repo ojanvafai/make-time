@@ -9,6 +9,7 @@ import {TaskQueue} from '../TaskQueue.js'
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
 import {CALENDAR_HEX_COLORS, CALENDAR_ID, CalendarSortListEntry, EventType, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+import { ServerStorage } from '../ServerStorage.js';
 
 const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
@@ -354,6 +355,8 @@ export class Calendar extends Model {
     let pageToken = null;
     let pendingEvents: CalendarEvent[] = [];
     let rules = await this.getRules();
+    let officesString: string = this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
+    let offices = officesString ? officesString.split(',').map(x => x.trim()) : [];
 
     while (true) {
       const request: gapi.client.calendar.EventsListParameters = {
@@ -383,7 +386,7 @@ export class Calendar extends Model {
       }
 
       pendingEvents =
-          response.result.items.map(i => new CalendarEvent(i, rules))
+          response.result.items.map(i => new CalendarEvent(i, rules, offices))
               .filter(e => !e.getShouldIgnore());
 
       callback(pendingEvents);

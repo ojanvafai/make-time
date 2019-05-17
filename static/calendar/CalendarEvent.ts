@@ -1,18 +1,23 @@
-import {assert} from '../Base.js';
+import {assert, defined} from '../Base.js';
 import {ANY_TITLE, AttendeeCount, CalendarRule, Frequency, stringFilterMatches} from '../Settings.js';
 
 import {EventType,} from './Constants.js';
 
 export class CalendarEvent {
   eventId: string;
-  colorId: number|undefined;
+  colorId?: number;
   type: EventType|null;
   summary: string;
   start: Date;
   end: Date;
   duration: number;
   attendeeCount: number;
-  recurringEventId: string|undefined;
+  // TODO: Figure out why typescript doesn't know about
+  // gapi.client.calendar.Event
+  attendees?: any[];  // gapi.client.calendar.Event.attendees[];
+  location?: string;
+  editUrl: string;
+  recurringEventId?: string;
   shouldIgnore: boolean;
   status?: 'confirmed'|'tentative'|'cancelled';
 
@@ -22,20 +27,24 @@ export class CalendarEvent {
     return new Date(parts.join(' '));
   }
 
-  getShouldIgnore() {
-    return this.shouldIgnore;
-  }
-
   constructor(
-      public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
+      public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[],
+      offices: string[]) {
     this.eventId = gcalEvent.id;
     this.status = gcalEvent.status;
     if (gcalEvent.colorId)
       this.colorId = Number(gcalEvent.colorId);
     this.summary = gcalEvent.summary;
+    this.attendees = gcalEvent.attendees;
+    this.location = gcalEvent.location;
     this.recurringEventId = gcalEvent.recurringEventId;
     this.shouldIgnore = gcalEvent.transparency === 'transparent' ||
         gcalEvent.guestsCanSeeOtherGuests === false || !gcalEvent.summary;
+
+    // TODO: Uncomment the replace below once the calendar bug is fixed where
+    // going directly to the event page doesn't show the rooms.
+    this.editUrl = gcalEvent.htmlLink;
+    // this.editUrl = event.htmlLink.replace('event?eid=', 'r/eventedit/');
 
     // Ignore events I've declined.
     if (!this.shouldIgnore && gcalEvent.attendees) {
@@ -57,6 +66,18 @@ export class CalendarEvent {
     start = assert(start, 'Got a calendar entry with no start date.');
     this.start = CalendarEvent.parseDate(start);
 
+    // TODO: Give this a proper UI and allow the duration to be configurable.
+    if (this.needsLocalRoom(offices)) {
+      let now = new Date();
+      if (this.start > now) {
+        now.setDate(now.getDate() + 14);
+        if (now > this.start) {
+          console.log(`(${this.start.getMonth() + 1}/${this.start.getDate()}) ${
+              this.summary} ${this.editUrl}`);
+        }
+      }
+    }
+
     let end = gcalEvent.end.dateTime;
     if (!end)
       end = gcalEvent.end.date;
@@ -76,6 +97,31 @@ export class CalendarEvent {
         break;
       }
     }
+  }
+
+  getShouldIgnore() {
+    return this.shouldIgnore;
+  }
+
+  needsLocalRoom(offices: string[]) {
+    if (this.shouldIgnore || !this.attendeeCount || !offices.length)
+      return false;
+
+    let attendees = assert(this.attendees);
+    let hasLocalRoom = Boolean(attendees.some(
+        x => x.resource && x.responseStatus === 'accepted' &&
+            offices.some(y => defined(x.displayName).includes(y))));
+
+    // For BIG meetings where rooms aren't visible as guests. Only do this
+    // if there are no meeting rooms at all since the location field is
+    // often out of date.
+    if (!hasLocalRoom && !attendees.some(x => x.resource)) {
+      hasLocalRoom = Boolean(
+          this.location &&
+          offices.some(y => defined(this.location).includes(y)));
+    }
+
+    return !hasLocalRoom;
   }
 
   ruleMatches_(rule: CalendarRule) {

@@ -274,6 +274,13 @@ export class Settings extends EventTarget {
       type: 'number',
     },
     {
+      key: ServerStorage.KEYS.LOCAL_OFFICES,
+      name: 'Local offices',
+      description:
+          `Comma separated list of offices to user when finding rooms that are missing a local conference room (substring matched).`,
+      type: 'string',
+    },
+    {
       key: ServerStorage.KEYS.LOG_MATCHING_RULES,
       name: 'Log matching rules',
       description:
