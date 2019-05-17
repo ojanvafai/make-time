@@ -55,14 +55,14 @@ export class ThreadRowGroup extends HTMLElement {
     if (!this.allowedCount_)
       return;
 
-    this.groupNameContainer_.textContent = '';
-    this.groupNameContainer_.append(this.groupName_);
-
-    if (this.allowedCount_) {
+    if (this.allowedCount_ && this.rowCount_ > this.allowedCount_) {
+      this.groupNameContainer_.textContent = this.groupName_;
       this.groupNameContainer_.append(
           ` (${this.rowCount_}/${this.allowedCount_})`);
-      this.groupNameContainer_.style.color =
-          this.rowCount_ > this.allowedCount_ ? 'red' : '';
+      this.groupNameContainer_.style.color = 'red';
+    } else if (this.groupNameContainer_.style.color === 'red') {
+      this.groupNameContainer_.textContent = this.groupName_;
+      this.groupNameContainer_.style.color = '';
     }
   }
 

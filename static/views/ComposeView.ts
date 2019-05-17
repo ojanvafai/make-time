@@ -347,7 +347,7 @@ export class ComposeView extends View {
       return;
     }
 
-    throw new Error(`Invalid action: ${JSON.stringify(action)}`);
+    this.body_.takeAction_(action);
   }
 }
 
