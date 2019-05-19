@@ -3,6 +3,9 @@ import {ANY_TITLE, AttendeeCount, CalendarRule, Frequency, stringFilterMatches} 
 
 import {EventType,} from './Constants.js';
 
+// TODO: Add help UI for no room view in TriageModel and explain this there.
+export let NO_ROOM_NEEDED = 'no room needed';
+
 export class CalendarEvent {
   eventId: string;
   colorId?: number;
@@ -105,7 +108,8 @@ export class CalendarEvent {
     if (!hasLocalRoom && !attendees.some(x => x.resource)) {
       hasLocalRoom = Boolean(
           this.location &&
-          offices.some(y => defined(this.location).includes(y)));
+          (this.location.toLowerCase().includes(NO_ROOM_NEEDED) ||
+           offices.some(y => defined(this.location).includes(y))));
     }
 
     return !hasLocalRoom;

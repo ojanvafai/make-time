@@ -1,6 +1,7 @@
 import {Action, Actions, registerActions, Shortcut} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
+import {NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
 import {SkimModel} from '../models/SkimModel.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
@@ -292,7 +293,8 @@ export class ThreadListView extends View {
       return;
 
     this.noMeetingRoomEvents_.before(
-        'Meetings in the next 4 weeks without a local room:');
+        `Meetings without a local room. Ignore by adding "${
+            NO_ROOM_NEEDED}" to the location.`);
 
     for (let event of events) {
       let item = document.createElement('div');
@@ -306,7 +308,7 @@ export class ThreadListView extends View {
       link.append(event.summary);
 
       item.append(
-          `${event.start.getMonth() + 1}/${event.start.getDate()}: `, link);
+          `${event.start.getMonth() + 1}/${event.start.getDate()} `, link);
       this.noMeetingRoomEvents_.append(item);
     }
   }
