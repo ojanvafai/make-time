@@ -1,6 +1,7 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action} from '../Actions.js';
 import {assert, compareDates, setFaviconCount as setFavicon} from '../Base.js';
+import {CalendarEvent} from '../calendar/CalendarEvent.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
 import {takeAction} from '../ThreadActions.js';
@@ -49,6 +50,10 @@ export abstract class ThreadListModel extends Model {
   protected abstract defaultCollapsedState(groupName: string): boolean;
   protected abstract compareThreads(a: Thread, b: Thread): number;
   abstract getGroupName(thread: Thread): string;
+
+  async getNoMeetingRoomEvents() {
+    return [] as CalendarEvent[];
+  }
 
   setSortOrder(_threads: Thread[]) {
     assert(false);

@@ -183,6 +183,7 @@ export class ThreadListView extends View {
   private modelListeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
+  private noMeetingRoomEvents_: HTMLElement;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private renderedRow_: ThreadRow|null;
@@ -221,6 +222,13 @@ export class ThreadListView extends View {
     this.renderedGroupName_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
+
+    this.noMeetingRoomEvents_ = document.createElement('div');
+    this.noMeetingRoomEvents_.style.cssText = `
+      column-count: 3;
+      white-space: nowrap;
+    `;
+    this.append(this.noMeetingRoomEvents_);
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -274,7 +282,33 @@ export class ThreadListView extends View {
       this.handleUndo_(undoEvent.thread, undoEvent.groupName);
     });
 
+    this.renderCalendar_();
     this.render_();
+  }
+
+  private async renderCalendar_() {
+    let events = await this.model_.getNoMeetingRoomEvents();
+    if (!events.length)
+      return;
+
+    this.noMeetingRoomEvents_.before(
+        'Meetings in the next 4 weeks without a local room:');
+
+    for (let event of events) {
+      let item = document.createElement('div');
+      item.style.cssText = `
+        overflow: hidden;
+        text-overflow: ellipsis;
+      `;
+
+      let link = document.createElement('a');
+      link.href = event.editUrl;
+      link.append(event.summary);
+
+      item.append(
+          `${event.start.getMonth() + 1}/${event.start.getDate()}: `, link);
+      this.noMeetingRoomEvents_.append(item);
+    }
   }
 
   handleThreadListChanged_() {
