@@ -59,7 +59,7 @@ export abstract class ThreadListModel extends Model {
   }
 
   protected setQuery(query: firebase.firestore.Query) {
-    query.onSnapshot((snapshot) => this.queueProcessSnapshot(snapshot));
+    query.onSnapshot((snapshot) => this.queueProcessSnapshot_(snapshot));
   }
 
   protected shouldShowThread(thread: Thread, showQueued?: boolean) {
@@ -105,8 +105,8 @@ export abstract class ThreadListModel extends Model {
 
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.
-  private async queueProcessSnapshot(snapshot:
-                                         firebase.firestore.QuerySnapshot) {
+  private async queueProcessSnapshot_(snapshot:
+                                          firebase.firestore.QuerySnapshot) {
     // In the debounce case, intentionally only process the last snapshot since
     // that has the most up to date data.
     this.snapshotToProcess_ = snapshot;
@@ -153,7 +153,7 @@ export abstract class ThreadListModel extends Model {
     }
 
     this.sort();
-    this.fetchThreads();
+    this.fetchThreads_();
   }
 
   protected sort() {
@@ -186,7 +186,7 @@ export abstract class ThreadListModel extends Model {
     });
   }
 
-  async fetchThreads() {
+  private async fetchThreads_() {
     // Do this fetching in idle time so it doesn't block other work like
     // switching views. If there's a lot of threads in this model, then we want
     // to interleave work for the other view's model as well so it can make

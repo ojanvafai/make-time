@@ -1,5 +1,6 @@
 import {notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
+import {Calendar} from '../calendar/Calendar.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
@@ -17,6 +18,23 @@ export class TriageModel extends ThreadListModel {
         firestoreUserCollection().doc('threads').collection('metadata');
     this.setQuery(
         metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true));
+
+    let offices = this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
+    if (offices)
+      this.setupCalendar_(offices);
+  }
+
+  private async setupCalendar_(offices: string) {
+    let end = new Date();
+    end.setDate(end.getDate() + 28);
+
+    let model = new Calendar(this.settings_, new Date(), end);
+    await model.init();
+
+    let events = model.getEventsWithoutLocalRoom(offices);
+    let data = events.map(x => `(${x.start.getMonth() + 1}/${x.start.getDate()}) ${
+      x.summary} ${x.editUrl}`);
+    console.log(data);
   }
 
   private threadDays_(thread: Thread) {

@@ -9,7 +9,6 @@ import {TaskQueue} from '../TaskQueue.js'
 import {Aggregate} from './Aggregate.js'
 import {CalendarEvent} from './CalendarEvent.js'
 import {CALENDAR_HEX_COLORS, CALENDAR_ID, CalendarSortListEntry, EventType, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
-import { ServerStorage } from '../ServerStorage.js';
 
 const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
@@ -277,7 +276,8 @@ export class Calendar extends Model {
   private isColorizing_: boolean = false;
   private onReceiveEventsChunkResolves: ((cs: CalendarEvent[]) => void)[] = [];
 
-  constructor(private settings_: Settings) {
+  constructor(
+      private settings_: Settings, private start_?: Date, private end_?: Date) {
     super();
     this.setupAggregates_();
   }
@@ -327,16 +327,28 @@ export class Calendar extends Model {
     return [...rules, ...BuiltInRules];
   }
 
+  getEventsWithoutLocalRoom(officesCsv: string) {
+    let offices = officesCsv ? officesCsv.split(',').map(x => x.trim()) : [];
+    return this.events.filter(x => x.needsLocalRoom(offices));
+  }
+
   private async initialFetch_() {
     if (!this.fetchingEvents_)
       return;
 
-    let weeks = 26;
-    let days = weeks * 7;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + days);
+    let startDate;
+    let endDate;
+    if (this.start_) {
+      startDate = this.start_;
+      endDate = defined(this.end_);
+    } else {
+      let weeks = 26;
+      let days = weeks * 7;
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      endDate = new Date();
+      endDate.setDate(endDate.getDate() + days);
+    }
 
     await this.fetchEvents_(
         (events: CalendarEvent[]) => this.gotEventsChunk(events),
@@ -355,8 +367,6 @@ export class Calendar extends Model {
     let pageToken = null;
     let pendingEvents: CalendarEvent[] = [];
     let rules = await this.getRules();
-    let officesString: string = this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
-    let offices = officesString ? officesString.split(',').map(x => x.trim()) : [];
 
     while (true) {
       const request: gapi.client.calendar.EventsListParameters = {
@@ -386,7 +396,7 @@ export class Calendar extends Model {
       }
 
       pendingEvents =
-          response.result.items.map(i => new CalendarEvent(i, rules, offices))
+          response.result.items.map(i => new CalendarEvent(i, rules))
               .filter(e => !e.getShouldIgnore());
 
       callback(pendingEvents);

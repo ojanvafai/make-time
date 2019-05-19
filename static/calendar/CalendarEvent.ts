@@ -28,8 +28,7 @@ export class CalendarEvent {
   }
 
   constructor(
-      public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[],
-      offices: string[]) {
+      public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
     this.eventId = gcalEvent.id;
     this.status = gcalEvent.status;
     if (gcalEvent.colorId)
@@ -65,18 +64,6 @@ export class CalendarEvent {
       start = gcalEvent.start.date;
     start = assert(start, 'Got a calendar entry with no start date.');
     this.start = CalendarEvent.parseDate(start);
-
-    // TODO: Give this a proper UI and allow the duration to be configurable.
-    if (this.needsLocalRoom(offices)) {
-      let now = new Date();
-      if (this.start > now) {
-        now.setDate(now.getDate() + 14);
-        if (now > this.start) {
-          console.log(`(${this.start.getMonth() + 1}/${this.start.getDate()}) ${
-              this.summary} ${this.editUrl}`);
-        }
-      }
-    }
 
     let end = gcalEvent.end.dateTime;
     if (!end)
