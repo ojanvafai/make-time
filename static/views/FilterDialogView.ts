@@ -1,4 +1,4 @@
-import {assert, defined, showDialog} from '../Base.js';
+import {assert, defined, notNull, showDialog} from '../Base.js';
 import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
@@ -17,18 +17,30 @@ export const DAYS_TO_SHOW_SETTING = {
 
 const SETTINGS = [DAYS_TO_SHOW_SETTING];
 
+export class ViewFiltersChanged extends Event {
+  static NAME = 'view-filters-changed';
+  constructor(public label: string) {
+    super(ViewFiltersChanged.NAME, {bubbles: true});
+  }
+}
+
 export class FilterDialogView extends View {
-  private basicSettings_: HTMLElement;
+  private container_: HTMLElement;
+  private label_: HTMLElement;
   private saveButton_: HTMLButtonElement;
   private dialog_?: HTMLDialogElement;
 
   constructor(private settings_: Settings) {
     super();
 
-    this.basicSettings_ = document.createElement('table');
+    this.container_ = document.createElement('table');
     // TODO: Should probably share appendSettings code through inheritance.
-    SettingsView.appendSettings(this.basicSettings_, this.settings_, SETTINGS);
-    this.append(this.basicSettings_);
+    SettingsView.appendSettings(this.container_, this.settings_, SETTINGS);
+    this.append(this.container_);
+
+    this.label_ = document.createElement('tr');
+    this.container_.append(this.label_);
+    this.appendLabelSelect_();
 
     let cancel = document.createElement('button');
     cancel.append('cancel');
@@ -56,23 +68,38 @@ export class FilterDialogView extends View {
     this.dialog_ = showDialog(this);
   }
 
-  handleChange_() {
+  private async appendLabelSelect_() {
+    let name = document.createElement('td');
+    name.append('View label');
+    let value = document.createElement('td');
+    value.append(await this.settings_.getLabelSelect());
+    // TODO: Add a none option.
+    this.label_.append(name, value);
+  }
+
+  private handleChange_() {
     this.saveButton_.disabled = false;
   }
 
-  async save_() {
+  private async save_() {
     assert(!this.saveButton_.disabled);
 
     let updates: StorageUpdates = {};
-    let inputs = Array.from(this.basicSettings_.querySelectorAll('input'));
+    let inputs =
+        Array.from(this.container_.querySelectorAll('input[setting]')) as
+        HTMLInputElement[];
     SettingsView.setUpdates(updates, inputs);
 
     await this.settings_.writeUpdates(updates);
 
+    let select = notNull(this.label_.querySelector('select'));
+    let option = select.selectedOptions[0];
+
+    this.dispatchEvent(new ViewFiltersChanged(option.value));
     this.close_();
   }
 
-  close_() {
+  private close_() {
     // TODO: prompt if there are changes.
     defined(this.dialog_).close();
   }

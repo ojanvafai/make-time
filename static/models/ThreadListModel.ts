@@ -35,6 +35,7 @@ export abstract class ThreadListModel extends Model {
   private snapshotToProcess_?: firebase.firestore.QuerySnapshot|null;
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
+  private filter_?: string;
 
   constructor(showFaviconCount?: boolean) {
     super();
@@ -59,16 +60,21 @@ export abstract class ThreadListModel extends Model {
     assert(false);
   }
 
-  labelHref(_label: string) {
-    return '';
-  }
-
   protected setQuery(query: firebase.firestore.Query) {
     query.onSnapshot((snapshot) => this.queueProcessSnapshot_(snapshot));
   }
 
+  setLabelFilter(filter: string) {
+    this.filter_ = filter && filter.toLowerCase();
+    this.dispatchEvent(new ThreadListChangedEvent());
+  }
+
   protected shouldShowThread(thread: Thread, showQueued?: boolean) {
     if (!showQueued && thread.isQueued())
+      return false;
+
+    let label = thread.getLabel();
+    if (this.filter_ && (!label || this.filter_ !== label.toLowerCase()))
       return false;
 
     // If we have archived all the messages but the change hasn't been

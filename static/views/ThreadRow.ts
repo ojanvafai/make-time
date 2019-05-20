@@ -1,5 +1,4 @@
 import {assert, parseAddressList} from '../Base.js';
-import {ThreadListModel} from '../models/ThreadListModel.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {BLOCKED_LABEL_NAME, Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -88,7 +87,7 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
 
-  constructor(public thread: Thread, private model_: ThreadListModel) {
+  constructor(public thread: Thread) {
     super();
     this.style.cssText = `
       display: flex;
@@ -286,9 +285,6 @@ export class ThreadRow extends HTMLElement {
 
     if (state.label && state.group !== state.label) {
       let label = this.createLabel_(state.label);
-      let labelHref = this.model_.labelHref(state.label);
-      if (labelHref)
-        label.href = labelHref;
       title.append(label);
     }
 
@@ -329,7 +325,7 @@ export class ThreadRow extends HTMLElement {
   }
 
   private createLabel_(text: string) {
-    let label = document.createElement('a');
+    let label = document.createElement('span');
     label.style.cssText = `
       display: inline-block;
       color: #666;

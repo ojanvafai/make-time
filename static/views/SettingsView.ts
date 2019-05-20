@@ -156,10 +156,7 @@ export class SettingsView extends View {
       };
 
       let input = document.createElement('input');
-      input.style.cssText = `
-        flex: 1;
-        margin-left: 5px;
-      `;
+      input.toggleAttribute('setting');
 
       if (field.min !== undefined)
         input.min = String(field.min);

@@ -1,34 +1,29 @@
 // Modified verison of https://github.com/dstillman/pathparser.js
 export class Router {
   private rules_: any[];
-  private extraQueryParams_: string;
-  private baseParams_: any;
+  private baseParams_: Map<string, string>;
 
   // universalQueryParameters_ is parameters that should survive navigations.
   // This is useful for developer time parameters like whether to bundle JS.
-  constructor(universalQueryParameters?: string[]) {
+  constructor(private universalQueryParameters_: string[]) {
     this.rules_ = [];
-    this.baseParams_ = {};
+    this.baseParams_ = new Map();
 
-    let windowParams = [];
-    if (universalQueryParameters && location.search) {
+    if (location.search) {
       let windowQueryParts = window.location.search.substring(1).split('&');
       for (let part of windowQueryParts) {
         var nameValuePair = part.split('=', 2);
-        if (universalQueryParameters.includes(nameValuePair[0])) {
-          this.baseParams_[nameValuePair[0]] = nameValuePair[1];
-          windowParams.push(part);
-        }
+        if (universalQueryParameters_.includes(nameValuePair[0]))
+          this.baseParams_.set(nameValuePair[0], nameValuePair[1]);
       }
     }
-
-    this.extraQueryParams_ =
-        windowParams.length ? `?${windowParams.join('&')}` : '';
   }
 
   getParams_(rule: any, pathParts: string[], queryParts: string[]) {
     var params: any = {};
-    Object.assign(params, this.baseParams_);
+    for (let [k, v] of this.baseParams_) {
+      params[k] = v;
+    }
 
     var missingParams: any = {};
 
@@ -64,8 +59,15 @@ export class Router {
       // Spaces in query parameters are encoded as '+' in some cases. Need to
       // make them spaces *before* decoding to avoid converting legitimate
       // pluses to spaces.
-      if (nameValue.length == 2 && !params[key] && !missingParams[key])
+      if (nameValue.length == 2 && !missingParams[key])
         params[key] = decodeURIComponent(nameValue[1].replace(/\+/g, ' '));
+    }
+
+    // Let the page override universal query parameter values after initial page
+    // load.
+    for (let param of this.universalQueryParameters_) {
+      if (param in params)
+        this.baseParams_.set(param, params[param]);
     }
 
     return params;
@@ -75,11 +77,19 @@ export class Router {
     this.rules_.push({parts: this.parsePath_(route), handler: handler});
   }
 
-  parsePath_(path: string) {
+  private parsePath_(path: string) {
     if (path.charAt(0) != '/')
       throw ` Path must start with a /. Path: ${path}`;
     // Strip the leading '/'.
     return path.substring(1).split('/');
+  }
+
+  private parseQueryString_(path: string) {
+    // TODO: Handle if there are multiple question marks.
+    let parts = path.split('?');
+    if (parts.length === 1)
+      return [];
+    return parts[1].split('&');
   }
 
   // Ewww...this can't be async because want to return a promise only in the
@@ -89,7 +99,7 @@ export class Router {
       excludeFromHistory?: boolean) {
     // TODO: Don't allow strings as an argument. Allow Node or Location only.
     let isString = typeof location == 'string';
-    let path = isString ? <string>location :
+    let path = isString ? (location as string).split('?')[0] :
                           (<Location|HTMLAnchorElement>location).pathname;
     if (!path)
       return null;
@@ -100,16 +110,21 @@ export class Router {
       return null;
 
     let pathParts = this.parsePath_(path);
-    // TODO: Allow including query parameters in the string version.
     // Strip the leading '?'.
     let queryParts = isString ?
-        [] :
+        this.parseQueryString_(location as string) :
         (<Location|HTMLAnchorElement>location).search.substring(1).split('&');
 
     for (let rule of this.rules_) {
       var params = this.getParams_(rule, pathParts, queryParts);
       if (params) {
-        let newPath = location.toString() + this.extraQueryParams_;
+        let paramEntries = [];
+        for (let [key, value] of Object.entries(params)) {
+          paramEntries.push(`${key}=${value}`);
+        }
+        let newPath =
+            path + (paramEntries.length ? `?${paramEntries.join('&')}` : '');
+
         if (!excludeFromHistory)
           history.pushState({}, '', newPath);
         return rule.handler(params);

@@ -19,6 +19,7 @@ import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
 import {AppShell, BackEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
+import {ViewFiltersChanged as ViewFiltersChangedEvent} from './views/FilterDialogView.js';
 import {HiddenView} from './views/HiddenView.js';
 import {KeyboardShortcutsDialog} from './views/KeyboardShortcutsDialog.js';
 import {SettingsView} from './views/SettingsView.js';
@@ -32,7 +33,7 @@ if (!navigator.userAgent.includes('Mobile'))
 let currentView_: View;
 let appShell_: AppShell;
 
-const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'filter'];
+const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'label'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 let longTasks_: LongTasks;
@@ -106,8 +107,8 @@ router.add('/settings', async (_parans) => {
   await setView(VIEW.Settings);
 });
 
-async function routeToTriage() {
-  await setView(VIEW.Triage);
+async function routeToTriage(params: any) {
+  await setView(VIEW.Triage, params);
 }
 
 function getView() {
@@ -126,15 +127,19 @@ async function createModel(viewType: VIEW, params?: any) {
       return new TrackingModel();
 
     case VIEW.Todo:
-      let model = await getTodoModel();
-      model.setFilter(params.filter);
-      return model;
+      let todoModel = await getTodoModel();
+      todoModel.setLabelFilter(params.label);
+      return todoModel;
 
     case VIEW.Triage:
-      return await getTriageModel();
+      let triageModel = await getTriageModel();
+      triageModel.setLabelFilter(params.label);
+      return triageModel;
 
     case VIEW.Skim:
-      return await getSkimModel();
+      let skimModel = await getSkimModel();
+      skimModel.setLabelFilter(params.label);
+      return skimModel;
 
     case VIEW.Settings:
       return null;
@@ -223,7 +228,7 @@ function preventUpdates() {
   shouldUpdate_ = false;
 }
 
-async function resetModels() {
+function resetModels() {
   calendarModel_ = undefined;
   triageModel_ = undefined;
   todoModel_ = undefined;
@@ -278,6 +283,15 @@ async function updateBackground() {
   appShell_.setBackground(background);
 }
 
+document.body.addEventListener(ViewFiltersChangedEvent.NAME, async (e) => {
+  let event = e as ViewFiltersChangedEvent;
+  // TODO: This is heavyweight and jarring to the user. All we really need is
+  // to dispatch a ThreadListChangedEvent on the model.
+  resetModels();
+  // TODO: Properly handle if there are existing query parameters.
+  await router.run(window.location.pathname + `?label=${event.label}`);
+});
+
 async function onLoad() {
   let serverStorage = await getServerStorage();
   serverStorage.addEventListener(ServerStorageUpdateEventName, async () => {
@@ -285,7 +299,7 @@ async function onLoad() {
     // Rerender the current view on settings changes in case a setting would
     // change it's behavior, e.g. duration of the countdown timer or sort order
     // of queues.
-    await resetModels();
+    resetModels();
     await routeToCurrentLocation();
   });
 

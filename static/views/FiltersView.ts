@@ -43,7 +43,6 @@ export class FiltersView extends HTMLElement {
   // AddressCompose does with Ranges instead.
   private cursorSentinelElement_?: HTMLElement;
   private dialog_?: HTMLDialogElement;
-  private labelSelect_?: HTMLSelectElement;
 
   constructor(private settings_: Settings) {
     super();
@@ -109,20 +108,6 @@ export class FiltersView extends HTMLElement {
     }
 
     focused.focus();
-  }
-
-  async getLabelSelect_() {
-    if (!this.labelSelect_) {
-      this.labelSelect_ = document.createElement('select');
-      let labels = Array.from(await this.settings_.getLabels()).sort();
-      labels.push('Create new...');
-      for (let label of labels) {
-        let option = document.createElement('option');
-        option.append(label);
-        this.labelSelect_.append(option);
-      }
-    }
-    return this.labelSelect_.cloneNode(true) as HTMLSelectElement;
   }
 
   async render_() {
@@ -320,7 +305,12 @@ export class FiltersView extends HTMLElement {
 
     // Add a "new label" option that prompts and then adds that option to all
     // the filter rows.
-    let label = await this.getLabelSelect_();
+    let label = await this.settings_.getLabelSelect();
+
+    let option = document.createElement('option');
+    option.append('Create new...');
+    label.append(option);
+
     for (let option of label.options) {
       if (option.value === rule.label) {
         option.selected = true;
@@ -371,12 +361,7 @@ export class FiltersView extends HTMLElement {
     if (!newLabel)
       return;
 
-    let option = document.createElement('option');
-    option.append(newLabel);
-
-    // Add to the template so that newly created rows get the new label as well.
-    defined(this.labelSelect_).prepend(option.cloneNode(true));
-
+    let option = this.settings_.addLabel(newLabel);
     let allLabels = this.querySelectorAll('select');
     for (let label of allLabels) {
       label.prepend(option.cloneNode(true));

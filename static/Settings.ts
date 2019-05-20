@@ -1,5 +1,6 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
+import {AsyncOnce} from './AsyncOnce.js';
 import {assert, defined, Labels} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, DEFAULT_CALENDAR_DATA, EventType, UNBOOKED_TYPES} from './calendar/Constants.js';
@@ -207,6 +208,8 @@ export class FiltersChangedEvent extends Event {
 export class Settings extends EventTarget {
   private filters_?: firebase.firestore.DocumentSnapshot;
   private queueSettings_?: QueueSettings;
+  private labelSelect_?: HTMLSelectElement;
+  private labelSelectCreator_?: AsyncOnce<HTMLSelectElement>;
 
   static CALENDAR_RULE_DIRECTIVES = ['title'];
   private static CALENDAR_RULE_FIELDS_ = ['label'].concat(
@@ -457,5 +460,30 @@ export class Settings extends EventTarget {
     }
     labels.add(Labels.Fallback);
     return labels;
+  }
+
+  async getLabelSelect() {
+    if (!this.labelSelectCreator_) {
+      this.labelSelectCreator_ = new AsyncOnce(async () => {
+        let select = document.createElement('select');
+        let labels = Array.from(await this.getLabels()).sort();
+        for (let label of labels) {
+          let option = document.createElement('option');
+          option.append(label);
+          select.append(option);
+        }
+        return select;
+      });
+    }
+    return (await this.labelSelectCreator_.do()).cloneNode(true) as
+        HTMLSelectElement;
+  }
+
+  addLabel(label: string) {
+    let option = document.createElement('option');
+    option.append(label);
+    let select = assert(this.labelSelect_);
+    select.prepend(option.cloneNode(true));
+    return option;
   }
 }
