@@ -97,20 +97,19 @@ export class CalendarEvent {
     if (this.shouldIgnore || !this.attendeeCount || !offices.length)
       return false;
 
+    if (this.location && this.location.toLowerCase().includes(NO_ROOM_NEEDED))
+      return false;
+
     let attendees = assert(this.attendees);
-    let hasLocalRoom = Boolean(attendees.some(
+    let hasLocalRoom = attendees.some(
         x => x.resource && x.responseStatus === 'accepted' &&
-            offices.some(y => defined(x.displayName).includes(y))));
+            offices.some(y => defined(x.displayName).includes(y)));
 
     // For BIG meetings where rooms aren't visible as guests. Only do this
     // if there are no meeting rooms at all since the location field is
     // often out of date.
-    if (!hasLocalRoom && !attendees.some(x => x.resource)) {
-      hasLocalRoom = Boolean(
-          this.location &&
-          (this.location.toLowerCase().includes(NO_ROOM_NEEDED) ||
-           offices.some(y => defined(this.location).includes(y))));
-    }
+    if (!hasLocalRoom && !attendees.some(x => x.resource))
+      hasLocalRoom = offices.some(y => defined(this.location).includes(y));
 
     return !hasLocalRoom;
   }
