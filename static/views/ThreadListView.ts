@@ -331,7 +331,7 @@ export class ThreadListView extends View {
   private getThreadRow_(thread: Thread) {
     let row = this.threadToRow_.get(thread);
     if (!row) {
-      row = new ThreadRow(thread, this.model_);
+      row = new ThreadRow(thread);
       this.threadToRow_.set(thread, row);
     }
     return row;
