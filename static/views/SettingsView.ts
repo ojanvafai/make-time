@@ -1,6 +1,6 @@
 import {assert, notNull} from '../Base.js';
 import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
-import {Settings} from '../Settings.js';
+import {Setting, Settings} from '../Settings.js';
 
 import {AppShell} from './AppShell.js';
 import {CalendarFiltersView} from './CalendarFiltersView.js';
@@ -39,7 +39,8 @@ export class SettingsView extends View {
     this.append(this.scrollable_);
 
     this.basicSettings_ = document.createElement('table');
-    this.populateSettings_(this.basicSettings_);
+    SettingsView.appendSettings(
+        this.basicSettings_, this.settings_, Settings.fields);
     this.scrollable_.append(this.basicSettings_);
 
     let filtersLinkContainer = document.createElement('div');
@@ -113,8 +114,9 @@ export class SettingsView extends View {
     this.saveButton_.disabled = false;
   }
 
-  populateSettings_(container: HTMLElement) {
-    for (let field of Settings.fields) {
+  static appendSettings(
+      container: HTMLElement, settings: Settings, fields: Setting[]) {
+    for (let field of fields) {
       let row = document.createElement('tr');
       row.style.cssText = `
         margin: 5px 0;
@@ -159,15 +161,19 @@ export class SettingsView extends View {
         margin-left: 5px;
       `;
 
+      if (field.min !== undefined)
+        input.min = String(field.min);
+      if (field.max !== undefined)
+        input.max = String(field.max);
       if (field.default)
         input.placeholder = `default: ${field.default}`;
       if (field.type)
         input.type = field.type;
 
       if (field.type == 'checkbox')
-        input.checked = this.settings_.get(field.key);
-      else if (this.settings_.has(field.key))
-        input.value = this.settings_.getNonDefault(field.key);
+        input.checked = settings.get(field.key);
+      else if (settings.has(field.key))
+        input.value = settings.getNonDefault(field.key);
 
       input.setAttribute('key', field.key);
 
@@ -182,11 +188,7 @@ export class SettingsView extends View {
     }
   }
 
-  async save_() {
-    assert(!this.saveButton_.disabled);
-
-    let updates: StorageUpdates = {};
-    let inputs = this.basicSettings_.querySelectorAll('input');
+  static setUpdates(updates: StorageUpdates, inputs: HTMLInputElement[]) {
     for (let input of inputs) {
       let key = notNull(input.getAttribute('key'));
       let value;
@@ -202,6 +204,14 @@ export class SettingsView extends View {
       }
       updates[key] = value;
     }
+  }
+
+  async save_() {
+    assert(!this.saveButton_.disabled);
+
+    let updates: StorageUpdates = {};
+    let inputs = Array.from(this.basicSettings_.querySelectorAll('input'));
+    SettingsView.setUpdates(updates, inputs);
 
     updates[ServerStorage.KEYS.QUEUES] = this.queues_.getAllQueueDatas();
     updates[ServerStorage.KEYS.CALENDAR_SORT] =

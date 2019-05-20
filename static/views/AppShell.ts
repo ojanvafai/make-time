@@ -1,5 +1,7 @@
-import {showHelp} from '../BaseMain.js';
+import {getSettings, showHelp} from '../BaseMain.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from '../RadialProgress.js';
+
+import {FilterDialogView} from './FilterDialogView.js';
 
 let progressElements: Map<string, RadialProgress> = new Map();
 let titleStack_: TitleEntry[] = [];
@@ -25,6 +27,7 @@ export class AppShell extends HTMLElement {
   private content_: HTMLElement;
   private backArrow_: HTMLElement;
   private menuToggle_: SVGSVGElement;
+  private filterToggle_: SVGSVGElement;
   private subject_: HTMLElement;
   private drawerOpen_: boolean;
 
@@ -110,8 +113,21 @@ export class AppShell extends HTMLElement {
     let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute(
         'd',
-        `M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2  s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2  S29.104,22,28,22z`);
+        `M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2 s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2 S29.104,22,28,22z`);
     this.menuToggle_.append(path);
+
+    this.filterToggle_ =
+        document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.filterToggle_.classList.add('menu-open-button');
+    this.filterToggle_.setAttribute('viewBox', '0 0 1232 1280');
+    this.filterToggle_.style.cssText = `
+      margin: 0 6px;
+    `;
+    this.filterToggle_.innerHTML =
+        `<g transform="translate(0,1280) scale(0.1,-0.1)">
+<path d="M102 12678 c58 -68 1233 -1459 2613 -3093 1380 -1633 2542 -3009 2582 -3056 l73 -86 0 -3221 0 -3221 790 792 790 792 0 2430 1 2430 1470 1740 c1881 2225 2386 2823 3193 3780 362 429 670 792 684 808 l26 27 -6163 0 -6163 0 104 -122z"/>
+</g>`;
+    this.filterToggle_.addEventListener('click', () => this.openFilterMenu_());
 
     let toolbarChildStyle = `
       margin-right: 4px;
@@ -139,8 +155,8 @@ export class AppShell extends HTMLElement {
     `;
 
     toolbar.append(
-        this.backArrow_, this.menuToggle_, AppShell.title_, this.subject_,
-        AppShell.loader_);
+        this.backArrow_, this.menuToggle_, this.filterToggle_, AppShell.title_,
+        this.subject_, AppShell.loader_);
 
     this.appendMenu_();
     this.menuToggle_.addEventListener('click', (e) => {
@@ -227,6 +243,9 @@ export class AppShell extends HTMLElement {
       node.append(...stack[stack.length - 1].title);
   }
 
+  async openFilterMenu_() {
+    new FilterDialogView(await getSettings());
+  }
 
   setContent(newContent: HTMLElement) {
     this.content_.textContent = '';

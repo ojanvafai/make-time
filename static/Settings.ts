@@ -5,6 +5,7 @@ import {firestoreUserCollection} from './BaseMain.js';
 import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, DEFAULT_CALENDAR_DATA, EventType, UNBOOKED_TYPES} from './calendar/Constants.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
+import {DAYS_TO_SHOW_SETTING} from './views/FilterDialogView.js';
 
 export interface HeaderFilterRule {
   name: string;
@@ -46,6 +47,16 @@ export interface CalendarRule {
 
 export interface Filters {
   filters?: FilterRule[], calendar?: CalendarRule[],
+}
+
+export interface Setting {
+  key: string;
+  name: string;
+  description: string;
+  type?: string;
+  min?: number;
+  max?: number;
+  default?: any;
 }
 
 export const ANY_TITLE = '<any>';
@@ -266,13 +277,7 @@ export class Settings extends EventTarget {
       default: 27,
       type: 'number',
     },
-    {
-      key: ServerStorage.KEYS.DAYS_TO_SHOW,
-      name: 'Wicked witch count',
-      description:
-          `For times when you're melting, only show emails from the past N days.`,
-      type: 'number',
-    },
+    DAYS_TO_SHOW_SETTING,
     {
       key: ServerStorage.KEYS.LOCAL_OFFICES,
       name: 'Local offices',
