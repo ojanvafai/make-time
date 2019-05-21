@@ -200,6 +200,7 @@ async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
   let thisViewGeneration = ++viewGeneration;
 
   appShell_.showMenuButton(shouldHideMenu);
+  appShell_.setQueryParameters(params);
 
   if (currentView_)
     currentView_.tearDown();

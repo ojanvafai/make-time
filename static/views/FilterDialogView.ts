@@ -30,7 +30,9 @@ export class FilterDialogView extends View {
   private saveButton_: HTMLButtonElement;
   private dialog_?: HTMLDialogElement;
 
-  constructor(private settings_: Settings) {
+  constructor(
+      private settings_: Settings,
+      private queryParameters_?: {[property: string]: string}) {
     super();
 
     this.container_ = document.createElement('table');
@@ -74,10 +76,17 @@ export class FilterDialogView extends View {
 
     let select = await this.settings_.getLabelSelect();
     let none = document.createElement('option');
-    // TODO: Without this the first item after the none option get selected. Not
-    // sure why.
     none.selected = true;
     select.prepend(none);
+
+    if (this.queryParameters_) {
+      let selected = this.queryParameters_['label'];
+      for (let item of select.children) {
+        if (item.textContent === selected) {
+          (item as HTMLOptionElement).selected = true;
+        }
+      }
+    }
 
     let value = document.createElement('td');
     value.append(select);

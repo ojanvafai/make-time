@@ -30,6 +30,7 @@ export class AppShell extends HTMLElement {
   private filterToggle_: SVGSVGElement;
   private subject_: HTMLElement;
   private drawerOpen_: boolean;
+  private queryParameters_?: {[property: string]: string};
 
   // TODO: Make these not static.
   private static title_: HTMLElement;
@@ -244,7 +245,7 @@ export class AppShell extends HTMLElement {
   }
 
   async openFilterMenu_() {
-    new FilterDialogView(await getSettings());
+    new FilterDialogView(await getSettings(), this.queryParameters_);
   }
 
   setContent(newContent: HTMLElement) {
@@ -266,6 +267,10 @@ export class AppShell extends HTMLElement {
 
   set contentScrollTop(value: number) {
     this.content_.scrollTop = value;
+  }
+
+  setQueryParameters(params: {[property: string]: string}) {
+    this.queryParameters_ = params;
   }
 
   showMenuButton(hide?: boolean) {
