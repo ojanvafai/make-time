@@ -32,12 +32,6 @@ export class TriageModel extends ThreadListModel {
     return model.getEventsWithoutLocalRoom(offices);
   }
 
-  private threadDays_(thread: Thread) {
-    // TODO: Make this respect day boundaries instead of just doing 24 hours.
-    let oneDay = 24 * 60 * 60 * 1000;
-    return (Date.now() - thread.getDate().getTime()) / (oneDay);
-  }
-
   defaultCollapsedState(groupName: string) {
     let queue = this.settings_.getQueueSettings().get(groupName).queue;
     return QueueSettings.WEEKDAYS.includes(queue) ||
@@ -48,11 +42,6 @@ export class TriageModel extends ThreadListModel {
     let vacation = this.settings_.get(ServerStorage.KEYS.VACATION);
     if (vacation && (vacation !== thread.getLabel()))
       return false;
-
-    let daysToShow = this.settings_.get(ServerStorage.KEYS.DAYS_TO_SHOW);
-    if (daysToShow !== null && this.threadDays_(thread) > daysToShow)
-      return false;
-
     return super.shouldShowThread(thread);
   }
 

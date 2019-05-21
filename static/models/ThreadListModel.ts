@@ -36,6 +36,7 @@ export abstract class ThreadListModel extends Model {
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
   private filter_?: string;
+  private days_?: number;
 
   constructor(showFaviconCount?: boolean) {
     super();
@@ -64,9 +65,16 @@ export abstract class ThreadListModel extends Model {
     query.onSnapshot((snapshot) => this.queueProcessSnapshot_(snapshot));
   }
 
-  setLabelFilter(filter: string) {
+  setViewFilters(filter?: string, days?: string) {
     this.filter_ = filter && filter.toLowerCase();
+    this.days_ = days ? Number(days) : undefined;
     this.dispatchEvent(new ThreadListChangedEvent());
+  }
+
+  private threadDays_(thread: Thread) {
+    // TODO: Make this respect day boundaries instead of just doing 24 hours.
+    let oneDay = 24 * 60 * 60 * 1000;
+    return (Date.now() - thread.getDate().getTime()) / (oneDay);
   }
 
   protected shouldShowThread(thread: Thread, showQueued?: boolean) {
@@ -75,6 +83,9 @@ export abstract class ThreadListModel extends Model {
 
     let label = thread.getLabel();
     if (this.filter_ && (!label || this.filter_ !== label.toLowerCase()))
+      return false;
+
+    if (this.days_ !== undefined && this.threadDays_(thread) > this.days_)
       return false;
 
     // If we have archived all the messages but the change hasn't been

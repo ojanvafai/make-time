@@ -6,7 +6,6 @@ import {firestoreUserCollection} from './BaseMain.js';
 import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, DEFAULT_CALENDAR_DATA, EventType, UNBOOKED_TYPES} from './calendar/Constants.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
-import {DAYS_TO_SHOW_SETTING} from './views/FilterDialogView.js';
 
 export interface HeaderFilterRule {
   name: string;
@@ -280,7 +279,6 @@ export class Settings extends EventTarget {
       default: 27,
       type: 'number',
     },
-    DAYS_TO_SHOW_SETTING,
     {
       key: ServerStorage.KEYS.LOCAL_OFFICES,
       name: 'Local offices',

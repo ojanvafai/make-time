@@ -33,7 +33,7 @@ if (!navigator.userAgent.includes('Mobile'))
 let currentView_: View;
 let appShell_: AppShell;
 
-const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'label'];
+const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'label', 'days'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 let longTasks_: LongTasks;
@@ -128,17 +128,17 @@ async function createModel(viewType: VIEW, params?: any) {
 
     case VIEW.Todo:
       let todoModel = await getTodoModel();
-      todoModel.setLabelFilter(params.label);
+      todoModel.setViewFilters(params.label, params.days);
       return todoModel;
 
     case VIEW.Triage:
       let triageModel = await getTriageModel();
-      triageModel.setLabelFilter(params.label);
+      triageModel.setViewFilters(params.label, params.days);
       return triageModel;
 
     case VIEW.Skim:
       let skimModel = await getSkimModel();
-      skimModel.setLabelFilter(params.label);
+      skimModel.setViewFilters(params.label, params.days);
       return skimModel;
 
     case VIEW.Settings:
@@ -290,7 +290,8 @@ document.body.addEventListener(ViewFiltersChangedEvent.NAME, async (e) => {
   // to dispatch a ThreadListChangedEvent on the model.
   resetModels();
   // TODO: Properly handle if there are existing query parameters.
-  await router.run(window.location.pathname + `?label=${event.label}`);
+  await router.run(
+      window.location.pathname + `?label=${event.label}&days=${event.days}`);
 });
 
 async function onLoad() {

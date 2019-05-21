@@ -1,13 +1,11 @@
 import {assert, defined, notNull, showDialog} from '../Base.js';
-import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
 import {SettingsView} from './SettingsView.js';
 import {View} from './View.js';
 
-// TODO: Figure out circular dependency and move this to Settings.
-export const DAYS_TO_SHOW_SETTING = {
-  key: ServerStorage.KEYS.DAYS_TO_SHOW,
+const DAYS_TO_SHOW_SETTING = {
+  key: 'days',
   name: 'Days to show',
   description: `Only show emails from the past N days.`,
   type: 'number',
@@ -16,11 +14,11 @@ export const DAYS_TO_SHOW_SETTING = {
 };
 
 const SETTINGS = [DAYS_TO_SHOW_SETTING];
-const QUERY_PARAMS = ['label'];
+const QUERY_PARAMS = ['label', 'days'];
 
 export class ViewFiltersChanged extends Event {
   static NAME = 'view-filters-changed';
-  constructor(public label: string) {
+  constructor(public label: string, public days: string) {
     super(ViewFiltersChanged.NAME, {bubbles: true});
   }
 }
@@ -40,6 +38,13 @@ export class FilterDialogView extends View {
     // TODO: Should probably share appendSettings code through inheritance.
     SettingsView.appendSettings(this.container_, this.settings_, SETTINGS);
     this.append(this.container_);
+
+    if (this.queryParameters_) {
+      let daysElement =
+        this.querySelector(`input[key=${DAYS_TO_SHOW_SETTING.key}]`) as
+        HTMLInputElement;
+      daysElement.value = this.queryParameters_.days;
+    }
 
     this.label_ = document.createElement('tr');
     this.container_.append(this.label_);
@@ -85,7 +90,7 @@ export class FilterDialogView extends View {
     select.prepend(none);
 
     if (this.queryParameters_) {
-      let selected = this.queryParameters_['label'];
+      let selected = this.queryParameters_.label;
       for (let item of select.children) {
         if (item.textContent === selected) {
           (item as HTMLOptionElement).selected = true;
@@ -105,18 +110,16 @@ export class FilterDialogView extends View {
   private async save_() {
     assert(!this.saveButton_.disabled);
 
-    let updates: StorageUpdates = {};
-    let inputs =
-        Array.from(this.container_.querySelectorAll('input[setting]')) as
-        HTMLInputElement[];
-    SettingsView.setUpdates(updates, inputs);
-
-    await this.settings_.writeUpdates(updates);
-
     let select = notNull(this.label_.querySelector('select'));
     let option = select.selectedOptions[0];
+    let label = option.value;
 
-    this.dispatchEvent(new ViewFiltersChanged(option.value));
+    let daysElement =
+        this.querySelector(`input[key=${DAYS_TO_SHOW_SETTING.key}]`) as
+        HTMLInputElement;
+    let days = daysElement.value;
+
+    this.dispatchEvent(new ViewFiltersChanged(label, days));
     this.close_();
   }
 
