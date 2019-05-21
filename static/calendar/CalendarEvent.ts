@@ -108,7 +108,7 @@ export class CalendarEvent {
     // For BIG meetings where rooms aren't visible as guests. Only do this
     // if there are no meeting rooms at all since the location field is
     // often out of date.
-    if (!hasLocalRoom && !attendees.some(x => x.resource))
+    if (!hasLocalRoom && this.location && !attendees.some(x => x.resource))
       hasLocalRoom = offices.some(y => defined(this.location).includes(y));
 
     return !hasLocalRoom;
