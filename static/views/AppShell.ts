@@ -271,6 +271,8 @@ export class AppShell extends HTMLElement {
 
   setQueryParameters(params: {[property: string]: string}) {
     this.queryParameters_ = params;
+    let hasFilterParams = FilterDialogView.containsFilterParameter(params);
+    this.filterToggle_.style.fill = hasFilterParams ? 'red' : '';
   }
 
   showMenuButton(hide?: boolean) {

@@ -16,6 +16,7 @@ export const DAYS_TO_SHOW_SETTING = {
 };
 
 const SETTINGS = [DAYS_TO_SHOW_SETTING];
+const QUERY_PARAMS = ['label'];
 
 export class ViewFiltersChanged extends Event {
   static NAME = 'view-filters-changed';
@@ -68,6 +69,10 @@ export class FilterDialogView extends View {
     this.addEventListener('input', () => this.handleChange_());
 
     this.dialog_ = showDialog(this);
+  }
+
+  static containsFilterParameter(params?: {[property: string]: string}) {
+    return params && QUERY_PARAMS.some(x => x in params);
   }
 
   private async appendLabelSelect_() {
