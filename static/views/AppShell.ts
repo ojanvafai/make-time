@@ -270,6 +270,7 @@ export class AppShell extends HTMLElement {
 
   showMenuButton(hide?: boolean) {
     this.menuToggle_.style.visibility = hide ? 'hidden' : 'visible';
+    this.filterToggle_.style.visibility = hide ? 'hidden' : 'visible';
   }
 
   showBackArrow(show: boolean) {
