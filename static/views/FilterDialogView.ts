@@ -71,9 +71,16 @@ export class FilterDialogView extends View {
   private async appendLabelSelect_() {
     let name = document.createElement('td');
     name.append('View label');
+
+    let select = await this.settings_.getLabelSelect();
+    let none = document.createElement('option');
+    // TODO: Without this the first item after the none option get selected. Not
+    // sure why.
+    none.selected = true;
+    select.prepend(none);
+
     let value = document.createElement('td');
-    value.append(await this.settings_.getLabelSelect());
-    // TODO: Add a none option.
+    value.append(select);
     this.label_.append(name, value);
   }
 

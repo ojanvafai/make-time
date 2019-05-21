@@ -59,8 +59,15 @@ export class Router {
       // Spaces in query parameters are encoded as '+' in some cases. Need to
       // make them spaces *before* decoding to avoid converting legitimate
       // pluses to spaces.
-      if (nameValue.length == 2 && !missingParams[key])
-        params[key] = decodeURIComponent(nameValue[1].replace(/\+/g, ' '));
+      if (nameValue.length == 2 && !missingParams[key]) {
+        // Empty parameters are how we delete universal query parameters.
+        if (nameValue[1] === '') {
+          delete params[key];
+          this.baseParams_.delete(key);
+        } else {
+          params[key] = decodeURIComponent(nameValue[1].replace(/\+/g, ' '));
+        }
+      }
     }
 
     // Let the page override universal query parameter values after initial page
