@@ -194,7 +194,6 @@ export class ThreadListView extends View {
   private scrollOffset_: number|undefined;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
-  private allowViewMessages_: boolean;
   private blockedToolbar_?: Actions;
 
   constructor(
@@ -260,24 +259,22 @@ export class ThreadListView extends View {
     if (bottomButtonUrl)
       this.appendButton_(defined(bottomButtonText), bottomButtonUrl);
 
-    this.allowViewMessages_ = this.model_.allowViewMessages();
-
     if (this.includeSkimAction_) {
       // TODO: Use a toggle switch.
       let button = this.appendButton_('Triage remaining');
       button.title = 'View/respond to remaining threads like regular triage.';
       button.addEventListener('click', () => {
         (this.model_ as SkimModel).toggleAllowViewMessages();
-        this.allowViewMessages_ = this.model_.allowViewMessages();
-        button.textContent =
-            this.allowViewMessages_ ? 'Back to skimming' : 'Triage remaining';
+        button.textContent = this.model_.allowViewMessages() ?
+            'Back to skimming' :
+            'Triage remaining';
       });
     }
 
     this.updateActions_();
 
     this.addListenerToModel(
-        ThreadListChangedEvent.NAME, this.handleThreadListChanged_.bind(this));
+        ThreadListChangedEvent.NAME, this.render_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread, undoEvent.groupName);
@@ -311,11 +308,6 @@ export class ThreadListView extends View {
           `${event.start.getMonth() + 1}/${event.start.getDate()} `, link);
       this.noMeetingRoomEvents_.append(item);
     }
-  }
-
-  handleThreadListChanged_() {
-    this.allowViewMessages_ = this.model_.allowViewMessages();
-    this.render_();
   }
 
   appendButton_(text: string, url?: string) {
@@ -765,16 +757,9 @@ export class ThreadListView extends View {
   }
 
   private setRenderedRowIfAllowed_(row: ThreadRow) {
-    if (this.allowViewMessages_) {
-      this.setRenderedRow_(row);
+    if (!this.model_.allowViewMessages())
       return;
-    }
-
-    if (!this.includeSkimAction_) {
-      // TODO: Don't hard code this logic that is specific to the TodoView.
-      alert(
-          'There are too many pinned, urgent, or must do threads. Please reprioritize to stay below the limits.');
-    }
+    this.setRenderedRow_(row);
   }
 
   private viewFocused_() {

@@ -108,12 +108,6 @@ export class TodoModel extends ThreadListModel {
         .length;
   }
 
-  allowViewMessages() {
-    return this.pinnedCount() <= this.allowedPinCount_ &&
-        this.mustDoCount() <= this.allowedMustDoCount_ &&
-        this.urgentCount() <= this.allowedUrgentCount_;
-  }
-
   private getSortData_(priority: number) {
     return this.threadsData_ && this.threadsData_[this.getSortKey_(priority)];
   }
