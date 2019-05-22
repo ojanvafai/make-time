@@ -104,7 +104,6 @@ export async function getPrimaryAccountDisplayName() {
     let names: any[] = resp.result.names;
     displayName_ = names.find(x => x.metadata.primary).displayName;
   }
-  console.log(displayName_)
   return displayName_;
 }
 
