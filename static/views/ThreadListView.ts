@@ -178,7 +178,6 @@ registerActions('Triage or Todo', [
 ]);
 
 export class ThreadListView extends View {
-  private autoStartTimer_: boolean;
   private timerDuration_: number;
   private allowedReplyLength_: number;
   private modelListeners_: ListenerData[];
@@ -208,7 +207,6 @@ export class ThreadListView extends View {
       flex-direction: column;
     `;
 
-    this.autoStartTimer_ = settings.get(ServerStorage.KEYS.AUTO_START_TIMER);
     this.timerDuration_ = settings.get(ServerStorage.KEYS.TIMER_DURATION);
     this.allowedReplyLength_ =
         settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
@@ -378,8 +376,7 @@ export class ThreadListView extends View {
   }
 
   addTimer_() {
-    let timer = new Timer(
-        this.autoStartTimer_, !!this.model_.timerCountsDown,
+    let timer = new Timer(!!this.model_.timerCountsDown,
         this.timerDuration_, this.singleThreadContainer_);
     AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;

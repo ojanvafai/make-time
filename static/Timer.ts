@@ -1,7 +1,5 @@
 export class Timer extends HTMLElement {
-  static autoStart_: boolean|undefined;
   static activeTimers_: Timer[];
-  paused_: boolean = false;
   timeDisplay_: HTMLElement;
   timerButton_: HTMLElement;
   timerKey_: number|null = null;
@@ -9,8 +7,8 @@ export class Timer extends HTMLElement {
   overlay_: HTMLElement|null = null;
 
   constructor(
-      autoStart: boolean, private countDown_: boolean,
-      private duration_: number, private overlayContainer_: HTMLElement) {
+      private countDown_: boolean, private duration_: number,
+      private overlayContainer_: HTMLElement) {
     super();
 
     this.style.cssText = `
@@ -21,10 +19,6 @@ export class Timer extends HTMLElement {
       right: 0;
     `;
 
-    if (Timer.autoStart_ === undefined)
-      Timer.autoStart_ = autoStart;
-    this.paused_ = !Timer.autoStart_;
-
     this.timeDisplay_ = document.createElement('span');
     this.timeDisplay_.style.cssText = `
       border-radius: 5px;
@@ -32,16 +26,16 @@ export class Timer extends HTMLElement {
 
     this.timerButton_ = document.createElement('span');
     this.timerButton_.style.cssText = `user-select: none;`;
+    this.timerButton_.textContent = '⭮';
     this.append(this.timeDisplay_, '\xa0', this.timerButton_);
 
-    this.updatePlayButton_();
-    this.timerButton_.onclick = () => this.toggleTimer_();
+    this.restartTimer_();
+    this.timerButton_.onclick = () => this.restartTimer_();
   }
 
   connectedCallback() {
     Timer.activeTimers_.push(this);
-    if (Timer.autoStart_)
-      this.restartTimer_();
+    this.restartTimer_();
   }
 
   disconnectedCallback() {
@@ -65,25 +59,8 @@ export class Timer extends HTMLElement {
     }
   }
 
-  toggleTimer_() {
-    let shouldPlay = this.paused_;
-    this.paused_ = !shouldPlay;
-    Timer.autoStart_ = shouldPlay;
-    this.updatePlayButton_();
-  }
-
-  updatePlayButton_() {
-    this.timerButton_.textContent = this.paused_ ? '▶️' : '⏸️';
-    this.clearOverlay_();
-    this.restartTimer_();
-  }
-
   restartTimer_() {
-    if (this.paused_) {
-      this.timeDisplay_.textContent = '';
-      return;
-    }
-
+    this.clearOverlay_();
     this.timeLeft_ = this.countDown_ ? this.duration_ : 0;
     this.clearTimer_();
     this.nextTick_();
@@ -120,12 +97,22 @@ export class Timer extends HTMLElement {
     `;
     let text = document.createElement('div');
     text.innerHTML =
-        'Out of time. Take an action!<br><br>The timer duration and whether it autostarts can be configured in the settings dialogs.';
+        'Out of time. Take an action!<br><br>The timer duration can be configured in the settings dialogs.';
     text.style.cssText = `
       position: absolute;
       padding: 5px;
-      background-color: #ffffffbb;
+      background-color: #ffffff;
+      text-align: center;
     `;
+
+    let resetButton = this.timerButton_.cloneNode(true) as HTMLElement;
+    resetButton.style.cssText = `
+      display: block;
+      font-size: 32px;
+    `;
+    resetButton.addEventListener('click', () => this.restartTimer_());
+    text.append(resetButton);
+
     this.overlay_.append(background, text);
     this.overlayContainer_.append(this.overlay_);
   }
@@ -134,40 +121,40 @@ export class Timer extends HTMLElement {
     if (this.overlay_)
       return;
 
-    if (this.paused_) {
-      this.timeDisplay_.textContent = '';
-      return;
-    }
+    let timeLeft = this.timeLeft_;
 
-    if (this.countDown_ && this.timeLeft_ == 0) {
+    if (this.countDown_ && timeLeft == 0) {
+      this.timeDisplay_.textContent = '';
       this.showOverlay_();
       return;
     }
 
+    this.timeDisplay_.style.opacity = '1';
+
     if (this.countDown_) {
       this.timeLeft_--;
-      if (this.timeLeft_ > 30) {
+      if (timeLeft > 30) {
         this.timeDisplay_.style.color = '#ddd';
-      } else if (this.timeLeft_ > 9) {
+      } else if (timeLeft > 9) {
         this.timeDisplay_.style.color = 'black';
-      } else if (this.timeLeft_ === 0) {
+      } else if (timeLeft === 0) {
         this.timeDisplay_.style.animation = '';
       } else {
         this.timeDisplay_.style.color = 'red';
-        this.timeDisplay_.style.animation = 'blinker 1s steps(1, end) infinite';
+        window.setTimeout(() => this.timeDisplay_.style.opacity = '0', 500);
       }
     } else {
       this.timeLeft_++;
-      if (this.timeLeft_ > 300) {
+      if (timeLeft > 300) {
         this.timeDisplay_.style.color = 'red';
-      } else if (this.timeLeft_ > 150) {
+      } else if (timeLeft > 150) {
         this.timeDisplay_.style.color = 'black';
       } else {
         this.timeDisplay_.style.color = '#ddd';
       }
     }
 
-    this.timeDisplay_.textContent = String(this.timeLeft_);
+    this.timeDisplay_.textContent = String(timeLeft);
     this.timerKey_ = window.setTimeout(this.nextTick_.bind(this), 1000);
   }
 }

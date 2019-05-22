@@ -240,14 +240,6 @@ export class Settings extends EventTarget {
       type: 'number',
     },
     {
-      key: ServerStorage.KEYS.AUTO_START_TIMER,
-      name: 'Auto start timer',
-      description:
-          `Timer automatically starts after triaging the first thread.`,
-      default: true,
-      type: 'checkbox',
-    },
-    {
       key: ServerStorage.KEYS.ALLOWED_REPLY_LENGTH,
       name: 'Allowed quick reply length',
       description:
