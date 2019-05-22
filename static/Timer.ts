@@ -145,17 +145,21 @@ export class Timer extends HTMLElement {
       }
     } else {
       this.timeLeft_++;
-      if (timeLeft > 300) {
+      if (timeLeft > 5) {
         this.timeDisplay_.style.color = 'red';
-      } else if (timeLeft > 150) {
+      } else if (timeLeft > 2) {
         this.timeDisplay_.style.color = 'black';
       } else {
         this.timeDisplay_.style.color = '#ddd';
       }
     }
 
-    this.timeDisplay_.textContent = String(timeLeft);
-    this.timerKey_ = window.setTimeout(this.nextTick_.bind(this), 1000);
+    this.timeDisplay_.textContent = this.countDown_ ?
+        String(timeLeft) :
+        (timeLeft ? `${timeLeft} min` : '');
+
+    this.timerKey_ = window.setTimeout(
+        this.nextTick_.bind(this), this.countDown_ ? 1000 : 60000);
   }
 }
 
