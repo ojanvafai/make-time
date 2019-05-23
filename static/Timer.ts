@@ -26,7 +26,7 @@ export class Timer extends HTMLElement {
 
     this.timerButton_ = document.createElement('span');
     this.timerButton_.style.cssText = `user-select: none;`;
-    this.timerButton_.textContent = '⭮';
+    this.timerButton_.textContent = '🗘';
     this.append(this.timeDisplay_, '\xa0', this.timerButton_);
 
     this.restartTimer_();
