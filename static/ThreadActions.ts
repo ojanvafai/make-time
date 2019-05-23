@@ -145,7 +145,7 @@ export async function takeAction(
         return await thread.setMuted();
 
       case SKIM_ACTION:
-        return await thread.setSkimmed();
+        return await thread.setOnlySkimmed();
 
       default:
         assert(false, 'This should never happen.');

@@ -87,7 +87,8 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
 
-  constructor(public thread: Thread) {
+  constructor(
+      public thread: Thread, private labelSelectTemplate_: HTMLSelectElement) {
     super();
     this.style.cssText = `
       display: flex;
@@ -272,19 +273,50 @@ export class ThreadRow extends HTMLElement {
       flex: 1;
     `;
 
+    // TODO: Make this a date picker for changing the due date.
     if (state.blocked && state.group !== BLOCKED_LABEL_NAME) {
       let blockedString = DAY_MONTH_FORMATTER.format(state.blocked);
       let label = this.createLabel_(blockedString);
       title.append(label);
     }
 
+    // TODO: Make this a select element for changing the priority.
     if (state.priority && state.group !== state.priority) {
       let label = this.createLabel_(state.priority);
       title.append(label);
     }
 
     if (state.label && state.group !== state.label) {
-      let label = this.createLabel_(state.label);
+      let label = this.createSelectChip_(state.label);
+
+      label.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        if (label.children.length > 1)
+          return;
+
+        let cloned =
+            this.labelSelectTemplate_.cloneNode(true) as HTMLSelectElement;
+        label.append(...cloned.children);
+
+        (label.children[0] as HTMLOptionElement).selected = true;
+      });
+
+      // Remove the extra items so the select shrinks back down to the width of
+      // the currently selected one.
+      label.addEventListener('blur', () => {
+        let toRemove = Array.from(label.children);
+        toRemove.shift();
+        for (let element of toRemove) {
+          element.remove();
+        }
+      });
+
+      label.addEventListener('change', async () => {
+        let newLabel = label.selectedOptions[0].value;
+        await this.thread.setOnlyLabel(newLabel);
+      });
+
       title.append(label);
     }
 
@@ -322,6 +354,26 @@ export class ThreadRow extends HTMLElement {
       this.messageDetails_.style.alignItems = 'center';
       this.messageDetails_.append(fromContainer, title, date, popoutButton);
     }
+  }
+
+  private createSelectChip_(text: string) {
+    let label = document.createElement('select');
+    // TODO: Share some code with createLabel_.
+    label.style.cssText = `
+      display: inline-block;
+      color: #666;
+      background-color: #ddd;
+      font-size: 0.75rem;
+      line-height: 18px;
+      border: none;
+      border-radius: 4px;
+      padding: 0 4px;
+      margin-right: 4px;
+    `;
+    let option = new Option();
+    option.append(text);
+    label.append(option);
+    return label;
   }
 
   private createLabel_(text: string) {

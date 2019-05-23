@@ -261,10 +261,6 @@ export class Thread extends EventTarget {
     return await this.updateMetadata(update);
   }
 
-  async setSkimmed() {
-    return await this.updateMetadata({skimmed: true});
-  }
-
   async setBlocked(days: number, moveToInbox?: boolean) {
     let update = this.keepInInboxMetadata_(moveToInbox);
     let date = new Date();
@@ -274,6 +270,15 @@ export class Thread extends EventTarget {
     date.setDate(date.getDate() + days);
     update.blocked = date.getTime();
     return await this.updateMetadata(update);
+  }
+
+  async setOnlySkimmed() {
+    return await this.updateMetadata({skimmed: true});
+  }
+
+  async setOnlyLabel(label: string) {
+    return await this.updateMetadata(
+        {labelId: await this.queueNames_.getId(label)});
   }
 
   skimmed() {

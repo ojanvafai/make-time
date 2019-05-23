@@ -452,7 +452,7 @@ export class Settings extends EventTarget {
     return labels;
   }
 
-  async getLabelSelect() {
+  async getLabelSelectTemplate() {
     if (!this.labelSelectCreator_) {
       this.labelSelectCreator_ = new AsyncOnce(async () => {
         let select = document.createElement('select');
@@ -465,7 +465,11 @@ export class Settings extends EventTarget {
         return select;
       });
     }
-    return (await this.labelSelectCreator_.do()).cloneNode(true) as
+    return await this.labelSelectCreator_.do();
+  }
+
+  async getLabelSelect() {
+    return (await this.getLabelSelectTemplate()).cloneNode(true) as
         HTMLSelectElement;
   }
 

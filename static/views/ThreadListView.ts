@@ -194,11 +194,12 @@ export class ThreadListView extends View {
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
   private blockedToolbar_?: Actions;
+  private labelSelectTemplate_?: HTMLSelectElement;
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      settings: Settings, bottomButtonUrl?: string, bottomButtonText?: string,
-      private includeSortActions_?: boolean,
+      private settings_: Settings, bottomButtonUrl?: string,
+      bottomButtonText?: string, private includeSortActions_?: boolean,
       private includeSkimAction_?: boolean) {
     super();
 
@@ -207,9 +208,9 @@ export class ThreadListView extends View {
       flex-direction: column;
     `;
 
-    this.timerDuration_ = settings.get(ServerStorage.KEYS.TIMER_DURATION);
+    this.timerDuration_ = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
     this.allowedReplyLength_ =
-        settings.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+        settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
     this.modelListeners_ = [];
     this.threadToRow_ = new WeakMap();
@@ -321,7 +322,7 @@ export class ThreadListView extends View {
   private getThreadRow_(thread: Thread) {
     let row = this.threadToRow_.get(thread);
     if (!row) {
-      row = new ThreadRow(thread);
+      row = new ThreadRow(thread, defined(this.labelSelectTemplate_));
       this.threadToRow_.set(thread, row);
     }
     return row;
@@ -376,16 +377,21 @@ export class ThreadListView extends View {
   }
 
   addTimer_() {
-    let timer = new Timer(!!this.model_.timerCountsDown,
-        this.timerDuration_, this.singleThreadContainer_);
+    let timer = new Timer(
+        !!this.model_.timerCountsDown, this.timerDuration_,
+        this.singleThreadContainer_);
     AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;
   }
 
-  private render_() {
+  private async render_() {
     if (this.hasQueuedFrame_)
       return;
     this.hasQueuedFrame_ = true;
+
+    if (!this.labelSelectTemplate_)
+      this.labelSelectTemplate_ = await this.settings_.getLabelSelectTemplate();
+
     requestAnimationFrame(this.renderFrame_.bind(this));
   }
 
