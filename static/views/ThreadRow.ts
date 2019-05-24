@@ -289,8 +289,14 @@ export class ThreadRow extends HTMLElement {
     if (state.label && state.group !== state.label) {
       let label = this.createSelectChip_(state.label);
 
+      // Clicks on the select shouldn't also be clicks on the row.
       label.addEventListener('click', (e) => {
         e.stopPropagation();
+      });
+
+      label.addEventListener('pointerdown', () => {
+        label.style.color = '#666';
+        label.style.backgroundColor = '#ddd';
 
         if (label.children.length > 1)
           return;
@@ -370,6 +376,14 @@ export class ThreadRow extends HTMLElement {
       padding: 0 4px;
       margin-right: 4px;
     `;
+    label.addEventListener('pointerenter', () => {
+      label.style.color = '#ddd';
+      label.style.backgroundColor = '#666';
+    });
+    label.addEventListener('pointerleave', () => {
+      label.style.color = '#666';
+      label.style.backgroundColor = '#ddd';
+    });
     let option = new Option();
     option.append(text);
     label.append(option);
