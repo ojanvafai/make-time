@@ -305,7 +305,7 @@ export class FiltersView extends HTMLElement {
 
     // Add a "new label" option that prompts and then adds that option to all
     // the filter rows.
-    let label = await this.settings_.getLabelSelectTemplate();
+    let label = await this.settings_.getLabelSelect();
 
     let option = document.createElement('option');
     option.append('Create new...');

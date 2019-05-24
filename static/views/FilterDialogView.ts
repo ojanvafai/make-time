@@ -84,7 +84,7 @@ export class FilterDialogView extends View {
     let name = document.createElement('td');
     name.append('View label');
 
-    let select = await this.settings_.getLabelSelectTemplate();
+    let select = await this.settings_.getLabelSelect();
     let none = document.createElement('option');
     none.selected = true;
     select.prepend(none);
