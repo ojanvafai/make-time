@@ -10,8 +10,6 @@ export class ToggleCollapsedEvent extends Event {
   }
 }
 
-const NUM_TOP_THREADS = 3;
-
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
   private rowCountWhenCollapsed_: number;
@@ -70,41 +68,26 @@ export class ThreadRowGroup extends HTMLElement {
     if (this.hideControls_())
       return;
 
-    let toggler = document.createElement('div');
-    toggler.style.cssText = `
+    this.expander_ = document.createElement('div');
+    this.expander_.style.cssText = `
       display: inline-block;
       text-decoration: underline;
       margin: 0 10px;
     `;
-    toggler.append(this.isCollapsed_() ? 'expand' : 'collapse');
-    toggler.addEventListener('click', () => this.toggleCollapsed_());
+    this.expander_.append(this.isCollapsed() ? 'expand' : 'collapse');
+    this.expander_.addEventListener('click', () => this.toggleCollapsed_());
 
-    this.expander_ = toggler;
-    header.append(toggler);
+    header.append(this.expander_);
 
-    if (!this.isCollapsed_()) {
+    if (!this.isCollapsed()) {
       header.append(
           ' select ', this.createSelector_('all', this.selectAll_),
           this.createSelector_('none', this.selectNone_));
     }
-
-    if (this.isCollapsed_() && this.showTopThreads_()) {
-      this.expander_ = document.createElement('div');
-      this.expander_.addEventListener('click', () => this.toggleCollapsed_());
-      this.append(this.expander_);
-    }
   }
 
-  isFullyCollapsed() {
-    return this.isCollapsed_() && !this.showTopThreads_();
-  }
-
-  private isCollapsed_() {
+  isCollapsed() {
     return this.model_.isCollapsed(this.groupName_);
-  }
-
-  private showTopThreads_() {
-    return this.model_.showTopThreads(this.groupName_);
   }
 
   private hideControls_() {
@@ -123,35 +106,17 @@ export class ThreadRowGroup extends HTMLElement {
     return !!this.rowContainer_.childElementCount;
   }
 
-  private setExpanderText_(text: string) {
-    let expander = defined(this.expander_);
-    expander.style.cssText = `
-      padding: 5px;
-      text-decoration: underline;
-    `;
-    expander.textContent = text;
-  }
-
   push(row: ThreadRow) {
     this.rowCount_++;
     this.updateGroupNameText_();
 
-    if (!this.hideControls_() && this.isCollapsed_()) {
+    if (!this.hideControls_() && this.isCollapsed()) {
       let threadsElided = ++this.rowCountWhenCollapsed_;
-      if (this.showTopThreads_()) {
-        threadsElided -= NUM_TOP_THREADS;
-        if (threadsElided > 0)
-          this.setExpanderText_(`${threadsElided} more...`);
-      } else {
-        this.setExpanderText_(`expand ${threadsElided} threads`);
-      }
+      defined(this.expander_).textContent = `expand ${threadsElided} threads`;
     }
 
-    if (this.hideControls_() || !this.isCollapsed_() ||
-        (this.showTopThreads_() &&
-         this.rowContainer_.childElementCount < NUM_TOP_THREADS)) {
+    if (this.hideControls_() || !this.isCollapsed())
       this.rowContainer_.append(row);
-    }
   }
 
   removeIfEmpty() {

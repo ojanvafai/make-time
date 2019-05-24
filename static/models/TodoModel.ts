@@ -68,11 +68,6 @@ export class TodoModel extends ThreadListModel {
     return notNull(thread.getPriority());
   }
 
-  showTopThreads(groupName: string) {
-    return groupName === MUST_DO_PRIORITY_NAME ||
-        groupName === URGENT_PRIORITY_NAME;
-  }
-
   hideGroupControls(groupName: string) {
     return groupName === PINNED_PRIORITY_NAME;
   }

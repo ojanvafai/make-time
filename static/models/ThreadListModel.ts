@@ -117,10 +117,6 @@ export abstract class ThreadListModel extends Model {
     return 0;
   }
 
-  showTopThreads(_groupName: string) {
-    return false;
-  }
-
   hideGroupControls(_groupName: string) {
     return false;
   }

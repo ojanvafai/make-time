@@ -658,7 +658,7 @@ export class ThreadListView extends View {
       case NEXT_FULL_ACTION: {
         let currentGroup = focused.getGroup();
         let newGroup = currentGroup.nextElementSibling as ThreadRowGroup;
-        while (newGroup && newGroup.isFullyCollapsed()) {
+        while (newGroup && newGroup.isCollapsed()) {
           newGroup = newGroup.nextElementSibling as ThreadRowGroup;
         }
         this.focusFirstRowOfGroup_(newGroup);
@@ -667,7 +667,7 @@ export class ThreadListView extends View {
       case PREVIOUS_FULL_ACTION: {
         let currentGroup = focused.getGroup();
         let newGroup = currentGroup.previousElementSibling as ThreadRowGroup;
-        while (newGroup && newGroup.isFullyCollapsed()) {
+        while (newGroup && newGroup.isCollapsed()) {
           newGroup = newGroup.previousElementSibling as ThreadRowGroup;
         }
         this.focusFirstRowOfGroup_(newGroup);
