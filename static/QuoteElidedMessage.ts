@@ -1,4 +1,4 @@
-import {defined} from './Base.js';
+import {defined, notNull} from './Base.js';
 import {Message} from './Message.js';
 
 // Rolling hash taken from https://gist.github.com/i-e-b/b892d95ac7c0cf4b70e4.
@@ -6,6 +6,19 @@ let MINIMUM_HASH_LENGTH = 10;
 let MINIMUM_ELIDE_LENGTH = 100;
 let TOGGLER: HTMLElement;
 let strippedTextMap = new WeakMap();
+
+// Forked from https://github.com/sindresorhus/linkify-urls (MIT License).
+// Capture the whole URL in group 1 to keep `String#split()` support
+const urlRegex =
+    /((?<!\+)(?:https?(?::\/\/))(?:www\.)?(?:[a-zA-Z\d-_.]+(?:(?:\.|@)[a-zA-Z\d]{2,})|localhost)(?:(?:[-a-zA-Z\d:%_+.~#!?&//=@]*)(?:[,](?![\s]))*)*)/g;
+
+// Get `<a>` element as string
+const createLink = (href: string) => {
+  let link = document.createElement('a');
+  link.textContent = href;
+  link.href = href;
+  return link;
+};
 
 export class QuoteElidedMessage {
   // These are initialized in computeHashes_, which is always called from the
@@ -27,6 +40,7 @@ export class QuoteElidedMessage {
     this.dom_ = document.createElement('div');
     this.dom_.innerHTML = currentMessage;
     this.sanitizeContent_();
+    this.linkifyContent_();
 
     this.computeHashes_();
     if (!previousMessage)
@@ -132,6 +146,45 @@ export class QuoteElidedMessage {
   sanitizeContent_() {
     this.removeDisallowedElements_();
     this.preWrapElements_();
+  }
+
+  linkifyContent_() {
+    var treeWalker = document.createTreeWalker(
+        this.dom_, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+          acceptNode: function(node) {
+            if (node.nodeType === Node.TEXT_NODE)
+              return NodeFilter.FILTER_ACCEPT;
+
+            let element = node as Element;
+            if (element.nodeName === 'A' && !element.hasAttribute('href'))
+              return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_SKIP;
+          }
+        },
+        false);
+
+    let list = [];
+    while (treeWalker.nextNode()) {
+      list.push(treeWalker.currentNode);
+    }
+
+    for (let item of list) {
+      let text = notNull(item.textContent);
+      if (!text.match(urlRegex))
+        continue;
+
+      // Forked from https://github.com/sindresorhus/linkify-urls (MIT License).
+      let linked = text.split(urlRegex).reduce((fragment, text, index) => {
+        if (index % 2)  // URLs are always in odd positions
+          fragment.append(createLink(text));
+        else if (text.length > 0)
+          fragment.append(text);
+        return fragment;
+      }, document.createDocumentFragment());
+
+      item.before(linked);
+      notNull(item.parentNode).removeChild(item);
+    }
   }
 
   // This removes elements that break make-time rendering. This is not a
