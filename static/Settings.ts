@@ -455,14 +455,14 @@ export class Settings extends EventTarget {
   async getLabelSelectTemplate() {
     if (!this.labelSelectCreator_) {
       this.labelSelectCreator_ = new AsyncOnce(async () => {
-        let select = document.createElement('select');
+        this.labelSelect_ = document.createElement('select');
         let labels = Array.from(await this.getLabels()).sort();
         for (let label of labels) {
           let option = document.createElement('option');
           option.append(label);
-          select.append(option);
+          this.labelSelect_.append(option);
         }
-        return select;
+        return this.labelSelect_;
       });
     }
     return await this.labelSelectCreator_.do();
