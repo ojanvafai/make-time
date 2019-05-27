@@ -4,7 +4,7 @@ import {firestoreUserCollection, login} from '../BaseMain.js';
 import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
 import {TriageModel} from '../models/TriageModel.js';
 import {Settings} from '../Settings.js';
-import {Thread, ThreadMetadataKeys} from '../Thread.js';
+import {BLOCKED_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {AppShell} from './AppShell.js';
 import {ThreadListView} from './ThreadListView.js';
@@ -72,9 +72,16 @@ class HiddenModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    if (this.queryKey_() === ThreadMetadataKeys.queued)
-      return TriageModel.getGroupName(thread);
-    return this.queryKey_();
+    switch (this.queryKey_()) {
+      case ThreadMetadataKeys.blocked:
+        return BLOCKED_LABEL_NAME;
+
+      case ThreadMetadataKeys.queued:
+        return TriageModel.getGroupName(thread);
+
+      default:
+        return this.queryKey_();
+    }
   }
 
   // Moving one of these types out of hidden into a priority or blocked means
@@ -120,7 +127,12 @@ export class HiddenView extends View {
     this.select_ = document.createElement('select');
     for (let key of FIRESTORE_KEYS) {
       let option = document.createElement('option');
-      option.append(key);
+      if (key === ThreadMetadataKeys.blocked) {
+        option.append(BLOCKED_LABEL_NAME);
+        option.value = key;
+      } else {
+        option.append(key);
+      }
       this.select_.append(option);
     }
     this.select_.addEventListener('change', () => this.handleSelectChange_());

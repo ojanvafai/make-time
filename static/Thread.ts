@@ -126,7 +126,7 @@ export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
 export const URGENT_PRIORITY_NAME = 'Urgent';
 export const BACKLOG_PRIORITY_NAME = 'Backlog';
-export const BLOCKED_LABEL_NAME = 'Blocked';
+export const BLOCKED_LABEL_NAME = 'Stuck';
 export const FALLBACK_LABEL_NAME = 'No label';
 
 export const PrioritySortOrder = [

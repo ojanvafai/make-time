@@ -274,7 +274,7 @@ export class ThreadRow extends HTMLElement {
     `;
 
     // TODO: Make this a date picker for changing the due date.
-    if (state.blocked && state.group !== BLOCKED_LABEL_NAME) {
+    if (state.blocked && state.group === BLOCKED_LABEL_NAME) {
       let blockedString = DAY_MONTH_FORMATTER.format(state.blocked);
       let label = this.createLabel_(blockedString);
       title.append(label);
