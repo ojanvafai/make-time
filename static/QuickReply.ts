@@ -1,8 +1,8 @@
 import {defined} from './Base.js';
 import {CancelEvent, EmailCompose, SubmitEvent} from './EmailCompose.js';
-import {RadialProgress} from './RadialProgress.js';
 import {SendAs} from './SendAs.js';
 import {ReplyType, Thread} from './Thread.js';
+import {Toast} from './Toast.js';
 import {AppShell} from './views/AppShell.js';
 
 export class ReplyCloseEvent extends Event {
@@ -26,17 +26,16 @@ export class ReplyScrollEvent extends Event {
   }
 }
 
+const LENGTHS = ['Tweet', 'Short story', 'Novella', 'Novel'];
+
 export class QuickReply extends HTMLElement {
   private isSending_?: boolean;
   private compose_: EmailCompose;
   private replyType_: HTMLSelectElement;
   private senders_?: HTMLSelectElement;
-  private progress_?: RadialProgress;
-  private count_?: HTMLElement;
+  private count_: HTMLElement;
 
-  constructor(
-      public thread: Thread, private allowedReplyLength_: number,
-      private sendAs_: SendAs) {
+  constructor(public thread: Thread, private sendAs_: SendAs) {
     super();
     this.style.cssText = `
       display: flex;
@@ -97,19 +96,10 @@ export class QuickReply extends HTMLElement {
       controls.append(this.senders_);
     controls.append(this.replyType_, cancel);
 
-    if (this.allowedReplyLength_) {
-      this.progress_ = new RadialProgress(true);
-      this.progress_.addToTotal(this.allowedReplyLength_);
-
-      this.count_ = document.createElement('button');
-      this.count_.style.cssText = `
-        color: red;
-        display: none;
-      `;
-      this.count_.addEventListener('click', () => this.handleAllowMore_());
-
-      controls.append(this.count_, this.progress_);
-    }
+    this.count_ = document.createElement('span');
+    this.count_.style.marginLeft = '4px';
+    controls.append(this.count_);
+    this.updateProgress_();
 
     this.append(this.compose_, controls);
   }
@@ -131,44 +121,35 @@ export class QuickReply extends HTMLElement {
     return compose;
   }
 
-  private updateProgress_() {
-    if (!this.progress_ || !this.count_)
-      return;
-
-    let textLength = this.compose_.plainText.length;
-    this.progress_.setProgress(textLength);
-    let lengthDiff = this.allowedReplyLength_ - textLength;
-    if (lengthDiff < 10) {
-      this.count_.style.display = '';
-      this.count_.textContent = String(lengthDiff);
-    } else {
-      this.count_.style.display = 'none';
-    }
+  private exceedsLengthIndex_() {
+    let count = this.compose_.plainText.length;
+    if (count < 280)
+      return 0;
+    if (count < 750)
+      return 1;
+    if (count < 2500)
+      return 2;
+    return 3;
   }
 
-  private handleAllowMore_() {
-    if (confirm(`Allow ${this.allowedReplyLength_} more characters?`) &&
-        confirm(`Are you sure?`) &&
-        confirm(
-            `Yes, this is annoying on purpose to help you resist the verbosity urge! Still want to move forward`) &&
-        confirm(`Last one! You sure?`)) {
-      alert(`JK lol. Ok...really last one now. Enjoy!`);
-      defined(this.progress_).addToTotal(this.allowedReplyLength_);
-      this.allowedReplyLength_ += this.allowedReplyLength_;
-      this.updateProgress_();
-    }
+  private updateProgress_() {
+    let oldIndex = LENGTHS.indexOf(this.count_.textContent.split(': ')[1]);
+    let index = this.exceedsLengthIndex_();
+    if (oldIndex === index)
+      return;
+
+    let message = `Length: ${LENGTHS[index]}`;
+    // Don't show the toast when we first open QuickReply and show it whenever
+    // the length grows.
+    if (index > 0 && oldIndex < index)
+      this.append(new Toast(message));
+    this.count_.textContent = message;
   }
 
   private async handleSubmit_() {
     let textLength = this.compose_.plainText.length;
     if (!textLength)
       return;
-
-    if (this.allowedReplyLength_ && textLength > this.allowedReplyLength_) {
-      alert(`Email is longer than the allowed length of ${
-          this.allowedReplyLength_} characters. Allowed length is configurable in Settings.`);
-      return;
-    }
 
     if (this.isSending_)
       return;

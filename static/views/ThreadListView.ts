@@ -13,6 +13,7 @@ import {BLOCKED_LABEL_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, SKIM_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
+import {Toast} from '../Toast.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {AppShell} from './AppShell.js';
@@ -462,7 +463,7 @@ export class ThreadListView extends View {
             if (this.model_.isCollapsed(nextGroupName))
               nextRow = null;
             else
-              toast = this.createToast_(nextGroupName);
+              toast = new Toast(`Now in: ${nextGroupName}`);
           }
         }
         if (nextRow) {
@@ -500,38 +501,6 @@ export class ThreadListView extends View {
     rendered.style.bottom = '0';
     rendered.style.visibility = 'hidden';
     this.singleThreadContainer_.append(rendered);
-  }
-
-  private createToast_(nextGroupName: string) {
-    let toast = document.createElement('div');
-    toast.style.cssText = `
-      position: fixed;
-      top: 50%;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      font-size: 20px;
-      opacity: 0.5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.5s;
-      transition-delay: 3s;
-      opacity: 0.95;
-      pointer-events: none;
-    `;
-    let text = document.createElement('div');
-    text.style.cssText = `
-      background-color: #000000bb;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid grey;
-      color: #ffffffbb;
-    `;
-    setTimeout(() => defined(toast).style.opacity = '0');
-    text.append(`Now triaging: ${nextGroupName}`);
-    toast.append(text);
-    return toast;
   }
 
   private setFocus_(row: ThreadRow|null) {
@@ -916,8 +885,7 @@ export class ThreadListView extends View {
 
   async showQuickReply() {
     let reply = new QuickReply(
-        notNull(this.renderedRow_).thread, this.model_.allowedReplyLength(),
-        await SendAs.getDefault());
+        notNull(this.renderedRow_).thread, await SendAs.getDefault());
     reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActions_());
 
     reply.addEventListener(ReplyScrollEvent.NAME, async () => {

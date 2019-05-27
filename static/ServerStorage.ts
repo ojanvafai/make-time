@@ -77,7 +77,6 @@ interface KeyTypes {
   BACKGROUND: string;
   VACATION: string;
   TIMER_DURATION: string;
-  ALLOWED_REPLY_LENGTH: string;
   ALLOWED_PIN_COUNT: string;
   ALLOWED_MUST_DO_COUNT: string;
   ALLOWED_URGENT_COUNT: string;
@@ -94,7 +93,6 @@ let keys: KeyTypes = {
   BACKGROUND: 'background',
   VACATION: 'vacation',
   TIMER_DURATION: 'timeout',
-  ALLOWED_REPLY_LENGTH: 'allowed_reply_length',
   ALLOWED_PIN_COUNT: 'allowed_pin_count',
   ALLOWED_MUST_DO_COUNT: 'allowed_must_do_count',
   ALLOWED_URGENT_COUNT: 'allowed_urgent_count',
@@ -111,7 +109,6 @@ let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.BACKGROUND,
   keys.VACATION,
   keys.TIMER_DURATION,
-  keys.ALLOWED_REPLY_LENGTH,
   keys.ALLOWED_PIN_COUNT,
   keys.ALLOWED_MUST_DO_COUNT,
   keys.ALLOWED_URGENT_COUNT,

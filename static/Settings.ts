@@ -240,14 +240,6 @@ export class Settings extends EventTarget {
       type: 'number',
     },
     {
-      key: ServerStorage.KEYS.ALLOWED_REPLY_LENGTH,
-      name: 'Allowed quick reply length',
-      description:
-          `Allowed length of quick replies. Longer messages will refuse to send.`,
-      default: 280,
-      type: 'number',
-    },
-    {
       key: ServerStorage.KEYS.ALLOWED_PIN_COUNT,
       name: 'Allowed pins',
       description:
