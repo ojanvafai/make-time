@@ -31,8 +31,8 @@ export class QuickReply extends HTMLElement {
   private compose_: EmailCompose;
   private replyType_: HTMLSelectElement;
   private senders_?: HTMLSelectElement;
-  private progress_: RadialProgress;
-  private count_: HTMLElement;
+  private progress_?: RadialProgress;
+  private count_?: HTMLElement;
 
   constructor(
       public thread: Thread, private allowedReplyLength_: number,
@@ -81,16 +81,6 @@ export class QuickReply extends HTMLElement {
       }
     }
 
-    this.progress_ = new RadialProgress(true);
-    this.progress_.addToTotal(this.allowedReplyLength_);
-
-    this.count_ = document.createElement('button');
-    this.count_.style.cssText = `
-      color: red;
-      display: none;
-    `;
-    this.count_.addEventListener('click', () => this.handleAllowMore_());
-
     let cancel = document.createElement('button');
     cancel.textContent = 'cancel';
     cancel.onclick = () => this.dispatchEvent(new ReplyCloseEvent());
@@ -105,7 +95,21 @@ export class QuickReply extends HTMLElement {
     `;
     if (this.senders_)
       controls.append(this.senders_);
-    controls.append(this.replyType_, cancel, this.count_, this.progress_);
+    controls.append(this.replyType_, cancel);
+
+    if (this.allowedReplyLength_) {
+      this.progress_ = new RadialProgress(true);
+      this.progress_.addToTotal(this.allowedReplyLength_);
+
+      this.count_ = document.createElement('button');
+      this.count_.style.cssText = `
+        color: red;
+        display: none;
+      `;
+      this.count_.addEventListener('click', () => this.handleAllowMore_());
+
+      controls.append(this.count_, this.progress_);
+    }
 
     this.append(this.compose_, controls);
   }
@@ -128,6 +132,9 @@ export class QuickReply extends HTMLElement {
   }
 
   private updateProgress_() {
+    if (!this.progress_ || !this.count_)
+      return;
+
     let textLength = this.compose_.plainText.length;
     this.progress_.setProgress(textLength);
     let lengthDiff = this.allowedReplyLength_ - textLength;
@@ -146,7 +153,7 @@ export class QuickReply extends HTMLElement {
             `Yes, this is annoying on purpose to help you resist the verbosity urge! Still want to move forward`) &&
         confirm(`Last one! You sure?`)) {
       alert(`JK lol. Ok...really last one now. Enjoy!`);
-      this.progress_.addToTotal(this.allowedReplyLength_);
+      defined(this.progress_).addToTotal(this.allowedReplyLength_);
       this.allowedReplyLength_ += this.allowedReplyLength_;
       this.updateProgress_();
     }
@@ -157,7 +164,7 @@ export class QuickReply extends HTMLElement {
     if (!textLength)
       return;
 
-    if (textLength > this.allowedReplyLength_) {
+    if (this.allowedReplyLength_ && textLength > this.allowedReplyLength_) {
       alert(`Email is longer than the allowed length of ${
           this.allowedReplyLength_} characters. Allowed length is configurable in Settings.`);
       return;

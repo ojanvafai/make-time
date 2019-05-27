@@ -32,6 +32,10 @@ export class TriageModel extends ThreadListModel {
     return model.getEventsWithoutLocalRoom(offices);
   }
 
+  allowedReplyLength() {
+    return this.settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
+  }
+
   defaultCollapsedState(groupName: string) {
     let queue = this.settings_.getQueueSettings().get(groupName).queue;
     return QueueSettings.WEEKDAYS.includes(queue) ||

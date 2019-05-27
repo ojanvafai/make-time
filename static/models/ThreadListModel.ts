@@ -53,6 +53,11 @@ export abstract class ThreadListModel extends Model {
   protected abstract compareThreads(a: Thread, b: Thread): number;
   abstract getGroupName(thread: Thread): string;
 
+  // 0 is a special value for infinite.
+  allowedReplyLength() {
+    return 0;
+  }
+
   async getNoMeetingRoomEvents() {
     return [] as CalendarEvent[];
   }

@@ -179,7 +179,6 @@ registerActions('Triage or Todo', [
 
 export class ThreadListView extends View {
   private timerDuration_: number;
-  private allowedReplyLength_: number;
   private modelListeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
@@ -209,8 +208,6 @@ export class ThreadListView extends View {
     `;
 
     this.timerDuration_ = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
-    this.allowedReplyLength_ =
-        settings_.get(ServerStorage.KEYS.ALLOWED_REPLY_LENGTH);
 
     this.modelListeners_ = [];
     this.threadToRow_ = new WeakMap();
@@ -919,7 +916,7 @@ export class ThreadListView extends View {
 
   async showQuickReply() {
     let reply = new QuickReply(
-        notNull(this.renderedRow_).thread, this.allowedReplyLength_,
+        notNull(this.renderedRow_).thread, this.model_.allowedReplyLength(),
         await SendAs.getDefault());
     reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActions_());
 
