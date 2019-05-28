@@ -3,7 +3,7 @@ export class Timer extends HTMLElement {
   timeDisplay_: HTMLElement;
   timerButton_: HTMLElement;
   timerKey_: number|null = null;
-  timeLeft_: number = 0;
+  startTime_: number = 0;
   overlay_: HTMLElement|null = null;
 
   constructor(
@@ -46,7 +46,7 @@ export class Timer extends HTMLElement {
 
   visibilityChanged(isHidden: boolean) {
     if (!isHidden) {
-      this.nextTick_();
+      this.render_();
       return;
     }
     this.clearTimer_();
@@ -61,9 +61,9 @@ export class Timer extends HTMLElement {
 
   restartTimer_() {
     this.clearOverlay_();
-    this.timeLeft_ = this.countDown_ ? this.duration_ : 0;
+    this.startTime_ = Date.now();
     this.clearTimer_();
-    this.nextTick_();
+    this.render_();
   }
 
   clearOverlay_() {
@@ -117,49 +117,50 @@ export class Timer extends HTMLElement {
     this.overlayContainer_.append(this.overlay_);
   }
 
-  async nextTick_() {
+  async render_() {
     if (this.overlay_)
       return;
 
-    let timeLeft = this.timeLeft_;
+    let timeExpiredSec = Math.floor((Date.now() - this.startTime_) / 1000);
 
-    if (this.countDown_ && timeLeft == 0) {
+    if (this.countDown_ && timeExpiredSec > this.duration_) {
       this.timeDisplay_.textContent = '';
+      this.timeDisplay_.style.animation = '';
       this.showOverlay_();
       return;
     }
 
     this.timeDisplay_.style.opacity = '1';
 
+    let newText;
+    let newColor;
     if (this.countDown_) {
-      this.timeLeft_--;
+      let timeLeft = this.duration_ - timeExpiredSec;
       if (timeLeft > 30) {
-        this.timeDisplay_.style.color = '#ddd';
+        newColor = '#ddd';
       } else if (timeLeft > 9) {
-        this.timeDisplay_.style.color = 'black';
-      } else if (timeLeft === 0) {
-        this.timeDisplay_.style.animation = '';
+        newColor = 'black';
       } else {
-        this.timeDisplay_.style.color = 'red';
+        newColor = 'red';
         window.setTimeout(() => this.timeDisplay_.style.opacity = '0', 500);
       }
+      newText = String(timeLeft);
     } else {
-      this.timeLeft_++;
-      if (timeLeft > 5) {
-        this.timeDisplay_.style.color = 'red';
-      } else if (timeLeft > 2) {
-        this.timeDisplay_.style.color = 'black';
+      let timeExpiredMin = Math.floor(timeExpiredSec / 60);
+      if (timeExpiredMin > 5) {
+        newColor = 'red';
+      } else if (timeExpiredMin > 2) {
+        newColor = 'black';
       } else {
-        this.timeDisplay_.style.color = '#ddd';
+        newColor = '#ddd';
       }
+      newText = timeExpiredMin ? `${timeExpiredMin} min` : '';
     }
 
-    this.timeDisplay_.textContent = this.countDown_ ?
-        String(timeLeft) :
-        (timeLeft ? `${timeLeft} min` : '');
-
+    this.timeDisplay_.style.color = newColor;
+    this.timeDisplay_.textContent = newText;
     this.timerKey_ = window.setTimeout(
-        this.nextTick_.bind(this), this.countDown_ ? 1000 : 60000);
+        this.render_.bind(this), this.countDown_ ? 1000 : 60000);
   }
 }
 
