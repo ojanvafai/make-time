@@ -48,11 +48,8 @@ export class TodoModel extends ThreadListModel {
     if (!priority)
       return false;
 
-    // Always show pinned threads even if there's a vacation
-    if (priority === Priority.Pin)
-      return true;
-
-    if (this.vacation_ && priority !== Priority.MustDo)
+    if (this.vacation_ && priority !== Priority.MustDo &&
+        priority !== Priority.Pin)
       return false;
 
     return super.shouldShowThread(thread);
