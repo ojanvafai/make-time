@@ -11,9 +11,13 @@ import {ThreadListModel} from './ThreadListModel.js';
 export const RETRIAGE_LABEL_NAME = 'Retriage';
 
 export class TriageModel extends ThreadListModel {
-  constructor(private settings_: Settings) {
+  private offices_?: string;
+
+  constructor(private settings_: Settings, offices?: string) {
     super();
     this.timerCountsDown = true;
+    this.offices_ =
+        offices || this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
     this.setQuery(
@@ -21,7 +25,8 @@ export class TriageModel extends ThreadListModel {
   }
 
   async getNoMeetingRoomEvents() {
-    let offices = this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
+    if (!this.offices_)
+      return [];
 
     let end = new Date();
     end.setDate(end.getDate() + 28);
@@ -29,7 +34,7 @@ export class TriageModel extends ThreadListModel {
     let model = new Calendar(this.settings_, new Date(), end);
     await model.init();
 
-    return model.getEventsWithoutLocalRoom(offices);
+    return model.getEventsWithoutLocalRoom(this.offices_);
   }
 
   defaultCollapsedState(groupName: string) {

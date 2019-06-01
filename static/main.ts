@@ -33,7 +33,7 @@ if (!navigator.userAgent.includes('Mobile'))
 let currentView_: View;
 let appShell_: AppShell;
 
-const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'label', 'days'];
+const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'label', 'days', 'offices'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 let longTasks_: LongTasks;
@@ -132,7 +132,7 @@ async function createModel(viewType: VIEW, params?: any) {
       return todoModel;
 
     case VIEW.Triage:
-      let triageModel = await getTriageModel();
+      let triageModel = await getTriageModel(params.offices);
       triageModel.setViewFilters(params.label, params.days);
       return triageModel;
 
@@ -250,9 +250,9 @@ async function getSkimModel() {
 }
 
 let triageModel_: TriageModel|undefined;
-async function getTriageModel() {
+async function getTriageModel(offices?: string) {
   if (!triageModel_)
-    triageModel_ = new TriageModel(await getSettings());
+    triageModel_ = new TriageModel(await getSettings(), offices);
   return triageModel_;
 }
 
@@ -291,7 +291,8 @@ document.body.addEventListener(ViewFiltersChangedEvent.NAME, async (e) => {
   resetModels();
   // TODO: Properly handle if there are existing query parameters.
   await router.run(
-      window.location.pathname + `?label=${event.label}&days=${event.days}`);
+      window.location.pathname +
+      `?label=${event.label}&days=${event.days}&offices=${event.offices}`);
 });
 
 async function onLoad() {

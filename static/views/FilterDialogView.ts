@@ -1,4 +1,5 @@
 import {assert, defined, notNull, showDialog} from '../Base.js';
+import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
 import {SettingsView} from './SettingsView.js';
@@ -18,7 +19,8 @@ const QUERY_PARAMS = ['label', 'days'];
 
 export class ViewFiltersChanged extends Event {
   static NAME = 'view-filters-changed';
-  constructor(public label: string, public days: string) {
+  constructor(
+      public label: string, public days: string, public offices: string) {
     super(ViewFiltersChanged.NAME, {bubbles: true});
   }
 }
@@ -41,14 +43,16 @@ export class FilterDialogView extends View {
 
     if (this.queryParameters_) {
       let daysElement =
-        this.querySelector(`input[key=${DAYS_TO_SHOW_SETTING.key}]`) as
-        HTMLInputElement;
+          this.querySelector(`input[key=${DAYS_TO_SHOW_SETTING.key}]`) as
+          HTMLInputElement;
       daysElement.value = this.queryParameters_.days;
     }
 
     this.label_ = document.createElement('tr');
     this.container_.append(this.label_);
     this.appendLabelSelect_();
+
+    this.appendOffices_();
 
     let cancel = document.createElement('button');
     cancel.append('cancel');
@@ -78,6 +82,34 @@ export class FilterDialogView extends View {
 
   static containsFilterParameter(params?: {[property: string]: string}) {
     return params && QUERY_PARAMS.some(x => x in params);
+  }
+
+  private appendOffices_() {
+    let offices = this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
+    if (!offices || !offices.includes(','))
+      return;
+
+    let officesRow = document.createElement('tr');
+    officesRow.toggleAttribute('offices');
+    this.container_.append(officesRow);
+
+    let name = document.createElement('td');
+    name.append('Local offices');
+    let officesCell = document.createElement('td');
+    officesRow.append(name, officesCell);
+
+    let parts = (offices as string).split(',').map(x => x.trim());
+    for (let part of parts) {
+      let checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = !this.queryParameters_ ||
+          !this.queryParameters_.offices ||
+          this.queryParameters_.offices.split(',').some(x => x.trim() === part);
+
+      let office = document.createElement('div');
+      office.append(checkbox, part);
+      officesCell.append(office);
+    }
   }
 
   private async appendLabelSelect_() {
@@ -119,7 +151,18 @@ export class FilterDialogView extends View {
         HTMLInputElement;
     let days = daysElement.value;
 
-    this.dispatchEvent(new ViewFiltersChanged(label, days));
+    let officesElements = Array.from(
+        this.querySelectorAll(`[offices] input`) as
+        NodeListOf<HTMLInputElement>);
+
+    let offices = '';
+    let checkedOffices = officesElements.filter(x => x.checked);
+    if (officesElements.length !== checkedOffices.length) {
+      offices =
+          checkedOffices.map(x => notNull(x.nextSibling).textContent).join(',');
+    }
+
+    this.dispatchEvent(new ViewFiltersChanged(label, days, offices));
     this.close_();
   }
 
