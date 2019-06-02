@@ -153,6 +153,7 @@ export class CalendarFiltersView extends HTMLElement {
     this.append(scrollable);
 
     let helpButton = document.createElement('button');
+    helpButton.className = 'mktime-button';
     helpButton.style.cssText = `margin-right: auto`;
     helpButton.append('Help');
     helpButton.onclick = () => {
@@ -160,10 +161,12 @@ export class CalendarFiltersView extends HTMLElement {
     };
 
     let cancel = document.createElement('button');
+    cancel.className = 'mktime-button';
     cancel.append('cancel');
     cancel.onclick = () => this.cancel_();
 
     let save = document.createElement('button');
+    save.className = 'mktime-button';
     save.append('save');
     save.onclick = () => this.save_();
 

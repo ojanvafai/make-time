@@ -1,5 +1,6 @@
 import {Action} from './Actions.js';
 import {assert} from './Base.js';
+import {TinyDatePicker} from './third_party/tiny-date-picker/DatePicker.js';
 import {BACKLOG_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, Thread, URGENT_PRIORITY_NAME} from './Thread.js';
 
 export let ARCHIVE_ACTION = {
@@ -97,12 +98,20 @@ export let BLOCKED_30D_ACTION = {
   hidden: true,
 };
 
+export let BLOCKED_CUSTOM_ACTION = {
+  name: 'Custom',
+  description: `Block on action from someone else. Pick a date to retriage.`,
+  key: '0',
+  hidden: true,
+}
+
 export let BLOCKED_BUTTONS = [
   BLOCKED_1D_ACTION,
   BLOCKED_2D_ACTION,
   BLOCKED_7D_ACTION,
   BLOCKED_14D_ACTION,
   BLOCKED_30D_ACTION,
+  BLOCKED_CUSTOM_ACTION,
 ];
 
 function destinationToPriority(destination: Action) {
@@ -136,19 +145,31 @@ export async function takeAction(
         return await thread.archive();
 
       case BLOCKED_1D_ACTION:
-        return await thread.setBlocked(1, moveToInboxAgain);
+        return await thread.setBlockedDays(1, moveToInboxAgain);
 
       case BLOCKED_2D_ACTION:
-        return await thread.setBlocked(2, moveToInboxAgain);
+        return await thread.setBlockedDays(2, moveToInboxAgain);
 
       case BLOCKED_7D_ACTION:
-        return await thread.setBlocked(7, moveToInboxAgain);
+        return await thread.setBlockedDays(7, moveToInboxAgain);
 
       case BLOCKED_14D_ACTION:
-        return await thread.setBlocked(14, moveToInboxAgain);
+        return await thread.setBlockedDays(14, moveToInboxAgain);
 
       case BLOCKED_30D_ACTION:
-        return await thread.setBlocked(30, moveToInboxAgain);
+        return await thread.setBlockedDays(30, moveToInboxAgain);
+
+      case BLOCKED_CUSTOM_ACTION:
+        let datePicker = new TinyDatePicker({mode: 'dp-modal'});
+        return new Promise((resolve) => {
+          // TODO: Handle the case where the date picker is closed without
+          // selecting a date.
+          datePicker.addEventListener('select', async () => {
+            await thread.setBlocked(
+                datePicker.state.selectedDate, moveToInboxAgain);
+            resolve();
+          });
+        });
 
       case MUTE_ACTION:
         return await thread.setMuted();

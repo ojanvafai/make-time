@@ -85,12 +85,14 @@ export class SettingsView extends View {
     this.scrollable_.append(calendarSortContainer);
 
     let helpButton = document.createElement('button');
+    helpButton.className = 'mktime-button';
     helpButton.append('Help');
     helpButton.onclick = () => {
       new HelpDialog(HELP_TEXT);
     };
 
     this.saveButton_ = document.createElement('button');
+    this.saveButton_.className = 'mktime-button';
     this.saveButton_.append('Save Changes');
     this.saveButton_.disabled = true;
     this.saveButton_.onclick = () => this.save_();

@@ -233,7 +233,7 @@ export class Thread extends EventTarget {
   async archive(archivedByFilter?: boolean) {
     // TODO: Take into account the repeat pattern. This assumes daily.
     if (this.hasRepeat()) {
-      this.setBlocked(1);
+      this.setBlockedDays(1);
       return;
     }
 
@@ -284,15 +284,20 @@ export class Thread extends EventTarget {
     return await this.updateMetadata(update);
   }
 
-  async setBlocked(days: number, moveToInbox?: boolean) {
+  async setBlocked(date: Date, moveToInbox?: boolean) {
     let update = this.keepInInboxMetadata_(moveToInbox);
+    update.blocked = date.getTime();
+    return await this.updateMetadata(update);
+  }
+
+  async setBlockedDays(days: number, moveToInbox?: boolean) {
     let date = new Date();
     // Set the time to midnight to ensure consistency since we only care about
     // day boundaries.
     date.setHours(0, 0, 0);
     date.setDate(date.getDate() + days);
-    update.blocked = date.getTime();
-    return await this.updateMetadata(update);
+
+    return await this.setBlocked(date, moveToInbox);
   }
 
   async setOnlySkimmed() {

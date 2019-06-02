@@ -25,6 +25,7 @@ class Logger extends HTMLElement {
     this.append(this.messageContainer_);
 
     let ok = document.createElement('button');
+    ok.className = 'mktime-button';
     ok.append('Close');
     ok.onclick = () => this.close_();
 

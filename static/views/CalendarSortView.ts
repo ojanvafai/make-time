@@ -94,6 +94,7 @@ export class CalendarSortView extends HTMLElement {
     }
 
     let button = document.createElement('button');
+    button.className = 'mktime-button';
     button.style.alignSelf = 'center';
     button.append('Reset to defaults');
     button.addEventListener('click', () => {

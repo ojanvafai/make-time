@@ -27,6 +27,7 @@ export class HelpDialog extends HTMLElement {
     container.append(help);
 
     let close = document.createElement('button');
+    close.className = 'mktime-button';
     close.append('close');
     close.onclick = () => dialog.close();
 

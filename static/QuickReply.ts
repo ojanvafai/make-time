@@ -81,6 +81,7 @@ export class QuickReply extends HTMLElement {
     }
 
     let cancel = document.createElement('button');
+    cancel.className = 'mktime-button';
     cancel.textContent = 'cancel';
     cancel.onclick = () => this.dispatchEvent(new ReplyCloseEvent());
 

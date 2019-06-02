@@ -109,6 +109,7 @@ export class Actions extends HTMLElement {
         continue;
 
       let button = document.createElement('button');
+      button.className = 'mktime-button';
       button.style.cssText = `
         white-space: nowrap;
         overflow: hidden;

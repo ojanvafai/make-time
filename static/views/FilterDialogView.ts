@@ -57,10 +57,12 @@ export class FilterDialogView extends View {
     this.appendFinalVersion_();
 
     let cancel = document.createElement('button');
+    cancel.className = 'mktime-button';
     cancel.append('cancel');
     cancel.addEventListener('click', () => this.close_());
 
     this.saveButton_ = document.createElement('button');
+    this.saveButton_.className = 'mktime-button';
     this.saveButton_.append('save');
     this.saveButton_.addEventListener('click', () => this.save_());
     this.saveButton_.disabled = true;

@@ -368,6 +368,7 @@ function reloadSoon() {
   container.append(
       'A new version of maketime is available. This window will reload in 60 seconds.');
   let close = document.createElement('button');
+  close.className = 'mktime-button';
   close.append('close');
   close.onclick = () => dialog.close();
 
