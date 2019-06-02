@@ -28,6 +28,10 @@ export enum ReplyType {
   Forward = 'forward',
 }
 
+interface Repeat {
+  type: number;
+}
+
 // Keep ThreadMetadataUpdate and ThreadMetadataKeys in sync with any changes
 // here.
 export interface ThreadMetadata {
@@ -37,6 +41,7 @@ export interface ThreadMetadata {
   retriageTimestamp?: number;
   priorityId?: number;
   labelId?: number;
+  repeat?: Repeat;
   needsRetriage?: boolean;
   // These booleans are so we can query for things that have a label but still
   // orderBy timestamp. We can just priorityId>0 because firestore doesn't
@@ -66,6 +71,7 @@ export interface ThreadMetadataUpdate {
   retriageTimestamp?: number|firebase.firestore.FieldValue;
   priorityId?: number|firebase.firestore.FieldValue;
   labelId?: number|firebase.firestore.FieldValue;
+  repeat?: Repeat|firebase.firestore.FieldValue;
   needsRetriage?: boolean|firebase.firestore.FieldValue;
   hasLabel?: boolean|firebase.firestore.FieldValue;
   hasPriority?: boolean|firebase.firestore.FieldValue;
@@ -89,6 +95,7 @@ export enum ThreadMetadataKeys {
   retriageTimestamp = 'retriageTimestamp',
   priorityId = 'priorityId',
   labelId = 'labelId',
+  repeat = 'repeat',
   needsRetriage = 'needsRetriage',
   hasLabel = 'hasLabel',
   hasPriority = 'hasPriority',
@@ -119,6 +126,11 @@ export enum Priority {
   Urgent = 3,
   Backlog = 4,
   Pin = 5,
+}
+
+// The number values get stored in firestore, so should never be changed.
+export enum RepeatType {
+  Daily = 1,
 }
 
 export const NEEDS_FILTER_PRIORITY_NAME = 'Filter';
@@ -219,6 +231,12 @@ export class Thread extends EventTarget {
   }
 
   async archive(archivedByFilter?: boolean) {
+    // TODO: Take into account the repeat pattern. This assumes daily.
+    if (this.hasRepeat()) {
+      this.setBlocked(1);
+      return;
+    }
+
     let update = this.removeFromInboxMetadata_();
     if (archivedByFilter)
       update.archivedByFilter = true;
@@ -226,6 +244,11 @@ export class Thread extends EventTarget {
   }
 
   async setMuted() {
+    if (this.hasRepeat()) {
+      alert('Cannot mute a repeating item.');
+      return;
+    }
+
     let update = this.removeFromInboxMetadata_();
     update.muted = true;
     return await this.updateMetadata(update);
@@ -279,6 +302,21 @@ export class Thread extends EventTarget {
   async setOnlyLabel(label: string) {
     return await this.updateMetadata(
         {labelId: await this.queueNames_.getId(label)});
+  }
+
+  async toggleRepeat() {
+    let current = this.metadata_.repeat;
+    let newRepeat;
+    if (current) {
+      newRepeat = firebase.firestore.FieldValue.delete();
+    } else {
+      newRepeat = {type: RepeatType.Daily};
+    }
+    this.updateMetadata({repeat: newRepeat});
+  }
+
+  hasRepeat() {
+    return !!this.metadata_.repeat;
   }
 
   skimmed() {

@@ -168,7 +168,7 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
     case VIEW.Todo:
       return new ThreadListView(
           <TodoModel>model, appShell_, await getSettings(), '/triage',
-          'Back to Triaging', true);
+          'Back to Triaging', true, false, true);
 
     case VIEW.Triage:
       return new ThreadListView(

@@ -51,6 +51,12 @@ export let SKIM_ACTION = {
       `Mare thread skimmed. Skimmed threads show in the Triage view, but not the Skim view.`,
 };
 
+export let REPEAT_ACTION = {
+  name: 'Repeats',
+  description: `Makes this task repeat daily.`,
+  key: 't',
+};
+
 export let BLOCKED_1D_ACTION = {
   name: '1 day',
   description:
@@ -123,6 +129,9 @@ export async function takeAction(
     return await thread.setPriority(priority, moveToInboxAgain);
   } else {
     switch (destination) {
+      case REPEAT_ACTION:
+        return await thread.toggleRepeat();
+
       case ARCHIVE_ACTION:
         return await thread.archive();
 

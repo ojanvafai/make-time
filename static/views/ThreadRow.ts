@@ -62,7 +62,7 @@ class RowState {
       public subject: string, public snippet: string, public from: string,
       public count: number, public lastMessageId: string, public group: string,
       public label: string|null, public priority: string|null,
-      public blocked: Date|null) {}
+      public blocked: Date|null, public hasRepeat: boolean) {}
 
   equals(other: RowState) {
     return this.subject === other.subject && this.snippet === other.snippet &&
@@ -72,7 +72,8 @@ class RowState {
         this.priority === other.priority &&
         (this.blocked === other.blocked ||
          this.blocked && other.blocked &&
-             this.blocked.getTime() === other.blocked.getTime());
+             this.blocked.getTime() === other.blocked.getTime()) &&
+        this.hasRepeat === other.hasRepeat;
   }
 }
 
@@ -225,7 +226,7 @@ export class ThreadRow extends HTMLElement {
         this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
         messageIds.length, messageIds[messageIds.length - 1],
         this.getGroup().name, this.thread.getLabel(), this.thread.getPriority(),
-        blockedDate);
+        blockedDate, this.thread.hasRepeat());
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -332,8 +333,19 @@ export class ThreadRow extends HTMLElement {
     snippet.innerHTML = state.snippet;
     title.append(state.subject || '\xa0', snippet);
 
+    let repeat;
+    if (state.hasRepeat) {
+      repeat = document.createElement('div')
+      repeat.textContent = '\u{1F501}';
+      repeat.style.marginRight = '4px';
+    }
+
     let date = document.createElement('div');
     date.textContent = this.dateString_(this.thread.getDate());
+    date.style.cssText = `
+      width: 4.5em;
+      text-align: right;
+    `
 
     let popoutButton = new ViewInGmailButton();
     popoutButton.setMessageId(state.lastMessageId);
@@ -349,7 +361,10 @@ export class ThreadRow extends HTMLElement {
 
       let topRow = document.createElement('div');
       topRow.style.display = 'flex';
-      topRow.append(fromContainer, date, popoutButton);
+      topRow.append(fromContainer);
+      if (repeat)
+        topRow.append(repeat);
+      topRow.append(date, popoutButton);
       this.messageDetails_.append(topRow, title);
 
       this.messageDetails_.style.flexDirection = 'column';
@@ -358,7 +373,10 @@ export class ThreadRow extends HTMLElement {
       title.style.margin = '5px 5px 0 5px';
     } else {
       this.messageDetails_.style.alignItems = 'center';
-      this.messageDetails_.append(fromContainer, title, date, popoutButton);
+      this.messageDetails_.append(fromContainer, title);
+      if (repeat)
+        this.messageDetails_.append(repeat);
+      this.messageDetails_.append(date, popoutButton);
     }
   }
 

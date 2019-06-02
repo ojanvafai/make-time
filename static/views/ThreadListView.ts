@@ -11,7 +11,7 @@ import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {BLOCKED_LABEL_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, SKIM_ACTION, URGENT_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, REPEAT_ACTION, SKIM_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -174,6 +174,7 @@ let RENDER_ONE_ACTIONS = [
 registerActions('Triage or Todo', [
   ...BASE_ACTIONS,
   ...SORT_ACTIONS,
+  REPEAT_ACTION,
   ...RENDER_ALL_ACTIONS,
   ...RENDER_ONE_ACTIONS,
 ]);
@@ -200,7 +201,8 @@ export class ThreadListView extends View {
       private model_: ThreadListModel, private appShell_: AppShell,
       private settings_: Settings, bottomButtonUrl?: string,
       bottomButtonText?: string, private includeSortActions_?: boolean,
-      private includeSkimAction_?: boolean) {
+      private includeSkimAction_?: boolean,
+      private includeRepeatAction_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -366,9 +368,11 @@ export class ThreadListView extends View {
     let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
     let skimButton = this.includeSkimAction_ ? [SKIM_ACTION] : [];
+    let repeat = this.includeRepeatAction_ ? [REPEAT_ACTION] : [];
 
-    this.setActions(
-        [...skimButton, ...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
+    this.setActions([
+      ...skimButton, ...BASE_ACTIONS, ...viewSpecific, ...sortActions, ...repeat
+    ]);
 
     if (this.renderedRow_)
       this.addTimer_();
@@ -762,11 +766,16 @@ export class ThreadListView extends View {
   }
 
   private async markTriaged_(destination: Action) {
+    // REPEAT_ACTION doesn't cause the row to move around, so don't remove the
+    // row.
+    let keepRows = destination === REPEAT_ACTION;
+
     if (this.renderedRow_) {
       // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in
       // some cases.
       let row = this.renderedRow_;
-      this.handleRowsRemoved_([row], this.getRows_());
+      if (!keepRows)
+        this.handleRowsRemoved_([row], this.getRows_());
       await this.model_.markSingleThreadTriaged(row.thread, destination);
     } else {
       let threads: Thread[] = [];
@@ -779,6 +788,10 @@ export class ThreadListView extends View {
           if (child == this.focusedRow_)
             focusedRowIsSelected = true;
           threads.push(child.thread);
+
+          if (keepRows)
+            continue;
+
           // ThreadRows get recycled, so clear the checked and focused state
           // for future use.
           child.resetState();
@@ -810,7 +823,7 @@ export class ThreadListView extends View {
       // Move focus to the first unselected email. If we aren't able to find
       // an unselected email, focusedEmail_ should end up null, so set it even
       // if firstUnselectedRowAfterSelected is null.
-      if (focusedRowIsSelected)
+      if (!keepRows && focusedRowIsSelected)
         this.setFocus_(firstUnselectedRowAfterFocused);
 
       await this.model_.markThreadsTriaged(threads, destination);
