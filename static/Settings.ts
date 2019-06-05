@@ -236,7 +236,7 @@ export class Settings extends EventTarget {
       name: 'Triage countdown timer',
       description:
           `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
-      default: 60,
+      default: 120,
       type: 'number',
     },
     {
