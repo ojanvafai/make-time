@@ -101,8 +101,11 @@ export class CalendarEvent {
       return false;
 
     let attendees = assert(this.attendees);
+    // Intentionally check for !declined instead of accepted so that newly
+    // booked rooms will count as accepted until they have either been declined
+    // or accepted.
     let hasLocalRoom = attendees.some(
-        x => x.resource && x.responseStatus === 'accepted' &&
+        x => x.resource && x.responseStatus !== 'declined' &&
             offices.some(y => defined(x.displayName).includes(y)));
 
     // For BIG meetings where rooms aren't visible as guests. Only do this
