@@ -1,7 +1,7 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {compareDates, defined, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
-import {MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
@@ -13,7 +13,7 @@ export class TodoModel extends ThreadListModel {
   constructor(
       private vacation_: string, private allowedPinCount_: number,
       private allowedMustDoCount_: number,
-      private allowedUrgentCount_: number) {
+      private allowedUrgentCount_: number, private finalVersion_?: boolean) {
     super(true);
     this.sortCount_ = 0;
 
@@ -56,12 +56,12 @@ export class TodoModel extends ThreadListModel {
   }
 
   defaultCollapsedState(groupName: string) {
-    return groupName !== MUST_DO_PRIORITY_NAME &&
-        groupName !== URGENT_PRIORITY_NAME &&
-        groupName !== NEEDS_FILTER_PRIORITY_NAME;
+    return groupName === BACKLOG_PRIORITY_NAME;
   }
 
   getGroupName(thread: Thread) {
+    if (this.finalVersion_)
+      return 'Final version';
     return notNull(thread.getPriority());
   }
 
@@ -105,6 +105,9 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected compareThreads(a: Thread, b: Thread) {
+    if (this.finalVersion_)
+      return compareDates(b.getLastTriagedDate(), a.getLastTriagedDate());
+
     let aPriority = defined(a.getPriorityId());
     let bPriority = defined(b.getPriorityId());
 

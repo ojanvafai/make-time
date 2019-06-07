@@ -33,7 +33,8 @@ if (!navigator.userAgent.includes('Mobile'))
 let currentView_: View;
 let appShell_: AppShell;
 
-const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'label', 'days', 'offices'];
+const UNIVERSAL_QUERY_PARAMETERS =
+    ['bundle', 'label', 'days', 'offices', 'finalVersion'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 let longTasks_: LongTasks;
@@ -127,7 +128,7 @@ async function createModel(viewType: VIEW, params?: any) {
       return new TrackingModel();
 
     case VIEW.Todo:
-      let todoModel = await getTodoModel();
+      let todoModel = await getTodoModel(params.finalVersion === 'true');
       todoModel.setViewFilters(params.label, params.days);
       return todoModel;
 
@@ -257,14 +258,14 @@ async function getTriageModel(offices?: string) {
 }
 
 let todoModel_: TodoModel|undefined;
-async function getTodoModel() {
+async function getTodoModel(finalVersion?: boolean) {
   if (!todoModel_) {
     let settings = await getSettings();
     todoModel_ = new TodoModel(
         settings.get(ServerStorage.KEYS.VACATION),
         settings.get(ServerStorage.KEYS.ALLOWED_PIN_COUNT),
         settings.get(ServerStorage.KEYS.ALLOWED_MUST_DO_COUNT),
-        settings.get(ServerStorage.KEYS.ALLOWED_URGENT_COUNT));
+        settings.get(ServerStorage.KEYS.ALLOWED_URGENT_COUNT), finalVersion);
   }
   return todoModel_;
 }
@@ -292,7 +293,8 @@ document.body.addEventListener(ViewFiltersChangedEvent.NAME, async (e) => {
   // TODO: Properly handle if there are existing query parameters.
   await router.run(
       window.location.pathname +
-      `?label=${event.label}&days=${event.days}&offices=${event.offices}`);
+      `?label=${event.label}&days=${event.days}&offices=${
+          event.offices}&finalVersion=${event.finalVersion}`);
 });
 
 async function onLoad() {
