@@ -69,6 +69,10 @@ export class TodoModel extends ThreadListModel {
     return groupName === PINNED_PRIORITY_NAME;
   }
 
+  showFinalVersion() {
+    return !!this.finalVersion_;
+  }
+
   allowedCount(groupName: string) {
     switch (groupName) {
       case PINNED_PRIORITY_NAME:

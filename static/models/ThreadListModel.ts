@@ -121,6 +121,10 @@ export abstract class ThreadListModel extends Model {
     return false;
   }
 
+  showFinalVersion() {
+    return false;
+  }
+
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.
   private async queueProcessSnapshot_(snapshot:

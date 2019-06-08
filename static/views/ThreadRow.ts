@@ -89,7 +89,8 @@ export class ThreadRow extends HTMLElement {
   private lastRowState_?: RowState;
 
   constructor(
-      public thread: Thread, private labelSelectTemplate_: HTMLSelectElement) {
+      public thread: Thread, showFinalVersion: boolean,
+      private labelSelectTemplate_: HTMLSelectElement) {
     super();
     this.style.cssText = `
       display: flex;
@@ -100,39 +101,30 @@ export class ThreadRow extends HTMLElement {
     this.checked_ = false;
     this.focusImpliesSelected_ = false;
 
-    let label = document.createElement('div');
-    this.label_ = label;
-    label.style.cssText = `
-      width: 40px;
-      border-right: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    `;
+    if (showFinalVersion) {
+      // TODO: Hook up event listeners and map checked state back into the model
+      // so the FV state persists across view changes.
+      this.appendCheckbox_(this.appendCheckboxContainer_());
+    }
+
+    this.label_ = this.appendCheckboxContainer_();
+    this.checkBox_ = this.appendCheckbox_(this.label_);
 
     // Pevent the default behavior of text selection on shift+click this is used
     // for range selections. Need to do it on mousedown unfortunately since
     // that's when the selection is modified on some platforms (e.g. mac).
-    label.addEventListener('mousedown', e => {
+    this.label_.addEventListener('mousedown', e => {
       if (e.shiftKey)
         e.preventDefault();
     });
-    label.addEventListener('click', e => this.select(e.shiftKey));
+    this.label_.addEventListener('click', e => this.select(e.shiftKey));
 
-    this.checkBox_ = document.createElement('input');
-    this.checkBox_.type = 'checkbox';
     // This pointer-events:none is so that clicking on the checkbox doesn't do
     // anything since we toggle the checked state ourselves. For some reason
     // e.preventDefault() on click doesn't seem to achieve the same result, but
     // couldn't actually reduce it to a small test case to file a bug.
-    this.checkBox_.style.cssText = `
-      margin-left: 5px;
-      margin-right: 5px;
-      pointer-events: none;
-    `;
-
-    label.append(this.checkBox_);
-    this.append(label);
+    this.checkBox_.style.pointerEvents = 'none';
+    this.append(this.label_);
 
     this.messageDetails_ = document.createElement('div');
     this.messageDetails_.style.cssText = `
@@ -162,6 +154,31 @@ export class ThreadRow extends HTMLElement {
     this.rendered = new RenderedThread(thread);
     thread.addEventListener(
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
+  }
+
+  private appendCheckboxContainer_() {
+    let container = document.createElement('div');
+    container.style.cssText = `
+      width: 40px;
+      border-right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    `;
+    this.append(container);
+    return container;
+  }
+
+  private appendCheckbox_(container: HTMLElement) {
+    let checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.style.cssText = `
+      margin-left: 5px;
+      margin-right: 5px;
+    `;
+
+    container.append(checkbox);
+    return checkbox;
   }
 
   select(shiftKey: boolean) {
