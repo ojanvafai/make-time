@@ -293,7 +293,8 @@ export class FiltersView extends HTMLElement {
     addButton.append('+');
     addButton.classList.add('row-button');
     addButton.onclick = async () => {
-      let emptyRule = await this.createRule_({});
+      let emptyRule =
+          await this.createRule_({label: label.selectedOptions[0].value});
       container.before(emptyRule);
     };
     buttons.append(addButton);
