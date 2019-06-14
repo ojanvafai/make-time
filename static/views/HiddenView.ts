@@ -158,7 +158,7 @@ export class HiddenView extends View {
     // arguments.
     this.threadListView_ = new ThreadListView(
         model, this.appShell_, this.settings_, undefined, undefined, false,
-        false, true);
+        true);
     this.append(this.threadListView_);
   }
 

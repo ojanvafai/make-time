@@ -3,7 +3,6 @@ import {assert, defined, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
-import {SkimModel} from '../models/SkimModel.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
@@ -11,7 +10,7 @@ import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {BLOCKED_LABEL_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, REPEAT_ACTION, SKIM_ACTION, URGENT_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -201,7 +200,6 @@ export class ThreadListView extends View {
       private model_: ThreadListModel, private appShell_: AppShell,
       private settings_: Settings, bottomButtonUrl?: string,
       bottomButtonText?: string, private includeSortActions_?: boolean,
-      private includeSkimAction_?: boolean,
       private includeRepeatAction_?: boolean) {
     super();
 
@@ -258,15 +256,20 @@ export class ThreadListView extends View {
     if (bottomButtonUrl)
       this.appendButton_(defined(bottomButtonText), bottomButtonUrl);
 
-    if (this.includeSkimAction_) {
+    if (this.model_.canDisallowViewMessages()) {
       // TODO: Use a toggle switch.
-      let button = this.appendButton_('Triage remaining');
-      button.title = 'View/respond to remaining threads like regular triage.';
-      button.addEventListener('click', () => {
-        (this.model_ as SkimModel).toggleAllowViewMessages();
+      let button = this.appendButton_('');
+      button.title = 'Override the allow view messages setting.';
+      let updateButtonText = () => {
         button.textContent = this.model_.allowViewMessages() ?
-            'Back to skimming' :
-            'Triage remaining';
+            'Disallow viewing messages' :
+            'Allow viewing messages';
+      };
+      updateButtonText();
+
+      button.addEventListener('click', () => {
+        this.model_.toggleAllowViewMessages();
+        updateButtonText();
       });
     }
 
@@ -369,12 +372,10 @@ export class ThreadListView extends View {
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
-    let skimButton = this.includeSkimAction_ ? [SKIM_ACTION] : [];
     let repeat = this.includeRepeatAction_ ? [REPEAT_ACTION] : [];
 
-    this.setActions([
-      ...skimButton, ...BASE_ACTIONS, ...viewSpecific, ...sortActions, ...repeat
-    ]);
+    this.setActions(
+        [...BASE_ACTIONS, ...viewSpecific, ...sortActions, ...repeat]);
 
     if (this.renderedRow_)
       this.addTimer_();
@@ -413,8 +414,8 @@ export class ThreadListView extends View {
     let threads = this.model_.getThreads();
     let oldRows = this.getRows_();
 
-    // This happens when an undo has happened, but the model hasn't yet seen the
-    // update from the undo.
+    // This happens when an undo has happened, but the model hasn't yet seen
+    // the update from the undo.
     if (this.renderedRow_ && !oldRows.includes(this.renderedRow_) &&
         !threads.includes(this.renderedRow_.thread))
       return;
@@ -842,8 +843,8 @@ export class ThreadListView extends View {
     this.renderedGroupName_ =
         groupName || (row ? this.model_.getGroupName(row.thread) : null);
 
-    // Technically this is async, but it's OK if this happens async with respect
-    // to the surrounding code as well.
+    // Technically this is async, but it's OK if this happens async with
+    // respect to the surrounding code as well.
     if (row)
       row.thread.markRead();
   }

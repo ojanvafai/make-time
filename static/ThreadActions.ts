@@ -46,12 +46,6 @@ export let MUTE_ACTION = {
       `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
 };
 
-export let SKIM_ACTION = {
-  name: `Skimmed`,
-  description:
-      `Mare thread skimmed. Skimmed threads show in the Triage view, but not the Skim view.`,
-};
-
 export let REPEAT_ACTION = {
   name: 'Repeats',
   description: `Makes this task repeat daily.`,
@@ -173,9 +167,6 @@ export async function takeAction(
 
       case MUTE_ACTION:
         return await thread.setMuted();
-
-      case SKIM_ACTION:
-        return await thread.setOnlySkimmed();
 
       default:
         assert(false, 'This should never happen.');

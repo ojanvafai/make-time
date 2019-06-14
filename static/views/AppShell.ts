@@ -314,7 +314,6 @@ export class AppShell extends HTMLElement {
     this.drawer_.append(
         menuTitle,
         this.createMenuItem_('Compose', {href: '/compose', nested: true}),
-        this.createMenuItem_('Skim', {href: '/skim', nested: true}),
         this.createMenuItem_('Triage', {href: '/triage', nested: true}),
         this.createMenuItem_('Todo', {href: '/todo', nested: true}),
         this.createMenuItem_('Hidden', {href: '/hidden', nested: true}),

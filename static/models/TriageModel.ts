@@ -12,6 +12,7 @@ export const RETRIAGE_LABEL_NAME = 'Retriage';
 
 export class TriageModel extends ThreadListModel {
   private offices_?: string;
+  private allowViewMessages_: boolean;
 
   constructor(private settings_: Settings, offices?: string) {
     super();
@@ -22,6 +23,21 @@ export class TriageModel extends ThreadListModel {
         firestoreUserCollection().doc('threads').collection('metadata');
     this.setQuery(
         metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true));
+
+    this.allowViewMessages_ =
+      this.settings_.get(ServerStorage.KEYS.ALLOW_VIEW_MESSAGES_IN_TRIAGE);
+  }
+
+  canDisallowViewMessages() {
+    return true;
+  }
+
+  allowViewMessages() {
+    return this.allowViewMessages_;
+  }
+
+  toggleAllowViewMessages() {
+    this.allowViewMessages_ = !this.allowViewMessages_;
   }
 
   async getNoMeetingRoomEvents() {

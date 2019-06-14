@@ -53,6 +53,16 @@ export abstract class ThreadListModel extends Model {
   protected abstract compareThreads(a: Thread, b: Thread): number;
   abstract getGroupName(thread: Thread): string;
 
+  canDisallowViewMessages() {
+    return false;
+  }
+
+  allowViewMessages() {
+    return true;
+  }
+
+  toggleAllowViewMessages() {}
+
   async getNoMeetingRoomEvents() {
     return [] as CalendarEvent[];
   }

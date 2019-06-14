@@ -76,6 +76,7 @@ interface KeyTypes {
   LAST_DEQUEUE_TIME: string;
   BACKGROUND: string;
   VACATION: string;
+  ALLOW_VIEW_MESSAGES_IN_TRIAGE: string;
   TIMER_DURATION: string;
   ALLOWED_PIN_COUNT: string;
   ALLOWED_MUST_DO_COUNT: string;
@@ -92,6 +93,7 @@ let keys: KeyTypes = {
   LAST_DEQUEUE_TIME: 'Last dequeue time',
   BACKGROUND: 'background',
   VACATION: 'vacation',
+  ALLOW_VIEW_MESSAGES_IN_TRIAGE: 'allow_view_messages_in_triage',
   TIMER_DURATION: 'timeout',
   ALLOWED_PIN_COUNT: 'allowed_pin_count',
   ALLOWED_MUST_DO_COUNT: 'allowed_must_do_count',
@@ -108,6 +110,7 @@ let keys: KeyTypes = {
 let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.BACKGROUND,
   keys.VACATION,
+  keys.ALLOW_VIEW_MESSAGES_IN_TRIAGE,
   keys.TIMER_DURATION,
   keys.ALLOWED_PIN_COUNT,
   keys.ALLOWED_MUST_DO_COUNT,
