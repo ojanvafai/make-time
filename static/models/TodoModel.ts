@@ -60,8 +60,7 @@ export class TodoModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    let priority =
-        this.finalVersion_ ? 'Final version' : notNull(thread.getPriority());
+    let priority = notNull(thread.getPriority());
     if (thread.isUnread())
       return `${priority} - unread`;
     return priority;
@@ -111,15 +110,15 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected compareThreads(a: Thread, b: Thread) {
-    if (this.finalVersion_)
-      return compareDates(b.getLastTriagedDate(), a.getLastTriagedDate());
-
     let aPriority = defined(a.getPriorityId());
     let bPriority = defined(b.getPriorityId());
 
     // Sort by priority, then by manual sort order, then by date.
     if (aPriority !== bPriority)
       return this.comparePriorities_(aPriority, bPriority);
+
+    if (this.finalVersion_)
+      return compareDates(b.getLastTriagedDate(), a.getLastTriagedDate());
 
     let sortData = this.getSortData_(aPriority);
     if (sortData) {
