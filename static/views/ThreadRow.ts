@@ -62,7 +62,8 @@ class RowState {
       public subject: string, public snippet: string, public from: string,
       public count: number, public lastMessageId: string, public group: string,
       public label: string|null, public priority: string|null,
-      public blocked: Date|null, public hasRepeat: boolean) {}
+      public blocked: Date|null, public hasRepeat: boolean,
+      public isUnread: boolean) {}
 
   equals(other: RowState) {
     return this.subject === other.subject && this.snippet === other.snippet &&
@@ -73,7 +74,7 @@ class RowState {
         (this.blocked === other.blocked ||
          this.blocked && other.blocked &&
              this.blocked.getTime() === other.blocked.getTime()) &&
-        this.hasRepeat === other.hasRepeat;
+        this.hasRepeat === other.hasRepeat && this.isUnread === other.isUnread;
   }
 }
 
@@ -222,8 +223,10 @@ export class ThreadRow extends HTMLElement {
 
   private handleThreadUpdated_() {
     this.renderRow_();
-    if (this.rendered.isRendered())
+    if (this.rendered.isRendered()) {
       this.rendered.render();
+      this.thread.markRead();
+    }
   }
 
   connectedCallback() {
@@ -243,7 +246,7 @@ export class ThreadRow extends HTMLElement {
         this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
         messageIds.length, messageIds[messageIds.length - 1],
         this.getGroup().name, this.thread.getLabel(), this.thread.getPriority(),
-        blockedDate, this.thread.hasRepeat());
+        blockedDate, this.thread.hasRepeat(), this.thread.isUnread());
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -251,6 +254,8 @@ export class ThreadRow extends HTMLElement {
       return;
 
     this.lastRowState_ = state;
+
+    this.style.fontWeight = state.isUnread ? 'bold' : '';
 
     let fromContainer = document.createElement('div');
     fromContainer.style.cssText = `

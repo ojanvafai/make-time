@@ -56,6 +56,9 @@ export interface ThreadMetadata {
   // Threads that were added back to the inbox in maketime, so syncWithGmail
   // should move them into the inbox instead of clearing their metadata.
   moveToInbox?: boolean;
+  // Count of number of messages read. We don't attempt to keep this in sync
+  // with gmail's sense of read state.
+  readCount?: number;
   countToArchive?: number;
   countToMarkRead?: number;
 }
@@ -81,6 +84,7 @@ export interface ThreadMetadataUpdate {
   muted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
   moveToInbox?: boolean|firebase.firestore.FieldValue;
+  readCount?: number|firebase.firestore.FieldValue;
   countToArchive?: number|firebase.firestore.FieldValue;
   countToMarkRead?: number|firebase.firestore.FieldValue;
 }
@@ -105,6 +109,7 @@ export enum ThreadMetadataKeys {
   muted = 'muted',
   archivedByFilter = 'archivedByFilter',
   moveToInbox = 'moveToInbox',
+  readCount = 'readCount',
   countToArchive = 'countToArchive',
   countToMarkRead = 'countToMarkRead',
 }
@@ -269,12 +274,27 @@ export class Thread extends EventTarget {
     // soon after that.
     update.retriageTimestamp = Date.now();
 
-    update.countToMarkRead = this.messageCount_();
-
     if (moveToInbox)
       update.moveToInbox = true;
 
     return update;
+  }
+
+  isUnread() {
+    // Old threads don't have a readCount since we added that field later.
+    return this.metadata_.readCount !== undefined &&
+        this.metadata_.readCount < this.metadata_.messageIds.length;
+  }
+
+  async markRead() {
+    // Old threads don't have a readCount since we added that field later.
+    if (this.metadata_.readCount === undefined ||
+        this.metadata_.readCount < this.metadata_.messageIds.length) {
+      let messageCount = this.messageCount_();
+      return await this.updateMetadata(
+          {readCount: messageCount, countToMarkRead: messageCount});
+    }
+    return {};
   }
 
   async setPriority(priority: Priority, moveToInbox?: boolean) {
@@ -460,6 +480,7 @@ export class Thread extends EventTarget {
       historyId: '',
       messageIds: [],
       timestamp: 0,
+      readCount: 0,
     } as ThreadMetadata;
     await doc.set(data);
     return data;

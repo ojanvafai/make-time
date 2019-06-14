@@ -841,6 +841,11 @@ export class ThreadListView extends View {
     // already been triaged and will no longer have a group name.
     this.renderedGroupName_ =
         groupName || (row ? this.model_.getGroupName(row.thread) : null);
+
+    // Technically this is async, but it's OK if this happens async with respect
+    // to the surrounding code as well.
+    if (row)
+      row.thread.markRead();
   }
 
   setRenderedRow_(row: ThreadRow|null, groupName?: string) {

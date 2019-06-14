@@ -27,6 +27,7 @@ export class Message {
   private plainedHtml_: string|undefined;
   private html_: string|undefined;
   private quoteElidedMessage_: QuoteElidedMessage|undefined;
+  private rawMessage_!: gapi.client.gmail.Message;
 
   id: string;
   attachments_: AttachmentResult[];
@@ -40,19 +41,21 @@ export class Message {
   bcc: string|undefined;
   messageId: string|undefined;
   listId: string|undefined;
-  isUnread: boolean;
-  isDraft: boolean;
+  isUnread!: boolean;
+  isDraft!: boolean;
 
   constructor(
-      public rawMessage: gapi.client.gmail.Message,
-      private previousMessage_?: Message) {
-    this.id = defined(rawMessage.id);
+      message: gapi.client.gmail.Message, private previousMessage_?: Message) {
+    this.id = defined(message.id);
+
+    // This is a setter that also sets isUnread and isDraft
+    this.setRawMessage(message);
 
     this.attachments_ = [];
 
     let hasDate = false;
 
-    let headers = defined(defined(rawMessage.payload).headers);
+    let headers = defined(defined(message.payload).headers);
     for (var header of headers) {
       let name = defined(header.name);
       let value = defined(header.value);
@@ -103,20 +106,27 @@ export class Message {
     // Things like chats don't have a date header. Use internalDate as per
     // https://developers.google.com/gmail/api/release-notes#2015-06-18.
     if (!hasDate)
-      this.date = new Date(Number(rawMessage.internalDate));
+      this.date = new Date(Number(message.internalDate));
+  }
 
-    let labels = defined(rawMessage.labelIds);
+  get rawMessage() {
+    return this.rawMessage_;
+  }
+
+  setRawMessage(message: gapi.client.gmail.Message) {
+    this.rawMessage_ = message;
+    let labels = defined(message.labelIds);
     this.isUnread = labels.includes('UNREAD');
     this.isDraft = labels.includes('DRAFT');
   }
 
   updateLabels(labelIds: string[]) {
-    this.rawMessage.labelIds = labelIds;
+    this.rawMessage_.labelIds = labelIds;
   }
 
   getHeaderValue(name: string) {
     name = name.toLowerCase();
-    let headers = defined(defined(this.rawMessage.payload).headers);
+    let headers = defined(defined(this.rawMessage_.payload).headers);
 
     for (var header of headers) {
       if (defined(header.name).toLowerCase().includes(name))
@@ -126,7 +136,7 @@ export class Message {
   }
 
   getLabelIds() {
-    return defined(this.rawMessage.labelIds);
+    return defined(this.rawMessage_.labelIds);
   }
 
   get parsedFrom() {
@@ -212,7 +222,7 @@ export class Message {
     // If a message has no body at all, fallback to empty string.
     this.plain_ = '';
 
-    let payload = defined(this.rawMessage.payload);
+    let payload = defined(this.rawMessage_.payload);
     if (payload.parts) {
       this.getMessageBody_(payload.parts);
     } else {

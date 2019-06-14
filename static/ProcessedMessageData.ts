@@ -41,7 +41,7 @@ export class ProcessedMessageData {
       // avoid recomputing the message body and quote diffs, just set the raw
       // message instead of fully reprocessing.
       if (i < oldMessageCount) {
-        this.messages[i].rawMessage = message;
+        this.messages[i].setRawMessage(message);
         continue;
       }
 
