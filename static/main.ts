@@ -445,20 +445,27 @@ async function doUpdate_() {
   if (!shouldUpdate_ || !navigator.onLine)
     return;
 
-  // Reload once a day at 3am to ensure people don't have excessively stale
-  // clients open.
-  let today = new Date();
-  let timeSinceNavigationStart =
-      today.getTime() - window.performance.timing.navigationStart;
-  if (timeSinceNavigationStart > ONE_DAY_MS && today.getHours() === 2)
-    reloadSoon();
-
   // update can get called before any views are setup due to visibilitychange
   // and online handlers
   let view = await getView();
   if (!view || isUpdating_)
     return;
   isUpdating_ = true;
+
+  // Reload once a day at 3am to ensure people don't have excessively stale
+  // clients open.
+  // Intentionally do this after setting isUpdating_ so that doUpdate_ getting
+  // called multiple times only calls reloadSoon once.
+  let today = new Date();
+  let timeSinceNavigationStart =
+      today.getTime() - window.performance.timing.navigationStart;
+  if (timeSinceNavigationStart > ONE_DAY_MS && today.getHours() === 2) {
+    reloadSoon();
+    // Since the application logic may change with the new version, don't
+    // proceed with the update. This lets us have confidence that old clients
+    // will reload before they do significant processing work.
+    return;
+  }
 
   try {
     await (await getMailProcessor()).process();
