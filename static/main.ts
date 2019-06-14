@@ -362,6 +362,11 @@ async function setupReloadOnVersionChange() {
 }
 
 function reloadSoon() {
+  // Prevent updates since the application logic may change with the new
+  // version. This lets us have confidence that old clients will reload before
+  // they do significant processing work.
+  preventUpdates();
+
   let dialog: HTMLDialogElement;
 
   let container = document.createElement('div');
@@ -445,17 +450,8 @@ async function doUpdate_() {
   if (!shouldUpdate_ || !navigator.onLine)
     return;
 
-  // update can get called before any views are setup due to visibilitychange
-  // and online handlers
-  let view = await getView();
-  if (!view || isUpdating_)
-    return;
-  isUpdating_ = true;
-
   // Reload once a day at 3am to ensure people don't have excessively stale
   // clients open.
-  // Intentionally do this after setting isUpdating_ so that doUpdate_ getting
-  // called multiple times only calls reloadSoon once.
   let today = new Date();
   let timeSinceNavigationStart =
       today.getTime() - window.performance.timing.navigationStart;
@@ -466,6 +462,13 @@ async function doUpdate_() {
     // will reload before they do significant processing work.
     return;
   }
+
+  // update can get called before any views are setup due to visibilitychange
+  // and online handlers
+  let view = await getView();
+  if (!view || isUpdating_)
+    return;
+  isUpdating_ = true;
 
   try {
     await (await getMailProcessor()).process();
