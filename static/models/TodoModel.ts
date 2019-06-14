@@ -1,7 +1,7 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {compareDates, defined, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
-import {MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME} from '../Thread.js';
+import {BACKLOG_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, PrioritySortOrder, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
@@ -12,8 +12,8 @@ export class TodoModel extends ThreadListModel {
 
   constructor(
       private vacation_: string, private allowedPinCount_: number,
-      private allowedMustDoCount_: number,
-      private allowedUrgentCount_: number, private finalVersion_?: boolean) {
+      private allowedMustDoCount_: number, private allowedUrgentCount_: number,
+      private finalVersion_?: boolean) {
     super(true);
     this.sortCount_ = 0;
 
@@ -118,6 +118,10 @@ export class TodoModel extends ThreadListModel {
     // Sort by priority, then by manual sort order, then by date.
     if (aPriority !== bPriority)
       return this.comparePriorities_(aPriority, bPriority);
+
+    // Sort unread items to the top of this priority.
+    if (a.isUnread() !== b.isUnread())
+      return a.isUnread() ? -1 : 1;
 
     let sortData = this.getSortData_(aPriority);
     if (sortData) {
