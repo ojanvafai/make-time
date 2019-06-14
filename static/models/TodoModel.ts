@@ -60,9 +60,11 @@ export class TodoModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    if (this.finalVersion_)
-      return 'Final version';
-    return notNull(thread.getPriority());
+    let priority =
+        this.finalVersion_ ? 'Final version' : notNull(thread.getPriority());
+    if (thread.isUnread())
+      return `${priority} - unread`;
+    return priority;
   }
 
   hideGroupControls(groupName: string) {
@@ -118,10 +120,6 @@ export class TodoModel extends ThreadListModel {
     // Sort by priority, then by manual sort order, then by date.
     if (aPriority !== bPriority)
       return this.comparePriorities_(aPriority, bPriority);
-
-    // Sort unread items to the top of this priority.
-    if (a.isUnread() !== b.isUnread())
-      return a.isUnread() ? -1 : 1;
 
     let sortData = this.getSortData_(aPriority);
     if (sortData) {
