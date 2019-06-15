@@ -50,8 +50,12 @@ export class RenderedThread extends HTMLElement {
     this.focused_ = null;
   }
 
-  isRendered() {
+  isAttached() {
     return !!this.parentNode;
+  }
+
+  isRendered() {
+    return this.isAttached() && this.style.visibility !== 'hidden';
   }
 
   showSpinner(show: boolean) {

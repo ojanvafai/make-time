@@ -862,11 +862,11 @@ export class ThreadListView extends View {
     let renderedRow = notNull(this.renderedRow_);
     let rendered = renderedRow.rendered;
     assert(
-        !rendered.isRendered() ||
+        !rendered.isAttached() ||
             rendered.parentNode == this.singleThreadContainer_,
         'Tried to rerender already rendered thread. This should never happen.');
 
-    if (!rendered.isRendered()) {
+    if (!rendered.isAttached()) {
       rendered.render();
       this.singleThreadContainer_.append(rendered);
     }
