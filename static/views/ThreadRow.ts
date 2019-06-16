@@ -271,7 +271,6 @@ export class ThreadRow extends HTMLElement {
 
     this.lastRowState_ = state;
 
-    this.style.fontWeight = state.isUnread ? 'bold' : '';
     this.style.display = state.finalVersionSkipped ? 'none' : 'flex';
 
     let fromContainer = document.createElement('div');
@@ -370,7 +369,10 @@ export class ThreadRow extends HTMLElement {
     snippet.style.color = '#666';
     // Snippet as returned by the gmail API is html escaped.
     snippet.innerHTML = state.snippet;
-    title.append(state.subject || '\xa0', snippet);
+
+    let subject = document.createElement('span');
+    subject.append(state.subject || '\xa0');
+    title.append(subject, snippet);
 
     let repeat;
     if (state.hasRepeat) {
@@ -385,6 +387,11 @@ export class ThreadRow extends HTMLElement {
       width: 4.5em;
       text-align: right;
     `
+
+    let boldState = state.isUnread ? '600' : '';
+    fromContainer.style.fontWeight = boldState;
+    subject.style.fontWeight = boldState;
+    date.style.fontWeight = boldState;
 
     let popoutButton = new ViewInGmailButton();
     popoutButton.setMessageId(state.lastMessageId);
