@@ -56,13 +56,19 @@ export class TodoModel extends ThreadListModel {
   }
 
   defaultCollapsedState(groupName: string) {
-    return groupName === BACKLOG_PRIORITY_NAME;
+    return groupName === BACKLOG_PRIORITY_NAME ||
+        groupName === this.unreadGroupName_(BACKLOG_PRIORITY_NAME);
+    ;
+  }
+
+  private unreadGroupName_(priority: string) {
+    return `${priority} - unread`;
   }
 
   getGroupName(thread: Thread) {
     let priority = notNull(thread.getPriority());
     if (thread.isUnread())
-      return `${priority} - unread`;
+      return this.unreadGroupName_(priority);
     return priority;
   }
 
@@ -116,6 +122,11 @@ export class TodoModel extends ThreadListModel {
     // Sort by priority, then by manual sort order, then by date.
     if (aPriority !== bPriority)
       return this.comparePriorities_(aPriority, bPriority);
+
+    // Sort unread items to the top of this priority. This is required so that
+    // when they are put in a separate unread group, they are all adjacent.
+    if (a.isUnread() !== b.isUnread())
+      return a.isUnread() ? -1 : 1;
 
     if (this.finalVersion_)
       return compareDates(b.getLastTriagedDate(), a.getLastTriagedDate());
