@@ -121,7 +121,11 @@ export class FilterDialogView extends View {
     this.container_.append(row);
 
     let name = document.createElement('td');
-    name.append('Final Version (alpha)');
+    let link = document.createElement('a');
+    link.href =
+        'http://markforster.squarespace.com/blog/2015/5/21/the-final-version-perfected-fvp.html';
+    link.append('Final Version (alpha)');
+    name.append(link);
     row.append(name);
 
     let checkbox = document.createElement('input');
