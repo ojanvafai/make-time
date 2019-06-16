@@ -63,7 +63,7 @@ class RowState {
       public count: number, public lastMessageId: string, public group: string,
       public label: string|null, public priority: string|null,
       public blocked: Date|null, public hasRepeat: boolean,
-      public isUnread: boolean) {}
+      public isUnread: boolean, public finalVersionSkipped: boolean) {}
 
   equals(other: RowState) {
     return this.subject === other.subject && this.snippet === other.snippet &&
@@ -74,23 +74,26 @@ class RowState {
         (this.blocked === other.blocked ||
          this.blocked && other.blocked &&
              this.blocked.getTime() === other.blocked.getTime()) &&
-        this.hasRepeat === other.hasRepeat && this.isUnread === other.isUnread;
+        this.hasRepeat === other.hasRepeat &&
+        this.isUnread === other.isUnread &&
+        this.finalVersionSkipped === other.finalVersionSkipped;
   }
 }
 
 export class ThreadRow extends HTMLElement {
-  focused_: boolean;
-  checked_: boolean;
-  focusImpliesSelected_: boolean;
+  private focused_: boolean;
+  private checked_: boolean;
+  private focusImpliesSelected_: boolean;
   rendered: RenderedThread;
   mark: boolean|undefined;
   private checkBox_: HTMLInputElement;
   private label_: HTMLElement;
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
+  private finalVersionSkipped_: boolean;
 
   constructor(
-      public thread: Thread, showFinalVersion: boolean,
+      public thread: Thread, private showFinalVersion_: boolean,
       private labelSelectTemplate_: HTMLSelectElement) {
     super();
     this.style.cssText = `
@@ -101,11 +104,15 @@ export class ThreadRow extends HTMLElement {
     this.focused_ = false;
     this.checked_ = false;
     this.focusImpliesSelected_ = false;
+    this.finalVersionSkipped_ = false;
 
-    if (showFinalVersion) {
-      // TODO: Hook up event listeners and map checked state back into the model
-      // so the FV state persists across view changes.
-      this.appendCheckbox_(this.appendCheckboxContainer_());
+    if (showFinalVersion_) {
+      let container = this.appendCheckboxContainer_();
+      let checkbox = this.appendCheckbox_(container);
+      checkbox.checked = thread.finalVersion();
+      container.addEventListener('click', async () => {
+        await this.thread.setOnlyFinalVersion(checkbox.checked);
+      });
     }
 
     this.label_ = this.appendCheckboxContainer_();
@@ -236,6 +243,11 @@ export class ThreadRow extends HTMLElement {
     this.renderRow_();
   }
 
+  setFinalVersionSkipped(value: boolean) {
+    this.finalVersionSkipped_ = value;
+    this.renderRow_();
+  }
+
   renderRow_() {
     if (!this.parentNode)
       return;
@@ -249,7 +261,8 @@ export class ThreadRow extends HTMLElement {
         this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
         messageIds.length, messageIds[messageIds.length - 1],
         this.getGroup().name, this.thread.getLabel(), this.thread.getPriority(),
-        blockedDate, this.thread.hasRepeat(), this.thread.isUnread());
+        blockedDate, this.thread.hasRepeat(), this.thread.isUnread(),
+        this.showFinalVersion_ && this.finalVersionSkipped_);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -259,6 +272,7 @@ export class ThreadRow extends HTMLElement {
     this.lastRowState_ = state;
 
     this.style.fontWeight = state.isUnread ? 'bold' : '';
+    this.style.display = state.finalVersionSkipped ? 'none' : 'flex';
 
     let fromContainer = document.createElement('div');
     fromContainer.style.cssText = `

@@ -371,6 +371,8 @@ export class ThreadListView extends View {
     let viewSpecific =
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
+    // TODO: Move this into the model so that we can have the TodoModel not show
+    // sort actions for FinalVersion mode.
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
     let repeat = this.includeRepeatAction_ ? [REPEAT_ACTION] : [];
 
@@ -438,6 +440,8 @@ export class ThreadListView extends View {
     let removedRows = oldRows.filter(x => !newRows.includes(x));
     this.handleRowsRemoved_(removedRows, oldRows);
 
+    this.updateFinalVersionRendering_();
+
     if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
       this.autoFocusedRow_ = newRows[0];
       this.setFocus_(this.autoFocusedRow_);
@@ -445,6 +449,26 @@ export class ThreadListView extends View {
 
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());
+  }
+
+  private updateFinalVersionRendering_() {
+    if (!this.model_.showFinalVersion())
+      return;
+
+    let groups =
+        Array.from(this.rowGroupContainer_.children) as ThreadRowGroup[];
+    for (let group of groups) {
+      let rows = Array.from(group.getRows()).reverse();
+      let hasHitFinalVersionRow = false;
+      for (let row of rows) {
+        if (!hasHitFinalVersionRow) {
+          hasHitFinalVersionRow = row.thread.finalVersion();
+          row.setFinalVersionSkipped(false);
+        } else {
+          row.setFinalVersionSkipped(!row.thread.finalVersion());
+        }
+      }
+    }
   }
 
   private handleRowsRemoved_(removedRows: ThreadRow[], oldRows: ThreadRow[]) {

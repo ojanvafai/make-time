@@ -52,6 +52,7 @@ export interface ThreadMetadata {
   blocked?: boolean|number;
   muted?: boolean;
   archivedByFilter?: boolean;
+  finalVersion?: boolean;
   // Threads that were added back to the inbox in maketime, so syncWithGmail
   // should move them into the inbox instead of clearing their metadata.
   moveToInbox?: boolean;
@@ -81,6 +82,7 @@ export interface ThreadMetadataUpdate {
   blocked?: boolean|number|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
+  finalVersion?: boolean|firebase.firestore.FieldValue;
   moveToInbox?: boolean|firebase.firestore.FieldValue;
   readCount?: number|firebase.firestore.FieldValue;
   countToArchive?: number|firebase.firestore.FieldValue;
@@ -105,6 +107,7 @@ export enum ThreadMetadataKeys {
   blocked = 'blocked',
   muted = 'muted',
   archivedByFilter = 'archivedByFilter',
+  finalVersion = 'finalVersion',
   moveToInbox = 'moveToInbox',
   readCount = 'readCount',
   countToArchive = 'countToArchive',
@@ -204,6 +207,7 @@ export class Thread extends EventTarget {
           blocked: firebase.firestore.FieldValue.delete(),
           muted: firebase.firestore.FieldValue.delete(),
           archivedByFilter: firebase.firestore.FieldValue.delete(),
+          finalVersion: firebase.firestore.FieldValue.delete(),
           queued: firebase.firestore.FieldValue.delete(),
           hasLabel: firebase.firestore.FieldValue.delete(),
           labelId: firebase.firestore.FieldValue.delete(),
@@ -316,6 +320,10 @@ export class Thread extends EventTarget {
     return await this.setBlocked(date, moveToInbox);
   }
 
+  async setOnlyFinalVersion(value: boolean) {
+    return await this.updateMetadata({finalVersion: value});
+  }
+
   async setOnlyLabel(label: string) {
     return await this.updateMetadata(
         {labelId: await this.queueNames_.getId(label)});
@@ -332,16 +340,20 @@ export class Thread extends EventTarget {
     this.updateMetadata({repeat: newRepeat});
   }
 
+  finalVersion() {
+    return !!this.metadata_.finalVersion;
+  }
+
   hasRepeat() {
     return !!this.metadata_.repeat;
   }
 
   isBlocked() {
-    return this.metadata_.blocked;
+    return !!this.metadata_.blocked;
   }
 
   needsRetriage() {
-    return this.metadata_.needsRetriage;
+    return !!this.metadata_.needsRetriage;
   }
 
   getDate() {
