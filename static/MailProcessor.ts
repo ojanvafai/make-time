@@ -99,8 +99,11 @@ export class MailProcessor {
             fields: 'messages(labelIds)',
           });
 
-      let newMessages = defined(newMessageData.result.messages);
-      if (newMessages.length === count) {
+      let newMessages = newMessageData.result.messages;
+      // newMessages can be undefined in the case where all the messages on this
+      // thread have no labelIds since we restrict the query to ones with
+      // labelIds.
+      if (newMessages && newMessages.length === count) {
         let modifyFailed =
             newMessages.some(x => defined(x.labelIds).includes('INBOX'));
         if (modifyFailed) {
