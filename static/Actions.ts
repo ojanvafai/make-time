@@ -111,6 +111,7 @@ export class Actions extends HTMLElement {
         let actionList = action as Action[];
         let button = this.createButton_(actionList[0], renderMini);
         if (button) {
+          button.append('...');
           buttonContainer.append(button);
           button.addEventListener('pointerdown', (e: Event) => {
             this.openMenu_(

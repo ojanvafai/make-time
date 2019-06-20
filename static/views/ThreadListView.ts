@@ -131,14 +131,22 @@ let MOVE_DOWN_ACTION = {
 };
 
 let BASE_ACTIONS = [
-  ARCHIVE_ACTION,
+  [
+    ARCHIVE_ACTION,
+    MUTE_ACTION,
+  ],
   BLOCKED_BUTTONS,
-  MUTE_ACTION,
-  MUST_DO_ACTION,
-  URGENT_ACTION,
-  BACKLOG_ACTION,
-  NEEDS_FILTER_ACTION,
-  UNDO_ACTION,
+  [
+    MUST_DO_ACTION,
+    URGENT_ACTION,
+    BACKLOG_ACTION,
+    NEEDS_FILTER_ACTION,
+    PIN_ACTION,
+  ],
+  [
+    UNDO_ACTION,
+    REPEAT_ACTION,
+  ],
   PREVIOUS_ACTION,
   PREVIOUS_FULL_ACTION,
   NEXT_ACTION,
@@ -152,7 +160,6 @@ let SORT_ACTIONS = [
 ];
 
 let RENDER_ALL_ACTIONS = [
-  PIN_ACTION,
   TOGGLE_FOCUSED_ACTION,
   TOGGLE_GROUP_ACTION,
   VIEW_FOCUSED_ACTION,
@@ -166,7 +173,6 @@ let RENDER_ONE_ACTIONS = [
 registerActions('Triage or Todo', [
   ...BASE_ACTIONS,
   ...SORT_ACTIONS,
-  REPEAT_ACTION,
   ...RENDER_ALL_ACTIONS,
   ...RENDER_ONE_ACTIONS,
 ]);
@@ -191,8 +197,7 @@ export class ThreadListView extends View {
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
       private settings_: Settings, bottomButtonUrl?: string,
-      bottomButtonText?: string, private includeSortActions_?: boolean,
-      private includeRepeatAction_?: boolean) {
+      bottomButtonText?: string, private includeSortActions_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -363,13 +368,11 @@ export class ThreadListView extends View {
     let viewSpecific =
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
-    // TODO: Move this into the model so that we can have the TodoModel not show
-    // sort actions for FinalVersion mode.
+    // TODO: Move this into the model so that we can have the TodoModel not
+    // show sort actions for FinalVersion mode.
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
-    let repeat = this.includeRepeatAction_ ? [REPEAT_ACTION] : [];
 
-    this.setActions(
-        [...BASE_ACTIONS, ...viewSpecific, ...sortActions, ...repeat]);
+    this.setActions([...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
 
     if (this.renderedRow_)
       this.addTimer_();
