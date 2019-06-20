@@ -1,4 +1,3 @@
-import {defined} from './Base.js';
 import {View} from './views/View.js';
 
 export interface Action {
@@ -8,7 +7,6 @@ export interface Action {
   secondaryKey?: Shortcut|string;
   hidden?: boolean;
   repeatable?: boolean;
-  subActions?: Action[];
 }
 
 const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
@@ -56,8 +54,9 @@ export function shortcutString(shortcut: Shortcut|string) {
   return shortcut.toString();
 }
 
-let actions_: Map<string, Action[]> = new Map();
-export function registerActions(viewName: string, actions: Action[]) {
+let actions_: Map<string, (Action | Action[])[]> = new Map();
+export function registerActions(
+    viewName: string, actions: (Action|Action[])[]) {
   actions_.set(viewName, actions);
 }
 
@@ -73,7 +72,7 @@ export function getPrimaryShortcut(action: Action) {
 }
 
 export class Actions extends HTMLElement {
-  private actions_: Action[];
+  private actions_: (Action|Action[])[];
   private supplementalActions_: Action[];
   private menu_?: HTMLElement;
 
@@ -84,7 +83,7 @@ export class Actions extends HTMLElement {
     this.supplementalActions_ = [];
   }
 
-  setActions(actions: Action[], supplementalActions?: Action[]) {
+  setActions(actions: (Action|Action[])[], supplementalActions?: Action[]) {
     this.actions_ = actions;
     this.supplementalActions_ = supplementalActions || [];
     this.render_();
@@ -108,12 +107,55 @@ export class Actions extends HTMLElement {
     this.append(buttonContainer);
 
     for (let action of this.actions_) {
-      if (!this.showHiddenActions_ && action.hidden)
+      if (Array.isArray(action)) {
+        let actionList = action as Action[];
+        let button = this.createButton_(actionList[0], renderMini);
+        if (button) {
+          buttonContainer.append(button);
+          button.addEventListener('pointerdown', () => {
+            this.openMenu_(button, renderMini, actionList.slice(1));
+          });
+        }
         continue;
-      let button = this.createButton_(action, renderMini);
+      }
+
+      let singleAction = action as Action;
+      if (!this.showHiddenActions_ && singleAction.hidden)
+        continue;
+      let button = this.createButton_(singleAction, renderMini);
       if (button)
         buttonContainer.append(button);
     }
+  }
+
+  private openMenu_(
+      button: HTMLElement, renderMini: boolean, actions: Action[]) {
+    // Since we reuse the menu if it was left open due to pointerup
+    // outside the menu, clear the contents.
+    if (this.menu_)
+      this.menu_.textContent = '';
+
+    this.menu_ = document.createElement('div');
+    for (let subAction of actions) {
+      let button = this.createButton_(subAction, renderMini, true);
+      if (button)
+        this.menu_.append(button);
+    }
+
+    // TODO: Center the menu above the button
+    let rect = button.getBoundingClientRect();
+    this.menu_.style.cssText = `
+        position: fixed;
+        bottom: ${window.innerHeight - rect.top}px;
+        left: ${rect.left}px;
+        display: flex;
+        flex-direction: column;
+      `;
+    document.body.append(this.menu_);
+
+    // TODO: Capture pointer up on the whole document so we close the menu
+    // if you pointer up not on a button.
+    button.addEventListener('pointerup', () => {this.removeMenu_()});
   }
 
   removeMenu_() {
@@ -132,6 +174,10 @@ export class Actions extends HTMLElement {
       min-width: 3em;
     `;
 
+    // TODO: Make this color match the theme.
+    if (isSubAction)
+      button.style.backgroundColor = '#fff';
+
     if (renderMini) {
       button.style.paddingLeft = '1px';
       button.style.paddingRight = '1px';
@@ -139,43 +185,10 @@ export class Actions extends HTMLElement {
 
     button.setAttribute('tooltip', action.description);
 
-    if (action.subActions) {
-      button.addEventListener('pointerdown', () => {
-        // Since we reuse the menu if it was left open due to pointerup outside
-        // the menu, clear the contents.
-        if (this.menu_)
-          this.menu_.textContent = '';
-
-        this.menu_ = document.createElement('div');
-        for (let subAction of defined(action.subActions)) {
-          let button = this.createButton_(subAction, renderMini, true);
-          if (button)
-            this.menu_.append(button);
-        }
-
-        // TODO: Center the menu above the button
-        let rect = button.getBoundingClientRect();
-        this.menu_.style.cssText = `
-          position: fixed;
-          bottom: ${window.innerHeight - rect.top}px;
-          left: ${rect.left}px;
-          border: 1px solid;
-          background: #ffffff;
-          display: flex;
-          flex-direction: column;
-        `;
-        document.body.append(this.menu_);
-
-        // TODO: Capture pointer up on the whole document so we close the menu
-        // if you pointer up not on a button.
-        button.addEventListener('pointerup', () => {this.removeMenu_()});
-      });
-    } else {
-      button.addEventListener(isSubAction ? 'pointerup' : 'click', () => {
-        this.removeMenu_();
-        this.view_.takeAction(action);
-      });
-    }
+    button.addEventListener(isSubAction ? 'pointerup' : 'click', () => {
+      this.removeMenu_();
+      this.view_.takeAction(action);
+    });
 
     let tooltipElement: HTMLElement;
     button.onpointerenter = () => {
@@ -224,18 +237,29 @@ export class Actions extends HTMLElement {
     return shortcut.matches(e);
   }
 
-  static getMatchingAction(e: KeyboardEvent, actions: Action[]) {
-    return actions.find((action: Action) => {
-      // Don't allow certain actions to apply in rapid succession for each
-      // thread. This prevents accidents of archiving a lot of threads at once
-      // when your stupid keyboard gets stuck holding the archive key down.
-      // #sigh
-      if (!action.repeatable && e.repeat)
-        return false;
+  static matchesAction(e: KeyboardEvent, action: Action) {
+    // Don't allow certain actions to apply in rapid succession for each
+    // thread. This prevents accidents of archiving a lot of threads at once
+    // when your stupid keyboard gets stuck holding the archive key down.
+    // #sigh
+    if (!action.repeatable && e.repeat)
+      return false;
 
-      return this.matchesEvent_(e, getPrimaryShortcut(action)) ||
-          this.matchesEvent_(e, action.secondaryKey);
-    });
+    return this.matchesEvent_(e, getPrimaryShortcut(action)) ||
+        this.matchesEvent_(e, action.secondaryKey);
+  }
+
+  static getMatchingAction(e: KeyboardEvent, actions: (Action|Action[])[]) {
+    for (let action of actions) {
+      if (Array.isArray(action)) {
+        let match = action.find(x => this.matchesAction(e, x));
+        if (match)
+          return match;
+      } else if (this.matchesAction(e, action)) {
+        return action;
+      }
+    }
+    return null;
   }
 
   async dispatchShortcut(e: KeyboardEvent) {

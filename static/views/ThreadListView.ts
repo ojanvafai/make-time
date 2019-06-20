@@ -8,7 +8,6 @@ import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {BLOCKED_LABEL_NAME as STUCK_LABEL_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
@@ -41,12 +40,6 @@ let QUICK_REPLY_ACTION = {
   name: `Reply`,
   description: `Give a short reply.`,
   key: 'r',
-};
-
-export let STUCK_ACTION = {
-  name: STUCK_LABEL_NAME,
-  description: `Show the stuck buttons.`,
-  subActions: BLOCKED_BUTTONS,
 };
 
 export let NEXT_ACTION = {
@@ -139,8 +132,7 @@ let MOVE_DOWN_ACTION = {
 
 let BASE_ACTIONS = [
   ARCHIVE_ACTION,
-  STUCK_ACTION,
-  ...BLOCKED_BUTTONS,
+  BLOCKED_BUTTONS,
   MUTE_ACTION,
   MUST_DO_ACTION,
   URGENT_ACTION,

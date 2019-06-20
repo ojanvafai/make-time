@@ -93,7 +93,7 @@ export let BLOCKED_30D_ACTION = {
 };
 
 export let BLOCKED_CUSTOM_ACTION = {
-  name: 'Custom',
+  name: 'Stuck',
   description: `Block on action from someone else. Pick a date to retriage.`,
   key: '0',
   hidden: true,
