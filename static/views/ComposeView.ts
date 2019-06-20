@@ -22,12 +22,14 @@ let HELP: Action = {
   description: 'Help tips.',
 };
 
-let SENT_ACTIONS: Action[] = [
-  MUST_DO_ACTION,
-  URGENT_ACTION,
-  BACKLOG_ACTION,
-  PIN_ACTION,
-  ...BLOCKED_BUTTONS,
+let SENT_ACTIONS: (Action|Action[])[] = [
+  [
+    MUST_DO_ACTION,
+    URGENT_ACTION,
+    BACKLOG_ACTION,
+    PIN_ACTION,
+  ],
+  BLOCKED_BUTTONS,
 ];
 
 const ACTIONS = [SEND, INSERT_LINK, HELP];
@@ -279,7 +281,7 @@ export class ComposeView extends View {
         text-align: center;
       `;
       container.append(this.sent_);
-      this.prepend(container);
+      this.append(container);
 
       this.sentToolbar_ = new Actions(this);
       this.sentToolbar_.setActions(SENT_ACTIONS);
@@ -330,11 +332,10 @@ export class ComposeView extends View {
         let thread = Thread.create(this.sentThreadId_, metadata);
         await thread.update();
         await takeAction(thread, action, true);
-        // Technically this will happen automatically the next time we sync with
-        // gmail, but do it proactively to minimize the window this thread has
-        // no label.
-        // Intentionally don't await processThread so the UI updates without
-        // waiting for this.
+        // Technically this will happen automatically the next time we sync
+        // with gmail, but do it proactively to minimize the window this
+        // thread has no label. Intentionally don't await processThread so the
+        // UI updates without waiting for this.
         (await this.getMailProcessor_()).processThread(thread.id);
       } finally {
         // Enable the toolbar again whether the update fails or succeeds.

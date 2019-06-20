@@ -73,7 +73,7 @@ export function getPrimaryShortcut(action: Action) {
 
 export class Actions extends HTMLElement {
   private actions_: (Action|Action[])[];
-  private supplementalActions_: Action[];
+  private supplementalActions_: (Action|Action[])[];
   private menu_?: HTMLElement;
 
   constructor(private view_: View) {
@@ -83,7 +83,7 @@ export class Actions extends HTMLElement {
     this.supplementalActions_ = [];
   }
 
-  setActions(actions: (Action|Action[])[], supplementalActions?: Action[]) {
+  setActions(actions: (Action|Action[])[], supplementalActions?: (Action|Action[])[]) {
     this.actions_ = actions;
     this.supplementalActions_ = supplementalActions || [];
     this.render_();
@@ -202,6 +202,7 @@ export class Actions extends HTMLElement {
         right: 0;
         display: flex;
         justify-content: center;
+        pointer-events: none;
       `;
 
       let text = document.createElement('div');

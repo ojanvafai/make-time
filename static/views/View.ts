@@ -21,7 +21,7 @@ export abstract class View extends HTMLElement {
       await this.actions_.dispatchShortcut(e);
   };
 
-  protected setActions(actions: (Action|Action[])[], supplementalActions?: Action[]) {
+  protected setActions(actions: (Action|Action[])[], supplementalActions?: (Action|Action[])[]) {
     this.actions_.setActions(actions, supplementalActions);
     AppShell.setFooter(this.actions_);
   }
