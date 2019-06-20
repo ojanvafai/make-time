@@ -281,7 +281,7 @@ export class ComposeView extends View {
       container.append(this.sent_);
       this.prepend(container);
 
-      this.sentToolbar_ = new Actions(this, true);
+      this.sentToolbar_ = new Actions(this);
       this.sentToolbar_.setActions(SENT_ACTIONS);
       container.append(this.sentToolbar_);
     }

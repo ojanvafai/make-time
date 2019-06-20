@@ -76,7 +76,7 @@ export class Actions extends HTMLElement {
   private supplementalActions_: Action[];
   private menu_?: HTMLElement;
 
-  constructor(private view_: View, private showHiddenActions_?: boolean) {
+  constructor(private view_: View) {
     super();
     this.style.display = 'flex';
     this.actions_ = [];
@@ -112,17 +112,15 @@ export class Actions extends HTMLElement {
         let button = this.createButton_(actionList[0], renderMini);
         if (button) {
           buttonContainer.append(button);
-          button.addEventListener('pointerdown', () => {
-            this.openMenu_(button, renderMini, actionList.slice(1));
+          button.addEventListener('pointerdown', (e: Event) => {
+            this.openMenu_(
+                e.target as HTMLButtonElement, renderMini, actionList.slice(1));
           });
         }
         continue;
       }
 
-      let singleAction = action as Action;
-      if (!this.showHiddenActions_ && singleAction.hidden)
-        continue;
-      let button = this.createButton_(singleAction, renderMini);
+      let button = this.createButton_(action, renderMini);
       if (button)
         buttonContainer.append(button);
     }
@@ -136,7 +134,7 @@ export class Actions extends HTMLElement {
       this.menu_.textContent = '';
 
     this.menu_ = document.createElement('div');
-    for (let subAction of actions) {
+    for (let subAction of actions.reverse()) {
       let button = this.createButton_(subAction, renderMini, true);
       if (button)
         this.menu_.append(button);
@@ -164,6 +162,9 @@ export class Actions extends HTMLElement {
   }
 
   createButton_(action: Action, renderMini: boolean, isSubAction?: boolean) {
+    if (action.hidden)
+      return null;
+
     let button = document.createElement('button');
     button.className = 'mktime-button';
     button.style.cssText = `

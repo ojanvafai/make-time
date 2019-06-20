@@ -57,7 +57,6 @@ export let BLOCKED_1D_ACTION = {
   description:
       `Block on action from someone else. Shows up tomorrow to retriage.`,
   key: '5',
-  hidden: true,
 };
 
 export let BLOCKED_2D_ACTION = {
@@ -65,7 +64,6 @@ export let BLOCKED_2D_ACTION = {
   description:
       `Block on action from someone else. Shows up in 2 days to retriage.`,
   key: '6',
-  hidden: true,
 };
 
 export let BLOCKED_7D_ACTION = {
@@ -73,7 +71,6 @@ export let BLOCKED_7D_ACTION = {
   description:
       `Block on action from someone else. Shows up in 7 days to retriage.`,
   key: '7',
-  hidden: true,
 };
 
 export let BLOCKED_14D_ACTION = {
@@ -81,7 +78,6 @@ export let BLOCKED_14D_ACTION = {
   description:
       `Block on action from someone else. Shows up in 14 days to retriage.`,
   key: '8',
-  hidden: true,
 };
 
 export let BLOCKED_30D_ACTION = {
@@ -89,23 +85,21 @@ export let BLOCKED_30D_ACTION = {
   description:
       `Block on action from someone else. Shows up in 30 days to retriage.`,
   key: '9',
-  hidden: true,
 };
 
 export let BLOCKED_CUSTOM_ACTION = {
   name: 'Stuck',
   description: `Block on action from someone else. Pick a date to retriage.`,
   key: '0',
-  hidden: true,
 }
 
 export let BLOCKED_BUTTONS = [
   BLOCKED_CUSTOM_ACTION,
-  BLOCKED_30D_ACTION,
-  BLOCKED_14D_ACTION,
-  BLOCKED_7D_ACTION,
-  BLOCKED_2D_ACTION,
   BLOCKED_1D_ACTION,
+  BLOCKED_2D_ACTION,
+  BLOCKED_7D_ACTION,
+  BLOCKED_14D_ACTION,
+  BLOCKED_30D_ACTION,
 ];
 
 function destinationToPriority(destination: Action) {
