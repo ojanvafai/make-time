@@ -37,6 +37,7 @@ export abstract class ThreadListModel extends Model {
   private faviconCount_: number;
   private filter_?: string;
   private days_?: number;
+  private threadGenerator_?: IterableIterator<Thread>;
 
   constructor(showFaviconCount?: boolean) {
     super();
@@ -197,19 +198,28 @@ export abstract class ThreadListModel extends Model {
       yield event;
   }
 
-  processInIdleTime_<T>(
-      items: IterableIterator<T>, callback: (item: T) => Promise<void>) {
+  // Intentionally use a member variable for the thread generator since we want
+  // to preempt finishing a previous run of threads if the snapshot changes.
+  processThreadsInIdleTime_(callback: (thread: Thread) => Promise<void>) {
     return new Promise((resolve) => {
       window.requestIdleCallback(async (deadline) => {
         let handler = async () => {
-          let item = items.next();
+          if (!this.threadGenerator_)
+            return;
+          let item = this.threadGenerator_.next();
+
           while (!item.done) {
             await callback(item.value);
             if (deadline.timeRemaining() === 0) {
               window.requestIdleCallback(() => handler());
               return;
             }
-            item = items.next();
+
+            // threadGenerator_ can be set to null while we are yielding for the
+            // callback.
+            if (!this.threadGenerator_)
+              return;
+            item = this.threadGenerator_.next();
           }
           resolve();
         };
@@ -225,11 +235,12 @@ export abstract class ThreadListModel extends Model {
     // progress.
     // TODO: When the view switches, deprioritize all these fetches until the
     // new view is finished.
-    await this.processInIdleTime_(
-        this.getThreadGenerator(),
+    this.threadGenerator_ = this.getThreadGenerator();
+    await this.processThreadsInIdleTime_(
         async (thread) => await thread.fetchFromDisk());
-    await this.processInIdleTime_(
-        this.getThreadGenerator(),
+
+    this.threadGenerator_ = this.getThreadGenerator();
+    await this.processThreadsInIdleTime_(
         async (thread) => await thread.syncMessagesInFirestore());
   }
 
