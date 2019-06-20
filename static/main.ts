@@ -568,8 +568,7 @@ window.addEventListener('error', (e) => {
       e.error, JSON.stringify(e, ['body', 'error', 'message', 'stack']));
 });
 
-const FIRESTORE_INTERNAL_ERROR =
-    `INTERNAL ASSERTION FAILED: AsyncQueue is already failed`;
+const FIRESTORE_INTERNAL_ERROR = `internal assertion failed`;
 const NETWORK_OFFLINE_ERROR_MESSAGE =
     'A network error occurred. Are you offline?';
 const FETCH_ERROR_MESSAGE =
@@ -577,7 +576,8 @@ const FETCH_ERROR_MESSAGE =
 
 // See https://github.com/firebase/firebase-js-sdk/issues/1642.
 function reloadOnFirestoreInternalError(message: string) {
-  if (message.includes(FIRESTORE_INTERNAL_ERROR))
+  if (message.toLowerCase().includes('firestore') &&
+      message.toLowerCase().includes(FIRESTORE_INTERNAL_ERROR))
     window.location.reload();
 }
 
