@@ -9,6 +9,10 @@ export interface Action {
   repeatable?: boolean;
 }
 
+interface ButtonWithAction extends HTMLButtonElement {
+  action: Action;
+}
+
 const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
 
 export class Shortcut {
@@ -83,7 +87,8 @@ export class Actions extends HTMLElement {
     this.supplementalActions_ = [];
   }
 
-  setActions(actions: (Action|Action[])[], supplementalActions?: (Action|Action[])[]) {
+  setActions(
+      actions: (Action|Action[])[], supplementalActions?: (Action|Action[])[]) {
     this.actions_ = actions;
     this.supplementalActions_ = supplementalActions || [];
     this.render_();
@@ -92,43 +97,59 @@ export class Actions extends HTMLElement {
   private render_() {
     this.textContent = '';
 
-    // window.innerWidth makes more logical sense for this, but chrome has bugs.
-    // crbug.com/960803.
-    let renderMini = window.outerWidth < 600;
-
-    let buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
+    let container = document.createElement('div');
+    container.style.cssText = `
       display: flex;
       flex-wrap: wrap;
       flex: 1;
       justify-content: center;
       align-items: center;
     `;
-    this.append(buttonContainer);
+    this.append(container);
 
     for (let action of this.actions_) {
-      if (Array.isArray(action)) {
-        let actionList = action as Action[];
-        let button = this.createButton_(actionList[0], renderMini);
-        if (button) {
-          button.append('...');
-          buttonContainer.append(button);
-          button.addEventListener('pointerdown', (e: Event) => {
-            this.openMenu_(
-                e.target as HTMLButtonElement, renderMini, actionList.slice(1));
-          });
-        }
-        continue;
-      }
-
-      let button = this.createButton_(action, renderMini);
-      if (button)
-        buttonContainer.append(button);
+      this.createButtonList_(action, container);
     }
   }
 
-  private openMenu_(
-      button: HTMLElement, renderMini: boolean, actions: Action[]) {
+  private createButtonList_(action: Action|Action[], container: HTMLElement) {
+    let button: ButtonWithAction|null;
+    if (Array.isArray(action)) {
+      let actionList = action as Action[];
+      button = this.createButton_(actionList[0]);
+      if (button) {
+        button.append('...');
+        button.addEventListener('pointerdown', (e: PointerEvent) => {
+          this.openMenu_(e.target as HTMLButtonElement, actionList.slice(1));
+
+          // Set this so we can have the same implementation for touch and
+          // mouse since touch does this implicitly.
+          button!.setPointerCapture(e.pointerId);
+        });
+      }
+    } else {
+      button = this.createButton_(action);
+    }
+
+    if (!button)
+      return;
+
+    container.append(button);
+
+    button.addEventListener('pointerup', (e: PointerEvent) => {
+      let hitElement = document.elementFromPoint(e.x, e.y);
+      if (hitElement === button ||
+          (this.menu_ && this.menu_.contains(hitElement))) {
+        this.view_.takeAction((hitElement as ButtonWithAction).action);
+      }
+
+      if (this.menu_)
+        this.menu_.remove();
+    });
+  }
+
+
+  private openMenu_(button: HTMLElement, actions: Action[]) {
     // Since we reuse the menu if it was left open due to pointerup
     // outside the menu, clear the contents.
     if (this.menu_)
@@ -136,37 +157,36 @@ export class Actions extends HTMLElement {
 
     this.menu_ = document.createElement('div');
     for (let subAction of actions.reverse()) {
-      let button = this.createButton_(subAction, renderMini, true);
+      let button = this.createButton_(subAction);
       if (button)
         this.menu_.append(button);
     }
 
-    // TODO: Center the menu above the button
-    let rect = button.getBoundingClientRect();
+    // TODO: Make this prettier. The background color is necessary to avoid
+    // having the buttons semi-transparent since they overlay on top of content.
     this.menu_.style.cssText = `
         position: fixed;
-        bottom: ${window.innerHeight - rect.top}px;
-        left: ${rect.left}px;
         display: flex;
         flex-direction: column;
+        background-color: #fff;
+        border-radius: 5px;
       `;
     document.body.append(this.menu_);
 
-    // TODO: Capture pointer up on the whole document so we close the menu
-    // if you pointer up not on a button.
-    button.addEventListener('pointerup', () => {this.removeMenu_()});
+    let buttonRect = button.getBoundingClientRect();
+    let menuWidth = this.menu_.offsetWidth;
+    this.menu_.style.bottom = `${window.innerHeight - buttonRect.top}px`;
+    // Center the menu over the button.
+    this.menu_.style.left = `${
+        buttonRect.left - (Math.max(0, (menuWidth - buttonRect.width)) / 2)}px`;
+    this.menu_.style.minWidth = `${buttonRect.width}px`;
   }
 
-  removeMenu_() {
-    if (this.menu_)
-      this.menu_.remove();
-  }
-
-  createButton_(action: Action, renderMini: boolean, isSubAction?: boolean) {
+  createButton_(action: Action) {
     if (action.hidden)
       return null;
 
-    let button = document.createElement('button');
+    let button = document.createElement('button') as ButtonWithAction;
     button.className = 'mktime-button';
     button.style.cssText = `
       white-space: nowrap;
@@ -174,61 +194,51 @@ export class Actions extends HTMLElement {
       position: relative;
       user-select: none;
       min-width: 3em;
+      touch-action: none;
     `;
 
-    // TODO: Make this color match the theme.
-    if (isSubAction)
-      button.style.backgroundColor = '#fff';
-
-    if (renderMini) {
-      button.style.paddingLeft = '1px';
-      button.style.paddingRight = '1px';
-    }
-
-    button.setAttribute('tooltip', action.description);
-
-    button.addEventListener(isSubAction ? 'pointerup' : 'click', () => {
-      this.removeMenu_();
-      this.view_.takeAction(action);
-    });
+    button.action = action;
 
     let tooltipElement: HTMLElement;
+    button.onpointerleave = () => tooltipElement.remove();
     button.onpointerenter = () => {
-      tooltipElement = document.createElement('div');
-      tooltipElement.style.cssText = `
-        position: absolute;
-        bottom: ${this.offsetHeight}px;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: center;
-        pointer-events: none;
-      `;
-
-      let text = document.createElement('div');
-      text.style.cssText = `
-        background-color: #ffffff;
-        border: 1px solid;
-        padding: 4px;
-        width: 300px;
-      `;
-
-      let key = action.key ? shortcutString(action.key) :
-                             action.name.charAt(0).toLowerCase();
-
-      let tooltip = <string>button.getAttribute('tooltip');
-      let bold = document.createElement('b');
-      bold.append(`${key}: `);
-      text.append(bold, tooltip);
-      tooltipElement.append(text);
+      tooltipElement = this.createTooltip_(action);
       this.append(tooltipElement);
-    };
-    button.onpointerleave = () => {
-      tooltipElement.remove();
     };
 
     button.append(action.name);
     return button;
+  }
+
+  private createTooltip_(action: Action) {
+    let tooltipElement = document.createElement('div');
+    tooltipElement.style.cssText = `
+      position: absolute;
+      bottom: ${this.offsetHeight}px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    `;
+
+    let text = document.createElement('div');
+    text.style.cssText = `
+      background-color: #ffffff;
+      border: 1px solid;
+      padding: 4px;
+      width: 300px;
+    `;
+
+    let key = action.key ? shortcutString(action.key) :
+                           action.name.charAt(0).toLowerCase();
+
+    let bold = document.createElement('b');
+    bold.append(`${key}: `);
+    text.append(bold, action.description);
+    tooltipElement.append(text);
+
+    return tooltipElement;
   }
 
   static matchesEvent_(e: KeyboardEvent, shortcut?: string|Shortcut) {
