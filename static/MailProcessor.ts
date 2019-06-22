@@ -497,10 +497,9 @@ export class MailProcessor {
         });
   }
 
-  async dequeueBlocked_() {
-    let querySnapshot = await this.metadataCollection_()
-                            .where(ThreadMetadataKeys.blocked, '<=', Date.now())
-                            .get();
+  async dequeueDateKeys_(key: ThreadMetadataKeys) {
+    let querySnapshot =
+        await this.metadataCollection_().where(key, '<=', Date.now()).get();
 
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
         querySnapshot.docs,
@@ -508,10 +507,6 @@ export class MailProcessor {
           let update: ThreadMetadataUpdate = {
             hasLabel: true,
           };
-          // TODO: Remove this once all clients have flushed all their blocked
-          // threads that don't have labels.
-          if (!doc.data().labelId)
-            update.labelId = BuiltInLabelIds.Blocked;
           await doc.ref.update(update);
         });
   }
@@ -544,7 +539,6 @@ export class MailProcessor {
     }
 
     let retriage = lacksLabel.slice(0, amountToRetriage);
-
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
         retriage, async (doc: firebase.firestore.QueryDocumentSnapshot) => {
           // Put the thread back in the triage queue (hasLabel) and denote
@@ -579,7 +573,8 @@ export class MailProcessor {
 
   private async processSingleQueue_(queue: string) {
     if (queue === QueueSettings.DAILY) {
-      await this.dequeueBlocked_();
+      await this.dequeueDateKeys_(ThreadMetadataKeys.blocked);
+      await this.dequeueDateKeys_(ThreadMetadataKeys.due);
       await this.processRetriage_();
     }
 

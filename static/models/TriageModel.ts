@@ -4,7 +4,7 @@ import {Calendar} from '../calendar/Calendar.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {BLOCKED_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
+import {BLOCKED_LABEL_NAME, Thread, ThreadMetadataKeys, OVERDUE_LABEL_NAME} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
@@ -25,7 +25,7 @@ export class TriageModel extends ThreadListModel {
         metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true));
 
     this.allowViewMessages_ =
-      this.settings_.get(ServerStorage.KEYS.ALLOW_VIEW_MESSAGES_IN_TRIAGE);
+        this.settings_.get(ServerStorage.KEYS.ALLOW_VIEW_MESSAGES_IN_TRIAGE);
   }
 
   canDisallowViewMessages() {
@@ -71,6 +71,8 @@ export class TriageModel extends ThreadListModel {
   }
 
   static getGroupName(thread: Thread) {
+    if (thread.hasDueDate())
+      return OVERDUE_LABEL_NAME;
     if (thread.isBlocked())
       return BLOCKED_LABEL_NAME;
     if (thread.needsRetriage())

@@ -1,6 +1,6 @@
 import {assert, parseAddressList} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
-import {BLOCKED_LABEL_NAME, Thread, UpdatedEvent} from '../Thread.js';
+import {Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
@@ -62,8 +62,9 @@ class RowState {
       public subject: string, public snippet: string, public from: string,
       public count: number, public lastMessageId: string, public group: string,
       public label: string|null, public priority: string|null,
-      public blocked: Date|null, public hasRepeat: boolean,
-      public isUnread: boolean, public finalVersionSkipped: boolean) {}
+      public blocked: Date|null, public due: Date|null,
+      public hasRepeat: boolean, public isUnread: boolean,
+      public finalVersionSkipped: boolean) {}
 
   equals(other: RowState) {
     return this.subject === other.subject && this.snippet === other.snippet &&
@@ -74,6 +75,7 @@ class RowState {
         (this.blocked === other.blocked ||
          this.blocked && other.blocked &&
              this.blocked.getTime() === other.blocked.getTime()) &&
+        (this.due && other.due && this.due.getTime() === other.due.getTime()) &&
         this.hasRepeat === other.hasRepeat &&
         this.isUnread === other.isUnread &&
         this.finalVersionSkipped === other.finalVersionSkipped;
@@ -256,12 +258,13 @@ export class ThreadRow extends HTMLElement {
     let messageIds = this.thread.getMessageIds();
     let blockedDate =
         this.thread.isBlocked() ? this.thread.getBlockedDate() : null;
+    let dueDate = this.thread.hasDueDate() ? this.thread.getDueDate() : null;
 
     let state = new RowState(
         this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
         messageIds.length, messageIds[messageIds.length - 1],
         this.getGroup().name, this.thread.getLabel(), this.thread.getPriority(),
-        blockedDate, this.thread.hasRepeat(), this.thread.isUnread(),
+        blockedDate, dueDate, this.thread.hasRepeat(), this.thread.isUnread(),
         this.showFinalVersion_ && this.finalVersionSkipped_);
 
     // Keep track of the last state we used to render this row so we can avoid
@@ -312,9 +315,16 @@ export class ThreadRow extends HTMLElement {
       flex: 1;
     `;
 
+    // TODO: Make this a date picker for changing the blocked date.
+    if (state.blocked) {
+      let blockedString = `Stuck: ${DAY_MONTH_FORMATTER.format(state.blocked)}`;
+      let label = this.createLabel_(blockedString);
+      title.append(label);
+    }
+
     // TODO: Make this a date picker for changing the due date.
-    if (state.blocked && state.group === BLOCKED_LABEL_NAME) {
-      let blockedString = DAY_MONTH_FORMATTER.format(state.blocked);
+    if (state.due) {
+      let blockedString = `Due: ${DAY_MONTH_FORMATTER.format(state.due)}`;
       let label = this.createLabel_(blockedString);
       title.append(label);
     }

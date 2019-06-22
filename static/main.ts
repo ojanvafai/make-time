@@ -460,7 +460,7 @@ async function doUpdate_() {
   } catch (e) {
     // TODO: Move this to Net.js once we've made it so that all network
     // requests that fail due to being offline get retried.
-    if (getErrorMessage(e) === NETWORK_OFFLINE_ERROR_MESSAGE) {
+    if (processErrorMessage(e) === NETWORK_OFFLINE_ERROR_MESSAGE) {
       AppShell.updateTitle(
           CONNECTION_FAILURE_KEY, 'Having trouble connecting to internet...');
     } else {
@@ -564,6 +564,9 @@ document.body.addEventListener('keydown', async (e) => {
 });
 
 window.addEventListener('error', (e) => {
+  // Want to process this in case we hit a firestore internal error and need to
+  // reload.
+  processErrorMessage(e);
   ErrorLogger.log(
       e.error, JSON.stringify(e, ['body', 'error', 'message', 'stack']));
 });
@@ -584,7 +587,7 @@ function reloadOnFirestoreInternalError(message: string) {
 // Different promise types stow a human understandable message in different
 // places. :( Also, if we catch via a try/catch, then we need to pass the
 // exception itself as an argument this function instead of e.reason.
-function getErrorMessage(reason: any) {
+function processErrorMessage(reason: any) {
   // Case: throw new Error('msg');
   let message = reason.message;
 
@@ -613,7 +616,7 @@ window.addEventListener('unhandledrejection', (e) => {
   let details = JSON.stringify(
       reason, ['stack', 'message', 'body', 'result', 'error', 'code']);
 
-  let message = getErrorMessage(e.reason);
+  let message = processErrorMessage(e.reason);
   reloadOnFirestoreInternalError(message);
 
   if (message)

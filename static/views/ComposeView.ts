@@ -7,7 +7,7 @@ import {MailProcessor} from '../MailProcessor.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 import {SendAs} from '../SendAs.js';
 import {Thread} from '../Thread.js';
-import {BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, PIN_ACTION, takeAction, URGENT_ACTION} from '../ThreadActions.js';
+import {BLOCKED_ACTIONS, DUE_ACTIONS, PRIORITY_ACTIONS, takeAction} from '../ThreadActions.js';
 
 import {HelpDialog} from './HelpDialog.js';
 import {View} from './View.js';
@@ -23,13 +23,9 @@ let HELP: Action = {
 };
 
 let SENT_ACTIONS: (Action|Action[])[] = [
-  [
-    MUST_DO_ACTION,
-    URGENT_ACTION,
-    BACKLOG_ACTION,
-    PIN_ACTION,
-  ],
-  BLOCKED_BUTTONS,
+  PRIORITY_ACTIONS,
+  BLOCKED_ACTIONS,
+  DUE_ACTIONS,
 ];
 
 const ACTIONS = [SEND, INSERT_LINK, HELP];

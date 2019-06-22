@@ -9,7 +9,7 @@ import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_BUTTONS, MUST_DO_ACTION, MUTE_ACTION, NEEDS_FILTER_ACTION, PIN_ACTION, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -135,14 +135,9 @@ let BASE_ACTIONS = [
     ARCHIVE_ACTION,
     MUTE_ACTION,
   ],
-  BLOCKED_BUTTONS,
-  [
-    MUST_DO_ACTION,
-    URGENT_ACTION,
-    BACKLOG_ACTION,
-    NEEDS_FILTER_ACTION,
-    PIN_ACTION,
-  ],
+  BLOCKED_ACTIONS,
+  DUE_ACTIONS,
+  PRIORITY_ACTIONS,
   [
     UNDO_ACTION,
     REPEAT_ACTION,
@@ -193,6 +188,9 @@ export class ThreadListView extends View {
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
   private labelSelectTemplate_?: HTMLSelectElement;
+
+  private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
+      [REPEAT_ACTION, ...DUE_ACTIONS];
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
@@ -775,7 +773,7 @@ export class ThreadListView extends View {
   private async markTriaged_(destination: Action) {
     // REPEAT_ACTION doesn't cause the row to move around, so don't remove the
     // row.
-    let keepRows = destination === REPEAT_ACTION;
+    let keepRows = ThreadListView.ACTIONS_THAT_KEEP_ROWS_.includes(destination);
 
     if (this.renderedRow_) {
       // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in

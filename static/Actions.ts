@@ -17,7 +17,8 @@ const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
 
 export class Shortcut {
   constructor(
-      public key: string, public ctrlMeta?: boolean, public shift?: boolean) {}
+      public key: string, public ctrlMeta?: boolean, public shift?: boolean,
+      public code?: string) {}
 
   toString() {
     let val = '';
@@ -29,7 +30,8 @@ export class Shortcut {
   }
 
   matches(e: KeyboardEvent) {
-    return this.key === e.key && !!this.shift === e.shiftKey &&
+    return (this.code ? this.code === e.code : this.key === e.key) &&
+        !!this.shift === e.shiftKey &&
         (USES_META_FOR_CTRL ? !!this.ctrlMeta === e.metaKey :
                               !!this.ctrlMeta === e.ctrlKey)
   }
