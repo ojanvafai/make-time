@@ -317,7 +317,7 @@ export class ComposeView extends View {
       return;
     }
 
-    if (SENT_ACTIONS.includes(action)) {
+    if (SENT_ACTIONS.flat().includes(action)) {
       if (!this.sentThreadId_)
         return;
 
