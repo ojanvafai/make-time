@@ -30,6 +30,8 @@ let SENT_ACTIONS: (Action|Action[])[] = [
 
 const ACTIONS = [SEND, INSERT_LINK, HELP];
 
+const CLOSE_SENT_TOOLBAR_DELAY_MS = 30000;
+
 // TODO: Make insert link a proper action on both ComposeView and
 // ThreadListView's quick reply.
 registerActions('Compose', [
@@ -284,7 +286,7 @@ export class ComposeView extends View {
       container.append(this.sentToolbar_);
     }
 
-    notNull(defined(this.sent_).parentElement).style.display = '';
+    this.showSent_(true);
     this.sent_.textContent =
         `Sent "${sent.subject}". Would you like to triage it for later?`;
 
@@ -300,6 +302,13 @@ export class ComposeView extends View {
     // Flush the model so that sending doesn't try to send the same message
     // again.
     this.handleUpdates_();
+
+    setTimeout(() => this.showSent_(false), CLOSE_SENT_TOOLBAR_DELAY_MS);
+  }
+
+  private showSent_(show: boolean) {
+    notNull(defined(this.sent_).parentElement).style.display =
+        show ? '' : 'none';
   }
 
   async takeAction(action: Action) {
@@ -340,7 +349,7 @@ export class ComposeView extends View {
       }
 
       this.sentThreadId_ = undefined;
-      notNull(defined(this.sent_).parentElement).style.display = 'none';
+      this.showSent_(false);
       return;
     }
 
