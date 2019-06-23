@@ -278,12 +278,7 @@ export abstract class ThreadListModel extends Model {
     })
   }
 
-  async markSingleThreadTriaged(thread: Thread, destination: Action) {
-    this.resetUndoableActions_();
-    await this.markTriagedInternal(thread, destination);
-  }
-
-  async markThreadsTriaged(threads: Thread[], destination: Action) {
+  async markThreadsTriaged(destination: Action, ...threads: Thread[]) {
     this.resetUndoableActions_();
 
     let progress = this.updateTitle(

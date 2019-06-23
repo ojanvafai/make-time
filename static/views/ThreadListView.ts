@@ -781,7 +781,7 @@ export class ThreadListView extends View {
       let row = this.renderedRow_;
       if (!keepRows)
         this.handleRowsRemoved_([row], this.getRows_());
-      await this.model_.markSingleThreadTriaged(row.thread, destination);
+      await this.model_.markThreadsTriaged(destination, row.thread);
     } else {
       let threads: Thread[] = [];
       let firstUnselectedRowAfterFocused = null;
@@ -831,7 +831,7 @@ export class ThreadListView extends View {
       if (!keepRows && focusedRowIsSelected)
         this.setFocus_(firstUnselectedRowAfterFocused);
 
-      await this.model_.markThreadsTriaged(threads, destination);
+      await this.model_.markThreadsTriaged(destination, ...threads);
     }
   }
 
