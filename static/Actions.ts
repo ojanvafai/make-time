@@ -128,6 +128,20 @@ export class Actions extends HTMLElement {
           // mouse since touch does this implicitly.
           button!.setPointerCapture(e.pointerId);
         });
+
+        button.addEventListener('pointermove', (e: PointerEvent) => {
+          // TODO: unify hover handling for menu and non-menu buttons.
+          // Right now non-menu buttons are handled in global stylesheet.
+          let hitElement = document.elementFromPoint(e.x, e.y);
+          let setColor = (x: HTMLElement) => {
+            x.style.backgroundColor = x === hitElement ? '#ccc' : '#ffffffbb';
+          };
+
+          setColor(button!);
+          for (let child of this.menu_!.children) {
+            setColor(child as HTMLElement);
+          }
+        });
       }
     } else {
       button = this.createButton_(action);
@@ -172,6 +186,7 @@ export class Actions extends HTMLElement {
         flex-direction: column;
         background-color: #fff;
         border-radius: 5px;
+        min-width: 33vw;
       `;
     document.body.append(this.menu_);
 
@@ -181,7 +196,6 @@ export class Actions extends HTMLElement {
     // Center the menu over the button.
     this.menu_.style.left = `${
         buttonRect.left - (Math.max(0, (menuWidth - buttonRect.width)) / 2)}px`;
-    this.menu_.style.minWidth = `${buttonRect.width}px`;
   }
 
   createButton_(action: Action) {
