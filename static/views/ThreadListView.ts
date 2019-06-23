@@ -274,7 +274,7 @@ export class ThreadListView extends View {
         ThreadListChangedEvent.NAME, this.render_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
-      this.handleUndo_(undoEvent.thread, undoEvent.groupName);
+      this.handleUndo_(undoEvent.thread);
     });
 
     this.renderCalendar_();
@@ -336,10 +336,10 @@ export class ThreadListView extends View {
     this.model_.addEventListener(eventName, handler);
   }
 
-  private handleUndo_(thread: Thread, groupName: string) {
+  private handleUndo_(thread: Thread) {
     let row = this.getThreadRow_(thread);
     if (this.renderedRow_)
-      this.setRenderedRow_(row, groupName);
+      this.setRenderedRow_(row);
     else
       this.setFocus_(row);
   }
@@ -835,15 +835,14 @@ export class ThreadListView extends View {
     }
   }
 
-  setRenderedRowInternal_(row: ThreadRow|null, groupName?: string) {
+  setRenderedRowInternal_(row: ThreadRow|null) {
     this.hasNewRenderedRow_ = !!row;
     if (this.renderedRow_)
       this.renderedRow_.rendered.remove();
     this.renderedRow_ = row;
     // This is read in renderFrame_. At that point, the rendered row will have
     // already been triaged and will no longer have a group name.
-    this.renderedGroupName_ =
-        groupName || (row ? this.model_.getGroupName(row.thread) : null);
+    this.renderedGroupName_ = (row ? this.model_.getGroupName(row.thread) : null);
 
     // Technically this is async, but it's OK if this happens async with
     // respect to the surrounding code as well.
@@ -851,8 +850,8 @@ export class ThreadListView extends View {
       row.thread.markRead();
   }
 
-  setRenderedRow_(row: ThreadRow|null, groupName?: string) {
-    this.setRenderedRowInternal_(row, groupName);
+  setRenderedRow_(row: ThreadRow|null) {
+    this.setRenderedRowInternal_(row);
     if (row)
       this.render_();
   }

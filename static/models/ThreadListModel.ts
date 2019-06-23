@@ -11,11 +11,10 @@ import {Model} from './Model.js';
 export interface TriageResult {
   thread: Thread;
   state: ThreadMetadataUpdate;
-  groupName: string;
 }
 
 export class UndoEvent extends Event {
-  constructor(public thread: Thread, public groupName: string) {
+  constructor(public thread: Thread) {
     super('undo');
   }
 }
@@ -266,15 +265,9 @@ export abstract class ThreadListModel extends Model {
 
   protected async markTriagedInternal(
       thread: Thread, destination: Action, moveToInboxAgain?: boolean) {
-    // Save this off before we modify the thread and lose this state.
-    let groupName = this.getGroupName(thread);
-
     this.undoableActions_.push({
       thread: thread,
       state: await takeAction(thread, destination, moveToInboxAgain),
-      // Save out the group name since it won't be on the thread synchronously
-      // after the undo action due to needing to wait for the onSnapshot.
-      groupName: groupName,
     })
   }
 
@@ -315,7 +308,7 @@ export abstract class ThreadListModel extends Model {
     for (let i = 0; i < actions.length; i++) {
       this.handleUndoAction(actions[i]);
       this.dispatchEvent(
-          new UndoEvent(actions[i].thread, actions[i].groupName));
+          new UndoEvent(actions[i].thread));
       progress.incrementProgress();
     }
   }
