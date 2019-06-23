@@ -771,68 +771,67 @@ export class ThreadListView extends View {
   }
 
   private async markTriaged_(destination: Action) {
-    // REPEAT_ACTION doesn't cause the row to move around, so don't remove the
-    // row.
-    let keepRows = ThreadListView.ACTIONS_THAT_KEEP_ROWS_.includes(destination);
+    let threads = this.collectThreadsToTriage_(
+        ThreadListView.ACTIONS_THAT_KEEP_ROWS_.includes(destination));
+    await this.model_.markTriaged(destination, threads);
+  }
 
+  private collectThreadsToTriage_(keepRows: boolean) {
     if (this.renderedRow_) {
       // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in
       // some cases.
       let row = this.renderedRow_;
       if (!keepRows)
         this.handleRowsRemoved_([row], this.getRows_());
-      await this.model_.markThreadsTriaged(destination, row.thread);
-    } else {
-      let threads: Thread[] = [];
-      let firstUnselectedRowAfterFocused = null;
-      let focusedRowIsSelected = false;
-
-      let rows = this.getRows_();
-      for (let child of rows) {
-        if (child.selected) {
-          if (child == this.focusedRow_)
-            focusedRowIsSelected = true;
-          threads.push(child.thread);
-
-          if (keepRows)
-            continue;
-
-          // ThreadRows get recycled, so clear the checked and focused state
-          // for future use.
-          child.resetState();
-
-          // TODO: Instead of removing rows outside of model changes, which
-          // causes races, move focus state into the model so that it all
-          // updates atomically.
-          let parentGroup = child.getGroup();
-          // The rows will get removed on the next frame anyways, but we don't
-          // want the user to see an intermediary state where the row is shown
-          // but unchecked and we don't want to move focus to the next row
-          // until these rows have been removed. So just removed them
-          // synchronously here purely for the visual effect. This also has
-          // the important side effect of not blocking the UI changes on
-          // network activity.
-          child.remove();
-          // Remove the parent group if it's now empty so the user doens't see
-          // a flicker where the row is removed without it's parent group also
-          // being removed.
-          parentGroup.removeIfEmpty();
-        } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
-          firstUnselectedRowAfterFocused = child;
-        }
-      }
-
-      if (!threads.length)
-        return;
-
-      // Move focus to the first unselected email. If we aren't able to find
-      // an unselected email, focusedEmail_ should end up null, so set it even
-      // if firstUnselectedRowAfterSelected is null.
-      if (!keepRows && focusedRowIsSelected)
-        this.setFocus_(firstUnselectedRowAfterFocused);
-
-      await this.model_.markThreadsTriaged(destination, ...threads);
+      return [row.thread];
     }
+
+    let threads: Thread[] = [];
+    let firstUnselectedRowAfterFocused = null;
+    let focusedRowIsSelected = false;
+
+    let rows = this.getRows_();
+    for (let child of rows) {
+      if (child.selected) {
+        if (child == this.focusedRow_)
+          focusedRowIsSelected = true;
+        threads.push(child.thread);
+
+        if (keepRows)
+          continue;
+
+        // ThreadRows get recycled, so clear the checked and focused state
+        // for future use.
+        child.resetState();
+
+        // TODO: Instead of removing rows outside of model changes, which
+        // causes races, move focus state into the model so that it all
+        // updates atomically.
+        let parentGroup = child.getGroup();
+        // The rows will get removed on the next frame anyways, but we don't
+        // want the user to see an intermediary state where the row is shown
+        // but unchecked and we don't want to move focus to the next row
+        // until these rows have been removed. So just removed them
+        // synchronously here purely for the visual effect. This also has
+        // the important side effect of not blocking the UI changes on
+        // network activity.
+        child.remove();
+        // Remove the parent group if it's now empty so the user doens't see
+        // a flicker where the row is removed without it's parent group also
+        // being removed.
+        parentGroup.removeIfEmpty();
+      } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
+        firstUnselectedRowAfterFocused = child;
+      }
+    }
+
+    // Move focus to the first unselected email. If we aren't able to find
+    // an unselected email, focusedEmail_ should end up null, so set it even
+    // if firstUnselectedRowAfterSelected is null.
+    if (!keepRows && focusedRowIsSelected)
+      this.setFocus_(firstUnselectedRowAfterFocused);
+
+    return threads;
   }
 
   setRenderedRowInternal_(row: ThreadRow|null) {
@@ -842,7 +841,8 @@ export class ThreadListView extends View {
     this.renderedRow_ = row;
     // This is read in renderFrame_. At that point, the rendered row will have
     // already been triaged and will no longer have a group name.
-    this.renderedGroupName_ = (row ? this.model_.getGroupName(row.thread) : null);
+    this.renderedGroupName_ =
+        (row ? this.model_.getGroupName(row.thread) : null);
 
     // Technically this is async, but it's OK if this happens async with
     // respect to the surrounding code as well.

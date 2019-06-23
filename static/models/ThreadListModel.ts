@@ -263,22 +263,18 @@ export abstract class ThreadListModel extends Model {
     this.undoableActions_ = [];
   }
 
-  protected async markTriagedInternal(
-      thread: Thread, destination: Action, moveToInboxAgain?: boolean) {
-    this.undoableActions_.push({
-      thread: thread,
-      state: await takeAction(thread, destination, moveToInboxAgain),
-    })
-  }
-
-  async markThreadsTriaged(destination: Action, ...threads: Thread[]) {
+  async markTriaged(
+      destination: Action, threads: Thread[], moveToInbox?: boolean) {
     this.resetUndoableActions_();
 
     let progress = this.updateTitle(
         'ThreadListModel.markThreadsTriaged', threads.length,
         'Modifying threads...');
     for (let thread of threads) {
-      this.markTriagedInternal(thread, destination);
+      this.undoableActions_.push({
+        thread: thread,
+        state: await takeAction(thread, destination, moveToInbox),
+      })
       progress.incrementProgress();
     };
   }
@@ -307,8 +303,7 @@ export abstract class ThreadListModel extends Model {
 
     for (let i = 0; i < actions.length; i++) {
       this.handleUndoAction(actions[i]);
-      this.dispatchEvent(
-          new UndoEvent(actions[i].thread));
+      this.dispatchEvent(new UndoEvent(actions[i].thread));
       progress.incrementProgress();
     }
   }

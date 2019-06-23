@@ -91,8 +91,8 @@ class HiddenModel extends ThreadListModel {
         this.queryKey_() === ThreadMetadataKeys.archivedByFilter;
   }
 
-  protected async markTriagedInternal(thread: Thread, destination: Action) {
-    super.markTriagedInternal(thread, destination, this.triageMovesToInbox_());
+  async markTriaged(destination: Action, threads: Thread[]) {
+    super.markTriaged(destination, threads, this.triageMovesToInbox_());
   }
 
   // Override the undo action for muted and archive since we need to have them
