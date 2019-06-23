@@ -81,6 +81,7 @@ export class Actions extends HTMLElement {
   private actions_: (Action|Action[])[];
   private supplementalActions_: (Action|Action[])[];
   private menu_?: HTMLElement;
+  private tooltip_?: HTMLElement;
 
   constructor(private view_: View) {
     super();
@@ -170,6 +171,9 @@ export class Actions extends HTMLElement {
   }
 
   private openMenu_(button: HTMLElement, actions: Action[]) {
+    if (this.tooltip_)
+      this.tooltip_.remove();
+
     this.menu_ = document.createElement('div');
     for (let subAction of actions.reverse()) {
       let button = this.createButton_(subAction);
@@ -210,21 +214,16 @@ export class Actions extends HTMLElement {
     `;
 
     button.action = action;
-
-    let tooltipElement: HTMLElement;
-    button.onpointerleave = () => tooltipElement.remove();
-    button.onpointerenter = () => {
-      tooltipElement = this.createTooltip_(action);
-      this.append(tooltipElement);
-    };
-
+    button.onpointerleave = () => this.tooltip_!.remove();
+    button.onpointerenter = () => this.appendTooltip_(action);
     button.append(action.name);
+
     return button;
   }
 
-  private createTooltip_(action: Action) {
-    let tooltipElement = document.createElement('div');
-    tooltipElement.style.cssText = `
+  private appendTooltip_(action: Action) {
+    this.tooltip_ = document.createElement('div');
+    this.tooltip_.style.cssText = `
       position: absolute;
       bottom: ${this.offsetHeight}px;
       left: 0;
@@ -248,9 +247,9 @@ export class Actions extends HTMLElement {
     let bold = document.createElement('b');
     bold.append(`${key}: `);
     text.append(bold, action.description);
-    tooltipElement.append(text);
+    this.tooltip_.append(text);
 
-    return tooltipElement;
+    this.append(this.tooltip_);
   }
 
   static matchesEvent_(e: KeyboardEvent, shortcut?: string|Shortcut) {
