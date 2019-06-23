@@ -332,16 +332,11 @@ export class ComposeView extends View {
       toolbar.style.opacity = '0.5';
       toolbar.style.pointerEvents = 'none';
 
+      let metadata = await Thread.fetchMetadata(this.sentThreadId_);
+      let thread = Thread.create(this.sentThreadId_, metadata);
+
       try {
-        let metadata = await Thread.fetchMetadata(this.sentThreadId_);
-        let thread = Thread.create(this.sentThreadId_, metadata);
-        await thread.update();
         await takeAction(thread, action, true);
-        // Technically this will happen automatically the next time we sync
-        // with gmail, but do it proactively to minimize the window this
-        // thread has no label. Intentionally don't await processThread so the
-        // UI updates without waiting for this.
-        (await this.getMailProcessor_()).processThread(thread.id);
       } finally {
         // Enable the toolbar again whether the update fails or succeeds.
         toolbar.style.opacity = '';
@@ -350,6 +345,15 @@ export class ComposeView extends View {
 
       this.sentThreadId_ = undefined;
       this.showSent_(false);
+
+      // Do this after hiding the sent toolbar since this is just an
+      // opitimization and we shouldn't make the user wait on this to get
+      // confirmation that the action has succeeded. Technically this will
+      // happen automatically the next time we sync with gmail, but do it
+      // proactively to minimize the window this thread has no label.
+      // Intentionally don't await processThread so the UI updates without
+      // waiting for this.
+      (await this.getMailProcessor_()).processThread(thread.id);
       return;
     }
 
