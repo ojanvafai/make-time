@@ -132,13 +132,16 @@ export class Actions extends HTMLElement {
         button.addEventListener('pointermove', (e: PointerEvent) => {
           // TODO: unify hover handling for menu and non-menu buttons.
           // Right now non-menu buttons are handled in global stylesheet.
+          if (!this.menu_)
+            return;
+
           let hitElement = document.elementFromPoint(e.x, e.y);
           let setColor = (x: HTMLElement) => {
             x.style.backgroundColor = x === hitElement ? '#ccc' : '#ffffffbb';
           };
 
           setColor(button!);
-          for (let child of this.menu_!.children) {
+          for (let child of this.menu_.children) {
             setColor(child as HTMLElement);
           }
         });
