@@ -305,6 +305,29 @@ export class Thread extends EventTarget {
     return await this.updateMetadata(update);
   }
 
+  async clearBlocked(moveToInbox?: boolean) {
+    let update = this.clearDate_(ThreadMetadataKeys.blocked, moveToInbox);
+    // Clearing blocked should put the thread back in the triage queue,
+    // otherwise the thread just disappears. If the user wants a queue other
+    // than triage, they can just use that action directly instead of clearing
+    // blocked (e.g. set the priority).
+    update.hasLabel = true;
+    return await this.updateMetadata(update);
+  }
+
+  async clearDue(moveToInbox?: boolean) {
+    let update = this.clearDate_(ThreadMetadataKeys.due, moveToInbox);
+    return await this.updateMetadata(update);
+  }
+
+  private clearDate_(key: ThreadMetadataKeys, moveToInbox?: boolean) {
+    let update: ThreadMetadataUpdate = {};
+    if (moveToInbox)
+      update.moveToInbox = true;
+    update[key] = firebase.firestore.FieldValue.delete();
+    return update;
+  }
+
   async setBlocked(date: Date, moveToInbox?: boolean) {
     return await this.setDate(ThreadMetadataKeys.blocked, date, moveToInbox);
   }

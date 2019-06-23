@@ -101,6 +101,12 @@ let BLOCKED_CUSTOM_ACTION = {
   key: '0',
 }
 
+let BLOCKED_NONE_ACTION = {
+  name: 'Clear',
+  description: `Removes the stuck date.`,
+  key: '-',
+};
+
 export let BLOCKED_ACTIONS = [
   BLOCKED_CUSTOM_ACTION,
   BLOCKED_1D_ACTION,
@@ -108,6 +114,7 @@ export let BLOCKED_ACTIONS = [
   BLOCKED_7D_ACTION,
   BLOCKED_14D_ACTION,
   BLOCKED_30D_ACTION,
+  BLOCKED_NONE_ACTION
 ];
 
 let DUE_1D_ACTION = {
@@ -144,7 +151,13 @@ let DUE_CUSTOM_ACTION = {
   name: 'Due',
   description: `Pick a due date to retriage.`,
   key: new Shortcut('0', false, true, 'Digit0'),
-}
+};
+
+let DUE_NONE_ACTION = {
+  name: 'Clear',
+  description: `Removes the due date.`,
+  key: new Shortcut('-', false, true, 'Minus'),
+};
 
 export let DUE_ACTIONS = [
   DUE_CUSTOM_ACTION,
@@ -153,6 +166,7 @@ export let DUE_ACTIONS = [
   DUE_7D_ACTION,
   DUE_14D_ACTION,
   DUE_30D_ACTION,
+  DUE_NONE_ACTION,
 ];
 
 function destinationToPriority(destination: Action) {
@@ -185,6 +199,9 @@ export async function takeAction(
       case ARCHIVE_ACTION:
         return await thread.archive();
 
+      case BLOCKED_NONE_ACTION:
+        return await thread.clearBlocked(moveToInboxAgain);
+
       // TODO: Remove some of the duplication between BLOCKED and DUE.
       case BLOCKED_1D_ACTION:
         return await thread.setBlockedDays(1, moveToInboxAgain);
@@ -203,6 +220,9 @@ export async function takeAction(
 
       case BLOCKED_CUSTOM_ACTION:
         return showDatePicker(thread.setBlocked.bind(thread), moveToInboxAgain);
+
+      case DUE_NONE_ACTION:
+        return await thread.clearDue(moveToInboxAgain);
 
       case DUE_1D_ACTION:
         return await thread.setDueDays(1, moveToInboxAgain);
