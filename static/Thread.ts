@@ -173,6 +173,7 @@ export class Thread extends EventTarget {
   // we can queue up archives/mark-reads with the right count of messages to
   // archive/mark-read.
   private sentMessageIds_: string[];
+  private actionInProgress_?: boolean;
 
   constructor(public id: string, private metadata_: ThreadMetadata) {
     super();
@@ -206,6 +207,8 @@ export class Thread extends EventTarget {
   // restore them.
   async updateMetadata(updates: ThreadMetadataUpdate) {
     await this.getMetadataDocument_().update(updates);
+    if (this.actionInProgress_)
+      this.setActionInProgress(false);
   }
 
   private static clearedMetadata_(removeFromInbox?: boolean):
@@ -242,6 +245,15 @@ export class Thread extends EventTarget {
 
   static metadataCollection() {
     return firestoreUserCollection().doc('threads').collection('metadata');
+  }
+
+  setActionInProgress(inProgress: boolean) {
+    this.actionInProgress_ = inProgress;
+    this.dispatchEvent(new UpdatedEvent());
+  }
+
+  actionInProgress() {
+    return !!this.actionInProgress_;
   }
 
   removeFromInboxMetadata_() {

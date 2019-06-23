@@ -797,29 +797,11 @@ export class ThreadListView extends View {
           focusedRowIsSelected = true;
         threads.push(child.thread);
 
-        if (keepRows)
-          continue;
-
         // ThreadRows get recycled, so clear the checked and focused state
         // for future use.
-        child.resetState();
-
-        // TODO: Instead of removing rows outside of model changes, which
-        // causes races, move focus state into the model so that it all
-        // updates atomically.
-        let parentGroup = child.getGroup();
-        // The rows will get removed on the next frame anyways, but we don't
-        // want the user to see an intermediary state where the row is shown
-        // but unchecked and we don't want to move focus to the next row
-        // until these rows have been removed. So just removed them
-        // synchronously here purely for the visual effect. This also has
-        // the important side effect of not blocking the UI changes on
-        // network activity.
-        child.remove();
-        // Remove the parent group if it's now empty so the user doens't see
-        // a flicker where the row is removed without it's parent group also
-        // being removed.
-        parentGroup.removeIfEmpty();
+        if (!keepRows)
+          child.resetState();
+        child.thread.setActionInProgress(true);
       } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
         firstUnselectedRowAfterFocused = child;
       }

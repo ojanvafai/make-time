@@ -64,7 +64,7 @@ class RowState {
       public label: string|null, public priority: string|null,
       public blocked: Date|null, public due: Date|null,
       public hasRepeat: boolean, public isUnread: boolean,
-      public finalVersionSkipped: boolean) {}
+      public finalVersionSkipped: boolean, public actionInProgress: boolean) {}
 
   equals(other: RowState) {
     return this.subject === other.subject && this.snippet === other.snippet &&
@@ -78,7 +78,8 @@ class RowState {
         (this.due && other.due && this.due.getTime() === other.due.getTime()) &&
         this.hasRepeat === other.hasRepeat &&
         this.isUnread === other.isUnread &&
-        this.finalVersionSkipped === other.finalVersionSkipped;
+        this.finalVersionSkipped === other.finalVersionSkipped &&
+        this.actionInProgress === other.actionInProgress;
   }
 }
 
@@ -269,7 +270,8 @@ export class ThreadRow extends HTMLElement {
         messageIds.length, messageIds[messageIds.length - 1],
         this.getGroup().name, this.thread.getLabel(), this.thread.getPriority(),
         blockedDate, dueDate, this.thread.hasRepeat(), this.thread.isUnread(),
-        this.showFinalVersion_ && this.finalVersionSkipped_);
+        this.showFinalVersion_ && this.finalVersionSkipped_,
+        this.thread.actionInProgress());
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -278,6 +280,7 @@ export class ThreadRow extends HTMLElement {
 
     this.lastRowState_ = state;
 
+    this.style.opacity = state.actionInProgress ? '0.2' : '';
     this.style.display = state.finalVersionSkipped ? 'none' : 'flex';
 
     let fromContainer = document.createElement('div');
