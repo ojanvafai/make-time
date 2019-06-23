@@ -91,8 +91,17 @@ export class RenderedThread extends HTMLElement {
   focusFirstUnread() {
     let messages = Array.from(this.children);
     let message = messages.find(x => x.classList.contains('unread'));
-    if (!message)
-      message = notNull(this.lastElementChild);
+
+    if (!message) {
+      // lastElementChild is null if if we try to render a thread before we have
+      // ever fetched its message data.
+      // TODO: Queue up the focus so that we call focusFirstUnread once the
+      // messages have loaded.
+      if (!this.lastElementChild)
+        return;
+      message = this.lastElementChild;
+    }
+
     this.focusMessage_(message, {'block': 'center'});
   }
 

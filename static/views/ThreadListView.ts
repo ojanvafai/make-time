@@ -865,7 +865,7 @@ export class ThreadListView extends View {
     let rendered = renderedRow.rendered;
     assert(
         !rendered.isAttached() ||
-            rendered.parentNode == this.singleThreadContainer_,
+            rendered.parentNode === this.singleThreadContainer_,
         'Tried to rerender already rendered thread. This should never happen.');
 
     if (!rendered.isAttached()) {
