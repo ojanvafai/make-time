@@ -121,29 +121,30 @@ export class Actions extends HTMLElement {
       button = this.createButton_(actionList[0]);
       if (button) {
         button.append('...');
-        button.addEventListener('pointerdown', (e: PointerEvent) => {
-          this.openMenu_(e.target as HTMLButtonElement, actionList.slice(1));
 
-          // Set this so we can have the same implementation for touch and
-          // mouse since touch does this implicitly.
-          button!.setPointerCapture(e.pointerId);
-        });
-
-        button.addEventListener('pointermove', (e: PointerEvent) => {
+        let updateMenuItemHover = (e: PointerEvent) => {
           // TODO: unify hover handling for menu and non-menu buttons.
           // Right now non-menu buttons are handled in global stylesheet.
           if (!this.menu_)
             return;
 
           let hitElement = document.elementFromPoint(e.x, e.y);
-          let setColor = (x: HTMLElement) => {
-            x.style.backgroundColor = x === hitElement ? '#ccc' : '#ffffffbb';
-          };
-
-          setColor(button!);
           for (let child of this.menu_.children) {
-            setColor(child as HTMLElement);
+            let element = child as HTMLElement;
+            element.style.backgroundColor =
+                element === hitElement ? '#ccc' : '#fff';
           }
+        };
+
+        button.addEventListener('pointermove', updateMenuItemHover);
+
+        button.addEventListener('pointerdown', (e: PointerEvent) => {
+          this.openMenu_(e.target as HTMLButtonElement, actionList.slice(1));
+
+          // Set this so we can have the same implementation for touch and
+          // mouse since touch does this implicitly.
+          button!.setPointerCapture(e.pointerId);
+          updateMenuItemHover(e);
         });
       }
     } else {
@@ -164,16 +165,11 @@ export class Actions extends HTMLElement {
 
       if (this.menu_)
         this.menu_.remove();
+      this.menu_ = undefined;
     });
   }
 
-
   private openMenu_(button: HTMLElement, actions: Action[]) {
-    // Since we reuse the menu if it was left open due to pointerup
-    // outside the menu, clear the contents.
-    if (this.menu_)
-      this.menu_.textContent = '';
-
     this.menu_ = document.createElement('div');
     for (let subAction of actions.reverse()) {
       let button = this.createButton_(subAction);
@@ -181,16 +177,13 @@ export class Actions extends HTMLElement {
         this.menu_.append(button);
     }
 
-    // TODO: Make this prettier. The background color is necessary to avoid
-    // having the buttons semi-transparent since they overlay on top of content.
     this.menu_.style.cssText = `
-        position: fixed;
-        display: flex;
-        flex-direction: column;
-        background-color: #fff;
-        border-radius: 5px;
-        min-width: 33vw;
-      `;
+      position: fixed;
+      display: flex;
+      flex-direction: column;
+      border-radius: 5px;
+      min-width: 33vw;
+    `;
     document.body.append(this.menu_);
 
     let buttonRect = button.getBoundingClientRect();
