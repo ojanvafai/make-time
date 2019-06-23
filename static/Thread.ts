@@ -190,9 +190,7 @@ export class Thread extends EventTarget {
     return count;
   }
 
-  // Returns the old values for all the fields being updated so that undo can
-  // restore them.
-  async updateMetadata(updates: ThreadMetadataUpdate) {
+  oldMetadataState(updates: ThreadMetadataUpdate) {
     let oldState: any = {};
     let fullState = this.metadata_ as any;
     for (let key in updates) {
@@ -201,8 +199,13 @@ export class Thread extends EventTarget {
       else
         oldState[key] = firebase.firestore.FieldValue.delete();
     }
-    await this.getMetadataDocument_().update(updates);
     return oldState;
+  }
+
+  // Returns the old values for all the fields being updated so that undo can
+  // restore them.
+  async updateMetadata(updates: ThreadMetadataUpdate) {
+    await this.getMetadataDocument_().update(updates);
   }
 
   private static clearedMetadata_(removeFromInbox?: boolean):
@@ -247,20 +250,22 @@ export class Thread extends EventTarget {
     return update;
   }
 
-  async archive(archivedByFilter?: boolean) {
+  archiveUpdate(archivedByFilter?: boolean) {
     // TODO: Take into account the repeat pattern. This assumes daily.
-    if (this.hasRepeat()) {
-      this.setBlockedDays(1);
-      return;
-    }
+    if (this.hasRepeat())
+      return this.stuckDaysUpdate(1);
 
     let update = this.removeFromInboxMetadata_();
     if (archivedByFilter)
       update.archivedByFilter = true;
-    return await this.updateMetadata(update);
+    return update;
   }
 
-  async setMuted() {
+  async archive(archivedByFilter?: boolean) {
+    await this.updateMetadata(this.archiveUpdate(archivedByFilter));
+  }
+
+  muteUpdate() {
     if (this.hasRepeat()) {
       alert('Cannot mute a repeating item.');
       return;
@@ -268,7 +273,14 @@ export class Thread extends EventTarget {
 
     let update = this.removeFromInboxMetadata_();
     update.muted = true;
-    return await this.updateMetadata(update);
+    return update;
+  }
+
+  async mute() {
+    let update = this.muteUpdate();
+    if (!update)
+      return;
+    await this.updateMetadata(update);
   }
 
   keepInInboxMetadata_() {
@@ -290,34 +302,32 @@ export class Thread extends EventTarget {
     if (this.metadata_.readCount === undefined ||
         this.metadata_.readCount < this.metadata_.messageIds.length) {
       let messageCount = this.messageCount_();
-      return await this.updateMetadata(
+      await this.updateMetadata(
           {readCount: messageCount, countToMarkRead: messageCount});
     }
-    return {};
   }
 
-  async setPriority(priority: Priority, moveToInbox?: boolean) {
+  priorityUpdate(priority: Priority, moveToInbox?: boolean) {
     let update = this.keepInInboxMetadata_();
     if (moveToInbox)
       update.moveToInbox = true;
     update.hasPriority = true;
     update.priorityId = priority;
-    return await this.updateMetadata(update);
+    return update;
   }
 
-  async clearBlocked(moveToInbox?: boolean) {
+  clearStuckUpdate(moveToInbox?: boolean) {
     let update = this.clearDate_(ThreadMetadataKeys.blocked, moveToInbox);
     // Clearing blocked should put the thread back in the triage queue,
     // otherwise the thread just disappears. If the user wants a queue other
     // than triage, they can just use that action directly instead of clearing
     // blocked (e.g. set the priority).
     update.hasLabel = true;
-    return await this.updateMetadata(update);
+    return update;
   }
 
-  async clearDue(moveToInbox?: boolean) {
-    let update = this.clearDate_(ThreadMetadataKeys.due, moveToInbox);
-    return await this.updateMetadata(update);
+  clearDueUpdate(moveToInbox?: boolean) {
+    return this.clearDate_(ThreadMetadataKeys.due, moveToInbox);
   }
 
   private clearDate_(key: ThreadMetadataKeys, moveToInbox?: boolean) {
@@ -328,25 +338,23 @@ export class Thread extends EventTarget {
     return update;
   }
 
-  async setBlocked(date: Date, moveToInbox?: boolean) {
-    return await this.setDate(ThreadMetadataKeys.blocked, date, moveToInbox);
+  stuckUpdate(date: Date, moveToInbox?: boolean) {
+    return this.setDate(ThreadMetadataKeys.blocked, date, moveToInbox);
   }
 
-  async setBlockedDays(days: number, moveToInbox?: boolean) {
-    return await this.setDateDays_(
-        ThreadMetadataKeys.blocked, days, moveToInbox);
+  stuckDaysUpdate(days: number, moveToInbox?: boolean) {
+    return this.setDateDays_(ThreadMetadataKeys.blocked, days, moveToInbox);
   }
 
-  async setDue(date: Date, moveToInbox?: boolean) {
-    return await this.setDate(ThreadMetadataKeys.due, date, moveToInbox, true);
+  dueUpdate(date: Date, moveToInbox?: boolean) {
+    return this.setDate(ThreadMetadataKeys.due, date, moveToInbox, true);
   }
 
-  async setDueDays(days: number, moveToInbox?: boolean) {
-    return await this.setDateDays_(
-        ThreadMetadataKeys.due, days, moveToInbox, true);
+  dueDaysUpdate(days: number, moveToInbox?: boolean) {
+    return this.setDateDays_(ThreadMetadataKeys.due, days, moveToInbox, true);
   }
 
-  async setDate(
+  setDate(
       key: ThreadMetadataKeys, date: Date, moveToInbox?: boolean,
       keepMetadata?: boolean) {
     // Don't want setting the due date to reset retriageTimestamp or reset
@@ -355,10 +363,10 @@ export class Thread extends EventTarget {
     if (moveToInbox)
       update.moveToInbox = true;
     update[key] = date.getTime();
-    return await this.updateMetadata(update);
+    return update;
   }
 
-  async setDateDays_(
+  setDateDays_(
       key: ThreadMetadataKeys, days: number, moveToInbox?: boolean,
       keepMetadata?: boolean) {
     let date = new Date();
@@ -367,19 +375,18 @@ export class Thread extends EventTarget {
     date.setHours(0, 0, 0);
     date.setDate(date.getDate() + days);
 
-    return await this.setDate(key, date, moveToInbox, keepMetadata);
+    return this.setDate(key, date, moveToInbox, keepMetadata);
   }
 
   async setOnlyFinalVersion(value: boolean) {
-    return await this.updateMetadata({finalVersion: value});
+    await this.updateMetadata({finalVersion: value});
   }
 
   async setOnlyLabel(label: string) {
-    return await this.updateMetadata(
-        {labelId: await this.queueNames_.getId(label)});
+    await this.updateMetadata({labelId: await this.queueNames_.getId(label)});
   }
 
-  async toggleRepeat() {
+  repeatUpdate() {
     let current = this.metadata_.repeat;
     let newRepeat;
     if (current) {
@@ -387,7 +394,7 @@ export class Thread extends EventTarget {
     } else {
       newRepeat = {type: RepeatType.Daily};
     }
-    await this.updateMetadata({repeat: newRepeat});
+    return {repeat: newRepeat} as ThreadMetadataUpdate;
   }
 
   finalVersion() {
@@ -558,7 +565,7 @@ export class Thread extends EventTarget {
     // themself a new message and then immediately marked it blocked.
     if (hasLabel)
       update.blocked = firebase.firestore.FieldValue.delete();
-    return await this.updateMetadata(update);
+    await this.updateMetadata(update);
   }
 
   getData() {

@@ -4,7 +4,7 @@ import {assert, compareDates, setFaviconCount as setFavicon} from '../Base.js';
 import {CalendarEvent} from '../calendar/CalendarEvent.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
-import {takeAction} from '../ThreadActions.js';
+import {createDateUpdate, createUpdate, pickDate} from '../ThreadActions.js';
 
 import {Model} from './Model.js';
 
@@ -270,13 +270,33 @@ export abstract class ThreadListModel extends Model {
     let progress = this.updateTitle(
         'ThreadListModel.markThreadsTriaged', threads.length,
         'Modifying threads...');
+
+    let pending = [];
+
+    // Need to pick the date first for actions that require the date picker
+    // since we don't want to show the date picker once per thread.
+    let date = await pickDate(destination);
+
     for (let thread of threads) {
+      let update = date ?
+          createDateUpdate(thread, destination, date, moveToInbox) :
+          createUpdate(thread, destination, moveToInbox);
+
+      if (!update)
+        continue;
+
+      pending.push({update: update, thread: thread});
       this.undoableActions_.push({
         thread: thread,
-        state: await takeAction(thread, destination, moveToInbox),
+        state: thread.oldMetadataState(update),
       })
-      progress.incrementProgress();
     };
+
+    for (let x of pending) {
+      // TODO: Use TaskQueue to do these in parallel.
+      await x.thread.updateMetadata(x.update);
+      progress.incrementProgress();
+    }
   }
 
   async handleUndoAction(action: TriageResult) {

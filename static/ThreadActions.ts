@@ -114,7 +114,7 @@ export let BLOCKED_ACTIONS = [
   BLOCKED_7D_ACTION,
   BLOCKED_14D_ACTION,
   BLOCKED_30D_ACTION,
-  BLOCKED_NONE_ACTION
+  BLOCKED_NONE_ACTION,
 ];
 
 let DUE_1D_ACTION = {
@@ -186,81 +186,98 @@ function destinationToPriority(destination: Action) {
   }
 }
 
+export async function pickDate(destination: Action): Promise<Date|undefined> {
+  if (destination === BLOCKED_CUSTOM_ACTION ||
+      destination === DUE_CUSTOM_ACTION) {
+    let datePicker = new TinyDatePicker({mode: 'dp-modal'});
+    return new Promise((resolve) => {
+      // TODO: Handle the case where the date picker is closed without
+      // selecting a date.
+      datePicker.addEventListener('select', async () => {
+        resolve(datePicker.state.selectedDate);
+      });
+    });
+  }
+  return;
+}
+
 export async function takeAction(
-    thread: Thread, destination: Action, moveToInboxAgain?: boolean) {
+    thread: Thread, destination: Action, moveToInbox?: boolean) {
+  let date = await pickDate(destination);
+  let update = date ?
+      await createDateUpdate(thread, destination, date, moveToInbox) :
+      await createUpdate(thread, destination, moveToInbox);
+  if (!update)
+    return;
+  await thread.updateMetadata(update);
+}
+
+export function createDateUpdate(
+    thread: Thread, destination: Action, date: Date, moveToInbox?: boolean) {
+  if (destination === BLOCKED_CUSTOM_ACTION)
+    return thread.stuckUpdate(date, moveToInbox);
+
+  if (destination === DUE_CUSTOM_ACTION)
+    return thread.dueUpdate(date, moveToInbox);
+
+  assert(false, 'This should never happen.');
+  return;
+}
+
+export function createUpdate(
+    thread: Thread, destination: Action, moveToInbox?: boolean) {
   let priority = destinationToPriority(destination);
   if (priority) {
-    return await thread.setPriority(priority, moveToInboxAgain);
+    return thread.priorityUpdate(priority, moveToInbox);
   } else {
     switch (destination) {
       case REPEAT_ACTION:
-        return await thread.toggleRepeat();
+        return thread.repeatUpdate();
 
       case ARCHIVE_ACTION:
-        return await thread.archive();
+        return thread.archiveUpdate();
 
       case BLOCKED_NONE_ACTION:
-        return await thread.clearBlocked(moveToInboxAgain);
+        return thread.clearStuckUpdate(moveToInbox);
 
       // TODO: Remove some of the duplication between BLOCKED and DUE.
       case BLOCKED_1D_ACTION:
-        return await thread.setBlockedDays(1, moveToInboxAgain);
+        return thread.stuckDaysUpdate(1, moveToInbox);
 
       case BLOCKED_2D_ACTION:
-        return await thread.setBlockedDays(2, moveToInboxAgain);
+        return thread.stuckDaysUpdate(2, moveToInbox);
 
       case BLOCKED_7D_ACTION:
-        return await thread.setBlockedDays(7, moveToInboxAgain);
+        return thread.stuckDaysUpdate(7, moveToInbox);
 
       case BLOCKED_14D_ACTION:
-        return await thread.setBlockedDays(14, moveToInboxAgain);
+        return thread.stuckDaysUpdate(14, moveToInbox);
 
       case BLOCKED_30D_ACTION:
-        return await thread.setBlockedDays(30, moveToInboxAgain);
-
-      case BLOCKED_CUSTOM_ACTION:
-        return showDatePicker(thread.setBlocked.bind(thread), moveToInboxAgain);
+        return thread.stuckDaysUpdate(30, moveToInbox);
 
       case DUE_NONE_ACTION:
-        return await thread.clearDue(moveToInboxAgain);
+        return thread.clearDueUpdate(moveToInbox);
 
       case DUE_1D_ACTION:
-        return await thread.setDueDays(1, moveToInboxAgain);
+        return thread.dueDaysUpdate(1, moveToInbox);
 
       case DUE_2D_ACTION:
-        return await thread.setDueDays(2, moveToInboxAgain);
+        return thread.dueDaysUpdate(2, moveToInbox);
 
       case DUE_7D_ACTION:
-        return await thread.setDueDays(7, moveToInboxAgain);
+        return thread.dueDaysUpdate(7, moveToInbox);
 
       case DUE_14D_ACTION:
-        return await thread.setDueDays(14, moveToInboxAgain);
+        return thread.dueDaysUpdate(14, moveToInbox);
 
       case DUE_30D_ACTION:
-        return await thread.setDueDays(30, moveToInboxAgain);
-
-      case DUE_CUSTOM_ACTION:
-        return showDatePicker(thread.setDue.bind(thread), moveToInboxAgain);
+        return thread.dueDaysUpdate(30, moveToInbox);
 
       case MUTE_ACTION:
-        return await thread.setMuted();
-
-      default:
-        assert(false, 'This should never happen.');
+        return thread.muteUpdate();
     }
   }
-}
-
-function showDatePicker(
-    callback: (date: Date, moveToInbox?: boolean|undefined) => Promise<any>,
-    moveToInboxAgain?: boolean) {
-  let datePicker = new TinyDatePicker({mode: 'dp-modal'});
-  return new Promise((resolve) => {
-    // TODO: Handle the case where the date picker is closed without
-    // selecting a date.
-    datePicker.addEventListener('select', async () => {
-      await callback(datePicker.state.selectedDate, moveToInboxAgain);
-      resolve();
-    });
-  });
+  assert(false, 'This should never happen.');
+  return;
 }

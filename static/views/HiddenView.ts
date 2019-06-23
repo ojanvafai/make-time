@@ -101,7 +101,7 @@ class HiddenModel extends ThreadListModel {
   async handleUndoAction(action: TriageResult) {
     switch (this.queryKey_()) {
       case ThreadMetadataKeys.muted:
-        await action.thread.setMuted();
+        await action.thread.mute();
         return;
 
       case ThreadMetadataKeys.archivedByFilter:
