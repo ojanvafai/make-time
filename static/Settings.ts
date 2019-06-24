@@ -1,9 +1,10 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, Labels} from './Base.js';
+import {assert, defined} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, DEFAULT_CALENDAR_DATA, EventType, UNBOOKED_TYPES} from './calendar/Constants.js';
+import {QueueNames} from './QueueNames.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 
@@ -442,21 +443,13 @@ export class Settings extends EventTarget {
     return labels;
   }
 
-  async getLabels() {
-    let filters = await this.getFilters();
-    let labels: Set<string> = new Set();
-    for (let rule of filters) {
-      labels.add(defined(rule.label));
-    }
-    labels.add(Labels.Fallback);
-    return labels;
-  }
-
   async getLabelSelectTemplate() {
     if (!this.labelSelectCreator_) {
       this.labelSelectCreator_ = new AsyncOnce(async () => {
         this.labelSelect_ = document.createElement('select');
-        let labels = Array.from(await this.getLabels()).sort();
+        let queueNames = new QueueNames();
+        let labels = await queueNames.getAllNames();
+        labels.sort();
         for (let label of labels) {
           let option = document.createElement('option');
           option.append(label);

@@ -1,4 +1,4 @@
-import {assert, defined} from './Base.js';
+import {assert, defined, Labels} from './Base.js';
 import {firestore, firestoreUserCollection} from './BaseMain.js';
 
 export class QueueNames {
@@ -7,6 +7,13 @@ export class QueueNames {
 
   getNameIdsDocument_() {
     return firestoreUserCollection().doc('NameIds');
+  }
+
+  async getAllNames() {
+    await this.fetch();
+    let nameIds = defined(QueueNames.nameIds_);
+    let names = Object.keys(nameIds);
+    return names.filter(x => x !== Labels.Archive);
   }
 
   setNameIds_(data: any) {

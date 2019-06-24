@@ -1,4 +1,5 @@
-import {defined, Labels, notNull} from '../Base.js';
+import {defined, notNull} from '../Base.js';
+import {QueueNames} from '../QueueNames.js';
 import {AllQueueDatas, QueueListEntry, QueueSettings} from '../QueueSettings.js';
 import {FiltersChangedEvent, Settings} from '../Settings.js';
 
@@ -121,9 +122,6 @@ export class QueuesView extends HTMLElement {
   private async render_() {
     this.textContent = '';
 
-    let labels = await this.settings_.getLabels();
-    labels.delete(Labels.Archive);
-
     // TODO: Show help text if there are no queues.
     let scrollable = document.createElement('div');
     scrollable.style.cssText = `
@@ -140,6 +138,8 @@ export class QueuesView extends HTMLElement {
     scrollable.append(
         this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
+    let queueNames = new QueueNames();
+    let labels = await queueNames.getAllNames();
     let queueDatas = this.settings_.getQueueSettings().getSorted(labels);
     for (let queueData of queueDatas) {
       this.appendRow_(queueData);

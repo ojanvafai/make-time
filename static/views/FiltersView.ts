@@ -1,4 +1,5 @@
 import {defined, Labels, showDialog} from '../Base.js';
+import {QueueNames} from '../QueueNames.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -364,6 +365,10 @@ export class FiltersView extends HTMLElement {
     newLabel = newLabel.replace(/\s+/g, '');
     if (!newLabel)
       return;
+
+    // Ensure the new label is stores in the QueueNames map in firestore.
+    let queueNames = new QueueNames();
+    queueNames.getId(newLabel);
 
     let option = this.settings_.addLabel(newLabel);
     let allLabels = this.querySelectorAll('select');
