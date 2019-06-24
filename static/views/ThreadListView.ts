@@ -248,12 +248,19 @@ export class ThreadListView extends View {
     `;
     this.append(this.singleThreadContainer_);
 
+    let buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+      display: flex;
+      justify-content: center;
+    `;
+    this.append(buttonContainer);
+
     if (bottomButtonUrl)
-      this.appendButton_(defined(bottomButtonText), bottomButtonUrl);
+      this.appendButton_(buttonContainer, defined(bottomButtonText), bottomButtonUrl);
 
     if (this.model_.canDisallowViewMessages()) {
       // TODO: Use a toggle switch.
-      let button = this.appendButton_('');
+      let button = this.appendButton_(buttonContainer, '');
       button.title = 'Override the allow view messages setting.';
       let updateButtonText = () => {
         button.textContent = this.model_.allowViewMessages() ?
@@ -307,13 +314,13 @@ export class ThreadListView extends View {
     }
   }
 
-  appendButton_(text: string, url?: string) {
+  appendButton_(container: HTMLElement, text: string, url?: string) {
     let button = document.createElement('a');
     button.className = 'label-button';
     if (url)
       button.href = url;
     button.textContent = text;
-    this.append(button);
+    container.append(button);
     return button;
   }
 
