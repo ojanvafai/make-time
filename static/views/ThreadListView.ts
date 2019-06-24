@@ -256,7 +256,8 @@ export class ThreadListView extends View {
     this.append(buttonContainer);
 
     if (bottomButtonUrl)
-      this.appendButton_(buttonContainer, defined(bottomButtonText), bottomButtonUrl);
+      this.appendButton_(
+          buttonContainer, defined(bottomButtonText), bottomButtonUrl);
 
     if (this.model_.canDisallowViewMessages()) {
       // TODO: Use a toggle switch.
@@ -780,6 +781,12 @@ export class ThreadListView extends View {
   private async markTriaged_(destination: Action) {
     let threads = this.collectThreadsToTriage_(
         ThreadListView.ACTIONS_THAT_KEEP_ROWS_.includes(destination));
+
+    if (threads.length > 1) {
+      let toast = new Toast(`Triaged ${threads.length} threads`);
+      AppShell.addToFooter(toast);
+    }
+
     await this.model_.markTriaged(destination, threads);
   }
 
