@@ -59,15 +59,17 @@ export class RenderThreadEvent extends Event {
 
 class RowState {
   constructor(
-      public subject: string, public snippet: string, public from: string,
-      public count: number, public lastMessageId: string, public group: string,
+      public isSmallScreen: boolean, public subject: string,
+      public snippet: string, public from: string, public count: number,
+      public lastMessageId: string, public group: string,
       public label: string|null, public priority: string|null,
       public blocked: Date|null, public due: Date|null,
       public hasRepeat: boolean, public isUnread: boolean,
       public finalVersionSkipped: boolean, public actionInProgress: boolean) {}
 
   equals(other: RowState) {
-    return this.subject === other.subject && this.snippet === other.snippet &&
+    return this.isSmallScreen === other.isSmallScreen &&
+        this.subject === other.subject && this.snippet === other.snippet &&
         this.from === other.from && this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
         this.group === other.group && this.label === other.label &&
@@ -265,11 +267,14 @@ export class ThreadRow extends HTMLElement {
         this.thread.isBlocked() ? this.thread.getBlockedDate() : null;
     let dueDate = this.thread.hasDueDate() ? this.thread.getDueDate() : null;
 
+    // window.innerWidth makes more logical sense for this, but chrome has bugs.
+    // crbug.com/960803.
     let state = new RowState(
-        this.thread.getSubject(), ` - ${snippetText}`, this.thread.getFrom(),
-        messageIds.length, messageIds[messageIds.length - 1],
-        this.getGroup().name, this.thread.getLabel(), this.thread.getPriority(),
-        blockedDate, dueDate, this.thread.hasRepeat(), this.thread.isUnread(),
+        window.outerWidth < 600, this.thread.getSubject(), ` - ${snippetText}`,
+        this.thread.getFrom(), messageIds.length,
+        messageIds[messageIds.length - 1], this.getGroup().name,
+        this.thread.getLabel(), this.thread.getPriority(), blockedDate, dueDate,
+        this.thread.hasRepeat(), this.thread.isUnread(),
         this.showFinalVersion_ && this.finalVersionSkipped_,
         this.thread.actionInProgress());
 
@@ -403,7 +408,7 @@ export class ThreadRow extends HTMLElement {
     date.style.cssText = `
       width: 4.5em;
       text-align: right;
-    `
+    `;
 
     let boldState = state.isUnread ? '600' : '';
     fromContainer.style.fontWeight = boldState;
@@ -416,10 +421,10 @@ export class ThreadRow extends HTMLElement {
     popoutButton.style.marginRight = '4px';
 
     this.messageDetails_.textContent = '';
+    this.messageDetails_.style.flexDirection =
+        state.isSmallScreen ? 'column' : '';
 
-    // window.innerWidth makes more logical sense for this, but chrome has bugs.
-    // crbug.com/960803.
-    if (window.outerWidth < 600) {
+    if (state.isSmallScreen) {
       this.messageDetails_.style.alignItems = '';
 
       let topRow = document.createElement('div');
@@ -430,7 +435,6 @@ export class ThreadRow extends HTMLElement {
       topRow.append(date, popoutButton);
       this.messageDetails_.append(topRow, title);
 
-      this.messageDetails_.style.flexDirection = 'column';
       fromContainer.style.flex = '1';
       title.style.fontSize = '12px';
       title.style.margin = '5px 5px 0 5px';

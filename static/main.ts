@@ -563,6 +563,10 @@ document.body.addEventListener('keydown', async (e) => {
     await getView().dispatchShortcut(e);
 });
 
+window.addEventListener('resize', () => {
+  getView().render();
+});
+
 window.addEventListener('error', (e) => {
   // Want to process this in case we hit a firestore internal error and need to
   // reload.

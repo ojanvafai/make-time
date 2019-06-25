@@ -279,14 +279,14 @@ export class ThreadListView extends View {
     this.updateActions_();
 
     this.addListenerToModel(
-        ThreadListChangedEvent.NAME, this.render_.bind(this));
+        ThreadListChangedEvent.NAME, this.render.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread);
     });
 
     this.renderCalendar_();
-    this.render_();
+    this.render();
   }
 
   private async renderCalendar_() {
@@ -392,7 +392,7 @@ export class ThreadListView extends View {
     timer.style.top = `-${timer.offsetHeight}px`;
   }
 
-  private async render_() {
+  async render() {
     if (this.hasQueuedFrame_)
       return;
     this.hasQueuedFrame_ = true;
@@ -768,7 +768,7 @@ export class ThreadListView extends View {
     this.appShell_.setSubject('');
     this.updateActions_();
 
-    this.render_();
+    this.render();
   }
 
   transitionToSingleThread_() {
@@ -849,7 +849,7 @@ export class ThreadListView extends View {
   setRenderedRow_(row: ThreadRow|null) {
     this.setRenderedRowInternal_(row);
     if (row)
-      this.render_();
+      this.render();
   }
 
   renderOne_(toast?: HTMLElement) {

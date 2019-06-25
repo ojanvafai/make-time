@@ -15,13 +15,15 @@ export abstract class View extends HTMLElement {
   tearDown() {}
   async init() {}
   async goBack() {}
+  render() {}
 
   async dispatchShortcut(e: KeyboardEvent) {
     if (this.actions_)
       await this.actions_.dispatchShortcut(e);
   };
 
-  protected setActions(actions: (Action|Action[])[], supplementalActions?: (Action|Action[])[]) {
+  protected setActions(
+      actions: (Action|Action[])[], supplementalActions?: (Action|Action[])[]) {
     this.actions_.setActions(actions, supplementalActions);
     AppShell.setFooter(this.actions_);
   }
