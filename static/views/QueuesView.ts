@@ -1,5 +1,5 @@
 import {defined, notNull} from '../Base.js';
-import {QueueNames} from '../QueueNames.js';
+import {QueueNames, SnapshotEvent} from '../QueueNames.js';
 import {AllQueueDatas, QueueListEntry, QueueSettings} from '../QueueSettings.js';
 import {FiltersChangedEvent, Settings} from '../Settings.js';
 
@@ -8,6 +8,7 @@ export class QueuesView extends HTMLElement {
   private daily_: HTMLElement|undefined;
   private weekly_: HTMLElement|undefined;
   private monthly_: HTMLElement|undefined;
+  private queueNames_: QueueNames;
 
   static rowClassName_ = 'queue-row';
 
@@ -19,6 +20,9 @@ export class QueuesView extends HTMLElement {
       flex-direction: column;
       outline: 0;
     `;
+
+    this.queueNames_ = QueueNames.create();
+    this.queueNames_.addEventListener(SnapshotEvent.NAME, () => this.render_());
 
     this.onkeydown = (e) => this.handleKeyDown_(e);
     this.settings_.addEventListener(
@@ -138,8 +142,7 @@ export class QueuesView extends HTMLElement {
     scrollable.append(
         this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
-    let queueNames = new QueueNames();
-    let labels = await queueNames.getAllNames();
+    let labels = await this.queueNames_.getAllNames();
     let queueDatas = this.settings_.getQueueSettings().getSorted(labels);
     for (let queueData of queueDatas) {
       this.appendRow_(queueData);

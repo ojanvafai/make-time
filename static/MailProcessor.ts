@@ -578,7 +578,7 @@ export class MailProcessor {
       await this.processRetriage_();
     }
 
-    let queueNames = new QueueNames();
+    let queueNames = QueueNames.create();
     let queueDatas = this.settings_.getQueueSettings().entries();
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)

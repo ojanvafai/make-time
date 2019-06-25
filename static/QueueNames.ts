@@ -1,9 +1,23 @@
-import {assert, defined, Labels} from './Base.js';
+import {assert, defined} from './Base.js';
 import {firestore, firestoreUserCollection} from './BaseMain.js';
 
-export class QueueNames {
+export class SnapshotEvent extends Event {
+  static NAME = 'snapshot';
+  constructor() {
+    super(SnapshotEvent.NAME);
+  }
+}
+
+export class QueueNames extends EventTarget {
   private static nameIds_?: {[property: string]: string};
-  private static idNames_?: {[property: string]: string};
+  private static idNames_?: { [property: string]: string };
+  private static instance_?: QueueNames;
+
+  static create() {
+    if (!this.instance_)
+      this.instance_ = new QueueNames();
+    return this.instance_;
+  }
 
   getNameIdsDocument_() {
     return firestoreUserCollection().doc('NameIds');
@@ -13,7 +27,7 @@ export class QueueNames {
     await this.fetch();
     let nameIds = defined(QueueNames.nameIds_);
     let names = Object.keys(nameIds);
-    return names.filter(x => x !== Labels.Archive);
+    return names;
   }
 
   setNameIds_(data: any) {
@@ -44,6 +58,7 @@ export class QueueNames {
 
     doc.onSnapshot((snapshot) => {
       this.setNameIds_(snapshot.data());
+      this.dispatchEvent(new SnapshotEvent());
     });
   }
 

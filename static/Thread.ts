@@ -179,7 +179,7 @@ export class Thread extends EventTarget {
     super();
 
     this.processed_ = new ProcessedMessageData();
-    this.queueNames_ = new QueueNames();
+    this.queueNames_ = QueueNames.create();
     this.sentMessageIds_ = [];
   }
 

@@ -156,7 +156,7 @@ async function login_() {
 
           await Promise.all([
             storage_.fetch(),
-            new QueueNames().fetch(),
+            QueueNames.create().fetch(),
           ]);
 
           // This has to happen after storage_.fetch().

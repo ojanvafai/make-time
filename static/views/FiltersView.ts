@@ -367,7 +367,7 @@ export class FiltersView extends HTMLElement {
       return;
 
     // Ensure the new label is stores in the QueueNames map in firestore.
-    let queueNames = new QueueNames();
+    let queueNames = QueueNames.create();
     queueNames.getId(newLabel);
 
     let option = this.settings_.addLabel(newLabel);
