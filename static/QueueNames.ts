@@ -1,4 +1,4 @@
-import {assert, defined} from './Base.js';
+import {assert, defined, Labels} from './Base.js';
 import {firestore, firestoreUserCollection} from './BaseMain.js';
 
 export class SnapshotEvent extends Event {
@@ -23,10 +23,12 @@ export class QueueNames extends EventTarget {
     return firestoreUserCollection().doc('NameIds');
   }
 
-  async getAllNames() {
+  async getAllNames(includeBuiltIns?: boolean) {
     await this.fetch();
     let nameIds = defined(QueueNames.nameIds_);
     let names = Object.keys(nameIds);
+    if (!includeBuiltIns)
+      names = names.filter(x => x !== Labels.Archive && x !== Labels.Fallback);
     return names;
   }
 

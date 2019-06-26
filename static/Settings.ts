@@ -448,7 +448,7 @@ export class Settings extends EventTarget {
       this.labelSelectCreator_ = new AsyncOnce(async () => {
         this.labelSelect_ = document.createElement('select');
         let queueNames = QueueNames.create();
-        let labels = await queueNames.getAllNames();
+        let labels = await queueNames.getAllNames(true);
         labels.sort();
         for (let label of labels) {
           let option = document.createElement('option');
