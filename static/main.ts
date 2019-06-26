@@ -426,13 +426,21 @@ async function doUpdate_() {
   if (!shouldUpdate_ || !navigator.onLine)
     return;
 
-  // Reload once a day at 3am to ensure people don't have excessively stale
-  // clients open.
+  // Reload once a day at the start of the day to ensure people don't have
+  // excessively stale clients open.
+  // Don't reload until after 3am to minimize the likelihood of reloading at
+  // midnight when the user is active.
   let today = new Date();
-  let timeSinceNavigationStart =
-      today.getTime() - window.performance.timing.navigationStart;
-  if (timeSinceNavigationStart > ONE_DAY_MS && today.getHours() === 2) {
-    reloadSoon();
+  let start = new Date(window.performance.timing.navigationStart);
+  if (today.getHours() > 2 &&
+      (start.getDate() !== today.getDate() ||
+       start.getMonth() !== today.getMonth())) {
+    // If the tab is hidden, reload right away. If it's visible, show a
+    // notification to the user so they can save state if they woulld like to.
+    if (document.visibilityState === 'visible')
+      reloadSoon();
+    else
+      window.location.reload();
     // Since the application logic may change with the new version, don't
     // proceed with the update. This lets us have confidence that old clients
     // will reload before they do significant processing work.
