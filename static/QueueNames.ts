@@ -10,7 +10,7 @@ export class SnapshotEvent extends Event {
 
 export class QueueNames extends EventTarget {
   private static nameIds_?: {[property: string]: string};
-  private static idNames_?: { [property: string]: string };
+  private static idNames_?: {[property: string]: string};
   private static instance_?: QueueNames;
 
   static create() {
@@ -64,6 +64,21 @@ export class QueueNames extends EventTarget {
 
   getName(id: number) {
     return defined(QueueNames.idNames_)[id];
+  }
+
+  async delete(name: string) {
+    let docRef = this.getNameIdsDocument_();
+    return await firestore().runTransaction((transaction) => {
+      return transaction.get(docRef).then((doc) => {
+        if (!doc.exists) {
+          throw 'Document does not exist!';
+        }
+
+        let data = defined(doc.data());
+        delete data.map[name];
+        transaction.update(docRef, data);
+      });
+    })
   }
 
   async getId(name: string) {

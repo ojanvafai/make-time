@@ -494,7 +494,8 @@ export class Thread extends EventTarget {
       case BuiltInLabelIds.Fallback:
         return FALLBACK_LABEL_NAME;
       default:
-        return this.queueNames_.getName(id);
+        let name = this.queueNames_.getName(id);
+        return name || FALLBACK_LABEL_NAME;
     }
   }
 

@@ -235,6 +235,14 @@ export class QueuesView extends HTMLElement {
     days.className = 'day';
     row.append(days);
 
+    let deleteLabel = document.createElement('div');
+    deleteLabel.append('\u274C');
+    deleteLabel.addEventListener('click', async () => {
+      if (confirm(`Delete ${queueData.label}? This cannot be undone.`))
+        await this.queueNames_.delete(queueData.label);
+    });
+    row.append(deleteLabel);
+
     let container = defined(this.getRowContainer_(queue));
     container.append(row);
   }
