@@ -121,7 +121,7 @@ export class Actions extends HTMLElement {
       let actionList = action as Action[];
       button = this.createButton_(actionList[0]);
       if (button) {
-        button.append('...');
+        button.classList.add('centered-up-arrow');
 
         let updateMenuItemHover = (e: PointerEvent) => {
           // TODO: unify hover handling for menu and non-menu buttons.

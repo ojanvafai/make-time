@@ -9,7 +9,7 @@ import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION, BACKLOG_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -135,9 +135,11 @@ let BASE_ACTIONS = [
     ARCHIVE_ACTION,
     MUTE_ACTION,
   ],
+  PRIORITY_ACTIONS,
+  URGENT_ACTION,
+  BACKLOG_ACTION,
   BLOCKED_ACTIONS,
   DUE_ACTIONS,
-  PRIORITY_ACTIONS,
   [
     UNDO_ACTION,
     REPEAT_ACTION,
