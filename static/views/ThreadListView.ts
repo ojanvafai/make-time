@@ -865,8 +865,8 @@ export class ThreadListView extends View {
     let renderedRow = notNull(this.renderedRow_);
 
     if (!this.model_.allowViewMessages()) {
-      let subject = document.createElement('div');
-      subject.style.cssText = `
+      let contents = document.createElement('div');
+      contents.style.cssText = `
         border-radius: 5px;
         background-color: #fff;
         margin: 30px;
@@ -874,9 +874,23 @@ export class ThreadListView extends View {
         font-size: 16px;
         position: absolute;
       `;
-      subject.append(renderedRow.thread.getSubject());
+
+      let from = document.createElement('b');
+      from.append('From: ');
+      contents.append(from);
+      contents.append(renderedRow.thread.getFrom());
+
+      // TODO: Style this properly instead of using brs.
+      contents.append(document.createElement('br'));
+      contents.append(document.createElement('br'));
+
+      let subject = document.createElement('b');
+      subject.append('Subject: ');
+      contents.append(subject);
+      contents.append(renderedRow.thread.getSubject());
+
       this.singleThreadContainer_.textContent = '';
-      this.singleThreadContainer_.append(subject);
+      this.singleThreadContainer_.append(contents);
       return;
     }
 
