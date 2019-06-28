@@ -504,9 +504,16 @@ export class MailProcessor {
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
         querySnapshot.docs,
         async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          if (doc.data().dueDateExpired)
+            return;
+
           let update: ThreadMetadataUpdate = {
             hasLabel: true,
           };
+
+          if (key === ThreadMetadataKeys.due)
+            update.dueDateExpired = true;
+
           await doc.ref.update(update);
         });
   }

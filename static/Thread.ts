@@ -50,7 +50,10 @@ export interface ThreadMetadata {
   hasPriority?: boolean;
   queued?: boolean;
   blocked?: boolean|number;
-  due?: boolean|number;
+  due?: number;
+  // Record whether we marked an item as overdue so we don't keep marking it
+  // overdue repeatedly unless the user changes the due date again.
+  dueDateExpired?: boolean;
   muted?: boolean;
   archivedByFilter?: boolean;
   finalVersion?: boolean;
@@ -82,6 +85,7 @@ export interface ThreadMetadataUpdate {
   queued?: boolean|firebase.firestore.FieldValue;
   blocked?: boolean|number|firebase.firestore.FieldValue;
   due?: boolean|number|firebase.firestore.FieldValue;
+  dueDateExpired?: boolean|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
   finalVersion?: boolean|firebase.firestore.FieldValue;
@@ -108,6 +112,7 @@ export enum ThreadMetadataKeys {
   queued = 'queued',
   blocked = 'blocked',
   due = 'due',
+  dueDateExpired = 'dueDateExpired',
   muted = 'muted',
   archivedByFilter = 'archivedByFilter',
   finalVersion = 'finalVersion',
@@ -372,8 +377,15 @@ export class Thread extends EventTarget {
     // Don't want setting the due date to reset retriageTimestamp or reset
     // other fields.
     let update = keepMetadata ? {} : this.keepInInboxMetadata_();
+
     if (moveToInbox)
       update.moveToInbox = true;
+
+    // Setting a new due date resets the bit that prevents the thread from being
+    // marked overdue.
+    if (key === ThreadMetadataKeys.due)
+      update.dueDateExpired = firebase.firestore.FieldValue.delete();
+
     update[key] = date.getTime();
     return update;
   }
