@@ -338,6 +338,8 @@ export class ThreadRow extends HTMLElement {
     if (state.due) {
       let blockedString = `Due: ${DAY_MONTH_FORMATTER.format(state.due)}`;
       let label = this.createLabel_(blockedString);
+      if (state.due < new Date())
+        label.style.color = 'red';
       title.append(label);
     }
 
