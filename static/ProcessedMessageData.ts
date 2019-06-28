@@ -1,4 +1,4 @@
-import {defined} from './Base.js';
+import {defined, parseAddressList} from './Base.js';
 import {Message} from './Message.js';
 
 export class ProcessedMessageData {
@@ -25,7 +25,15 @@ export class ProcessedMessageData {
   getFrom() {
     if (!this.messages.length)
       return '';
-    return this.messages[this.messages.length - 1].from || '';
+
+    let addresses = new Set();
+    this.messages.map(x => {
+      if (!x.from)
+        return;
+      let parsed = parseAddressList(x.from);
+      parsed.map(y => addresses.add(y.name || y.address));
+    });
+    return Array.from(addresses).join(',');
   }
 
   process(historyId: string, rawMessages: gapi.client.gmail.Message[]) {

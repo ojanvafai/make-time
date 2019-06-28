@@ -1,4 +1,4 @@
-import {assert, parseAddressList} from '../Base.js';
+import {assert} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -302,12 +302,7 @@ export class ThreadRow extends HTMLElement {
       overflow: hidden;
     `;
 
-    if (state.from) {
-      let parsed = parseAddressList(state.from)[0];
-      from.textContent = parsed.name || parsed.address;
-    } else {
-      from.textContent = '\xa0';
-    }
+    from.textContent = state.from || '\xa0';
 
     let count = document.createElement('div');
     count.style.cssText = `
