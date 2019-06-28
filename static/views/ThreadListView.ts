@@ -858,42 +858,62 @@ export class ThreadListView extends View {
       this.render();
   }
 
+  renderOneWithoutMessages_() {
+    let renderedRow = notNull(this.renderedRow_);
+
+    let contents = document.createElement('div');
+    contents.style.cssText = `
+      border-radius: 5px;
+      background-color: #fff;
+      margin: 30px;
+      padding: 10px;
+      font-size: 16px;
+      position: absolute;
+      width: -webkit-fill-available;
+    `;
+
+    let from = document.createElement('b');
+    from.append('From: ');
+    contents.append(from);
+    contents.append(renderedRow.thread.getFrom());
+
+    let subjectContainer = document.createElement('div')
+    subjectContainer.style.cssText = `
+      margin: 4px 0;
+    `;
+    contents.append(subjectContainer);
+
+    let subject = document.createElement('b');
+    subject.append('Subject: ');
+    subjectContainer.append(subject);
+    subjectContainer.append(renderedRow.thread.getSubject());
+
+    let snippet = document.createElement('div');
+    snippet.style.cssText = `
+      color: grey;
+    `;
+    // Snippet returned by the gmail API is html escaped.
+    snippet.innerHTML = renderedRow.thread.getSnippet();
+    contents.append(snippet);
+
+    this.singleThreadContainer_.textContent = '';
+    this.singleThreadContainer_.append(contents);
+  }
+
   renderOne_(toast?: HTMLElement) {
     if (this.rowGroupContainer_.style.display != 'none')
       this.transitionToSingleThread_();
 
-    let renderedRow = notNull(this.renderedRow_);
+    this.updateActions_();
+    if (toast)
+      AppShell.addToFooter(toast);
 
     if (!this.model_.allowViewMessages()) {
-      let contents = document.createElement('div');
-      contents.style.cssText = `
-        border-radius: 5px;
-        background-color: #fff;
-        margin: 30px;
-        padding: 10px;
-        font-size: 16px;
-        position: absolute;
-      `;
-
-      let from = document.createElement('b');
-      from.append('From: ');
-      contents.append(from);
-      contents.append(renderedRow.thread.getFrom());
-
-      // TODO: Style this properly instead of using brs.
-      contents.append(document.createElement('br'));
-      contents.append(document.createElement('br'));
-
-      let subject = document.createElement('b');
-      subject.append('Subject: ');
-      contents.append(subject);
-      contents.append(renderedRow.thread.getSubject());
-
-      this.singleThreadContainer_.textContent = '';
-      this.singleThreadContainer_.append(contents);
+      this.renderOneWithoutMessages_();
       return;
     }
 
+    let renderedRow = notNull(this.renderedRow_);
     let rendered = renderedRow.rendered;
     assert(
         !rendered.isAttached() ||
@@ -907,10 +927,6 @@ export class ThreadListView extends View {
 
     rendered.style.bottom = '';
     rendered.style.visibility = 'visible';
-
-    this.updateActions_();
-    if (toast)
-      AppShell.addToFooter(toast);
 
     // If you click on a row before it's pulled in message details, handle it
     // semi-gracefully.
