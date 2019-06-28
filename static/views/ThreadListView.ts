@@ -9,7 +9,7 @@ import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION, BACKLOG_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -190,6 +190,7 @@ export class ThreadListView extends View {
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
   private labelSelectTemplate_?: HTMLSelectElement;
+  private buttonContainer_: HTMLElement;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
       [REPEAT_ACTION, ...DUE_ACTIONS];
@@ -250,20 +251,20 @@ export class ThreadListView extends View {
     `;
     this.append(this.singleThreadContainer_);
 
-    let buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
+    this.buttonContainer_ = document.createElement('div');
+    this.buttonContainer_.style.cssText = `
       display: flex;
       justify-content: center;
     `;
-    this.append(buttonContainer);
+    this.append(this.buttonContainer_);
 
     if (bottomButtonUrl)
       this.appendButton_(
-          buttonContainer, defined(bottomButtonText), bottomButtonUrl);
+          this.buttonContainer_, defined(bottomButtonText), bottomButtonUrl);
 
     if (this.model_.canDisallowViewMessages()) {
       // TODO: Use a toggle switch.
-      let button = this.appendButton_(buttonContainer, '');
+      let button = this.appendButton_(this.buttonContainer_, '');
       button.title = 'Override the allow view messages setting.';
       let updateButtonText = () => {
         button.textContent = this.model_.allowViewMessages() ?
@@ -519,6 +520,9 @@ export class ThreadListView extends View {
   }
 
   private prerender_() {
+    if (!this.model_.allowViewMessages())
+      return;
+
     let row;
     if (this.renderedRow_) {
       row = rowAtOffset(this.getRows_(), this.renderedRow_, 1);
@@ -745,8 +749,6 @@ export class ThreadListView extends View {
   }
 
   private setRenderedRowIfAllowed_(row: ThreadRow) {
-    if (!this.model_.allowViewMessages())
-      return;
     this.setRenderedRow_(row);
   }
 
@@ -762,6 +764,7 @@ export class ThreadListView extends View {
     this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
+    this.buttonContainer_.style.display = 'flex';
     this.singleThreadContainer_.textContent = '';
     this.appShell_.contentScrollTop = this.scrollOffset_ || 0;
 
@@ -778,6 +781,7 @@ export class ThreadListView extends View {
 
     this.scrollOffset_ = this.appShell_.contentScrollTop;
     this.rowGroupContainer_.style.display = 'none';
+    this.buttonContainer_.style.display = 'none';
   }
 
   private async markTriaged_(destination: Action) {
@@ -859,6 +863,23 @@ export class ThreadListView extends View {
       this.transitionToSingleThread_();
 
     let renderedRow = notNull(this.renderedRow_);
+
+    if (!this.model_.allowViewMessages()) {
+      let subject = document.createElement('div');
+      subject.style.cssText = `
+        border-radius: 5px;
+        background-color: #fff;
+        margin: 30px;
+        padding: 10px;
+        font-size: 16px;
+        position: absolute;
+      `;
+      subject.append(renderedRow.thread.getSubject());
+      this.singleThreadContainer_.textContent = '';
+      this.singleThreadContainer_.append(subject);
+      return;
+    }
+
     let rendered = renderedRow.rendered;
     assert(
         !rendered.isAttached() ||

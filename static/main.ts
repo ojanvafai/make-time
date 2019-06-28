@@ -573,7 +573,9 @@ document.body.addEventListener('keydown', async (e) => {
 });
 
 window.addEventListener('resize', () => {
-  getView().render();
+  let view = getView();
+  if (view)
+    view.render();
 });
 
 window.addEventListener('error', (e) => {
