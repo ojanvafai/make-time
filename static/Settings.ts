@@ -236,7 +236,7 @@ export class Settings extends EventTarget {
       key: ServerStorage.KEYS.ALLOW_VIEW_MESSAGES_IN_TRIAGE,
       name: 'Allow view messages in triage',
       description:
-          `Controls whether you can view messages in triage. This helps force you to do a quick triage just based off subjects.`,
+          `If you have more email than you can read, triage subject lines and then read in Todo view so that you get to the must do items before reading all the backlog items.`,
       type: 'checkbox',
       default: true,
     },
