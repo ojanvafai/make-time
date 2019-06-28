@@ -191,6 +191,7 @@ export class ThreadListView extends View {
   private hasNewRenderedRow_: boolean;
   private labelSelectTemplate_?: HTMLSelectElement;
   private buttonContainer_: HTMLElement;
+  private viewportObserver_?: IntersectionObserver;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
       [REPEAT_ACTION, ...DUE_ACTIONS];
@@ -431,6 +432,14 @@ export class ThreadListView extends View {
         !threads.includes(this.renderedRow_.thread))
       return;
 
+    if (this.viewportObserver_)
+      this.viewportObserver_.disconnect();
+
+    this.viewportObserver_ = new IntersectionObserver((entries) => {
+      entries.map(
+          x => (x.target as ThreadRowGroup).setInViewport(x.isIntersecting));
+    });
+
     this.rowGroupContainer_.textContent = '';
     let currentGroup = null;
     // Threads should be in sorted order already and all threads in the
@@ -440,6 +449,7 @@ export class ThreadListView extends View {
       if (!currentGroup || currentGroup.name != groupName) {
         let allowedCount = this.model_.allowedCount(groupName);
         currentGroup = new ThreadRowGroup(groupName, this.model_, allowedCount);
+        this.viewportObserver_.observe(currentGroup);
         this.rowGroupContainer_.append(currentGroup);
       }
       currentGroup.push(this.getThreadRow_(thread));

@@ -49,6 +49,13 @@ export class ThreadRowGroup extends HTMLElement {
     this.appendControls_(header);
   }
 
+  setInViewport(inViewport: boolean) {
+    let rows = Array.from(this.rowContainer_.children) as ThreadRow[];
+    for (let row of rows) {
+      row.setInViewport(inViewport);
+    }
+  }
+
   updateGroupNameText_() {
     if (!this.allowedCount_)
       return;

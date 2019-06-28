@@ -86,6 +86,7 @@ class RowState {
 }
 
 export class ThreadRow extends HTMLElement {
+  private inViewport_: boolean;
   private focused_: boolean;
   private checked_: boolean;
   private focusImpliesSelected_: boolean;
@@ -106,6 +107,7 @@ export class ThreadRow extends HTMLElement {
       background-color: ${UNCHECKED_BACKGROUND_COLOR};
     `;
 
+    this.inViewport_ = false;
     this.focused_ = false;
     this.checked_ = false;
     this.focusImpliesSelected_ = false;
@@ -123,9 +125,10 @@ export class ThreadRow extends HTMLElement {
     this.label_ = this.appendCheckboxContainer_();
     this.checkBox_ = this.appendCheckbox_(this.label_);
 
-    // Pevent the default behavior of text selection on shift+click this is used
-    // for range selections. Need to do it on mousedown unfortunately since
-    // that's when the selection is modified on some platforms (e.g. mac).
+    // Pevent the default behavior of text selection on shift+click this is
+    // used for range selections. Need to do it on mousedown unfortunately
+    // since that's when the selection is modified on some platforms (e.g.
+    // mac).
     this.label_.addEventListener('mousedown', e => {
       if (e.shiftKey)
         e.preventDefault();
@@ -134,8 +137,8 @@ export class ThreadRow extends HTMLElement {
 
     // This pointer-events:none is so that clicking on the checkbox doesn't do
     // anything since we toggle the checked state ourselves. For some reason
-    // e.preventDefault() on click doesn't seem to achieve the same result, but
-    // couldn't actually reduce it to a small test case to file a bug.
+    // e.preventDefault() on click doesn't seem to achieve the same result,
+    // but couldn't actually reduce it to a small test case to file a bug.
     this.checkBox_.style.pointerEvents = 'none';
     this.append(this.label_);
 
@@ -146,13 +149,13 @@ export class ThreadRow extends HTMLElement {
       flex: 1;
     `;
 
-    // Pevent the default behavior of text selection on shift+click this is used
-    // for range selections. Need to do it on mousedown unfortunately since
-    // that's when the selection is modified on some platforms (e.g. mac). Need
-    // to do this on messageDetails_ in additon to the label since the whole row
-    // is clickable in Skim view.
-    // TODO: See if we need this now that we no longer have Skim view. Should we
-    // make the whole row clickable when viewing messages is disallowed in
+    // Pevent the default behavior of text selection on shift+click this is
+    // used for range selections. Need to do it on mousedown unfortunately
+    // since that's when the selection is modified on some platforms (e.g.
+    // mac). Need to do this on messageDetails_ in additon to the label since
+    // the whole row is clickable in Skim view.
+    // TODO: See if we need this now that we no longer have Skim view. Should
+    // we make the whole row clickable when viewing messages is disallowed in
     // Triage view?
     this.messageDetails_.addEventListener('mousedown', e => {
       if (e.shiftKey)
@@ -160,8 +163,8 @@ export class ThreadRow extends HTMLElement {
     });
 
     this.messageDetails_.addEventListener('click', (e) => {
-      // If the user is selecting the subject line in the row, have that prevent
-      // rendering the thread so they can copy-paste the subject.
+      // If the user is selecting the subject line in the row, have that
+      // prevent rendering the thread so they can copy-paste the subject.
       if (!this.threadRowContainsSelection_())
         this.dispatchEvent(new RenderThreadEvent(e.shiftKey));
     });
@@ -170,6 +173,14 @@ export class ThreadRow extends HTMLElement {
     this.rendered = new RenderedThread(thread);
     thread.addEventListener(
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
+  }
+
+  setInViewport(inViewport: boolean) {
+    // Don't rerender if inViewport state isn't changing.
+    if (this.inViewport_ === inViewport)
+      return;
+    this.inViewport_ = inViewport;
+    this.render_();
   }
 
   private appendCheckboxContainer_() {
@@ -237,28 +248,29 @@ export class ThreadRow extends HTMLElement {
   }
 
   private handleThreadUpdated_() {
-    this.renderRow_();
+    this.render_();
     if (this.rendered.isAttached()) {
       // Rerender messages even if the thread is only prerendred in case new
       // messages came in.
       this.rendered.render();
-      // If the thread is the actual rendered thread, mark new messages as read.
+      // If the thread is the actual rendered thread, mark new messages as
+      // read.
       if (this.rendered.isRendered())
         this.thread.markRead();
     }
   }
 
   connectedCallback() {
-    this.renderRow_();
+    this.render_();
   }
 
   setFinalVersionSkipped(value: boolean) {
     this.finalVersionSkipped_ = value;
-    this.renderRow_();
+    this.render_();
   }
 
-  renderRow_() {
-    if (!this.parentNode)
+  render_() {
+    if (!this.parentNode || !this.inViewport_)
       return;
 
     let snippetText = this.thread.getSnippet();
@@ -267,8 +279,8 @@ export class ThreadRow extends HTMLElement {
         this.thread.isBlocked() ? this.thread.getBlockedDate() : null;
     let dueDate = this.thread.hasDueDate() ? this.thread.getDueDate() : null;
 
-    // window.innerWidth makes more logical sense for this, but chrome has bugs.
-    // crbug.com/960803.
+    // window.innerWidth makes more logical sense for this, but chrome has
+    // bugs. crbug.com/960803.
     let state = new RowState(
         window.outerWidth < 600, this.thread.getSubject(), ` - ${snippetText}`,
         this.thread.getFrom(), messageIds.length,
@@ -366,8 +378,8 @@ export class ThreadRow extends HTMLElement {
         (label.children[0] as HTMLOptionElement).selected = true;
       });
 
-      // Remove the extra items so the select shrinks back down to the width of
-      // the currently selected one.
+      // Remove the extra items so the select shrinks back down to the width
+      // of the currently selected one.
       label.addEventListener('blur', () => {
         let toRemove = Array.from(label.children);
         toRemove.shift();
