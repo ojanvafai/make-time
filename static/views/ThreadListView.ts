@@ -868,23 +868,30 @@ export class ThreadListView extends View {
 
     let contents = document.createElement('div');
     contents.style.cssText = `
-      border-radius: 5px;
       background-color: #fff;
-      margin: 30px;
+      margin: 30px auto;
       padding: 10px;
       font-size: 16px;
-      position: absolute;
       width: -webkit-fill-available;
+      max-width: 600px;
     `;
+
+    let fromContainer = document.createElement('div');
+    fromContainer.style.cssText = `
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    `;
+    contents.append(fromContainer);
 
     let from = document.createElement('b');
     from.append('From: ');
-    contents.append(from);
-    contents.append(renderedRow.thread.getFrom());
+    fromContainer.append(from);
+    fromContainer.append(renderedRow.thread.getFrom());
 
     let subjectContainer = document.createElement('div')
     subjectContainer.style.cssText = `
-      margin: 4px 0;
+      margin: 16px 0;
     `;
     contents.append(subjectContainer);
 
