@@ -860,11 +860,6 @@ export class ThreadListView extends View {
     // already been triaged and will no longer have a group name.
     this.renderedGroupName_ =
         (row ? this.model_.getGroupName(row.thread) : null);
-
-    // Technically this is async, but it's OK if this happens async with
-    // respect to the surrounding code as well.
-    if (row)
-      row.thread.markRead();
   }
 
   setRenderedRow_(row: ThreadRow|null) {
@@ -936,6 +931,7 @@ export class ThreadListView extends View {
     }
 
     let renderedRow = notNull(this.renderedRow_);
+
     let rendered = renderedRow.rendered;
     assert(
         !rendered.isAttached() ||
@@ -970,6 +966,11 @@ export class ThreadListView extends View {
     this.appShell_.setSubject(subject, viewInGmailButton);
 
     rendered.focusFirstUnread();
+
+    // Technically this is async, but it's OK if this happens async with
+    // respect to the surrounding code as well.
+    renderedRow.thread.markRead();
+
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to
     // make renderOne_ async.
