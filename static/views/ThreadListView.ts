@@ -388,6 +388,11 @@ export class ThreadListView extends View {
   }
 
   addTimer_() {
+    // Having a timer when you can only read the subject and the snippet is not
+    // helpful and adds visual clutter.
+    if (!this.model_.allowViewMessages())
+      return;
+
     let timer = new Timer(
         !!this.model_.timerCountsDown, this.timerDuration_,
         this.singleThreadContainer_);
