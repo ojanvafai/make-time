@@ -222,19 +222,21 @@ export class ThreadListView extends View {
 
     // Use a larger margin for hiding content than for creating it so that small
     // scrolls up and down don't't repeatedly doing rendering work.
-    this.isVisibleObserver_ = new IntersectionObserver((entries) => {
-      entries.map(x => {
-        if (x.isIntersecting)
-          (x.target as ThreadRowGroup).setInViewport(true);
-      });
-    }, {root: this.appShell_.getScroller(), rootMargin: '50%'});
-
+    // Register the hidden observer first so that it runs before the visible one
+    // since we always get called back once when we first observe a target.
     this.isHiddenObserver_ = new IntersectionObserver((entries) => {
       entries.map(x => {
         if (!x.isIntersecting)
           (x.target as ThreadRowGroup).setInViewport(false);
       });
     }, {root: this.appShell_.getScroller(), rootMargin: '100%'});
+
+    this.isVisibleObserver_ = new IntersectionObserver((entries) => {
+      entries.map(x => {
+        if (x.isIntersecting)
+          (x.target as ThreadRowGroup).setInViewport(true);
+      });
+    }, {root: this.appShell_.getScroller(), rootMargin: '50%'});
 
     this.noMeetingRoomEvents_ = document.createElement('div');
     this.noMeetingRoomEvents_.style.cssText = `
