@@ -60,6 +60,7 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   updateRowCount_(count: number) {
+    // TODO: Get the real row height
     let rowHeight = 20;
     this.placeholder_.style.height = `${count * rowHeight}px`;
 
@@ -110,7 +111,7 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   getRows() {
-    return this.rowContainer_.childNodes as NodeListOf<ThreadRow>;
+    return Array.from(this.rowContainer_.childNodes) as ThreadRow[];
   }
 
   getFirstRow() {
