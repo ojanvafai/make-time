@@ -983,7 +983,7 @@ export class ThreadListView extends View {
     reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActions_());
 
     reply.addEventListener(ReplyScrollEvent.NAME, async () => {
-      if (!this.renderedRow_)
+      if (!this.renderedRow_ || !this.model_.allowViewMessages())
         return;
 
       let row = this.renderedRow_;
