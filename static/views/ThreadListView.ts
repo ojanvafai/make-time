@@ -191,7 +191,8 @@ export class ThreadListView extends View {
   private hasNewRenderedRow_: boolean;
   private labelSelectTemplate_?: HTMLSelectElement;
   private buttonContainer_: HTMLElement;
-  private viewportObserver_: IntersectionObserver;
+  private isVisibleObserver_: IntersectionObserver;
+  private isHiddenObserver_: IntersectionObserver;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
       [REPEAT_ACTION, ...DUE_ACTIONS];
@@ -219,11 +220,21 @@ export class ThreadListView extends View {
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
 
-    this.viewportObserver_ = new IntersectionObserver((entries) => {
+    // Use a larger margin for hiding content than for creating it so that small
+    // scrolls up and down don't't repeatedly doing rendering work.
+    this.isVisibleObserver_ = new IntersectionObserver((entries) => {
       entries.map(x => {
-        (x.target as ThreadRowGroup).setInViewport(x.isIntersecting);
+        if (x.isIntersecting)
+          (x.target as ThreadRowGroup).setInViewport(true);
       });
-    });
+    }, {root: this.appShell_.getScroller(), rootMargin: '50%'});
+
+    this.isHiddenObserver_ = new IntersectionObserver((entries) => {
+      entries.map(x => {
+        if (!x.isIntersecting)
+          (x.target as ThreadRowGroup).setInViewport(false);
+      });
+    }, {root: this.appShell_.getScroller(), rootMargin: '100%'});
 
     this.noMeetingRoomEvents_ = document.createElement('div');
     this.noMeetingRoomEvents_.style.cssText = `
@@ -289,14 +300,14 @@ export class ThreadListView extends View {
     this.updateActions_();
 
     this.addListenerToModel(
-        ThreadListChangedEvent.NAME, this.render.bind(this));
+        ThreadListChangedEvent.NAME, this.render_.bind(this));
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread);
     });
 
     this.renderCalendar_();
-    this.render();
+    this.render_();
   }
 
   private async renderCalendar_() {
@@ -394,7 +405,7 @@ export class ThreadListView extends View {
       this.addTimer_();
   }
 
-  addTimer_() {
+  private addTimer_() {
     // Having a timer when you can only read the subject and the snippet is not
     // helpful and adds visual clutter.
     if (!this.model_.allowViewMessages())
@@ -407,7 +418,7 @@ export class ThreadListView extends View {
     timer.style.top = `-${timer.offsetHeight}px`;
   }
 
-  async render() {
+  private async render_() {
     if (this.hasQueuedFrame_)
       return;
     this.hasQueuedFrame_ = true;
@@ -418,7 +429,7 @@ export class ThreadListView extends View {
     requestAnimationFrame(this.renderFrame_.bind(this));
   }
 
-  getRows_() {
+  private getRows_() {
     let rows = [];
     for (let group of this.rowGroupContainer_.children as
          HTMLCollectionOf<ThreadRowGroup>) {
@@ -427,9 +438,17 @@ export class ThreadListView extends View {
     return rows.flat();
   }
 
-  getFirstRow_() {
+  private getFirstRow_() {
     let group = this.rowGroupContainer_.firstChild as ThreadRowGroup;
     return group && group.getFirstRow();
+  }
+
+  forceRender() {
+    let rows = this.getRows_();
+    for (let row of rows) {
+      row.render();
+    }
+    this.render_();
   }
 
   private renderFrame_() {
@@ -452,7 +471,8 @@ export class ThreadListView extends View {
          HTMLCollectionOf<ThreadRowGroup>) {
       if (!newGroupNames.has(group.name)) {
         group.remove();
-        this.viewportObserver_.unobserve(group);
+        this.isVisibleObserver_.unobserve(group);
+        this.isHiddenObserver_.unobserve(group);
         removedRows.push(...group.getRows());
       }
     }
@@ -478,7 +498,8 @@ export class ThreadListView extends View {
 
         entry = {group: group, rows: []};
         groupMap.set(groupName, entry);
-        this.viewportObserver_.observe(group);
+        this.isVisibleObserver_.observe(group);
+        this.isHiddenObserver_.observe(group);
 
         if (previousEntry)
           previousEntry.group.after(group);
@@ -824,7 +845,7 @@ export class ThreadListView extends View {
     this.appShell_.setSubject('');
     this.updateActions_();
 
-    this.render();
+    this.render_();
   }
 
   transitionToSingleThread_() {
@@ -901,7 +922,7 @@ export class ThreadListView extends View {
   setRenderedRow_(row: ThreadRow|null) {
     this.setRenderedRowInternal_(row);
     if (row)
-      this.render();
+      this.render_();
   }
 
   renderOneWithoutMessages_() {

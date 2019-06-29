@@ -15,6 +15,7 @@ export class ThreadRowGroup extends HTMLElement {
   private placeholder_: HTMLElement;
   private groupNameContainer_: HTMLElement;
   private expander_?: HTMLElement;
+  private lastRowHeight_?: number;
 
   constructor(
       private groupName_: string, private model_: ThreadListModel,
@@ -60,10 +61,6 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   updateRowCount_(count: number) {
-    // TODO: Get the real row height
-    let rowHeight = 20;
-    this.placeholder_.style.height = `${count * rowHeight}px`;
-
     if (!this.allowedCount_)
       return;
 
@@ -146,9 +143,16 @@ export class ThreadRowGroup extends HTMLElement {
       }
     }
 
+    // Minimize DOM modifications to only the cases where something has changed.
+    let rowListChanged = this.rowsChanged_(rows);
+    if (rowListChanged || this.lastRowHeight_ !== ThreadRow.lastHeight()) {
+      this.lastRowHeight_ = ThreadRow.lastHeight();
+      this.placeholder_.style.height = `${rows.length * this.lastRowHeight_}px`;
+    }
+
     // Performance optimization to avoid doing a bunch of DOM if the count and
     // sort order of rows didn't change.
-    if (!this.rowsChanged_(rows))
+    if (!rowListChanged)
       return [];
 
     this.updateRowCount_(rows.length);

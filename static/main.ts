@@ -575,7 +575,7 @@ document.body.addEventListener('keydown', async (e) => {
 window.addEventListener('resize', () => {
   let view = getView();
   if (view)
-    view.render();
+    view.forceRender();
 });
 
 window.addEventListener('error', (e) => {

@@ -256,6 +256,10 @@ export class AppShell extends HTMLElement {
     this.content_.append(newContent);
   }
 
+  getScroller() {
+    return this.content_;
+  }
+
   setSubject(...items: (string|Node)[]) {
     this.subject_.textContent = '';
     this.subject_.append(...items);

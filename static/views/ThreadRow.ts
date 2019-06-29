@@ -101,6 +101,8 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
   private finalVersionSkipped_: boolean;
+  private static lastHeightIsSmallScreen_: boolean;
+  private static lastHeight_: number;
 
   constructor(
       public thread: Thread, private showFinalVersion_: boolean,
@@ -179,12 +181,16 @@ export class ThreadRow extends HTMLElement {
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
   }
 
+  static lastHeight() {
+    return this.lastHeight_;
+  }
+
   setInViewport(inViewport: boolean) {
     // Don't rerender if inViewport state isn't changing.
     if (this.inViewport_ === inViewport)
       return;
     this.inViewport_ = inViewport;
-    this.render_();
+    this.render();
   }
 
   private appendCheckboxContainer_() {
@@ -252,7 +258,7 @@ export class ThreadRow extends HTMLElement {
   }
 
   private handleThreadUpdated_() {
-    this.render_();
+    this.render();
     if (this.rendered.isAttached()) {
       // Rerender messages even if the thread is only prerendred in case new
       // messages came in.
@@ -265,15 +271,15 @@ export class ThreadRow extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render_();
+    this.render();
   }
 
   setFinalVersionSkipped(value: boolean) {
     this.finalVersionSkipped_ = value;
-    this.render_();
+    this.render();
   }
 
-  render_() {
+  render() {
     if (!this.parentNode || !this.inViewport_)
       return;
 
@@ -457,6 +463,15 @@ export class ThreadRow extends HTMLElement {
       if (repeat)
         this.messageDetails_.append(repeat);
       this.messageDetails_.append(date, popoutButton);
+    }
+
+    // All rows are the same height, so we can save the last rendered height in
+    // a static variable that we can then use to estimate heights for the
+    // virtual scrolling. The height of rows only changes if the screen width
+    // changes or if the user zooms. We don't currently handle the latter.
+    if (state.isSmallScreen !== ThreadRow.lastHeightIsSmallScreen_) {
+      ThreadRow.lastHeightIsSmallScreen_ = state.isSmallScreen;
+      ThreadRow.lastHeight_ = this.offsetHeight;
     }
   }
 
