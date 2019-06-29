@@ -74,14 +74,18 @@ class RowState {
         this.lastMessageId === other.lastMessageId &&
         this.group === other.group && this.label === other.label &&
         this.priority === other.priority &&
-        (this.blocked === other.blocked ||
-         this.blocked && other.blocked &&
-             this.blocked.getTime() === other.blocked.getTime()) &&
-        (this.due && other.due && this.due.getTime() === other.due.getTime()) &&
+        this.datesEqual_(this.blocked, other.blocked) &&
+        this.datesEqual_(this.due, other.due) &&
         this.hasRepeat === other.hasRepeat &&
         this.isUnread === other.isUnread &&
         this.finalVersionSkipped === other.finalVersionSkipped &&
         this.actionInProgress === other.actionInProgress;
+  }
+
+  datesEqual_(a: Date|null, b: Date|null) {
+    if (a && b)
+      return a.getTime() === b.getTime();
+    return a === b;
   }
 }
 

@@ -191,7 +191,7 @@ export class ThreadListView extends View {
   private hasNewRenderedRow_: boolean;
   private labelSelectTemplate_?: HTMLSelectElement;
   private buttonContainer_: HTMLElement;
-  private viewportObserver_?: IntersectionObserver;
+  private viewportObserver_: IntersectionObserver;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
       [REPEAT_ACTION, ...DUE_ACTIONS];
@@ -218,6 +218,12 @@ export class ThreadListView extends View {
     this.renderedGroupName_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
+
+    this.viewportObserver_ = new IntersectionObserver((entries) => {
+      entries.map(x => {
+        (x.target as ThreadRowGroup).setInViewport(x.isIntersecting);
+      });
+    });
 
     this.noMeetingRoomEvents_ = document.createElement('div');
     this.noMeetingRoomEvents_.style.cssText = `
@@ -413,12 +419,17 @@ export class ThreadListView extends View {
   }
 
   getRows_() {
-    return <ThreadRow[]>Array.from(
-        this.rowGroupContainer_.querySelectorAll('mt-thread-row'));
+    let rows = [];
+    for (let group of this.rowGroupContainer_.children as
+         HTMLCollectionOf<ThreadRowGroup>) {
+      rows.push(group.getRows());
+    }
+    return rows.flat();
   }
 
   getFirstRow_() {
-    return <ThreadRow>this.rowGroupContainer_.querySelector('mt-thread-row');
+    let group = this.rowGroupContainer_.firstChild as ThreadRowGroup;
+    return group && group.getFirstRow();
   }
 
   private renderFrame_() {
@@ -432,37 +443,63 @@ export class ThreadListView extends View {
         !threads.includes(this.renderedRow_.thread))
       return;
 
-    if (this.viewportObserver_)
-      this.viewportObserver_.disconnect();
+    let newGroupNames = new Set(threads.map(x => this.model_.getGroupName(x)));
 
-    this.viewportObserver_ = new IntersectionObserver((entries) => {
-      entries.map(
-          x => (x.target as ThreadRowGroup).setInViewport(x.isIntersecting));
-    });
+    let removedRows = [];
 
-    this.rowGroupContainer_.textContent = '';
-    let currentGroup = null;
-    // Threads should be in sorted order already and all threads in the
-    // same queue should be adjacent to each other.
-    for (let thread of threads) {
-      let groupName = this.model_.getGroupName(thread);
-      if (!currentGroup || currentGroup.name != groupName) {
-        let allowedCount = this.model_.allowedCount(groupName);
-        currentGroup = new ThreadRowGroup(groupName, this.model_, allowedCount);
-        this.viewportObserver_.observe(currentGroup);
-        this.rowGroupContainer_.append(currentGroup);
+    // Remove groups that no longer exist.
+    for (let group of this.rowGroupContainer_.children as
+         HTMLCollectionOf<ThreadRowGroup>) {
+      if (!newGroupNames.has(group.name)) {
+        group.remove();
+        this.viewportObserver_.unobserve(group);
+        removedRows.push(...group.getRows());
       }
-      currentGroup.push(this.getThreadRow_(thread));
     }
 
-    let newRows = this.getRows_();
-    let removedRows = oldRows.filter(x => !newRows.includes(x));
+    let groupMap = new Map(
+        (Array.from(this.rowGroupContainer_.children) as ThreadRowGroup[])
+            .map(x => {
+              return [
+                x.name, {group: x, rows: []}
+              ] as [string, {group: ThreadRowGroup, rows: ThreadRow[]}];
+            }));
+
+    // Threads should be in sorted order already and all threads in the
+    // same queue should be adjacent to each other.
+    let previousEntry: {group: ThreadRowGroup, rows: ThreadRow[]}|undefined;
+    for (let thread of threads) {
+      let groupName = this.model_.getGroupName(thread);
+      let entry = groupMap.get(groupName);
+      // Insertion sort insert new groups
+      if (!entry) {
+        let allowedCount = this.model_.allowedCount(groupName);
+        let group = new ThreadRowGroup(groupName, this.model_, allowedCount);
+
+        entry = {group: group, rows: []};
+        groupMap.set(groupName, entry);
+        this.viewportObserver_.observe(group);
+
+        if (previousEntry)
+          previousEntry.group.after(group);
+        else
+          this.rowGroupContainer_.prepend(group);
+      }
+
+      entry.rows.push(this.getThreadRow_(thread));
+      previousEntry = entry;
+    }
+
+    for (let entry of groupMap.values()) {
+      removedRows.push(...entry.group.setRows(entry.rows));
+    }
+
     this.handleRowsRemoved_(removedRows, oldRows);
 
     this.updateFinalVersionRendering_();
 
     if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
-      this.autoFocusedRow_ = newRows[0];
+      this.autoFocusedRow_ = this.getFirstRow_();
       this.setFocus_(this.autoFocusedRow_);
     }
 
@@ -698,8 +735,7 @@ export class ThreadListView extends View {
   focusFirstRowOfGroup_(group: ThreadRowGroup) {
     if (!group)
       return;
-    let firstRow = <ThreadRow>group.querySelector('mt-thread-row');
-    this.setFocusAndScrollIntoView_(firstRow);
+    this.setFocusAndScrollIntoView_(group.getFirstRow());
   }
 
   async takeAction(action: Action) {

@@ -12,8 +12,7 @@ export class ToggleCollapsedEvent extends Event {
 
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
-  private rowCountWhenCollapsed_: number;
-  private rowCount_: number;
+  private placeholder_: HTMLElement;
   private groupNameContainer_: HTMLElement;
   private expander_?: HTMLElement;
 
@@ -41,29 +40,35 @@ export class ThreadRowGroup extends HTMLElement {
     header.append(this.groupNameContainer_);
     this.append(header);
 
-    this.rowCountWhenCollapsed_ = 0;
-    this.rowCount_ = 0;
     this.rowContainer_ = document.createElement('div');
-    this.append(this.rowContainer_);
+    this.placeholder_ = document.createElement('div');
+    // Match ThreadRow color in index.html.
+    this.placeholder_.style.backgroundColor = '#ffffffbb';
+    this.append(this.rowContainer_, this.placeholder_);
 
     this.appendControls_(header);
   }
 
   setInViewport(inViewport: boolean) {
+    this.rowContainer_.style.display = inViewport ? '' : 'none';
+    this.placeholder_.style.display = inViewport ? 'none' : '';
+
     let rows = Array.from(this.rowContainer_.children) as ThreadRow[];
     for (let row of rows) {
       row.setInViewport(inViewport);
     }
   }
 
-  updateGroupNameText_() {
+  updateRowCount_(count: number) {
+    let rowHeight = 20;
+    this.placeholder_.style.height = `${count * rowHeight}px`;
+
     if (!this.allowedCount_)
       return;
 
-    if (this.allowedCount_ && this.rowCount_ > this.allowedCount_) {
+    if (count > this.allowedCount_) {
       this.groupNameContainer_.textContent = this.groupName_;
-      this.groupNameContainer_.append(
-          ` (${this.rowCount_}/${this.allowedCount_})`);
+      this.groupNameContainer_.append(` (${count}/${this.allowedCount_})`);
       this.groupNameContainer_.style.color = 'red';
     } else if (this.groupNameContainer_.style.color === 'red') {
       this.groupNameContainer_.textContent = this.groupName_;
@@ -81,7 +86,6 @@ export class ThreadRowGroup extends HTMLElement {
       text-decoration: underline;
       margin: 0 10px;
     `;
-    this.expander_.append(this.isCollapsed() ? 'expand' : 'collapse');
     this.expander_.addEventListener('click', () => this.toggleCollapsed_());
 
     header.append(this.expander_);
@@ -106,24 +110,76 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   getRows() {
-    return <NodeListOf<ThreadRow>>this.querySelectorAll('mt-thread-row');
+    return this.rowContainer_.childNodes as NodeListOf<ThreadRow>;
+  }
+
+  getFirstRow() {
+    return this.rowContainer_.firstChild as ThreadRow | null;
   }
 
   hasRows() {
     return !!this.rowContainer_.childElementCount;
   }
 
-  push(row: ThreadRow) {
-    this.rowCount_++;
-    this.updateGroupNameText_();
+  rowsChanged_(rows: ThreadRow[]) {
+    if (rows.length !== this.rowContainer_.childElementCount)
+      return true;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i] !== this.rowContainer_.children[i])
+        return true;
+    }
+    return false;
+  }
 
-    if (!this.hideControls_() && this.isCollapsed()) {
-      let threadsElided = ++this.rowCountWhenCollapsed_;
-      defined(this.expander_).textContent = `expand ${threadsElided} threads`;
+  setRows(rows: ThreadRow[]) {
+    if (!this.hideControls_()) {
+      let expander = defined(this.expander_);
+      if (this.isCollapsed()) {
+        expander.textContent = `expand ${rows.length} threads`;
+        // TODO: Should we retain the rows but display:none rowContainer_
+        // instead?
+        this.rowContainer_.textContent = '';
+        return [];
+      } else {
+        expander.textContent = 'collapse';
+      }
     }
 
-    if (this.hideControls_() || !this.isCollapsed())
-      this.rowContainer_.append(row);
+    // Performance optimization to avoid doing a bunch of DOM if the count and
+    // sort order of rows didn't change.
+    if (!this.rowsChanged_(rows))
+      return [];
+
+    this.updateRowCount_(rows.length);
+
+    let removed = [];
+    // Remove rows that no longer exist.
+    for (let row of Array.from(this.rowContainer_.children) as ThreadRow[]) {
+      if (!rows.includes(row)) {
+        row.remove();
+        removed.push(row);
+      }
+    }
+
+    let isGroupInViewport = !!this.rowContainer_.parentNode;
+
+    let previousRow;
+    // Ensure the order of rows match the new order, but also try to
+    // minimize moving things around in the DOM to minimize style recalc.
+    for (let row of rows) {
+      if (previousRow ? row.previousSibling !== previousRow :
+                        row !== this.rowContainer_.firstChild) {
+        if (previousRow)
+          previousRow.after(row);
+        else
+          this.rowContainer_.prepend(row);
+      }
+
+      row.setInViewport(isGroupInViewport);
+      previousRow = row;
+    }
+
+    return removed;
   }
 
   removeIfEmpty() {
