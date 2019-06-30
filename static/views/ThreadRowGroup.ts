@@ -1,15 +1,8 @@
 import {ThreadListModel} from '../models/ThreadListModel.js';
-import {ALL, NONE, SELECTED_PROPERTY, SIZE_PROPERTY, SOME, STATE_PROPERTY, DISABLED} from '../SelectBoxPainter.js';
+import {SelectBox} from '../SelectBox.js';
+import {ALL, NONE, SOME} from '../SelectBoxPainter.js';
 
 import {SelectRowEvent, ThreadRow} from './ThreadRow.js';
-
-// Kinda gross that we need to expose the typescript output directory in the
-// code. :(
-// @ts-ignore
-if (CSS && CSS.paintWorklet)
-  // @ts-ignore
-  CSS.paintWorklet.addModule('./gen/SelectBoxPainter.js');
-
 
 export class ToggleCollapsedEvent extends Event {
   static NAME = 'toggle-collapsed';
@@ -17,33 +10,6 @@ export class ToggleCollapsedEvent extends Event {
     super(ToggleCollapsedEvent.NAME);
   }
 }
-
-class SelectBox extends HTMLElement {
-  private selected_!: string;
-
-  constructor() {
-    super();
-    this.style.cssText = `
-      background-image: paint(select-box);
-    `;
-    this.style.setProperty(SIZE_PROPERTY, '16');
-    this.select(NONE);
-  }
-
-  selected() {
-    return this.selected_;
-  }
-
-  select(value: string) {
-    this.selected_ = value;
-    this.style.setProperty(SELECTED_PROPERTY, value);
-  }
-
-  setDisabled(disabled: boolean) {
-    this.style.setProperty(STATE_PROPERTY, disabled ? DISABLED : '');
-  }
-}
-window.customElements.define('mt-select-box', SelectBox);
 
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
@@ -65,8 +31,6 @@ export class ThreadRowGroup extends HTMLElement {
     `;
 
     this.selectBox_ = new SelectBox();
-    this.selectBox_.style.width = '40px';
-
     this.selectBox_.addEventListener('click', () => {
       if (this.selectBox_.selected() === NONE)
         this.selectRows_(true);
@@ -266,7 +230,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.selectBox_.select(select ? ALL : NONE);
     let rows = <NodeListOf<ThreadRow>>this.rowContainer_.childNodes;
     for (let child of rows) {
-      child.checked = select;
+      child.setChecked(select);
       if (!select)
         child.clearFocusImpliesSelected();
     }

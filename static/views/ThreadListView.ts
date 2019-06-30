@@ -670,7 +670,7 @@ export class ThreadListView extends View {
       let start = (lastIndex < newIndex) ? lastIndex : newIndex;
       let end = (lastIndex < newIndex) ? newIndex : lastIndex;
       for (var i = start; i < end; i++) {
-        rows[i].checked = true;
+        rows[i].setChecked(true);
       }
     }
     this.lastCheckedRow_ = row;
@@ -816,7 +816,7 @@ export class ThreadListView extends View {
 
   toggleFocused_() {
     let focused = notNull(this.focusedRow_);
-    focused.checked = !focused.checked;
+    focused.setChecked(!focused.checked);
     this.moveFocus_(NEXT_ACTION);
   }
 
@@ -825,7 +825,7 @@ export class ThreadListView extends View {
     const checking = !focused.checked;
     let rows = focused.getGroup().getRows();
     for (let row of rows) {
-      row.checked = checking;
+      row.setChecked(checking);
     }
   }
 

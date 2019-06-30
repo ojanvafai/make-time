@@ -29,7 +29,7 @@ class SelectBoxPainter {
       return;
 
     if (selected === SOME)
-      ctx.fillStyle = '#999';
+      ctx.fillStyle = '#777';
 
     let innerPadding = 4;
     let innerOffsetLeft = innerPadding + (geom.width - size) / 2;

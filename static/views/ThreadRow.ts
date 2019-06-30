@@ -1,5 +1,7 @@
 import {assert, isMobileUserAgent} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
+import {SelectBox} from '../SelectBox.js';
+import {ALL, NONE, SOME} from '../SelectBoxPainter.js';
 import {Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
@@ -142,8 +144,7 @@ export class ThreadRow extends HTMLElement {
   private focusImpliesSelected_: boolean;
   rendered: RenderedThread;
   mark: boolean|undefined;
-  private checkBox_: HTMLInputElement;
-  private label_: HTMLElement;
+  private checkBox_: SelectBox;
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
   private finalVersionSkipped_: boolean;
@@ -166,33 +167,26 @@ export class ThreadRow extends HTMLElement {
     this.finalVersionSkipped_ = false;
 
     if (showFinalVersion_) {
-      let container = this.appendCheckboxContainer_();
-      let checkbox = this.appendCheckbox_(container);
-      checkbox.checked = thread.finalVersion();
-      container.addEventListener('click', async () => {
-        await this.thread.setOnlyFinalVersion(checkbox.checked);
+      let checkbox = new SelectBox();
+      this.append(checkbox);
+      checkbox.select(thread.finalVersion() ? ALL : NONE);
+      checkbox.addEventListener('click', async () => {
+        await this.thread.setOnlyFinalVersion(checkbox.isFullySelected());
       });
     }
 
-    this.label_ = this.appendCheckboxContainer_();
-    this.checkBox_ = this.appendCheckbox_(this.label_);
+    this.checkBox_ = new SelectBox();
+    this.append(this.checkBox_);
 
     // Pevent the default behavior of text selection on shift+click this is
     // used for range selections. Need to do it on mousedown unfortunately
     // since that's when the selection is modified on some platforms (e.g.
     // mac).
-    this.label_.addEventListener('mousedown', e => {
+    this.checkBox_.addEventListener('mousedown', e => {
       if (e.shiftKey)
         e.preventDefault();
     });
-    this.label_.addEventListener('click', e => this.select(e.shiftKey));
-
-    // This pointer-events:none is so that clicking on the checkbox doesn't do
-    // anything since we toggle the checked state ourselves. For some reason
-    // e.preventDefault() on click doesn't seem to achieve the same result,
-    // but couldn't actually reduce it to a small test case to file a bug.
-    this.checkBox_.style.pointerEvents = 'none';
-    this.append(this.label_);
+    this.checkBox_.addEventListener('click', e => this.select(e.shiftKey));
 
     this.messageDetails_ = document.createElement('div');
     this.messageDetails_.style.cssText = `
@@ -240,35 +234,8 @@ export class ThreadRow extends HTMLElement {
     this.render();
   }
 
-  private appendCheckboxContainer_() {
-    let container = document.createElement('div');
-    container.className = 'checkbox-container';
-    container.style.cssText = `
-      width: 40px;
-      border-right: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    `;
-    this.append(container);
-    return container;
-  }
-
-  private appendCheckbox_(container: HTMLElement) {
-    let checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.style.cssText = `
-      margin-left: 5px;
-      margin-right: 5px;
-    `;
-
-    container.append(checkbox);
-    return checkbox;
-  }
-
   select(shiftKey: boolean) {
-    this.checked = !this.selected;
-    this.dispatchEvent(new SelectRowEvent(this.checked, shiftKey));
+    this.setChecked(!this.selected, shiftKey);
     this.setFocus(true, false);
   }
 
@@ -291,7 +258,7 @@ export class ThreadRow extends HTMLElement {
   resetState() {
     // Intentionally use the public setters so that styles are updated.
     this.clearFocus();
-    this.checked = false;
+    this.setChecked(false);
   }
 
   getGroup() {
@@ -581,7 +548,7 @@ export class ThreadRow extends HTMLElement {
   setFocus(value: boolean, focusImpliesSelected: boolean) {
     this.focusImpliesSelected_ = focusImpliesSelected;
     this.focused_ = value;
-    this.label_.style.backgroundColor = this.focused_ ? '#ccc' : '';
+    this.checkBox_.style.backgroundColor = this.focused_ ? '#ccc' : '';
     this.updateCheckbox_();
     // TODO: Technically we probably want a blur event as well for !value.
     if (value)
@@ -604,15 +571,24 @@ export class ThreadRow extends HTMLElement {
     return this.checked_;
   }
 
-  set checked(value) {
+  setChecked(value: boolean, shiftKey?: boolean) {
     this.checked_ = value;
     this.style.backgroundColor =
         this.checked_ ? '#c2dbff' : UNCHECKED_BACKGROUND_COLOR;
     this.updateCheckbox_();
+    this.dispatchEvent(new SelectRowEvent(this.checked, !!shiftKey));
   }
 
   updateCheckbox_() {
-    this.checkBox_.checked = this.selected;
+    let newState;
+    if (this.checked_)
+      newState = ALL;
+    else if (this.focused_ && this.focusImpliesSelected_)
+      newState = SOME;
+    else
+      newState = NONE;
+
+    this.checkBox_.select(newState);
   }
 }
 
