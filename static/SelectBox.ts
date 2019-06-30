@@ -14,7 +14,8 @@ export class SelectBox extends HTMLElement {
     super();
     this.style.cssText = `
       width: 40px;
-      height: 40px;
+      min-width: 20px;
+      min-height: 20px;
       background-image: paint(select-box);
     `;
     this.style.setProperty(SIZE_PROPERTY, '16');

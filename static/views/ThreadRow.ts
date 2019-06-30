@@ -140,7 +140,6 @@ class RowState extends LabelState {
 export class ThreadRow extends HTMLElement {
   private inViewport_: boolean;
   private focused_: boolean;
-  private checked_: boolean;
   private focusImpliesSelected_: boolean;
   rendered: RenderedThread;
   mark: boolean|undefined;
@@ -158,11 +157,11 @@ export class ThreadRow extends HTMLElement {
     this.style.cssText = `
       display: flex;
       background-color: ${UNCHECKED_BACKGROUND_COLOR};
+      white-space: nowrap;
     `;
 
     this.inViewport_ = false;
     this.focused_ = false;
-    this.checked_ = false;
     this.focusImpliesSelected_ = false;
     this.finalVersionSkipped_ = false;
 
@@ -193,7 +192,7 @@ export class ThreadRow extends HTMLElement {
       display: flex;
       overflow: hidden;
       flex: 1;
-      padding-left: 4px;
+      min-height: 40px;
     `;
 
     // Pevent the default behavior of text selection on shift+click this is
@@ -382,6 +381,7 @@ export class ThreadRow extends HTMLElement {
         state.isSmallScreen ? 'column' : '';
 
     if (state.isSmallScreen) {
+      this.messageDetails_.style.padding = '12px 0 12px 4px';
       this.messageDetails_.style.alignItems = '';
       let topRow = document.createElement('div');
       topRow.style.cssText = `
@@ -395,6 +395,7 @@ export class ThreadRow extends HTMLElement {
 
       fromContainer.style.flex = '1';
     } else {
+      this.messageDetails_.style.padding = '0 0 0 4px';
       this.messageDetails_.style.alignItems = 'center';
       this.messageDetails_.append(
           fromContainer, labels, subject, date, popoutButton);
@@ -495,7 +496,7 @@ export class ThreadRow extends HTMLElement {
       font-size: 0.75rem;
       line-height: 18px;
       border: none;
-      border-radius: 4px;
+      border-radius: 3px;
       padding: 0 4px;
       margin-right: 4px;
     `;
@@ -564,24 +565,22 @@ export class ThreadRow extends HTMLElement {
   }
 
   get selected() {
-    return this.checked_ || (this.focused_ && this.focusImpliesSelected_);
+    return this.checked || (this.focused_ && this.focusImpliesSelected_);
   }
 
   get checked() {
-    return this.checked_;
+    return this.checkBox_.isFullySelected();
   }
 
   setChecked(value: boolean, shiftKey?: boolean) {
-    this.checked_ = value;
-    this.style.backgroundColor =
-        this.checked_ ? '#c2dbff' : UNCHECKED_BACKGROUND_COLOR;
+    this.checkBox_.select(value ? ALL : NONE);
     this.updateCheckbox_();
     this.dispatchEvent(new SelectRowEvent(this.checked, !!shiftKey));
   }
 
   updateCheckbox_() {
     let newState;
-    if (this.checked_)
+    if (this.checked)
       newState = ALL;
     else if (this.focused_ && this.focusImpliesSelected_)
       newState = SOME;
