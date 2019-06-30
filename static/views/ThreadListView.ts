@@ -15,7 +15,7 @@ import {Toast} from '../Toast.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {AppShell} from './AppShell.js';
-import {FocusRowEvent, HeightChangedEvent, RenderThreadEvent, SelectRowEvent, ThreadRow} from './ThreadRow.js';
+import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, SelectRowEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
@@ -984,8 +984,16 @@ export class ThreadListView extends View {
     viewInGmailButton.style.display = 'inline-flex';
 
     let subject = document.createElement('div');
-    subject.style.flex = '1';
-    subject.append(renderedRow.thread.getSubject());
+    subject.style.cssText = `
+      flex: 1;
+    `;
+    subject.append(renderedRow.thread.getSubject(), ' ');
+
+    let labelState = new LabelState(renderedRow.thread, '');
+    ThreadRow.appendLabels(
+        subject, labelState, renderedRow.thread,
+        defined(this.labelSelectTemplate_));
+
     this.appShell_.setSubject(subject, viewInGmailButton);
 
     rendered.focusFirstUnread();

@@ -454,6 +454,9 @@ export class Thread extends EventTarget {
   }
 
   getBlockedDate() {
+    if (!this.isBlocked())
+      return null;
+
     let blocked = defined(this.metadata_.blocked);
     // TODO: Remove this once blocked can no longer be a boolean.
     if (blocked === true) {
@@ -467,6 +470,8 @@ export class Thread extends EventTarget {
   }
 
   getDueDate() {
+    if (!this.hasDueDate())
+      return null;
     let due = defined(this.metadata_.due);
     return new Date(due as number);
   }

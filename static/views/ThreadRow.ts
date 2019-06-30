@@ -64,35 +64,74 @@ export class HeightChangedEvent extends Event {
   }
 }
 
-class RowState {
-  constructor(
-      public isSmallScreen: boolean, public subject: string,
-      public snippet: string, public from: HTMLElement, public count: number,
-      public lastMessageId: string, public group: string,
-      public label: string|null, public priority: string|null,
-      public blocked: Date|null, public due: Date|null,
-      public hasRepeat: boolean, public isUnread: boolean,
-      public finalVersionSkipped: boolean, public actionInProgress: boolean) {}
+export class LabelState {
+  public label: string|null;
+  public priority: string|null;
+  public blocked: Date|null;
+  public due: Date|null;
+  public hasRepeat: boolean;
 
-  equals(other: RowState) {
-    return this.isSmallScreen === other.isSmallScreen &&
-        this.subject === other.subject && this.snippet === other.snippet &&
-        this.from === other.from && this.count === other.count &&
-        this.lastMessageId === other.lastMessageId &&
-        this.group === other.group && this.label === other.label &&
+  constructor(thread: Thread, public group: string) {
+    this.label = thread.getLabel();
+    this.priority = thread.getPriority();
+    this.blocked = thread.getBlockedDate();
+    this.due = thread.getDueDate();
+    this.hasRepeat = thread.hasRepeat();
+  }
+
+  equals(other: LabelState) {
+    return this.group === other.group && this.label === other.label &&
         this.priority === other.priority &&
         this.datesEqual_(this.blocked, other.blocked) &&
         this.datesEqual_(this.due, other.due) &&
-        this.hasRepeat === other.hasRepeat &&
-        this.isUnread === other.isUnread &&
-        this.finalVersionSkipped === other.finalVersionSkipped &&
-        this.actionInProgress === other.actionInProgress;
+        this.hasRepeat === other.hasRepeat;
   }
 
   datesEqual_(a: Date|null, b: Date|null) {
     if (a && b)
       return a.getTime() === b.getTime();
     return a === b;
+  }
+}
+
+class RowState extends LabelState {
+  isSmallScreen: boolean;
+  subject: string;
+  snippet: string;
+  from: HTMLElement;
+  isUnread: boolean;
+  actionInProgress: boolean;
+  count: number;
+  lastMessageId: string;
+
+  constructor(
+      thread: Thread, public group: string,
+      public finalVersionSkipped: boolean) {
+    super(thread, group);
+
+    // window.innerWidth makes more logical sense for this, but chrome has
+    // bugs. crbug.com/960803.
+    this.isSmallScreen = window.outerWidth < 600;
+
+    this.subject = thread.getSubject();
+    this.snippet = thread.getSnippet();
+    this.from = thread.getFrom();
+    this.isUnread = thread.isUnread();
+    this.actionInProgress = thread.actionInProgress();
+
+    let messageIds = thread.getMessageIds();
+    this.count = messageIds.length;
+    this.lastMessageId = messageIds[messageIds.length - 1];
+  }
+
+  equals(other: RowState): boolean {
+    return super.equals(other) && this.isSmallScreen === other.isSmallScreen &&
+        this.subject === other.subject && this.snippet === other.snippet &&
+        this.from === other.from && this.count === other.count &&
+        this.lastMessageId === other.lastMessageId &&
+        this.isUnread === other.isUnread &&
+        this.finalVersionSkipped === other.finalVersionSkipped &&
+        this.actionInProgress === other.actionInProgress;
   }
 }
 
@@ -290,22 +329,9 @@ export class ThreadRow extends HTMLElement {
     if (!this.parentNode || !this.inViewport_)
       return;
 
-    let snippetText = this.thread.getSnippet();
-    let messageIds = this.thread.getMessageIds();
-    let blockedDate =
-        this.thread.isBlocked() ? this.thread.getBlockedDate() : null;
-    let dueDate = this.thread.hasDueDate() ? this.thread.getDueDate() : null;
-
-    // window.innerWidth makes more logical sense for this, but chrome has
-    // bugs. crbug.com/960803.
     let state = new RowState(
-        window.outerWidth < 600, this.thread.getSubject(), ` - ${snippetText}`,
-        this.thread.getFrom(), messageIds.length,
-        messageIds[messageIds.length - 1], this.getGroup().name,
-        this.thread.getLabel(), this.thread.getPriority(), blockedDate, dueDate,
-        this.thread.hasRepeat(), this.thread.isUnread(),
-        this.showFinalVersion_ && this.finalVersionSkipped_,
-        this.thread.actionInProgress());
+        this.thread, this.getGroup().name,
+        this.showFinalVersion_ && this.finalVersionSkipped_);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -349,84 +375,17 @@ export class ThreadRow extends HTMLElement {
       margin-right: 25px;
       flex: 1;
     `;
-
-    // TODO: Make this a date picker for changing the blocked date.
-    if (state.blocked) {
-      let blockedString = `Stuck: ${DAY_MONTH_FORMATTER.format(state.blocked)}`;
-      let label = this.createLabel_(blockedString);
-      title.append(label);
-    }
-
-    // TODO: Make this a date picker for changing the due date.
-    if (state.due) {
-      let blockedString = `Due: ${DAY_MONTH_FORMATTER.format(state.due)}`;
-      let label = this.createLabel_(blockedString);
-      if (state.due < new Date())
-        label.style.color = 'red';
-      title.append(label);
-    }
-
-    // TODO: Make this a select element for changing the priority.
-    if (state.priority && state.group !== state.priority) {
-      let label = this.createLabel_(state.priority);
-      title.append(label);
-    }
-
-    if (state.label && state.group !== state.label) {
-      let label = this.createSelectChip_(state.label);
-
-      // Clicks on the select shouldn't also be clicks on the row.
-      label.addEventListener('click', (e) => {
-        e.stopPropagation();
-      });
-
-      label.addEventListener('pointerdown', () => {
-        label.style.color = '#666';
-        label.style.backgroundColor = '#ddd';
-
-        if (label.children.length > 1)
-          return;
-
-        let cloned =
-            this.labelSelectTemplate_.cloneNode(true) as HTMLSelectElement;
-        label.append(...cloned.children);
-
-        (label.children[0] as HTMLOptionElement).selected = true;
-      });
-
-      // Remove the extra items so the select shrinks back down to the width
-      // of the currently selected one.
-      label.addEventListener('blur', () => {
-        let toRemove = Array.from(label.children);
-        toRemove.shift();
-        for (let element of toRemove) {
-          element.remove();
-        }
-      });
-
-      label.addEventListener('change', async () => {
-        let newLabel = label.selectedOptions[0].value;
-        await this.thread.setOnlyLabel(newLabel);
-      });
-
-      title.append(label);
-    }
+    ThreadRow.appendLabels(
+        title, state, this.thread, this.labelSelectTemplate_);
 
     let snippet = document.createElement('span');
     snippet.style.color = '#666';
     // Snippet as returned by the gmail API is html escaped.
-    snippet.innerHTML = state.snippet;
+    snippet.innerHTML = ` - ${state.snippet}`;
 
     let subject = document.createElement('span');
     subject.append(state.subject || '\xa0');
     title.append(subject, snippet);
-
-    let repeat;
-    if (state.hasRepeat) {
-      repeat = document.createElement('div')
-      repeat.textContent = '\u{1F501}';
-      repeat.style.marginRight = '4px';
-    }
 
     let date = document.createElement('div');
     date.textContent = this.dateString_(this.thread.getDate());
@@ -454,8 +413,6 @@ export class ThreadRow extends HTMLElement {
       let topRow = document.createElement('div');
       topRow.style.display = 'flex';
       topRow.append(fromContainer);
-      if (repeat)
-        topRow.append(repeat);
       topRow.append(date, popoutButton);
       this.messageDetails_.append(topRow, title);
 
@@ -465,8 +422,6 @@ export class ThreadRow extends HTMLElement {
     } else {
       this.messageDetails_.style.alignItems = 'center';
       this.messageDetails_.append(fromContainer, title);
-      if (repeat)
-        this.messageDetails_.append(repeat);
       this.messageDetails_.append(date, popoutButton);
     }
 
@@ -480,7 +435,79 @@ export class ThreadRow extends HTMLElement {
     }
   }
 
-  private createSelectChip_(text: string) {
+  static appendLabels(
+      container: HTMLElement, state: LabelState, thread: Thread,
+      labelSelect: HTMLSelectElement) {
+    // TODO: Make this a date picker for changing the blocked date.
+    if (state.blocked) {
+      let blockedString = `Stuck: ${DAY_MONTH_FORMATTER.format(state.blocked)}`;
+      let label = this.createLabel_(blockedString);
+      container.append(label);
+    }
+
+    // TODO: Make this a date picker for changing the due date.
+    if (state.due) {
+      let blockedString = `Due: ${DAY_MONTH_FORMATTER.format(state.due)}`;
+      let label = this.createLabel_(blockedString);
+      if (state.due < new Date())
+        label.style.color = 'red';
+      container.append(label);
+    }
+
+    // TODO: Make this a select element for changing the priority.
+    if (state.priority && state.group !== state.priority) {
+      let label = this.createLabel_(state.priority);
+      container.append(label);
+    }
+
+    if (state.label && state.group !== state.label) {
+      let label = this.createSelectChip_(state.label);
+
+      // Clicks on the select shouldn't also be clicks on the row.
+      label.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      label.addEventListener('pointerdown', () => {
+        label.style.color = '#666';
+        label.style.backgroundColor = '#ddd';
+
+        if (label.children.length > 1)
+          return;
+
+        let cloned = labelSelect.cloneNode(true) as HTMLSelectElement;
+        label.append(...cloned.children);
+
+        (label.children[0] as HTMLOptionElement).selected = true;
+      });
+
+      // Remove the extra items so the select shrinks back down to the width
+      // of the currently selected one.
+      label.addEventListener('blur', () => {
+        let toRemove = Array.from(label.children);
+        toRemove.shift();
+        for (let element of toRemove) {
+          element.remove();
+        }
+      });
+
+      label.addEventListener('change', async () => {
+        let newLabel = label.selectedOptions[0].value;
+        await thread.setOnlyLabel(newLabel);
+      });
+
+      container.append(label);
+    }
+
+    if (state.hasRepeat) {
+      let repeat = document.createElement('span')
+      repeat.textContent = '\u{1F501}';
+      repeat.style.marginRight = '4px';
+      container.append(repeat);
+    }
+  }
+
+  private static createSelectChip_(text: string) {
     let label = document.createElement('select');
     // TODO: Share some code with createLabel_.
     label.style.cssText = `
@@ -508,7 +535,7 @@ export class ThreadRow extends HTMLElement {
     return label;
   }
 
-  private createLabel_(text: string) {
+  private static createLabel_(text: string) {
     let label = document.createElement('span');
     label.style.cssText = `
       display: inline-block;
