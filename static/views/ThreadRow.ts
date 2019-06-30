@@ -1,4 +1,4 @@
-import {assert} from '../Base.js';
+import {assert, isMobileUserAgent} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
@@ -199,6 +199,7 @@ export class ThreadRow extends HTMLElement {
       display: flex;
       overflow: hidden;
       flex: 1;
+      padding-left: 4px;
     `;
 
     // Pevent the default behavior of text selection on shift+click this is
@@ -241,6 +242,7 @@ export class ThreadRow extends HTMLElement {
 
   private appendCheckboxContainer_() {
     let container = document.createElement('div');
+    container.className = 'checkbox-container';
     container.style.cssText = `
       width: 40px;
       border-right: 0;
@@ -345,7 +347,6 @@ export class ThreadRow extends HTMLElement {
     let fromContainer = document.createElement('div');
     fromContainer.style.cssText = `
       width: 150px;
-      padding-left: 5px;
       display: flex;
       align-items: baseline;
     `;
@@ -353,13 +354,16 @@ export class ThreadRow extends HTMLElement {
     let from = document.createElement('div');
     from.style.cssText = `
       overflow: hidden;
-    `;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: #333;
+  `;
     from.append(state.from)
 
     let count = document.createElement('div');
     count.style.cssText = `
       font-size: 80%;
-      margin-left: 4px;
+      margin: 0 6px;
       color: grey;
     `;
 
@@ -383,12 +387,18 @@ export class ThreadRow extends HTMLElement {
       flex: 1;
       margin-right: 25px;
     `;
+    subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
     subject.append(state.subject, snippet);
 
     let date = document.createElement('div');
     date.textContent = this.dateString_(this.thread.getDate());
     date.style.cssText = `
       text-align: right;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: #333;
+      display: flex;
+      align-items: center;
     `;
 
     let boldState = state.isUnread ? '600' : '';
@@ -406,20 +416,21 @@ export class ThreadRow extends HTMLElement {
 
     if (state.isSmallScreen) {
       this.messageDetails_.style.alignItems = '';
-
       let topRow = document.createElement('div');
-      topRow.style.display = 'flex';
+      topRow.style.cssText = `
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+      `;
       topRow.append(fromContainer, labels);
       topRow.append(date, popoutButton);
       this.messageDetails_.append(topRow, subject);
 
       fromContainer.style.flex = '1';
-      subject.style.fontSize = '12px';
-      subject.style.margin = '5px 5px 0 5px';
     } else {
       this.messageDetails_.style.alignItems = 'center';
-      this.messageDetails_.append(fromContainer, labels, subject);
-      this.messageDetails_.append(date, popoutButton);
+      this.messageDetails_.append(
+          fromContainer, labels, subject, date, popoutButton);
     }
 
     // All rows are the same height, so we can save the last rendered height in
