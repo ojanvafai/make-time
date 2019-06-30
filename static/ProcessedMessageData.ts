@@ -5,11 +5,13 @@ export class ProcessedMessageData {
   messages: Message[];
   snippet: string;
   historyId: string;
+  from_: HTMLElement|null;
 
   constructor() {
     this.messages = [];
     this.snippet = '';
     this.historyId = '';
+    this.from_ = null;
   }
 
   getSubject() {
@@ -23,22 +25,60 @@ export class ProcessedMessageData {
   }
 
   getFrom() {
-    if (!this.messages.length)
-      return '';
+    if (!this.from_) {
+      this.from_ = document.createElement('span');
+      this.updateFrom_(this.from_);
+    }
+    return this.from_;
+  }
 
-    let addresses = new Set();
+  minifyFrom_(addresses: string[], shouldMinify: boolean) {
+    if (shouldMinify)
+      addresses = addresses.map(x => x.split(' ')[0]);
+    return addresses.join(', ');
+  }
+
+  updateFrom_(container: HTMLElement) {
+    let read = new Set();
+    let unread = new Set();
+
     this.messages.map(x => {
       if (!x.from)
         return;
+      let set = x.isUnread ? unread : read;
       let parsed = parseAddressList(x.from);
-      parsed.map(y => addresses.add(y.name || y.address));
+      parsed.map(y => {
+        set.add(y.name || y.address.split('@')[0]);
+      });
     });
-    return Array.from(addresses).join(',');
+
+    let minify = (unread.size + read.size) > 1;
+
+    if (unread.size) {
+      let unreadContainer = document.createElement('b');
+      unreadContainer.textContent =
+          this.minifyFrom_(Array.from(unread), minify);
+      container.append(unreadContainer);
+    }
+
+    let onlyReadAddresses = Array.from(read).filter(x => !unread.has(x));
+    if (onlyReadAddresses.length) {
+      if (container.firstChild)
+        container.append(', ');
+
+      let readContainer = document.createElement('span');
+      readContainer.textContent = this.minifyFrom_(onlyReadAddresses, minify);
+      container.append(readContainer);
+    }
+
+    if (!container.firstChild)
+      container.append('\xa0');
   }
 
   process(historyId: string, rawMessages: gapi.client.gmail.Message[]) {
     this.historyId = historyId;
     this.snippet = defined(rawMessages[rawMessages.length - 1].snippet);
+    this.from_ = null;
 
     let oldMessageCount = this.messages.length;
     for (let i = 0; i < rawMessages.length; i++) {

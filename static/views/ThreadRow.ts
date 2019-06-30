@@ -67,7 +67,7 @@ export class HeightChangedEvent extends Event {
 class RowState {
   constructor(
       public isSmallScreen: boolean, public subject: string,
-      public snippet: string, public from: string, public count: number,
+      public snippet: string, public from: HTMLElement, public count: number,
       public lastMessageId: string, public group: string,
       public label: string|null, public priority: string|null,
       public blocked: Date|null, public due: Date|null,
@@ -330,8 +330,7 @@ export class ThreadRow extends HTMLElement {
     from.style.cssText = `
       overflow: hidden;
     `;
-
-    from.textContent = state.from || '\xa0';
+    from.append(state.from)
 
     let count = document.createElement('div');
     count.style.cssText = `
@@ -437,7 +436,6 @@ export class ThreadRow extends HTMLElement {
     `;
 
     let boldState = state.isUnread ? '600' : '';
-    fromContainer.style.fontWeight = boldState;
     subject.style.fontWeight = boldState;
     date.style.fontWeight = boldState;
 

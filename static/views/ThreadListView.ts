@@ -501,15 +501,18 @@ export class ThreadListView extends View {
         let allowedCount = this.model_.allowedCount(groupName);
         let group = new ThreadRowGroup(groupName, this.model_, allowedCount);
 
-        entry = {group: group, rows: []};
-        groupMap.set(groupName, entry);
-        this.isVisibleObserver_.observe(group);
-        this.isHiddenObserver_.observe(group);
 
         if (previousEntry)
           previousEntry.group.after(group);
         else
           this.rowGroupContainer_.prepend(group);
+
+        entry = {group: group, rows: []};
+        groupMap.set(groupName, entry);
+        // Call observe after putting the group in the DOM so we don't have a
+        // race condition where sometimes the group has no dimensions/position.
+        this.isVisibleObserver_.observe(group);
+        this.isHiddenObserver_.observe(group);
       }
 
       entry.rows.push(this.getThreadRow_(thread));
