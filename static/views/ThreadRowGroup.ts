@@ -101,7 +101,7 @@ export class ThreadRowGroup extends HTMLElement {
 
     let header = document.createElement('div');
     header.style.cssText = `
-      padding: 10px 0 6px;
+      padding: 16px 0 8px;
       display: flex;
       align-items: stretch;
     `;
