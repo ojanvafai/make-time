@@ -16,6 +16,7 @@ export class ThreadRowGroup extends HTMLElement {
   private groupNameContainer_: HTMLElement;
   private expander_?: HTMLElement;
   private lastRowHeight_?: number;
+  private wasCollapsed_?: boolean;
 
   constructor(
       private groupName_: string, private model_: ThreadListModel,
@@ -31,12 +32,12 @@ export class ThreadRowGroup extends HTMLElement {
       font-weight: bold;
       font-size: 18px;
     `;
-    this.groupNameContainer_.append(this.groupName_);
 
     let header = document.createElement('div');
     header.style.cssText = `
       margin-left: 5px;
       padding-top: 10px;
+      display: flex;
     `;
     header.append(this.groupNameContainer_);
     this.append(header);
@@ -61,32 +62,51 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   updateRowCount_(count: number) {
-    if (!this.allowedCount_)
-      return;
+    if (this.isCollapsed()) {
+      let expander = defined(this.expander_);
+      let countContainer = document.createElement('div');
+      countContainer.style.cssText = `
+        display: inline-block;
+        color: grey;
+      `;
+      countContainer.append(`ᐯ - ${count} rows`);
+      expander.textContent = '';
+      expander.append(countContainer);
+    }
 
-    if (count > this.allowedCount_) {
-      this.groupNameContainer_.textContent = this.groupName_;
+    this.groupNameContainer_.textContent = this.groupName_;
+
+    if (this.allowedCount_ && count > this.allowedCount_) {
       this.groupNameContainer_.append(` (${count}/${this.allowedCount_})`);
       this.groupNameContainer_.style.color = 'red';
-    } else if (this.groupNameContainer_.style.color === 'red') {
-      this.groupNameContainer_.textContent = this.groupName_;
-      this.groupNameContainer_.style.color = '';
+      return;
     }
+
+    if (this.groupNameContainer_.style.color === 'red')
+      this.groupNameContainer_.style.color = '';
   }
 
   private appendControls_(header: HTMLElement) {
     if (this.hideControls_())
       return;
 
-    this.expander_ = document.createElement('div');
-    this.expander_.style.cssText = `
+    let expander = document.createElement('div');
+    expander.style.cssText = `
       display: inline-block;
-      text-decoration: underline;
-      margin: 0 10px;
+      color: grey;
+      margin: 2px 4px;
+      padding: 0 3px;
+      font-weight: bold;
+      font-size: 75%;
     `;
-    this.expander_.addEventListener('click', () => this.toggleCollapsed_());
+    expander.addEventListener(
+        'pointerenter', () => expander.style.outline = '1px solid');
+    expander.addEventListener(
+        'pointerleave', () => expander.style.outline = '');
+    expander.addEventListener('click', () => this.toggleCollapsed_());
 
-    header.append(this.expander_);
+    header.append(expander);
+    this.expander_ = expander;
 
     if (!this.isCollapsed()) {
       header.append(
@@ -130,19 +150,6 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   setRows(rows: ThreadRow[]) {
-    if (!this.hideControls_()) {
-      let expander = defined(this.expander_);
-      if (this.isCollapsed()) {
-        expander.textContent = `expand ${rows.length} threads`;
-        // TODO: Should we retain the rows but display:none rowContainer_
-        // instead?
-        this.rowContainer_.textContent = '';
-        return [];
-      } else {
-        expander.textContent = 'collapse';
-      }
-    }
-
     // Minimize DOM modifications to only the cases where something has changed.
     let rowListChanged = this.rowsChanged_(rows);
     if (rowListChanged || this.lastRowHeight_ !== ThreadRow.lastHeight()) {
@@ -152,10 +159,20 @@ export class ThreadRowGroup extends HTMLElement {
 
     // Performance optimization to avoid doing a bunch of DOM if the count and
     // sort order of rows didn't change.
-    if (!rowListChanged)
+    if (!rowListChanged && this.wasCollapsed_ === this.isCollapsed())
       return [];
 
+    this.wasCollapsed_ = this.isCollapsed();
     this.updateRowCount_(rows.length);
+
+    if (!this.hideControls_() && this.isCollapsed()) {
+      // TODO: Should we retain the rows but display:none rowContainer_
+      // instead?
+      this.rowContainer_.textContent = '';
+      return [];
+    }
+
+    defined(this.expander_).textContent = 'ᐱ';
 
     let removed = [];
     // Remove rows that no longer exist.
