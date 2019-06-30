@@ -483,16 +483,19 @@ export class ThreadRow extends HTMLElement {
 
       // Remove the extra items so the select shrinks back down to the width
       // of the currently selected one.
-      label.addEventListener('blur', () => {
-        let toRemove = Array.from(label.children);
-        toRemove.shift();
+      let removeUnselected = () => {
+        let toRemove = Array.from(label.children) as HTMLOptionElement[];
         for (let element of toRemove) {
-          element.remove();
+          if (!element.selected)
+            element.remove();
         }
-      });
+      };
+
+      label.addEventListener('blur', () => removeUnselected());
 
       label.addEventListener('change', async () => {
         let newLabel = label.selectedOptions[0].value;
+        removeUnselected();
         await thread.setOnlyLabel(newLabel);
       });
 
