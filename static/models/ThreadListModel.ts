@@ -127,10 +127,6 @@ export abstract class ThreadListModel extends Model {
     return 0;
   }
 
-  hideGroupControls(_groupName: string) {
-    return false;
-  }
-
   showFinalVersion() {
     return false;
   }

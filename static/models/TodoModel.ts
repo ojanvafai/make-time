@@ -72,10 +72,6 @@ export class TodoModel extends ThreadListModel {
     return priority;
   }
 
-  hideGroupControls(groupName: string) {
-    return groupName === PINNED_PRIORITY_NAME;
-  }
-
   showFinalVersion() {
     return !!this.finalVersion_;
   }

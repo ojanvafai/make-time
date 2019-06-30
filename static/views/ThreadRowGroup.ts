@@ -1,6 +1,5 @@
-import {defined} from '../Base.js';
 import {ThreadListModel} from '../models/ThreadListModel.js';
-import {ALL, NONE, SELECTED_PROPERTY, SOME} from '../SelectBoxPainter.js';
+import {ALL, NONE, SELECTED_PROPERTY, SIZE_PROPERTY, SOME, STATE_PROPERTY, DISABLED} from '../SelectBoxPainter.js';
 
 import {SelectRowEvent, ThreadRow} from './ThreadRow.js';
 
@@ -25,10 +24,9 @@ class SelectBox extends HTMLElement {
   constructor() {
     super();
     this.style.cssText = `
-      width: 1em;
-      height: 1em;
       background-image: paint(select-box);
     `;
+    this.style.setProperty(SIZE_PROPERTY, '16');
     this.select(NONE);
   }
 
@@ -40,6 +38,10 @@ class SelectBox extends HTMLElement {
     this.selected_ = value;
     this.style.setProperty(SELECTED_PROPERTY, value);
   }
+
+  setDisabled(disabled: boolean) {
+    this.style.setProperty(STATE_PROPERTY, disabled ? DISABLED : '');
+  }
 }
 window.customElements.define('mt-select-box', SelectBox);
 
@@ -48,7 +50,8 @@ export class ThreadRowGroup extends HTMLElement {
   private placeholder_: HTMLElement;
   private selectBox_: SelectBox;
   private groupNameContainer_: HTMLElement;
-  private expander_?: HTMLElement;
+  private rowCountDisplay_: Text;
+  private expander_: HTMLElement;
   private lastRowHeight_?: number;
   private wasCollapsed_?: boolean;
 
@@ -62,7 +65,7 @@ export class ThreadRowGroup extends HTMLElement {
     `;
 
     this.selectBox_ = new SelectBox();
-    this.selectBox_.style.marginRight = '4px';
+    this.selectBox_.style.width = '40px';
 
     this.selectBox_.addEventListener('click', () => {
       if (this.selectBox_.selected() === NONE)
@@ -71,17 +74,36 @@ export class ThreadRowGroup extends HTMLElement {
         this.selectRows_(false);
     });
 
-    this.groupNameContainer_ = document.createElement('span');
+    this.groupNameContainer_ = document.createElement('div');
     this.groupNameContainer_.style.cssText = `
       font-weight: bold;
       font-size: 18px;
+      padding: 2px;
+      display: flex;
     `;
+    this.groupNameContainer_.className = 'outline-on-hover';
+    this.groupNameContainer_.addEventListener(
+        'click', () => this.toggleCollapsed_());
+
+    this.rowCountDisplay_ = new Text();
+
+    this.expander_ = document.createElement('div');
+    this.expander_.style.cssText = `
+      color: grey;
+      margin: 2px 4px;
+      padding: 0 3px;
+      font-weight: bold;
+      font-size: 12px;
+    `;
+
+    this.groupNameContainer_.append(
+        groupName_, this.rowCountDisplay_, this.expander_);
 
     let header = document.createElement('div');
     header.style.cssText = `
-      margin-left: 5px;
-      padding-top: 10px;
+      padding: 10px 0 6px;
       display: flex;
+      align-items: stretch;
     `;
     header.append(this.selectBox_, this.groupNameContainer_);
     this.append(header);
@@ -91,8 +113,6 @@ export class ThreadRowGroup extends HTMLElement {
     // Match ThreadRow color in index.html.
     this.placeholder_.style.backgroundColor = '#ffffffbb';
     this.append(this.rowContainer_, this.placeholder_);
-
-    this.appendControls_(header);
 
     this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
   }
@@ -132,57 +152,22 @@ export class ThreadRowGroup extends HTMLElement {
     this.selectBox_.select(select);
   }
 
-  private updateRowCount_(count: number) {
-    if (this.isCollapsed()) {
-      let expander = defined(this.expander_);
-      let countContainer = document.createElement('div');
-      countContainer.style.cssText = `
-        display: inline-block;
-        color: grey;
-      `;
-      countContainer.append(`ᐯ - ${count} rows`);
-      expander.textContent = '';
-      expander.append(countContainer);
-    }
+  private updateRowCount_(count: number, collapsed: boolean) {
+    let overLimit = this.allowedCount_ && count > this.allowedCount_;
+    this.groupNameContainer_.style.color = overLimit ? 'red' : '';
 
-    this.groupNameContainer_.textContent = this.groupName_;
-
-    if (this.allowedCount_ && count > this.allowedCount_) {
-      this.groupNameContainer_.append(` (${count}/${this.allowedCount_})`);
-      this.groupNameContainer_.style.color = 'red';
-      return;
-    }
-
-    if (this.groupNameContainer_.style.color === 'red')
-      this.groupNameContainer_.style.color = '';
-  }
-
-  private appendControls_(header: HTMLElement) {
-    if (this.hideControls_())
-      return;
-
-    let expander = document.createElement('div');
-    expander.style.cssText = `
-      display: inline-block;
-      color: grey;
-      margin: 2px 4px;
-      padding: 0 3px;
-      font-weight: bold;
-      font-size: 75%;
-    `;
-    expander.className = 'outline-on-hover';
-    expander.addEventListener('click', () => this.toggleCollapsed_());
-
-    header.append(expander);
-    this.expander_ = expander;
+    let text;
+    if (overLimit)
+      text = ` (${count}/${this.allowedCount_})`;
+    else if (collapsed)
+      text = ` (${count})`;
+    else
+      text = '';
+    this.rowCountDisplay_.textContent = text;
   }
 
   isCollapsed() {
     return this.model_.isCollapsed(this.groupName_);
-  }
-
-  private hideControls_() {
-    return this.model_.hideGroupControls(this.groupName_);
   }
 
   private toggleCollapsed_() {
@@ -219,22 +204,25 @@ export class ThreadRowGroup extends HTMLElement {
       this.placeholder_.style.height = `${rows.length * this.lastRowHeight_}px`;
     }
 
+    let collapsed = this.isCollapsed();
+
     // Performance optimization to avoid doing a bunch of DOM if the count and
     // sort order of rows didn't change.
-    if (!rowListChanged && this.wasCollapsed_ === this.isCollapsed())
+    if (!rowListChanged && this.wasCollapsed_ === collapsed)
       return [];
 
-    this.wasCollapsed_ = this.isCollapsed();
-    this.updateRowCount_(rows.length);
+    this.wasCollapsed_ = collapsed;
+    this.updateRowCount_(rows.length, collapsed);
 
-    if (!this.hideControls_() && this.isCollapsed()) {
+    this.expander_.textContent = collapsed ? 'ᐯ' : 'ᐱ';
+    this.selectBox_.setDisabled(collapsed);
+
+    if (collapsed) {
       // TODO: Should we retain the rows but display:none rowContainer_
       // instead?
       this.rowContainer_.textContent = '';
       return [];
     }
-
-    defined(this.expander_).textContent = 'ᐱ';
 
     let removed = [];
     // Remove rows that no longer exist.
@@ -272,6 +260,9 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   private selectRows_(select: boolean) {
+    if (this.isCollapsed())
+      return;
+
     this.selectBox_.select(select ? ALL : NONE);
     let rows = <NodeListOf<ThreadRow>>this.rowContainer_.childNodes;
     for (let child of rows) {
