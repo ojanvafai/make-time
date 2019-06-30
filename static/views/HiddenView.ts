@@ -1,5 +1,5 @@
 import {Action} from '../Actions.js';
-import {compareDates, defined} from '../Base.js';
+import {compareDates, defined, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
 import {TriageModel} from '../models/TriageModel.js';
@@ -46,7 +46,8 @@ class HiddenModel extends ThreadListModel {
     switch (this.queryKey_()) {
       case ThreadMetadataKeys.blocked:
         // Reverse sort by blocked date for the blocked view.
-        return compareDates(b.getBlockedDate(), a.getBlockedDate());
+        return compareDates(
+            notNull(b.getBlockedDate()), notNull(a.getBlockedDate()));
 
       case ThreadMetadataKeys.queued:
         return TriageModel.compareThreads(this.settings_, a, b);
