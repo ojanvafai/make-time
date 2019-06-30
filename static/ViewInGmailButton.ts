@@ -1,10 +1,13 @@
-import {defined} from './Base.js';
+import {defined, isMobileUserAgent} from './Base.js';
 
 export class ViewInGmailButton extends HTMLElement {
   messageId_: string|undefined;
 
   constructor() {
     super();
+
+    if (isMobileUserAgent())
+      return;
 
     this.append('↗');
 

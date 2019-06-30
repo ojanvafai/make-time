@@ -979,22 +979,53 @@ export class ThreadListView extends View {
       return;
     }
 
-    let viewInGmailButton = new ViewInGmailButton();
-    viewInGmailButton.setMessageId(messages[messages.length - 1].id);
-    viewInGmailButton.style.display = 'inline-flex';
+    let arrow = document.createElement('span');
+    arrow.style.cssText = `
+      margin: 0px 4px;
+      font-size: 75%;
+      height: 20px;
+      width: 20px;
+      border: 1px solid rgb(102, 102, 102);
+      border-radius: 3px;
+      padding: 3px;
+    `;
 
     let subject = document.createElement('div');
     subject.style.cssText = `
       flex: 1;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+      margin-right: 4px;
     `;
-    subject.append(renderedRow.thread.getSubject(), ' ');
+    subject.append(renderedRow.thread.getSubject());
 
+    let toggleClamp = () => {
+      let shouldClamp = subject.style.overflow === '';
+      if (shouldClamp) {
+        subject.style.overflow = 'hidden';
+        subject.style.display = '-webkit-box';
+        arrow.textContent = 'ᐯ';
+      } else {
+        subject.style.overflow = '';
+        subject.style.display = '';
+        arrow.textContent = 'ᐱ';
+      }
+    };
+    subject.addEventListener('click', () => toggleClamp());
+    arrow.addEventListener('click', () => toggleClamp());
+    toggleClamp();
+
+    let labelContainer = document.createElement('div');
     let labelState = new LabelState(renderedRow.thread, '');
     ThreadRow.appendLabels(
-        subject, labelState, renderedRow.thread,
+        labelContainer, labelState, renderedRow.thread,
         defined(this.labelSelectTemplate_));
 
-    this.appShell_.setSubject(subject, viewInGmailButton);
+    let viewInGmailButton = new ViewInGmailButton();
+    viewInGmailButton.setMessageId(messages[messages.length - 1].id);
+    viewInGmailButton.style.display = 'inline-flex';
+
+    this.appShell_.setSubject(arrow, subject, labelContainer, viewInGmailButton);
 
     rendered.focusFirstUnread();
 

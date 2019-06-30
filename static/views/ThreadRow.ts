@@ -549,6 +549,7 @@ export class ThreadRow extends HTMLElement {
       border-radius: 4px;
       padding: 0 4px;
       margin-right: 4px;
+      white-space: nowrap;
     `;
     label.append(text);
     return label;

@@ -134,10 +134,14 @@ export function compareDates(a: Date, b: Date) {
   return -(a > b) || +(a < b);
 }
 
+export function isMobileUserAgent() {
+  return navigator.userAgent.includes(' Mobile ')
+}
+
 export function setFaviconCount(count: number) {
   // Don't update the favicon on mobile where it's not visibile in the tab
   // strip and we want the regular favicon for add to homescreen.
-  if (navigator.userAgent.includes(' Mobile '))
+  if (isMobileUserAgent())
     return;
 
   let faviconUrl;

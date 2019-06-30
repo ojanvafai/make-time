@@ -1,4 +1,4 @@
-import {defined, getCurrentWeekNumber, showDialog} from './Base.js';
+import {defined, getCurrentWeekNumber, showDialog, isMobileUserAgent} from './Base.js';
 import {firestore, getServerStorage, getSettings} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
@@ -26,7 +26,7 @@ import {ThreadListView} from './views/ThreadListView.js';
 import {TrackingView} from './views/TrackingView.js';
 import {View} from './views/View.js';
 
-if (!navigator.userAgent.includes('Mobile'))
+if (!isMobileUserAgent())
   document.documentElement.classList.add('desktop');
 
 let currentView_: View;
