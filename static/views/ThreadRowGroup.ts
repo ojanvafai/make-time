@@ -1,7 +1,16 @@
 import {defined} from '../Base.js';
 import {ThreadListModel} from '../models/ThreadListModel.js';
+import {ALL, NONE, SELECTED_PROPERTY, SOME} from '../SelectBoxPainter.js';
 
-import {ThreadRow} from './ThreadRow.js';
+import {SelectRowEvent, ThreadRow} from './ThreadRow.js';
+
+// Kinda gross that we need to expose the typescript output directory in the
+// code. :(
+// @ts-ignore
+if (CSS && CSS.paintWorklet)
+  // @ts-ignore
+  CSS.paintWorklet.addModule('./gen/SelectBoxPainter.js');
+
 
 export class ToggleCollapsedEvent extends Event {
   static NAME = 'toggle-collapsed';
@@ -10,9 +19,34 @@ export class ToggleCollapsedEvent extends Event {
   }
 }
 
+class SelectBox extends HTMLElement {
+  private selected_!: string;
+
+  constructor() {
+    super();
+    this.style.cssText = `
+      width: 1em;
+      height: 1em;
+      background-image: paint(select-box);
+    `;
+    this.select(NONE);
+  }
+
+  selected() {
+    return this.selected_;
+  }
+
+  select(value: string) {
+    this.selected_ = value;
+    this.style.setProperty(SELECTED_PROPERTY, value);
+  }
+}
+window.customElements.define('mt-select-box', SelectBox);
+
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
   private placeholder_: HTMLElement;
+  private selectBox_: SelectBox;
   private groupNameContainer_: HTMLElement;
   private expander_?: HTMLElement;
   private lastRowHeight_?: number;
@@ -27,6 +61,16 @@ export class ThreadRowGroup extends HTMLElement {
       border-bottom: 1px solid #ddd;
     `;
 
+    this.selectBox_ = new SelectBox();
+    this.selectBox_.style.marginRight = '4px';
+
+    this.selectBox_.addEventListener('click', () => {
+      if (this.selectBox_.selected() === NONE)
+        this.selectRows_(true);
+      else
+        this.selectRows_(false);
+    });
+
     this.groupNameContainer_ = document.createElement('span');
     this.groupNameContainer_.style.cssText = `
       font-weight: bold;
@@ -39,7 +83,7 @@ export class ThreadRowGroup extends HTMLElement {
       padding-top: 10px;
       display: flex;
     `;
-    header.append(this.groupNameContainer_);
+    header.append(this.selectBox_, this.groupNameContainer_);
     this.append(header);
 
     this.rowContainer_ = document.createElement('div');
@@ -49,6 +93,8 @@ export class ThreadRowGroup extends HTMLElement {
     this.append(this.rowContainer_, this.placeholder_);
 
     this.appendControls_(header);
+
+    this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
   }
 
   setInViewport(inViewport: boolean) {
@@ -61,7 +107,32 @@ export class ThreadRowGroup extends HTMLElement {
     }
   }
 
-  updateRowCount_(count: number) {
+  private updateSelectBox_() {
+    let rows = this.getRows();
+    let hasChecked = false;
+    let hasUnchecked = false;
+    for (let row of rows) {
+      if (hasChecked && hasUnchecked)
+        break;
+      if (!hasChecked)
+        hasChecked = row.checked;
+      if (!hasUnchecked)
+        hasUnchecked = !row.checked;
+    }
+
+    let select;
+    if (hasChecked && hasUnchecked) {
+      select = SOME;
+    } else if (hasUnchecked) {
+      select = NONE;
+    } else {
+      select = ALL;
+    }
+
+    this.selectBox_.select(select);
+  }
+
+  private updateRowCount_(count: number) {
     if (this.isCollapsed()) {
       let expander = defined(this.expander_);
       let countContainer = document.createElement('div');
@@ -100,19 +171,12 @@ export class ThreadRowGroup extends HTMLElement {
       font-size: 75%;
     `;
     expander.addEventListener(
-        'pointerenter', () => expander.style.outline = '1px solid');
-    expander.addEventListener(
-        'pointerleave', () => expander.style.outline = '');
+        'pointerover', () => expander.style.outline = '1px solid');
+    expander.addEventListener('pointerout', () => expander.style.outline = '');
     expander.addEventListener('click', () => this.toggleCollapsed_());
 
     header.append(expander);
     this.expander_ = expander;
-
-    if (!this.isCollapsed()) {
-      header.append(
-          ' select ', this.createSelector_('all', this.selectAll_),
-          this.createSelector_('none', this.selectNone_));
-    }
   }
 
   isCollapsed() {
@@ -209,24 +273,8 @@ export class ThreadRowGroup extends HTMLElement {
       this.remove();
   }
 
-  private createSelector_(textContent: string, callback: () => void) {
-    let selector = document.createElement('span');
-    selector.textContent = textContent;
-    selector.style.textDecoration = 'underline';
-    selector.style.marginRight = '4px';
-    selector.onclick = callback.bind(this);
-    return selector;
-  }
-
-  private selectAll_() {
-    this.selectRows_(true);
-  }
-
-  private selectNone_() {
-    this.selectRows_(false);
-  }
-
   private selectRows_(select: boolean) {
+    this.selectBox_.select(select ? ALL : NONE);
     let rows = <NodeListOf<ThreadRow>>this.rowContainer_.childNodes;
     for (let child of rows) {
       child.checked = select;

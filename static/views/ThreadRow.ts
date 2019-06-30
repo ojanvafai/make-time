@@ -45,7 +45,7 @@ export class FocusRowEvent extends Event {
 
 export class SelectRowEvent extends Event {
   static NAME = 'select-row';
-  constructor(public shiftKey: boolean) {
+  constructor(public selected: boolean, public shiftKey: boolean) {
     super(SelectRowEvent.NAME, {bubbles: true});
   }
 }
@@ -266,8 +266,7 @@ export class ThreadRow extends HTMLElement {
 
   select(shiftKey: boolean) {
     this.checked = !this.selected;
-    if (this.checked)
-      this.dispatchEvent(new SelectRowEvent(shiftKey));
+    this.dispatchEvent(new SelectRowEvent(this.checked, shiftKey));
     this.setFocus(true, false);
   }
 

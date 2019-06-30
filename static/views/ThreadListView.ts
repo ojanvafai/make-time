@@ -261,8 +261,9 @@ export class ThreadListView extends View {
     });
     this.rowGroupContainer_.addEventListener(
         SelectRowEvent.NAME, (e: Event) => {
-          this.handleCheckRow_(
-              <ThreadRow>e.target, (e as SelectRowEvent).shiftKey);
+          let event = (e as SelectRowEvent);
+          if (event.selected)
+            this.handleCheckRow_(<ThreadRow>e.target, event.shiftKey);
         });
     this.rowGroupContainer_.addEventListener(HeightChangedEvent.NAME, () => {
       this.forceRender();
@@ -1025,7 +1026,8 @@ export class ThreadListView extends View {
     viewInGmailButton.setMessageId(messages[messages.length - 1].id);
     viewInGmailButton.style.display = 'inline-flex';
 
-    this.appShell_.setSubject(arrow, subject, labelContainer, viewInGmailButton);
+    this.appShell_.setSubject(
+        arrow, subject, labelContainer, viewInGmailButton);
 
     rendered.focusFirstUnread();
 
