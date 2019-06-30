@@ -346,7 +346,6 @@ export class ThreadRow extends HTMLElement {
     let fromContainer = document.createElement('div');
     fromContainer.style.cssText = `
       width: 150px;
-      margin-right: 25px;
       padding-left: 5px;
       display: flex;
       align-items: baseline;
@@ -369,14 +368,9 @@ export class ThreadRow extends HTMLElement {
       count.textContent = String(state.count);
     fromContainer.append(from, count);
 
-    let title = document.createElement('div');
-    title.style.cssText = `
-      overflow: hidden;
-      margin-right: 25px;
-      flex: 1;
-    `;
+    let labels = document.createElement('div');
     ThreadRow.appendLabels(
-        title, state, this.thread, this.labelSelectTemplate_);
+        labels, state, this.thread, this.labelSelectTemplate_);
 
     let snippet = document.createElement('span');
     snippet.style.color = '#666';
@@ -384,13 +378,17 @@ export class ThreadRow extends HTMLElement {
     snippet.innerHTML = ` - ${state.snippet}`;
 
     let subject = document.createElement('span');
-    subject.append(state.subject || '\xa0');
-    title.append(subject, snippet);
+    subject.style.cssText = `
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      margin-right: 25px;
+    `;
+    subject.append(state.subject, snippet);
 
     let date = document.createElement('div');
     date.textContent = this.dateString_(this.thread.getDate());
     date.style.cssText = `
-      width: 4.5em;
       text-align: right;
     `;
 
@@ -412,16 +410,16 @@ export class ThreadRow extends HTMLElement {
 
       let topRow = document.createElement('div');
       topRow.style.display = 'flex';
-      topRow.append(fromContainer);
+      topRow.append(fromContainer, labels);
       topRow.append(date, popoutButton);
-      this.messageDetails_.append(topRow, title);
+      this.messageDetails_.append(topRow, subject);
 
       fromContainer.style.flex = '1';
-      title.style.fontSize = '12px';
-      title.style.margin = '5px 5px 0 5px';
+      subject.style.fontSize = '12px';
+      subject.style.margin = '5px 5px 0 5px';
     } else {
       this.messageDetails_.style.alignItems = 'center';
-      this.messageDetails_.append(fromContainer, title);
+      this.messageDetails_.append(fromContainer, labels, subject);
       this.messageDetails_.append(date, popoutButton);
     }
 
