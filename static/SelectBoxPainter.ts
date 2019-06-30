@@ -1,6 +1,5 @@
 export const SELECTED_PROPERTY = '--select-box-selected';
 export const SIZE_PROPERTY = '--select-box-size';
-export const STATE_PROPERTY = '--select-box-state';
 export const ALL = 'all';
 export const SOME = 'some';
 export const NONE = 'none';
@@ -8,15 +7,14 @@ export const DISABLED = 'disabled';
 
 class SelectBoxPainter {
   static get inputProperties() {
-    return [SELECTED_PROPERTY, SIZE_PROPERTY, STATE_PROPERTY];
+    return [SELECTED_PROPERTY, SIZE_PROPERTY];
   }
 
   paint(ctx: CanvasRenderingContext2D, geom: any, properties: any) {
     const selected = properties.get(SELECTED_PROPERTY).toString();
     const size = Number(properties.get(SIZE_PROPERTY).toString());
-    const isDisabled = properties.get(STATE_PROPERTY).toString() === 'disabled';
 
-    ctx.strokeStyle = isDisabled ? '#bbb' : '#000';
+    ctx.strokeStyle = (selected === DISABLED) ? '#ddd' : '#000';
 
     let halfLineWidth = 1;
     ctx.lineWidth = 2 * halfLineWidth;
@@ -25,7 +23,7 @@ class SelectBoxPainter {
     let offsetTop = (geom.height - size) / 2;
     ctx.strokeRect(offsetLeft, offsetTop, size, size);
 
-    if (isDisabled || selected === NONE)
+    if (selected === DISABLED || selected === NONE)
       return;
 
     if (selected === SOME)

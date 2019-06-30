@@ -1,7 +1,7 @@
 import {assert, isMobileUserAgent} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {SelectBox} from '../SelectBox.js';
-import {ALL, NONE, SOME} from '../SelectBoxPainter.js';
+import {ALL, DISABLED, NONE, SOME} from '../SelectBoxPainter.js';
 import {Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
@@ -141,6 +141,7 @@ export class ThreadRow extends HTMLElement {
   private inViewport_: boolean;
   private focused_: boolean;
   private focusImpliesSelected_: boolean;
+  private hovered_: boolean;
   rendered: RenderedThread;
   mark: boolean|undefined;
   private checkBox_: SelectBox;
@@ -163,6 +164,7 @@ export class ThreadRow extends HTMLElement {
     this.inViewport_ = false;
     this.focused_ = false;
     this.focusImpliesSelected_ = false;
+    this.hovered_ = false;
     this.finalVersionSkipped_ = false;
 
     if (showFinalVersion_) {
@@ -216,9 +218,19 @@ export class ThreadRow extends HTMLElement {
     });
     this.append(this.messageDetails_);
 
+
+    this.addEventListener('pointerover', () => {
+      this.setHovered_(true);
+    });
+    this.addEventListener('pointerout', () => {
+      this.setHovered_(false);
+    });
+
     this.rendered = new RenderedThread(thread);
     thread.addEventListener(
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
+
+    this.updateCheckbox_();
   }
 
   static lastHeight() {
@@ -578,14 +590,21 @@ export class ThreadRow extends HTMLElement {
     this.dispatchEvent(new SelectRowEvent(this.checked, !!shiftKey));
   }
 
+  private setHovered_(hovered: boolean) {
+    this.hovered_ = hovered;
+    this.updateCheckbox_();
+  }
+
   updateCheckbox_() {
     let newState;
     if (this.checked)
       newState = ALL;
     else if (this.focused_ && this.focusImpliesSelected_)
       newState = SOME;
-    else
+    else if (this.focused_ || this.hovered_)
       newState = NONE;
+    else
+      newState = DISABLED;
 
     this.checkBox_.select(newState);
   }

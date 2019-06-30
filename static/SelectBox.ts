@@ -1,4 +1,4 @@
-import {DISABLED, NONE, SELECTED_PROPERTY, SIZE_PROPERTY, STATE_PROPERTY, ALL} from './SelectBoxPainter.js';
+import {ALL, DISABLED, NONE, SELECTED_PROPERTY, SIZE_PROPERTY} from './SelectBoxPainter.js';
 
 // Kinda gross that we need to expose the typescript output directory in the
 // code. :(
@@ -36,7 +36,7 @@ export class SelectBox extends HTMLElement {
   }
 
   setDisabled(disabled: boolean) {
-    this.style.setProperty(STATE_PROPERTY, disabled ? DISABLED : '');
+    this.select(disabled ? DISABLED : NONE);
   }
 }
 window.customElements.define('mt-select-box', SelectBox);
