@@ -21,7 +21,7 @@ export class Timer extends HTMLElement {
 
     this.timeDisplay_ = document.createElement('span');
     this.timeDisplay_.style.cssText = `
-      border-radius: 5px;
+      border-radius: 3px;
     `;
 
     this.timerButton_ = document.createElement('span');

@@ -62,7 +62,8 @@ export function showDialog(contents: HTMLElement|string) {
   dialog.style.cssText = `
     top: 15px;
     padding: 8px;
-    border: 3px solid grey;
+    border: 1px solid #999;
+    outline: 1px solid #bbb;
     max-height: calc(100vh - 30px - 16px - 6px);
     max-width: 800px;
     position: fixed;

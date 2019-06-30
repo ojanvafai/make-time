@@ -522,7 +522,7 @@ export class ThreadRow extends HTMLElement {
       background-color: #ddd;
       font-size: 0.75rem;
       line-height: 18px;
-      border-radius: 4px;
+      border-radius: 3px;
       padding: 0 4px;
       margin-right: 4px;
       white-space: nowrap;

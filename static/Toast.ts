@@ -23,7 +23,7 @@ export class Toast extends HTMLElement {
     text.style.cssText = `
       background-color: #000000bb;
       padding: 10px;
-      border-radius: 5px;
+      border-radius: 3px;
       border: 1px solid grey;
       color: #ffffffbb;
     `;
