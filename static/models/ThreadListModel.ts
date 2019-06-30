@@ -264,7 +264,10 @@ export abstract class ThreadListModel extends Model {
   }
 
   async markTriaged(
-      destination: Action, threads: Thread[], moveToInbox?: boolean) {
+    destination: Action, threads: Thread[], moveToInbox?: boolean) {
+    if (!threads.length)
+      return;
+
     this.resetUndoableActions_();
 
     let progress = this.updateTitle(
