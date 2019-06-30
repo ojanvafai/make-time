@@ -170,9 +170,7 @@ export class ThreadRowGroup extends HTMLElement {
       font-weight: bold;
       font-size: 75%;
     `;
-    expander.addEventListener(
-        'pointerover', () => expander.style.outline = '1px solid');
-    expander.addEventListener('pointerout', () => expander.style.outline = '');
+    expander.className = 'outline-on-hover';
     expander.addEventListener('click', () => this.toggleCollapsed_());
 
     header.append(expander);
