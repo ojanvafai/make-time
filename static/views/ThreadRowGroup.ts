@@ -78,7 +78,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.groupNameContainer_.style.cssText = `
       font-weight: bold;
       font-size: 18px;
-      padding: 2px;
+      padding: 8px;
       display: flex;
     `;
     this.groupNameContainer_.className = 'outline-on-hover';
@@ -101,7 +101,7 @@ export class ThreadRowGroup extends HTMLElement {
 
     let header = document.createElement('div');
     header.style.cssText = `
-      padding: 16px 0 8px;
+      padding-top: 8px;
       display: flex;
       align-items: stretch;
     `;
