@@ -57,6 +57,13 @@ export class RenderThreadEvent extends Event {
   }
 }
 
+export class HeightChangedEvent extends Event {
+  static NAME = 'row-height-changed';
+  constructor() {
+    super(HeightChangedEvent.NAME, {bubbles: true});
+  }
+}
+
 class RowState {
   constructor(
       public isSmallScreen: boolean, public subject: string,

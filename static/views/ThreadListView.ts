@@ -15,7 +15,7 @@ import {Toast} from '../Toast.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {AppShell} from './AppShell.js';
-import {FocusRowEvent, RenderThreadEvent, SelectRowEvent, ThreadRow} from './ThreadRow.js';
+import {FocusRowEvent, HeightChangedEvent, RenderThreadEvent, SelectRowEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
@@ -264,6 +264,9 @@ export class ThreadListView extends View {
           this.handleCheckRow_(
               <ThreadRow>e.target, (e as SelectRowEvent).shiftKey);
         });
+    this.rowGroupContainer_.addEventListener(HeightChangedEvent.NAME, () => {
+      this.forceRender();
+    });
 
     this.singleThreadContainer_ = document.createElement('div');
     this.singleThreadContainer_.style.cssText = `
@@ -929,51 +932,9 @@ export class ThreadListView extends View {
 
   renderOneWithoutMessages_() {
     let renderedRow = notNull(this.renderedRow_);
-
-    let contents = document.createElement('div');
-    contents.style.cssText = `
-      background-color: #fff;
-      margin: 30px auto;
-      padding: 10px;
-      font-size: 16px;
-      width: -webkit-fill-available;
-      max-width: 600px;
-    `;
-
-    let fromContainer = document.createElement('div');
-    fromContainer.style.cssText = `
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    `;
-    contents.append(fromContainer);
-
-    let from = document.createElement('b');
-    from.append('From: ');
-    fromContainer.append(from);
-    fromContainer.append(renderedRow.thread.getFrom());
-
-    let subjectContainer = document.createElement('div')
-    subjectContainer.style.cssText = `
-      margin: 16px 0;
-    `;
-    contents.append(subjectContainer);
-
-    let subject = document.createElement('b');
-    subject.append('Subject: ');
-    subjectContainer.append(subject);
-    subjectContainer.append(renderedRow.thread.getSubject());
-
-    let snippet = document.createElement('div');
-    snippet.style.cssText = `
-      color: grey;
-    `;
-    // Snippet returned by the gmail API is html escaped.
-    snippet.innerHTML = renderedRow.thread.getSnippet();
-    contents.append(snippet);
-
+    renderedRow.rendered.renderWithoutMessages();
     this.singleThreadContainer_.textContent = '';
-    this.singleThreadContainer_.append(contents);
+    this.singleThreadContainer_.append(renderedRow.rendered);
   }
 
   renderOne_(toast?: HTMLElement) {

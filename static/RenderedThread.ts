@@ -37,6 +37,7 @@ if (CSS && CSS.paintWorklet)
 export class RenderedThread extends HTMLElement {
   private spinner_?: HTMLElement;
   private focused_: HTMLElement|null;
+  private excludeMessages_: boolean;
 
   constructor(public thread: Thread) {
     super();
@@ -48,6 +49,7 @@ export class RenderedThread extends HTMLElement {
       max-width: 1000px;
     `;
     this.focused_ = null;
+    this.excludeMessages_ = false;
   }
 
   isAttached() {
@@ -75,17 +77,69 @@ export class RenderedThread extends HTMLElement {
   }
 
   render() {
-    let messages = this.thread.getMessages();
-    let alreadyRenderedMessages =
-        [...this.children].filter(x => x.classList.contains('message'));
-    // Only append new messages.
-    messages = messages.slice(alreadyRenderedMessages.length);
-    for (let message of messages) {
-      let rendered = this.renderMessage_(message);
-      if (this.childElementCount == 0)
-        rendered.style.border = '0';
-      this.append(rendered);
+    if (this.excludeMessages_) {
+      this.textContent = '';
+
+      let contents = document.createElement('div');
+      contents.style.cssText = `
+        background-color: #fff;
+        margin: 30px auto;
+        padding: 10px;
+        font-size: 16px;
+        width: -webkit-fill-available;
+        max-width: 600px;
+      `;
+      this.append(contents);
+
+      let fromContainer = document.createElement('div');
+      fromContainer.style.cssText = `
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      `;
+      contents.append(fromContainer);
+
+      let from = document.createElement('b');
+      from.append('From: ');
+      fromContainer.append(from);
+      fromContainer.append(this.thread.getFrom());
+
+      let subjectContainer = document.createElement('div')
+      subjectContainer.style.cssText = `
+        margin: 16px 0;
+      `;
+      contents.append(subjectContainer);
+
+      let subject = document.createElement('b');
+      subject.append('Subject: ');
+      subjectContainer.append(subject);
+      subjectContainer.append(this.thread.getSubject());
+
+      let snippet = document.createElement('div');
+      snippet.style.cssText = `
+        color: grey;
+      `;
+      // Snippet returned by the gmail API is html escaped.
+      snippet.innerHTML = this.thread.getSnippet();
+      contents.append(snippet);
+    } else {
+      let messages = this.thread.getMessages();
+      let alreadyRenderedMessages =
+          [...this.children].filter(x => x.classList.contains('message'));
+      // Only append new messages.
+      messages = messages.slice(alreadyRenderedMessages.length);
+      for (let message of messages) {
+        let rendered = this.renderMessage_(message);
+        if (this.childElementCount == 0)
+          rendered.style.border = '0';
+        this.append(rendered);
+      }
     }
+  }
+
+  renderWithoutMessages() {
+    this.excludeMessages_ = true;
+    this.render();
   }
 
   focusFirstUnread() {

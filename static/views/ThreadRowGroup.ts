@@ -147,7 +147,10 @@ export class ThreadRowGroup extends HTMLElement {
     let rowListChanged = this.rowsChanged_(rows);
     if (rowListChanged || this.lastRowHeight_ !== ThreadRow.lastHeight()) {
       this.lastRowHeight_ = ThreadRow.lastHeight();
-      this.placeholder_.style.height = `${rows.length * this.lastRowHeight_}px`;
+      if (this.lastRowHeight_) {
+        this.placeholder_.style.height =
+            `${rows.length * this.lastRowHeight_}px`;
+      }
     }
 
     // Performance optimization to avoid doing a bunch of DOM if the count and
