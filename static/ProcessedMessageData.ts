@@ -33,8 +33,14 @@ export class ProcessedMessageData {
   }
 
   minifyFrom_(addresses: string[], shouldMinify: boolean) {
-    if (shouldMinify)
-      addresses = addresses.map(x => x.split(' ')[0]);
+    if (shouldMinify) {
+      addresses = addresses.map(x => {
+        let parts = x.split(' ');
+        // Exclude things like Dr., Mr., etc.
+        return (parts[0].endsWith('.') && parts.length > 1) ? parts[1] :
+                                                              parts[0];
+      });
+    }
     return addresses.join(', ');
   }
 
