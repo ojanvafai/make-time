@@ -123,6 +123,10 @@ export class HiddenView extends View {
     super();
 
     let container = document.createElement('div');
+    container.style.cssText = `
+      text-align: center;
+      margin-top: 4px;
+    `;
     this.append(container);
 
     this.select_ = document.createElement('select');
@@ -138,7 +142,7 @@ export class HiddenView extends View {
     }
     this.select_.addEventListener('change', () => this.handleSelectChange_());
 
-    container.append('Show: ', this.select_);
+    container.append(this.select_);
   }
 
   async init() {

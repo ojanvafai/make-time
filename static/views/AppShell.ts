@@ -48,6 +48,7 @@ export class AppShell extends HTMLElement {
       right: 0;
       bottom: 0;
       left: 0;
+      overflow: auto;
     `;
 
     this.drawer_ = document.createElement('div');
@@ -250,9 +251,6 @@ export class AppShell extends HTMLElement {
 
   setContent(newContent: HTMLElement) {
     this.content_.textContent = '';
-    newContent.style.width = '100%';
-    newContent.style.maxWidth = '1000px';
-    newContent.style.margin = 'auto';
     this.content_.append(newContent);
   }
 

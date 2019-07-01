@@ -206,6 +206,9 @@ export class ThreadListView extends View {
     this.style.cssText = `
       display: flex;
       flex-direction: column;
+      width: 100%;
+      max-width: 1000px;
+      margin: auto;
     `;
 
     this.timerDuration_ = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
