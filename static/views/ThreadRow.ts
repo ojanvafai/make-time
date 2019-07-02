@@ -358,6 +358,9 @@ export class ThreadRow extends HTMLElement {
     // Snippet as returned by the gmail API is html escaped.
     snippet.innerHTML = ` - ${state.snippet}`;
 
+    let justSubject = document.createElement('span');
+    justSubject.append(state.subject);
+
     let subject = document.createElement('span');
     subject.style.cssText = `
       overflow: hidden;
@@ -366,7 +369,7 @@ export class ThreadRow extends HTMLElement {
       margin-right: 25px;
     `;
     subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
-    subject.append(state.subject, snippet);
+    subject.append(justSubject, snippet);
 
     let date = document.createElement('div');
     date.textContent = this.dateString_(this.thread.getDate());
@@ -380,7 +383,7 @@ export class ThreadRow extends HTMLElement {
     `;
 
     let boldState = state.isUnread ? '600' : '';
-    subject.style.fontWeight = boldState;
+    justSubject.style.fontWeight = boldState;
     date.style.fontWeight = boldState;
 
     let popoutButton = new ViewInGmailButton();
