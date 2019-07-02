@@ -27,8 +27,16 @@ export class QueueNames extends EventTarget {
     await this.fetch();
     let nameIds = defined(QueueNames.nameIds_);
     let names = Object.keys(nameIds);
-    if (!includeBuiltIns)
+    if (includeBuiltIns) {
+      // If the labels haven't ever been applied to threads, they won't be in
+      // QueueNames yet (and Labels.Archive is never applied)..
+      if (!names.includes(Labels.Archive))
+        names.push(Labels.Archive);
+      if (!names.includes(Labels.Fallback))
+        names.push(Labels.Fallback);
+    } else {
       names = names.filter(x => x !== Labels.Archive && x !== Labels.Fallback);
+    }
     return names;
   }
 
