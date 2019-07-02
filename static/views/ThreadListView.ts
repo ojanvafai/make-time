@@ -8,7 +8,7 @@ import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {Thread} from '../Thread.js';
+import {InProgressChangedEvent, Thread} from '../Thread.js';
 import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
@@ -182,6 +182,7 @@ export class ThreadListView extends View {
   private noMeetingRoomEvents_: HTMLElement;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
+  private pendingContainer_: HTMLElement;
   private renderedRow_: ThreadRow|null;
   private autoFocusedRow_: ThreadRow|null;
   private lastCheckedRow_: ThreadRow|null;
@@ -209,6 +210,7 @@ export class ThreadListView extends View {
       width: 100%;
       max-width: 1000px;
       margin: auto;
+      position: relative;
     `;
 
     this.timerDuration_ = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
@@ -285,6 +287,23 @@ export class ThreadListView extends View {
     `;
     this.append(this.buttonContainer_);
 
+    this.pendingContainer_ = document.createElement('div');
+    this.pendingContainer_.style.cssText = `
+      position: sticky;
+      z-index: 100;
+      bottom: 0;
+      max-width: 1000px;
+      pointer-events: none;
+      border-top: 1px dotted #ccc;
+      background-color: white;
+    `;
+    this.append(this.pendingContainer_);
+
+    this.rowGroupContainer_.addEventListener(
+        InProgressChangedEvent.NAME, (e) => this.handleInProgressChanged_(e));
+    this.pendingContainer_.addEventListener(
+        InProgressChangedEvent.NAME, (e) => this.handleInProgressChanged_(e));
+
     if (bottomButtonUrl)
       this.appendButton_(
           this.buttonContainer_, defined(bottomButtonText), bottomButtonUrl);
@@ -317,6 +336,18 @@ export class ThreadListView extends View {
 
     this.renderCalendar_();
     this.render_();
+  }
+
+  private handleInProgressChanged_(e: InProgressChangedEvent) {
+    let row = e.target && (e.target as ThreadRow);
+    if (row && !row.thread.actionInProgress()) {
+      row.style.position = '';
+      row.style.right = '';
+      row.style.bottom = '';
+      row.style.left = '';
+      row.style.backgroundColor = '#ffffffbb';
+    }
+    this.render_()
   }
 
   private async renderCalendar_() {
@@ -462,14 +493,26 @@ export class ThreadListView extends View {
 
   private renderFrame_() {
     this.hasQueuedFrame_ = false;
-    let threads = this.model_.getThreads();
+    let allThreads = this.model_.getThreads();
     let oldRows = this.getRows_();
 
     // This happens when an undo has happened, but the model hasn't yet seen
     // the update from the undo.
     if (this.renderedRow_ && !oldRows.includes(this.renderedRow_) &&
-        !threads.includes(this.renderedRow_.thread))
+        !allThreads.includes(this.renderedRow_.thread))
       return;
+
+    let threadsInPending = allThreads.filter(x => x.actionInProgress());
+    let threads = allThreads.filter(x => !x.actionInProgress());
+    for (let thread of threadsInPending) {
+      let row = this.getThreadRow_(thread);
+      row.style.position = 'absolute';
+      row.style.right = '0';
+      row.style.bottom = '0';
+      row.style.left = '0';
+      row.style.backgroundColor = '#ccc';
+      this.pendingContainer_.prepend(row);
+    }
 
     let newGroupNames = new Set(threads.map(x => this.model_.getGroupName(x)));
 
@@ -903,9 +946,10 @@ export class ThreadListView extends View {
 
         // ThreadRows get recycled, so clear the checked and focused state
         // for future use.
-        if (!keepRows)
+        if (!keepRows) {
           child.resetState();
-        child.thread.setActionInProgress(true);
+          child.thread.setActionInProgress(true);
+        }
       } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
         firstUnselectedRowAfterFocused = child;
       }

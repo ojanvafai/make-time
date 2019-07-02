@@ -2,7 +2,7 @@ import {assert, isMobileUserAgent} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {SelectBox} from '../SelectBox.js';
 import {ALL, DISABLED, NONE, SOME} from '../SelectBoxPainter.js';
-import {Thread, UpdatedEvent} from '../Thread.js';
+import {InProgressChangedEvent, Thread, UpdatedEvent} from '../Thread.js';
 import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
@@ -102,7 +102,6 @@ class RowState extends LabelState {
   snippet: string;
   from: HTMLElement;
   isUnread: boolean;
-  actionInProgress: boolean;
   count: number;
   lastMessageId: string;
 
@@ -119,7 +118,6 @@ class RowState extends LabelState {
     this.snippet = thread.getSnippet();
     this.from = thread.getFrom();
     this.isUnread = thread.isUnread();
-    this.actionInProgress = thread.actionInProgress();
 
     let messageIds = thread.getMessageIds();
     this.count = messageIds.length;
@@ -132,18 +130,17 @@ class RowState extends LabelState {
         this.from === other.from && this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&
-        this.finalVersionSkipped === other.finalVersionSkipped &&
-        this.actionInProgress === other.actionInProgress;
+        this.finalVersionSkipped === other.finalVersionSkipped;
   }
 }
 
 export class ThreadRow extends HTMLElement {
+  rendered: RenderedThread;
+  mark: boolean|undefined;
   private inViewport_: boolean;
   private focused_: boolean;
   private focusImpliesSelected_: boolean;
   private hovered_: boolean;
-  rendered: RenderedThread;
-  mark: boolean|undefined;
   private checkBox_: SelectBox;
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
@@ -230,6 +227,11 @@ export class ThreadRow extends HTMLElement {
     thread.addEventListener(
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
 
+    // Redispatch this so the ThreadListView picks it up.
+    thread.addEventListener(
+        InProgressChangedEvent.NAME,
+        () => this.dispatchEvent(new InProgressChangedEvent()));
+
     this.updateCheckbox_();
   }
 
@@ -272,11 +274,16 @@ export class ThreadRow extends HTMLElement {
     this.setChecked(false);
   }
 
-  getGroup() {
+  private getGroupMaybeNull_() {
     let parent = this.parentElement;
     while (parent && !(parent instanceof ThreadRowGroup)) {
       parent = parent.parentElement
     }
+    return parent;
+  }
+
+  getGroup() {
+    let parent = this.getGroupMaybeNull_();
     return assert(
         parent,
         'Attempted to get the parent group of a ThreadRow not in a group.');
@@ -305,11 +312,18 @@ export class ThreadRow extends HTMLElement {
   }
 
   render() {
-    if (!this.parentNode || !this.inViewport_)
+    if (!this.inViewport_)
+      return;
+
+    if (this.thread.actionInProgress())
+      return;
+
+    let group = this.getGroupMaybeNull_();
+    if (!group)
       return;
 
     let state = new RowState(
-        this.thread, this.getGroup().name,
+        this.thread, group.name,
         this.showFinalVersion_ && this.finalVersionSkipped_);
 
     // Keep track of the last state we used to render this row so we can avoid
@@ -318,8 +332,6 @@ export class ThreadRow extends HTMLElement {
       return;
 
     this.lastRowState_ = state;
-
-    this.style.opacity = state.actionInProgress ? '0.2' : '';
     this.style.display = state.finalVersionSkipped ? 'none' : 'flex';
 
     let fromContainer = document.createElement('div');

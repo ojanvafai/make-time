@@ -61,6 +61,7 @@ export class AppShell extends HTMLElement {
       background: #eee;
       display: flex;
       flex-direction: column;
+      align-items: center;
       ${panelStyle}
     `;
 
@@ -75,6 +76,7 @@ export class AppShell extends HTMLElement {
       color: #ffffffbb;
       padding: 6px;
       position: relative;
+      width: 100%;
     `;
 
     this.content_ = document.createElement('div');
@@ -82,17 +84,20 @@ export class AppShell extends HTMLElement {
       flex: 1;
       overflow: auto;
       height: 100%;
+      width: 100%;
+      max-width: 1000px;
     `;
 
     AppShell.footer_ = document.createElement('div');
     AppShell.footer_.style.cssText = `
+      z-index: 1000;
       position: sticky;
       bottom: 0;
-      left: 0;
-      right: 0;
+      width: 100%;
+      max-width: 1000px;
       display: flex;
       justify-content: center;
-      border: 1px doted #ccc;
+      border-top: 1px dotted #ccc;
       /* Don't eat clicks in the transparent background of the footer. */
       pointer-events: none;
     `;

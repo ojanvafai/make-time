@@ -22,6 +22,13 @@ export class UpdatedEvent extends Event {
   }
 }
 
+export class InProgressChangedEvent extends Event {
+  static NAME = 'in-progress-changed';
+  constructor() {
+    super(InProgressChangedEvent.NAME, {bubbles: true});
+  }
+}
+
 export enum ReplyType {
   ReplyAll = 'reply all',
   Reply = 'reply',
@@ -212,8 +219,11 @@ export class Thread extends EventTarget {
   // restore them.
   async updateMetadata(updates: ThreadMetadataUpdate) {
     await this.getMetadataDocument_().update(updates);
-    if (this.actionInProgress_)
+    this.dispatchEvent(new UpdatedEvent());
+    if (this.actionInProgress_) {
       this.setActionInProgress(false);
+      this.dispatchEvent(new InProgressChangedEvent());
+    }
   }
 
   private static clearedMetadata_(removeFromInbox?: boolean):
@@ -254,7 +264,6 @@ export class Thread extends EventTarget {
 
   setActionInProgress(inProgress: boolean) {
     this.actionInProgress_ = inProgress;
-    this.dispatchEvent(new UpdatedEvent());
   }
 
   actionInProgress() {
