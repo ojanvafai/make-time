@@ -38,11 +38,26 @@ html {
   font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
   height: 100%;
 }
-
 body {
   margin: 0px;
 }
-fieldset, select, .mktime-button, .label-button {
+div.x-button {
+  width: 15px;
+  height: 15px;
+  font-size: 16px;
+  margin: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #ccc;
+}
+.x-button:after {
+  content: '×';
+}
+.x-button:hover {
+  color: #000;
+}
+fieldset, select, .mktime-button, .label-button, .x-button {
   padding: 3px;
   -webkit-appearance: none;
   border-radius: 3px;
@@ -75,7 +90,11 @@ select.button, .mktime-button, .label-button {
   align-self: center;
   display: inline-block;
 }
-.label-button:hover,  .mktime-button:hover {
+.x-button:hover,
+.outline-on-hover:hover,
+mt-select-box:hover,
+.label-button:hover,
+.mktime-button:hover {
   background-color: #ccc;
 }
 .row-button {
@@ -106,7 +125,7 @@ select.button, .mktime-button, .label-button {
   visibility: visible;
 }
 .queue-row:hover {
-  background-color: lightgrey !important;
+  background-color: #eee !important;
 }
 #drawer,
 #drawer > .item {
@@ -152,9 +171,6 @@ blockquote {
 mt-thread-row:hover {
   background-color: #eee !important;
 }
-mt-select-box:hover {
-  background-color: #ccc;
-}
 div[contenteditable]::before {
   content: attr(placeholder);
 }
@@ -172,9 +188,6 @@ div[contenteditable]::before {
   color: #000000bb;
   background-color: #ffffffbb;
   border-radius: 3px;
-}
-.outline-on-hover:hover {
-  outline: 1px solid;
 }
 /* Regular font-size looks good on mobile but large on desktop. */
 html.desktop,

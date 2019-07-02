@@ -92,6 +92,7 @@ export class AppShell extends HTMLElement {
       right: 0;
       display: flex;
       justify-content: center;
+      border: 1px doted #ccc;
       /* Don't eat clicks in the transparent background of the footer. */
       pointer-events: none;
     `;

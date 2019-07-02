@@ -163,6 +163,7 @@ export class CalendarSortView extends HTMLElement {
     let row = document.createElement('div');
     row.style.cssText = `
       display: flex;
+      margin: 4px 0;
     `;
     row.className = ROW_CLASS_NAME;
 

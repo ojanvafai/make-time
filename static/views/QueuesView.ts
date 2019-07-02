@@ -201,6 +201,7 @@ export class QueuesView extends HTMLElement {
     let row = document.createElement('div');
     row.style.cssText = `
       display: flex;
+      align-items: center;
     `;
     row.className = QueuesView.rowClassName_;
 
@@ -236,7 +237,7 @@ export class QueuesView extends HTMLElement {
     row.append(days);
 
     let deleteLabel = document.createElement('div');
-    deleteLabel.append('\u274C');
+    deleteLabel.className = 'x-button';
     deleteLabel.addEventListener('click', async () => {
       if (confirm(`Delete ${queueData.label}? This cannot be undone.`))
         await this.queueNames_.delete(queueData.label);
