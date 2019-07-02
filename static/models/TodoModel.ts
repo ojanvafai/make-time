@@ -11,9 +11,9 @@ export class TodoModel extends ThreadListModel {
   private sortCount_: number;
 
   constructor(
-      private allowViewMessagesInTriage_: boolean, private vacation_: string,
-      private allowedPinCount_: number, private allowedMustDoCount_: number,
-      private allowedUrgentCount_: number, private finalVersion_?: boolean) {
+      private vacation_: string, private allowedPinCount_: number,
+      private allowedMustDoCount_: number, private allowedUrgentCount_: number,
+      private finalVersion_?: boolean) {
     super(true);
     this.sortCount_ = 0;
 
@@ -66,10 +66,7 @@ export class TodoModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    let priority = notNull(thread.getPriority());
-    if (!this.allowViewMessagesInTriage_ && thread.isUnread())
-      return this.unreadGroupName_(priority);
-    return priority;
+    return notNull(thread.getPriority());
   }
 
   showFinalVersion() {
@@ -118,12 +115,6 @@ export class TodoModel extends ThreadListModel {
     // Sort by priority, then by manual sort order, then by date.
     if (aPriority !== bPriority)
       return this.comparePriorities_(aPriority, bPriority);
-
-    // Sort unread items to the top of this priority. This is required so that
-    // when they are put in a separate unread group, they are all adjacent.
-    // Only separate them out of the triage view was over subject lines.
-    if (!this.allowViewMessagesInTriage_ && a.isUnread() !== b.isUnread())
-      return a.isUnread() ? -1 : 1;
 
     if (this.finalVersion_)
       return compareDates(b.getLastTriagedDate(), a.getLastTriagedDate());

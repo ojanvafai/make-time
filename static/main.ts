@@ -238,7 +238,6 @@ async function getTodoModel(finalVersion?: boolean) {
   if (!todoModel_) {
     let settings = await getSettings();
     todoModel_ = new TodoModel(
-        settings.get(ServerStorage.KEYS.ALLOW_VIEW_MESSAGES_IN_TRIAGE),
         settings.get(ServerStorage.KEYS.VACATION),
         settings.get(ServerStorage.KEYS.ALLOWED_PIN_COUNT),
         settings.get(ServerStorage.KEYS.ALLOWED_MUST_DO_COUNT),
