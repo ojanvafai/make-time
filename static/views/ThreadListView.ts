@@ -1026,6 +1026,7 @@ export class ThreadListView extends View {
         defined(this.labelSelectTemplate_));
 
     let viewInGmailButton = new ViewInGmailButton();
+    viewInGmailButton.style.marginLeft = '10px';
     viewInGmailButton.setMessageId(messages[messages.length - 1].id);
     viewInGmailButton.style.display = 'inline-flex';
 

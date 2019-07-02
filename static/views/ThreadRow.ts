@@ -388,8 +388,8 @@ export class ThreadRow extends HTMLElement {
 
     let popoutButton = new ViewInGmailButton();
     popoutButton.setMessageId(state.lastMessageId);
-    popoutButton.style.marginLeft = '4px';
-    popoutButton.style.marginRight = '4px';
+    popoutButton.style.marginLeft = '11px';
+    popoutButton.style.marginRight = '11px';
 
     this.messageDetails_.textContent = '';
     this.messageDetails_.style.flexDirection =
