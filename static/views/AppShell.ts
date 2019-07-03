@@ -21,6 +21,13 @@ export class BackEvent extends Event {
   }
 }
 
+export class ToggleViewEvent extends Event {
+  static NAME = 'toggle-view';
+  constructor() {
+    super(ToggleViewEvent.NAME);
+  }
+}
+
 export class AppShell extends HTMLElement {
   private drawer_: HTMLElement;
   private mainContent_: HTMLElement;
@@ -28,6 +35,7 @@ export class AppShell extends HTMLElement {
   private backArrow_: HTMLElement;
   private menuToggle_: SVGSVGElement;
   private filterToggle_: SVGSVGElement;
+  private viewToggle_: HTMLElement;
   private subject_: HTMLElement;
   private drawerOpen_: boolean;
   private queryParameters_?: {[property: string]: string};
@@ -137,6 +145,18 @@ export class AppShell extends HTMLElement {
 </g>`;
     this.filterToggle_.addEventListener('click', () => this.openFilterMenu_());
 
+    this.viewToggle_ = document.createElement('div');
+    this.viewToggle_.classList.add('menu-open-button');
+    this.viewToggle_.style.cssText = `
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin-left: 6px;
+    `;
+    this.viewToggle_.append('⇄');
+    this.viewToggle_.addEventListener(
+        'click', () => this.dispatchEvent(new ToggleViewEvent()));
+
     let toolbarChildStyle = `
       margin-right: 4px;
       display: flex;
@@ -163,8 +183,8 @@ export class AppShell extends HTMLElement {
     `;
 
     toolbar.append(
-        this.backArrow_, this.menuToggle_, this.filterToggle_, AppShell.title_,
-        this.subject_, AppShell.loader_);
+        this.backArrow_, this.menuToggle_, this.viewToggle_, this.filterToggle_,
+        AppShell.title_, this.subject_, AppShell.loader_);
 
     this.appendMenu_();
     this.menuToggle_.addEventListener('click', (e) => {
@@ -181,6 +201,10 @@ export class AppShell extends HTMLElement {
 
     this.backArrow_.addEventListener(
         'click', () => this.dispatchEvent(new BackEvent()));
+  }
+
+  showViewToggle(show: boolean) {
+    this.viewToggle_.style.display = show ? 'flex' : 'none';
   }
 
   setBackground(background: string) {

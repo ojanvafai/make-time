@@ -203,8 +203,8 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      private settings_: Settings, bottomButtonUrl?: string,
-      bottomButtonText?: string, private includeSortActions_?: boolean) {
+      private settings_: Settings, private toggleViewUrl_?: string,
+      private includeSortActions_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -306,10 +306,6 @@ export class ThreadListView extends View {
         InProgressChangedEvent.NAME, (e) => this.handleInProgressChanged_(e));
     this.pendingContainer_.addEventListener(
         InProgressChangedEvent.NAME, (e) => this.handleInProgressChanged_(e));
-
-    if (bottomButtonUrl)
-      this.appendButton_(
-          this.buttonContainer_, defined(bottomButtonText), bottomButtonUrl);
 
     if (this.model_.canDisallowViewMessages()) {
       // TODO: Use a toggle switch.
@@ -423,6 +419,16 @@ export class ThreadListView extends View {
     await login();
     await this.model_.loadFromDisk();
     await this.model_.update();
+  }
+
+  async toggleView() {
+    // TODO: Do this in a less hacky way.
+    // Use a link instead of setting window.location so it goes through the
+    // router.
+    let a = document.createElement('a');
+    a.href = defined(this.toggleViewUrl_);
+    this.append(a);
+    a.click();
   }
 
   async goBack() {

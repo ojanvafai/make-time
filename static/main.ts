@@ -1,4 +1,4 @@
-import {defined, getCurrentWeekNumber, showDialog, isMobileUserAgent} from './Base.js';
+import {defined, getCurrentWeekNumber, isMobileUserAgent, showDialog} from './Base.js';
 import {firestore, getServerStorage, getSettings} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
@@ -15,7 +15,7 @@ import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {SendAs} from './SendAs.js';
 import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
-import {AppShell, BackEvent} from './views/AppShell.js';
+import {AppShell, BackEvent, ToggleViewEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
 import {ViewFiltersChanged as ViewFiltersChangedEvent} from './views/FilterDialogView.js';
@@ -158,13 +158,11 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Todo:
       return new ThreadListView(
-          <TodoModel>model, appShell_, await getSettings(), '/triage',
-          'Back to Triaging', true);
+          <TodoModel>model, appShell_, await getSettings(), '/triage', true);
 
     case VIEW.Triage:
       return new ThreadListView(
-          <TriageModel>model, appShell_, await getSettings(), '/todo',
-          'Go to todo list');
+          <TriageModel>model, appShell_, await getSettings(), '/todo');
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
@@ -184,6 +182,7 @@ async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
   let thisViewGeneration = ++viewGeneration;
 
   appShell_.showMenuButton(shouldHideMenu);
+  appShell_.showViewToggle(viewType === VIEW.Todo || viewType === VIEW.Triage);
   appShell_.setQueryParameters(params);
 
   if (currentView_)
@@ -286,8 +285,10 @@ async function onLoad() {
 
   appShell_ = new AppShell();
   appShell_.addEventListener(BackEvent.NAME, async () => {
-    if (getView().goBack)
-      await getView().goBack();
+    await getView().goBack();
+  });
+  appShell_.addEventListener(ToggleViewEvent.NAME, async () => {
+    await getView().toggleView();
   });
   document.body.append(appShell_);
 
