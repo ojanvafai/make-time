@@ -319,8 +319,12 @@ export class ThreadRow extends HTMLElement {
       return;
 
     let group = this.getGroupMaybeNull_();
-    if (!group)
+    if (!group) {
+      // This happens when the action for a row is completed and it needs to be
+      // removed from the pending queue.
+      this.remove();
       return;
+    }
 
     let state = new RowState(
         this.thread, group.name,
