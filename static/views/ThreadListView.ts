@@ -196,6 +196,7 @@ export class ThreadListView extends View {
   private buttonContainer_: HTMLElement;
   private isVisibleObserver_: IntersectionObserver;
   private isHiddenObserver_: IntersectionObserver;
+  private updateVisibilityTimer_?: number;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
       [REPEAT_ACTION, ...DUE_ACTIONS];
@@ -575,7 +576,6 @@ export class ThreadListView extends View {
     let oldPending = new Set(Array.from(
         this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>));
 
-    let now = Date.now();
     for (let thread of threads) {
       let row = this.getThreadRow_(thread);
       if (oldPending.has(row)) {
@@ -583,14 +583,7 @@ export class ThreadListView extends View {
         continue;
       }
 
-      // Show pending threads after a timeout to avoid excessive flickering.
-      // Kind of gross to hide with CSS instead of just not putting in the DOM,
-      // but we rely on the InProgressChangeEvents bubbling up to the
-      // ThreadListView, so they need to be in the DOM for that.
-      let hide = (now - defined(thread.actionInProgressTimestamp())) <
-          SHOW_PENDING_DELAY;
-
-      this.setPendingStyling_(row, true, hide);
+      this.setPendingStyling_(row, true);
       this.pendingContainer_.prepend(row);
     }
 
@@ -600,10 +593,39 @@ export class ThreadListView extends View {
       this.setPendingStyling_(row, false);
       row.remove();
     }
+
+    // Schedule an update so that we show the rows after a second if they are
+    // still in the pending area.
+    this.scheduleUpdatePendingVisibility_();
   }
 
-  private setPendingStyling_(row: ThreadRow, set: boolean, hide?: boolean) {
-    row.style.visibility = hide ? 'hidden' : 'visible';
+  private scheduleUpdatePendingVisibility_() {
+    if (this.updateVisibilityTimer_)
+      return;
+    this.updateVisibilityTimer_ = window.setTimeout(() => {
+      this.updateVisibilityTimer_ = undefined;
+
+      let rows = this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>;
+      for (let row of rows) {
+        if (row.style.visibility === 'hidden') {
+          // If there are still rows that are hidden, then schedule another
+          // update so they get caught later.
+          let timestamp = defined(row.thread.actionInProgressTimestamp());
+          if ((Date.now() - timestamp) < SHOW_PENDING_DELAY)
+            this.scheduleUpdatePendingVisibility_();
+          else
+            row.style.visibility = '';
+        }
+      }
+    }, SHOW_PENDING_DELAY);
+  }
+
+  private setPendingStyling_(row: ThreadRow, set: boolean) {
+    // Show pending threads after a timeout to avoid excessive flickering.
+    // Kind of gross to hide with CSS instead of just not putting in the DOM,
+    // but we rely on the InProgressChangeEvents bubbling up to the
+    // ThreadListView, so they need to be in the DOM for that.
+    row.style.visibility = set ? 'hidden' : 'visible';
     row.style.position = set ? 'absolute' : '';
     row.style.right = set ? '0' : '';
     row.style.bottom = set ? '0' : '';
