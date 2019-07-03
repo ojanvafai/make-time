@@ -186,7 +186,8 @@ export class Actions extends HTMLElement {
       display: flex;
       flex-direction: column;
       border-radius: 3px;
-      min-width: 50vw;
+      width: 50vw;
+      max-width: 200px;
     `;
     document.body.append(this.menu_);
 
