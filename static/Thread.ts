@@ -186,6 +186,7 @@ export class Thread extends EventTarget {
   // archive/mark-read.
   private sentMessageIds_: string[];
   private actionInProgress_?: boolean;
+  private actionInProgressTimestamp_?: number;
 
   constructor(public id: string, private metadata_: ThreadMetadata) {
     super();
@@ -264,10 +265,15 @@ export class Thread extends EventTarget {
 
   setActionInProgress(inProgress: boolean) {
     this.actionInProgress_ = inProgress;
+    this.actionInProgressTimestamp_ = inProgress ? Date.now() : undefined;
   }
 
   actionInProgress() {
     return !!this.actionInProgress_;
+  }
+
+  actionInProgressTimestamp() {
+    return this.actionInProgressTimestamp_;
   }
 
   removeFromInboxMetadata_() {

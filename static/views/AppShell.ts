@@ -76,7 +76,7 @@ export class AppShell extends HTMLElement {
       color: #ffffffbb;
       padding: 6px;
       position: relative;
-      width: --webkit-fill-available;
+      width: -webkit-fill-available;
     `;
 
     this.content_ = document.createElement('div');

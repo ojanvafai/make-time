@@ -167,6 +167,8 @@ let RENDER_ONE_ACTIONS = [
   VIEW_THREADLIST_ACTION,
 ];
 
+const SHOW_PENDING_DELAY = 1000;
+
 registerActions('Triage or Todo', [
   ...BASE_ACTIONS,
   ...SORT_ACTIONS,
@@ -339,15 +341,10 @@ export class ThreadListView extends View {
   }
 
   private handleInProgressChanged_(e: InProgressChangedEvent) {
-    let row = e.target && (e.target as ThreadRow);
-    if (row && !row.thread.actionInProgress()) {
-      row.style.position = '';
-      row.style.right = '';
-      row.style.bottom = '';
-      row.style.left = '';
-      row.style.backgroundColor = '#ffffffbb';
-    }
-    this.render_()
+    let row = notNull(e.target && (e.target as ThreadRow));
+    if (!row.thread.actionInProgress())
+      this.setPendingStyling_(row, false);
+    this.render_();
   }
 
   private async renderCalendar_() {
@@ -503,19 +500,10 @@ export class ThreadListView extends View {
       return;
 
     let threadsInPending = allThreads.filter(x => x.actionInProgress());
+    this.updatePendingArea_(threadsInPending);
+
     let threads = allThreads.filter(x => !x.actionInProgress());
-    for (let thread of threadsInPending) {
-      let row = this.getThreadRow_(thread);
-      row.style.position = 'absolute';
-      row.style.right = '0';
-      row.style.bottom = '0';
-      row.style.left = '0';
-      row.style.backgroundColor = '#ccc';
-      this.pendingContainer_.prepend(row);
-    }
-
     let newGroupNames = new Set(threads.map(x => this.model_.getGroupName(x)));
-
     let removedRows = [];
 
     // Remove groups that no longer exist.
@@ -581,6 +569,46 @@ export class ThreadListView extends View {
 
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());
+  }
+
+  private updatePendingArea_(threads: Thread[]) {
+    let oldPending = new Set(Array.from(
+        this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>));
+
+    let now = Date.now();
+    for (let thread of threads) {
+      let row = this.getThreadRow_(thread);
+      if (oldPending.has(row)) {
+        oldPending.delete(row);
+        continue;
+      }
+
+      // Show pending threads after a timeout to avoid excessive flickering.
+      // Kind of gross to hide with CSS instead of just not putting in the DOM,
+      // but we rely on the InProgressChangeEvents bubbling up to the
+      // ThreadListView, so they need to be in the DOM for that.
+      let hide = (now - defined(thread.actionInProgressTimestamp())) <
+          SHOW_PENDING_DELAY;
+
+      this.setPendingStyling_(row, true, hide);
+      this.pendingContainer_.prepend(row);
+    }
+
+    // If a thread is archived, it's metadata isn't updated until it's shown
+    // in some view, so it will still be styled for the pending queue.
+    for (let row of oldPending) {
+      this.setPendingStyling_(row, false);
+      row.remove();
+    }
+  }
+
+  private setPendingStyling_(row: ThreadRow, set: boolean, hide?: boolean) {
+    row.style.visibility = hide ? 'hidden' : 'visible';
+    row.style.position = set ? 'absolute' : '';
+    row.style.right = set ? '0' : '';
+    row.style.bottom = set ? '0' : '';
+    row.style.left = set ? '0' : '';
+    row.style.backgroundColor = set ? '#ccc' : '#ffffffbb';
   }
 
   private updateFinalVersionRendering_() {
