@@ -60,15 +60,21 @@ div.x-button {
 .menu-item {
   padding: 12px;
 }
-fieldset, select, input, mt-address-compose,
+input[type=checkbox], input[type=radio] {
+  width: 18px;
+  height: 18px;
+  margin: 0 4px 0 0;
+}
+fieldset, select, mt-address-compose,
+input:not([type=checkbox]):not([type=radio]),
 .mktime-button, .label-button, .x-button, .row-button,
 [contentEditable]  {
   padding: 3px;
   -webkit-appearance: none;
   border-radius: 3px;
   border: 1px solid #ccc;
-  color: #000000bb;
-  background-color: #ffffffbb;
+  background: none;
+  margin: 0;
 }
 select.button, .mktime-button, .label-button {
   margin: 4px;
@@ -79,7 +85,6 @@ select.button, .mktime-button, .label-button {
 }
 .mktime-button:disabled {
   color: grey;
-  background-color: #eee;
 }
 .centered-up-arrow::after {
   content: "▲";
@@ -102,6 +107,9 @@ mt-select-box:hover,
 .label-button:hover,
 .mktime-button:hover {
   background-color: #ccc;
+}
+.mktime-button:disabled:hover {
+  background: none;
 }
 .row-button {
   width: 16px;

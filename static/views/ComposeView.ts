@@ -92,11 +92,6 @@ export class ComposeView extends View {
     this.autoSend_ = this.params_ && this.params_.autosend === '1';
 
     this.from_ = document.createElement('select');
-    this.from_.style.cssText = `
-      padding: 3px;
-      border-radius: 0;
-      font-size: small;
-    `;
     this.from_.addEventListener(
         'change', this.debounceHandleUpdates_.bind(this));
     this.appendLine_('From:\xa0', this.from_);

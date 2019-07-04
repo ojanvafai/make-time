@@ -96,6 +96,8 @@ export class AppShell extends HTMLElement {
       position: relative;
       width: -webkit-fill-available;
       border-bottom: 1px dotted #ccc;
+      box-shadow: #ccc 0px 1px 2px;
+      z-index: 10;
     `;
 
     this.content_ = document.createElement('div');
@@ -116,7 +118,6 @@ export class AppShell extends HTMLElement {
       max-width: 1000px;
       display: flex;
       justify-content: center;
-      border-top: 1px dotted #ccc;
       /* Don't eat clicks in the transparent background of the footer. */
       pointer-events: none;
     `;
