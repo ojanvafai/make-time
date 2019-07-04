@@ -72,18 +72,18 @@ window.onpopstate = () => {
 };
 
 router.add('/compose', async (params) => {
-  let shouldShowToolbar = true;
+  let shouldHideToolbar = false;
   for (let param of Object.entries(params)) {
     // TODO: Directly check for the compose parameters instead of doing this.
     if (!UNIVERSAL_QUERY_PARAMETERS.includes(param[0])) {
-      shouldShowToolbar = false;
+      shouldHideToolbar = true;
       break;
     }
   }
 
-  if (!shouldShowToolbar)
+  if (shouldHideToolbar)
     preventUpdates();
-  await setView(VIEW.Compose, params, shouldShowToolbar);
+  await setView(VIEW.Compose, params, shouldHideToolbar);
 });
 router.add('/track', async (_params) => {
   await setView(VIEW.Tracking);
@@ -179,10 +179,10 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
 let viewGeneration = 0;
 async function setView(
-    viewType: VIEW, params?: any, shouldShowToolbar?: boolean) {
+    viewType: VIEW, params?: any, shouldHideToolbar?: boolean) {
   let thisViewGeneration = ++viewGeneration;
 
-  appShell_.showToolbar(shouldShowToolbar);
+  appShell_.showToolbar(!shouldHideToolbar);
   appShell_.showViewToggle(viewType === VIEW.Todo || viewType === VIEW.Triage);
   appShell_.showOverflowMenuButton(false);
   appShell_.setQueryParameters(params);
