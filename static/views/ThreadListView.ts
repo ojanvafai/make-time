@@ -316,7 +316,6 @@ export class ThreadListView extends View {
       this.handleUndo_(undoEvent.thread);
     });
 
-    this.updateOverflowMenuButton_();
     this.renderCalendar_();
     this.render_();
   }
@@ -430,7 +429,7 @@ export class ThreadListView extends View {
   openFirstSelectedThreadInGmail_() {
     // Would prefer to open all the selected rows in gmail, but Chrome only
     // allows one popup per gesture.
-    let row = this.getRows_().find(x => x.selected);
+    let row = this.renderedRow_ || this.getRows_().find(x => x.selected);
     if (!row)
       return;
 
@@ -449,7 +448,7 @@ export class ThreadListView extends View {
         container, 'View in gmail',
         () => this.openFirstSelectedThreadInGmail_());
 
-    if (this.model_.canDisallowViewMessages()) {
+    if (!this.renderedRow_ && this.model_.canDisallowViewMessages()) {
       let contents = this.model_.allowViewMessages() ?
           'Disallow viewing messages' :
           'Allow viewing messages';
@@ -969,13 +968,7 @@ export class ThreadListView extends View {
     this.setRenderedRowIfAllowed_(this.focusedRow_);
   }
 
-  private updateOverflowMenuButton_() {
-    this.appShell_.showOverflowMenuButton(
-        this.model_.canDisallowViewMessages() && !this.renderedRow_);
-  }
-
   private transitionToThreadList_(focusedRow: ThreadRow|null) {
-    this.updateOverflowMenuButton_();
     this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
@@ -992,7 +985,6 @@ export class ThreadListView extends View {
   }
 
   transitionToSingleThread_() {
-    this.updateOverflowMenuButton_();
     this.appShell_.showBackArrow(true);
 
     this.scrollOffset_ = this.appShell_.contentScrollTop;

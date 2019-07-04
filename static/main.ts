@@ -184,7 +184,9 @@ async function setView(
 
   appShell_.showToolbar(!shouldHideToolbar);
   appShell_.showViewToggle(viewType === VIEW.Todo || viewType === VIEW.Triage);
-  appShell_.showOverflowMenuButton(false);
+  // TODO: Make this work for VIEW.Hidden as well.
+  appShell_.showOverflowMenuButton(
+      viewType === VIEW.Todo || viewType === VIEW.Triage);
   appShell_.setQueryParameters(params);
 
   if (currentView_)
