@@ -1118,13 +1118,12 @@ export class ThreadListView extends View {
 
     let arrow = document.createElement('span');
     arrow.style.cssText = `
-      margin: 0px 4px;
       font-size: 75%;
       height: 20px;
       width: 20px;
-      border: 1px solid rgb(102, 102, 102);
-      border-radius: 3px;
-      padding: 3px;
+      display: flex;
+      align-items: center;
+      margin-right: 6px;
     `;
 
     let subject = document.createElement('div');
@@ -1141,11 +1140,11 @@ export class ThreadListView extends View {
       if (shouldClamp) {
         subject.style.overflow = 'hidden';
         subject.style.display = '-webkit-box';
-        arrow.textContent = 'ᐯ';
+        arrow.textContent = '▼';
       } else {
         subject.style.overflow = '';
         subject.style.display = '';
-        arrow.textContent = 'ᐱ';
+        arrow.textContent = '▲';
       }
     };
     subject.addEventListener('click', () => toggleClamp());
@@ -1158,7 +1157,7 @@ export class ThreadListView extends View {
         labelContainer, labelState, renderedRow.thread,
         defined(this.labelSelectTemplate_));
 
-    this.appShell_.setSubject(arrow, subject, labelContainer);
+    this.appShell_.setSubject(subject, arrow, labelContainer);
 
     rendered.focusFirstUnread();
 
