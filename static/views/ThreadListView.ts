@@ -253,6 +253,7 @@ export class ThreadListView extends View {
     this.append(this.noMeetingRoomEvents_);
 
     this.rowGroupContainer_ = document.createElement('div');
+    this.rowGroupContainer_.className = 'row-group-container';
     this.rowGroupContainer_.style.cssText = `
       display: flex;
       flex-direction: column;
@@ -568,7 +569,6 @@ export class ThreadListView extends View {
       if (!entry) {
         let allowedCount = this.model_.allowedCount(groupName);
         let group = new ThreadRowGroup(groupName, this.model_, allowedCount);
-
 
         if (previousEntry)
           previousEntry.group.after(group);
