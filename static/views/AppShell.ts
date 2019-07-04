@@ -41,6 +41,7 @@ export class AppShell extends HTMLElement {
   private mainContent_: HTMLElement;
   private content_: HTMLElement;
   private backArrow_: HTMLElement;
+  private toolbar_: HTMLElement;
   private menuToggle_: SVGSVGElement;
   private filterToggle_: SVGSVGElement;
   private viewToggle_: HTMLElement;
@@ -86,16 +87,15 @@ export class AppShell extends HTMLElement {
 
     document.body.append(this.drawer_, this.mainContent_);
 
-    let toolbar = document.createElement('div');
-    toolbar.style.cssText = `
+    this.toolbar_ = document.createElement('div');
+    this.toolbar_.style.cssText = `
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      background-color: #000000bb;
-      color: #ffffffbb;
       padding: 6px;
       position: relative;
       width: -webkit-fill-available;
+      border-bottom: 1px dotted #ccc;
     `;
 
     this.content_ = document.createElement('div');
@@ -121,7 +121,7 @@ export class AppShell extends HTMLElement {
       pointer-events: none;
     `;
 
-    this.mainContent_.append(toolbar, this.content_, AppShell.footer_);
+    this.mainContent_.append(this.toolbar_, this.content_, AppShell.footer_);
 
     this.backArrow_ = document.createElement('div');
     this.backArrow_.style.cssText = `
@@ -204,7 +204,7 @@ export class AppShell extends HTMLElement {
       ${toolbarChildStyle}
     `;
 
-    toolbar.append(
+    this.toolbar_.append(
         this.backArrow_, this.menuToggle_, this.viewToggle_, this.filterToggle_,
         AppShell.title_, this.subject_, AppShell.loader_,
         this.overflowMenuButton_);
@@ -379,9 +379,8 @@ export class AppShell extends HTMLElement {
     this.filterToggle_.style.fill = hasFilterParams ? 'red' : '';
   }
 
-  showMenuButton(hide?: boolean) {
-    this.menuToggle_.style.visibility = hide ? 'hidden' : 'visible';
-    this.filterToggle_.style.visibility = hide ? 'hidden' : 'visible';
+  showToolbar(show?: boolean) {
+    this.toolbar_.style.display = show ? 'flex' : 'none';
   }
 
   showBackArrow(show: boolean) {
