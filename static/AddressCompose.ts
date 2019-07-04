@@ -15,7 +15,6 @@ export class AddressCompose extends HTMLElement {
 
     this.style.cssText = `
       line-height: 1em;
-      border: 1px solid;
       padding: 1px;
       word-break: break-word;
 

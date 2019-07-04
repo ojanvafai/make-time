@@ -63,7 +63,6 @@ export class EmailCompose extends HTMLElement {
       flex: 1;
       min-width: 200px;
       overflow: auto;
-      border: 1px solid;
       padding: 8px;
       outline: none;
       word-break: break-word;

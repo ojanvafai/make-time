@@ -111,7 +111,6 @@ export class ComposeView extends View {
     this.subject_.addEventListener(
         'input', this.debounceHandleUpdates_.bind(this));
     this.subject_.style.cssText = `
-      border: 1px solid;
       flex: 1;
       outline: none;
       padding: 4px;

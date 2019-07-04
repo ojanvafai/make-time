@@ -24,7 +24,7 @@ export class Toast extends HTMLElement {
       background-color: #000000bb;
       padding: 10px;
       border-radius: 3px;
-      border: 1px solid grey;
+      border: 1px solid #ccc;
       color: #ffffffbb;
     `;
     text.append(message);

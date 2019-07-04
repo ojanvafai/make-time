@@ -144,7 +144,7 @@ export class SettingsView extends View {
           top: ${rect.bottom + 2}px;
           width: 300px;
           background-color: #ffffff;
-          border: 1px solid;
+          border: 1px solid #ccc;
           padding: 4px;
           z-index: 100;
         `;
