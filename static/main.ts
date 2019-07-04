@@ -15,7 +15,7 @@ import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {SendAs} from './SendAs.js';
 import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
-import {AppShell, BackEvent, ToggleViewEvent} from './views/AppShell.js';
+import {AppShell, BackEvent, OverflowMenuOpenEvent, ToggleViewEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
 import {ViewFiltersChanged as ViewFiltersChangedEvent} from './views/FilterDialogView.js';
@@ -183,6 +183,7 @@ async function setView(viewType: VIEW, params?: any, shouldHideMenu?: boolean) {
 
   appShell_.showMenuButton(shouldHideMenu);
   appShell_.showViewToggle(viewType === VIEW.Todo || viewType === VIEW.Triage);
+  appShell_.showOverflowMenuButton(false);
   appShell_.setQueryParameters(params);
 
   if (currentView_)
@@ -287,8 +288,12 @@ async function onLoad() {
   appShell_.addEventListener(BackEvent.NAME, async () => {
     await getView().goBack();
   });
-  appShell_.addEventListener(ToggleViewEvent.NAME, async () => {
-    await getView().toggleView();
+  appShell_.addEventListener(ToggleViewEvent.NAME, () => {
+    getView().toggleView();
+  });
+  appShell_.addEventListener(OverflowMenuOpenEvent.NAME, (e: Event) => {
+    let container = (e as OverflowMenuOpenEvent).container;
+    getView().openOverflowMenu(container);
   });
   document.body.append(appShell_);
 

@@ -1,3 +1,4 @@
+import {defined, notNull} from '../Base.js';
 import {getSettings, showHelp} from '../BaseMain.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from '../RadialProgress.js';
 
@@ -28,6 +29,13 @@ export class ToggleViewEvent extends Event {
   }
 }
 
+export class OverflowMenuOpenEvent extends Event {
+  static NAME = 'overflow-menu-open';
+  constructor(public container: HTMLElement) {
+    super(OverflowMenuOpenEvent.NAME);
+  }
+}
+
 export class AppShell extends HTMLElement {
   private drawer_: HTMLElement;
   private mainContent_: HTMLElement;
@@ -36,6 +44,9 @@ export class AppShell extends HTMLElement {
   private menuToggle_: SVGSVGElement;
   private filterToggle_: SVGSVGElement;
   private viewToggle_: HTMLElement;
+  private overflowMenuButton_: HTMLElement;
+  private overflowMenu_?: HTMLElement;
+  private clickOverlay_?: HTMLElement;
   private subject_: HTMLElement;
   private drawerOpen_: boolean;
   private queryParameters_?: {[property: string]: string};
@@ -157,6 +168,17 @@ export class AppShell extends HTMLElement {
     this.viewToggle_.addEventListener(
         'click', () => this.dispatchEvent(new ToggleViewEvent()));
 
+    this.overflowMenuButton_ = document.createElement('div');
+    this.overflowMenuButton_.classList.add('menu-open-button');
+    this.overflowMenuButton_.style.cssText = `
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+    this.overflowMenuButton_.append('⋮');
+    this.overflowMenuButton_.addEventListener(
+        'click', () => this.toggleOverflowMenu_());
+
     let toolbarChildStyle = `
       margin-right: 4px;
       display: flex;
@@ -184,7 +206,8 @@ export class AppShell extends HTMLElement {
 
     toolbar.append(
         this.backArrow_, this.menuToggle_, this.viewToggle_, this.filterToggle_,
-        AppShell.title_, this.subject_, AppShell.loader_);
+        AppShell.title_, this.subject_, AppShell.loader_,
+        this.overflowMenuButton_);
 
     this.appendMenu_();
     this.menuToggle_.addEventListener('click', (e) => {
@@ -205,6 +228,55 @@ export class AppShell extends HTMLElement {
 
   showViewToggle(show: boolean) {
     this.viewToggle_.style.display = show ? 'flex' : 'none';
+  }
+
+  showOverflowMenuButton(show: boolean) {
+    this.overflowMenuButton_.style.display = show ? 'flex' : 'none';
+  }
+
+  closeOverflowMenu() {
+    defined(this.overflowMenu_).remove();
+    this.overflowMenu_ = undefined;
+    defined(this.clickOverlay_).remove();
+    this.clickOverlay_ = undefined;
+  }
+
+  private toggleOverflowMenu_() {
+    if (this.overflowMenu_) {
+      this.closeOverflowMenu();
+      return;
+    }
+
+    let container = notNull(this.overflowMenuButton_.parentNode);
+
+    this.clickOverlay_ = document.createElement('div');
+    this.clickOverlay_.style.cssText = `
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 1000000;
+    `;
+    this.clickOverlay_.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      this.closeOverflowMenu();
+    });
+    container.append(this.clickOverlay_);
+
+    this.overflowMenu_ = document.createElement('div');
+    this.overflowMenu_.style.cssText = `
+      position: fixed;
+      right: 6px;
+      top: 6px;
+      background-color: white;
+      color: black;
+      border: 1px solid #ccc;
+      z-index: 1000001;
+    `;
+    container.append(this.overflowMenu_);
+
+    this.dispatchEvent(new OverflowMenuOpenEvent(this.overflowMenu_));
   }
 
   setBackground(background: string) {

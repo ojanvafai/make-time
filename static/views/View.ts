@@ -15,7 +15,8 @@ export abstract class View extends HTMLElement {
   tearDown() {}
   async init() {}
   async goBack() {}
-  async toggleView() {}
+  toggleView() {}
+  openOverflowMenu(_container: HTMLElement) {}
   forceRender() {}
 
   async dispatchShortcut(e: KeyboardEvent) {

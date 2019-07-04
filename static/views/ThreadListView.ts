@@ -307,23 +307,6 @@ export class ThreadListView extends View {
     this.pendingContainer_.addEventListener(
         InProgressChangedEvent.NAME, (e) => this.handleInProgressChanged_(e));
 
-    if (this.model_.canDisallowViewMessages()) {
-      // TODO: Use a toggle switch.
-      let button = this.appendButton_(this.buttonContainer_, '');
-      button.title = 'Override the allow view messages setting.';
-      let updateButtonText = () => {
-        button.textContent = this.model_.allowViewMessages() ?
-            'Disallow viewing messages' :
-            'Allow viewing messages';
-      };
-      updateButtonText();
-
-      button.addEventListener('click', () => {
-        this.model_.toggleAllowViewMessages();
-        updateButtonText();
-      });
-    }
-
     this.updateActions_();
 
     this.addListenerToModel(
@@ -333,6 +316,7 @@ export class ThreadListView extends View {
       this.handleUndo_(undoEvent.thread);
     });
 
+    this.updateOverflowMenuButton_();
     this.renderCalendar_();
     this.render_();
   }
@@ -421,7 +405,7 @@ export class ThreadListView extends View {
     await this.model_.update();
   }
 
-  async toggleView() {
+  toggleView() {
     // TODO: Do this in a less hacky way.
     // Use a link instead of setting window.location so it goes through the
     // router.
@@ -429,6 +413,21 @@ export class ThreadListView extends View {
     a.href = defined(this.toggleViewUrl_);
     this.append(a);
     a.click();
+  }
+
+  openOverflowMenu(container: HTMLElement) {
+    if (this.model_.canDisallowViewMessages()) {
+      let item = document.createElement('div');
+      item.className = 'menu-item';
+      item.textContent = this.model_.allowViewMessages() ?
+          'Disallow viewing messages' :
+          'Allow viewing messages';
+      item.addEventListener('click', () => {
+        this.model_.toggleAllowViewMessages();
+        this.appShell_.closeOverflowMenu();
+      });
+      container.append(item);
+    }
   }
 
   async goBack() {
@@ -943,7 +942,13 @@ export class ThreadListView extends View {
     this.setRenderedRowIfAllowed_(this.focusedRow_);
   }
 
+  private updateOverflowMenuButton_() {
+    this.appShell_.showOverflowMenuButton(
+        this.model_.canDisallowViewMessages());
+  }
+
   private transitionToThreadList_(focusedRow: ThreadRow|null) {
+    this.updateOverflowMenuButton_();
     this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
@@ -960,6 +965,7 @@ export class ThreadListView extends View {
   }
 
   transitionToSingleThread_() {
+    this.appShell_.showOverflowMenuButton(false);
     this.appShell_.showBackArrow(true);
 
     this.scrollOffset_ = this.appShell_.contentScrollTop;
