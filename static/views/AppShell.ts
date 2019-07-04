@@ -95,9 +95,8 @@ export class AppShell extends HTMLElement {
       padding: 6px;
       position: relative;
       width: -webkit-fill-available;
-      border-bottom: 1px dotted #ccc;
       box-shadow: #ccc 0px 1px 2px;
-      z-index: 10;
+      z-index: 20;
     `;
 
     this.content_ = document.createElement('div');
