@@ -12,7 +12,6 @@ import {InProgressChangedEvent, Thread} from '../Thread.js';
 import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
-import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {AppShell} from './AppShell.js';
 import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, SelectRowEvent, ThreadRow} from './ThreadRow.js';
@@ -415,18 +414,46 @@ export class ThreadListView extends View {
     a.click();
   }
 
+  createMenuItem_(
+      container: HTMLElement, contents: string, clickHandler: () => void) {
+    let item = document.createElement('div');
+    item.className = 'menu-item';
+    item.append(contents);
+    item.addEventListener('click', () => {
+      this.appShell_.closeOverflowMenu();
+      clickHandler();
+    });
+    container.append(item);
+  }
+
+  openFirstSelectedThreadInGmail_() {
+    // Would prefer to open all the selected rows in gmail, but Chrome only
+    // allows one popup per gesture.
+    let row = this.getRows_().find(x => x.selected);
+    if (!row)
+      return;
+
+    let messageIds = row.thread.getMessageIds();
+    let messageId = messageIds[messageIds.length - 1];
+
+    // In theory, linking to the threadId should work, but it doesn't for
+    // some threads. Linking to the messageId seems to work reliably. The
+    // message ID listed will be expanded in the gmail UI, so link to the
+    // last one since that one is definitionally always expanded.
+    window.open(`https://mail.google.com/mail/#all/${defined(messageId)}`);
+  }
+
   openOverflowMenu(container: HTMLElement) {
+    this.createMenuItem_(
+        container, 'View in gmail',
+        () => this.openFirstSelectedThreadInGmail_());
+
     if (this.model_.canDisallowViewMessages()) {
-      let item = document.createElement('div');
-      item.className = 'menu-item';
-      item.textContent = this.model_.allowViewMessages() ?
+      let contents = this.model_.allowViewMessages() ?
           'Disallow viewing messages' :
           'Allow viewing messages';
-      item.addEventListener('click', () => {
-        this.model_.toggleAllowViewMessages();
-        this.appShell_.closeOverflowMenu();
-      });
-      container.append(item);
+      this.createMenuItem_(
+          container, contents, () => this.model_.toggleAllowViewMessages());
     }
   }
 
@@ -944,7 +971,7 @@ export class ThreadListView extends View {
 
   private updateOverflowMenuButton_() {
     this.appShell_.showOverflowMenuButton(
-        this.model_.canDisallowViewMessages());
+        this.model_.canDisallowViewMessages() && !this.renderedRow_);
   }
 
   private transitionToThreadList_(focusedRow: ThreadRow|null) {
@@ -965,7 +992,7 @@ export class ThreadListView extends View {
   }
 
   transitionToSingleThread_() {
-    this.appShell_.showOverflowMenuButton(false);
+    this.updateOverflowMenuButton_();
     this.appShell_.showBackArrow(true);
 
     this.scrollOffset_ = this.appShell_.contentScrollTop;
@@ -1131,13 +1158,7 @@ export class ThreadListView extends View {
         labelContainer, labelState, renderedRow.thread,
         defined(this.labelSelectTemplate_));
 
-    let viewInGmailButton = new ViewInGmailButton();
-    viewInGmailButton.style.marginLeft = '10px';
-    viewInGmailButton.setMessageId(messages[messages.length - 1].id);
-    viewInGmailButton.style.display = 'inline-flex';
-
-    this.appShell_.setSubject(
-        arrow, subject, labelContainer, viewInGmailButton);
+    this.appShell_.setSubject(arrow, subject, labelContainer);
 
     rendered.focusFirstUnread();
 

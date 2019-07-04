@@ -3,7 +3,6 @@ import {RenderedThread} from '../RenderedThread.js';
 import {SelectBox} from '../SelectBox.js';
 import {ALL, DISABLED, NONE, SOME} from '../SelectBoxPainter.js';
 import {InProgressChangedEvent, Thread, UpdatedEvent} from '../Thread.js';
-import {ViewInGmailButton} from '../ViewInGmailButton.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 
@@ -156,6 +155,7 @@ export class ThreadRow extends HTMLElement {
       display: flex;
       background-color: ${UNCHECKED_BACKGROUND_COLOR};
       white-space: nowrap;
+      padding-right: 12px;
     `;
 
     this.inViewport_ = false;
@@ -398,11 +398,6 @@ export class ThreadRow extends HTMLElement {
     justSubject.style.fontWeight = boldState;
     date.style.fontWeight = boldState;
 
-    let popoutButton = new ViewInGmailButton();
-    popoutButton.setMessageId(state.lastMessageId);
-    popoutButton.style.marginLeft = '11px';
-    popoutButton.style.marginRight = '11px';
-
     this.messageDetails_.textContent = '';
     this.messageDetails_.style.flexDirection =
         state.isSmallScreen ? 'column' : '';
@@ -416,16 +411,14 @@ export class ThreadRow extends HTMLElement {
         align-items: center;
         margin-bottom: 4px;
       `;
-      topRow.append(fromContainer, labels);
-      topRow.append(date, popoutButton);
+      topRow.append(fromContainer, labels, date);
       this.messageDetails_.append(topRow, subject);
 
       fromContainer.style.flex = '1';
     } else {
       this.messageDetails_.style.padding = '0 0 0 4px';
       this.messageDetails_.style.alignItems = 'center';
-      this.messageDetails_.append(
-          fromContainer, labels, subject, date, popoutButton);
+      this.messageDetails_.append(fromContainer, labels, subject, date);
     }
 
     // All rows are the same height, so we can save the last rendered height in
