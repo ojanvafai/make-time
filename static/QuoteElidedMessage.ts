@@ -4,7 +4,7 @@ import {Message} from './Message.js';
 // Rolling hash taken from https://gist.github.com/i-e-b/b892d95ac7c0cf4b70e4.
 let MINIMUM_HASH_LENGTH = 10;
 let MINIMUM_ELIDE_LENGTH = 100;
-let TOGGLER: HTMLElement;
+let TOGGLER: SVGSVGElement;
 let strippedTextMap = new WeakMap();
 
 // Forked from https://github.com/sindresorhus/linkify-urls (MIT License).
@@ -217,17 +217,21 @@ export class QuoteElidedMessage {
 
   getToggler_() {
     if (!TOGGLER) {
-      TOGGLER = document.createElement('div');
-      // Gross hack to render centered-ish elipsis without using an image.
-      TOGGLER.style.overflow = 'hidden';
+      TOGGLER = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      TOGGLER.classList.add('toggler');
+      TOGGLER.setAttribute('viewBox', '0 0 24 24');
+      TOGGLER.style.cssText = `
+        width: 16px;
+        padding: 1px 4px;
+        border-radius: 3px;
+        border: 1px solid #ccc;
+        user-select: none;
+      `;
       TOGGLER.innerHTML =
-          `<div style="margin-top:-7px"><div class="toggler">...</div></div>`;
+          `<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>`;
     }
-    let toggler = <HTMLElement>TOGGLER.cloneNode(true);
-    let toggleButton = <HTMLElement>toggler.querySelector('.toggler');
-    toggleButton.onclick = function(e) {
-      toggleElided(e, <HTMLElement>this);
-    };
+    let toggler = <SVGSVGElement>TOGGLER.cloneNode(true);
+    toggler.addEventListener('click', toggleElided);
     return toggler;
   }
 
@@ -314,12 +318,13 @@ function setElidedState(node: ChildNode, state: string) {
   element.setAttribute('mk-elide', state);
 }
 
-function toggleElided(e: Event, element: Element) {
+function toggleElided(e: Event) {
   e.preventDefault();
 
+  let element = e.target as Element;
   while (!element.nextElementSibling ||
          !element.nextElementSibling.hasAttribute('mk-elide')) {
-    element = <HTMLElement>element.parentNode;
+    element = notNull(element.parentElement);
   }
 
   while (element.nextElementSibling &&

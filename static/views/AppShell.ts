@@ -176,7 +176,7 @@ export class AppShell extends HTMLElement {
       margin-left: 6px;
     `;
     this.overflowMenuButton_.innerHTML =
-        `<path d="M 12 3 A 2 2 0 0 0 10 5 A 2 2 0 0 0 12 7 A 2 2 0 0 0 14 5 A 2 2 0 0 0 12 3 z M 12 10 A 2 2 0 0 0 10 12 A 2 2 0 0 0 12 14 A 2 2 0 0 0 14 12 A 2 2 0 0 0 12 10 z M 12 17 A 2 2 0 0 0 10 19 A 2 2 0 0 0 12 21 A 2 2 0 0 0 14 19 A 2 2 0 0 0 12 17 z"></path>`;
+        `<circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>`;
 
     this.overflowMenuButton_.append('⋮');
     this.overflowMenuButton_.addEventListener(
