@@ -183,7 +183,7 @@ async function setView(
   let thisViewGeneration = ++viewGeneration;
 
   appShell_.showToolbar(!shouldHideToolbar);
-  appShell_.showViewToggle(viewType === VIEW.Todo || viewType === VIEW.Triage);
+  appShell_.showViewAndFilterToggles(false);
   // TODO: Make this work for VIEW.Hidden as well.
   appShell_.showOverflowMenuButton(
       viewType === VIEW.Todo || viewType === VIEW.Triage);

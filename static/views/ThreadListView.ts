@@ -307,14 +307,14 @@ export class ThreadListView extends View {
     `;
     this.append(this.buttonContainer_);
 
-    this.updateActions_();
-
     this.addListenerToModel(ThreadListChangedEvent.NAME, () => this.render_());
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread);
     });
 
+    this.updateActions_();
+    this.appShell_.showViewAndFilterToggles(true);
     this.renderCalendar_();
     this.render_();
   }
@@ -977,6 +977,7 @@ export class ThreadListView extends View {
   }
 
   private transitionToThreadList_(focusedRow: ThreadRow|null) {
+    this.appShell_.showViewAndFilterToggles(true);
     this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
@@ -993,6 +994,7 @@ export class ThreadListView extends View {
   }
 
   transitionToSingleThread_() {
+    this.appShell_.showViewAndFilterToggles(false);
     this.appShell_.showBackArrow(true);
 
     this.scrollOffset_ = this.appShell_.contentScrollTop;

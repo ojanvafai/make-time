@@ -229,12 +229,13 @@ export class AppShell extends HTMLElement {
         'click', () => this.dispatchEvent(new BackEvent()));
   }
 
-  showViewToggle(show: boolean) {
-    this.viewToggle_.style.display = show ? 'flex' : 'none';
+  showViewAndFilterToggles(show: boolean) {
+    this.filterToggle_.style.display = show ? '' : 'none';
+    this.viewToggle_.style.display = show ? '' : 'none';
   }
 
   showOverflowMenuButton(show: boolean) {
-    this.overflowMenuButton_.style.display = show ? 'flex' : 'none';
+    this.overflowMenuButton_.style.display = show ? '' : 'none';
   }
 
   closeOverflowMenu() {
