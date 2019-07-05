@@ -540,7 +540,7 @@ export class CalendarFiltersView extends HTMLElement {
   createQueryEditor_(queryParts: any, isDisabled?: boolean) {
     let editor = document.createElement('div');
     editor.style.cssText = `
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color);
       padding: 1px;
       font-family: system-ui;
       white-space: pre-wrap;

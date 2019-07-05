@@ -569,7 +569,8 @@ export class ThreadRow extends HTMLElement {
   setFocus(value: boolean, focusImpliesSelected: boolean) {
     this.focusImpliesSelected_ = focusImpliesSelected;
     this.focused_ = value;
-    this.checkBox_.style.backgroundColor = this.focused_ ? '#ccc' : '';
+    this.checkBox_.style.backgroundColor =
+        this.focused_ ? 'var(--border-color)' : '';
     this.updateCheckbox_();
     // TODO: Technically we probably want a blur event as well for !value.
     if (value)

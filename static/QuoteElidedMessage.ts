@@ -223,8 +223,6 @@ export class QuoteElidedMessage {
       TOGGLER.style.cssText = `
         width: 16px;
         padding: 1px 4px;
-        border-radius: 3px;
-        border: 1px solid #ccc;
         user-select: none;
       `;
       TOGGLER.innerHTML =

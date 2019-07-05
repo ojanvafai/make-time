@@ -49,7 +49,7 @@ div.x-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #ccc;
+  color: var(--border-color);
 }
 .x-button:after {
   content: '×';
@@ -64,12 +64,12 @@ input[type=checkbox], input[type=radio] {
 }
 fieldset, select, mt-address-compose,
 input:not([type=checkbox]):not([type=radio]),
-.mktime-button, .label-button, .x-button, .row-button,
+.menu-open-button, .mktime-button, .label-button, .x-button, .row-button, .toggler,
 [contentEditable]  {
   padding: 3px;
   -webkit-appearance: none;
   border-radius: 3px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   background: none;
   margin: 0;
 }
@@ -108,7 +108,7 @@ mt-select-box:hover,
 .expander:hover,
 .toggler:hover {
   color: #000;
-  background-color: #ccc;
+  background-color: var(--border-color);
   cursor: pointer;
 }
 .mktime-button:disabled:hover {
@@ -180,9 +180,6 @@ div[contenteditable]::before {
 .menu-open-button {
   height: 22px;
   width: 22px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  padding: 3px;
 }
 /* Regular font-size looks good on mobile but large on desktop. */
 html.desktop,

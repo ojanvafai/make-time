@@ -133,7 +133,7 @@ export class Actions extends HTMLElement {
           for (let child of this.menu_.children) {
             let element = child as HTMLElement;
             element.style.backgroundColor =
-                element === hitElement ? '#ccc' : '#fff';
+                element === hitElement ? 'var(--border-color)' : '#fff';
           }
         };
 

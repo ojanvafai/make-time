@@ -95,7 +95,7 @@ export class AppShell extends HTMLElement {
       padding: 6px;
       position: relative;
       width: -webkit-fill-available;
-      box-shadow: #ccc 0px 1px 2px;
+      box-shadow: var(--border-color) 0px 1px 2px;
       z-index: 20;
     `;
 
@@ -274,7 +274,7 @@ export class AppShell extends HTMLElement {
       top: 6px;
       background-color: white;
       color: black;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color);
       z-index: 1000001;
     `;
     container.append(this.overflowMenu_);
@@ -283,6 +283,9 @@ export class AppShell extends HTMLElement {
   }
 
   setBackground(background: string) {
+    let root = document.documentElement;
+    root.style.setProperty('--border-color', '#ccc');
+
     this.mainContent_.style.background = background;
   }
 
