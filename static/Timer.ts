@@ -92,7 +92,7 @@ export class Timer extends HTMLElement {
       right: 0;
       bottom: 0;
       left: 0;
-      background-color: #000000;
+      background-color: var(--inverted-overlay-background-color);
       opacity: 0.5;
     `;
     let text = document.createElement('div');
@@ -101,7 +101,7 @@ export class Timer extends HTMLElement {
     text.style.cssText = `
       position: absolute;
       padding: 5px;
-      background-color: #ffffff;
+      background-color: var(--overlay-background-color);
       text-align: center;
     `;
 

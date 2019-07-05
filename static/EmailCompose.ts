@@ -140,13 +140,11 @@ export class EmailCompose extends HTMLElement {
 
   showLinkBubble_(link: HTMLAnchorElement) {
     this.bubble_ = document.createElement('div');
+    this.bubble_.className = 'link-bubble';
     this.bubble_.style.cssText = `
       position: fixed;
       white-space: nowrap;
-      border: 1px solid;
-      background-color: #eee;
-      box-shadow: 2px 2px 10px 1px lightgrey;
-      padding: 2px;
+      box-shadow: 2px 2px 10px 1px var(--border-and-hover-color);
       z-index: 100;
     `;
 

@@ -258,8 +258,8 @@ export class ThreadListView extends View {
       z-index: 10;
       top: 0;
       max-width: 1000px;
-      box-shadow: 0px 0px 8px var(--border-color);
-      background-color: white;
+      box-shadow: 0px 0px 8px var(--border-and-hover-color);
+      background-color: var(--overlay-background-color);
       max-height: 7em;
       opacity: 0.5;
       overflow: auto;

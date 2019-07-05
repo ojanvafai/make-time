@@ -42,7 +42,7 @@ export class RenderedThread extends HTMLElement {
   constructor(public thread: Thread) {
     super();
     this.style.cssText = `
-      background-color: white;
+      background-color: var(--overlay-background-color);
       position: absolute;
       left: 0;
       right: 0;
@@ -67,7 +67,7 @@ export class RenderedThread extends HTMLElement {
       this.spinner_.style.cssText = `
         text-align: center;
         padding: 8px;
-        background: #ddd;
+        background-color: var(--border-and-hover-color);
       `;
       this.append(this.spinner_);
       this.spinner_.scrollIntoView({'block': 'center', 'behavior': 'smooth'});
@@ -82,7 +82,6 @@ export class RenderedThread extends HTMLElement {
 
       let contents = document.createElement('div');
       contents.style.cssText = `
-        background-color: #fff;
         margin: 30px auto;
         padding: 10px;
         font-size: 16px;
@@ -233,7 +232,7 @@ export class RenderedThread extends HTMLElement {
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
     headerDiv.style.cssText = `
-      background-color: #ddd;
+      background-color: var(--row-hover-color);
       padding: 8px;
       margin: 0 -8px;
       border-top: 1px solid;

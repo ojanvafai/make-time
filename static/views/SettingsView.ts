@@ -142,8 +142,8 @@ export class SettingsView extends View {
           position: fixed;
           top: ${rect.bottom + 2}px;
           width: 300px;
-          background-color: #ffffff;
-          border: 1px solid var(--border-color);
+          background-color: var(--overlay-background-color);
+          border: 1px solid var(--border-and-hover-color);
           padding: 4px;
           z-index: 100;
         `;

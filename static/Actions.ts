@@ -132,8 +132,9 @@ export class Actions extends HTMLElement {
           let hitElement = document.elementFromPoint(e.x, e.y);
           for (let child of this.menu_.children) {
             let element = child as HTMLElement;
-            element.style.backgroundColor =
-                element === hitElement ? 'var(--border-color)' : '#fff';
+            element.style.backgroundColor = element === hitElement ?
+                'var(--border-and-hover-color)' :
+                'var(--overlay-background-color)';
           }
         };
 
@@ -241,7 +242,7 @@ export class Actions extends HTMLElement {
 
     let text = document.createElement('div');
     text.style.cssText = `
-      background-color: #ffffff;
+      background-color: var(--overlay-background-color);
       border: 1px solid;
       padding: 4px;
       width: 300px;

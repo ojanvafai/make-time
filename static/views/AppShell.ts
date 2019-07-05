@@ -78,7 +78,7 @@ export class AppShell extends HTMLElement {
     this.mainContent_ = document.createElement('div');
     this.mainContent_.style.cssText = `
       will-change: transform;
-      background: #eee;
+      background-color: var(--overlay-background-color);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -95,7 +95,7 @@ export class AppShell extends HTMLElement {
       padding: 6px;
       position: relative;
       width: -webkit-fill-available;
-      box-shadow: var(--border-color) 0px 1px 2px;
+      box-shadow: var(--border-and-hover-color) 0px 1px 2px;
       z-index: 20;
     `;
 
@@ -272,9 +272,9 @@ export class AppShell extends HTMLElement {
       position: fixed;
       right: 6px;
       top: 6px;
-      background-color: white;
+      background-color: var(--overlay-background-color);
       color: black;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-and-hover-color);
       z-index: 1000001;
     `;
     container.append(this.overflowMenu_);
@@ -284,8 +284,14 @@ export class AppShell extends HTMLElement {
 
   setBackground(background: string) {
     let root = document.documentElement;
-    root.style.setProperty('--border-color', '#ccc');
+    root.style.setProperty('--border-and-hover-color', '#ccc');
+    root.style.setProperty('--row-hover-color', '#eee');
     root.style.setProperty('--nested-background-color', '#ffffffbb');
+    root.style.setProperty('--overlay-background-color', '#fff');
+    root.style.setProperty('--inverted-overlay-background-color', '#000');
+    root.style.setProperty('--selected-background-color', '#c2dbff');
+    root.style.setProperty('--text-color', '#000');
+    root.style.setProperty('--inverted-text-color', '#fff');
 
     this.mainContent_.style.background = background;
   }
@@ -400,9 +406,6 @@ export class AppShell extends HTMLElement {
     a.append(name);
     a.className = 'item';
 
-    if (options.nested)
-      a.classList.add('nested');
-
     if (options.href)
       a.href = options.href;
 
@@ -414,22 +417,15 @@ export class AppShell extends HTMLElement {
   }
 
   private appendMenu_() {
-    let helpButton = this.createMenuItem_('Help', {
-      onclick: async () => showHelp(),
-    });
-
-    let menuTitle = document.createElement('div');
-    menuTitle.append('MakeTime phases');
-
     this.drawer_.append(
-        menuTitle,
-        this.createMenuItem_('Compose', {href: '/compose', nested: true}),
-        this.createMenuItem_('Triage', {href: '/triage', nested: true}),
-        this.createMenuItem_('Todo', {href: '/todo', nested: true}),
-        this.createMenuItem_('Hidden', {href: '/hidden', nested: true}),
+        this.createMenuItem_('Compose', {href: '/compose'}),
+        this.createMenuItem_('Triage', {href: '/triage'}),
+        this.createMenuItem_('Todo', {href: '/todo'}),
+        this.createMenuItem_('Hidden', {href: '/hidden'}),
         this.createMenuItem_('Calendar (alpha)', {href: '/calendar'}),
         this.createMenuItem_('Track (alpha)', {href: '/track'}),
-        this.createMenuItem_('Settings', {href: '/settings'}), helpButton);
+        this.createMenuItem_('Settings', {href: '/settings'}),
+        this.createMenuItem_('Help', {onclick: () => showHelp()}));
   }
 
   private openMenu() {

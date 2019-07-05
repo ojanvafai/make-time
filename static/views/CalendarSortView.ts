@@ -155,7 +155,8 @@ export class CalendarSortView extends HTMLElement {
     let rows =
         <NodeListOf<HTMLElement>>this.querySelectorAll(`.${ROW_CLASS_NAME}`);
     for (let row of rows) {
-      row.style.backgroundColor = this.isChecked_(row) ? '#c2dbff' : 'white';
+      row.style.backgroundColor =
+          this.isChecked_(row) ? 'var(--selected-background-color)' : '';
     }
   }
 

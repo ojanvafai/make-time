@@ -29,7 +29,7 @@ export class AutoComplete extends HTMLElement {
     super();
     // TODO: Fix box shadow to respect whether the menu is above or below.
     this.style.cssText = `
-      background-color: #ffffffbb;
+      background-color: var(--overlay-background-color);
       position: fixed;
       border: 1px solid;
       box-shadow: 2px -2px 10px 1px lightgrey;
@@ -140,8 +140,9 @@ export class AutoComplete extends HTMLElement {
     this.index_ = index;
     for (let i = 0; i < this.children.length; i++) {
       let child = <AutoCompleteEntry>this.children[i];
-      child.style.backgroundColor = (i == index) ? '#6677dd' : '#ffffffbb';
-      child.style.color = (i == index) ? '#ffffffbb' : '#000000bb';
+      child.style.backgroundColor = (i == index) ?
+          'var(--selected-background-color)' :
+          'var(--overlay-background-color)';
     }
   }
 }

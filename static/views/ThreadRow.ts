@@ -463,9 +463,6 @@ export class ThreadRow extends HTMLElement {
       });
 
       label.addEventListener('pointerdown', () => {
-        label.style.color = '#666';
-        label.style.backgroundColor = '#ddd';
-
         if (label.children.length > 1)
           return;
 
@@ -509,23 +506,10 @@ export class ThreadRow extends HTMLElement {
     // TODO: Share some code with createLabel_.
     label.style.cssText = `
       display: inline-block;
-      color: #666;
-      background-color: #ddd;
       font-size: 0.75rem;
       line-height: 18px;
-      border: none;
-      border-radius: 3px;
-      padding: 0 4px;
       margin-right: 4px;
     `;
-    label.addEventListener('pointerenter', () => {
-      label.style.color = '#ddd';
-      label.style.backgroundColor = '#666';
-    });
-    label.addEventListener('pointerleave', () => {
-      label.style.color = '#666';
-      label.style.backgroundColor = '#ddd';
-    });
     let option = new Option();
     option.append(text);
     label.append(option);
@@ -534,14 +518,11 @@ export class ThreadRow extends HTMLElement {
 
   private static createLabel_(text: string) {
     let label = document.createElement('span');
+    label.className = 'label-chip';
     label.style.cssText = `
       display: inline-block;
-      color: #666;
-      background-color: #ddd;
       font-size: 0.75rem;
       line-height: 18px;
-      border-radius: 3px;
-      padding: 0 4px;
       margin-right: 4px;
       white-space: nowrap;
     `;
@@ -568,7 +549,7 @@ export class ThreadRow extends HTMLElement {
     this.focusImpliesSelected_ = focusImpliesSelected;
     this.focused_ = value;
     this.checkBox_.style.backgroundColor =
-        this.focused_ ? 'var(--border-color)' : '';
+        this.focused_ ? 'var(--border-and-hover-color)' : '';
     this.updateCheckbox_();
     // TODO: Technically we probably want a blur event as well for !value.
     if (value)

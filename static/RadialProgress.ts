@@ -28,7 +28,7 @@ export class RadialProgress extends HTMLElement {
     let size = 16;
 
     this.style.cssText = `
-      background-color: grey;
+      background-color: var(--border-and-hover-color);
       width: ${size}px;
       height: ${size}px;
       border-radius: ${size / 2}px;

@@ -21,11 +21,11 @@ export class Toast extends HTMLElement {
 
     let text = document.createElement('div');
     text.style.cssText = `
-      background-color: #000000bb;
+      background-color: var(--inverted-overlay-background-color);
       padding: 10px;
       border-radius: 3px;
-      border: 1px solid var(--border-color);
-      color: #ffffffbb;
+      border: 1px solid var(--border-and-hover-color);
+      color: var(--text-color);
     `;
     text.append(message);
     this.append(text);

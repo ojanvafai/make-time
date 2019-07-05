@@ -2,8 +2,6 @@
 import {AutoComplete, EntrySelectedEvent} from './AutoComplete.js';
 import {assert, defined, parseAddressList, ParsedAddress, serializeAddress} from './Base.js';
 
-let CHIP_BORDER_COLOR = '#dadce0';
-
 export class AddressCompose extends HTMLElement {
   private preventAutoComplete_: boolean;
   private autoComplete_: AutoComplete;
@@ -43,7 +41,7 @@ export class AddressCompose extends HTMLElement {
       return;
     }
 
-    this.style.backgroundColor = '#ffffffbb';
+    this.style.backgroundColor = 'var(--nested-background-color)';
     this.tabIndex = 0;
     this.addEventListener('focus', (e) => this.handleFocus_(e));
     this.addEventListener('click', (e) => this.handleClick_(e));
@@ -167,18 +165,20 @@ export class AddressCompose extends HTMLElement {
     outer.className = 'chip';
     outer.style.cssText = `
       font-size: .75rem;
-      border: 1px solid ${CHIP_BORDER_COLOR};
+      background-color: var(--nested-background-color);
+      border: 1px solid var(--border-and-hover-color);
       border-radius: 10px;
       box-sizing: border-box;
       display: inline-flex;
       height: 20px;
       margin: 2px;
-      background-color: #ffffffbb;
     `;
     outer.addEventListener(
-        'mouseenter', () => outer.style.backgroundColor = '#eee');
+        'pointerover',
+        () => outer.style.backgroundColor = 'var(--border-and-hover-color)');
     outer.addEventListener(
-        'mouseleave', () => outer.style.backgroundColor = 'white');
+        'pointerout',
+        () => outer.style.backgroundColor = 'var(--nested-background-color)');
 
     let inner = document.createElement('span');
     inner.style.cssText = `
@@ -207,6 +207,10 @@ export class AddressCompose extends HTMLElement {
     this.input_.value = value;
     this.preventAutoComplete_ = false;
     this.focusInput_();
+    // Make sure the input has no horizontal scrolling. This has the downside of
+    // never shrinking the input, but it will shrink whenever we select an item
+    // since we make it 1px at that point.
+    this.input_.style.width = `${this.input_.scrollWidth}px`;
 
     this.updateAutoComplete_();
   }

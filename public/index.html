@@ -29,6 +29,11 @@ document.body.append(script);
 <link rel="manifest" href="manifest.json">
 
 <style>
+/* Just style these here to minimize movement and flicker on load before the theme has loaded. */
+:root {
+  --overlay-background-color: #fff;
+  --border-and-hover-color: #fff;
+}
 /* Hack to prevent wide images and videos from causing horizontal scrolling. */
 .message img, .message video {
   max-width: -webkit-fill-available;
@@ -49,7 +54,7 @@ div.x-button {
   display: flex;
   justify-content: center;
   align-items: center;
-  color: var(--border-color);
+  color: var(--border-and-hover-color);
 }
 .x-button:after {
   content: '×';
@@ -64,12 +69,12 @@ input[type=checkbox], input[type=radio] {
 }
 fieldset, select, mt-address-compose,
 input:not([type=checkbox]):not([type=radio]),
-.menu-open-button, .mktime-button, .label-button, .x-button, .row-button, .toggler,
-[contentEditable]  {
+.menu-open-button, .mktime-button, .label-button, .x-button, .row-button,
+.toggler, .link-bubble, .label-chip, [contentEditable]  {
   padding: 3px;
   -webkit-appearance: none;
   border-radius: 3px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-and-hover-color);
   background: none;
   margin: 0;
 }
@@ -97,6 +102,7 @@ select.button, .mktime-button, .label-button {
   align-self: center;
   display: inline-block;
 }
+select:hover:not(:focus),
 .menu-item:hover,
 .menu-open-button:hover,
 .x-button:hover,
@@ -108,7 +114,7 @@ mt-select-box:hover,
 .expander:hover,
 .toggler:hover {
   color: #000;
-  background-color: var(--border-color);
+  background-color: var(--border-and-hover-color);
   cursor: pointer;
 }
 .mktime-button:disabled:hover {
@@ -137,25 +143,24 @@ mt-select-box:hover,
   visibility: visible;
 }
 mt-thread-row:hover,
-.queue-row:hover {
-  background-color: #eee !important;
+.queue-row:hover,
+#drawer > .item:hover {
+  cursor: pointer;
+  color: var(--text-color);
+  background-color: var(--row-hover-color) !important;
 }
 #drawer,
 #drawer > .item {
-  color: #ddd;
-  background-color: #444;
+  color: var(--inverted-text-color);
+  background-color: var(--text-color);
   font-weight: bold;
 }
-#drawer > .item.current-page,
-#drawer > .item:hover {
-  cursor: pointer;
-  color: #444;
-  background-color: #ddd;
-  border-bottom: 1px solid #444;
+#drawer > .current-page {
+  color: var(--text-color);
+  background-color: var(--inverted-text-color);
 }
 #drawer > * {
   display: block;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 15px;
 }
 #drawer > a {

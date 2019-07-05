@@ -843,7 +843,7 @@ export class Thread extends EventTarget {
           from}${date}${subject}${to}<br>${lastMessage.getHtmlOrPlain()}`;
     } else {
       text = `${replyText}<br><br>${lastMessage.from} wrote:<br>
-  <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px solid var(--border-color);padding-left:1ex">
+  <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px solid var(--border-and-hover-color);padding-left:1ex">
     ${lastMessage.getHtmlOrPlain()}
   </blockquote>`;
     }

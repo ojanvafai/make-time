@@ -194,10 +194,6 @@ export class FiltersView extends HTMLElement {
 
     let label = document.createElement('select');
     label.disabled = true;
-    label.style.cssText = `
-      background-color: #ddd;
-      color: dimgrey;
-    `;
     let option = document.createElement('option');
     option.append(Labels.Fallback);
     label.append(option);

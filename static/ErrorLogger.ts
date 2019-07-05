@@ -8,8 +8,8 @@ class Logger extends HTMLElement {
       position: fixed;
       bottom: 10px;
       right: 10px;
-      border: 1px solid #000000bb;
-      background-color: #ffffffff;
+      border: 1px solid var(--border-and-hover-color);
+      background-color: var(--overlay-background-color);
       max-width: 50%;
       max-height: 50%;
       display: flex;

@@ -203,10 +203,6 @@ export class CalendarFiltersView extends HTMLElement {
 
     let label = document.createElement('select');
     label.disabled = true;
-    label.style.cssText = `
-      background-color: #ddd;
-      color: dimgrey;
-    `;
     let option = document.createElement('option');
     option.append(Labels.Fallback);
     label.append(option);
@@ -478,7 +474,7 @@ export class CalendarFiltersView extends HTMLElement {
   appendValue_(container: HTMLElement, value: string) {
     let valueElement = document.createElement('span');
     valueElement.style.cssText = `
-      background-color: lightgrey;
+      background-color: #ccc;
       padding: 1px 2px;
       border-radius: 3px;
     `;
@@ -540,7 +536,7 @@ export class CalendarFiltersView extends HTMLElement {
   createQueryEditor_(queryParts: any, isDisabled?: boolean) {
     let editor = document.createElement('div');
     editor.style.cssText = `
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-and-hover-color);
       padding: 1px;
       font-family: system-ui;
       white-space: pre-wrap;
