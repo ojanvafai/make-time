@@ -44,8 +44,8 @@ export class AppShell extends HTMLElement {
   private toolbar_: HTMLElement;
   private menuToggle_: SVGSVGElement;
   private filterToggle_: SVGSVGElement;
-  private viewToggle_: HTMLElement;
-  private overflowMenuButton_: HTMLElement;
+  private viewToggle_: SVGSVGElement;
+  private overflowMenuButton_: SVGSVGElement;
   private overflowMenu_?: HTMLElement;
   private clickOverlay_?: HTMLElement;
   private subject_: HTMLElement;
@@ -156,25 +156,28 @@ export class AppShell extends HTMLElement {
 </g>`;
     this.filterToggle_.addEventListener('click', () => this.openFilterMenu_());
 
-    this.viewToggle_ = document.createElement('div');
+    this.viewToggle_ =
+        document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.viewToggle_.classList.add('menu-open-button');
     this.viewToggle_.style.cssText = `
       display: none;
-      align-items: center;
-      justify-content: center;
       margin-left: 6px;
     `;
-    this.viewToggle_.append('⇄');
+    this.viewToggle_.innerHTML =
+        `<path d="M 17 2 L 17 6 L 3 6 L 3 8 L 17 8 L 17 12 L 22 7 L 17 2 M 7 12 L 2 17 L 7 22 L 7 18 L 21 18 L 21 16 L 7 16 L 7 12"></path>`;
     this.viewToggle_.addEventListener(
         'click', () => this.dispatchEvent(new ToggleViewEvent()));
 
-    this.overflowMenuButton_ = document.createElement('div');
+    this.overflowMenuButton_ =
+        document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.overflowMenuButton_.classList.add('menu-open-button');
+    this.overflowMenuButton_.setAttribute('viewBox', '0 0 24 24');
     this.overflowMenuButton_.style.cssText = `
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin-left: 6px;
     `;
+    this.overflowMenuButton_.innerHTML =
+        `<path d="M 12 3 A 2 2 0 0 0 10 5 A 2 2 0 0 0 12 7 A 2 2 0 0 0 14 5 A 2 2 0 0 0 12 3 z M 12 10 A 2 2 0 0 0 10 12 A 2 2 0 0 0 12 14 A 2 2 0 0 0 14 12 A 2 2 0 0 0 12 10 z M 12 17 A 2 2 0 0 0 10 19 A 2 2 0 0 0 12 21 A 2 2 0 0 0 14 19 A 2 2 0 0 0 12 17 z"></path>`;
+
     this.overflowMenuButton_.append('⋮');
     this.overflowMenuButton_.addEventListener(
         'click', () => this.toggleOverflowMenu_());
