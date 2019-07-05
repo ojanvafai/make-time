@@ -54,9 +54,6 @@ div.x-button {
 .x-button:after {
   content: '×';
 }
-.x-button:hover {
-  color: #000;
-}
 .menu-item {
   padding: 12px;
 }
@@ -101,12 +98,18 @@ select.button, .mktime-button, .label-button {
   display: inline-block;
 }
 .menu-item:hover,
+.menu-open-button:hover,
 .x-button:hover,
 .outline-on-hover:hover,
 mt-select-box:hover,
 .label-button:hover,
-.mktime-button:hover {
+.mktime-button:hover,
+.row-button:hover,
+.expander:hover,
+.toggler:hover {
+  color: #000;
   background-color: #ccc;
+  cursor: pointer;
 }
 .mktime-button:disabled:hover {
   background: none;
@@ -118,10 +121,6 @@ mt-select-box:hover,
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.row-button:hover {
-  color: #ffffffbb;
-  background-color: #000000bb;
 }
 .invalid-directive::before {
   color: red;
@@ -137,6 +136,7 @@ mt-select-box:hover,
 .weekly .day {
   visibility: visible;
 }
+mt-thread-row:hover,
 .queue-row:hover {
   background-color: #eee !important;
 }
@@ -146,11 +146,9 @@ mt-select-box:hover,
   background-color: #444;
   font-weight: bold;
 }
-#drawer > .item  {
-  cursor: pointer;
-}
 #drawer > .item.current-page,
 #drawer > .item:hover {
+  cursor: pointer;
   color: #444;
   background-color: #ddd;
   border-bottom: 1px solid #444;
@@ -169,20 +167,11 @@ mt-select-box:hover,
 blockquote {
   min-width: 300px;
 }
-.expander:hover {
-  background-color: #ffffffbb;
-}
 .toggler {
   display: inline-block;
   background-color: #ddd;
   user-select: none;
   padding: 1px 4px;
-}
-.toggler:hover {
-  background-color: #bbb;
-}
-mt-thread-row:hover {
-  background-color: #eee !important;
 }
 .row-group-container:empty:after {
   content: "All done! Go you!\A ٩( ′ㅂ`)و ";
@@ -200,10 +189,6 @@ div[contenteditable]::before {
   border: 1px solid #ccc;
   border-radius: 3px;
   padding: 3px;
-}
-.menu-open-button:hover {
-  background-color: #ccc;
-  border-radius: 3px;
 }
 /* Regular font-size looks good on mobile but large on desktop. */
 html.desktop,

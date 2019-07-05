@@ -197,7 +197,6 @@ export class AppShell extends HTMLElement {
 
     this.subject_ = document.createElement('div');
     this.subject_.style.cssText = `
-      text-align: center;
       flex: 1;
       ${toolbarChildStyle}
     `;

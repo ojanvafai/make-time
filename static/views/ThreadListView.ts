@@ -1159,7 +1159,12 @@ export class ThreadListView extends View {
         labelContainer, labelState, renderedRow.thread,
         defined(this.labelSelectTemplate_));
 
-    this.appShell_.setSubject(subject, arrow, labelContainer);
+    this.appShell_.setSubject(subject, labelContainer);
+
+    // Only show the arrow if there's actual overflow.
+    // TODO: Technically we should recompute this when the window changes width.
+    if (subject.offsetHeight < subject.scrollHeight)
+      subject.after(arrow);
 
     rendered.focusFirstUnread();
 
