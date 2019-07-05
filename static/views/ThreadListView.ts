@@ -196,7 +196,6 @@ export class ThreadListView extends View {
   private isVisibleObserver_: IntersectionObserver;
   private isHiddenObserver_: IntersectionObserver;
   private updateVisibilityTimer_?: number;
-  private shouldSetRowGroupContainerClass_?: boolean;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
       [REPEAT_ACTION, ...DUE_ACTIONS];
@@ -310,10 +309,7 @@ export class ThreadListView extends View {
 
     this.updateActions_();
 
-    this.addListenerToModel(ThreadListChangedEvent.NAME, () => {
-      this.shouldSetRowGroupContainerClass_ = true;
-      this.render_();
-    });
+    this.addListenerToModel(ThreadListChangedEvent.NAME, () => this.render_());
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.handleUndo_(undoEvent.thread);
@@ -604,10 +600,8 @@ export class ThreadListView extends View {
 
     // Only set this after the initial update so we don't show the all done
     // indication incorrectly.
-    if (this.shouldSetRowGroupContainerClass_) {
+    if (this.model_.hasFetchedThreads())
       this.rowGroupContainer_.className = 'row-group-container';
-      this.shouldSetRowGroupContainerClass_ = false;
-    }
 
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());

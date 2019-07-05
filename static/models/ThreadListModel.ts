@@ -37,6 +37,7 @@ export abstract class ThreadListModel extends Model {
   private filter_?: string;
   private days_?: number;
   private threadGenerator_?: IterableIterator<Thread>;
+  private haveEverProcessedSnapshot_?: boolean;
 
   constructor(showFaviconCount?: boolean) {
     super();
@@ -52,6 +53,10 @@ export abstract class ThreadListModel extends Model {
   protected abstract defaultCollapsedState(groupName: string): boolean;
   protected abstract compareThreads(a: Thread, b: Thread): number;
   abstract getGroupName(thread: Thread): string;
+
+  hasFetchedThreads() {
+    return this.haveEverProcessedSnapshot_;
+  }
 
   canDisallowViewMessages() {
     return false;
@@ -154,6 +159,8 @@ export abstract class ThreadListModel extends Model {
   }
 
   private processSnapshot_() {
+    this.haveEverProcessedSnapshot_ = true;
+
     let snapshot = assert(this.snapshotToProcess_);
     this.snapshotToProcess_ = null;
 
@@ -260,7 +267,7 @@ export abstract class ThreadListModel extends Model {
   }
 
   async markTriaged(
-    destination: Action, threads: Thread[], moveToInbox?: boolean) {
+      destination: Action, threads: Thread[], moveToInbox?: boolean) {
     if (!threads.length)
       return;
 
