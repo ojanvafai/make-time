@@ -285,6 +285,7 @@ export class AppShell extends HTMLElement {
   setBackground(background: string) {
     let root = document.documentElement;
     root.style.setProperty('--border-color', '#ccc');
+    root.style.setProperty('--nested-background-color', '#ffffffbb');
 
     this.mainContent_.style.background = background;
   }

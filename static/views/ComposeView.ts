@@ -7,7 +7,7 @@ import {MailProcessor} from '../MailProcessor.js';
 import {ComposeModel} from '../models/ComposeModel.js';
 import {SendAs} from '../SendAs.js';
 import {Thread} from '../Thread.js';
-import {BLOCKED_ACTIONS, DUE_ACTIONS, PRIORITY_ACTIONS, takeAction, URGENT_ACTION, BACKLOG_ACTION} from '../ThreadActions.js';
+import {BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, PRIORITY_ACTIONS, takeAction, URGENT_ACTION} from '../ThreadActions.js';
 
 import {HelpDialog} from './HelpDialog.js';
 import {View} from './View.js';
@@ -110,7 +110,7 @@ export class ComposeView extends View {
       flex: 1;
       outline: none;
       padding: 4px;
-      background-color: #ffffffbb;
+      background-color: var(--nested-background-color);
       font-size: small;
     `;
     this.appendLine_(this.subject_);
@@ -120,7 +120,7 @@ export class ComposeView extends View {
       flex: 1 1 0;
       margin: 4px;
       display: flex;
-      background-color: #ffffffbb;
+      background-color: var(--nested-background-color);
       min-height: 50px;
     `;
 
@@ -271,7 +271,7 @@ export class ComposeView extends View {
 
       let container = document.createElement('div');
       container.style.cssText = `
-        background-color: #ffffffbb;
+        background-color: var(--nested-background-color);
         margin: 10px 4px;
         text-align: center;
       `;

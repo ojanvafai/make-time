@@ -27,7 +27,6 @@ export class SettingsView extends View {
     super();
 
     this.style.cssText = `
-      background: #ffffffbb;
       display: block;
     `;
 

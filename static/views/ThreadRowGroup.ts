@@ -73,8 +73,7 @@ export class ThreadRowGroup extends HTMLElement {
 
     this.rowContainer_ = document.createElement('div');
     this.placeholder_ = document.createElement('div');
-    // Match ThreadRow color in index.html.
-    this.placeholder_.style.backgroundColor = '#ffffffbb';
+    this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
     this.append(this.rowContainer_, this.placeholder_);
 
     this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
