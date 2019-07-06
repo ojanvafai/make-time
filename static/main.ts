@@ -15,6 +15,7 @@ import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {SendAs} from './SendAs.js';
 import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
+import {Themes} from './Themes.js';
 import {AppShell, BackEvent, OverflowMenuOpenEvent, ToggleViewEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
@@ -28,6 +29,9 @@ import {View} from './views/View.js';
 
 if (!isMobileUserAgent())
   document.documentElement.classList.add('desktop');
+
+// Run this as early as possible to minimize flash of white on reload.
+Themes.apply();
 
 let currentView_: View;
 let appShell_: AppShell;
@@ -260,8 +264,8 @@ async function getMailProcessor() {
 
 async function updateBackground() {
   let settings = await getSettings();
-  let background = settings.get(ServerStorage.KEYS.BACKGROUND) || 'lavender';
-  appShell_.setBackground(background);
+  let background = settings.get(ServerStorage.KEYS.BACKGROUND);
+  Themes.setOverrideBackground(background);
 }
 
 document.body.addEventListener(ViewFiltersChangedEvent.NAME, async (e) => {

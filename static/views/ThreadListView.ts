@@ -8,6 +8,7 @@ import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
+import {Themes} from '../Themes.js';
 import {InProgressChangedEvent, Thread} from '../Thread.js';
 import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
@@ -443,8 +444,7 @@ export class ThreadListView extends View {
   }
 
   openOverflowMenu(container: HTMLElement) {
-    this.createMenuItem_(
-        container, 'Dark mode', () => this.appShell_.toggleDarkMode());
+    this.createMenuItem_(container, 'Dark mode', () => Themes.toggleDarkMode());
 
     this.createMenuItem_(
         container, 'View in gmail',
