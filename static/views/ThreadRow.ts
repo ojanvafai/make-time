@@ -1,7 +1,7 @@
 import {assert, isMobileUserAgent} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {SelectBox} from '../SelectBox.js';
-import {ALL, DISABLED, NONE, SOME} from '../SelectBoxPainter.js';
+import {ALL, DISABLED, NONE, SOME} from '../SelectBox.js';
 import {InProgressChangedEvent, Thread, UpdatedEvent} from '../Thread.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';

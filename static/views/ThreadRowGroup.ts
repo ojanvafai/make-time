@@ -1,6 +1,6 @@
 import {ThreadListModel} from '../models/ThreadListModel.js';
 import {SelectBox} from '../SelectBox.js';
-import {ALL, NONE, SOME} from '../SelectBoxPainter.js';
+import {ALL, NONE, SOME} from '../SelectBox.js';
 
 import {SelectRowEvent, ThreadRow} from './ThreadRow.js';
 
