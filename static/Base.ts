@@ -69,6 +69,8 @@ export function showDialog(contents: HTMLElement|string) {
     position: fixed;
     display: flex;
     overscroll-behavior: none;
+    background-color: var(--overlay-background-color);
+    color: var(--text-color);
   `;
   dialog.addEventListener('close', () => dialog.remove());
 

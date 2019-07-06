@@ -344,7 +344,7 @@ export class ThreadRow extends HTMLElement {
       overflow: hidden;
       text-transform: uppercase;
       font-size: 12px;
-      color: #333;
+      color: var(--dim-text-color);
   `;
     from.append(state.from)
 
@@ -387,7 +387,7 @@ export class ThreadRow extends HTMLElement {
       text-align: right;
       text-transform: uppercase;
       font-size: 12px;
-      color: #333;
+      color: var(--dim-text-color);
       display: flex;
       align-items: center;
     `;

@@ -1,24 +1,35 @@
-import {ALL, DISABLED, NONE, SELECTED_PROPERTY, SIZE_PROPERTY} from './SelectBoxPainter.js';
-
-// Kinda gross that we need to expose the typescript output directory in the
-// code. :(
-// @ts-ignore
-if (CSS && CSS.paintWorklet)
-  // @ts-ignore
-  CSS.paintWorklet.addModule('./gen/SelectBoxPainter.js');
+export const ALL = 'all';
+export const SOME = 'some';
+export const NONE = 'none';
+export const DISABLED = 'disabled';
 
 export class SelectBox extends HTMLElement {
   private selected_!: string;
+  private svg_: SVGSVGElement;
 
   constructor() {
     super();
     this.style.cssText = `
-      width: 40px;
-      min-width: 20px;
-      min-height: 20px;
-      background-image: paint(select-box);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
     `;
-    this.style.setProperty(SIZE_PROPERTY, '16');
+
+    this.svg_ = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.svg_.setAttribute('viewbox', '0 0 20 20');
+    this.svg_.style.cssText = `
+      background: var(--inverted-text-color);
+      width: 20px;
+      height: 20px;
+      border: 2px solid;
+      box-sizing: border-box;
+    `;
+    this.svg_.innerHTML = `
+      <rect x="3" y="3" width="10" height="10" />
+    `;
+    this.append(this.svg_);
+
     this.select(NONE);
   }
 
@@ -32,11 +43,32 @@ export class SelectBox extends HTMLElement {
 
   select(value: string) {
     this.selected_ = value;
-    this.style.setProperty(SELECTED_PROPERTY, value);
+    this.render_();
   }
 
   setDisabled(disabled: boolean) {
     this.select(disabled ? DISABLED : NONE);
+  }
+
+  render_() {
+    let fill;
+    let borderColor;
+    if (this.selected_ === ALL) {
+      fill = 'var(--text-color)';
+      borderColor = 'var(--text-color)';
+    } else if (this.selected_ === SOME) {
+      fill = 'var(--checkbox-indeterminate-color)';
+      borderColor = 'var(--text-color)';
+    } else if (this.selected_ === DISABLED) {
+      fill = 'var(--inverted-text-color)';
+      borderColor = 'var(--dim-text-color)';
+    } else {
+      fill = 'var(--inverted-text-color)';
+      borderColor = 'var(--text-color)';
+    }
+
+    this.svg_.style.borderColor = borderColor;
+    this.svg_.style.fill = fill;
   }
 }
 window.customElements.define('mt-select-box', SelectBox);

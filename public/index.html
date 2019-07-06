@@ -34,6 +34,12 @@ document.body.append(script);
   --overlay-background-color: #fff;
   --border-and-hover-color: #fff;
 }
+:root, select, button {
+  color: var(--text-color);
+}
+svg {
+  fill: var(--text-color);
+}
 /* Hack to prevent wide images and videos from causing horizontal scrolling. */
 .message img, .message video {
   max-width: -webkit-fill-available;
@@ -113,7 +119,7 @@ mt-select-box:hover,
 .row-button:hover,
 .expander:hover,
 .toggler:hover {
-  color: #000;
+  color: var(--text-color);
   background-color: var(--border-and-hover-color);
   cursor: pointer;
 }

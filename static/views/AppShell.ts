@@ -78,7 +78,7 @@ export class AppShell extends HTMLElement {
     this.mainContent_ = document.createElement('div');
     this.mainContent_.style.cssText = `
       will-change: transform;
-      background-color: var(--overlay-background-color);
+      background: var(--main-background, #fff);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -273,7 +273,6 @@ export class AppShell extends HTMLElement {
       right: 6px;
       top: 6px;
       background-color: var(--overlay-background-color);
-      color: black;
       border: 1px solid var(--border-and-hover-color);
       z-index: 1000001;
     `;
@@ -284,16 +283,26 @@ export class AppShell extends HTMLElement {
 
   setBackground(background: string) {
     let root = document.documentElement;
-    root.style.setProperty('--border-and-hover-color', '#ccc');
-    root.style.setProperty('--row-hover-color', '#eee');
-    root.style.setProperty('--nested-background-color', '#ffffffbb');
-    root.style.setProperty('--overlay-background-color', '#fff');
-    root.style.setProperty('--inverted-overlay-background-color', '#000');
+    // TODO: Add a setting for this.
+    let isLightMode = true;
+    root.style.setProperty(
+        '--border-and-hover-color', isLightMode ? '#ccc' : '#333');
+    root.style.setProperty('--row-hover-color', isLightMode ? '#eee' : '#111');
+    root.style.setProperty(
+        '--nested-background-color', isLightMode ? '#ffffffbb' : '#000000bb');
+    root.style.setProperty(
+        '--overlay-background-color', isLightMode ? '#fff' : '#000');
+    root.style.setProperty(
+        '--inverted-overlay-background-color', isLightMode ? '#000' : '#fff');
     root.style.setProperty('--selected-background-color', '#c2dbff');
-    root.style.setProperty('--text-color', '#000');
-    root.style.setProperty('--inverted-text-color', '#fff');
-
-    this.mainContent_.style.background = background;
+    root.style.setProperty('--text-color', isLightMode ? '#000' : '#fff');
+    root.style.setProperty('--dim-text-color', isLightMode ? '#333' : '#ccc');
+    root.style.setProperty(
+        '--inverted-text-color', isLightMode ? '#fff' : '#000');
+    root.style.setProperty(
+        '--checkbox-indeterminate-color', isLightMode ? '#aaa' : '#888');
+    root.style.setProperty(
+        '--main-background', isLightMode ? background : '#000');
   }
 
   static setFooter(dom?: HTMLElement) {
