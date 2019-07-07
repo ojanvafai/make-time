@@ -232,7 +232,7 @@ export class Settings extends EventTarget {
       key: ServerStorage.KEYS.BACKGROUND,
       name: 'Background',
       description:
-          `Override the theme's background. Can be any <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/background">CSS background</a> including URLs to images.`,
+          `Override the theme's background. Can be any CSS background including "url(image-url-here)".`,
     },
     {
       key: ServerStorage.KEYS.VACATION,
