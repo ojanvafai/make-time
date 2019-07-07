@@ -74,6 +74,7 @@ export class ServerStorage extends EventTarget {
 interface KeyTypes {
   HAS_SHOWN_FIRST_RUN: string;
   LAST_DEQUEUE_TIME: string;
+  THEME: string;
   BACKGROUND: string;
   VACATION: string;
   ALLOW_VIEW_MESSAGES_IN_TRIAGE: string;
@@ -91,6 +92,7 @@ interface KeyTypes {
 let keys: KeyTypes = {
   HAS_SHOWN_FIRST_RUN: 'has_shown_first_run',
   LAST_DEQUEUE_TIME: 'Last dequeue time',
+  THEME: 'theme',
   BACKGROUND: 'background',
   VACATION: 'vacation',
   ALLOW_VIEW_MESSAGES_IN_TRIAGE: 'allow_view_messages_in_triage',
@@ -108,6 +110,7 @@ let keys: KeyTypes = {
 // TODO: Setup a proper listening system for each key and make that the only way
 // to get at the key's value so callers are forced to handle updates.
 let KEYS_TO_DISPATCH_UPDATE_EVENT = [
+  keys.THEME,
   keys.BACKGROUND,
   keys.VACATION,
   keys.ALLOW_VIEW_MESSAGES_IN_TRIAGE,

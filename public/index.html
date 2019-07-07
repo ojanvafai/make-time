@@ -34,8 +34,12 @@ document.body.append(script);
   --overlay-background-color: #fff;
   --border-and-hover-color: #fff;
 }
-:root, select, button, input {
+:root, a:visited {
   color: var(--text-color);
+}
+select, button, input {
+  color: var(--text-color);
+  background-color: var(--overlay-background-color);
 }
 svg {
   fill: var(--text-color);
@@ -81,7 +85,6 @@ input:not([type=checkbox]):not([type=radio]),
   -webkit-appearance: none;
   border-radius: 3px;
   border: 1px solid var(--border-and-hover-color);
-  background: none;
   margin: 0;
 }
 select.button, .mktime-button, .label-button {

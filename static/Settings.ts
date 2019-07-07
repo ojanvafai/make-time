@@ -7,6 +7,7 @@ import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, DE
 import {QueueNames} from './QueueNames.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
+import {THEMES} from './Themes.js';
 
 export interface HeaderFilterRule {
   name: string;
@@ -54,6 +55,7 @@ export interface Setting {
   key: string;
   name: string;
   description: string;
+  values?: string[];
   type?: string;
   min?: number;
   max?: number;
@@ -221,10 +223,16 @@ export class Settings extends EventTarget {
 
   static fields = [
     {
+      key: ServerStorage.KEYS.THEME,
+      name: 'Theme',
+      description: `Set a theme.`,
+      values: THEMES.map(x => x.name),
+    },
+    {
       key: ServerStorage.KEYS.BACKGROUND,
       name: 'Background',
       description:
-          `Set the maketime background. Can be any <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/background">CSS background</a> including URLs to images.`,
+          `Override the theme's background. Can be any <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/background">CSS background</a> including URLs to images.`,
     },
     {
       key: ServerStorage.KEYS.VACATION,

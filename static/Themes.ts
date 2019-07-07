@@ -1,3 +1,5 @@
+import {assert} from './Base.js';
+
 interface Theme {
   name: string;
   styles: {
@@ -48,6 +50,34 @@ export const DARK: Theme = {
   }
 };
 
+function randomColorNumber() {
+  return Math.floor(Math.random() * 256);
+}
+
+function randomColor() {
+  return `rgb(${randomColorNumber()},${randomColorNumber()},${
+      randomColorNumber()}`;
+}
+
+export const RANDOM: Theme = {
+  name: 'Random',
+  styles: {
+    '--border-and-hover-color': randomColor(),
+    '--row-hover-color': randomColor(),
+    '--nested-background-color': randomColor(),
+    '--overlay-background-color': randomColor(),
+    '--inverted-overlay-background-color': randomColor(),
+    '--selected-background-color': randomColor(),
+    '--text-color': randomColor(),
+    '--dim-text-color': randomColor(),
+    '--inverted-text-color': randomColor(),
+    '--checkbox-indeterminate-color': randomColor(),
+    '--main-background': randomColor(),
+  }
+};
+
+export const THEMES = [DEFAULT, DARK, RANDOM];
+
 const MAIN_BACKGROUND_PROPERTY = '--main-background';
 
 export class Themes {
@@ -71,12 +101,25 @@ export class Themes {
     }
   }
 
+  static setTheme(themeName: string) {
+    let theme = THEMES.find(x => x.name === themeName);
+    // Cache the full theme in localStorage so it's available immediately before
+    // the settings have loaded off the netowrk.
+    localStorage.theme = JSON.stringify(assert(theme));
+    this.apply();
+  }
+
   static apply() {
     let theme;
+    // Dark mode wins over all other theming.
     if (this.isDarkMode_()) {
       theme = DARK;
     } else {
-      theme = ((localStorage.theme as Theme | undefined) || DEFAULT);
+      if (localStorage.theme)
+        theme = JSON.parse(localStorage.theme) as Theme;
+      else
+        theme = DEFAULT;
+
       if (this.overrideBackground_) {
         // Deep clone the object to avoid modifying the actual theme.
         theme = JSON.parse(JSON.stringify(theme)) as Theme;

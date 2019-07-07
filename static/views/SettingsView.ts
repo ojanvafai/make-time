@@ -40,6 +40,8 @@ export class SettingsView extends View {
     this.basicSettings_ = document.createElement('table');
     SettingsView.appendSettings(
         this.basicSettings_, this.settings_, Settings.fields);
+
+
     this.scrollable_.append(this.basicSettings_);
 
     let filtersLinkContainer = document.createElement('div');
@@ -156,22 +158,37 @@ export class SettingsView extends View {
         tooltipElement.remove();
       };
 
-      let input = document.createElement('input');
-      input.toggleAttribute('setting');
+      let input;
+      if (field.values) {
+        input = document.createElement('select');
+        let currentValue;
+        if (settings.has(field.key))
+          currentValue = settings.getNonDefault(field.key);
 
-      if (field.min !== undefined)
-        input.min = String(field.min);
-      if (field.max !== undefined)
-        input.max = String(field.max);
-      if (field.default)
-        input.placeholder = `default: ${field.default}`;
-      if (field.type)
-        input.type = field.type;
+        for (let value of field.values) {
+          let option = document.createElement('option');
+          option.append(value);
+          if (currentValue === value)
+            option.selected = true;
+          input.append(option);
+        }
+      } else {
+        input = document.createElement('input');
+        input.toggleAttribute('setting');
+        if (field.min !== undefined)
+          input.min = String(field.min);
+        if (field.max !== undefined)
+          input.max = String(field.max);
+        if (field.default)
+          input.placeholder = `default: ${field.default}`;
+        if (field.type)
+          input.type = field.type;
 
-      if (field.type == 'checkbox')
-        input.checked = settings.get(field.key);
-      else if (settings.has(field.key))
-        input.value = settings.getNonDefault(field.key);
+        if (field.type == 'checkbox')
+          input.checked = settings.get(field.key);
+        else if (settings.has(field.key))
+          input.value = settings.getNonDefault(field.key);
+      }
 
       input.setAttribute('key', field.key);
 
@@ -211,6 +228,8 @@ export class SettingsView extends View {
     let inputs = Array.from(this.basicSettings_.querySelectorAll('input'));
     SettingsView.setUpdates(updates, inputs);
 
+    let themeSelect = this.querySelector('select') as HTMLSelectElement;
+    updates[ServerStorage.KEYS.THEME] = themeSelect.selectedOptions[0].value;
     updates[ServerStorage.KEYS.QUEUES] = this.queues_.getAllQueueDatas();
     updates[ServerStorage.KEYS.CALENDAR_SORT] =
         this.calendarSortView_.getAllCalendarSortDatas();
