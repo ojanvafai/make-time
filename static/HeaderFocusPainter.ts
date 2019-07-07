@@ -1,7 +1,13 @@
+const COLOR_PROPERTY = '--selected-background-color';
+
 class HeaderFocusPainter {
-  paint(ctx: CanvasRenderingContext2D, geom: any, _properties: any) {
+  static get inputProperties() {
+    return [COLOR_PROPERTY];
+  }
+
+  paint(ctx: CanvasRenderingContext2D, geom: any, properties: any) {
     let width = 3;
-    ctx.fillStyle = '#80b3fd';
+    ctx.fillStyle = properties.get(COLOR_PROPERTY).toString();
     ctx.fillRect(0, 0, width, geom.height);
     ctx.fillRect(geom.width - width, 0, width, geom.height);
   }
