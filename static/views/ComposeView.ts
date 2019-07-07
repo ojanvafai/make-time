@@ -260,12 +260,6 @@ export class ComposeView extends View {
   }
 
   async send_() {
-    let sent = await this.model_.send(this.body_.value);
-    if (!sent)
-      return;
-
-    this.sentThreadId_ = defined(sent.response.threadId);
-
     if (!this.sent_) {
       this.sent_ = document.createElement('div');
 
@@ -277,15 +271,30 @@ export class ComposeView extends View {
       `;
       container.append(this.sent_);
       this.append(container);
-
-      this.sentToolbar_ = new Actions(this);
-      this.sentToolbar_.setActions(SENT_ACTIONS);
-      container.append(this.sentToolbar_);
     }
 
     this.showSent_(true);
-    this.sent_.textContent =
-        `Sent "${sent.subject}". Would you like to triage it for later?`;
+
+    let sent;
+    try {
+      this.sent_.textContent = `Sending "${this.subject_.value}"`
+      sent = await this.model_.send(this.body_.value);
+    } finally {
+      this.sent_.textContent = sent ?
+          `Sent "${sent.subject}". Would you like to triage it for later?` :
+          `Failed to send "${this.subject_.value}"`;
+    }
+
+    if (!sent)
+      return;
+
+    this.sentThreadId_ = defined(sent.response.threadId);
+
+    if (!this.sentToolbar_) {
+      this.sentToolbar_ = new Actions(this);
+      this.sentToolbar_.setActions(SENT_ACTIONS);
+      notNull(this.sent_.parentNode).append(this.sentToolbar_);
+    }
 
     this.to_.value = this.params_.to && !this.autoSend_ ? this.params_.to : '';
     this.clearInlineTo_();
@@ -306,6 +315,12 @@ export class ComposeView extends View {
   private showSent_(show: boolean) {
     notNull(defined(this.sent_).parentElement).style.display =
         show ? '' : 'none';
+
+    if (!show) {
+      if (this.sentToolbar_)
+        this.sentToolbar_.remove();
+      this.sentToolbar_ = undefined;
+    }
   }
 
   async takeAction(action: Action) {
