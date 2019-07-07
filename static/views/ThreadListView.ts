@@ -1022,40 +1022,24 @@ export class ThreadListView extends View {
       // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in
       // some cases.
       let row = this.renderedRow_;
+      // Do this here so that we show the next thread instantly rather than
+      // waiting for the action to complete.
       if (!keepRows)
         this.handleRowsRemoved_([row], this.getRows_());
       return [row.thread];
     }
 
-    let threads: Thread[] = [];
-    let firstUnselectedRowAfterFocused = null;
-    let focusedRowIsSelected = false;
-
-    let rows = this.getRows_();
-    for (let child of rows) {
-      if (child.selected) {
-        if (child == this.focusedRow_)
-          focusedRowIsSelected = true;
-        threads.push(child.thread);
-
-        // ThreadRows get recycled, so clear the checked and focused state
-        // for future use.
-        if (!keepRows) {
-          child.resetState();
-          child.thread.setActionInProgress(true);
-        }
-      } else if (focusedRowIsSelected && !firstUnselectedRowAfterFocused) {
-        firstUnselectedRowAfterFocused = child;
+    return this.getRows_().filter(x => x.selected).map(x => {
+      // ThreadRows get recycled, so clear the checked and focused state
+      // for future use.
+      if (!keepRows) {
+        x.resetState();
+        // This causes the row to be removed instantely rather than waiting for
+        // the action to completely.
+        x.thread.setActionInProgress(true);
       }
-    }
-
-    // Move focus to the first unselected email. If we aren't able to find
-    // an unselected email, focusedEmail_ should end up null, so set it even
-    // if firstUnselectedRowAfterSelected is null.
-    if (!keepRows && focusedRowIsSelected)
-      this.setFocus_(firstUnselectedRowAfterFocused);
-
-    return threads;
+      return x.thread;
+    });
   }
 
   setRenderedRowInternal_(row: ThreadRow|null) {
