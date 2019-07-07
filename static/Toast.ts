@@ -25,7 +25,7 @@ export class Toast extends HTMLElement {
       padding: 10px;
       border-radius: 3px;
       border: 1px solid var(--border-and-hover-color);
-      color: var(--text-color);
+      color: var(--inverted-text-color);
     `;
     text.append(message);
     this.append(text);

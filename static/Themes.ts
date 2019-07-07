@@ -36,7 +36,7 @@ export const DEFAULT: Theme = {
 export const DARK: Theme = {
   name: 'Dark Mode',
   styles: {
-    '--border-and-hover-color': '#333',
+    '--border-and-hover-color': '#666',
     '--row-hover-color': '#111',
     '--nested-background-color': '#000000bb',
     '--overlay-background-color': '#000',

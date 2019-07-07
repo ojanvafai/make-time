@@ -446,11 +446,8 @@ export class CalendarFiltersView extends HTMLElement {
 
       let fieldElement = document.createElement('span');
       fieldElement.style.cssText = `
-        color: white;
-        background-color: darkolivegreen;
         padding: 1px 2px;
-        margin-right: 2px;
-        border-radius: 3px;
+        font-weight: bold;
       `;
 
       let fieldTextWithoutSentinel =
@@ -474,9 +471,8 @@ export class CalendarFiltersView extends HTMLElement {
   appendValue_(container: HTMLElement, value: string) {
     let valueElement = document.createElement('span');
     valueElement.style.cssText = `
-      background-color: #ccc;
       padding: 1px 2px;
-      border-radius: 3px;
+      text-decoration: underline var(--dim-text-color);
     `;
     this.appendWithSentinel_(valueElement, value);
     container.append(valueElement);
