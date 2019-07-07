@@ -1030,14 +1030,10 @@ export class ThreadListView extends View {
     }
 
     return this.getRows_().filter(x => x.selected).map(x => {
-      // ThreadRows get recycled, so clear the checked and focused state
-      // for future use.
-      if (!keepRows) {
-        x.resetState();
-        // This causes the row to be removed instantely rather than waiting for
-        // the action to completely.
+      // This causes the row to be removed instantely rather than waiting for
+      // the action to completely.
+      if (!keepRows)
         x.thread.setActionInProgress(true);
-      }
       return x.thread;
     });
   }

@@ -86,7 +86,7 @@ export class LabelState {
         this.hasRepeat === other.hasRepeat;
   }
 
-  datesEqual_(a: Date|null, b: Date|null) {
+  private datesEqual_(a: Date|null, b: Date|null) {
     if (a && b)
       return a.getTime() === b.getTime();
     return a === b;
@@ -226,9 +226,13 @@ export class ThreadRow extends HTMLElement {
         UpdatedEvent.NAME, () => this.handleThreadUpdated_());
 
     // Redispatch this so the ThreadListView picks it up.
-    thread.addEventListener(
-        InProgressChangedEvent.NAME,
-        () => this.dispatchEvent(new InProgressChangedEvent()));
+    thread.addEventListener(InProgressChangedEvent.NAME, () => {
+      // This happens when a triage action completes on a Thread, which means
+      // that the row was removed from the view, so we should remove it's
+      // previous focused/checked state.
+      this.resetState_();
+      this.dispatchEvent(new InProgressChangedEvent());
+    });
 
     this.updateCheckbox_();
   }
@@ -250,14 +254,14 @@ export class ThreadRow extends HTMLElement {
     this.setFocus(true, false);
   }
 
-  threadRowContainsSelection_() {
+  private threadRowContainsSelection_() {
     let sel = window.getSelection();
     return !sel.isCollapsed &&
         (this.containsNode_(sel.anchorNode) ||
          this.containsNode_(sel.focusNode));
   }
 
-  containsNode_(node: Node) {
+  private containsNode_(node: Node) {
     while (node.parentNode) {
       if (node.parentNode == this)
         return true;
@@ -266,7 +270,7 @@ export class ThreadRow extends HTMLElement {
     return false;
   }
 
-  resetState() {
+  private resetState_() {
     // Intentionally use the public setters so that styles are updated.
     this.clearFocus();
     this.setChecked(false);
@@ -583,7 +587,7 @@ export class ThreadRow extends HTMLElement {
     this.updateCheckbox_();
   }
 
-  updateCheckbox_() {
+  private updateCheckbox_() {
     let newState;
     if (this.checked)
       newState = ALL;
