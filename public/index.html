@@ -48,6 +48,17 @@ select, input {
 svg {
   fill: var(--text-color);
 }
+legend {
+  font-size: 150%;
+  font-weight: bold;
+}
+mt-queues legend {
+  font-size: 125%;
+}
+mt-queues fieldset {
+  border: 0;
+  padding: 0;
+}
 /* Hack to prevent wide images and videos from causing horizontal scrolling. */
 .message img, .message video {
   max-width: -webkit-fill-available;
@@ -81,10 +92,10 @@ input[type=checkbox], input[type=radio] {
   height: 18px;
   margin: 0 4px 0 0;
 }
-fieldset, select, mt-address-compose,
+fieldset, select, mt-address-compose, [contentEditable],
 input:not([type=checkbox]):not([type=radio]),
 .menu-open-button, .mktime-button, .label-button, .x-button, .row-button,
-.toggler, .link-bubble, .label-chip, [contentEditable]  {
+.toggler, .link-bubble, .label-chip  {
   padding: 3px;
   -webkit-appearance: none;
   border-radius: 3px;
