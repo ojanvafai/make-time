@@ -507,31 +507,33 @@ export class ThreadRow extends HTMLElement {
 
   private static createSelectChip_(text: string) {
     let label = document.createElement('select');
-    // TODO: Share some code with createLabel_.
-    label.style.cssText = `
-      display: inline-block;
-      font-size: 0.75rem;
-      line-height: 18px;
-      margin-right: 4px;
-    `;
+    this.styleLabel_(label);
+
     let option = new Option();
     option.append(text);
     label.append(option);
+
     return label;
   }
 
   private static createLabel_(text: string) {
     let label = document.createElement('span');
+    this.styleLabel_(label);
+
     label.className = 'label-chip';
+    label.append(text);
+    return label;
+  }
+
+  private static styleLabel_(label: HTMLElement) {
     label.style.cssText = `
       display: inline-block;
       font-size: 0.75rem;
       line-height: 18px;
       margin-right: 4px;
       white-space: nowrap;
+      background: none;
     `;
-    label.append(text);
-    return label;
   }
 
   private dateString_(date: Date) {

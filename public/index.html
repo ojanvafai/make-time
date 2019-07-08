@@ -92,7 +92,7 @@ input[type=checkbox], input[type=radio] {
   height: 18px;
   margin: 0 4px 0 0;
 }
-select, mt-address-compose, [contentEditable],
+select, mt-address-compose, [contentEditable=true],
 input:not([type=checkbox]):not([type=radio]),
 .menu-open-button, .mktime-button, .label-button, .x-button, .row-button,
 .toggler, .link-bubble, .label-chip  {
@@ -108,6 +108,7 @@ select.button, .mktime-button, .label-button {
   font-size: 16px;
   display: block;
   text-align: center;
+  background: none;
 }
 .mktime-button:disabled {
   color: grey;
