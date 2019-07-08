@@ -40,50 +40,46 @@ export class SettingsView extends View {
     this.basicSettings_ = document.createElement('table');
     SettingsView.appendSettings(
         this.basicSettings_, this.settings_, Settings.fields);
-
-
     this.scrollable_.append(this.basicSettings_);
 
-    let filtersLinkContainer = document.createElement('div');
-    filtersLinkContainer.style.cssText = `
-      margin: 16px 0;
+    let sortContainer = document.createElement('div');
+    sortContainer.style.cssText = `
+      display: flex;
+      flex-wrap: wrap;
     `;
-    let mailFilters = document.createElement('a');
-    mailFilters.classList.add('label-button');
-    mailFilters.append('Modify email filters');
-    mailFilters.onclick = () => new FiltersView(this.settings_);
-
-    let calendarFilters = document.createElement('a');
-    calendarFilters.classList.add('label-button');
-    calendarFilters.append('Modify calendar filters');
-    calendarFilters.onclick = () => new CalendarFiltersView(this.settings_);
-
-    filtersLinkContainer.append(mailFilters, calendarFilters);
-    this.scrollable_.append(filtersLinkContainer);
+    this.scrollable_.append(sortContainer);
 
     this.queues_ = new QueuesView(this.settings_);
     this.queues_.addEventListener('change', () => this.handleChange_());
 
-    let queuesContainer = document.createElement('fieldset');
+    let queuesContainer = document.createElement('div');
     queuesContainer.style.cssText = `
-      margin-bottom: 16px;
+      margin: 16px 8px;
+      padding: 8px;
+      border-left: 1px solid var(--border-and-hover-color);
+      flex: 1;
+      white-space: nowrap;
     `;
     queuesContainer.innerHTML = '<legend>Email label sort order</legend>';
     queuesContainer.append(this.queues_);
-    this.scrollable_.append(queuesContainer);
+    sortContainer.append(queuesContainer);
 
     this.calendarSortView_ = new CalendarSortView(this.settings_);
     this.calendarSortView_.addEventListener(
         'change', () => this.handleChange_());
 
-    let calendarSortContainer = document.createElement('fieldset');
+    let calendarSortContainer = document.createElement('div');
     calendarSortContainer.style.cssText = `
-      margin-bottom: 16px;
+      margin: 16px 8px;
+      padding: 8px;
+      border-left: 1px solid var(--border-and-hover-color);
+      flex: 1;
+      white-space: nowrap;
     `;
     calendarSortContainer.innerHTML =
         '<legend>Calendar label sort order</legend>';
     calendarSortContainer.append(this.calendarSortView_);
-    this.scrollable_.append(calendarSortContainer);
+    sortContainer.append(calendarSortContainer);
 
     let helpButton = document.createElement('button');
     helpButton.className = 'mktime-button';
@@ -98,12 +94,23 @@ export class SettingsView extends View {
     this.saveButton_.disabled = true;
     this.saveButton_.onclick = () => this.save_();
 
+    let mailFilters = document.createElement('button');
+    mailFilters.classList.add('mktime-button');
+    mailFilters.append('Modify email filters');
+    mailFilters.onclick = () => new FiltersView(this.settings_);
+
+    let calendarFilters = document.createElement('button');
+    calendarFilters.classList.add('mktime-button');
+    calendarFilters.append('Modify calendar filters');
+    calendarFilters.onclick = () => new CalendarFiltersView(this.settings_);
+
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
       display: flex;
       justify-content: center;
     `;
-    buttonContainer.append(this.saveButton_, helpButton);
+    buttonContainer.append(
+        this.saveButton_, mailFilters, calendarFilters, helpButton);
     AppShell.setFooter(buttonContainer);
 
     this.addEventListener('change', () => this.handleChange_());
@@ -120,44 +127,6 @@ export class SettingsView extends View {
   static appendSettings(
       container: HTMLElement, settings: Settings, fields: Setting[]) {
     for (let field of fields) {
-      let row = document.createElement('tr');
-      row.style.cssText = `
-        margin: 5px 0;
-      `;
-
-      let helpButton = document.createElement('span');
-      helpButton.style.cssText = `
-        margin: 0 4px;
-        text-decoration: underline;
-        color: blue;
-      `;
-      helpButton.textContent = '?';
-      helpButton.setAttribute('tooltip', field.description);
-
-      let tooltipElement: HTMLElement;
-      helpButton.onpointerenter = () => {
-        tooltipElement = document.createElement('div');
-
-        let rect = helpButton.getBoundingClientRect();
-
-        tooltipElement.style.cssText = `
-          position: fixed;
-          top: ${rect.bottom + 2}px;
-          width: 300px;
-          background-color: var(--overlay-background-color);
-          border: 1px solid var(--border-and-hover-color);
-          padding: 4px;
-          z-index: 100;
-        `;
-
-        tooltipElement.append(<string>helpButton.getAttribute('tooltip'));
-        helpButton.after(tooltipElement);
-      };
-
-      helpButton.onpointerleave = () => {
-        tooltipElement.remove();
-      };
-
       let input;
       if (field.values) {
         input = document.createElement('select');
@@ -174,6 +143,7 @@ export class SettingsView extends View {
         }
       } else {
         input = document.createElement('input');
+
         input.toggleAttribute('setting');
         if (field.min !== undefined)
           input.min = String(field.min);
@@ -190,15 +160,38 @@ export class SettingsView extends View {
           input.value = settings.getNonDefault(field.key);
       }
 
+      input.style.cssText = `
+        max-width: 100px;
+        margin-right: 10px;
+        flex: 0 0 auto;
+      `;
+
       input.setAttribute('key', field.key);
 
       let label = document.createElement('td');
-      label.append(field.name, helpButton);
+      label.style.cssText = `
+        font-weight: bold;
+        padding-right: 10px 10px 10px 0;
+      `;
+      label.append(field.name);
 
-      let inputContainer = document.createElement('td');
-      inputContainer.append(input);
-      row.append(label, inputContainer);
+      let description = document.createElement('span');
+      description.style.color = 'var(--dim-text-color)';
+      description.append(field.description);
 
+      let inputContainer = document.createElement('div');
+      inputContainer.style.cssText = `
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+      `;
+      inputContainer.append(input, description);
+
+      let rightCell = document.createElement('td');
+      rightCell.append(inputContainer);
+
+      let row = document.createElement('tr');
+      row.append(label, rightCell);
       container.append(row);
     }
   }

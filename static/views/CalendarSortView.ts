@@ -135,7 +135,6 @@ export class CalendarSortView extends HTMLElement {
   createSelect_(list: {[property: string]: string}, opt_selectedItem?: string) {
     let select = document.createElement('select');
     select.classList.add('color');
-    select.style.padding = '2px';
     select.addEventListener('change', (e: Event) => {
       let row =
           notNull((e.target as HTMLElement).closest(`.${ROW_CLASS_NAME}`));
@@ -196,19 +195,23 @@ export class CalendarSortView extends HTMLElement {
     label.append(checkbox, colorElement, queueData.label);
     row.append(label);
 
+    let colors = this.createSelect_(CALENDAR_ALLOWED_COLORS, color);
+    row.append(colors);
+
     if (UNBOOKED_TYPES.includes(queueData.label)) {
-      let elem = document.createElement('div');
-      elem.className = 'hardcoded-color';
-      elem.style.cssText = `
+      // For hardcoded colors, still create a select element with all the
+      // options so that it sizes to the same width as the other rows, but
+      // disable it so the user can't modify it and make both the text and
+      // background-colors the hardcoded color so it just looks like a colored
+      // div.
+      colors.className = 'hardcoded-color';
+      colors.disabled = true;
+      colors.style.cssText = `
+        color: ${color};
         background-color: ${color};
-        width: 60px;
-        margin: 2px;
       `;
-      row.append(elem);
     } else {
-      let colors = this.createSelect_(CALENDAR_ALLOWED_COLORS, color);
       colors.className = 'color';
-      row.append(colors);
     }
 
     this.append(row);
