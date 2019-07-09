@@ -1,5 +1,3 @@
-import {assert} from './Base.js';
-
 interface Theme {
   name: string;
   styles: {
@@ -103,10 +101,10 @@ export class Themes {
   }
 
   static setTheme(themeName: string) {
-    let theme = THEMES.find(x => x.name === themeName);
+    let theme = THEMES.find(x => x.name === themeName) || DEFAULT;
     // Cache the full theme in localStorage so it's available immediately before
     // the settings have loaded off the netowrk.
-    localStorage.theme = JSON.stringify(assert(theme));
+    localStorage.theme = JSON.stringify(theme);
     this.apply();
   }
 
