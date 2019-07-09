@@ -27,7 +27,7 @@ document.body.append(script);
 
 // Avoid flash of white on reload.
 if (localStorage.background)
-  document.documentElement.style.background = localStorage.background;
+  document.documentElement.style.setProperty('--main-background', localStorage.background);
 </script>
 
 <link rel="manifest" href="manifest.json">
@@ -37,6 +37,7 @@ if (localStorage.background)
 :root {
   --overlay-background-color: #fff;
   --border-and-hover-color: #fff;
+  background: var(--main-background);
 }
 :root, a:visited {
   color: var(--text-color);
