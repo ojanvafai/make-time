@@ -132,6 +132,10 @@ export class Themes {
       }
     }
 
+    // Cache in localstorage so we can set this without flash of white on
+    // reload.
+    localStorage.background = theme.styles[MAIN_BACKGROUND_PROPERTY];
+
     let root = document.documentElement;
 
     root.style.setProperty('--thread-text-color', isDarkMode ? '#fff' : '#000');

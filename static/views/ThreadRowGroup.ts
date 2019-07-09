@@ -27,6 +27,7 @@ export class ThreadRowGroup extends HTMLElement {
     super();
     this.style.cssText = `
       display: block;
+      margin: 8px 0;
     `;
 
     this.selectBox_ = new SelectBox();
