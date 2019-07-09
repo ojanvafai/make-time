@@ -266,8 +266,8 @@ export class RenderedThread extends HTMLElement {
     expander.style.cssText = `
       cursor: pointer;
       font-size: 75%;
-      height: 20px;
-      width: 20px;
+      width: 18px;
+      margin-left: 2px;
       display: flex;
       align-items: center;
       justify-content: center;
