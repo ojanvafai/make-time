@@ -223,21 +223,16 @@ export class RenderedThread extends HTMLElement {
     messageDiv.className = 'message';
     messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
 
-    let rightItems = document.createElement('div');
-    rightItems.classList.add('date');
-    let date = document.createElement('div');
-    date.append(this.dateString_(processedMessage.date));
-    rightItems.append(date);
-
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
     headerDiv.style.cssText = `
       white-space: pre-wrap;
-      display: flex;
       margin-bottom: 16px;
     `;
 
     let from = document.createElement('div');
+    from.style.flex = '1';
+
     if (processedMessage.parsedFrom.length) {
       let parsed = processedMessage.parsedFrom[0];
       if (parsed.name) {
@@ -249,15 +244,27 @@ export class RenderedThread extends HTMLElement {
       }
     }
 
+    let date = document.createElement('div');
+    date.append(this.dateString_(processedMessage.date));
+
+    let topRow = document.createElement('div');
+    topRow.style.cssText = `
+      display: flex;
+      margin-bottom: 4px;
+    `;
+    topRow.append(from, date);
+
     let to = document.createElement('div');
     to.style.cssText = `
-      white-space: nowrap;
+    cursor: pointer;
+    white-space: nowrap;
       overflow: hidden;
     `;
 
     let expander = document.createElement('span');
     expander.classList.add('expander');
     expander.style.cssText = `
+      cursor: pointer;
       font-size: 75%;
       height: 20px;
       width: 20px;
@@ -266,14 +273,24 @@ export class RenderedThread extends HTMLElement {
       justify-content: center;
       user-select: none;
     `;
+
+    let bottomRow = document.createElement('div');
+    bottomRow.style.cssText = `
+      display: flex;
+      color: var(--dim-text-color);
+      font-size: 90%;
+    `;
+    bottomRow.append(to, expander);
+
     let toggleClamp = () => {
       let shouldExpand = expander.textContent === '▼';
       to.style.whiteSpace = shouldExpand ? '' : 'nowrap';
-      expander.textContent = shouldExpand ?  '▲' : '▼' ;
+      expander.textContent = shouldExpand ? '▲' : '▼';
+      bottomRow.style.fontSize = shouldExpand ? '' : '90%';
     };
+    to.addEventListener('click', toggleClamp);
     expander.addEventListener('click', toggleClamp);
     toggleClamp();
-    rightItems.append(expander);
 
     if (processedMessage.to)
       this.appendAddresses_(to, 'to', processedMessage.to);
@@ -282,14 +299,7 @@ export class RenderedThread extends HTMLElement {
     if (processedMessage.bcc)
       this.appendAddresses_(to, 'bcc', processedMessage.bcc);
 
-    let addressContainer = document.createElement('div');
-    addressContainer.style.cssText = `
-      flex: 1;
-      overflow: hidden;
-    `;
-    addressContainer.append(from, to);
-
-    headerDiv.append(addressContainer, rightItems);
+    headerDiv.append(topRow, bottomRow);
 
     if (processedMessage.isDraft) {
       let draft = document.createElement('div');
