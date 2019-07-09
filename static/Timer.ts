@@ -102,6 +102,7 @@ export class Timer extends HTMLElement {
       position: absolute;
       padding: 5px;
       background-color: var(--overlay-background-color);
+      border-radius: 4px;
       text-align: center;
     `;
 
