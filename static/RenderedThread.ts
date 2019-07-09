@@ -117,7 +117,7 @@ export class RenderedThread extends HTMLElement {
 
       let snippet = document.createElement('div');
       snippet.style.cssText = `
-        color: grey;
+        color: var(--dim-text-color);
       `;
       // Snippet returned by the gmail API is html escaped.
       snippet.innerHTML = this.thread.getSnippet();
@@ -216,7 +216,8 @@ export class RenderedThread extends HTMLElement {
   renderMessage_(processedMessage: Message) {
     var messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
-      padding: 0 8px;
+      padding: 8px 8px 16px;
+      border-top: 1px dotted var(--border-and-hover-color);
       word-break: break-word;
     `;
     messageDiv.className = 'message';
@@ -231,16 +232,12 @@ export class RenderedThread extends HTMLElement {
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
     headerDiv.style.cssText = `
-      padding: 8px;
-      margin: 0 -8px;
-      border-top: 1px solid var(--border-and-hover-color);
       white-space: pre-wrap;
       display: flex;
+      margin-bottom: 16px;
     `;
 
     let from = document.createElement('div');
-    from.style.cssText = `color: #000000bb`;
-
     if (processedMessage.parsedFrom.length) {
       let parsed = processedMessage.parsedFrom[0];
       if (parsed.name) {
@@ -254,25 +251,28 @@ export class RenderedThread extends HTMLElement {
 
     let to = document.createElement('div');
     to.style.cssText = `
-      display: -webkit-box;
-      -webkit-line-clamp: 1;
-      -webkit-box-orient: vertical;
+      white-space: nowrap;
+      overflow: hidden;
     `;
 
     let expander = document.createElement('span');
     expander.classList.add('expander');
     expander.style.cssText = `
-      padding: 0 3px;
+      font-size: 75%;
+      height: 20px;
+      width: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       user-select: none;
-      float: right;
     `;
-    expander.onclick = () => {
-      let existing = window.getComputedStyle(to).webkitLineClamp;
-      // Wow. Setting this to 'none' doens't work. But setting it to 'unset'
-      // returns 'none' from computed style.
-      to.style.webkitLineClamp = existing == 'none' ? '1' : 'unset';
+    let toggleClamp = () => {
+      let shouldExpand = expander.textContent === '▼';
+      to.style.whiteSpace = shouldExpand ? '' : 'nowrap';
+      expander.textContent = shouldExpand ?  '▲' : '▼' ;
     };
-    expander.append('▾');
+    expander.addEventListener('click', toggleClamp);
+    toggleClamp();
     rightItems.append(expander);
 
     if (processedMessage.to)
@@ -283,7 +283,10 @@ export class RenderedThread extends HTMLElement {
       this.appendAddresses_(to, 'bcc', processedMessage.bcc);
 
     let addressContainer = document.createElement('div');
-    addressContainer.style.cssText = `flex: 1;`;
+    addressContainer.style.cssText = `
+      flex: 1;
+      overflow: hidden;
+    `;
     addressContainer.append(from, to);
 
     headerDiv.append(addressContainer, rightItems);
@@ -291,7 +294,6 @@ export class RenderedThread extends HTMLElement {
     if (processedMessage.isDraft) {
       let draft = document.createElement('div');
       draft.style.cssText = `
-        color: #000000bb;
         font-weight: bold;
         margin-top: 10px;
       `;
@@ -312,7 +314,6 @@ export class RenderedThread extends HTMLElement {
 
   appendAddresses_(container: HTMLElement, name: string, value: string) {
     let div = document.createElement('div');
-    div.style.cssText = `overflow: hidden;`;
     let b = document.createElement('b');
     b.append(`${name}: `);
     div.append(b, value);
