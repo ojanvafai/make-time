@@ -315,7 +315,7 @@ export class ThreadListView extends View {
     });
 
     this.updateActions_();
-    this.appShell_.showViewAndFilterToggles(true);
+    this.appShell_.showViewAndFilterToggles(!!this.toggleViewUrl_);
     this.renderCalendar_();
     this.render_();
   }
@@ -980,7 +980,7 @@ export class ThreadListView extends View {
   }
 
   private transitionToThreadList_(focusedRow: ThreadRow|null) {
-    this.appShell_.showViewAndFilterToggles(true);
+    this.appShell_.showViewAndFilterToggles(!!this.toggleViewUrl_);
     this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
