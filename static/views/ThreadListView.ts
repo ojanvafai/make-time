@@ -444,7 +444,7 @@ export class ThreadListView extends View {
   }
 
   openOverflowMenu(container: HTMLElement) {
-    this.createMenuItem_(container, 'Dark mode', () => Themes.toggleDarkMode());
+    this.createMenuItem_(container, 'Force dark mode', () => Themes.toggleDarkMode());
 
     this.createMenuItem_(
         container, 'View in gmail',

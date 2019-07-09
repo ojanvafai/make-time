@@ -1,5 +1,5 @@
 import {Action} from './Actions.js';
-import {assert, defined, notNull} from './Base.js';
+import {assert, notNull} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 import {NEXT_ACTION, NEXT_FULL_ACTION, PREVIOUS_ACTION, PREVIOUS_FULL_ACTION} from './views/ThreadListView.js';
@@ -42,7 +42,8 @@ export class RenderedThread extends HTMLElement {
   constructor(public thread: Thread) {
     super();
     this.style.cssText = `
-      background-color: var(--overlay-background-color);
+      background-color: var(--thread-background-color);
+      color: var(--thread-text-color);
       position: absolute;
       left: 0;
       right: 0;
@@ -162,8 +163,7 @@ export class RenderedThread extends HTMLElement {
     let message: Element|null;
     switch (action) {
       case NEXT_ACTION:
-        message = this.getMessageFromHeader_(notNull(this.focused_))
-                      .nextElementSibling;
+        message = notNull(this.focused_).nextElementSibling;
         if (!message)
           return;
         break;
@@ -173,8 +173,7 @@ export class RenderedThread extends HTMLElement {
         break;
 
       case PREVIOUS_ACTION:
-        message = this.getMessageFromHeader_(notNull(this.focused_))
-                      .previousElementSibling;
+        message = notNull(this.focused_).previousElementSibling;
         if (!message)
           return;
         break;
@@ -193,9 +192,9 @@ export class RenderedThread extends HTMLElement {
 
   focusMessage_(message: Element, options?: ScrollIntoViewOptions) {
     this.clearFocus_();
-    this.focused_ = this.getHeader_(defined(message));
+    this.focused_ = message as HTMLElement;
     this.focused_.style.backgroundImage = 'paint(header-focus)';
-    this.focused_.scrollIntoView(options);
+    this.getHeader_(this.focused_).scrollIntoView(options);
   }
 
   private clearFocus_() {
@@ -232,12 +231,10 @@ export class RenderedThread extends HTMLElement {
     var headerDiv = document.createElement('div');
     headerDiv.classList.add('headers');
     headerDiv.style.cssText = `
-      background-color: var(--row-hover-color);
       padding: 8px;
       margin: 0 -8px;
-      border-top: 1px solid;
+      border-top: 1px solid var(--border-and-hover-color);
       white-space: pre-wrap;
-      color: grey;
       display: flex;
     `;
 

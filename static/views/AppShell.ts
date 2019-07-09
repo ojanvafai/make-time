@@ -79,6 +79,7 @@ export class AppShell extends HTMLElement {
     this.mainContent_.style.cssText = `
       will-change: transform;
       background: var(--main-background, #fff);
+      box-shadow: -1px 0 4px #999;
       display: flex;
       flex-direction: column;
       align-items: center;

@@ -57,7 +57,7 @@ export class SelectBox extends HTMLElement {
       fill = 'var(--text-color)';
       borderColor = 'var(--text-color)';
     } else if (this.selected_ === SOME) {
-      fill = 'var(--checkbox-indeterminate-color)';
+      fill = 'var(--midpoint-color)';
       borderColor = 'var(--text-color)';
     } else if (this.selected_ === DISABLED) {
       fill = 'var(--inverted-text-color)';

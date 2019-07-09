@@ -224,6 +224,7 @@ export class QuoteElidedMessage {
         width: 16px;
         padding: 1px 4px;
         user-select: none;
+        fill: var(--thread-text-color);
       `;
       TOGGLER.innerHTML =
           `<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>`;

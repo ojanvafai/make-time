@@ -176,8 +176,8 @@ mt-thread-row:hover,
 }
 #drawer,
 #drawer > .item {
-  color: var(--inverted-text-color);
-  background-color: var(--text-color);
+  color: var(--text-color);
+  background-color: var(--midpoint-color);
   font-weight: bold;
 }
 #drawer > .current-page {
@@ -210,6 +210,10 @@ div[contenteditable]::before {
 .menu-open-button {
   height: 22px;
   width: 22px;
+}
+html.dark-mode .message * {
+  color: var(--thread-text-color) !important;
+  background-color: var(--thread-background-color) !important;
 }
 /* Regular font-size looks good on mobile but large on desktop. */
 html.desktop,

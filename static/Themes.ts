@@ -11,7 +11,7 @@ interface Theme {
     '--text-color': string;
     '--dim-text-color': string;
     '--inverted-text-color': string;
-    '--checkbox-indeterminate-color': string;
+    '--midpoint-color': string;
     '--main-background': string;
   }
 }
@@ -28,13 +28,13 @@ export const DEFAULT: Theme = {
     '--text-color': '#000',
     '--dim-text-color': '#333',
     '--inverted-text-color': '#fff',
-    '--checkbox-indeterminate-color': '#aaa',
+    '--midpoint-color': '#aaa',
     '--main-background': 'lavender',
   }
 };
 
 export const DARK: Theme = {
-  name: 'Dark Mode',
+  name: 'Dark',
   styles: {
     '--border-and-hover-color': '#666',
     '--row-hover-color': '#111',
@@ -45,7 +45,7 @@ export const DARK: Theme = {
     '--text-color': '#fff',
     '--dim-text-color': '#ccc',
     '--inverted-text-color': '#000',
-    '--checkbox-indeterminate-color': '#888',
+    '--midpoint-color': '#888',
     '--main-background': '#000',
   }
 };
@@ -71,7 +71,7 @@ export const RANDOM: Theme = {
     '--text-color': randomColor(),
     '--dim-text-color': randomColor(),
     '--inverted-text-color': randomColor(),
-    '--checkbox-indeterminate-color': randomColor(),
+    '--midpoint-color': randomColor(),
     '--main-background': randomColor(),
   }
 };
@@ -79,6 +79,7 @@ export const RANDOM: Theme = {
 export const THEMES = [DEFAULT, DARK, RANDOM];
 
 const MAIN_BACKGROUND_PROPERTY = '--main-background';
+const DARK_MODE_CLASSNAME = 'dark-mode';
 
 export class Themes {
   static overrideBackground_?: string;
@@ -86,11 +87,11 @@ export class Themes {
   static toggleDarkMode() {
     // Put dark mode in storage separate from the theme so that toggling dark
     // mode doesn't lose the chosen theme.
-    localStorage.darkMode = !this.isDarkMode_();
+    localStorage.darkMode = !this.isDarkMode();
     this.apply();
   }
 
-  private static isDarkMode_() {
+  static isDarkMode() {
     return localStorage.darkMode === 'true';
   }
 
@@ -110,11 +111,17 @@ export class Themes {
   }
 
   static apply() {
+    let isDarkMode = this.isDarkMode();
+
     let theme;
     // Dark mode wins over all other theming.
-    if (this.isDarkMode_()) {
+    if (isDarkMode) {
+      document.documentElement.classList.add(DARK_MODE_CLASSNAME);
+
       theme = DARK;
     } else {
+      document.documentElement.classList.remove(DARK_MODE_CLASSNAME);
+
       if (localStorage.theme)
         theme = JSON.parse(localStorage.theme) as Theme;
       else
@@ -128,6 +135,11 @@ export class Themes {
     }
 
     let root = document.documentElement;
+
+    root.style.setProperty('--thread-text-color', isDarkMode ? '#fff' : '#000');
+    root.style.setProperty(
+        '--thread-background-color', isDarkMode ? '#000' : '#fff');
+
     for (let style of Object.entries(theme.styles)) {
       root.style.setProperty(style[0], style[1]);
     }
