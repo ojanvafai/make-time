@@ -245,6 +245,7 @@ export class RenderedThread extends HTMLElement {
     }
 
     let date = document.createElement('div');
+    date.style.color = 'var(--dim-text-color)';
     date.append(this.dateString_(processedMessage.date));
 
     let topRow = document.createElement('div');
