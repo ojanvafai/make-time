@@ -287,17 +287,11 @@ export class RenderedThread extends HTMLElement {
       to.style.whiteSpace = shouldExpand ? '' : 'nowrap';
       expander.textContent = shouldExpand ? '▲' : '▼';
       bottomRow.style.fontSize = shouldExpand ? '' : '90%';
+      this.renderTo_(processedMessage, to, !shouldExpand);
     };
     to.addEventListener('click', toggleClamp);
     expander.addEventListener('click', toggleClamp);
     toggleClamp();
-
-    if (processedMessage.to)
-      this.appendAddresses_(to, 'to', processedMessage.to);
-    if (processedMessage.cc)
-      this.appendAddresses_(to, 'cc', processedMessage.cc);
-    if (processedMessage.bcc)
-      this.appendAddresses_(to, 'bcc', processedMessage.bcc);
 
     headerDiv.append(topRow, bottomRow);
 
@@ -320,6 +314,31 @@ export class RenderedThread extends HTMLElement {
 
     messageDiv.append(headerDiv, bodyContainer);
     return messageDiv;
+  }
+
+  renderTo_(
+      processedMessage: Message, container: HTMLElement,
+    shouldMinify: boolean) {
+    container.textContent = '';
+
+    if (processedMessage.to) {
+      this.appendAddresses_(
+          container, 'to',
+          shouldMinify ? Message.minifyAddressList(processedMessage.parsedTo) :
+                         processedMessage.to);
+    }
+    if (processedMessage.cc) {
+      this.appendAddresses_(
+          container, 'cc',
+          shouldMinify ? Message.minifyAddressList(processedMessage.parsedCc) :
+                         processedMessage.cc);
+    }
+    if (processedMessage.bcc) {
+      this.appendAddresses_(
+          container, 'bcc',
+          shouldMinify ? Message.minifyAddressList(processedMessage.parsedBcc) :
+                         processedMessage.bcc);
+    }
   }
 
   appendAddresses_(container: HTMLElement, name: string, value: string) {

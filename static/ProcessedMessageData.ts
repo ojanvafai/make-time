@@ -32,18 +32,6 @@ export class ProcessedMessageData {
     return this.from_;
   }
 
-  minifyFrom_(addresses: string[], shouldMinify: boolean) {
-    if (shouldMinify) {
-      addresses = addresses.map(x => {
-        let parts = x.split(' ');
-        // Exclude things like Dr., Mr., etc.
-        return (parts[0].endsWith('.') && parts.length > 1) ? parts[1] :
-                                                              parts[0];
-      });
-    }
-    return addresses.join(', ');
-  }
-
   updateFrom_(container: HTMLElement) {
     let read = new Set();
     let unread = new Set();
@@ -63,7 +51,7 @@ export class ProcessedMessageData {
     if (unread.size) {
       let unreadContainer = document.createElement('b');
       unreadContainer.textContent =
-          this.minifyFrom_(Array.from(unread), minify);
+          Message.minifyAddressNames(Array.from(unread), minify);
       container.append(unreadContainer);
     }
 
@@ -73,7 +61,8 @@ export class ProcessedMessageData {
         container.append(', ');
 
       let readContainer = document.createElement('span');
-      readContainer.textContent = this.minifyFrom_(onlyReadAddresses, minify);
+      readContainer.textContent =
+          Message.minifyAddressNames(onlyReadAddresses, minify);
       container.append(readContainer);
     }
 

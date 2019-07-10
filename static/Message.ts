@@ -109,6 +109,26 @@ export class Message {
       this.date = new Date(Number(message.internalDate));
   }
 
+  static minifyAddressNames(addresses: string[], shouldMinify: boolean) {
+    if (shouldMinify) {
+      addresses = addresses.map(x => {
+        let parts = x.split(' ');
+        // Exclude things like Dr., Mr., etc.
+        return (parts[0].endsWith('.') && parts.length > 1) ? parts[1] :
+                                                              parts[0];
+      });
+    }
+    return addresses.join(', ');
+  }
+
+  static minifyAddressList(addresses: Address[]) {
+    let set = new Set();
+    addresses.map(x => {
+      set.add(x.name || x.address.split('@')[0]);
+    });
+    return this.minifyAddressNames(Array.from(set), true);
+  }
+
   get rawMessage() {
     return this.rawMessage_;
   }
