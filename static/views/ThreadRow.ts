@@ -151,7 +151,6 @@ export class ThreadRow extends HTMLElement {
     super();
     this.style.cssText = `
       display: flex;
-      background-color: var(--nested-background-color);
       white-space: nowrap;
       padding-right: 12px;
     `;

@@ -27,7 +27,9 @@ export class ThreadRowGroup extends HTMLElement {
     super();
     this.style.cssText = `
       display: block;
-      margin: 8px 0;
+      margin-top: 24px;
+      border-radius: 3px;
+      background-color: var(--nested-background-color);
     `;
 
     this.selectBox_ = new SelectBox();
@@ -42,7 +44,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.groupNameContainer_.style.cssText = `
       font-weight: bold;
       font-size: 18px;
-      padding: 8px;
+      padding: 12px 4px;
       display: flex;
       border-radius: 3px;
     `;
@@ -66,7 +68,6 @@ export class ThreadRowGroup extends HTMLElement {
 
     let header = document.createElement('div');
     header.style.cssText = `
-      padding-top: 8px;
       display: flex;
       align-items: stretch;
     `;
@@ -74,11 +75,6 @@ export class ThreadRowGroup extends HTMLElement {
     this.append(header);
 
     this.rowContainer_ = document.createElement('div');
-    // This overflow:hidden is needed to clip the corners of the nested rows.
-    this.rowContainer_.style.cssText = `
-      border-radius: 3px;
-      overflow: hidden;
-    `;
     this.placeholder_ = document.createElement('div');
     this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
     this.append(this.rowContainer_, this.placeholder_);
