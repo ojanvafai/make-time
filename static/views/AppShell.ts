@@ -82,7 +82,7 @@ export class AppShell extends HTMLElement {
       box-shadow: -1px 0 4px #999;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       ${panelStyle}
     `;
 
@@ -100,14 +100,21 @@ export class AppShell extends HTMLElement {
       z-index: 20;
     `;
 
+    let contentContainer = document.createElement('div');
+    contentContainer.style.cssText = `
+      overflow: auto;
+      flex: 1;
+    `;
+
     this.content_ = document.createElement('div');
     this.content_.style.cssText = `
       flex: 1;
-      overflow: auto;
       height: 100%;
       width: 100%;
       max-width: 1000px;
+      margin: auto;
     `;
+    contentContainer.append(this.content_);
 
     AppShell.footer_ = document.createElement('div');
     AppShell.footer_.style.cssText = `
@@ -122,7 +129,7 @@ export class AppShell extends HTMLElement {
       pointer-events: none;
     `;
 
-    this.mainContent_.append(this.toolbar_, this.content_, AppShell.footer_);
+    this.mainContent_.append(this.toolbar_, contentContainer, AppShell.footer_);
 
     this.backArrow_ = document.createElement('div');
     this.backArrow_.style.cssText = `
@@ -356,7 +363,7 @@ export class AppShell extends HTMLElement {
   }
 
   getScroller() {
-    return this.content_;
+    return this.content_.parentElement;
   }
 
   setSubject(...items: (string|Node)[]) {

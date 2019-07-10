@@ -25,6 +25,8 @@ export class ThreadRowGroup extends HTMLElement {
       private groupName_: string, private model_: ThreadListModel,
       private allowedCount_?: number) {
     super();
+    // Use negative margin and width to make is so that the rounded corners are
+    // clipped when filling the width of the window.
     this.style.cssText = `
       display: block;
       margin-top: 24px;
