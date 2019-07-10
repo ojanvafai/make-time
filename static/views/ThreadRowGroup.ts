@@ -44,6 +44,7 @@ export class ThreadRowGroup extends HTMLElement {
       font-size: 18px;
       padding: 8px;
       display: flex;
+      border-radius: 3px;
     `;
     this.groupNameContainer_.className = 'outline-on-hover';
     this.groupNameContainer_.addEventListener(
@@ -73,6 +74,11 @@ export class ThreadRowGroup extends HTMLElement {
     this.append(header);
 
     this.rowContainer_ = document.createElement('div');
+    // This overflow:hidden is needed to clip the corners of the nested rows.
+    this.rowContainer_.style.cssText = `
+      border-radius: 3px;
+      overflow: hidden;
+    `;
     this.placeholder_ = document.createElement('div');
     this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
     this.append(this.rowContainer_, this.placeholder_);

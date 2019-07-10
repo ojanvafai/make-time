@@ -14,6 +14,7 @@ export class SelectBox extends HTMLElement {
       align-items: center;
       justify-content: center;
       padding: 10px;
+      border-radius: 3px;
     `;
 
     this.svg_ = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -24,6 +25,7 @@ export class SelectBox extends HTMLElement {
       height: 20px;
       border: 2px solid;
       box-sizing: border-box;
+      border-radius: 3px;
     `;
     this.svg_.innerHTML = `
       <rect x="3" y="3" width="10" height="10" />
