@@ -520,19 +520,18 @@ export class ThreadRow extends HTMLElement {
     let label = document.createElement('span');
     this.styleLabel_(label);
 
-    label.className = 'label-chip';
     label.append(text);
     return label;
   }
 
   private static styleLabel_(label: HTMLElement) {
+    label.className = 'label-chip';
     label.style.cssText = `
       display: inline-block;
       font-size: 0.75rem;
       line-height: 18px;
       margin-right: 4px;
       white-space: nowrap;
-      background: none;
     `;
   }
 
