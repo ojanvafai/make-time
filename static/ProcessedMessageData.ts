@@ -29,7 +29,9 @@ export class ProcessedMessageData {
       this.from_ = document.createElement('span');
       this.updateFrom_(this.from_);
     }
-    return this.from_;
+    // Clone so that different callers get different spans and don't reparent
+    // the other's spans.
+    return this.from_.cloneNode(true) as HTMLSpanElement;
   }
 
   updateFrom_(container: HTMLElement) {

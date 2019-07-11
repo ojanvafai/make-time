@@ -350,17 +350,18 @@ export class ThreadRow extends HTMLElement {
       color: var(--dim-text-color);
   `;
     from.append(state.from)
+    fromContainer.append(from);
 
-    let count = document.createElement('div');
-    count.style.cssText = `
-      font-size: 80%;
-      margin: 0 6px;
-      color: grey;
-    `;
-
-    if (state.count > 1)
+    if (state.count > 1) {
+      let count = document.createElement('div');
+      count.style.cssText = `
+        font-size: 80%;
+        margin: 0 6px;
+        color: grey;
+      `;
       count.textContent = String(state.count);
-    fromContainer.append(from, count);
+      fromContainer.append(count);
+    }
 
     let labels = document.createElement('div');
     ThreadRow.appendLabels(
