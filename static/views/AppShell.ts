@@ -125,6 +125,7 @@ export class AppShell extends HTMLElement {
       max-width: 1000px;
       display: flex;
       justify-content: center;
+      align-self: center;
       /* Don't eat clicks in the transparent background of the footer. */
       pointer-events: none;
     `;
