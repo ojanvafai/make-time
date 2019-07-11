@@ -244,7 +244,7 @@ export class Thread extends EventTarget {
       hasLabel: firebase.firestore.FieldValue.delete(),
       hasPriority: firebase.firestore.FieldValue.delete(),
       priorityId: firebase.firestore.FieldValue.delete(),
-    }
+    };
 
     if (removeFromInbox) {
       update.moveToInbox = firebase.firestore.FieldValue.delete();
@@ -295,6 +295,12 @@ export class Thread extends EventTarget {
 
   async archive(archivedByFilter?: boolean) {
     await this.updateMetadata(this.archiveUpdate(archivedByFilter));
+  }
+
+  // For muted threads that get new messages, all we need to do is archive the
+  // messages in gmail during the sync.
+  async applyMute() {
+    await this.updateMetadata({countToArchive: this.messageCount_()});
   }
 
   muteUpdate() {

@@ -178,7 +178,7 @@ export class MailProcessor {
       this.moveToInbox_(),
       this.removeGmailLabels_(
           ThreadMetadataKeys.countToArchive,
-          ['INBOX', 'UNREAD', defined(this.makeTimeLabelId_)]),
+          ['INBOX', defined(this.makeTimeLabelId_)]),
       this.removeGmailLabels_(ThreadMetadataKeys.countToMarkRead, ['UNREAD'])
     ]);
 
@@ -448,7 +448,7 @@ export class MailProcessor {
 
   private async applyFilters_(thread: Thread) {
     if (thread.isMuted()) {
-      await thread.archive();
+      await thread.applyMute();
       return;
     }
 
