@@ -1,3 +1,4 @@
+import {notNull} from './Base.js';
 import {View} from './views/View.js';
 
 export interface Action {
@@ -157,6 +158,15 @@ export class Actions extends HTMLElement {
       return;
 
     container.append(button);
+
+    button.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        this.view_.takeAction(notNull(button).action);
+        // Prevent the threadlist from consuming the action to show the
+        // currently focused thread.
+        e.stopPropagation();
+      }
+    });
 
     button.addEventListener('pointerup', (e: PointerEvent) => {
       let hitElement = document.elementFromPoint(e.x, e.y);
