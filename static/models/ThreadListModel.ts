@@ -212,7 +212,7 @@ export abstract class ThreadListModel extends Model {
 
           while (!item.done) {
             await callback(item.value);
-            if (deadline.timeRemaining() === 0) {
+            if (deadline && deadline.timeRemaining() === 0) {
               window.requestIdleCallback(() => handler());
               return;
             }

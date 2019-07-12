@@ -3,6 +3,11 @@ import {gapiFetch} from './Net.js';
 
 export let USER_ID = 'me';
 
+if (!window.requestIdleCallback) {
+  // @ts-ignore
+  window.requestIdleCallback = window.setTimeout;
+}
+
 let ASSERT_STRING = 'This should never happen.';
 
 export function notNull<T>(x: T|null, message?: string): T {

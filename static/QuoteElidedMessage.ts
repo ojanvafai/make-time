@@ -9,8 +9,20 @@ let strippedTextMap = new WeakMap();
 
 // Forked from https://github.com/sindresorhus/linkify-urls (MIT License).
 // Capture the whole URL in group 1 to keep `String#split()` support
-const urlRegex =
-    /((?<!\+)(?:https?(?::\/\/))(?:www\.)?(?:[a-zA-Z\d-_.]+(?:(?:\.|@)[a-zA-Z\d]{2,})|localhost)(?:(?:[-a-zA-Z\d:%_+.~#!?&//=@]*)(?:[,](?![\s]))*)*)/g;
+let urlRegex: RegExp;
+try {
+  // Use RegExp constructor instead of parser to create the regexp so that we
+  // can catch the error in Safari. Unfortunately, that means all the
+  // backslashes need to be escaped.
+  urlRegex = new RegExp(
+      '((?<!\\+)(?:https?(?::\\/\\/))(?:www\\.)?(?:[a-zA-Z\\d-_.]+(?:(?:\\.|@)[a-zA-Z\\d]{2,})|localhost)(?:(?:[-a-zA-Z\\d:%_+.~#!?&//=@]*)(?:[,](?![\\s]))*)*)',
+      'g');
+} catch {
+  // Fallback for browser that don't support negative lookbehind.
+  urlRegex = new RegExp(
+      '((?:https?(?::\\/\\/))(?:www\\.)?(?:[a-zA-Z\\d-_.]+(?:(?:\\.|@)[a-zA-Z\\d]{2,})|localhost)(?:(?:[-a-zA-Z\\d:%_+.~#!?&//=@]*)(?:[,](?![\\s]))*)*)',
+      'g');
+}
 
 // Get `<a>` element as string
 const createLink = (href: string) => {
