@@ -364,6 +364,12 @@ function reloadSoon() {
   let container = document.createElement('div');
   container.append(
       'A new version of maketime is available. This window will reload in 60 seconds.');
+
+  let reloadButton = document.createElement('button');
+  reloadButton.className = 'mktime-button';
+  reloadButton.append('reload now');
+  reloadButton.onclick = () => reload();
+
   let close = document.createElement('button');
   close.className = 'mktime-button';
   close.append('close');
@@ -374,11 +380,15 @@ function reloadSoon() {
     display: flex;
     justify-content: flex-end;
   `;
-  buttonContainer.append(close);
+  buttonContainer.append(reloadButton, close);
   container.append(buttonContainer);
   dialog = showDialog(container);
 
-  setTimeout(() => window.location.reload(), 60000);
+  setTimeout(() => reload(), 60000);
+}
+
+function reload() {
+  window.location.reload();
 }
 
 const DAILY_LOCAL_UPDATES_KEY = 'daily-local-updates';
@@ -456,7 +466,7 @@ async function doUpdate_() {
     if (document.visibilityState === 'visible')
       reloadSoon();
     else
-      window.location.reload();
+      reload();
     // Since the application logic may change with the new version, don't
     // proceed with the update. This lets us have confidence that old clients
     // will reload before they do significant processing work.
@@ -611,7 +621,7 @@ const FETCH_ERROR_MESSAGE =
 function reloadOnFirestoreInternalError(message: string) {
   if (message.toLowerCase().includes('firestore') &&
       message.toLowerCase().includes(FIRESTORE_INTERNAL_ERROR))
-    window.location.reload();
+    reload();
 }
 
 // Different promise types stow a human understandable message in different
@@ -638,7 +648,7 @@ window.addEventListener('unhandledrejection', (e) => {
   let reason = e.reason;
   // 401 means the credentials are invalid and you probably need to 2 factor.
   if (reason && reason.status == 401)
-    window.location.reload();
+    reload();
 
   // Plain stringify will skip a bunch of things, so manually list out
   // everything we might care about. Add to this list over time as we find
