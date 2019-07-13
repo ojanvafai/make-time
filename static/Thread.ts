@@ -146,6 +146,7 @@ export enum Priority {
   Urgent = 3,
   Backlog = 4,
   Pin = 5,
+  Quick = 6,
 }
 
 // The number values get stored in firestore, so should never be changed.
@@ -153,6 +154,7 @@ export enum RepeatType {
   Daily = 1,
 }
 
+export const QUICK_PRIORITY_NAME = 'Quick';
 export const NEEDS_FILTER_PRIORITY_NAME = 'Filter';
 export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
@@ -164,6 +166,7 @@ export const FALLBACK_LABEL_NAME = 'No label';
 
 export const PrioritySortOrder = [
   Priority.Pin,
+  Priority.Quick,
   Priority.MustDo,
   Priority.Urgent,
   Priority.NeedsFilter,
@@ -550,6 +553,8 @@ export class Thread extends EventTarget {
     switch (this.getPriorityId()) {
       case Priority.Pin:
         return PINNED_PRIORITY_NAME;
+      case Priority.Quick:
+        return QUICK_PRIORITY_NAME;
       case Priority.NeedsFilter:
         return NEEDS_FILTER_PRIORITY_NAME;
       case Priority.MustDo:

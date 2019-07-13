@@ -1,7 +1,7 @@
 import {Action, Shortcut} from './Actions.js';
 import {assert} from './Base.js';
 import {TinyDatePicker} from './third_party/tiny-date-picker/DatePicker.js';
-import {BACKLOG_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, Thread, URGENT_PRIORITY_NAME} from './Thread.js';
+import {BACKLOG_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, QUICK_PRIORITY_NAME, Thread, URGENT_PRIORITY_NAME} from './Thread.js';
 
 export let ARCHIVE_ACTION = {
   name: `Archive`,
@@ -12,6 +12,12 @@ export let PIN_ACTION = {
   name: PINNED_PRIORITY_NAME,
   description: `Pins to the top at the top of todo.`,
   key: 'x',
+};
+
+export let QUICK_ACTION = {
+  name: QUICK_PRIORITY_NAME,
+  description: `Quick to take action on.`,
+  key: 'q',
 };
 
 export let MUST_DO_ACTION = {
@@ -28,8 +34,7 @@ export let URGENT_ACTION = {
 
 export let BACKLOG_ACTION = {
   name: BACKLOG_PRIORITY_NAME,
-  description:
-      `Important for achieving my mission, but can be done at leisure.`,
+  description: `Important but can be done when I get to it.`,
   key: '3',
 };
 
@@ -42,6 +47,7 @@ export let NEEDS_FILTER_ACTION = {
 
 export let PRIORITY_ACTIONS = [
   MUST_DO_ACTION,
+  QUICK_ACTION,
   NEEDS_FILTER_ACTION,
   PIN_ACTION,
 ];
@@ -171,6 +177,8 @@ function destinationToPriority(destination: Action) {
   switch (destination) {
     case PIN_ACTION:
       return Priority.Pin;
+    case QUICK_ACTION:
+      return Priority.Quick;
     case MUST_DO_ACTION:
       return Priority.MustDo;
     case URGENT_ACTION:

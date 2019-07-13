@@ -173,9 +173,11 @@ export abstract class ThreadListModel extends Model {
       if (!this.shouldShowThread(thread))
         continue;
 
-      if (data.priorityId === Priority.MustDo ||
-          data.priorityId === Priority.NeedsFilter)
+      if (data.priorityId === Priority.Quick ||
+        data.priorityId === Priority.MustDo ||
+        data.priorityId === Priority.NeedsFilter) {
         faviconCount++;
+      }
 
       this.threads_.push(thread);
     };
