@@ -12,7 +12,6 @@ export class AddressCompose extends HTMLElement {
     super();
 
     this.style.cssText = `
-      line-height: 1em;
       padding: 1px;
       word-break: break-word;
 
@@ -26,6 +25,7 @@ export class AddressCompose extends HTMLElement {
 
     this.addressContainer_ = document.createElement('div');
     this.addressContainer_.style.cssText = `
+      line-height: 1em;
       display: flex;
       flex-wrap: wrap;
     `;
@@ -232,8 +232,7 @@ export class AddressCompose extends HTMLElement {
     this.autoComplete_.render(address.address || address.name);
 
     let rect = this.input_.getBoundingClientRect();
-    this.autoComplete_.style.left = `${rect.left}px`;
-    this.autoComplete_.style.top = `${rect.bottom + 4}px`;
+    this.autoComplete_.setPosition(rect.left, rect.bottom);
   }
 
   handleInput_(e: InputEvent) {

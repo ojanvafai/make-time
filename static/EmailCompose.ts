@@ -182,7 +182,10 @@ export class EmailCompose extends HTMLElement {
     this.bubble_.append('URL ', input, ' ', deleteButton);
     this.append(this.bubble_);
 
-    this.positionRelativeTo_(this.bubble_, link.getBoundingClientRect());
+    let position =
+        this.positionRelativeTo_(this.bubble_, link.getBoundingClientRect());
+    this.bubble_.style.top = `${position.top}px`;
+    this.bubble_.style.left = `${position.left}px`;
   }
 
   positionRelativeTo_(node: HTMLElement, rect: ClientRect) {
@@ -191,13 +194,13 @@ export class EmailCompose extends HTMLElement {
     let windowHeight = document.documentElement.offsetHeight;
     let putAbove = windowHeight < (rect.bottom + buffer + height);
     let top = putAbove ? rect.top - buffer - height : rect.bottom + buffer;
-    node.style.top = `${top}px`;
 
     let width = node.offsetWidth;
     let windowWidth = document.documentElement.offsetWidth;
     let shiftLeft = windowWidth < (rect.left + width)
     let left = shiftLeft ? windowWidth - width : rect.left;
-    node.style.left = `${left}px`;
+
+    return {top: top, left: left};
   }
 
   async takeAction_(action: Action) {
@@ -337,7 +340,8 @@ export class EmailCompose extends HTMLElement {
 
     let range = notNull(this.getAutocompleteRange());
     let rect = range.getBoundingClientRect();
-    this.positionRelativeTo_(this.autoComplete_, rect);
+    let position = this.positionRelativeTo_(this.autoComplete_, rect);
+    this.autoComplete_.setPosition(position.left, position.top);
   }
 
   hideAutocompleteMenu_() {

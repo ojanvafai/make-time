@@ -1,4 +1,4 @@
-import {defined} from './Base.js';
+import {defined, isMobileUserAgent} from './Base.js';
 import {Contacts} from './Contacts.js';
 
 export class EntrySelectedEvent extends Event {
@@ -31,13 +31,27 @@ export class AutoComplete extends HTMLElement {
     this.style.cssText = `
       background-color: var(--overlay-background-color);
       position: fixed;
-      border: 1px solid;
+      border: 1px solid var(--border-and-hover-color);
       box-shadow: 2px -2px 10px 1px lightgrey;
       z-index: 100;
+      overflow: hidden;
     `;
     this.index_ = 0;
     // Setup contacts in the constructor so the data is fetched off disk early.
     this.contacts_ = Contacts.getDefault();
+  }
+
+  setPosition(x: number, y: number) {
+    this.style.top = `${y}px`;
+
+    // The rows don't fit on mobile screens, so make them always fill the width
+    // of the screen.
+    if (isMobileUserAgent()) {
+      this.style.left = `8px`;
+      this.style.right = `8px`;
+    } else {
+      this.style.left = `${x}px`;
+    }
   }
 
   getCandidates(search: string) {
@@ -104,8 +118,13 @@ export class AutoComplete extends HTMLElement {
       };
       entry.style.cssText = `
         display: block;
-        padding: 4px;
+        padding: 8px;
+        white-space: nowrap;
       `;
+
+      if (isMobileUserAgent())
+        entry.style.fontSize = '150%';
+
       let text = '';
       if (candidate.name) {
         text += `${candidate.name}: `;
