@@ -39,7 +39,7 @@ export const DARK: Theme = {
     '--nested-background-color': '#000000bb',
     '--overlay-background-color': '#000',
     '--inverted-overlay-background-color': '#fff',
-    '--selected-background-color': '#c2dbff',
+    '--selected-background-color': '#2F4F4F',
     '--text-color': '#fff',
     '--dim-text-color': '#bbb',
     '--inverted-text-color': '#000',

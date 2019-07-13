@@ -6,7 +6,7 @@ class HeaderFocusPainter {
   }
 
   paint(ctx: CanvasRenderingContext2D, geom: any, properties: any) {
-    let width = 3;
+    let width = 5;
     ctx.fillStyle = properties.get(COLOR_PROPERTY).toString();
     ctx.fillRect(0, 0, width, geom.height);
     ctx.fillRect(geom.width - width, 0, width, geom.height);
