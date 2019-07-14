@@ -576,9 +576,13 @@ function isEditable(element: Element) {
   return false;
 }
 
-document.addEventListener('visibilitychange', () => {
+document.addEventListener('visibilitychange', async () => {
+  let view = await getView();
+  if (view)
+    view.visibilityChanged();
+
   if (document.visibilityState == 'visible')
-    update();
+    await update();
 });
 
 document.body.addEventListener('keydown', async (e) => {

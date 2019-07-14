@@ -341,6 +341,11 @@ export class ComposeView extends View {
     }
   }
 
+  visibilityChanged() {
+    if (document.visibilityState !== 'visible')
+      this.showSent_(false);
+  }
+
   async takeAction(action: Action) {
     if (action == SEND) {
       await this.send_();

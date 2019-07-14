@@ -18,6 +18,7 @@ export abstract class View extends HTMLElement {
   toggleView() {}
   openOverflowMenu(_container: HTMLElement) {}
   forceRender() {}
+  visibilityChanged() {}
 
   async dispatchShortcut(e: KeyboardEvent) {
     if (this.actions_)
