@@ -22,12 +22,18 @@ let HELP: Action = {
   description: 'Help tips.',
 };
 
+let CLOSE: Action = {
+  name: 'X',
+  description: 'Close this window.',
+};
+
 let SENT_ACTIONS: (Action|Action[])[] = [
   PRIORITY_ACTIONS,
   URGENT_ACTION,
   BACKLOG_ACTION,
   BLOCKED_ACTIONS,
   DUE_ACTIONS,
+  CLOSE,
 ];
 
 const ACTIONS = [SEND, INSERT_LINK, HELP];
@@ -221,7 +227,11 @@ export class ComposeView extends View {
       this.inlineTo_.value = '';
   }
 
-  async handleUpdates_(skipFlushToDisk?: boolean) {
+  async handleUpdates_(
+      skipFlushToDisk?: boolean, skipHideSentToolbar?: boolean) {
+    if (!skipHideSentToolbar)
+      this.showSent_(false, true);
+
     let emails = this.body_.getEmails();
     if (emails.length) {
       this.getInlineTo_().value =
@@ -307,25 +317,38 @@ export class ComposeView extends View {
 
     // Flush the model so that sending doesn't try to send the same message
     // again.
-    this.handleUpdates_();
+    this.handleUpdates_(false, true);
 
     setTimeout(() => this.showSent_(false), CLOSE_SENT_TOOLBAR_DELAY_MS);
   }
 
-  private showSent_(show: boolean) {
-    notNull(defined(this.sent_).parentElement).style.display =
-        show ? '' : 'none';
+  private showSent_(show: boolean, preventCloseWindow?: boolean) {
+    if (!this.sent_)
+      return;
 
-    if (!show) {
-      if (this.sentToolbar_)
-        this.sentToolbar_.remove();
+    notNull(this.sent_.parentElement).style.display = show ? '' : 'none';
+
+    if (!show && this.sentToolbar_) {
+      // Intentionally only autoclose the window if the sent toolbar is still
+      // visible. window.close only works when there's nothing in the back
+      // history unfortunately.
+      if (!preventCloseWindow)
+        window.close();
+
+      this.sentToolbar_.remove();
       this.sentToolbar_ = undefined;
+      this.sentThreadId_ = undefined;
     }
   }
 
   async takeAction(action: Action) {
     if (action == SEND) {
       await this.send_();
+      return;
+    }
+
+    if (action == CLOSE) {
+      this.showSent_(false);
       return;
     }
 
@@ -355,7 +378,6 @@ export class ComposeView extends View {
         toolbar.style.pointerEvents = '';
       }
 
-      this.sentThreadId_ = undefined;
       this.showSent_(false);
 
       // Do this after hiding the sent toolbar since this is just an
