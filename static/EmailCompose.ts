@@ -145,6 +145,7 @@ export class EmailCompose extends HTMLElement {
       position: fixed;
       white-space: nowrap;
       box-shadow: 2px 2px 10px 1px var(--border-and-hover-color);
+      background-color: var(--overlay-background-color);
       z-index: 100;
     `;
 
