@@ -371,10 +371,16 @@ export class Message {
 
       switch (part.mimeType) {
         case 'text/plain':
-          this.plain_ = Message.base64_.urlDecode(defined(body.data));
+          // Sometimes there are multiple text/plain blocks. Gmail seems to use
+          // the first one and some messages clearly require that.
+          if (!this.plain_)
+            this.plain_ = Message.base64_.urlDecode(defined(body.data));
           break;
         case 'text/html':
-          this.html_ = Message.base64_.urlDecode(defined(body.data));
+          // Sometimes there are multiple text/html blocks. Gmail seems to use
+          // the first one and some messages clearly require that.
+          if (!this.html_)
+            this.html_ = Message.base64_.urlDecode(defined(body.data));
           break;
       }
     }
