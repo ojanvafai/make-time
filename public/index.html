@@ -65,9 +65,15 @@ mt-queues fieldset {
   padding: 0;
 }
 /* Hack to prevent wide images and videos from causing horizontal scrolling. */
-.message img, .message video {
+.message-body img, .message-body video {
   max-width: -webkit-fill-available;
   max-width: fill-available;
+}
+.message-body * {
+  /* Gmail strips position:absolute, so this might not be a great fix, but we need
+  something to prevent messages from being moved outside the bounds of the UI,
+  e.g. TripIt emails do this. */
+  position: static !important;
 }
 html {
   font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
