@@ -623,7 +623,7 @@ const FETCH_ERROR_MESSAGE =
 
 // See https://github.com/firebase/firebase-js-sdk/issues/1642.
 function reloadOnFirestoreInternalError(message: string) {
-  if (message.toLowerCase().includes('firestore') &&
+  if (message && message.toLowerCase().includes('firestore') &&
       message.toLowerCase().includes(FIRESTORE_INTERNAL_ERROR))
     reload();
 }
