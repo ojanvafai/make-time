@@ -10,7 +10,7 @@ import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
 import {InProgressChangedEvent, Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION, MUST_DO_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 
@@ -142,6 +142,7 @@ let BASE_ACTIONS = [
     MUTE_ACTION,
   ],
   PRIORITY_ACTIONS,
+  MUST_DO_ACTION,
   URGENT_ACTION,
   BACKLOG_ACTION,
   BLOCKED_ACTIONS,
