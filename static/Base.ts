@@ -1,7 +1,23 @@
 import emailJsParseAddressList from '../third_party/emailjs-addressparser/addressparser.js';
+import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
+
 import {gapiFetch} from './Net.js';
 
 export let USER_ID = 'me';
+
+// Authorization scopes required by the Google API.
+export let SCOPES = [
+  'https://www.googleapis.com/auth/gmail.modify',
+  'https://www.google.com/m8/feeds',
+  'https://www.googleapis.com/auth/calendar.events',
+  'profile',
+];
+
+export function redirectToSignInPage() {
+  var provider = new firebase.auth.GoogleAuthProvider();
+  SCOPES.forEach(x => provider.addScope(x));
+  firebase.auth().signInWithRedirect(provider);
+}
 
 if (!window.requestIdleCallback) {
   // @ts-ignore

@@ -1,4 +1,4 @@
-import {defined, getCurrentWeekNumber, isMobileUserAgent, showDialog} from './Base.js';
+import {defined, getCurrentWeekNumber, isMobileUserAgent, showDialog, redirectToSignInPage} from './Base.js';
 import {firestore, getServerStorage, getSettings} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
@@ -652,7 +652,7 @@ window.addEventListener('unhandledrejection', (e) => {
   let reason = e.reason;
   // 401 means the credentials are invalid and you probably need to 2 factor.
   if (reason && reason.status == 401)
-    reload();
+    redirectToSignInPage();
 
   // Plain stringify will skip a bunch of things, so manually list out
   // everything we might care about. Add to this list over time as we find

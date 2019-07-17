@@ -13,7 +13,7 @@ import * as usedForSideEffects2 from '../third_party/firebasejs/5.8.2/firebase-f
 usedForSideEffects2;
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, notNull} from './Base.js';
+import {assert, notNull, redirectToSignInPage, SCOPES} from './Base.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
@@ -25,22 +25,26 @@ let storage_ = new ServerStorage();
 let settings_: Settings;
 
 // Client ID and API key from the Developer Console
+let apiKey: string;
 let clientId: string;
 let firebaseConfig: {apiKey: string, authDomain: string, projectId: string};
 let isGoogle = location.toString().includes(':8000/') ||
     location.toString().includes('https://com-mktime');
 
+
 if (isGoogle) {
+  apiKey = 'AIzaSyCcuBNlI6FgtgiLub2ihGInrNwDc3_UZSY';
   firebaseConfig = {
-    apiKey: 'AIzaSyCcuBNlI6FgtgiLub2ihGInrNwDc3_UZSY',
+    apiKey,
     authDomain: 'com-mktime.firebaseapp.com',
     projectId: 'google.com:mktime',
   };
   clientId =
       '800053010416-p1p6n47o6ovdm04329v9p8mskl618kuj.apps.googleusercontent.com';
 } else {
+  apiKey = 'AIzaSyDFj2KpiXCNYnmp7VxKz5wpjJ4RquGB8qA';
   firebaseConfig = {
-    apiKey: 'AIzaSyDFj2KpiXCNYnmp7VxKz5wpjJ4RquGB8qA',
+    apiKey,
     authDomain: 'mk-time.firebaseapp.com',
     projectId: 'mk-time',
   };
@@ -53,14 +57,6 @@ let DISCOVERY_DOCS = [
   'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest',
   'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
   'https://people.googleapis.com/$discovery/rest?version=v1',
-];
-
-// Authorization scopes required by the Google API.
-let SCOPES = [
-  'https://www.googleapis.com/auth/gmail.modify',
-  'https://www.google.com/m8/feeds',
-  'https://www.googleapis.com/auth/calendar.events',
-  'profile',
 ];
 
 let isSignedIn_ = false;
@@ -87,19 +83,31 @@ function loadGapi() {
   });
 };
 
-function redirectToSignInPage_() {
-  var provider = new firebase.auth.GoogleAuthProvider();
-  SCOPES.forEach(x => provider.addScope(x));
-  firebase.auth().signInWithRedirect(provider);
-}
-
 let loginOnce_: AsyncOnce<void>;
-let loadedGapi_ = false;
 
 export async function login() {
   if (!loginOnce_)
     loginOnce_ = new AsyncOnce<void>(login_);
   await loginOnce_.do();
+}
+
+// From https://firebase.google.com/docs/auth/web/google-signin. Unlike that
+// code we redirect to the login page instead of signing in with the googleUser
+// credentials since the latter can only be done in a popup.
+function isUserEqual(
+    googleUser: gapi.auth2.GoogleUser, firebaseUser: firebase.User|null) {
+  if (firebaseUser) {
+    var providerData = firebaseUser.providerData;
+    for (var i = 0; i < providerData.length; i++) {
+      let data = notNull(providerData[i]);
+      if (data.providerId === firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
+          data.uid === googleUser.getBasicProfile().getId()) {
+        // We don't need to reauth the Firebase connection.
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 async function login_() {
@@ -108,89 +116,80 @@ async function login_() {
   if (isSignedIn_ || window.location.search.includes('skiplogin=1'))
     return;
 
-  let progress = AppShell.updateLoaderTitle('login', 1, 'Logging in...');
-
-  // Assert that we're not initializing firebase more than once.
+  // Ensure that we're not initializing firebase more than once.
   assert(!firebase.apps.length);
 
   try {
+    let progress = AppShell.updateLoaderTitle('login', 1, 'Logging in...');
+    let googleUser = await loginToGapi();
     await firebase.initializeApp(firebaseConfig);
-
-    try {
-      await firebase.firestore().enablePersistence(
-          {experimentalTabSynchronization: true});
-    } catch (e) {
-      // Currently offline is only enabled for one tab at a time and also
-      // doesn't work on some browsers.
-      console.log(e)
-    }
-
-    // getRedirectResult triggers onIdTokenChanged, so no need to handle the
-    // result, but we do need to call it.
-    await firebase.auth().getRedirectResult();
+    await enablePersistence();
 
     await new Promise(resolve => {
-      // Use onIdTokenChanged instead of onAuthStateChanged since that captures
-      // id token revocation in addition to login/logout.
-      firebase.auth().onIdTokenChanged(async (user) => {
-        if (user) {
-          if (loadedGapi_)
-            return;
-          loadedGapi_ = true;
-          await loadGapi();
-          await gapi.client.init({
-            discoveryDocs: DISCOVERY_DOCS,
-            clientId: clientId,
-            scope: SCOPES.join(' '),
+      let unsubscribe =
+          firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+            unsubscribe();
+
+            if (!firebaseUser || !isUserEqual(googleUser, firebaseUser))
+              redirectToSignInPage();
+
+            // Do this before fetching data out of firestore to make the app
+            // feel faster by hiding the login text sooner.
+            progress.incrementProgress();
+
+            await initializeStorage();
+            resolve();
           });
-
-          // This returns false in multilogin scenarios. Calling
-          // gapi.auth2.getAuthInstance().signIn() prompts the user to pick an
-          // account.
-          if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
-            // @ts-ignore gapi.auth2.SigninOptions in DefinitelyTyped doesn't
-            // know about ux_mode. :(
-            gapi.auth2.getAuthInstance().signIn({ux_mode: 'redirect'});
-            return;
-          }
-
-          await Promise.all([
-            storage_.fetch(),
-            QueueNames.create().fetch(),
-          ]);
-
-          // This has to happen after storage_.fetch().
-          settings_ = new Settings(storage_);
-          await settings_.fetch();
-
-          if (!storage_.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
-            await showHelp();
-            let updates: StorageUpdates = {};
-            updates[ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN] = true;
-            storage_.writeUpdates(updates);
-          }
-
-          // Firebase APIs don't detect signout of google accounts. They manage
-          // firebase tokens only. It's weird though, since they fire
-          // onIdTokenChanged but still pass a user object as if you're still
-          // signed in.
-          gapi.auth2.getAuthInstance().isSignedIn.listen(
-              (isSignedIn: boolean) => {
-                if (!isSignedIn)
-                  redirectToSignInPage_();
-              });
-
-          progress.incrementProgress();
-          resolve();
-        } else {
-          redirectToSignInPage_();
-        }
-      });
     });
   } catch (e) {
     showPleaseReload();
     console.log(e);
     return;
+  }
+}
+
+async function loginToGapi() {
+  await loadGapi();
+  await gapi.client.init({
+    apiKey,
+    discoveryDocs: DISCOVERY_DOCS,
+    clientId: clientId,
+    scope: SCOPES.join(' '),
+  });
+
+  if (await gapi.auth2.getAuthInstance().isSignedIn.get())
+    return gapi.auth2.getAuthInstance().currentUser.get();
+  return await gapi.auth2.getAuthInstance().signIn(
+      // @ts-ignore ux_mode isn't in the types for this method.
+      {ux_mode: 'redirect', redirect_uri: window.location.origin});
+}
+
+async function enablePersistence() {
+  try {
+    await firebase.firestore().enablePersistence(
+        {experimentalTabSynchronization: true});
+  } catch (e) {
+    // Currently offline is only enabled for one tab at a time and also
+    // doesn't work on some browsers.
+    console.log(e)
+  }
+}
+
+async function initializeStorage() {
+  await Promise.all([
+    storage_.fetch(),
+    QueueNames.create().fetch(),
+  ]);
+
+  // This has to happen after storage_.fetch().
+  settings_ = new Settings(storage_);
+  await settings_.fetch();
+
+  if (!storage_.get(ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN)) {
+    await showHelp();
+    let updates: StorageUpdates = {};
+    updates[ServerStorage.KEYS.HAS_SHOWN_FIRST_RUN] = true;
+    storage_.writeUpdates(updates);
   }
 }
 

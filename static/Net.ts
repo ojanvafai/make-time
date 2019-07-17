@@ -1,3 +1,5 @@
+import {redirectToSignInPage} from './Base.js';
+
 let queuedRequests_: ((value?: {}|PromiseLike<{}>|undefined) => void)[] = [];
 let TEN_SECONDS = 10 * 1000;
 export const CONNECTION_FAILURE_KEY = 'trouble-connecting-to-internet';
@@ -31,6 +33,9 @@ export async function gapiFetch<T>(
       window.dispatchEvent(new Event(CONNECTION_FAILURE_KEY));
       return response;
     } catch (e) {
+      // For auth errors, reload the page so it redirects to the login screen.
+      if (e.status === 401)
+        redirectToSignInPage();
       // Don't retry 404s as they should never work on retry.
       if (e.status === 404)
         throw e;
