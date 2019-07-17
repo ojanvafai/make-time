@@ -15,6 +15,7 @@ interface ButtonWithAction extends HTMLButtonElement {
 }
 
 const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
+const OPEN_MENU_DELAY_MS = 150;
 
 export class Shortcut {
   constructor(
@@ -83,6 +84,7 @@ export class Actions extends HTMLElement {
   private supplementalActions_: (Action|Action[])[];
   private menu_?: HTMLElement;
   private tooltip_?: HTMLElement;
+  private isDebouncedMenuOpen_?: boolean;
 
   constructor(private view_: View) {
     super();
@@ -142,12 +144,17 @@ export class Actions extends HTMLElement {
         button.addEventListener('pointermove', updateMenuItemHover);
 
         button.addEventListener('pointerdown', (e: PointerEvent) => {
-          this.openMenu_(e.target as HTMLButtonElement, actionList.slice(1));
+          this.isDebouncedMenuOpen_ = true;
+          setTimeout(() => {
+            if (!this.isDebouncedMenuOpen_)
+              return;
+            this.openMenu_(e.target as HTMLButtonElement, actionList.slice(1));
+            updateMenuItemHover(e);
+          }, OPEN_MENU_DELAY_MS);
 
           // Set this so we can have the same implementation for touch and
           // mouse since touch does this implicitly.
           button!.setPointerCapture(e.pointerId);
-          updateMenuItemHover(e);
         });
       }
     } else {
@@ -169,6 +176,8 @@ export class Actions extends HTMLElement {
     });
 
     button.addEventListener('pointerup', (e: PointerEvent) => {
+      this.isDebouncedMenuOpen_ = false;
+
       let hitElement = document.elementFromPoint(e.x, e.y);
       if (hitElement === button ||
           (this.menu_ && this.menu_.contains(hitElement))) {
