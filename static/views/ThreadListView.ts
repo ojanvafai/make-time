@@ -42,6 +42,12 @@ let QUICK_REPLY_ACTION = {
   key: 'r',
 };
 
+let VIEW_IN_GMAIL_ACTION = {
+  name: `View in gmail`,
+  description: `View the selected thread in gmail.`,
+  key: 'v',
+};
+
 export let NEXT_ACTION = {
   name: `Next`,
   description: `Go to the next row/thread/message.`,
@@ -149,6 +155,7 @@ let BASE_ACTIONS = [
   NEXT_ACTION,
   NEXT_FULL_ACTION,
   INSERT_LINK_HIDDEN,
+  VIEW_IN_GMAIL_ACTION,
 ];
 
 let SORT_ACTIONS = [
@@ -444,11 +451,12 @@ export class ThreadListView extends View {
   }
 
   openOverflowMenu(container: HTMLElement) {
-    this.createMenuItem_(container, 'Force dark mode', () => Themes.toggleDarkMode());
+    this.createMenuItem_(
+        container, 'Force dark mode', () => Themes.toggleDarkMode());
 
     this.createMenuItem_(
         container, 'View in gmail',
-        () => this.openFirstSelectedThreadInGmail_());
+        () => this.takeAction(VIEW_IN_GMAIL_ACTION));
 
     if (!this.renderedRow_ && this.model_.canDisallowViewMessages()) {
       let contents = this.model_.allowViewMessages() ?
@@ -910,6 +918,10 @@ export class ThreadListView extends View {
     switch (action) {
       case UNDO_ACTION:
         this.model_.undoLastAction();
+        return;
+
+      case VIEW_IN_GMAIL_ACTION:
+        this.openFirstSelectedThreadInGmail_();
         return;
 
       case QUICK_REPLY_ACTION:
