@@ -10,7 +10,7 @@ import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
 import {InProgressChangedEvent, Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION, MUST_DO_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BACKLOG_ACTION, BLOCKED_ACTIONS, DUE_ACTIONS, MUST_DO_ACTION, MUTE_ACTION, PRIORITY_ACTIONS, REPEAT_ACTION, URGENT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 
@@ -456,7 +456,7 @@ export class ThreadListView extends View {
         container, 'Force dark mode', () => Themes.toggleDarkMode());
 
     this.createMenuItem_(
-        container, 'View in gmail',
+        container, `${VIEW_IN_GMAIL_ACTION.name} (${VIEW_IN_GMAIL_ACTION.key})`,
         () => this.takeAction(VIEW_IN_GMAIL_ACTION));
 
     if (!this.renderedRow_ && this.model_.canDisallowViewMessages()) {
