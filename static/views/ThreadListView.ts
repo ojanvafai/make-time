@@ -46,6 +46,7 @@ let VIEW_IN_GMAIL_ACTION = {
   name: `View in gmail`,
   description: `View the selected thread in gmail.`,
   key: 'v',
+  hidden: true,
 };
 
 export let NEXT_ACTION = {
