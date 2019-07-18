@@ -168,6 +168,7 @@ export class AppShell extends HTMLElement {
     this.viewToggle_ =
         document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.viewToggle_.classList.add('menu-open-button');
+    this.viewToggle_.setAttribute('viewBox', '0 0 24 24');
     this.viewToggle_.style.cssText = `
       display: none;
       margin-left: 6px;
