@@ -45,12 +45,6 @@ export let NEEDS_FILTER_ACTION = {
   key: 'f',
 };
 
-export let PRIORITY_ACTIONS = [
-  QUICK_ACTION,
-  NEEDS_FILTER_ACTION,
-  PIN_ACTION,
-];
-
 export let MUTE_ACTION = {
   name: `Mute`,
   description:
@@ -170,6 +164,19 @@ export let DUE_ACTIONS = [
   DUE_14D_ACTION,
   DUE_30D_ACTION,
   DUE_NONE_ACTION,
+];
+
+export let BASE_THREAD_ACTIONS = [
+  [
+    QUICK_ACTION,
+    NEEDS_FILTER_ACTION,
+    PIN_ACTION,
+  ],
+  MUST_DO_ACTION,
+  URGENT_ACTION,
+  BACKLOG_ACTION,
+  BLOCKED_ACTIONS,
+  DUE_ACTIONS,
 ];
 
 function destinationToPriority(destination: Action) {
