@@ -108,7 +108,7 @@ select.label-chip {
 }
 select, mt-address-compose, [contentEditable=true],
 input:not([type=checkbox]):not([type=radio]),
-.menu-open-button, .mktime-button, .label-button, .x-button, .row-button,
+.menu-open-button, .mktime-button, .x-button, .row-button,
 .toggler, .link-bubble, .label-chip  {
   padding: 3px;
   -webkit-appearance: none;
@@ -116,13 +116,27 @@ input:not([type=checkbox]):not([type=radio]),
   border: 1px solid var(--border-and-hover-color);
   margin: 0;
 }
-select.button, .mktime-button, .label-button {
+select.button, .mktime-button {
   margin: 4px;
-  padding: 12px 3px;
+  padding: 3px;
+  height: 40px;
+  min-width: 40px;
+  box-sizing: border-box;
   font-size: 16px;
   display: block;
   text-align: center;
   background: none;
+}
+html.desktop select.button, html.desktop .mktime-button {
+  height: 36px;
+}
+.mktime-button {
+  white-space: nowrap;
+  user-select: none;
+  touch-action: none;
+  /* These are for buttons that have the :after up arrow. */
+  position: relative;
+  overflow: hidden;
 }
 .mktime-button:disabled {
   color: grey;
@@ -136,18 +150,12 @@ select.button, .mktime-button, .label-button {
   color: grey;
   font-size: 9px;
 }
-.label-button {
-  text-decoration: none;
-  align-self: center;
-  display: inline-block;
-}
 select:hover:not(:focus),
 .menu-item:hover,
 .menu-open-button:hover,
 .x-button:hover,
 .outline-on-hover:hover,
 mt-select-box:hover,
-.label-button:hover,
 .mktime-button:hover,
 .row-button:hover,
 .expander:hover,
@@ -226,8 +234,8 @@ div[contenteditable]::before {
   width: 32px;
 }
 html.desktop .menu-open-button {
-  height: 22px;
-  width: 22px;
+  height: 24px;
+  width: 24px;
 }
 html.dark-mode .message-body * {
   color: var(--thread-text-color) !important;
@@ -236,8 +244,7 @@ html.dark-mode .message-body * {
 /* Regular font-size looks good on mobile but large on desktop. */
 html.desktop,
 html.desktop select.button,
-html.desktop button,
-html.desktop .label-button {
+html.desktop button {
   font-size: 0.875rem;
 }
 @keyframes blinker {

@@ -357,16 +357,6 @@ export class ThreadListView extends View {
     }
   }
 
-  appendButton_(container: HTMLElement, text: string, url?: string) {
-    let button = document.createElement('a');
-    button.className = 'label-button';
-    if (url)
-      button.href = url;
-    button.textContent = text;
-    container.append(button);
-    return button;
-  }
-
   private getThreadRow_(thread: Thread) {
     let row = this.threadToRow_.get(thread);
     if (!row) {

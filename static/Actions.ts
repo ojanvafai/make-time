@@ -230,14 +230,6 @@ export class Actions extends HTMLElement {
 
     let button = document.createElement('button') as ButtonWithAction;
     button.className = 'mktime-button';
-    button.style.cssText = `
-      white-space: nowrap;
-      overflow: hidden;
-      position: relative;
-      user-select: none;
-      min-width: 3em;
-      touch-action: none;
-    `;
 
     button.action = action;
     button.onpointerleave = () => this.tooltip_!.remove();
