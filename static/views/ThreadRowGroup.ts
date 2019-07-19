@@ -1,5 +1,5 @@
 import {ThreadListModel} from '../models/ThreadListModel.js';
-import {SelectBox} from '../SelectBox.js';
+import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
 import {ALL, NONE, SOME} from '../SelectBox.js';
 
 import {SelectRowEvent, ThreadRow} from './ThreadRow.js';
@@ -35,11 +35,8 @@ export class ThreadRowGroup extends HTMLElement {
     `;
 
     this.selectBox_ = new SelectBox();
-    this.selectBox_.addEventListener('click', () => {
-      if (this.selectBox_.selected() === NONE)
-        this.selectRows_(true);
-      else
-        this.selectRows_(false);
+    this.selectBox_.addEventListener(SelectChangedEvent.NAME, () => {
+      this.selectRows_(this.selectBox_.selected() === ALL);
     });
 
     this.groupNameContainer_ = document.createElement('div');

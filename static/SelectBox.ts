@@ -3,6 +3,13 @@ export const SOME = 'some';
 export const NONE = 'none';
 export const DISABLED = 'disabled';
 
+export class SelectChangedEvent extends Event {
+  static NAME = 'select-changed';
+  constructor(public rangeSelect: boolean) {
+    super(SelectChangedEvent.NAME, {bubbles: true});
+  }
+}
+
 export class SelectBox extends HTMLElement {
   private selected_!: string;
   private svg_: SVGSVGElement;
@@ -31,6 +38,20 @@ export class SelectBox extends HTMLElement {
       <rect x="3" y="3" width="10" height="10" />
     `;
     this.append(this.svg_);
+
+    // Prevent the default behavior of text selection on shift+click this is
+    // used for range selections. Need to do it on mousedown unfortunately
+    // since that's when the selection is modified on some platforms (e.g.
+    // mac).
+    this.addEventListener('mousedown', e => {
+      if (e.shiftKey)
+        e.preventDefault();
+    });
+
+    this.addEventListener('click', e => {
+      this.select(this.selected_ === NONE ? ALL : NONE);
+      this.dispatchEvent(new SelectChangedEvent(e.shiftKey));
+    });
 
     this.select(NONE);
   }

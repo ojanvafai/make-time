@@ -1,6 +1,6 @@
 import {assert, isMobileUserAgent} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
-import {SelectBox} from '../SelectBox.js';
+import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
 import {ALL, DISABLED, NONE, SOME} from '../SelectBox.js';
 import {InProgressChangedEvent, Thread, UpdatedEvent} from '../Thread.js';
 
@@ -165,7 +165,7 @@ export class ThreadRow extends HTMLElement {
       let checkbox = new SelectBox();
       this.append(checkbox);
       checkbox.select(thread.finalVersion() ? ALL : NONE);
-      checkbox.addEventListener('click', async () => {
+      checkbox.addEventListener(SelectChangedEvent.NAME, async () => {
         await this.thread.setOnlyFinalVersion(checkbox.isFullySelected());
       });
     }
@@ -173,15 +173,11 @@ export class ThreadRow extends HTMLElement {
     this.checkBox_ = new SelectBox();
     this.append(this.checkBox_);
 
-    // Pevent the default behavior of text selection on shift+click this is
-    // used for range selections. Need to do it on mousedown unfortunately
-    // since that's when the selection is modified on some platforms (e.g.
-    // mac).
-    this.checkBox_.addEventListener('mousedown', e => {
-      if (e.shiftKey)
-        e.preventDefault();
+    this.checkBox_.addEventListener(SelectChangedEvent.NAME, e => {
+      let rangeSelect = (e as SelectChangedEvent).rangeSelect;
+      this.handleCheckedChanged_(rangeSelect);
+      this.setFocus(true, false);
     });
-    this.checkBox_.addEventListener('click', e => this.select(e.shiftKey));
 
     this.messageDetails_ = document.createElement('div');
     this.messageDetails_.style.cssText = `
@@ -246,11 +242,6 @@ export class ThreadRow extends HTMLElement {
       return;
     this.inViewport_ = inViewport;
     this.render();
-  }
-
-  select(shiftKey: boolean) {
-    this.setChecked(!this.selected, shiftKey);
-    this.setFocus(true, false);
   }
 
   private threadRowContainsSelection_() {
@@ -577,10 +568,14 @@ export class ThreadRow extends HTMLElement {
     return this.checkBox_.isFullySelected();
   }
 
-  setChecked(value: boolean, shiftKey?: boolean) {
+  setChecked(value: boolean, rangeSelect?: boolean) {
     this.checkBox_.select(value ? ALL : NONE);
     this.updateCheckbox_();
-    this.dispatchEvent(new SelectRowEvent(this.checked, !!shiftKey));
+    this.handleCheckedChanged_(rangeSelect);
+  }
+
+  private handleCheckedChanged_(rangeSelect?: boolean) {
+    this.dispatchEvent(new SelectRowEvent(this.checked, !!rangeSelect));
   }
 
   private setHovered_(hovered: boolean) {
