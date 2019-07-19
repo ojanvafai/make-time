@@ -33,7 +33,7 @@ export class QuickReply extends HTMLElement {
   private compose_: EmailCompose;
   private replyType_: HTMLSelectElement;
   private senders_?: HTMLSelectElement;
-  private count_: HTMLElement;
+  private lengthIndex_: number;
 
   constructor(public thread: Thread, private sendAs_: SendAs) {
     super();
@@ -45,6 +45,7 @@ export class QuickReply extends HTMLElement {
     `;
 
     this.compose_ = this.createCompose_();
+    this.lengthIndex_ = 0;
 
     this.replyType_ = document.createElement('select');
     this.replyType_.classList.add('button');
@@ -97,13 +98,6 @@ export class QuickReply extends HTMLElement {
       controls.append(this.senders_);
     controls.append(this.replyType_, cancel);
 
-    this.count_ = document.createElement('span');
-    this.count_.style.cssText = `
-      position: absolute;
-      right: 8px;
-      color: var(--dim-text-color);
-    `;
-    controls.append(this.count_);
     this.updateProgress_();
 
     this.append(this.compose_, controls);
@@ -137,17 +131,16 @@ export class QuickReply extends HTMLElement {
   }
 
   private updateProgress_() {
-    let oldIndex = LENGTHS.indexOf(this.count_.textContent.split(': ')[1]);
     let index = this.exceedsLengthIndex_();
-    if (oldIndex === index)
+    if (this.lengthIndex_ === index)
       return;
 
-    let message = LENGTHS[index];
     // Don't show the toast when we first open QuickReply and show it whenever
     // the length grows.
-    if (index > 0 && oldIndex < index)
-      this.append(new Toast(message));
-    this.count_.textContent = message;
+    if (index > 0 && this.lengthIndex_ < index)
+      this.append(new Toast(`Length: ${LENGTHS[index]}`));
+
+    this.lengthIndex_ = index;
   }
 
   private async handleSubmit_() {
