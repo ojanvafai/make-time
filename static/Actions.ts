@@ -209,6 +209,7 @@ export class Actions extends HTMLElement {
       width: 50vw;
       max-width: 200px;
       background-color: var(--overlay-background-color);
+      border: 1px solid var(--border-and-hover-color);
     `;
     document.body.append(this.menu_);
 
