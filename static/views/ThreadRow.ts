@@ -161,6 +161,9 @@ export class ThreadRow extends HTMLElement {
     this.hovered_ = false;
     this.finalVersionSkipped_ = false;
 
+    this.checkBox_ = new SelectBox();
+    this.append(this.checkBox_);
+
     if (showFinalVersion_) {
       let checkbox = new SelectBox();
       this.append(checkbox);
@@ -169,9 +172,6 @@ export class ThreadRow extends HTMLElement {
         await this.thread.setOnlyFinalVersion(checkbox.isFullySelected());
       });
     }
-
-    this.checkBox_ = new SelectBox();
-    this.append(this.checkBox_);
 
     this.checkBox_.addEventListener(SelectChangedEvent.NAME, e => {
       let rangeSelect = (e as SelectChangedEvent).rangeSelect;
