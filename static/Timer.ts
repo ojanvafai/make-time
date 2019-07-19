@@ -1,7 +1,7 @@
 export class Timer extends HTMLElement {
   static activeTimers_: Timer[];
   timeDisplay_: HTMLElement;
-  timerButton_: HTMLElement;
+  timerButton_: SVGSVGElement;
   timerKey_: number|null = null;
   startTime_: number = 0;
   overlay_: HTMLElement|null = null;
@@ -12,7 +12,7 @@ export class Timer extends HTMLElement {
     super();
 
     this.style.cssText = `
-      display: block;
+      display: flex;
       font-size: 32px;
       padding: 4px;
       position: absolute;
@@ -24,10 +24,13 @@ export class Timer extends HTMLElement {
       border-radius: 3px;
     `;
 
-    this.timerButton_ = document.createElement('span');
-    this.timerButton_.style.cssText = `user-select: none;`;
-    this.timerButton_.textContent = '\u{1F501}';
-    this.append(this.timeDisplay_, '\xa0', this.timerButton_);
+    this.timerButton_ =
+        document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    this.timerButton_.setAttribute('viewBox', '0 0 24 24');
+    this.timerButton_.classList.add('menu-open-button');
+    this.timerButton_.innerHTML =
+        `<path d="M 22 2 L 19.058594 4.9414062 C 16.865786 2.7436807 13.666769 1.5536385 10.212891 2.15625 C 6.1828906 2.86025 2.9227344 6.0746563 2.1777344 10.097656 C 1.0007344 16.443656 5.864 22 12 22 C 17.134 22 21.3785 18.109094 21.9375 13.121094 C 22.0045 12.525094 21.5375 12 20.9375 12 C 20.4375 12 20.007125 12.368234 19.953125 12.865234 C 19.520125 16.870234 16.119 20 12 20 C 7.059 20 3.1501562 15.498859 4.1601562 10.380859 C 4.7681562 7.3008594 7.2335937 4.8107812 10.308594 4.1757812 C 13.170804 3.5850239 15.832013 4.545023 17.642578 6.3574219 L 15 9 L 22 9 L 22 2 z"></path>`;
+    this.append(this.timeDisplay_, this.timerButton_);
 
     this.restartTimer_();
     this.timerButton_.onclick = () => this.restartTimer_();
@@ -104,9 +107,11 @@ export class Timer extends HTMLElement {
       background-color: var(--overlay-background-color);
       border-radius: 4px;
       text-align: center;
+      display: flex;
+      align-items: center;
     `;
 
-    let resetButton = this.timerButton_.cloneNode(true) as HTMLElement;
+    let resetButton = this.timerButton_.cloneNode(true) as SVGSVGElement;
     resetButton.style.cssText = `
       display: block;
       font-size: 32px;
