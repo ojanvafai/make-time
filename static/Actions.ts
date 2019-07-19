@@ -215,7 +215,7 @@ export class Actions extends HTMLElement {
 
     let buttonRect = button.getBoundingClientRect();
     let menuWidth = this.menu_.offsetWidth;
-    this.menu_.style.bottom = `${window.innerHeight - buttonRect.top}px`;
+    this.menu_.style.bottom = `${window.innerHeight - buttonRect.top + 4}px`;
     // Center the menu over the button, but keep it bound withing the window.
     this.menu_.style.left = `${
         Math.max(
