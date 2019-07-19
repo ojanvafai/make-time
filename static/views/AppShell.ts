@@ -93,7 +93,6 @@ export class AppShell extends HTMLElement {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      padding: 6px;
       position: relative;
       width: -webkit-fill-available;
       box-shadow: var(--border-and-hover-color) 0px 1px 2px;
@@ -126,6 +125,7 @@ export class AppShell extends HTMLElement {
       display: flex;
       justify-content: center;
       align-self: center;
+      box-shadow: var(--border-and-hover-color) 0px -1px 2px;
       /* Don't eat clicks in the transparent background of the footer. */
       pointer-events: none;
     `;
@@ -182,26 +182,21 @@ export class AppShell extends HTMLElement {
         document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.overflowMenuButton_.classList.add('menu-open-button');
     this.overflowMenuButton_.setAttribute('viewBox', '0 0 24 24');
-    this.overflowMenuButton_.style.cssText = `
-      margin-left: 6px;
-    `;
     this.overflowMenuButton_.innerHTML =
         `<circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>`;
-
-    this.overflowMenuButton_.append('⋮');
     this.overflowMenuButton_.addEventListener(
         'click', () => this.toggleOverflowMenu_());
 
     let toolbarChildStyle = `
-      margin-right: 4px;
       display: flex;
       align-items:center;
     `;
 
     AppShell.title_ = document.createElement('div');
+    AppShell.title_.className = 'hide-if-empty';
     AppShell.title_.id = 'title';
     AppShell.title_.style.cssText = `
-      margin-left: 4px;
+      margin: 0 4px;
       ${toolbarChildStyle}
     `;
 
@@ -212,6 +207,7 @@ export class AppShell extends HTMLElement {
     `;
 
     AppShell.loader_ = document.createElement('div');
+    AppShell.loader_.className = 'hide-if-empty';
     AppShell.loader_.style.cssText = `
       ${toolbarChildStyle}
     `;
@@ -280,8 +276,8 @@ export class AppShell extends HTMLElement {
     this.overflowMenu_ = document.createElement('div');
     this.overflowMenu_.style.cssText = `
       position: fixed;
-      right: 6px;
-      top: 6px;
+      right: 0;
+      top: 0;
       background-color: var(--overlay-background-color);
       border: 1px solid var(--border-and-hover-color);
       z-index: 1000001;

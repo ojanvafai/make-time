@@ -98,7 +98,10 @@ export class QuickReply extends HTMLElement {
     controls.append(this.replyType_, cancel);
 
     this.count_ = document.createElement('span');
-    this.count_.style.marginLeft = '4px';
+    this.count_.style.cssText = `
+      margin-left: 4px;
+      color: var(--dim-text-color);
+    `;
     controls.append(this.count_);
     this.updateProgress_();
 
@@ -113,8 +116,7 @@ export class QuickReply extends HTMLElement {
       display: flex;
       background-color: var(--nested-background-color);
     `;
-    compose.placeholder =
-        'Hit <enter> to send, <esc> to cancel. Allowed length is configurable in Settings.';
+    compose.placeholder = '<enter> to send, <esc> to cancel.';
     compose.addEventListener(
         CancelEvent.NAME, () => this.dispatchEvent(new ReplyCloseEvent()));
     compose.addEventListener(SubmitEvent.NAME, () => this.handleSubmit_());

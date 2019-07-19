@@ -82,6 +82,9 @@ html {
 body {
   margin: 0px;
 }
+.hide-if-empty:empty {
+  display: none !important;
+}
 div.x-button {
   width: 15px;
   height: 15px;
@@ -108,17 +111,25 @@ select.label-chip {
 }
 select, mt-address-compose, [contentEditable=true],
 input:not([type=checkbox]):not([type=radio]),
-.menu-open-button, .mktime-button, .x-button, .row-button,
-.toggler, .link-bubble, .label-chip  {
-  padding: 3px;
+.x-button, .row-button, .toggler, .link-bubble, .label-chip  {
+  padding: 4px;
   -webkit-appearance: none;
   border-radius: 3px;
   border: 1px solid var(--border-and-hover-color);
   margin: 0;
 }
-select.button, .mktime-button {
-  margin: 4px;
-  padding: 3px;
+.centered-up-arrow::after {
+  content: "▲";
+  color: grey;
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  bottom: 3px;
+  left: 3px;
+  font-size: 9px;
+}
+select.button, .mktime-button, .menu-open-button {
+  padding: 8px;
   height: 40px;
   min-width: 40px;
   box-sizing: border-box;
@@ -127,10 +138,12 @@ select.button, .mktime-button {
   text-align: center;
   background: none;
 }
-html.desktop select.button, html.desktop .mktime-button {
-  height: 36px;
+select.button {
+  margin-right: 4px;
 }
-.mktime-button {
+.menu-open-button, .mktime-button {
+  border-radius: 3px;
+  border: 0;
   white-space: nowrap;
   user-select: none;
   touch-action: none;
@@ -140,15 +153,6 @@ html.desktop select.button, html.desktop .mktime-button {
 }
 .mktime-button:disabled {
   color: grey;
-}
-.centered-up-arrow::after {
-  content: "▲";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  color: grey;
-  font-size: 9px;
 }
 select:hover:not(:focus),
 .menu-item:hover,
@@ -228,14 +232,6 @@ blockquote {
 }
 div[contenteditable]::before {
   content: attr(placeholder);
-}
-.menu-open-button {
-  height: 32px;
-  width: 32px;
-}
-html.desktop .menu-open-button {
-  height: 24px;
-  width: 24px;
 }
 html.dark-mode .message-body * {
   color: var(--thread-text-color) !important;

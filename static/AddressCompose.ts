@@ -12,7 +12,7 @@ export class AddressCompose extends HTMLElement {
     super();
 
     this.style.cssText = `
-      padding: 1px;
+      padding: 0;
       word-break: break-word;
 
       /* Match gmail default style of tiny text in compose to avoid different sizes on copy-paste. */
@@ -61,7 +61,6 @@ export class AddressCompose extends HTMLElement {
     this.input_.style.cssText = `
       border: 0;
       outline: 0;
-      margin: 2px;
       box-sizing: content-box;
       background: transparent;
     `;

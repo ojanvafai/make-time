@@ -208,6 +208,7 @@ export class Actions extends HTMLElement {
       border-radius: 3px;
       width: 50vw;
       max-width: 200px;
+      background-color: var(--overlay-background-color);
     `;
     document.body.append(this.menu_);
 
@@ -243,7 +244,7 @@ export class Actions extends HTMLElement {
     this.tooltip_ = document.createElement('div');
     this.tooltip_.style.cssText = `
       position: absolute;
-      bottom: ${this.offsetHeight}px;
+      bottom: ${this.offsetHeight + 4}px;
       left: 0;
       right: 0;
       display: flex;
