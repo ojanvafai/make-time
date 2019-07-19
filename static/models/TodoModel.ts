@@ -6,6 +6,8 @@ import {Thread} from '../Thread.js';
 
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
 
+const NEEDS_TRIAGE_SUFFIX = ' - needs triage';
+
 export class TodoModel extends ThreadListModel {
   private threadsData_?: firebase.firestore.DocumentData;
   private sortCount_: number;
@@ -66,7 +68,10 @@ export class TodoModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    return notNull(thread.getPriority());
+    let priority = notNull(thread.getPriority());
+    if (thread.needsMessageTriage())
+      return `${priority}${NEEDS_TRIAGE_SUFFIX}`;
+    return priority;
   }
 
   showFinalVersion() {
@@ -116,8 +121,8 @@ export class TodoModel extends ThreadListModel {
     if (aPriority !== bPriority)
       return this.comparePriorities_(aPriority, bPriority);
 
-    if (this.finalVersion_)
-      return compareDates(b.getLastTriagedDate(), a.getLastTriagedDate());
+    if (a.needsMessageTriage() != b.needsMessageTriage())
+      return a.needsMessageTriage() ? -1 : 1;
 
     let sortData = this.getSortData_(aPriority);
     if (sortData) {

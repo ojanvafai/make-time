@@ -174,8 +174,8 @@ export abstract class ThreadListModel extends Model {
         continue;
 
       if (data.priorityId === Priority.Quick ||
-        data.priorityId === Priority.MustDo ||
-        data.priorityId === Priority.NeedsFilter) {
+          data.priorityId === Priority.MustDo ||
+          data.priorityId === Priority.NeedsFilter) {
         faviconCount++;
       }
 
@@ -286,9 +286,12 @@ export abstract class ThreadListModel extends Model {
     let date = await pickDate(destination);
 
     for (let thread of threads) {
+      // If we're not allowed to view messages, mark a bit that this thread was
+      // triaged in that state so we can group it separately in the Todo view.
+      let needsMessageTriage = !this.allowViewMessages();
       let update = date ?
           createDateUpdate(thread, destination, date, moveToInbox) :
-          createUpdate(thread, destination, moveToInbox);
+          createUpdate(thread, destination, moveToInbox, needsMessageTriage);
 
       if (!update)
         continue;

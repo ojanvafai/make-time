@@ -237,10 +237,11 @@ export function createDateUpdate(
 }
 
 export function createUpdate(
-    thread: Thread, destination: Action, moveToInbox?: boolean) {
+    thread: Thread, destination: Action, moveToInbox?: boolean,
+    needsMessageTriage?: boolean) {
   let priority = destinationToPriority(destination);
   if (priority) {
-    return thread.priorityUpdate(priority, moveToInbox);
+    return thread.priorityUpdate(priority, moveToInbox, needsMessageTriage);
   } else {
     switch (destination) {
       case REPEAT_ACTION:
