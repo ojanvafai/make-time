@@ -99,7 +99,8 @@ export class QuickReply extends HTMLElement {
 
     this.count_ = document.createElement('span');
     this.count_.style.cssText = `
-      margin-left: 4px;
+      position: absolute;
+      right: 8px;
       color: var(--dim-text-color);
     `;
     controls.append(this.count_);
@@ -141,7 +142,7 @@ export class QuickReply extends HTMLElement {
     if (oldIndex === index)
       return;
 
-    let message = `Length: ${LENGTHS[index]}`;
+    let message = LENGTHS[index];
     // Don't show the toast when we first open QuickReply and show it whenever
     // the length grows.
     if (index > 0 && oldIndex < index)
