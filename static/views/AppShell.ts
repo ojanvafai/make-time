@@ -40,7 +40,7 @@ export class AppShell extends HTMLElement {
   private drawer_: HTMLElement;
   private mainContent_: HTMLElement;
   private content_: HTMLElement;
-  private backArrow_: HTMLElement;
+  private backArrow_: SVGSVGElement;
   private toolbar_: HTMLElement;
   private menuToggle_: SVGSVGElement;
   private filterToggle_: SVGSVGElement;
@@ -132,15 +132,17 @@ export class AppShell extends HTMLElement {
 
     this.mainContent_.append(this.toolbar_, contentContainer, AppShell.footer_);
 
-    this.backArrow_ = document.createElement('div');
+    this.backArrow_ =
+      document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    // Too lazy to rework the arrow to point left, so just use CSS Transforms.
     this.backArrow_.style.cssText = `
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      transform: rotate(90deg);
       display: none;
     `;
-    this.backArrow_.className = 'menu-open-button';
-    this.backArrow_.textContent = '⬅';
+    this.backArrow_.classList.add('menu-open-button');
+    this.backArrow_.setAttribute('viewBox', '0 0 24 24');
+    this.backArrow_.innerHTML =
+        `<path d="M 12 3 C 11.448 3 11 3.448 11 4 L 11 17.070312 L 7.1367188 13.207031 C 6.7457187 12.816031 6.1126563 12.816031 5.7226562 13.207031 L 5.6367188 13.292969 C 5.2457187 13.683969 5.2457187 14.317031 5.6367188 14.707031 L 11.292969 20.363281 C 11.683969 20.754281 12.317031 20.754281 12.707031 20.363281 L 18.363281 14.707031 C 18.754281 14.316031 18.754281 13.682969 18.363281 13.292969 L 18.277344 13.207031 C 17.886344 12.816031 17.253281 12.816031 16.863281 13.207031 L 13 17.070312 L 13 4 C 13 3.448 12.552 3 12 3 z"></path>`;
 
     this.menuToggle_ =
         document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -389,7 +391,7 @@ export class AppShell extends HTMLElement {
 
   showBackArrow(show: boolean) {
     this.menuToggle_.style.display = show ? 'none' : '';
-    this.backArrow_.style.display = show ? 'flex' : 'none';
+    this.backArrow_.style.display = show ? '' : 'none';
   }
 
   private createMenuItem_(name: string, options: any) {
