@@ -15,13 +15,12 @@ const DAYS_TO_SHOW_SETTING = {
 };
 
 const SETTINGS = [DAYS_TO_SHOW_SETTING];
-const QUERY_PARAMS = ['label', 'days', 'finalVersion'];
+const QUERY_PARAMS = ['label', 'days'];
 
 export class ViewFiltersChanged extends Event {
   static NAME = 'view-filters-changed';
   constructor(
-      public label: string, public days: string, public offices: string,
-      public finalVersion: string|boolean) {
+      public label: string, public days: string, public offices: string) {
     super(ViewFiltersChanged.NAME, {bubbles: true});
   }
 }
@@ -54,7 +53,6 @@ export class FilterDialogView extends View {
     this.appendLabelSelect_();
 
     this.appendOffices_();
-    this.appendFinalVersion_();
 
     let cancel = document.createElement('button');
     cancel.className = 'mktime-button';
@@ -116,26 +114,6 @@ export class FilterDialogView extends View {
     }
   }
 
-  private appendFinalVersion_() {
-    let row = document.createElement('tr');
-    this.container_.append(row);
-
-    let name = document.createElement('td');
-    let link = document.createElement('a');
-    link.href =
-        'http://markforster.squarespace.com/blog/2015/5/21/the-final-version-perfected-fvp.html';
-    link.append('Final Version (alpha)');
-    name.append(link);
-    row.append(name);
-
-    let checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'finalVersion';
-    checkbox.checked =
-        Boolean(this.queryParameters_ && this.queryParameters_.finalVersion);
-    row.append(checkbox);
-  }
-
   private async appendLabelSelect_() {
     let name = document.createElement('td');
     name.append('View label');
@@ -186,13 +164,7 @@ export class FilterDialogView extends View {
           checkedOffices.map(x => notNull(x.nextSibling).textContent).join(',');
     }
 
-    let finalVersion =
-        (this.querySelector('.finalVersion') as HTMLInputElement).checked ?
-        true :
-        '';
-
-    this.dispatchEvent(
-        new ViewFiltersChanged(label, days, offices, finalVersion));
+    this.dispatchEvent(new ViewFiltersChanged(label, days, offices));
     this.close_();
   }
 

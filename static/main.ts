@@ -1,4 +1,4 @@
-import {defined, getCurrentWeekNumber, isMobileUserAgent, showDialog, redirectToSignInPage} from './Base.js';
+import {defined, getCurrentWeekNumber, isMobileUserAgent, redirectToSignInPage, showDialog} from './Base.js';
 import {firestore, getServerStorage, getSettings} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
@@ -36,8 +36,7 @@ Themes.apply();
 let currentView_: View;
 let appShell_: AppShell;
 
-const UNIVERSAL_QUERY_PARAMETERS =
-    ['bundle', 'label', 'days', 'offices', 'finalVersion'];
+const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'label', 'days', 'offices'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 let longTasks_: LongTasks;
@@ -127,7 +126,7 @@ async function createModel(viewType: VIEW, params?: any) {
       return new TrackingModel();
 
     case VIEW.Todo:
-      let todoModel = await getTodoModel(params.finalVersion === 'true');
+      let todoModel = await getTodoModel();
       todoModel.setViewFilters(params.label, params.days);
       return todoModel;
 
@@ -241,14 +240,15 @@ async function getTriageModel(offices?: string) {
 }
 
 let todoModel_: TodoModel|undefined;
-async function getTodoModel(finalVersion?: boolean) {
+async function getTodoModel() {
   if (!todoModel_) {
     let settings = await getSettings();
     todoModel_ = new TodoModel(
         settings.get(ServerStorage.KEYS.VACATION),
         settings.get(ServerStorage.KEYS.ALLOWED_PIN_COUNT),
         settings.get(ServerStorage.KEYS.ALLOWED_MUST_DO_COUNT),
-        settings.get(ServerStorage.KEYS.ALLOWED_URGENT_COUNT), finalVersion);
+        settings.get(ServerStorage.KEYS.ALLOWED_URGENT_COUNT),
+        settings.get(ServerStorage.KEYS.FINAL_VERSION));
   }
   return todoModel_;
 }
@@ -279,8 +279,7 @@ document.body.addEventListener(ViewFiltersChangedEvent.NAME, async (e) => {
   // TODO: Properly handle if there are existing query parameters.
   await router.run(
       window.location.pathname +
-      `?label=${event.label}&days=${event.days}&offices=${
-          event.offices}&finalVersion=${event.finalVersion}`);
+      `?label=${event.label}&days=${event.days}&offices=${event.offices}`);
 });
 
 async function onLoad() {

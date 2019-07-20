@@ -10,7 +10,7 @@ import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
 import {InProgressChangedEvent, Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, DUE_ACTIONS, MUTE_ACTION, BASE_THREAD_ACTIONS, REPEAT_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, DUE_ACTIONS, MUTE_ACTION, REPEAT_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 

@@ -249,6 +249,13 @@ export class Settings extends EventTarget {
       default: true,
     },
     {
+      key: ServerStorage.KEYS.FINAL_VERSION,
+      name: 'Final version',
+      description: `Enable final version prioritiztion by default. See http://markforster.squarespace.com/blog/2015/5/21/the-final-version-perfected-fvp.html.`,
+      type: 'checkbox',
+      default: false,
+    },
+    {
       key: ServerStorage.KEYS.TIMER_DURATION,
       name: 'Triage countdown timer',
       description:
