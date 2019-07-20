@@ -30,7 +30,7 @@ export class ThreadRowGroup extends HTMLElement {
     // clipped when filling the width of the window.
     this.style.cssText = `
       display: block;
-      margin-top: 24px;
+      margin-bottom: 24px;
       border-radius: 3px;
       background-color: var(--nested-background-color);
     `;
