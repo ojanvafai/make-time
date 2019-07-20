@@ -268,12 +268,18 @@ export class ComposeView extends View {
   async send_() {
     if (!this.sent_) {
       this.sent_ = document.createElement('div');
+      this.sent_.style.cssText = `
+        border-bottom: 1px dotted var(--border-and-hover-color);
+        padding: 3px;
+      `;
 
       let container = document.createElement('div');
       container.style.cssText = `
         background-color: var(--nested-background-color);
         margin: 10px 4px;
         text-align: center;
+        border-radius: 3px;
+        border: 1px solid var(--border-and-hover-color);
       `;
       container.append(this.sent_);
       this.append(container);
