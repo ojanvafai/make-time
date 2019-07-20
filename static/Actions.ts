@@ -123,10 +123,10 @@ export class Actions extends HTMLElement {
           if (!this.menu_)
             return;
 
-          let hitElement = document.elementFromPoint(e.x, e.y);
+          let hitButton = this.hitButton_(e);
           for (let child of this.menu_.children) {
             let element = child as HTMLElement;
-            element.style.backgroundColor = element === hitElement ?
+            element.style.backgroundColor = element === hitButton ?
                 'var(--border-and-hover-color)' :
                 'var(--overlay-background-color)';
           }
@@ -162,16 +162,29 @@ export class Actions extends HTMLElement {
     });
 
     button.addEventListener('pointerup', (e: PointerEvent) => {
-      let hitElement = document.elementFromPoint(e.x, e.y);
-      if (hitElement === button ||
-          (this.menu_ && this.menu_.contains(hitElement))) {
-        this.view_.takeAction((hitElement as ButtonWithAction).action);
+      let hitButton = this.hitButton_(e);
+      if (hitButton &&
+          (hitButton === button ||
+           (this.menu_ && this.menu_.contains(hitButton)))) {
+        this.view_.takeAction(hitButton.action);
       }
 
       if (this.menu_)
         this.menu_.remove();
       this.menu_ = undefined;
     });
+  }
+
+  private hitButton_(e: PointerEvent) {
+    let hitElement = document.elementFromPoint(e.x, e.y) as Node | null;
+    let buttonWithAction;
+    while (hitElement && !buttonWithAction) {
+      let asButtonWithAction = hitElement as ButtonWithAction;
+      if (asButtonWithAction.action)
+        return asButtonWithAction;
+      hitElement = hitElement.parentNode;
+    }
+    return null;
   }
 
   private openMenu_(button: HTMLElement, actions: Action[]) {

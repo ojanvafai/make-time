@@ -1,4 +1,4 @@
-import {createSvgButton, defined, DOWN_ARROW_SVG, notNull} from '../Base.js';
+import {createSvgButton, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, notNull} from '../Base.js';
 import {getSettings, showHelp} from '../BaseMain.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from '../RadialProgress.js';
 
@@ -135,7 +135,8 @@ export class AppShell extends HTMLElement {
     this.mainContent_.append(this.toolbar_, contentContainer, AppShell.footer_);
 
     this.backArrow_ = createSvgButton(
-        '0 0 24 24', () => this.dispatchEvent(new BackEvent()), DOWN_ARROW_SVG);
+        DOWN_ARROW_VIEW_BOX, () => this.dispatchEvent(new BackEvent()),
+        DOWN_ARROW_SVG);
     // Too lazy to rework the arrow to point left, so just use CSS Transforms.
     this.backArrow_.style.cssText = `
       transform: rotate(90deg);

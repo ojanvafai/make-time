@@ -1,5 +1,5 @@
 import {Action, registerActions, Shortcut} from '../Actions.js';
-import {assert, defined, notNull} from '../Base.js';
+import {assert, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -122,8 +122,13 @@ let UNDO_ACTION = {
   key: 'u',
 };
 
+let downArrow = createSvg(DOWN_ARROW_VIEW_BOX, DOWN_ARROW_SVG);
+let upArrow = downArrow.cloneNode(true) as SVGSVGElement;
+// Too lazy to make an up arrow SVG, so just rotate the down arrow.
+upArrow.style.transform = 'rotate(180deg)';
+
 let MOVE_UP_ACTION = {
-  name: '⬆',
+  name: upArrow,
   description: `Moves the row up in sort order in the Todo view.`,
   key: '[',
   secondaryKey: new Shortcut('ArrowUp', true, false),
@@ -131,7 +136,7 @@ let MOVE_UP_ACTION = {
 };
 
 let MOVE_DOWN_ACTION = {
-  name: '⬇',
+  name: downArrow,
   description: `Moves the row down in sort order in the Todo view.`,
   key: ']',
   secondaryKey: new Shortcut('ArrowDown', true, false),

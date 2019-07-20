@@ -4,6 +4,7 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 import {gapiFetch} from './Net.js';
 
 export const USER_ID = 'me';
+export const DOWN_ARROW_VIEW_BOX = '0 0 24 24';
 export const DOWN_ARROW_SVG =
     `<path d="M 12 3 C 11.448 3 11 3.448 11 4 L 11 17.070312 L 7.1367188 13.207031 C 6.7457187 12.816031 6.1126563 12.816031 5.7226562 13.207031 L 5.6367188 13.292969 C 5.2457187 13.683969 5.2457187 14.317031 5.6367188 14.707031 L 11.292969 20.363281 C 11.683969 20.754281 12.317031 20.754281 12.707031 20.363281 L 18.363281 14.707031 C 18.754281 14.316031 18.754281 13.682969 18.363281 13.292969 L 18.277344 13.207031 C 17.886344 12.816031 17.253281 12.816031 16.863281 13.207031 L 13 17.070312 L 13 4 C 13 3.448 12.552 3 12 3 z"></path>`;
 
@@ -23,12 +24,17 @@ export function createMktimeButton(
   return button;
 }
 
+export function createSvg(viewBox: string, innerHTML: string) {
+  let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', viewBox);
+  svg.innerHTML = innerHTML;
+  return svg;
+}
+
 export function createSvgButton(
-    viewBox: string, onClick: (e: Event) => void, innerHTML: string) {
-  let button = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  viewBox: string, onClick: (e: Event) => void, innerHTML: string) {
+  let button = createSvg(viewBox, innerHTML);
   setupMktimeButton(button, onClick);
-  button.setAttribute('viewBox', viewBox);
-  button.innerHTML = innerHTML;
   return button;
 }
 
