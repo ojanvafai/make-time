@@ -1,3 +1,5 @@
+import {createMktimeButton} from './Base.js';
+
 class Logger extends HTMLElement {
   messageContainer_: HTMLDivElement;
 
@@ -24,18 +26,13 @@ class Logger extends HTMLElement {
     `;
     this.append(this.messageContainer_);
 
-    let ok = document.createElement('button');
-    ok.className = 'mktime-button';
-    ok.append('Close');
-    ok.onclick = () => this.close_();
-
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
       display: flex;
       justify-content: center;
       flex-shrink: 0;
     `;
-    buttonContainer.append(ok);
+    buttonContainer.append(createMktimeButton('Close', () => this.close_()));
     this.append(buttonContainer);
   }
 

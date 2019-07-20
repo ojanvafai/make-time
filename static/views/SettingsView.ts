@@ -1,4 +1,4 @@
-import {assert, notNull} from '../Base.js';
+import {assert, createMktimeButton, notNull} from '../Base.js';
 import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Setting, Settings} from '../Settings.js';
 
@@ -81,28 +81,17 @@ export class SettingsView extends View {
     calendarSortContainer.append(this.calendarSortView_);
     sortContainer.append(calendarSortContainer);
 
-    let helpButton = document.createElement('button');
-    helpButton.className = 'mktime-button';
-    helpButton.append('Help');
-    helpButton.onclick = () => {
-      new HelpDialog(HELP_TEXT);
-    };
+    let helpButton =
+        createMktimeButton('Help', () => new HelpDialog(HELP_TEXT));
 
-    this.saveButton_ = document.createElement('button');
-    this.saveButton_.className = 'mktime-button';
-    this.saveButton_.append('Save Changes');
+    this.saveButton_ = createMktimeButton('Save Changes', () => this.save_());
     this.saveButton_.disabled = true;
-    this.saveButton_.onclick = () => this.save_();
 
-    let mailFilters = document.createElement('button');
-    mailFilters.classList.add('mktime-button');
-    mailFilters.append('Modify email filters');
-    mailFilters.onclick = () => new FiltersView(this.settings_);
-
-    let calendarFilters = document.createElement('button');
-    calendarFilters.classList.add('mktime-button');
-    calendarFilters.append('Modify calendar filters');
-    calendarFilters.onclick = () => new CalendarFiltersView(this.settings_);
+    let mailFilters = createMktimeButton(
+        'Modify email filters', () => new FiltersView(this.settings_));
+    let calendarFilters = createMktimeButton(
+        'Modify calendar filters',
+        () => new CalendarFiltersView(this.settings_));
 
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `

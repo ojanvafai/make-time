@@ -1,4 +1,4 @@
-import {notNull} from './Base.js';
+import {createMktimeButton, notNull} from './Base.js';
 import {View} from './views/View.js';
 
 export interface Action {
@@ -221,14 +221,10 @@ export class Actions extends HTMLElement {
     if (action.hidden)
       return null;
 
-    let button = document.createElement('button') as ButtonWithAction;
-    button.className = 'mktime-button';
-
+    let button = createMktimeButton(action.name) as ButtonWithAction;
     button.action = action;
     button.onpointerleave = () => this.tooltip_!.remove();
     button.onpointerenter = () => this.appendTooltip_(action);
-    button.append(action.name);
-
     return button;
   }
 

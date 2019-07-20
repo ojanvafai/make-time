@@ -1,4 +1,4 @@
-import {defined} from './Base.js';
+import {defined, createMktimeButton} from './Base.js';
 import {CancelEvent, EmailCompose, SubmitEvent} from './EmailCompose.js';
 import {SendAs} from './SendAs.js';
 import {ReplyType, Thread} from './Thread.js';
@@ -81,10 +81,7 @@ export class QuickReply extends HTMLElement {
       }
     }
 
-    let cancel = document.createElement('button');
-    cancel.className = 'mktime-button';
-    cancel.textContent = 'cancel';
-    cancel.onclick = () => this.dispatchEvent(new ReplyCloseEvent());
+    let cancel = createMktimeButton('cancel', () => this.dispatchEvent(new ReplyCloseEvent()));
 
     // Group these together so they wrap atomically.
     let controls = document.createElement('div');

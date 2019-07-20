@@ -111,12 +111,15 @@ select.label-chip {
 }
 select, mt-address-compose, [contentEditable=true],
 input:not([type=checkbox]):not([type=radio]),
-.x-button, .row-button, .toggler, .link-bubble, .label-chip  {
+.mktime-button, .x-button, .row-button, .toggler, .link-bubble, .label-chip  {
   padding: 4px;
   -webkit-appearance: none;
   border-radius: 3px;
   border: 1px solid var(--border-and-hover-color);
   margin: 0;
+}
+.toolbar .mktime-button {
+  border: 0;
 }
 .centered-up-arrow::after {
   content: "▲";
@@ -128,7 +131,7 @@ input:not([type=checkbox]):not([type=radio]),
   left: 3px;
   font-size: 9px;
 }
-select.button, .mktime-button, .menu-open-button {
+select.button, .mktime-button {
   padding: 8px;
   height: 40px;
   min-width: 40px;
@@ -141,9 +144,7 @@ select.button, .mktime-button, .menu-open-button {
 select.button {
   margin-right: 4px;
 }
-.menu-open-button, .mktime-button {
-  border-radius: 3px;
-  border: 0;
+.mktime-button {
   white-space: nowrap;
   user-select: none;
   touch-action: none;
@@ -156,7 +157,6 @@ select.button {
 }
 select:hover:not(:focus),
 .menu-item:hover,
-.menu-open-button:hover,
 .x-button:hover,
 .outline-on-hover:hover,
 mt-select-box:hover,

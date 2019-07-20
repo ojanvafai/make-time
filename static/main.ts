@@ -1,4 +1,4 @@
-import {defined, getCurrentWeekNumber, isMobileUserAgent, redirectToSignInPage, showDialog} from './Base.js';
+import {createMktimeButton, defined, getCurrentWeekNumber, isMobileUserAgent, redirectToSignInPage, showDialog} from './Base.js';
 import {firestore, getServerStorage, getSettings} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
@@ -364,15 +364,8 @@ function reloadSoon() {
   container.append(
       'A new version of maketime is available. This window will reload in 60 seconds.');
 
-  let reloadButton = document.createElement('button');
-  reloadButton.className = 'mktime-button';
-  reloadButton.append('reload now');
-  reloadButton.onclick = () => reload();
-
-  let close = document.createElement('button');
-  close.className = 'mktime-button';
-  close.append('close');
-  close.onclick = () => dialog.close();
+  let reloadButton = createMktimeButton('reload now', () => reload());
+  let close = createMktimeButton('close', () => dialog.close());
 
   let buttonContainer = document.createElement('div');
   buttonContainer.style.cssText = `

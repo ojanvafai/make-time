@@ -1,4 +1,4 @@
-import {defined, notNull} from '../Base.js';
+import {createSvgButton, defined, notNull} from '../Base.js';
 import {getSettings, showHelp} from '../BaseMain.js';
 import {COMPLETED_EVENT_NAME, RadialProgress} from '../RadialProgress.js';
 
@@ -89,13 +89,14 @@ export class AppShell extends HTMLElement {
     document.body.append(this.drawer_, this.mainContent_);
 
     this.toolbar_ = document.createElement('div');
+    this.toolbar_.className = 'toolbar';
     this.toolbar_.style.cssText = `
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       position: relative;
       width: -webkit-fill-available;
-      box-shadow: var(--border-and-hover-color) 0px 1px 2px;
+      box-shadow: var(--border-and-hover-color) 0 0 4px;
       z-index: 20;
     `;
 
@@ -116,6 +117,7 @@ export class AppShell extends HTMLElement {
     contentContainer.append(this.content_);
 
     AppShell.footer_ = document.createElement('div');
+    AppShell.footer_.className = 'toolbar';
     AppShell.footer_.style.cssText = `
       z-index: 1000;
       position: sticky;
@@ -125,69 +127,55 @@ export class AppShell extends HTMLElement {
       display: flex;
       justify-content: center;
       align-self: center;
-      box-shadow: var(--border-and-hover-color) 0px -1px 2px;
+      box-shadow: var(--border-and-hover-color) 0 0 4px;
       /* Don't eat clicks in the transparent background of the footer. */
       pointer-events: none;
     `;
 
     this.mainContent_.append(this.toolbar_, contentContainer, AppShell.footer_);
 
-    this.backArrow_ =
-      document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const backArrowContents =
+        `<path d="M 12 3 C 11.448 3 11 3.448 11 4 L 11 17.070312 L 7.1367188 13.207031 C 6.7457187 12.816031 6.1126563 12.816031 5.7226562 13.207031 L 5.6367188 13.292969 C 5.2457187 13.683969 5.2457187 14.317031 5.6367188 14.707031 L 11.292969 20.363281 C 11.683969 20.754281 12.317031 20.754281 12.707031 20.363281 L 18.363281 14.707031 C 18.754281 14.316031 18.754281 13.682969 18.363281 13.292969 L 18.277344 13.207031 C 17.886344 12.816031 17.253281 12.816031 16.863281 13.207031 L 13 17.070312 L 13 4 C 13 3.448 12.552 3 12 3 z"></path>`;
+    this.backArrow_ = createSvgButton(
+        '0 0 24 24', () => this.dispatchEvent(new BackEvent()),
+        backArrowContents);
     // Too lazy to rework the arrow to point left, so just use CSS Transforms.
     this.backArrow_.style.cssText = `
       transform: rotate(90deg);
       display: none;
     `;
-    this.backArrow_.classList.add('menu-open-button');
-    this.backArrow_.setAttribute('viewBox', '0 0 24 24');
-    this.backArrow_.innerHTML =
-        `<path d="M 12 3 C 11.448 3 11 3.448 11 4 L 11 17.070312 L 7.1367188 13.207031 C 6.7457187 12.816031 6.1126563 12.816031 5.7226562 13.207031 L 5.6367188 13.292969 C 5.2457187 13.683969 5.2457187 14.317031 5.6367188 14.707031 L 11.292969 20.363281 C 11.683969 20.754281 12.317031 20.754281 12.707031 20.363281 L 18.363281 14.707031 C 18.754281 14.316031 18.754281 13.682969 18.363281 13.292969 L 18.277344 13.207031 C 17.886344 12.816031 17.253281 12.816031 16.863281 13.207031 L 13 17.070312 L 13 4 C 13 3.448 12.552 3 12 3 z"></path>`;
 
-    this.menuToggle_ =
-        document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.menuToggle_.classList.add('menu-open-button');
-    this.menuToggle_.setAttribute('viewBox', '0 0 32 32');
-    let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute(
-        'd',
-        `M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2 s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2 S29.104,22,28,22z`);
-    this.menuToggle_.append(path);
+    const menuToggleContents =
+        `<path d="M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2 s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2 S29.104,22,28,22z"></path>`;
+    this.menuToggle_ = createSvgButton('0 0 32 32', (e) => {
+      e.stopPropagation();
+      this.toggleMenu();
+    }, menuToggleContents);
 
-    this.filterToggle_ =
-        document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.filterToggle_.classList.add('menu-open-button');
-    this.filterToggle_.setAttribute('viewBox', '0 0 1232 1280');
+    let filterToggleContents =
+        `<g transform="translate(0,1280) scale(0.1,-0.1)">
+      <path d="M102 12678 c58 -68 1233 -1459 2613 -3093 1380 -1633 2542 -3009 2582 -3056 l73 -86 0 -3221 0 -3221 790 792 790 792 0 2430 1 2430 1470 1740 c1881 2225 2386 2823 3193 3780 362 429 670 792 684 808 l26 27 -6163 0 -6163 0 104 -122z"/>
+    </g>`;
+    this.filterToggle_ = createSvgButton(
+        '0 0 1232 1280', () => this.openFilterMenu_(), filterToggleContents);
     this.filterToggle_.style.cssText = `
       margin: 0 6px;
     `;
-    this.filterToggle_.innerHTML =
-        `<g transform="translate(0,1280) scale(0.1,-0.1)">
-<path d="M102 12678 c58 -68 1233 -1459 2613 -3093 1380 -1633 2542 -3009 2582 -3056 l73 -86 0 -3221 0 -3221 790 792 790 792 0 2430 1 2430 1470 1740 c1881 2225 2386 2823 3193 3780 362 429 670 792 684 808 l26 27 -6163 0 -6163 0 104 -122z"/>
-</g>`;
-    this.filterToggle_.addEventListener('click', () => this.openFilterMenu_());
 
-    this.viewToggle_ =
-        document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.viewToggle_.classList.add('menu-open-button');
-    this.viewToggle_.setAttribute('viewBox', '0 0 24 24');
+    let viewToggleContents =
+        `<path d="M 17 2 L 17 6 L 3 6 L 3 8 L 17 8 L 17 12 L 22 7 L 17 2 M 7 12 L 2 17 L 7 22 L 7 18 L 21 18 L 21 16 L 7 16 L 7 12"></path>`;
+    this.viewToggle_ = createSvgButton(
+        '0 0 24 24', () => this.dispatchEvent(new ToggleViewEvent()),
+        viewToggleContents);
     this.viewToggle_.style.cssText = `
       display: none;
       margin-left: 6px;
     `;
-    this.viewToggle_.innerHTML =
-        `<path d="M 17 2 L 17 6 L 3 6 L 3 8 L 17 8 L 17 12 L 22 7 L 17 2 M 7 12 L 2 17 L 7 22 L 7 18 L 21 18 L 21 16 L 7 16 L 7 12"></path>`;
-    this.viewToggle_.addEventListener(
-        'click', () => this.dispatchEvent(new ToggleViewEvent()));
 
-    this.overflowMenuButton_ =
-        document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.overflowMenuButton_.classList.add('menu-open-button');
-    this.overflowMenuButton_.setAttribute('viewBox', '0 0 24 24');
-    this.overflowMenuButton_.innerHTML =
+    let overflowMenuContents =
         `<circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>`;
-    this.overflowMenuButton_.addEventListener(
-        'click', () => this.toggleOverflowMenu_());
+    this.overflowMenuButton_ = createSvgButton(
+        '0 0 24 24', () => this.toggleOverflowMenu_(), overflowMenuContents);
 
     let toolbarChildStyle = `
       display: flex;
@@ -220,10 +208,6 @@ export class AppShell extends HTMLElement {
         this.overflowMenuButton_);
 
     this.appendMenu_();
-    this.menuToggle_.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.toggleMenu();
-    });
 
     this.mainContent_.addEventListener('click', (e) => {
       if (this.drawerOpen_) {
@@ -231,9 +215,6 @@ export class AppShell extends HTMLElement {
         this.closeMenu();
       }
     });
-
-    this.backArrow_.addEventListener(
-        'click', () => this.dispatchEvent(new BackEvent()));
   }
 
   showViewAndFilterToggles(show: boolean) {

@@ -1,4 +1,4 @@
-import {notNull} from '../Base.js';
+import {createMktimeButton, notNull} from '../Base.js';
 import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, UNBOOKED_TYPES} from '../calendar/Constants.js';
 import {FiltersChangedEvent, Settings} from '../Settings.js';
 
@@ -93,13 +93,9 @@ export class CalendarSortView extends HTMLElement {
       this.appendRow_(data);
     }
 
-    let button = document.createElement('button');
-    button.className = 'mktime-button';
+    let button =
+        createMktimeButton('Reset to defaults', () => this.resetToDefaults_());
     button.style.alignSelf = 'center';
-    button.append('Reset to defaults');
-    button.addEventListener('click', () => {
-      this.resetToDefaults_();
-    });
     this.append(button);
   }
 

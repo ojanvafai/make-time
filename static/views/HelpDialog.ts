@@ -1,4 +1,4 @@
-import {showDialog} from '../Base.js';
+import {createMktimeButton, showDialog} from '../Base.js';
 
 export class HelpDialog extends HTMLElement {
   constructor(helpText: HTMLElement|string) {
@@ -26,17 +26,12 @@ export class HelpDialog extends HTMLElement {
 
     container.append(help);
 
-    let close = document.createElement('button');
-    close.className = 'mktime-button';
-    close.append('close');
-    close.onclick = () => dialog.close();
-
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
       display: flex;
       justify-content: flex-end;
     `;
-    buttonContainer.append(close);
+    buttonContainer.append(createMktimeButton('close', () => dialog.close()));
     container.append(buttonContainer);
   }
 }

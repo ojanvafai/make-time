@@ -4,6 +4,30 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 import {gapiFetch} from './Net.js';
 
 export let USER_ID = 'me';
+const MKTIME_BUTTON_CLASS = 'mktime-button';
+
+function setupMktimeButton(button: Element, onClick?: (e: Event) => void) {
+  button.classList.add(MKTIME_BUTTON_CLASS);
+  if (onClick)
+    button.addEventListener('click', onClick);
+}
+
+export function createMktimeButton(
+    contents: string|HTMLElement, onClick?: (e: Event) => void) {
+  let button = document.createElement('button');
+  setupMktimeButton(button, onClick);
+  button.append(contents);
+  return button;
+}
+
+export function createSvgButton(
+    viewBox: string, onClick: (e: Event) => void, innerHTML: string) {
+  let button = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  setupMktimeButton(button, onClick);
+  button.setAttribute('viewBox', viewBox);
+  button.innerHTML = innerHTML;
+  return button;
+}
 
 // Authorization scopes required by the Google API.
 export let SCOPES = [
@@ -100,7 +124,7 @@ export function showDialog(contents: HTMLElement|string) {
   dialog.addEventListener('close', () => dialog.remove());
   dialog.addEventListener('click', e => {
     if (e.target === dialog)
-      dialog.remove();
+      dialog.close();
   });
 
   let wrapper = document.createElement('div');

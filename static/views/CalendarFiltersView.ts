@@ -1,4 +1,4 @@
-import {defined, Labels, showDialog} from '../Base.js';
+import {createMktimeButton, defined, Labels, showDialog} from '../Base.js';
 import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -152,23 +152,12 @@ export class CalendarFiltersView extends HTMLElement {
     scrollable.append(container);
     this.append(scrollable);
 
-    let helpButton = document.createElement('button');
-    helpButton.className = 'mktime-button';
+    let helpButton =
+        createMktimeButton('Help', () => new HelpDialog(HELP_TEXT));
     helpButton.style.cssText = `margin-right: auto`;
-    helpButton.append('Help');
-    helpButton.onclick = () => {
-      new HelpDialog(HELP_TEXT);
-    };
 
-    let cancel = document.createElement('button');
-    cancel.className = 'mktime-button';
-    cancel.append('cancel');
-    cancel.onclick = () => this.cancel_();
-
-    let save = document.createElement('button');
-    save.className = 'mktime-button';
-    save.append('save');
-    save.onclick = () => this.save_();
+    let cancel = createMktimeButton('cancel', () => this.cancel_());
+    let save = createMktimeButton('save', () => this.save_());
 
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
