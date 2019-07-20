@@ -68,6 +68,10 @@ export abstract class ThreadListModel extends Model {
 
   toggleAllowViewMessages() {}
 
+  needsMessageTriage(_thread: Thread) {
+    return false;
+  }
+
   async getNoMeetingRoomEvents() {
     return [] as CalendarEvent[];
   }
@@ -286,15 +290,11 @@ export abstract class ThreadListModel extends Model {
     let date = await pickDate(destination);
 
     for (let thread of threads) {
-      // Mark a bit that this thread was triaged with unread messages so it can
-      // be grouped differently in todo view. Don't mark this bit for things
-      // that are overdue, stuck, or retriage since those have already been
-      // fully triaged once.
-      let needsMessageTriage = thread.isUnread() && !thread.hasDueDate() &&
-          !thread.isStuck() && !thread.needsRetriage();
       let update = date ?
           createDateUpdate(thread, destination, date, moveToInbox) :
-          createUpdate(thread, destination, moveToInbox, needsMessageTriage);
+          createUpdate(
+              thread, destination, moveToInbox,
+              this.needsMessageTriage(thread));
 
       if (!update)
         continue;

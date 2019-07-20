@@ -4,7 +4,7 @@ import {Calendar} from '../calendar/Calendar.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {STUCK_LABEL_NAME, OVERDUE_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
+import {OVERDUE_LABEL_NAME, STUCK_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
@@ -43,6 +43,15 @@ export class TriageModel extends ThreadListModel {
 
   toggleAllowViewMessages() {
     this.allowViewMessages_ = !this.allowViewMessages_;
+  }
+
+  // Mark a bit that this thread was triaged with unread messages so it can be
+  // grouped differently in todo view. Don't mark this bit for things that are
+  // overdue, stuck, or retriage since those have already been fully triaged
+  // once.
+  needsMessageTriage(thread: Thread) {
+    return thread.isUnread() && !thread.hasDueDate() && !thread.isStuck() &&
+        !thread.needsRetriage();
   }
 
   async getNoMeetingRoomEvents() {
