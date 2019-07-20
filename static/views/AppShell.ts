@@ -282,6 +282,7 @@ export class AppShell extends HTMLElement {
       top: 0;
       background-color: var(--overlay-background-color);
       border: 1px solid var(--border-and-hover-color);
+      box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
       z-index: 1000001;
     `;
     container.append(this.overflowMenu_);

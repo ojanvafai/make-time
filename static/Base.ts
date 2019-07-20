@@ -82,9 +82,9 @@ export function showDialog(contents: HTMLElement|string) {
   // Subtract out the top/bottom, padding and border from the max-height.
   dialog.style.cssText = `
     top: 15px;
-    padding: 8px;
-    border: 1px solid #999;
-    outline: 1px solid #bbb;
+    padding: 8px 12px;
+    border: 1px solid var(--border-and-hover-color);
+    box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
     max-height: calc(100vh - 30px - 16px - 6px);
     max-width: 800px;
     position: fixed;

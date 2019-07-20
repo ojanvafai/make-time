@@ -4,11 +4,12 @@ import {Calendar} from '../calendar/Calendar.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {BLOCKED_LABEL_NAME, Thread, ThreadMetadataKeys, OVERDUE_LABEL_NAME} from '../Thread.js';
+import {BLOCKED_LABEL_NAME, OVERDUE_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
 export const RETRIAGE_LABEL_NAME = 'Retriage';
+export const NO_OFFICES = 'none';
 
 export class TriageModel extends ThreadListModel {
   private offices_?: string;
@@ -17,8 +18,12 @@ export class TriageModel extends ThreadListModel {
   constructor(private settings_: Settings, offices?: string) {
     super();
     this.timerCountsDown = true;
-    this.offices_ =
-        offices || this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
+
+    if (offices !== NO_OFFICES) {
+      this.offices_ =
+          offices || this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
+    }
+
     let metadataCollection =
         firestoreUserCollection().doc('threads').collection('metadata');
     this.setQuery(

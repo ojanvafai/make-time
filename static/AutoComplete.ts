@@ -32,7 +32,7 @@ export class AutoComplete extends HTMLElement {
       background-color: var(--overlay-background-color);
       position: fixed;
       border: 1px solid var(--border-and-hover-color);
-      box-shadow: 2px -2px 10px 1px lightgrey;
+      box-shadow: 2px -2px 10px 1px var(--border-and-hover-color);
       z-index: 100;
       overflow: hidden;
     `;

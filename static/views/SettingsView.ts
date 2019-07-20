@@ -171,7 +171,7 @@ export class SettingsView extends View {
       let label = document.createElement('td');
       label.style.cssText = `
         font-weight: bold;
-        padding-right: 10px 10px 10px 0;
+        padding-right: 12px;
       `;
       label.append(field.name);
 
@@ -179,16 +179,13 @@ export class SettingsView extends View {
       description.style.color = 'var(--dim-text-color)';
       description.append(field.description);
 
-      let inputContainer = document.createElement('div');
-      inputContainer.style.cssText = `
+      let rightCell = document.createElement('td');
+      rightCell.style.cssText = `
         display: flex;
         align-items: center;
         padding: 10px 0;
       `;
-      inputContainer.append(input, description);
-
-      let rightCell = document.createElement('td');
-      rightCell.append(inputContainer);
+      rightCell.append(input, description);
 
       let row = document.createElement('tr');
       row.append(label, rightCell);

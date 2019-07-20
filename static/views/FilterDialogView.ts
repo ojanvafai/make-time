@@ -1,4 +1,5 @@
 import {assert, defined, notNull, showDialog} from '../Base.js';
+import {NO_OFFICES} from '../models/TriageModel.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 
@@ -15,7 +16,7 @@ const DAYS_TO_SHOW_SETTING = {
 };
 
 const SETTINGS = [DAYS_TO_SHOW_SETTING];
-const QUERY_PARAMS = ['label', 'days'];
+const QUERY_PARAMS = ['label', 'days', 'offices'];
 
 export class ViewFiltersChanged extends Event {
   static NAME = 'view-filters-changed';
@@ -86,19 +87,39 @@ export class FilterDialogView extends View {
     return params && QUERY_PARAMS.some(x => x in params);
   }
 
+  private createNameCell_(contents: string|HTMLElement) {
+    let cell = document.createElement('td');
+    cell.style.cssText = `
+      font-weight: bold;
+      padding-right: 12px;
+    `;
+    cell.append(contents);
+    return cell;
+  }
+
+  private createValueCell_(contents?: string|HTMLElement) {
+    let cell = document.createElement('td');
+    cell.style.cssText = `
+      display: flex;
+      align-items: center;
+      padding: 10px 0px;
+    `;
+    if (contents)
+      cell.append(contents);
+    return cell;
+  }
+
   private appendOffices_() {
     let offices = this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
-    if (!offices || !offices.includes(','))
+    if (!offices)
       return;
 
     let officesRow = document.createElement('tr');
     officesRow.toggleAttribute('offices');
     this.container_.append(officesRow);
 
-    let name = document.createElement('td');
-    name.append('Local offices');
-    let officesCell = document.createElement('td');
-    officesRow.append(name, officesCell);
+    let officesCell = this.createValueCell_();
+    officesRow.append(this.createNameCell_('Local offices'), officesCell);
 
     let parts = (offices as string).split(',').map(x => x.trim());
     for (let part of parts) {
@@ -109,16 +130,16 @@ export class FilterDialogView extends View {
           this.queryParameters_.offices.split(',').some(x => x.trim() === part);
 
       let office = document.createElement('div');
+      office.style.cssText = `
+        display: flex;
+        align-items: center;
+      `;
       office.append(checkbox, part);
       officesCell.append(office);
     }
   }
 
   private async appendLabelSelect_() {
-    let name = document.createElement('td');
-    name.style.fontWeight = 'bold';
-    name.append('View label');
-
     let select = await this.settings_.getLabelSelect();
     let none = document.createElement('option');
     none.selected = true;
@@ -133,9 +154,8 @@ export class FilterDialogView extends View {
       }
     }
 
-    let value = document.createElement('td');
-    value.append(select);
-    this.label_.append(name, value);
+    this.label_.append(
+        this.createNameCell_('View label'), this.createValueCell_(select));
   }
 
   private handleChange_() {
@@ -161,8 +181,10 @@ export class FilterDialogView extends View {
     let offices = '';
     let checkedOffices = officesElements.filter(x => x.checked);
     if (officesElements.length !== checkedOffices.length) {
-      offices =
-          checkedOffices.map(x => notNull(x.nextSibling).textContent).join(',');
+      offices = checkedOffices.length ?
+          checkedOffices.map(x => notNull(x.nextSibling).textContent)
+              .join(',') :
+          NO_OFFICES;
     }
 
     this.dispatchEvent(new ViewFiltersChanged(label, days, offices));
