@@ -4,7 +4,7 @@ import {firestoreUserCollection, login} from '../BaseMain.js';
 import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
 import {TriageModel} from '../models/TriageModel.js';
 import {Settings} from '../Settings.js';
-import {BLOCKED_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
+import {STUCK_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {AppShell} from './AppShell.js';
 import {ThreadListView} from './ThreadListView.js';
@@ -47,7 +47,7 @@ class HiddenModel extends ThreadListModel {
       case ThreadMetadataKeys.blocked:
         // Reverse sort by blocked date for the blocked view.
         return compareDates(
-            notNull(b.getBlockedDate()), notNull(a.getBlockedDate()));
+            notNull(b.getStuckDate()), notNull(a.getStuckDate()));
 
       case ThreadMetadataKeys.queued:
         return TriageModel.compareThreads(this.settings_, a, b);
@@ -75,7 +75,7 @@ class HiddenModel extends ThreadListModel {
   getGroupName(thread: Thread) {
     switch (this.queryKey_()) {
       case ThreadMetadataKeys.blocked:
-        return BLOCKED_LABEL_NAME;
+        return STUCK_LABEL_NAME;
 
       case ThreadMetadataKeys.queued:
         return TriageModel.getGroupName(thread);
@@ -133,7 +133,7 @@ export class HiddenView extends View {
     for (let key of FIRESTORE_KEYS) {
       let option = document.createElement('option');
       if (key === ThreadMetadataKeys.blocked) {
-        option.append(BLOCKED_LABEL_NAME);
+        option.append(STUCK_LABEL_NAME);
         option.value = key;
       } else {
         option.append(key);

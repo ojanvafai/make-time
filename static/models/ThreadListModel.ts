@@ -286,9 +286,12 @@ export abstract class ThreadListModel extends Model {
     let date = await pickDate(destination);
 
     for (let thread of threads) {
-      // If we're not allowed to view messages, mark a bit that this thread was
-      // triaged in that state so we can group it separately in the Todo view.
-      let needsMessageTriage = !this.allowViewMessages();
+      // Mark a bit that this thread was triaged with unread messages so it can
+      // be grouped differently in todo view. Don't mark this bit for things
+      // that are overdue, stuck, or retriage since those have already been
+      // fully triaged once.
+      let needsMessageTriage = thread.isUnread() && !thread.hasDueDate() &&
+          !thread.isStuck() && !thread.needsRetriage();
       let update = date ?
           createDateUpdate(thread, destination, date, moveToInbox) :
           createUpdate(thread, destination, moveToInbox, needsMessageTriage);

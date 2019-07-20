@@ -163,7 +163,7 @@ export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
 export const URGENT_PRIORITY_NAME = 'Urgent';
 export const BACKLOG_PRIORITY_NAME = 'Backlog';
-export const BLOCKED_LABEL_NAME = 'Stuck';
+export const STUCK_LABEL_NAME = 'Stuck';
 export const OVERDUE_LABEL_NAME = 'Overdue';
 export const FALLBACK_LABEL_NAME = 'No label';
 
@@ -178,7 +178,7 @@ export const PrioritySortOrder = [
 
 // Use negative values for built-in labels.
 export enum BuiltInLabelIds {
-  Blocked = -1,
+  Stuck = -1,
   Fallback = -2,
 }
 
@@ -352,7 +352,8 @@ export class Thread extends EventTarget {
     }
   }
 
-  priorityUpdate(priority: Priority, moveToInbox?: boolean, needsMessageTriage?: boolean) {
+  priorityUpdate(
+      priority: Priority, moveToInbox?: boolean, needsMessageTriage?: boolean) {
     let update = this.keepInInboxMetadata_();
 
     if (moveToInbox)
@@ -466,7 +467,7 @@ export class Thread extends EventTarget {
     return !!this.metadata_.due;
   }
 
-  isBlocked() {
+  isStuck() {
     return !!this.metadata_.blocked;
   }
 
@@ -490,8 +491,8 @@ export class Thread extends EventTarget {
         this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp));
   }
 
-  getBlockedDate() {
-    if (!this.isBlocked())
+  getStuckDate() {
+    if (!this.isStuck())
       return null;
 
     let blocked = defined(this.metadata_.blocked);
@@ -543,8 +544,8 @@ export class Thread extends EventTarget {
       return FALLBACK_LABEL_NAME;
 
     switch (id) {
-      case BuiltInLabelIds.Blocked:
-        return BLOCKED_LABEL_NAME;
+      case BuiltInLabelIds.Stuck:
+        return STUCK_LABEL_NAME;
       case BuiltInLabelIds.Fallback:
         return FALLBACK_LABEL_NAME;
       default:

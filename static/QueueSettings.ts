@@ -1,7 +1,7 @@
 import {assert, defined} from './Base.js';
 import {RETRIAGE_LABEL_NAME} from './models/TriageModel.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
-import {BLOCKED_LABEL_NAME} from './Thread.js';
+import {STUCK_LABEL_NAME} from './Thread.js';
 
 export interface QueueData {
   queue: string;
@@ -47,7 +47,7 @@ export class QueueSettings {
     };
 
     this.stuckQueueData_ = {
-      label: BLOCKED_LABEL_NAME,
+      label: STUCK_LABEL_NAME,
       data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex - 1)
     };
   }
@@ -99,7 +99,7 @@ export class QueueSettings {
     if (label === RETRIAGE_LABEL_NAME)
       return this.retriageQueueData_;
 
-    if (label === BLOCKED_LABEL_NAME)
+    if (label === STUCK_LABEL_NAME)
       return this.stuckQueueData_;
 
     let data = this.get(label);

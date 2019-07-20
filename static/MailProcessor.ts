@@ -476,7 +476,7 @@ export class MailProcessor {
       return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
     });
     let needsTriage = newMessages.length !== 0 ||
-        !(thread.getPriorityId() || thread.isBlocked());
+        !(thread.getPriorityId() || thread.isStuck());
 
     await thread.setLabelAndQueued(shouldQueue, label, needsTriage);
     await this.addMakeTimeLabel_(thread.id);

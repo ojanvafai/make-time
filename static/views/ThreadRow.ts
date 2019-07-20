@@ -73,7 +73,7 @@ export class LabelState {
   constructor(thread: Thread, public group: string) {
     this.label = thread.getLabel();
     this.priority = thread.getPriority();
-    this.blocked = thread.getBlockedDate();
+    this.blocked = thread.getStuckDate();
     this.due = thread.getDueDate();
     this.hasRepeat = thread.hasRepeat();
   }

@@ -4,7 +4,7 @@ import {Calendar} from '../calendar/Calendar.js';
 import {QueueSettings} from '../QueueSettings.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {BLOCKED_LABEL_NAME, OVERDUE_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
+import {STUCK_LABEL_NAME, OVERDUE_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
 import {ThreadListModel} from './ThreadListModel.js';
 
@@ -78,8 +78,8 @@ export class TriageModel extends ThreadListModel {
   static getGroupName(thread: Thread) {
     if (thread.hasDueDate())
       return OVERDUE_LABEL_NAME;
-    if (thread.isBlocked())
-      return BLOCKED_LABEL_NAME;
+    if (thread.isStuck())
+      return STUCK_LABEL_NAME;
     if (thread.needsRetriage())
       return RETRIAGE_LABEL_NAME;
     return notNull(thread.getLabel());
