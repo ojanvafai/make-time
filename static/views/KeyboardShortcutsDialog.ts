@@ -55,12 +55,12 @@ export class KeyboardShortcutsDialog {
 
     let shortcut = document.createElement('td');
     shortcut.style.cssText = `
-        font-weight: bold;
-        color: green;
-        text-align: right;
-        padding-right: 4px;
-        white-space:pre;
-      `;
+      font-weight: bold;
+      color: green;
+      text-align: right;
+      padding-right: 10px;
+      white-space:pre;
+    `;
     shortcut.append(key);
 
     if (action.secondaryKey)
@@ -68,13 +68,20 @@ export class KeyboardShortcutsDialog {
 
     row.append(shortcut);
 
-    let name = document.createElement('td');
-    name.style.cssText = `
-        white-space: nowrap;
-        padding-right: 10px;
-      `;
-    name.append(action.name);
-    row.append(name);
+    let nameContainer = document.createElement('td');
+    nameContainer.style.cssText = `
+      white-space: nowrap;
+      padding-right: 10px;
+    `;
+    let name = action.name;
+    if (typeof name !== 'string') {
+      name = name.cloneNode(true) as HTMLElement | SVGElement;
+      // This is a gross hack to make the svg icons not be enormous.
+      // Is there a better way to get SVG to size to the line-height?
+      name.style.height = '1.1em';
+    }
+    nameContainer.append(name);
+    row.append(nameContainer);
 
     let description = document.createElement('td');
     description.append(action.description);

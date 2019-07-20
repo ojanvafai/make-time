@@ -2,7 +2,7 @@ import {createMktimeButton, notNull} from './Base.js';
 import {View} from './views/View.js';
 
 export interface Action {
-  name: string|Element;
+  name: string|HTMLElement|SVGElement;
   description: string;
   key: Shortcut|string;
   secondaryKey?: Shortcut|string;
@@ -44,6 +44,7 @@ function humanReadableKeyName(key: string) {
   switch (key) {
     case ' ':
       return '<space>';
+    // TODO: Replace the unicode characters with SVGs.
     case 'ArrowDown':
       return '⬇';
     case 'ArrowUp':
