@@ -6,6 +6,7 @@ import {BACKLOG_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME
 export let ARCHIVE_ACTION = {
   name: `Archive`,
   description: `Archive and remove from the current group.`,
+  key: 'a',
 };
 
 export let PIN_ACTION = {
@@ -48,7 +49,8 @@ export let NEEDS_FILTER_ACTION = {
 export let MUTE_ACTION = {
   name: `Mute`,
   description:
-      `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
+    `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
+  key: 'm',
 };
 
 export let REPEAT_ACTION = {

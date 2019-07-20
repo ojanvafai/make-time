@@ -1,4 +1,4 @@
-import {Action, Actions, registerActions} from '../Actions.js';
+import {Action, Actions, registerActions, ActionList} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
 import {defined, getMyEmail, notNull, serializeAddress} from '../Base.js';
 import {login} from '../BaseMain.js';
@@ -14,20 +14,23 @@ import {View} from './View.js';
 
 let SEND: Action = {
   name: 'Send',
+  key: 's',
   description: 'Send the mail.',
 };
 
 let HELP: Action = {
   name: 'Help',
+  key: 'h',
   description: 'Help tips.',
 };
 
 let CLOSE: Action = {
   name: 'X',
+  key: 'x',
   description: 'Close this window.',
 };
 
-let SENT_ACTIONS: (Action|Action[])[] = [
+let SENT_ACTIONS: ActionList = [
   ...BASE_THREAD_ACTIONS,
   CLOSE,
 ];

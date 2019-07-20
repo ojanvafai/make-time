@@ -119,6 +119,7 @@ let VIEW_THREADLIST_ACTION = {
 let UNDO_ACTION = {
   name: `Undo`,
   description: `Undoes the last action taken.`,
+  key: 'u',
 };
 
 let MOVE_UP_ACTION = {

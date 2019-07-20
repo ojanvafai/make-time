@@ -1,4 +1,5 @@
-import {Action, Actions} from '../Actions.js';
+import {Action, ActionList, Actions} from '../Actions.js';
+
 import {AppShell} from './AppShell.js';
 
 export abstract class View extends HTMLElement {
@@ -25,8 +26,7 @@ export abstract class View extends HTMLElement {
       await this.actions_.dispatchShortcut(e);
   };
 
-  protected setActions(
-      actions: (Action|Action[])[], supplementalActions?: (Action|Action[])[]) {
+  protected setActions(actions: ActionList, supplementalActions?: ActionList) {
     this.actions_.setActions(actions, supplementalActions);
     AppShell.setFooter(this.actions_);
   }

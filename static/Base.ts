@@ -3,7 +3,10 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {gapiFetch} from './Net.js';
 
-export let USER_ID = 'me';
+export const USER_ID = 'me';
+export const DOWN_ARROW_SVG =
+    `<path d="M 12 3 C 11.448 3 11 3.448 11 4 L 11 17.070312 L 7.1367188 13.207031 C 6.7457187 12.816031 6.1126563 12.816031 5.7226562 13.207031 L 5.6367188 13.292969 C 5.2457187 13.683969 5.2457187 14.317031 5.6367188 14.707031 L 11.292969 20.363281 C 11.683969 20.754281 12.317031 20.754281 12.707031 20.363281 L 18.363281 14.707031 C 18.754281 14.316031 18.754281 13.682969 18.363281 13.292969 L 18.277344 13.207031 C 17.886344 12.816031 17.253281 12.816031 16.863281 13.207031 L 13 17.070312 L 13 4 C 13 3.448 12.552 3 12 3 z"></path>`;
+
 const MKTIME_BUTTON_CLASS = 'mktime-button';
 
 function setupMktimeButton(button: Element, onClick?: (e: Event) => void) {
@@ -13,7 +16,7 @@ function setupMktimeButton(button: Element, onClick?: (e: Event) => void) {
 }
 
 export function createMktimeButton(
-    contents: string|HTMLElement, onClick?: (e: Event) => void) {
+    contents: string|Element, onClick?: (e: Event) => void) {
   let button = document.createElement('button');
   setupMktimeButton(button, onClick);
   button.append(contents);

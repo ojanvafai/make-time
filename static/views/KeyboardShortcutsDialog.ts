@@ -1,4 +1,4 @@
-import {Action, getActions, getPrimaryShortcut, shortcutString} from '../Actions.js';
+import {Action, getActions, shortcutString} from '../Actions.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
@@ -51,7 +51,7 @@ export class KeyboardShortcutsDialog {
     row.style.borderTop = '1px dotted var(--border-and-hover-color)';
     container.append(row);
 
-    let key = shortcutString(getPrimaryShortcut(action));
+    let key = shortcutString(action.key);
 
     let shortcut = document.createElement('td');
     shortcut.style.cssText = `

@@ -2,13 +2,15 @@ import {createMktimeButton, notNull} from './Base.js';
 import {View} from './views/View.js';
 
 export interface Action {
-  name: string;
+  name: string|Element;
   description: string;
-  key?: Shortcut|string;
+  key: Shortcut|string;
   secondaryKey?: Shortcut|string;
   hidden?: boolean;
   repeatable?: boolean;
 }
+
+export type ActionList = (Action|Action[])[];
 
 interface ButtonWithAction extends HTMLButtonElement {
   action: Action;
@@ -61,9 +63,8 @@ export function shortcutString(shortcut: Shortcut|string) {
   return shortcut.toString();
 }
 
-let actions_: Map<string, (Action | Action[])[]> = new Map();
-export function registerActions(
-    viewName: string, actions: (Action|Action[])[]) {
+let actions_: Map<string, ActionList> = new Map();
+export function registerActions(viewName: string, actions: ActionList) {
   actions_.set(viewName, actions);
 }
 
@@ -71,16 +72,9 @@ export function getActions() {
   return actions_;
 }
 
-// TODO: Should probably make Action a proper class and put this on Action.
-export function getPrimaryShortcut(action: Action) {
-  if (action.key)
-    return action.key;
-  return action.name.charAt(0).toLowerCase();
-}
-
 export class Actions extends HTMLElement {
-  private actions_: (Action|Action[])[];
-  private supplementalActions_: (Action|Action[])[];
+  private actions_: ActionList;
+  private supplementalActions_: ActionList;
   private menu_?: HTMLElement;
   private tooltip_?: HTMLElement;
 
@@ -91,8 +85,7 @@ export class Actions extends HTMLElement {
     this.supplementalActions_ = [];
   }
 
-  setActions(
-      actions: (Action|Action[])[], supplementalActions?: (Action|Action[])[]) {
+  setActions(actions: ActionList, supplementalActions?: ActionList) {
     this.actions_ = actions;
     this.supplementalActions_ = supplementalActions || [];
     this.render_();
@@ -248,11 +241,8 @@ export class Actions extends HTMLElement {
       width: 300px;
     `;
 
-    let key = action.key ? shortcutString(action.key) :
-                           action.name.charAt(0).toLowerCase();
-
     let bold = document.createElement('b');
-    bold.append(`${key}: `);
+    bold.append(`${shortcutString(action.key)}: `);
     text.append(bold, action.description);
     this.tooltip_.append(text);
 
@@ -276,11 +266,11 @@ export class Actions extends HTMLElement {
     if (!action.repeatable && e.repeat)
       return false;
 
-    return this.matchesEvent_(e, getPrimaryShortcut(action)) ||
+    return this.matchesEvent_(e, action.key) ||
         this.matchesEvent_(e, action.secondaryKey);
   }
 
-  static getMatchingAction(e: KeyboardEvent, actions: (Action|Action[])[]) {
+  static getMatchingAction(e: KeyboardEvent, actions: ActionList) {
     for (let action of actions) {
       if (Array.isArray(action)) {
         let match = action.find(x => this.matchesAction(e, x));

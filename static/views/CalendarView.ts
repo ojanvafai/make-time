@@ -8,6 +8,7 @@ import {View} from './View.js'
 
 let COLORIZE_ACTION: Action = {
   name: 'Colorize Events',
+  key: 'c',
   description:
       'Set the colors of events in your calendar to match the ones shown here.',
 };
