@@ -1,4 +1,4 @@
-import {assert, defined, notNull, showDialog, createMktimeButton} from '../Base.js';
+import {assert, createMktimeButton, notNull, showDialog} from '../Base.js';
 import {NO_OFFICES} from '../models/TriageModel.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
@@ -15,7 +15,6 @@ const DAYS_TO_SHOW_SETTING = {
   default: null,
 };
 
-const SETTINGS = [DAYS_TO_SHOW_SETTING];
 const QUERY_PARAMS = ['label', 'days', 'offices'];
 
 export class ViewFiltersChanged extends Event {
@@ -30,7 +29,7 @@ export class FilterDialogView extends View {
   private container_: HTMLElement;
   private label_: HTMLElement;
   private saveButton_: HTMLButtonElement;
-  private dialog_?: HTMLDialogElement;
+  private dialog_: HTMLDialogElement;
 
   constructor(
       private settings_: Settings,
@@ -38,16 +37,9 @@ export class FilterDialogView extends View {
     super();
 
     this.container_ = document.createElement('table');
-    // TODO: Should probably share appendSettings code through inheritance.
-    SettingsView.appendSettings(this.container_, this.settings_, SETTINGS);
     this.append(this.container_);
 
-    if (this.queryParameters_) {
-      let daysElement =
-          this.querySelector(`input[key=${DAYS_TO_SHOW_SETTING.key}]`) as
-          HTMLInputElement;
-      daysElement.value = this.queryParameters_.days;
-    }
+    this.appendDaysToShow_();
 
     this.label_ = document.createElement('tr');
     this.container_.append(this.label_);
@@ -83,23 +75,42 @@ export class FilterDialogView extends View {
   private createNameCell_(contents: string|HTMLElement) {
     let cell = document.createElement('td');
     cell.style.cssText = `
-      font-weight: bold;
-      padding-right: 12px;
+      padding-right: 4px;
+      text-align: right;
+      max-width: 200px;
     `;
     cell.append(contents);
     return cell;
   }
 
-  private createValueCell_(contents?: string|HTMLElement) {
+  private createValueCell_(...contents: (string|HTMLElement)[]) {
     let cell = document.createElement('td');
     cell.style.cssText = `
       display: flex;
       align-items: center;
       padding: 10px 0px;
     `;
-    if (contents)
-      cell.append(contents);
+    cell.append(...contents);
     return cell;
+  }
+
+  private appendDaysToShow_() {
+    let row = document.createElement('tr');
+    this.container_.append(row);
+
+    // TODO: Should probably share appendSettings code through inheritance.
+    let input = SettingsView.createInput(this.settings_, DAYS_TO_SHOW_SETTING);
+
+    row.append(
+        this.createNameCell_('Only show rows from the last'),
+        this.createValueCell_(input, 'days'));
+
+    if (this.queryParameters_) {
+      let daysElement =
+          this.querySelector(`input[key=${DAYS_TO_SHOW_SETTING.key}]`) as
+          HTMLInputElement;
+      daysElement.value = this.queryParameters_.days;
+    }
   }
 
   private appendOffices_() {
@@ -112,7 +123,12 @@ export class FilterDialogView extends View {
     this.container_.append(officesRow);
 
     let officesCell = this.createValueCell_();
-    officesRow.append(this.createNameCell_('Local offices'), officesCell);
+    officesCell.style.flexDirection = 'column';
+    officesCell.style.alignItems = 'flex-start';
+    officesRow.append(
+        this.createNameCell_(
+            'Only show meetings lacking rooms in these offices'),
+        officesCell);
 
     let parts = (offices as string).split(',').map(x => x.trim());
     for (let part of parts) {
@@ -148,7 +164,8 @@ export class FilterDialogView extends View {
     }
 
     this.label_.append(
-        this.createNameCell_('View label'), this.createValueCell_(select));
+        this.createNameCell_('Only show rows with this label'),
+        this.createValueCell_(select));
   }
 
   private handleChange_() {
@@ -186,7 +203,7 @@ export class FilterDialogView extends View {
 
   private close_() {
     // TODO: prompt if there are changes.
-    defined(this.dialog_).close();
+    this.dialog_.close();
   }
 }
 

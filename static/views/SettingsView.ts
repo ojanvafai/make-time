@@ -113,50 +113,53 @@ export class SettingsView extends View {
     this.saveButton_.disabled = false;
   }
 
+  static createInput(settings: Settings, field: Setting) {
+    let input;
+    if (field.values) {
+      input = document.createElement('select');
+      let currentValue;
+      if (settings.has(field.key))
+        currentValue = settings.getNonDefault(field.key);
+
+      for (let value of field.values) {
+        let option = document.createElement('option');
+        option.append(value);
+        if (currentValue === value)
+          option.selected = true;
+        input.append(option);
+      }
+    } else {
+      input = document.createElement('input');
+
+      input.toggleAttribute('setting');
+      if (field.min !== undefined)
+        input.min = String(field.min);
+      if (field.max !== undefined)
+        input.max = String(field.max);
+      if (field.default)
+        input.placeholder = `default: ${field.default}`;
+      if (field.type)
+        input.type = field.type;
+
+      if (field.type == 'checkbox')
+        input.checked = settings.get(field.key);
+      else if (settings.has(field.key))
+        input.value = settings.getNonDefault(field.key);
+    }
+
+    input.style.cssText = `
+      max-width: 100px;
+      margin-right: 10px;
+      flex: 0 0 auto;
+    `;
+
+    input.setAttribute('key', field.key);
+    return input;
+  }
+
   static appendSettings(
       container: HTMLElement, settings: Settings, fields: Setting[]) {
     for (let field of fields) {
-      let input;
-      if (field.values) {
-        input = document.createElement('select');
-        let currentValue;
-        if (settings.has(field.key))
-          currentValue = settings.getNonDefault(field.key);
-
-        for (let value of field.values) {
-          let option = document.createElement('option');
-          option.append(value);
-          if (currentValue === value)
-            option.selected = true;
-          input.append(option);
-        }
-      } else {
-        input = document.createElement('input');
-
-        input.toggleAttribute('setting');
-        if (field.min !== undefined)
-          input.min = String(field.min);
-        if (field.max !== undefined)
-          input.max = String(field.max);
-        if (field.default)
-          input.placeholder = `default: ${field.default}`;
-        if (field.type)
-          input.type = field.type;
-
-        if (field.type == 'checkbox')
-          input.checked = settings.get(field.key);
-        else if (settings.has(field.key))
-          input.value = settings.getNonDefault(field.key);
-      }
-
-      input.style.cssText = `
-        max-width: 100px;
-        margin-right: 10px;
-        flex: 0 0 auto;
-      `;
-
-      input.setAttribute('key', field.key);
-
       let label = document.createElement('td');
       label.style.cssText = `
         font-weight: bold;
@@ -174,7 +177,7 @@ export class SettingsView extends View {
         align-items: center;
         padding: 10px 0;
       `;
-      rightCell.append(input, description);
+      rightCell.append(this.createInput(settings, field), description);
 
       let row = document.createElement('tr');
       row.append(label, rightCell);

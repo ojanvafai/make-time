@@ -134,7 +134,7 @@ export function showDialog(contents: HTMLElement|string) {
   dialog.style.cssText = `
     top: 0;
     padding: 0;
-    margin: 8px;
+    margin: 8px auto;
     border: 1px solid var(--border-and-hover-color);
     box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
     max-height: calc(100vh - 2px);
