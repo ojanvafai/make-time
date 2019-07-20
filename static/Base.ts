@@ -80,12 +80,16 @@ function getWeekNumber(date: Date) {
 export function showDialog(contents: HTMLElement|string) {
   let dialog = document.createElement('dialog');
   // Subtract out the top/bottom, padding and border from the max-height.
+  // Set padding to 0 so that clicks the the dialog as the target always mean
+  // that the click was on the backdrop. Put the padding on a wrapper element
+  // instead.
   dialog.style.cssText = `
-    top: 15px;
-    padding: 8px 12px;
+    top: 0;
+    padding: 0;
+    margin: 8px;
     border: 1px solid var(--border-and-hover-color);
     box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
-    max-height: calc(100vh - 30px - 16px - 6px);
+    max-height: calc(100vh - 2px);
     max-width: 800px;
     position: fixed;
     display: flex;
@@ -94,8 +98,15 @@ export function showDialog(contents: HTMLElement|string) {
     color: var(--text-color);
   `;
   dialog.addEventListener('close', () => dialog.remove());
+  dialog.addEventListener('click', e => {
+    if (e.target === dialog)
+      dialog.remove();
+  });
 
-  dialog.append(contents);
+  let wrapper = document.createElement('div');
+  wrapper.style.padding = '8px';
+  wrapper.append(contents);
+  dialog.append(wrapper);
   document.body.append(dialog);
 
   dialog.showModal();

@@ -8,18 +8,13 @@ export class KeyboardShortcutsDialog {
     table.style.borderCollapse = 'collapse';
 
     let actions = getActions();
-    let isFirst = true;
     for (let entry of actions) {
       let viewName = entry[0];
 
       let headerRow = document.createElement('tr');
-      if (!isFirst) {
-        headerRow.style.cssText = `
-          height: 40px;
-          vertical-align: bottom;
-        `;
-      }
-      isFirst = false;
+      headerRow.style.cssText = `
+        height: 60px;
+      `;
       table.append(headerRow);
 
       headerRow.append(document.createElement('td'));
@@ -39,14 +34,21 @@ export class KeyboardShortcutsDialog {
       }
     }
 
+    let title = document.createElement('div');
+    title.style.cssText = `
+      font-weight: bold;
+      border-bottom: 1px solid var(--border-and-hover-color);
+    `;
+    title.append('Keyboard Shortcuts');
+
     let container = document.createElement('div');
-    container.append('Keyboard Shortcuts', document.createElement('hr'), table);
+    container.append(title, table);
     new HelpDialog(container);
   }
 
   private appendActions_(action: Action, container: HTMLTableElement) {
     let row = document.createElement('tr');
-    row.style.borderTop = '1px dotted #ddd';
+    row.style.borderTop = '1px dotted var(--border-and-hover-color)';
     container.append(row);
 
     let key = shortcutString(getPrimaryShortcut(action));
