@@ -1,5 +1,5 @@
 import {Action, registerActions, Shortcut} from '../Actions.js';
-import {assert, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, notNull} from '../Base.js';
+import {assert, collapseArrow, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, expandArrow, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -1113,7 +1113,6 @@ export class ThreadListView extends View {
       width: 20px;
       display: flex;
       align-items: center;
-      margin-right: 6px;
     `;
 
     let subject = document.createElement('div');
@@ -1127,14 +1126,15 @@ export class ThreadListView extends View {
 
     let toggleClamp = () => {
       let shouldClamp = subject.style.overflow === '';
+      arrow.textContent = '';
       if (shouldClamp) {
         subject.style.overflow = 'hidden';
         subject.style.display = '-webkit-box';
-        arrow.textContent = '▼';
+        arrow.append(expandArrow());
       } else {
         subject.style.overflow = '';
         subject.style.display = '';
-        arrow.textContent = '▲';
+        arrow.append(collapseArrow());
       }
     };
     subject.addEventListener('click', () => toggleClamp());
@@ -1152,7 +1152,7 @@ export class ThreadListView extends View {
     // Only show the arrow if there's actual overflow.
     // TODO: Technically we should recompute this when the window changes width.
     if (subject.offsetHeight < subject.scrollHeight)
-      subject.after(arrow);
+      subject.before(arrow);
 
     rendered.focusFirstUnread();
 

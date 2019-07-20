@@ -32,10 +32,25 @@ export function createSvg(viewBox: string, innerHTML: string) {
 }
 
 export function createSvgButton(
-  viewBox: string, onClick: (e: Event) => void, innerHTML: string) {
+    viewBox: string, onClick: (e: Event) => void, innerHTML: string) {
   let button = createSvg(viewBox, innerHTML);
   setupMktimeButton(button, onClick);
   return button;
+}
+
+function createArrow(innerHTML: string) {
+  let svg = createSvg('0 0 24 24', innerHTML);
+  svg.style.height = '24px';
+  return svg;
+}
+export function collapseArrow() {
+  return createArrow(
+      `<path d="M12,9.929l3.821,3.821c0.414,0.414,1.086,0.414,1.5,0l0,0c0.414-0.414,0.414-1.086,0-1.5l-4.614-4.614 c-0.391-0.391-1.024-0.391-1.414,0L6.679,12.25c-0.414,0.414-0.414,1.086,0,1.5l0,0c0.414,0.414,1.086,0.414,1.5,0L12,9.929z"></path>`);
+}
+
+export function expandArrow() {
+  return createArrow(
+      `<path d="M12,14.071L8.179,10.25c-0.414-0.414-1.086-0.414-1.5,0l0,0c-0.414,0.414-0.414,1.086,0,1.5l4.614,4.614 c0.391,0.391,1.024,0.391,1.414,0l4.614-4.614c0.414-0.414,0.414-1.086,0-1.5v0c-0.414-0.414-1.086-0.414-1.5,0L12,14.071z"></path>`);
 }
 
 // Authorization scopes required by the Google API.

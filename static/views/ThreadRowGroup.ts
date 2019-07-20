@@ -1,3 +1,4 @@
+import {collapseArrow, expandArrow} from '../Base.js';
 import {ThreadListModel} from '../models/ThreadListModel.js';
 import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
 import {ALL, NONE, SOME} from '../SelectBox.js';
@@ -43,8 +44,9 @@ export class ThreadRowGroup extends HTMLElement {
     this.groupNameContainer_.style.cssText = `
       font-weight: bold;
       font-size: 18px;
-      padding: 12px 4px;
+      padding: 12px 4px 12px 0;
       display: flex;
+      align-items: center;
       border-radius: 3px;
     `;
     this.groupNameContainer_.className = 'outline-on-hover';
@@ -56,14 +58,13 @@ export class ThreadRowGroup extends HTMLElement {
     this.expander_ = document.createElement('div');
     this.expander_.style.cssText = `
       color: grey;
-      margin: 2px 4px;
-      padding: 0 3px;
+      margin-top: 2px;
       font-weight: bold;
       font-size: 12px;
     `;
 
     this.groupNameContainer_.append(
-        groupName_, this.rowCountDisplay_, this.expander_);
+        this.expander_, groupName_, this.rowCountDisplay_);
 
     let header = document.createElement('div');
     header.style.cssText = `
@@ -178,7 +179,8 @@ export class ThreadRowGroup extends HTMLElement {
     this.wasCollapsed_ = collapsed;
     this.updateRowCount_(rows.length, collapsed);
 
-    this.expander_.textContent = collapsed ? 'ᐯ' : 'ᐱ';
+    this.expander_.textContent = '';
+    this.expander_.append(collapsed ? expandArrow() : collapseArrow());
     this.selectBox_.setDisabled(collapsed);
 
     if (collapsed) {

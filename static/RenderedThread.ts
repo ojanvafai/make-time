@@ -1,5 +1,5 @@
 import {Action} from './Actions.js';
-import {assert, notNull} from './Base.js';
+import {assert, collapseArrow, expandArrow, notNull} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 import {NEXT_ACTION, NEXT_FULL_ACTION, PREVIOUS_ACTION, PREVIOUS_FULL_ACTION} from './views/ThreadListView.js';
@@ -257,8 +257,7 @@ export class RenderedThread extends HTMLElement {
 
     let to = document.createElement('div');
     to.style.cssText = `
-    cursor: pointer;
-    white-space: nowrap;
+      cursor: pointer;
       overflow: hidden;
     `;
 
@@ -268,27 +267,30 @@ export class RenderedThread extends HTMLElement {
       cursor: pointer;
       font-size: 75%;
       width: 18px;
-      margin-left: 2px;
+      margin-left: -2px;
       display: flex;
       align-items: center;
       justify-content: center;
       user-select: none;
+      border-radius: 3px;
     `;
 
     let bottomRow = document.createElement('div');
     bottomRow.style.cssText = `
       display: flex;
+      align-items: center;
       color: var(--dim-text-color);
       font-size: 90%;
     `;
-    bottomRow.append(to, expander);
+    bottomRow.append(expander, to);
 
     let toggleClamp = () => {
-      let shouldExpand = expander.textContent === '▼';
-      to.style.whiteSpace = shouldExpand ? '' : 'nowrap';
-      expander.textContent = shouldExpand ? '▲' : '▼';
-      bottomRow.style.fontSize = shouldExpand ? '' : '90%';
-      this.renderTo_(processedMessage, to, !shouldExpand);
+      let shouldMinify = to.style.whiteSpace !== 'nowrap';
+      to.style.whiteSpace = shouldMinify ? 'nowrap' : '';
+      expander.textContent = '';
+      expander.append(shouldMinify ? expandArrow() : collapseArrow());
+      bottomRow.style.fontSize = shouldMinify ? '90%' : '';
+      this.renderTo_(processedMessage, to, shouldMinify);
     };
     to.addEventListener('click', toggleClamp);
     expander.addEventListener('click', toggleClamp);
@@ -319,7 +321,7 @@ export class RenderedThread extends HTMLElement {
 
   renderTo_(
       processedMessage: Message, container: HTMLElement,
-    shouldMinify: boolean) {
+      shouldMinify: boolean) {
     container.textContent = '';
 
     if (processedMessage.to) {
