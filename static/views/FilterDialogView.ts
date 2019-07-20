@@ -116,6 +116,7 @@ export class FilterDialogView extends View {
 
   private async appendLabelSelect_() {
     let name = document.createElement('td');
+    name.style.fontWeight = 'bold';
     name.append('View label');
 
     let select = await this.settings_.getLabelSelect();
