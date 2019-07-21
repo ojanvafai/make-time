@@ -1,6 +1,8 @@
+import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action, registerActions, Shortcut} from '../Actions.js';
 import {assert, collapseArrow, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, expandArrow, notNull} from '../Base.js';
-import {login} from '../BaseMain.js';
+import {firestoreUserCollection, login} from '../BaseMain.js';
+import {CalendarEvent} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
@@ -33,6 +35,14 @@ let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
 
 interface ListenerData {
   name: string, handler: (e: Event) => void,
+}
+
+interface IgnoredEvent {
+  summary: string, eventId: string, end: number,
+}
+
+interface IgnoredDocumentData extends firebase.firestore.DocumentSnapshot {
+  ignored: IgnoredEvent[],
 }
 
 let QUICK_REPLY_ACTION = {
@@ -329,10 +339,22 @@ export class ThreadListView extends View {
     this.render_();
   }
 
+  private meetingsDocument_() {
+    return firestoreUserCollection().doc('meetings');
+  }
+
+  private async ignoredMeetings_() {
+    // TODO: Cache this in memory.
+    return (await this.meetingsDocument_().get()).data() as IgnoredDocumentData;
+  }
+
   private async renderCalendar_() {
     let events = await this.model_.getNoMeetingRoomEvents();
     if (!events.length)
       return;
+
+    let ignoredData = await this.ignoredMeetings_();
+    let ignored = ignoredData ? ignoredData.ignored : [];
 
     this.noMeetingRoomEvents_ = document.createElement('div');
     this.noMeetingRoomEvents_.style.cssText = `
@@ -355,45 +377,71 @@ export class ThreadListView extends View {
         `Meetings without a local room.`, eventContainer);
 
     for (let event of events) {
-      let item = document.createElement('div');
-      item.style.cssText = `
-        display: flex;
-        border-radius: 3px;
-        border: 1px dotted var(--border-and-hover-color);
-        margin: 4px;
-      `;
-
-      let link = document.createElement('a');
-      link.style.cssText = `
-        overflow: hidden;
-        text-overflow: ellipsis;
-        width: 150px;
-        padding: 4px;
-        color: var(--text-color);
-      `;
-      link.className = 'hover';
-      link.href = event.editUrl;
-      link.append(
-          `${event.start.getMonth() + 1}/${event.start.getDate()} `,
-          event.summary);
-
-      let xButton = document.createElement('div');
-      xButton.title =
-          `Click here to remove if this meeting doesn't need a room.`;
-      xButton.className = 'x-button';
-      // Override the borders from the stylesheet for x-button.
-      xButton.style.cssText = `
-        border: 0;
-        border-radius: 0;
-        width: 20px;
-      `;
-      xButton.addEventListener('click', () => {
-        item.remove();
-      });
-      item.append(link, xButton);
-
-      eventContainer.append(item);
+      if (ignored.find(x => x.eventId === event.eventId))
+        continue;
+      eventContainer.append(this.createNoMeetingRoomEvent(event));
     }
+
+    // Remove ignored meetings that have passed from firestore.
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    let time = yesterday.getTime();
+    let filteredIgnored = ignored.filter(x => x.end > time);
+
+    if (filteredIgnored.length != ignored.length) {
+      await this.meetingsDocument_().set(
+          {ignored: filteredIgnored}, {merge: true});
+    }
+  }
+
+  private createNoMeetingRoomEvent(event: CalendarEvent) {
+    let item = document.createElement('div');
+    item.style.cssText = `
+      display: flex;
+      border-radius: 3px;
+      border: 1px dotted var(--border-and-hover-color);
+      margin: 4px;
+    `;
+
+    let link = document.createElement('a');
+    link.style.cssText = `
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 150px;
+      padding: 4px;
+      color: var(--text-color);
+    `;
+    link.className = 'hover';
+    link.href = event.editUrl;
+    link.append(
+        `${event.start.getMonth() + 1}/${event.start.getDate()} `,
+        event.summary);
+
+    let xButton = document.createElement('div');
+    xButton.title = `Click here to remove if this meeting doesn't need a room.`;
+    xButton.className = 'x-button';
+    // Override the borders from the stylesheet for x-button.
+    xButton.style.cssText = `
+      border: 0;
+      border-radius: 0;
+      width: 20px;
+    `;
+
+    xButton.addEventListener('click', async () => {
+      let ignoredData = await this.ignoredMeetings_();
+      let newIgnored = ignoredData ? ignoredData.ignored : [];
+      let ignoredEvent = {
+        summary: event.summary,
+        eventId: event.eventId,
+        end: new Date(event.end).getTime(),
+      };
+      newIgnored.push(ignoredEvent);
+      await this.meetingsDocument_().set({ignored: newIgnored}, {merge: true});
+      item.remove();
+    });
+
+    item.append(link, xButton);
+    return item;
   }
 
   private getThreadRow_(thread: Thread) {
