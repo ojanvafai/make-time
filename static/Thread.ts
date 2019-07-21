@@ -73,6 +73,8 @@ export interface ThreadMetadata {
   readCount?: number;
   countToArchive?: number;
   countToMarkRead?: number;
+  // Queue pushing maketime labels to gmail as gmail labels.
+  pushLabelsToGmail?: boolean;
 }
 
 // Want strong typing on all update calls, but don't want to write historyId and
@@ -102,6 +104,7 @@ export interface ThreadMetadataUpdate {
   readCount?: number|firebase.firestore.FieldValue;
   countToArchive?: number|firebase.firestore.FieldValue;
   countToMarkRead?: number|firebase.firestore.FieldValue;
+  pushLabelsToGmail?: boolean|firebase.firestore.FieldValue;
 }
 
 // Firestore queries take the key as a string. Use an enum so we can avoid silly
@@ -130,6 +133,7 @@ export enum ThreadMetadataKeys {
   readCount = 'readCount',
   countToArchive = 'countToArchive',
   countToMarkRead = 'countToMarkRead',
+  pushLabelsToGmail = 'pushLabelsToGmail',
 }
 
 let FWD_THREAD_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -181,6 +185,40 @@ export enum BuiltInLabelIds {
   Stuck = -1,
   Fallback = -2,
 }
+
+export function getPriorityName(id: Priority) {
+  switch (id) {
+    case Priority.Pin:
+      return PINNED_PRIORITY_NAME;
+    case Priority.Quick:
+      return QUICK_PRIORITY_NAME;
+    case Priority.NeedsFilter:
+      return NEEDS_FILTER_PRIORITY_NAME;
+    case Priority.MustDo:
+      return MUST_DO_PRIORITY_NAME;
+    case Priority.Urgent:
+      return URGENT_PRIORITY_NAME;
+    case Priority.Backlog:
+      return BACKLOG_PRIORITY_NAME;
+  }
+  throw new Error('This should never happen');
+}
+
+export function getLabelName(queueNames: QueueNames, id?: number) {
+  if (!id)
+    return FALLBACK_LABEL_NAME;
+
+  switch (id) {
+    case BuiltInLabelIds.Stuck:
+      return STUCK_LABEL_NAME;
+    case BuiltInLabelIds.Fallback:
+      return FALLBACK_LABEL_NAME;
+    default:
+      let name = queueNames.getName(id);
+      return name || FALLBACK_LABEL_NAME;
+  }
+}
+
 
 export class Thread extends EventTarget {
   private processed_: ProcessedMessageData;
@@ -406,8 +444,8 @@ export class Thread extends EventTarget {
   }
 
   setDate(
-      key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, date: Date, moveToInbox?: boolean,
-      keepMetadata?: boolean) {
+      key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, date: Date,
+      moveToInbox?: boolean, keepMetadata?: boolean) {
     // Don't want setting the due date to reset retriageTimestamp or reset
     // other fields.
     let update = keepMetadata ? {} : this.keepInInboxMetadata_();
@@ -425,8 +463,8 @@ export class Thread extends EventTarget {
   }
 
   setDateDays_(
-      key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, days: number, moveToInbox?: boolean,
-      keepMetadata?: boolean) {
+      key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, days: number,
+      moveToInbox?: boolean, keepMetadata?: boolean) {
     let date = new Date();
     // Set the time to midnight to ensure consistency since we only care about
     // day boundaries.
@@ -434,6 +472,10 @@ export class Thread extends EventTarget {
     date.setDate(date.getDate() + days);
 
     return this.setDate(key, date, moveToInbox, keepMetadata);
+  }
+
+  async pushLabelsToGmail() {
+    await this.updateMetadata({pushLabelsToGmail: true});
   }
 
   async setOnlyFinalVersion(value: boolean) {
@@ -539,19 +581,7 @@ export class Thread extends EventTarget {
   }
 
   getLabel() {
-    let id = this.getLabelId();
-    if (!id)
-      return FALLBACK_LABEL_NAME;
-
-    switch (id) {
-      case BuiltInLabelIds.Stuck:
-        return STUCK_LABEL_NAME;
-      case BuiltInLabelIds.Fallback:
-        return FALLBACK_LABEL_NAME;
-      default:
-        let name = this.queueNames_.getName(id);
-        return name || FALLBACK_LABEL_NAME;
-    }
+    return getLabelName(this.queueNames_, this.getLabelId());
   }
 
   needsTriage() {
@@ -564,20 +594,9 @@ export class Thread extends EventTarget {
   }
 
   getPriority() {
-    switch (this.getPriorityId()) {
-      case Priority.Pin:
-        return PINNED_PRIORITY_NAME;
-      case Priority.Quick:
-        return QUICK_PRIORITY_NAME;
-      case Priority.NeedsFilter:
-        return NEEDS_FILTER_PRIORITY_NAME;
-      case Priority.MustDo:
-        return MUST_DO_PRIORITY_NAME;
-      case Priority.Urgent:
-        return URGENT_PRIORITY_NAME;
-      case Priority.Backlog:
-        return BACKLOG_PRIORITY_NAME;
-    }
+    let id = this.getPriorityId();
+    if (id)
+      return getPriorityName(id);
     return null;
   }
 

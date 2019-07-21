@@ -10,10 +10,12 @@ import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, ruleRegexp, Settings, stringFilterMatches} from './Settings.js';
 import {TaskQueue} from './TaskQueue.js';
-import {BuiltInLabelIds, Priority, Thread, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
+import {BuiltInLabelIds, getLabelName, getPriorityName, Priority, Thread, ThreadMetadata, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
+let LABEL_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/label`;
+let PRIORITY_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/priority`;
 let MUST_DO_RETRIAGE_FREQUENCY_DAYS = 1;
 let URGENT_RETRIAGE_FREQUENCY_DAYS = 7;
 let BACKLOG_RETRIAGE_FREQUENCY_DAYS = 28;
@@ -30,22 +32,34 @@ export class MailProcessor {
   async init() {
     if (this.makeTimeLabelId_)
       return;
+    let labels = await this.ensureLabelsExist_(MAKE_TIME_LABEL_NAME);
+    this.makeTimeLabelId_ = labels[0].id;
+  }
 
+  private async getExistingMakeTimeLabels_() {
     var response = await gapiFetch(
         gapi.client.gmail.users.labels.list, {'userId': USER_ID});
     let labels = defined(response.result.labels);
-    let label = labels.find(x => x.name === MAKE_TIME_LABEL_NAME);
-    if (!label) {
-      let resp = await gapiFetch(gapi.client.gmail.users.labels.create, {
-        name: MAKE_TIME_LABEL_NAME,
-        messageListVisibility: 'hide',
-        labelListVisibility: 'labelHide',
-        userId: USER_ID,
-      });
-      label = resp.result;
-    }
+    return labels.filter(x => defined(x.name).startsWith(MAKE_TIME_LABEL_NAME))
+  }
 
-    this.makeTimeLabelId_ = label.id;
+  private async ensureLabelsExist_(...labelNames: string[]) {
+    let labels = await this.getExistingMakeTimeLabels_();
+    let result = [];
+    for (let labelName of labelNames) {
+      let label = labels.find(x => x.name === labelName);
+      if (!label) {
+        let resp = await gapiFetch(gapi.client.gmail.users.labels.create, {
+          name: labelName,
+          messageListVisibility: 'hide',
+          labelListVisibility: 'labelHide',
+          userId: USER_ID,
+        });
+        label = resp.result;
+      }
+      result.push(label);
+    }
+    return result;
   }
 
   async process() {
@@ -170,6 +184,109 @@ export class MailProcessor {
     await this.removeLabels_(id, [defined(this.makeTimeLabelId_)]);
   }
 
+  private spacesToDashes_(str: string) {
+    return str.replace(/ /g, '-');
+  }
+
+  private async pushLabelsToGmail_() {
+    let querySnapshot =
+        await this.metadataCollection_()
+            .where(ThreadMetadataKeys.pushLabelsToGmail, '==', true)
+            .get();
+
+    if (!querySnapshot.docs.length)
+      return;
+
+    // Ensure parent labels exist first.
+    await this.ensureLabelsExist_(
+        MAKE_TIME_LABEL_NAME, LABEL_LABEL_NAME, PRIORITY_LABEL_NAME);
+
+    let labelPrefix = `${LABEL_LABEL_NAME}/`;
+    let priorityPrefix = `${PRIORITY_LABEL_NAME}/`;
+
+    let queueNames = new QueueNames();
+
+    let mktimeLabelAndPriorityLabels =
+        (await this.getExistingMakeTimeLabels_()).filter(x => {
+          let name = defined(x.name);
+          return name.startsWith(labelPrefix) ||
+              name.startsWith(priorityPrefix);
+        });
+
+    await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
+        querySnapshot.docs,
+        async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          // TODO: Do something to apply due/stuck dates as labels?
+          let data = doc.data() as ThreadMetadata;
+
+          let resp = await gapiFetch(gapi.client.gmail.users.threads.get, {
+            userId: USER_ID,
+            id: doc.id,
+            format: 'minimal',
+            fields: 'messages(labelIds)',
+          });
+
+          let existingLabelIds: Set<string> = new Set();
+          if (resp.result.messages) {
+            for (let message of resp.result.messages) {
+              defined(message.labelIds).map(x => existingLabelIds.add(x));
+            }
+          }
+
+          let existingMktimeLabelIds =
+              Array.from(existingLabelIds)
+                  .filter(
+                      x => mktimeLabelAndPriorityLabels.find(y => y.id === x));
+
+          let addLabelIds = [];
+          let removeLabelIds = existingMktimeLabelIds;
+
+          if (data.muted)
+            addLabelIds.push('MUTE');
+          else if (existingLabelIds.has('MUTE'))
+            removeLabelIds.push('MUTE');
+
+          let labelName =
+              `${LABEL_LABEL_NAME}/${getLabelName(queueNames, data.labelId)}`;
+          await this.addRemoveLabel_(
+              mktimeLabelAndPriorityLabels, existingMktimeLabelIds, labelName,
+              addLabelIds, removeLabelIds);
+
+          if (data.priorityId) {
+            let priorityName =
+                `${PRIORITY_LABEL_NAME}/${getPriorityName(data.priorityId)}`;
+            await this.addRemoveLabel_(
+                mktimeLabelAndPriorityLabels, existingMktimeLabelIds,
+                priorityName, addLabelIds, removeLabelIds);
+          }
+
+          await this.modifyLabels_(doc.id, addLabelIds, removeLabelIds);
+          let update: ThreadMetadataUpdate = {
+            pushLabelsToGmail: firebase.firestore.FieldValue.delete(),
+          };
+          await doc.ref.update(update);
+        });
+  }
+
+  private async addRemoveLabel_(
+      mktimeLabelAndPriorityLabels: gapi.client.gmail.Label[],
+      existingMktimeLabelIds: string[], labelName: string,
+      addLabelIds: string[], removeLabelIds: string[]) {
+    labelName = this.spacesToDashes_(labelName);
+    let gmailLabel =
+        mktimeLabelAndPriorityLabels.find(x => x.name === labelName);
+
+    if (!gmailLabel) {
+      gmailLabel = (await this.ensureLabelsExist_(labelName))[0];
+      mktimeLabelAndPriorityLabels.push(gmailLabel);
+    }
+
+    let labelId = defined(gmailLabel.id);
+    if (!existingMktimeLabelIds.includes(labelId))
+      addLabelIds.push(labelId);
+    removeLabelIds = removeLabelIds.filter(x => x !== labelId);
+  }
+
   private async syncWithGmail_() {
     // Add back in threads that were archived and then undone and
     // flush any pending archives/markReads from maketime.
@@ -179,7 +296,8 @@ export class MailProcessor {
       this.removeGmailLabels_(
           ThreadMetadataKeys.countToArchive,
           ['INBOX', defined(this.makeTimeLabelId_)]),
-      this.removeGmailLabels_(ThreadMetadataKeys.countToMarkRead, ['UNREAD'])
+      this.removeGmailLabels_(ThreadMetadataKeys.countToMarkRead, ['UNREAD']),
+      this.pushLabelsToGmail_(),
     ]);
 
     // This has to happen after the removeGmailLabels_ calls above as those
@@ -188,10 +306,11 @@ export class MailProcessor {
         'in:inbox -in:mktime',
         (thread) => this.processThread(defined(thread.id)), 'Updating...');
 
-    // For anything that used to be in the inbox, but isn't anymore (e.g. the
-    // user archived from gmail), clear it's metadata so it doesn't show up in
-    // maketime either. Include spam and trash in this query since we want to
-    // remove messages that were marked as spam/trash in gmail as well.
+    // For anything that used to be in the inbox, but isn't anymore (e.g.
+    // the user archived from gmail), clear it's metadata so it doesn't show
+    // up in maketime either. Include spam and trash in this query since we
+    // want to remove messages that were marked as spam/trash in gmail as
+    // well.
     await this.forEachThread_(
         '-in:inbox in:mktime', (thread) => this.clearMetadata_(thread),
         'Removing messages archived from gmail...', true);
@@ -201,9 +320,9 @@ export class MailProcessor {
     const taskQueue = new TaskQueue(3);
     for (let item of items) {
       taskQueue.queueTask(async () => {
-        // We don't want an error processing one thread to prevent processing
-        // all the other threads since usually those errors are specific to
-        // something unexpected with that specific thread.
+        // We don't want an error processing one thread to prevent
+        // processing all the other threads since usually those errors are
+        // specific to something unexpected with that specific thread.
         try {
           await callback(item);
         } catch (e) {
@@ -261,14 +380,20 @@ export class MailProcessor {
     return threads;
   }
 
-  async processThread(threadId: string) {
-    let metadata = await Thread.fetchMetadata(threadId);
+  private async getThread_(threadId: string, metadata?: ThreadMetadata) {
+    if (!metadata)
+      metadata = await Thread.fetchMetadata(threadId);
+
     let thread = Thread.create(threadId, metadata);
     // Grab the messages we have off disk first to avoid sending those bytes
     // down the wire if we already have them.
     await thread.fetchFromDisk();
     await thread.update();
+    return thread;
+  }
 
+  async processThread(threadId: string) {
+    let thread = await this.getThread_(threadId);
     let messages = thread.getMessages();
     assert(
         messages.length,
@@ -316,8 +441,8 @@ export class MailProcessor {
       await Thread.clearMetadata(id);
       await this.removeMakeTimeLabel_(id);
     } else {
-      // If one of the messages is in the inbox, move them all to the inbox so
-      // that gmail doesn't keep returning this thread for a "-in:inbox"
+      // If one of the messages is in the inbox, move them all to the inbox
+      // so that gmail doesn't keep returning this thread for a "-in:inbox"
       // query.
       await this.addLabels_(id, ['INBOX']);
     }
@@ -467,9 +592,9 @@ export class MailProcessor {
         (this.settings_.getQueueSettings().get(label).queue !=
          QueueSettings.IMMEDIATE);
 
-    // If all the new messages have the sent label and the thread already has
-    // a priority, then don't make you retriage since you sent the messages
-    // yourself and could have retriaged at that point.
+    // If all the new messages have the sent label and the thread already
+    // has a priority, then don't make you retriage since you sent the
+    // messages yourself and could have retriaged at that point.
     let makeTimeLabelId = defined(this.makeTimeLabelId_);
     let newMessages = thread.getMessages().filter(x => {
       let ids = x.getLabelIds()
@@ -554,8 +679,8 @@ export class MailProcessor {
             hasLabel: true,
             needsRetriage: true,
           };
-          // TODO: Remove this once all clients have flushed all their threads
-          // that don't have labels.
+          // TODO: Remove this once all clients have flushed all their
+          // threads that don't have labels.
           if (!doc.data().labelId)
             update.labelId = BuiltInLabelIds.Fallback;
           await doc.ref.update(update);
@@ -563,8 +688,8 @@ export class MailProcessor {
   }
 
   private async processRetriage_() {
-    // If there are still untriaged needsRetriage threads, then don't add more
-    // to the pile.
+    // If there are still untriaged needsRetriage threads, then don't add
+    // more to the pile.
     let needsRetriage = await this.metadataCollection_()
                             .where(ThreadMetadataKeys.needsRetriage, '==', true)
                             .get();
@@ -642,8 +767,8 @@ export class MailProcessor {
     await storage.fetch();
 
     let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
-    // Leaving in for easy manual testing of dequeuing code. Delete if this is
-    // in the way of a code change.
+    // Leaving in for easy manual testing of dequeuing code. Delete if this
+    // is in the way of a code change.
     //
     // let time = new Date(lastDequeueTime);
     // let DAYS_BACK = 1;

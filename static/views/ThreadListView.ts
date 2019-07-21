@@ -546,6 +546,10 @@ export class ThreadListView extends View {
         container, `${VIEW_IN_GMAIL_ACTION.name} (${VIEW_IN_GMAIL_ACTION.key})`,
         () => this.takeAction(VIEW_IN_GMAIL_ACTION));
 
+    this.createMenuItem_(
+        container, 'Apply labels in gmail on next sync',
+        () => this.applyLabelsInGmail_());
+
     if (!this.renderedRow_ && this.model_.canDisallowViewMessages()) {
       let contents = this.model_.allowViewMessages() ?
           'Disallow viewing messages' :
@@ -1106,6 +1110,13 @@ export class ThreadListView extends View {
     this.buttonContainer_.style.display = 'none';
 
     this.clearNoMeetingRooms_();
+  }
+
+  private async applyLabelsInGmail_() {
+    let threads = this.collectThreadsToTriage_(true);
+    for (let thread of threads) {
+      await thread.pushLabelsToGmail();
+    }
   }
 
   private async markTriaged_(destination: Action) {
