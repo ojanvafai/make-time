@@ -352,11 +352,11 @@ export class AppShell extends HTMLElement {
   }
 
   get contentScrollTop() {
-    return this.content_.scrollTop;
+    return notNull(this.content_.parentElement).scrollTop;
   }
 
   set contentScrollTop(value: number) {
-    this.content_.scrollTop = value;
+    notNull(this.content_.parentElement).scrollTop = value;
   }
 
   setQueryParameters(params: {[property: string]: string}) {
