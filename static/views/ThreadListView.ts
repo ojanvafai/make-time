@@ -355,6 +355,10 @@ export class ThreadListView extends View {
 
     let ignoredData = await this.ignoredMeetings_();
     let ignored = ignoredData ? ignoredData.ignored : [];
+    let notIgnored =
+        events.filter(x => !ignored.find(y => y.eventId === x.eventId));
+    if (!notIgnored.length)
+      return;
 
     this.noMeetingRoomEvents_ = document.createElement('div');
     this.noMeetingRoomEvents_.style.cssText = `
@@ -376,10 +380,8 @@ export class ThreadListView extends View {
     this.noMeetingRoomEvents_.append(
         `Meetings without a local room.`, eventContainer);
 
-    for (let event of events) {
-      if (ignored.find(x => x.eventId === event.eventId))
-        continue;
-      eventContainer.append(this.createNoMeetingRoomEvent(event));
+    for (let event of notIgnored) {
+      this.appendNoMeetingRoomEvent(eventContainer, event);
     }
 
     // Remove ignored meetings that have passed from firestore.
@@ -387,14 +389,14 @@ export class ThreadListView extends View {
     yesterday.setDate(yesterday.getDate() - 1);
     let time = yesterday.getTime();
     let filteredIgnored = ignored.filter(x => x.end > time);
-
     if (filteredIgnored.length != ignored.length) {
       await this.meetingsDocument_().set(
           {ignored: filteredIgnored}, {merge: true});
     }
   }
 
-  private createNoMeetingRoomEvent(event: CalendarEvent) {
+  private appendNoMeetingRoomEvent(
+      container: HTMLElement, event: CalendarEvent) {
     let item = document.createElement('div');
     item.style.cssText = `
       display: flex;
@@ -436,12 +438,24 @@ export class ThreadListView extends View {
         end: new Date(event.end).getTime(),
       };
       newIgnored.push(ignoredEvent);
-      await this.meetingsDocument_().set({ignored: newIgnored}, {merge: true});
+
+      // TODO: Give some indication that this is blocked on a network request.
       item.remove();
+      if (!container.childElementCount)
+        this.clearNoMeetingRooms_();
+
+      await this.meetingsDocument_().set({ignored: newIgnored}, {merge: true});
     });
 
     item.append(link, xButton);
-    return item;
+    container.append(item);
+  }
+
+  private clearNoMeetingRooms_() {
+    if (this.noMeetingRoomEvents_) {
+      this.noMeetingRoomEvents_.remove();
+      this.noMeetingRoomEvents_ = undefined;
+    }
   }
 
   private getThreadRow_(thread: Thread) {
@@ -1091,10 +1105,7 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.style.display = 'none';
     this.buttonContainer_.style.display = 'none';
 
-    if (this.noMeetingRoomEvents_) {
-      this.noMeetingRoomEvents_.remove();
-      this.noMeetingRoomEvents_ = undefined;
-    }
+    this.clearNoMeetingRooms_();
   }
 
   private async markTriaged_(destination: Action) {
