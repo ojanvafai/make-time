@@ -54,7 +54,7 @@ export class FilterDialogView extends View {
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
       display: flex;
-      align-items: center;
+      justify-content: flex-end;
     `;
     buttonContainer.append(cancel, this.saveButton_);
     this.append(buttonContainer);
