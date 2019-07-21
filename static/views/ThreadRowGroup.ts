@@ -49,7 +49,7 @@ export class ThreadRowGroup extends HTMLElement {
       align-items: center;
       border-radius: 3px;
     `;
-    this.groupNameContainer_.className = 'outline-on-hover';
+    this.groupNameContainer_.className = 'hover';
     this.groupNameContainer_.addEventListener(
         'click', () => this.toggleCollapsed_());
 

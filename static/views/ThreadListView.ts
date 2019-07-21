@@ -191,7 +191,7 @@ export class ThreadListView extends View {
   private modelListeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
-  private noMeetingRoomEvents_: HTMLElement;
+  private noMeetingRoomEvents_?: HTMLElement;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private pendingContainer_: HTMLElement;
@@ -255,13 +255,6 @@ export class ThreadListView extends View {
           (x.target as ThreadRowGroup).setInViewport(true);
       });
     }, {root: this.appShell_.getScroller(), rootMargin: '50%'});
-
-    this.noMeetingRoomEvents_ = document.createElement('div');
-    this.noMeetingRoomEvents_.style.cssText = `
-      column-count: 3;
-      white-space: nowrap;
-    `;
-    this.append(this.noMeetingRoomEvents_);
 
     this.pendingContainer_ = document.createElement('div');
     this.pendingContainer_.style.cssText = `
@@ -342,24 +335,46 @@ export class ThreadListView extends View {
     if (!events.length)
       return;
 
-    this.noMeetingRoomEvents_.before(
+    this.noMeetingRoomEvents_ = document.createElement('div');
+    this.noMeetingRoomEvents_.style.cssText = `
+      text-align: center;
+      margin: 8px 0;
+    `;
+    this.prepend(this.noMeetingRoomEvents_);
+
+    let eventContainer = document.createElement('div');
+    eventContainer.style.cssText = `
+      display: flex;
+      white-space: nowrap;
+      flex-wrap: wrap;
+      justify-content: center;
+      text-align: start;
+      margin-top: 4px;
+    `;
+
+    this.noMeetingRoomEvents_.append(
         `Meetings without a local room. Ignore by adding "${
-            NO_ROOM_NEEDED}" to the location.`);
+            NO_ROOM_NEEDED}" to the location.`,
+        eventContainer);
 
     for (let event of events) {
-      let item = document.createElement('div');
+      let item = document.createElement('a');
       item.style.cssText = `
         overflow: hidden;
         text-overflow: ellipsis;
+        width: 150px;
+        border: 1px dotted var(--border-and-hover-color);
+        padding: 4px;
+        margin: 4px;
+        color: var(--text-color);
       `;
 
-      let link = document.createElement('a');
-      link.href = event.editUrl;
-      link.append(event.summary);
-
+      item.className = 'hover';
+      item.href = event.editUrl;
       item.append(
-          `${event.start.getMonth() + 1}/${event.start.getDate()} `, link);
-      this.noMeetingRoomEvents_.append(item);
+          `${event.start.getMonth() + 1}/${event.start.getDate()} `,
+          event.summary);
+      eventContainer.append(item);
     }
   }
 
@@ -999,6 +1014,7 @@ export class ThreadListView extends View {
     this.updateActions_();
 
     this.render_();
+    this.renderCalendar_();
   }
 
   transitionToSingleThread_() {
@@ -1008,6 +1024,11 @@ export class ThreadListView extends View {
     this.scrollOffset_ = this.appShell_.contentScrollTop;
     this.rowGroupContainer_.style.display = 'none';
     this.buttonContainer_.style.display = 'none';
+
+    if (this.noMeetingRoomEvents_) {
+      this.noMeetingRoomEvents_.remove();
+      this.noMeetingRoomEvents_ = undefined;
+    }
   }
 
   private async markTriaged_(destination: Action) {
