@@ -1,7 +1,6 @@
 import {Action, registerActions, Shortcut} from '../Actions.js';
 import {assert, collapseArrow, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, expandArrow, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
-import {NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
@@ -353,27 +352,46 @@ export class ThreadListView extends View {
     `;
 
     this.noMeetingRoomEvents_.append(
-        `Meetings without a local room. Ignore by adding "${
-            NO_ROOM_NEEDED}" to the location.`,
-        eventContainer);
+        `Meetings without a local room.`, eventContainer);
 
     for (let event of events) {
-      let item = document.createElement('a');
+      let item = document.createElement('div');
       item.style.cssText = `
+        display: flex;
+        border-radius: 3px;
+        border: 1px dotted var(--border-and-hover-color);
+        margin: 4px;
+      `;
+
+      let link = document.createElement('a');
+      link.style.cssText = `
         overflow: hidden;
         text-overflow: ellipsis;
         width: 150px;
-        border: 1px dotted var(--border-and-hover-color);
         padding: 4px;
-        margin: 4px;
         color: var(--text-color);
       `;
-
-      item.className = 'hover';
-      item.href = event.editUrl;
-      item.append(
+      link.className = 'hover';
+      link.href = event.editUrl;
+      link.append(
           `${event.start.getMonth() + 1}/${event.start.getDate()} `,
           event.summary);
+
+      let xButton = document.createElement('div');
+      xButton.title =
+          `Click here to remove if this meeting doesn't need a room.`;
+      xButton.className = 'x-button';
+      // Override the borders from the stylesheet for x-button.
+      xButton.style.cssText = `
+        border: 0;
+        border-radius: 0;
+        width: 20px;
+      `;
+      xButton.addEventListener('click', () => {
+        item.remove();
+      });
+      item.append(link, xButton);
+
       eventContainer.append(item);
     }
   }

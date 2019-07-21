@@ -239,6 +239,11 @@ export class QueuesView extends HTMLElement {
 
     let deleteLabel = document.createElement('div');
     deleteLabel.className = 'x-button';
+    deleteLabel.style.cssText = `
+      width: 15px;
+      height: 15px;
+      margin: 4px;
+    `;
     deleteLabel.addEventListener('click', async () => {
       if (confirm(`Delete ${queueData.label}? This cannot be undone.`))
         await this.queueNames_.delete(queueData.label);
