@@ -138,7 +138,6 @@ export function showDialog(contents: HTMLElement|string) {
     border: 1px solid var(--border-and-hover-color);
     box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
     max-height: calc(100vh - 2px);
-    max-width: 800px;
     position: fixed;
     display: flex;
     overscroll-behavior: none;
@@ -152,7 +151,10 @@ export function showDialog(contents: HTMLElement|string) {
   });
 
   let wrapper = document.createElement('div');
-  wrapper.style.padding = '8px';
+  wrapper.style.cssText = `
+    display: flex;
+    padding: 8px;
+  `;
   wrapper.append(contents);
   dialog.append(wrapper);
   document.body.append(dialog);
