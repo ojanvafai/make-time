@@ -1,6 +1,6 @@
 
 import {AutoComplete, EntrySelectedEvent} from './AutoComplete.js';
-import {assert, defined, parseAddressList, ParsedAddress, serializeAddress} from './Base.js';
+import {assert, defined, parseAddressList, ParsedAddress, serializeAddress, notNull} from './Base.js';
 
 export class AddressCompose extends HTMLElement {
   private preventAutoComplete_: boolean;
@@ -320,7 +320,7 @@ export class AddressCompose extends HTMLElement {
   }
 
   getSelectedChips_() {
-    let sel = window.getSelection();
+    let sel = notNull(window.getSelection());
     if (sel.isCollapsed)
       return null;
 
@@ -352,7 +352,7 @@ export class AddressCompose extends HTMLElement {
   }
 
   handleClick_(e: Event) {
-    if (window.getSelection().isCollapsed &&
+    if (notNull(window.getSelection()).isCollapsed &&
         !this.getContainingChip_(e.target as Node))
       this.focusInput_();
   }
@@ -442,7 +442,7 @@ export class AddressCompose extends HTMLElement {
     if (!selected)
       return;
     let text = this.getText_(selected);
-    e.clipboardData.setData('text/plain', text);
+    notNull(e.clipboardData).setData('text/plain', text);
     e.preventDefault();
   }
 }

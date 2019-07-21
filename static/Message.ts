@@ -122,7 +122,7 @@ export class Message {
   }
 
   static minifyAddressList(addresses: Address[]) {
-    let set = new Set();
+    let set: Set<string> = new Set();
     addresses.map(x => {
       set.add(x.name || x.address.split('@')[0]);
     });

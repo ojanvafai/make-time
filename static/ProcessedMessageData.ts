@@ -35,8 +35,8 @@ export class ProcessedMessageData {
   }
 
   updateFrom_(container: HTMLElement) {
-    let read = new Set();
-    let unread = new Set();
+    let read: Set<string> = new Set();
+    let unread: Set<string> = new Set();
 
     this.messages.map(x => {
       if (!x.from)

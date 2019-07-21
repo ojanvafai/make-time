@@ -127,7 +127,7 @@ export class EmailCompose extends HTMLElement {
     if (this.bubble_)
       this.bubble_.remove();
 
-    let selection = window.getSelection();
+    let selection = notNull(window.getSelection());
     if (selection.rangeCount === 0)
       return;
     let range = selection.getRangeAt(0);
@@ -153,7 +153,7 @@ export class EmailCompose extends HTMLElement {
     input.value = link.href;
     input.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === 'Escape') {
-        let selection = window.getSelection();
+        let selection = notNull(window.getSelection());
         selection.selectAllChildren(link);
         selection.collapseToEnd();
         e.preventDefault();
@@ -280,7 +280,7 @@ export class EmailCompose extends HTMLElement {
   }
 
   private insertLink_() {
-    let selection = window.getSelection();
+    let selection = notNull(window.getSelection());
     if (selection.rangeCount === 0)
       return;
 
@@ -321,7 +321,7 @@ export class EmailCompose extends HTMLElement {
   }
 
   protected cursor() {
-    return window.getSelection().getRangeAt(0).cloneRange();
+    return notNull(window.getSelection()).getRangeAt(0).cloneRange();
   }
 
   protected renderAutocomplete() {
@@ -499,7 +499,7 @@ export class EmailCompose extends HTMLElement {
     let separator = document.createTextNode(SEPARATOR);
     range.collapse();
     range.insertNode(separator);
-    window.getSelection().collapse(separator, separator.length);
+    notNull(window.getSelection()).collapse(separator, separator.length);
   }
 }
 

@@ -1,4 +1,4 @@
-import {createMktimeButton, defined, Labels, showDialog} from '../Base.js';
+import {createMktimeButton, defined, Labels, notNull, showDialog} from '../Base.js';
 import {QueueNames} from '../QueueNames.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
 
@@ -498,12 +498,12 @@ export class FiltersView extends HTMLElement {
 
   setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
-    window.getSelection().selectAllChildren(
-        defined(this.cursorSentinelElement_));
+    notNull(window.getSelection())
+        .selectAllChildren(defined(this.cursorSentinelElement_));
   }
 
   insertSentinelText_() {
-    let range = window.getSelection().getRangeAt(0);
+    let range = notNull(window.getSelection()).getRangeAt(0);
     let node = new Text(CURSOR_SENTINEL);
     range.insertNode(node);
     return node;

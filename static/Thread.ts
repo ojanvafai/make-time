@@ -406,7 +406,7 @@ export class Thread extends EventTarget {
   }
 
   setDate(
-      key: ThreadMetadataKeys, date: Date, moveToInbox?: boolean,
+      key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, date: Date, moveToInbox?: boolean,
       keepMetadata?: boolean) {
     // Don't want setting the due date to reset retriageTimestamp or reset
     // other fields.
@@ -425,7 +425,7 @@ export class Thread extends EventTarget {
   }
 
   setDateDays_(
-      key: ThreadMetadataKeys, days: number, moveToInbox?: boolean,
+      key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, days: number, moveToInbox?: boolean,
       keepMetadata?: boolean) {
     let date = new Date();
     // Set the time to midnight to ensure consistency since we only care about

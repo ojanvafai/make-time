@@ -1,4 +1,4 @@
-import {assert, isMobileUserAgent} from '../Base.js';
+import {assert, isMobileUserAgent, notNull} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
 import {ALL, DISABLED, NONE, SOME} from '../SelectBox.js';
@@ -245,13 +245,16 @@ export class ThreadRow extends HTMLElement {
   }
 
   private threadRowContainsSelection_() {
-    let sel = window.getSelection();
+    let sel = notNull(window.getSelection());
     return !sel.isCollapsed &&
         (this.containsNode_(sel.anchorNode) ||
          this.containsNode_(sel.focusNode));
   }
 
-  private containsNode_(node: Node) {
+  private containsNode_(node: Node|null) {
+    if (!node)
+      return false;
+
     while (node.parentNode) {
       if (node.parentNode == this)
         return true;

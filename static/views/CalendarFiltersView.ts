@@ -1,4 +1,4 @@
-import {createMktimeButton, defined, Labels, showDialog} from '../Base.js';
+import {createMktimeButton, defined, Labels, showDialog, notNull} from '../Base.js';
 import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -500,12 +500,12 @@ export class CalendarFiltersView extends HTMLElement {
 
   setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
-    window.getSelection().selectAllChildren(
+   notNull( window.getSelection()).selectAllChildren(
         defined(this.cursorSentinelElement_));
   }
 
   insertSentinelText_() {
-    let range = window.getSelection().getRangeAt(0);
+    let range = notNull(window.getSelection()).getRangeAt(0);
     let node = new Text(CURSOR_SENTINEL);
     range.insertNode(node);
     return node;
