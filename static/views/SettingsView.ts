@@ -97,6 +97,7 @@ export class SettingsView extends View {
     buttonContainer.style.cssText = `
       display: flex;
       justify-content: center;
+      flex-wrap: wrap;
     `;
     buttonContainer.append(
         this.saveButton_, mailFilters, calendarFilters, helpButton);

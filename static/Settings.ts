@@ -54,7 +54,7 @@ export interface Filters {
 export interface Setting {
   key: string;
   name: string;
-  description: string;
+  description: string|HTMLElement;
   values?: string[];
   type?: string;
   min?: number;
@@ -63,6 +63,9 @@ export interface Setting {
 }
 
 export const ANY_TITLE = '<any>';
+let FINAL_VERSION_DESCRIPTION = document.createElement('span');
+FINAL_VERSION_DESCRIPTION.innerHTML =
+    'Enable <a href="http://markforster.squarespace.com/blog/2015/5/21/the-final-version-perfected-fvp.html">final version prioritiztion</a>.';
 
 // TODO: Settings shouldn't have all this calendar specific knowledge.
 export let BuiltInRules: CalendarRule[] = [
@@ -251,7 +254,7 @@ export class Settings extends EventTarget {
     {
       key: ServerStorage.KEYS.FINAL_VERSION,
       name: 'Final version',
-      description: `Enable final version prioritiztion by default. See http://markforster.squarespace.com/blog/2015/5/21/the-final-version-perfected-fvp.html.`,
+      description: FINAL_VERSION_DESCRIPTION,
       type: 'checkbox',
       default: false,
     },
