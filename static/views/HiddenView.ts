@@ -78,7 +78,7 @@ class HiddenModel extends ThreadListModel {
         return STUCK_LABEL_NAME;
 
       case ThreadMetadataKeys.queued:
-        return TriageModel.getGroupName(thread);
+        return TriageModel.getGroupName(this.settings_, thread);
 
       default:
         return this.queryKey_();

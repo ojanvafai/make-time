@@ -10,6 +10,7 @@ import {ThreadListModel} from './ThreadListModel.js';
 
 export const RETRIAGE_LABEL_NAME = 'Retriage';
 export const NO_OFFICES = 'none';
+const IMPORTANT_NAME = 'important';
 
 export class TriageModel extends ThreadListModel {
   private offices_?: string;
@@ -70,7 +71,10 @@ export class TriageModel extends ThreadListModel {
   defaultCollapsedState(groupName: string) {
     let queue = this.settings_.getQueueSettings().get(groupName).queue;
     return QueueSettings.WEEKDAYS.includes(queue) ||
-        queue === QueueSettings.MONTHLY;
+        queue === QueueSettings.MONTHLY ||
+        (this.settings_.get(ServerStorage.KEYS.PRIORITY_INBOX) !==
+             Settings.IGNORE_IMPORTANCE &&
+         !groupName.endsWith(IMPORTANT_NAME));
   }
 
   protected shouldShowThread(thread: Thread) {
@@ -81,17 +85,27 @@ export class TriageModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    return TriageModel.getGroupName(thread);
+    return TriageModel.getGroupName(this.settings_, thread);
   }
 
-  static getGroupName(thread: Thread) {
+  static getGroupName(settings: Settings, thread: Thread) {
     if (thread.hasDueDate())
       return OVERDUE_LABEL_NAME;
     if (thread.isStuck())
       return STUCK_LABEL_NAME;
     if (thread.needsRetriage())
       return RETRIAGE_LABEL_NAME;
-    return notNull(thread.getLabel());
+
+    let name = notNull(thread.getLabel());
+
+    let priorityInbox = settings.get(ServerStorage.KEYS.PRIORITY_INBOX);
+    if (thread.isImportant() && priorityInbox !== Settings.IGNORE_IMPORTANCE) {
+      return priorityInbox === Settings.SINGLE_GROUP ?
+          IMPORTANT_NAME :
+          `${name} - ${IMPORTANT_NAME}`;
+    }
+
+    return name;
   }
 
   protected compareThreads(a: Thread, b: Thread) {
@@ -99,9 +113,16 @@ export class TriageModel extends ThreadListModel {
   }
 
   static compareThreads(settings: Settings, a: Thread, b: Thread) {
+    // Important things always come before not important.
+    if (a.isImportant() != b.isImportant() &&
+        settings.get(ServerStorage.KEYS.PRIORITY_INBOX) !==
+            Settings.IGNORE_IMPORTANCE) {
+      return a.isImportant() ? -1 : 1;
+    }
+
     // Sort by queue, then by date.
-    let aGroup = TriageModel.getGroupName(a);
-    let bGroup = TriageModel.getGroupName(b);
+    let aGroup = TriageModel.getGroupName(settings, a);
+    let bGroup = TriageModel.getGroupName(settings, b);
     if (aGroup == bGroup)
       return ThreadListModel.compareDates(a, b);
     return settings.getQueueSettings().queueNameComparator(aGroup, bGroup);

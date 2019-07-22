@@ -118,7 +118,7 @@ export class SettingsView extends View {
     let input;
     if (field.values) {
       input = document.createElement('select');
-      let currentValue;
+      let currentValue = field.default;
       if (settings.has(field.key))
         currentValue = settings.getNonDefault(field.key);
 
@@ -146,13 +146,12 @@ export class SettingsView extends View {
         input.checked = settings.get(field.key);
       else if (settings.has(field.key))
         input.value = settings.getNonDefault(field.key);
+
+      input.style.maxWidth = '100px';
     }
 
-    input.style.cssText = `
-      max-width: 100px;
-      margin-right: 10px;
-      flex: 0 0 auto;
-    `;
+    input.style.marginRight = '10px';
+    input.style.flex = '0 0 auto';
 
     input.setAttribute('key', field.key);
     return input;
@@ -211,8 +210,12 @@ export class SettingsView extends View {
     let inputs = Array.from(this.basicSettings_.querySelectorAll('input'));
     SettingsView.setUpdates(updates, inputs);
 
-    let themeSelect = this.querySelector('select') as HTMLSelectElement;
+    let [themeSelect, priorityInboxSelect] =
+        this.querySelectorAll('select') as NodeListOf<HTMLSelectElement>;
     updates[ServerStorage.KEYS.THEME] = themeSelect.selectedOptions[0].value;
+    updates[ServerStorage.KEYS.PRIORITY_INBOX] =
+        priorityInboxSelect.selectedOptions[0].value;
+
     updates[ServerStorage.KEYS.QUEUES] = this.queues_.getAllQueueDatas();
     updates[ServerStorage.KEYS.CALENDAR_SORT] =
         this.calendarSortView_.getAllCalendarSortDatas();

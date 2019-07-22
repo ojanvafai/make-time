@@ -75,6 +75,7 @@ export interface ThreadMetadata {
   countToMarkRead?: number;
   // Queue pushing maketime labels to gmail as gmail labels.
   pushLabelsToGmail?: boolean;
+  important?: boolean;
 }
 
 // Want strong typing on all update calls, but don't want to write historyId and
@@ -105,6 +106,7 @@ export interface ThreadMetadataUpdate {
   countToArchive?: number|firebase.firestore.FieldValue;
   countToMarkRead?: number|firebase.firestore.FieldValue;
   pushLabelsToGmail?: boolean|firebase.firestore.FieldValue;
+  important?: boolean|firebase.firestore.FieldValue;
 }
 
 // Firestore queries take the key as a string. Use an enum so we can avoid silly
@@ -134,6 +136,7 @@ export enum ThreadMetadataKeys {
   countToArchive = 'countToArchive',
   countToMarkRead = 'countToMarkRead',
   pushLabelsToGmail = 'pushLabelsToGmail',
+  important = 'important',
 }
 
 let FWD_THREAD_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -556,6 +559,10 @@ export class Thread extends EventTarget {
     return new Date(due as number);
   }
 
+  isImportant() {
+    return !!this.metadata_.important;
+  }
+
   getSubject() {
     return this.processed_.getSubject();
   }
@@ -728,6 +735,8 @@ export class Thread extends EventTarget {
       historyId: historyId,
       messageIds: messages.flatMap(x => defined(x.id)),
       timestamp: Thread.getTimestamp_(lastMessage),
+      important:
+          messages.some(x => x.labelIds && x.labelIds.includes('IMPORTANT')),
     };
 
     this.sentMessageIds_ =

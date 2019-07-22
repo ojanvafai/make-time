@@ -224,12 +224,27 @@ export class Settings extends EventTarget {
   private static FILTER_RULE_FIELDS_ = ['label'].concat(
       Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
 
+  static SINGLE_GROUP = 'Single group';
+  static GROUP_PER_LABEL = 'Group per label';
+  static IGNORE_IMPORTANCE = 'Ignore importance';
+
   static fields = [
     {
       key: ServerStorage.KEYS.THEME,
       name: 'Theme',
       description: `Set a theme.`,
       values: THEMES.map(x => x.name),
+    },
+    {
+      key: ServerStorage.KEYS.PRIORITY_INBOX,
+      name: 'Priority inbox',
+      description: `Configure how important messages are grouped.`,
+      values:
+          [
+            Settings.SINGLE_GROUP, Settings.GROUP_PER_LABEL,
+            Settings.IGNORE_IMPORTANCE
+          ],
+      default: Settings.GROUP_PER_LABEL,
     },
     {
       key: ServerStorage.KEYS.BACKGROUND,
