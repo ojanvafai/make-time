@@ -11,6 +11,7 @@ export class SelectChangedEvent extends Event {
 }
 
 export class SelectBox extends HTMLElement {
+  private hovered_: boolean;
   private selected_!: string;
   private svg_: SVGSVGElement;
 
@@ -23,6 +24,8 @@ export class SelectBox extends HTMLElement {
       padding: 10px;
       border-radius: 3px;
     `;
+
+    this.hovered_ = false;
 
     this.svg_ = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.svg_.setAttribute('viewbox', '0 0 20 20');
@@ -53,7 +56,19 @@ export class SelectBox extends HTMLElement {
       this.dispatchEvent(new SelectChangedEvent(e.shiftKey));
     });
 
+    this.addEventListener('pointerover', () => {
+      this.setHovered(true);
+    });
+    this.addEventListener('pointerout', () => {
+      this.setHovered(false);
+    });
+
     this.select(NONE);
+  }
+
+  setHovered(hovered: boolean) {
+    this.hovered_ = hovered;
+    this.render_();
   }
 
   isFullySelected() {
@@ -83,6 +98,9 @@ export class SelectBox extends HTMLElement {
       fill = 'var(--midpoint-color)';
       borderColor = 'var(--text-color)';
     } else if (this.selected_ === DISABLED) {
+      fill = 'var(--inverted-text-color)';
+      borderColor = 'var(--midpoint-color)';
+    } else if (!this.hovered_) {
       fill = 'var(--inverted-text-color)';
       borderColor = 'var(--dim-text-color)';
     } else {

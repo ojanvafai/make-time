@@ -1,7 +1,7 @@
 import {assert, isMobileUserAgent, notNull} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
-import {ALL, DISABLED, NONE, SOME} from '../SelectBox.js';
+import {ALL, NONE, SOME} from '../SelectBox.js';
 import {InProgressChangedEvent, Thread, UpdatedEvent} from '../Thread.js';
 
 import {ThreadRowGroup} from './ThreadRowGroup.js';
@@ -137,8 +137,8 @@ export class ThreadRow extends HTMLElement {
   private inViewport_: boolean;
   private focused_: boolean;
   private focusImpliesSelected_: boolean;
-  private hovered_: boolean;
   private checkBox_: SelectBox;
+  private finalVersionCheckbox_?: SelectBox;
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
   private finalVersionSkipped_: boolean;
@@ -158,7 +158,6 @@ export class ThreadRow extends HTMLElement {
     this.inViewport_ = false;
     this.focused_ = false;
     this.focusImpliesSelected_ = false;
-    this.hovered_ = false;
     this.finalVersionSkipped_ = false;
 
     this.checkBox_ = new SelectBox();
@@ -166,6 +165,7 @@ export class ThreadRow extends HTMLElement {
 
     if (showFinalVersion_) {
       let checkbox = new SelectBox();
+      this.finalVersionCheckbox_ = checkbox;
       this.append(checkbox);
       checkbox.select(thread.finalVersion() ? ALL : NONE);
       checkbox.addEventListener(SelectChangedEvent.NAME, async () => {
@@ -582,8 +582,9 @@ export class ThreadRow extends HTMLElement {
   }
 
   private setHovered_(hovered: boolean) {
-    this.hovered_ = hovered;
-    this.updateCheckbox_();
+    this.checkBox_.setHovered(hovered);
+    if (this.finalVersionCheckbox_)
+      this.finalVersionCheckbox_.setHovered(hovered);
   }
 
   private updateCheckbox_() {
@@ -592,10 +593,8 @@ export class ThreadRow extends HTMLElement {
       newState = ALL;
     else if (this.focused_ && this.focusImpliesSelected_)
       newState = SOME;
-    else if (this.focused_ || this.hovered_)
-      newState = NONE;
     else
-      newState = DISABLED;
+      newState = NONE;
 
     this.checkBox_.select(newState);
   }
