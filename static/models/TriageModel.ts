@@ -71,10 +71,7 @@ export class TriageModel extends ThreadListModel {
   defaultCollapsedState(groupName: string) {
     let queue = this.settings_.getQueueSettings().get(groupName).queue;
     return QueueSettings.WEEKDAYS.includes(queue) ||
-        queue === QueueSettings.MONTHLY ||
-        (this.settings_.get(ServerStorage.KEYS.PRIORITY_INBOX) !==
-             Settings.IGNORE_IMPORTANCE &&
-         !groupName.endsWith(IMPORTANT_NAME));
+        queue === QueueSettings.MONTHLY;
   }
 
   protected shouldShowThread(thread: Thread) {
