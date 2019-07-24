@@ -41,7 +41,7 @@ export class SettingsView extends View {
     this.basicSettings_.style.cssText = `
       margin: 8px;
       padding: 8px;
-      background-color: var(--overlay-background-color);
+      background-color: var(--nested-background-color);
       border-radius: 5px;
     `;
     SettingsView.appendSettings(
@@ -76,7 +76,7 @@ export class SettingsView extends View {
     queuesContainer.style.cssText = calendarSortContainer.style.cssText = `
       margin: 16px 8px;
       padding: 8px;
-      background-color: var(--overlay-background-color);
+      background-color: var(--nested-background-color);
       border-radius: 5px;
       flex: 1;
       white-space: nowrap;
