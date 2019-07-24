@@ -33,7 +33,6 @@ export class SettingsView extends View {
     this.scrollable_ = document.createElement('div');
     this.scrollable_.style.cssText = `
       overflow: auto;
-      padding: 4px;
     `;
     this.append(this.scrollable_);
 
@@ -74,7 +73,7 @@ export class SettingsView extends View {
     sortContainer.append(calendarSortContainer);
 
     queuesContainer.style.cssText = calendarSortContainer.style.cssText = `
-      margin: 16px 8px;
+      margin: 8px;
       padding: 8px;
       background-color: var(--nested-background-color);
       border-radius: 5px;
