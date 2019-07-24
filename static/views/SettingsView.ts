@@ -38,6 +38,12 @@ export class SettingsView extends View {
     this.append(this.scrollable_);
 
     this.basicSettings_ = document.createElement('table');
+    this.basicSettings_.style.cssText = `
+      margin: 8px;
+      padding: 8px;
+      background-color: var(--overlay-background-color);
+      border-radius: 5px;
+    `;
     SettingsView.appendSettings(
         this.basicSettings_, this.settings_, Settings.fields);
     this.scrollable_.append(this.basicSettings_);
@@ -53,13 +59,6 @@ export class SettingsView extends View {
     this.queues_.addEventListener('change', () => this.handleChange_());
 
     let queuesContainer = document.createElement('div');
-    queuesContainer.style.cssText = `
-      margin: 16px 8px;
-      padding: 8px;
-      border-left: 1px solid var(--border-and-hover-color);
-      flex: 1;
-      white-space: nowrap;
-    `;
     queuesContainer.innerHTML = '<legend>Email label sort order</legend>';
     queuesContainer.append(this.queues_);
     sortContainer.append(queuesContainer);
@@ -69,17 +68,19 @@ export class SettingsView extends View {
         'change', () => this.handleChange_());
 
     let calendarSortContainer = document.createElement('div');
-    calendarSortContainer.style.cssText = `
-      margin: 16px 8px;
-      padding: 8px;
-      border-left: 1px solid var(--border-and-hover-color);
-      flex: 1;
-      white-space: nowrap;
-    `;
     calendarSortContainer.innerHTML =
         '<legend>Calendar label sort order</legend>';
     calendarSortContainer.append(this.calendarSortView_);
     sortContainer.append(calendarSortContainer);
+
+    queuesContainer.style.cssText = calendarSortContainer.style.cssText = `
+      margin: 16px 8px;
+      padding: 8px;
+      background-color: var(--overlay-background-color);
+      border-radius: 5px;
+      flex: 1;
+      white-space: nowrap;
+    `;
 
     let helpButton =
         createMktimeButton('Help', () => new HelpDialog(HELP_TEXT));
