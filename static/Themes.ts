@@ -17,8 +17,8 @@ interface Theme {
 export const DEFAULT: Theme = {
   name: 'Default',
   styles: {
-    '--border-and-hover-color': '#ccc',
-    '--row-hover-color': '#eee',
+    '--border-and-hover-color': '#00000047',
+    '--row-hover-color': '#00000024',
     '--nested-background-color': '#ffffffbb',
     '--overlay-background-color': '#fff',
     '--inverted-overlay-background-color': '#000',

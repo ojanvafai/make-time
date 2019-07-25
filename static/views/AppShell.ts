@@ -98,6 +98,7 @@ export class AppShell extends HTMLElement {
       width: -webkit-fill-available;
       box-shadow: var(--border-and-hover-color) 0 0 4px;
       z-index: 20;
+      background-color: var(--nested-background-color);
     `;
 
     let contentContainer = document.createElement('div');
@@ -122,12 +123,12 @@ export class AppShell extends HTMLElement {
       z-index: 1000;
       position: sticky;
       bottom: 0;
-      width: 100%;
-      max-width: 1000px;
+      width: -webkit-fill-available;
       display: flex;
       justify-content: center;
       align-self: center;
       box-shadow: var(--border-and-hover-color) 0 0 4px;
+      background-color: var(--nested-background-color);
       /* Don't eat clicks in the transparent background of the footer. */
       pointer-events: none;
     `;
