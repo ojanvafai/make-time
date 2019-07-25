@@ -193,6 +193,7 @@ export class Actions extends HTMLElement {
       this.tooltip_.remove();
 
     this.menu_ = document.createElement('div');
+    this.menu_.className = 'toolbar menu';
     for (let subAction of actions.reverse()) {
       let button = this.createButton_(subAction);
       if (button)
