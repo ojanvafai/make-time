@@ -103,7 +103,9 @@ export class QuickReply extends HTMLElement {
   private createCompose_() {
     let compose = new EmailCompose(true);
     compose.style.cssText = `
-      flex: 1;
+      width: 100%;
+      max-width: var(--max-width);
+      align-self: center;
       margin: 4px;
       display: flex;
       background-color: var(--nested-background-color);

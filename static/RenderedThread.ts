@@ -47,7 +47,7 @@ export class RenderedThread extends HTMLElement {
       position: absolute;
       left: 0;
       right: 0;
-      max-width: 1000px;
+      max-width: var(--max-width);
     `;
     this.focused_ = null;
     this.excludeMessages_ = false;

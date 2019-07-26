@@ -138,6 +138,7 @@ export class Themes {
 
     let root = document.documentElement;
 
+    root.style.setProperty('--max-width', '1000px');
     root.style.setProperty('--thread-text-color', isDarkMode ? '#fff' : '#000');
     root.style.setProperty(
         '--thread-background-color', isDarkMode ? '#000' : '#fff');

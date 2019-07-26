@@ -230,7 +230,7 @@ export class ThreadListView extends View {
       display: flex;
       flex-direction: column;
       width: 100%;
-      max-width: 1000px;
+      max-width: var(--max-width);
       margin: auto;
       position: relative;
     `;
@@ -270,7 +270,7 @@ export class ThreadListView extends View {
       position: sticky;
       z-index: 10;
       top: 0;
-      max-width: 1000px;
+      max-width: var(--max-width);
       box-shadow: 0px 0px 8px var(--border-and-hover-color);
       background-color: var(--overlay-background-color);
       max-height: 7em;
