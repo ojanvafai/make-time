@@ -1,6 +1,6 @@
 import {defined, notNull} from '../Base.js';
 import {QueueNames, SnapshotEvent} from '../QueueNames.js';
-import {AllQueueDatas, QueueListEntry, QueueSettings} from '../QueueSettings.js';
+import {AllQueueDatas, MergeOption, QueueListEntry, QueueSettings} from '../QueueSettings.js';
 import {FiltersChangedEvent, Settings} from '../Settings.js';
 
 export class QueuesView extends HTMLElement {
@@ -159,7 +159,10 @@ export class QueuesView extends HTMLElement {
                     .selectedOptions[0]
                     .value;
       }
-      output[label] = {queue, index: i + 1};
+      let merge = (<HTMLSelectElement>selector.querySelector('.merge')!)
+                      .selectedOptions[0]
+                      .value as MergeOption;
+      output[label] = {queue, index: i + 1, merge};
     }
   }
 
@@ -179,7 +182,10 @@ export class QueuesView extends HTMLElement {
 
   createSelect_(list: string[], opt_selectedItem?: string) {
     let select = document.createElement('select');
-    select.style.padding = '2px';
+    select.style.cssText = `
+      padding: 3px;
+      margin-left: 4px;
+    `;
     select.addEventListener('change', () => this.dispatchChange_());
     for (let item of list) {
       let option = this.createOption_(item);
@@ -236,6 +242,12 @@ export class QueuesView extends HTMLElement {
     let days = this.createSelect_(QueueSettings.WEEKDAYS, queue);
     days.className = 'day';
     row.append(days);
+
+    let merge = queueData.data.merge;
+    let mergeSelect = this.createSelect_(Object.values(MergeOption), merge);
+    mergeSelect.className = 'merge';
+    mergeSelect.style.cssText = 'margin-left: 4px;';
+    row.append(mergeSelect);
 
     let deleteLabel = document.createElement('div');
     deleteLabel.className = 'x-button';

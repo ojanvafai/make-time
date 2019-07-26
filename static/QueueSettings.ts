@@ -3,9 +3,15 @@ import {RETRIAGE_LABEL_NAME} from './models/TriageModel.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
 import {STUCK_LABEL_NAME} from './Thread.js';
 
+export enum MergeOption {
+  separate = 'Separate',
+  merge = 'Merge',
+}
+
 export interface QueueData {
   queue: string;
   index: number;
+  merge: MergeOption;
 }
 
 export interface QueueListEntry {
@@ -87,11 +93,12 @@ export class QueueSettings {
     return aIndex - bIndex;
   }
 
-  queueData_(opt_queue?: string, opt_index?: number): QueueData {
+  queueData_(opt_queue?: string, opt_index?: number, mergeOption?: MergeOption):
+      QueueData {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
           // For unknown queues, put them first.
-          index: opt_index || 0,
+          index: opt_index || 0, merge: mergeOption || MergeOption.separate,
     }
   }
 
