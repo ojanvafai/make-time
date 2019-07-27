@@ -400,7 +400,7 @@ export class Thread extends EventTarget {
     if (moveToInbox)
       update.moveToInbox = true;
 
-    if (needsMessageTriage)
+    if (needsMessageTriage && priority !== Priority.NeedsFilter)
       update.needsMessageTriage = true;
 
     update.hasPriority = true;
