@@ -3,6 +3,8 @@ import {ANY_TITLE, AttendeeCount, CalendarRule, Frequency, stringFilterMatches} 
 
 import {EventType,} from './Constants.js';
 
+export let NO_ROOM_NEEDED = 'no room needed';
+
 export class CalendarEvent {
   eventId: string;
   colorId?: number;
@@ -92,6 +94,9 @@ export class CalendarEvent {
 
   needsLocalRoom(offices: string[]) {
     if (this.shouldIgnore || !this.attendeeCount || !offices.length)
+      return false;
+
+    if (this.location && this.location.toLowerCase().includes(NO_ROOM_NEEDED))
       return false;
 
     let attendees = assert(this.attendees);

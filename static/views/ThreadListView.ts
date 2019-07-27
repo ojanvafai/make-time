@@ -2,7 +2,7 @@ import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action, registerActions, Shortcut} from '../Actions.js';
 import {assert, collapseArrow, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, expandArrow, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
-import {CalendarEvent} from '../calendar/CalendarEvent.js';
+import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
@@ -378,7 +378,9 @@ export class ThreadListView extends View {
     `;
 
     this.noMeetingRoomEvents_.append(
-        `Meetings without a local room.`, eventContainer);
+        `Meetings without a local room. Ignore by adding "${
+            NO_ROOM_NEEDED}" to the location.`,
+        eventContainer);
 
     for (let event of notIgnored) {
       this.appendNoMeetingRoomEvent(eventContainer, event);
