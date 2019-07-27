@@ -2,6 +2,7 @@ import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.j
 import {Action} from '../Actions.js';
 import {assert, compareDates, setFaviconCount as setFavicon} from '../Base.js';
 import {CalendarEvent} from '../calendar/CalendarEvent.js';
+import {SendAs} from '../SendAs.js';
 import {Priority, ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
 import {createDateUpdate, createUpdate, pickDate} from '../ThreadActions.js';
@@ -68,7 +69,7 @@ export abstract class ThreadListModel extends Model {
 
   toggleAllowViewMessages() {}
 
-  needsMessageTriage(_thread: Thread) {
+  needsMessageTriage(_thread: Thread, _sendAs: SendAs) {
     return false;
   }
 
@@ -297,7 +298,7 @@ export abstract class ThreadListModel extends Model {
           createDateUpdate(thread, destination, date, moveToInbox) :
           createUpdate(
               thread, destination, moveToInbox,
-              this.needsMessageTriage(thread));
+              this.needsMessageTriage(thread, await SendAs.getDefault()));
 
       if (!update)
         continue;

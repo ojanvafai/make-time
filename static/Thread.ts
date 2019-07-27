@@ -7,6 +7,7 @@ import {send} from './Mail.js';
 import {gapiFetch} from './Net.js';
 import {ProcessedMessageData} from './ProcessedMessageData.js';
 import {QueueNames} from './QueueNames.js';
+import {SendAs} from './SendAs.js';
 
 let memoryCache_: Map<string, Thread> = new Map();
 
@@ -375,6 +376,16 @@ export class Thread extends EventTarget {
     // soon after that.
     update.retriageTimestamp = Date.now();
     return update;
+  }
+
+  unreadNotSentByMe(sendAs: SendAs) {
+    if (!this.isUnread())
+      return false;
+
+    let senders = defined(sendAs.senders).map(x => x.sendAsEmail);
+    let unread = this.processed_.messages.slice(this.metadata_.readCount);
+    return unread.some(
+        x => x.parsedFrom.some(y => !senders.includes(y.address)));
   }
 
   isUnread() {

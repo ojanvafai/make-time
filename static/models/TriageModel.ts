@@ -2,6 +2,7 @@ import {notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {Calendar} from '../calendar/Calendar.js';
 import {QueueSettings} from '../QueueSettings.js';
+import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {OVERDUE_LABEL_NAME, STUCK_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
@@ -49,10 +50,11 @@ export class TriageModel extends ThreadListModel {
   // Mark a bit that this thread was triaged with unread messages so it can be
   // grouped differently in todo view. Don't mark this bit for things that are
   // overdue, stuck, or retriage since those have already been fully triaged
-  // once.
-  needsMessageTriage(thread: Thread) {
-    return thread.isUnread() && !thread.hasDueDate() && !thread.isStuck() &&
-        !thread.needsRetriage();
+  // once. If the unread messages were all sent by me, then consider them read
+  // as well since I don't need to read messages I sent.
+  needsMessageTriage(thread: Thread, sendAs: SendAs) {
+    return thread.unreadNotSentByMe(sendAs) && !thread.hasDueDate() &&
+        !thread.isStuck() && !thread.needsRetriage();
   }
 
   async getNoMeetingRoomEvents() {
