@@ -25,6 +25,7 @@ export interface AllQueueDatas {
 
 export class QueueSettings {
   private queueDatas_?: AllQueueDatas;
+  private mergeMap_?: Map<string, string>;
   private retriageQueueData_: QueueListEntry;
   private stuckQueueData_: QueueListEntry;
 
@@ -71,6 +72,41 @@ export class QueueSettings {
 
   async resetQueueData_() {
     this.queueDatas_ = this.storage_.get(ServerStorage.KEYS.QUEUES);
+    if (!this.queueDatas_)
+      return;
+
+    let datas = Object.entries(this.queueDatas_)
+                    .sort(
+                        (a, b) => QueueSettings.queueIndex_(a[1]) -
+                            QueueSettings.queueIndex_(b[1]));
+
+    this.mergeMap_ = new Map();
+    let group = [];
+    for (let data of datas) {
+      let merge = group.length && data[1].merge === MergeOption.merge;
+      if (!merge) {
+        if (group.length) {
+          this.setMappedGroup_(group);
+          group = [];
+        }
+      }
+      group.push(data[0]);
+    }
+
+    if (group.length)
+      this.setMappedGroup_(group);
+  }
+
+  setMappedGroup_(names: string[]) {
+    let map = defined(this.mergeMap_);
+    let mergedName = names.join(', ');
+    for (let name of names) {
+      map.set(name, mergedName);
+    }
+  }
+
+  getMappedGroupName(groupName: string) {
+    return defined(this.mergeMap_).get(groupName);
   }
 
   get(label: string) {

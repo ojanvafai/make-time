@@ -672,11 +672,16 @@ export class ThreadListView extends View {
               ] as [string, {group: ThreadRowGroup, rows: ThreadRow[]}];
             }));
 
+    let queueSettings = this.settings_.getQueueSettings()
+
     // Threads should be in sorted order already and all threads in the
     // same queue should be adjacent to each other.
     let previousEntry: {group: ThreadRowGroup, rows: ThreadRow[]}|undefined;
     for (let thread of threads) {
-      let groupName = this.model_.getGroupName(thread);
+      let originalGroupName = this.model_.getGroupName(thread);
+      let groupName =
+          defined(queueSettings.getMappedGroupName(originalGroupName));
+
       let entry = groupMap.get(groupName);
       // Insertion sort insert new groups
       if (!entry) {

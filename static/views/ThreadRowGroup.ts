@@ -49,6 +49,8 @@ export class ThreadRowGroup extends HTMLElement {
       display: flex;
       align-items: center;
       border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
     `;
     this.groupNameContainer_.className = 'hover';
     this.groupNameContainer_.addEventListener(
