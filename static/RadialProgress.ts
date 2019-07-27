@@ -7,16 +7,13 @@ export class CompletedEvent extends Event {
   }
 }
 
-let DEFAULT_COLOR = 'white';
-let OVERFLOW_COLOR = 'red';
-
 export class RadialProgress extends HTMLElement {
   private total_: number;
   private completedCount_: number;
   private slice1_: HTMLElement;
   private slice2_: HTMLElement;
 
-  constructor(private allowOverflow_?: boolean) {
+  constructor() {
     super();
 
     this.total_ = 0;
@@ -28,11 +25,12 @@ export class RadialProgress extends HTMLElement {
     let size = 16;
 
     this.style.cssText = `
-      background-color: var(--border-and-hover-color);
+      background-color: var(--midpoint-color);
       width: ${size}px;
       height: ${size}px;
       border-radius: ${size / 2}px;
       position: relative;
+      margin-left: 4px;
     `;
 
     let clipCss = `
@@ -63,6 +61,7 @@ export class RadialProgress extends HTMLElement {
       height: ${size}px;
       border-radius: ${size / 2}px;
       transform: rotate(0);
+      background-color: var(--dim-text-color);
     `;
 
     this.slice1_ = document.createElement('div');
@@ -78,8 +77,6 @@ export class RadialProgress extends HTMLElement {
       clip: rect(0px, ${size}px, ${size}px, ${size / 2}px);
     `;
     clip2.append(this.slice2_);
-
-    this.setColor_(DEFAULT_COLOR);
   }
 
   addToTotal(count: number) {
@@ -94,7 +91,7 @@ export class RadialProgress extends HTMLElement {
   }
 
   incrementProgress() {
-    assert(!this.allowOverflow_ && this.total_ !== 0);
+    assert(this.total_ !== 0);
 
     this.completedCount_++;
     if (this.completedCount_ == this.total_)
@@ -109,35 +106,15 @@ export class RadialProgress extends HTMLElement {
   }
 
   private complete_() {
-    if (this.allowOverflow_)
-      return;
-
     this.dispatchEvent(new CompletedEvent());
     this.total_ = 0;
     this.completedCount_ = 0;
     this.style.display = 'none';
   }
 
-  private setColor_(color: string) {
-    this.slice1_.style.backgroundColor = color;
-    this.slice1_.style.borderColor = color;
-    this.slice2_.style.backgroundColor = color;
-    this.slice2_.style.borderColor = color;
-  }
-
   private render_() {
-    let completedCount;
-    if (this.allowOverflow_) {
-      completedCount = this.completedCount_ % this.total_;
-      let color =
-          this.completedCount_ > this.total_ ? OVERFLOW_COLOR : DEFAULT_COLOR;
-      this.setColor_(color);
-    } else {
-      assert(this.completedCount_ <= this.total_);
-      completedCount = this.completedCount_;
-    }
-
-    let ratio = completedCount / this.total_;
+    assert(this.completedCount_ <= this.total_);
+    let ratio = this.completedCount_ / this.total_;
     // Always have some of the progress indicated.
     let drawAngle = Math.max(18, ratio * 360);
 
