@@ -326,10 +326,7 @@ export class ThreadListView extends View {
       this.handleUndo_(undoEvent.thread);
     });
 
-    this.updateActions_();
-    this.appShell_.showViewAndFilterToggles(!!this.toggleViewUrl_);
-    this.renderCalendar_();
-    this.render_();
+    this.transitionToThreadList_(null);
   }
 
   private handleInProgressChanged_(e: InProgressChangedEvent) {
@@ -349,6 +346,8 @@ export class ThreadListView extends View {
   }
 
   private async renderCalendar_() {
+    this.noMeetingRoomEvents_ = document.createElement('div');
+
     let events = await this.model_.getNoMeetingRoomEvents();
     if (!events.length)
       return;
@@ -360,7 +359,12 @@ export class ThreadListView extends View {
     if (!notIgnored.length)
       return;
 
-    this.noMeetingRoomEvents_ = document.createElement('div');
+    // renderCalendar can get called twice without noMeetingRoomEvents_ being
+    // removed due to the await calls above if the user clicks on a thread when
+    // we're halfway through the first renderCalendar call.
+    if (!this.noMeetingRoomEvents_)
+      return;
+
     this.noMeetingRoomEvents_.style.cssText = `
       text-align: center;
       margin: 8px 0;
@@ -1179,7 +1183,7 @@ export class ThreadListView extends View {
   }
 
   renderOne_(toast?: HTMLElement) {
-    if (this.rowGroupContainer_.style.display != 'none')
+    if (this.rowGroupContainer_.style.display !== 'none')
       this.transitionToSingleThread_();
 
     this.updateActions_();
