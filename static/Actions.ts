@@ -1,4 +1,4 @@
-import {createMktimeButton, isMobileUserAgent, notNull} from './Base.js';
+import {createMktimeButton, defined, isMobileUserAgent, notNull} from './Base.js';
 import {View} from './views/View.js';
 
 export interface Action {
@@ -17,6 +17,7 @@ interface ButtonWithAction extends HTMLButtonElement {
 }
 
 const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
+const MARGIN = 4;
 
 // TODO: Move this to ThreadListView once we don't need the click workaround for
 // it below.
@@ -133,6 +134,8 @@ export class Actions extends HTMLElement {
             return;
 
           let hitButton = this.hitButton_(e);
+          this.updateTooltip_(hitButton ? hitButton.action : null);
+
           for (let child of this.menu_.children) {
             let element = child as HTMLElement;
             element.style.backgroundColor = element === hitButton ?
@@ -203,9 +206,6 @@ export class Actions extends HTMLElement {
   }
 
   private openMenu_(button: HTMLElement, actions: Action[]) {
-    if (this.tooltip_)
-      this.tooltip_.remove();
-
     this.menu_ = document.createElement('div');
     this.menu_.className = 'toolbar menu';
     for (let subAction of actions.reverse()) {
@@ -240,22 +240,24 @@ export class Actions extends HTMLElement {
 
     let buttonRect = button.getBoundingClientRect();
     let menuWidth = this.menu_.offsetWidth;
-    let margin = 4;
 
     // Put a bigger margin on mobile so that you can see the button under your
     // finger.
-    let bottomMargin = isMobileUserAgent() ? 20 : margin;
+    let bottomMargin = isMobileUserAgent() ? 20 : MARGIN;
 
     this.menu_.style.bottom =
         `${window.innerHeight - buttonRect.top + bottomMargin}px`;
     // Center the menu over the button, but keep it bound withing the window.
     this.menu_.style.left = `${
         Math.max(
-            margin,
+            MARGIN,
             Math.min(
-                window.innerWidth - menuWidth - margin,
+                window.innerWidth - menuWidth - MARGIN,
                 buttonRect.left -
                     (Math.max(0, (menuWidth - buttonRect.width)) / 2)))}px`;
+
+    if (this.tooltip_)
+      this.positionTooltip_(this.menu_);
   }
 
   createButton_(action: Action, ...children: (string|Element)[]) {
@@ -269,20 +271,23 @@ export class Actions extends HTMLElement {
     button.action = action;
     button.onpointerleave = () => this.tooltip_!.remove();
     button.onpointerenter = () => this.appendTooltip_(action);
+    button.oncontextmenu = (e: Event) => e.preventDefault();
     return button;
   }
 
-  private appendTooltip_(action: Action) {
-    this.tooltip_ = document.createElement('div');
-    this.tooltip_.style.cssText = `
-      position: absolute;
-      bottom: ${this.offsetHeight + 4}px;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: center;
-      pointer-events: none;
-    `;
+  private positionTooltip_(relativeTo: HTMLElement) {
+    let tooltip = defined(this.tooltip_);
+    tooltip.style.bottom = `${
+        window.innerHeight - relativeTo.getBoundingClientRect().top +
+        MARGIN}px`;
+  }
+
+  private updateTooltip_(action: Action|null) {
+    let tooltip = defined(this.tooltip_);
+    tooltip.textContent = '';
+
+    if (!action)
+      return;
 
     let text = document.createElement('div');
     text.style.cssText = `
@@ -295,9 +300,23 @@ export class Actions extends HTMLElement {
     let bold = document.createElement('b');
     bold.append(`${shortcutString(action.key)}: `);
     text.append(bold, action.description);
-    this.tooltip_.append(text);
+    tooltip.append(text);
+  }
 
+  private appendTooltip_(action: Action) {
+    this.tooltip_ = document.createElement('div');
+    this.tooltip_.style.cssText = `
+      position: absolute;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    `;
+
+    this.updateTooltip_(action);
     this.append(this.tooltip_);
+    this.positionTooltip_(this);
   }
 
   static matchesEvent_(e: KeyboardEvent, shortcut?: string|Shortcut) {
