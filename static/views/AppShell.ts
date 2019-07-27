@@ -1,10 +1,10 @@
 import {createSvgButton, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, notNull} from '../Base.js';
 import {getSettings, showHelp} from '../BaseMain.js';
-import {COMPLETED_EVENT_NAME, RadialProgress} from '../RadialProgress.js';
+import {COMPLETED_EVENT_NAME, ProgressTracker} from '../ProgressTracker.js';
 
 import {FilterDialogView} from './FilterDialogView.js';
 
-let progressElements: Map<string, RadialProgress> = new Map();
+let progressElements: Map<string, ProgressTracker> = new Map();
 let titleStack_: TitleEntry[] = [];
 let loaderTitleStack_: TitleEntry[] = [];
 
@@ -186,6 +186,7 @@ export class AppShell extends HTMLElement {
     AppShell.title_.id = 'title';
     AppShell.title_.style.cssText = `
       margin: 0 4px;
+      color: var(--dim-text-color);
       ${toolbarChildStyle}
     `;
 
@@ -198,6 +199,7 @@ export class AppShell extends HTMLElement {
     AppShell.loader_ = document.createElement('div');
     AppShell.loader_.className = 'hide-if-empty';
     AppShell.loader_.style.cssText = `
+      color: var(--dim-text-color);
       ${toolbarChildStyle}
     `;
 
@@ -294,7 +296,7 @@ export class AppShell extends HTMLElement {
       key: string, count: number, ...opt_title: (HTMLElement|string)[]) {
     let progress = progressElements.get(key);
     if (!progress) {
-      progress = new RadialProgress();
+      progress = new ProgressTracker();
       progressElements.set(key, progress);
       progress.addEventListener(COMPLETED_EVENT_NAME, () => {
         AppShell.clearLoaderTitle(key);
