@@ -82,16 +82,16 @@ export class SettingsView extends View {
     `;
 
     let helpButton =
-        createMktimeButton('Help', () => new HelpDialog(HELP_TEXT));
+        createMktimeButton(() => new HelpDialog(HELP_TEXT), 'Help');
 
-    this.saveButton_ = createMktimeButton('Save Changes', () => this.save_());
+    this.saveButton_ = createMktimeButton(() => this.save_(), 'Save Changes');
     this.saveButton_.disabled = true;
 
     let mailFilters = createMktimeButton(
-        'Modify email filters', () => new FiltersView(this.settings_));
+        () => new FiltersView(this.settings_), 'Modify email filters');
     let calendarFilters = createMktimeButton(
-        'Modify calendar filters',
-        () => new CalendarFiltersView(this.settings_));
+        () => new CalendarFiltersView(this.settings_),
+        'Modify calendar filters');
 
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `

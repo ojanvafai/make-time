@@ -17,10 +17,10 @@ function setupMktimeButton(button: Element, onClick?: (e: Event) => void) {
 }
 
 export function createMktimeButton(
-    contents: string|Element, onClick?: (e: Event) => void) {
+    onClick?: (e: Event) => void, ...contents: (string|Element)[]) {
   let button = document.createElement('button');
   setupMktimeButton(button, onClick);
-  button.append(contents);
+  button.append(...contents);
   return button;
 }
 

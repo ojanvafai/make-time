@@ -1,4 +1,4 @@
-import {createMktimeButton, defined, Labels, showDialog, notNull} from '../Base.js';
+import {createMktimeButton, defined, Labels, notNull, showDialog} from '../Base.js';
 import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -153,11 +153,11 @@ export class CalendarFiltersView extends HTMLElement {
     this.append(scrollable);
 
     let helpButton =
-        createMktimeButton('Help', () => new HelpDialog(HELP_TEXT));
+        createMktimeButton(() => new HelpDialog(HELP_TEXT), 'Help');
     helpButton.style.cssText = `margin-right: auto`;
 
-    let cancel = createMktimeButton('cancel', () => this.cancel_());
-    let save = createMktimeButton('save', () => this.save_());
+    let cancel = createMktimeButton(() => this.cancel_(), 'cancel');
+    let save = createMktimeButton(() => this.save_(), 'save');
 
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
@@ -500,8 +500,8 @@ export class CalendarFiltersView extends HTMLElement {
 
   setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
-   notNull( window.getSelection()).selectAllChildren(
-        defined(this.cursorSentinelElement_));
+    notNull(window.getSelection())
+        .selectAllChildren(defined(this.cursorSentinelElement_));
   }
 
   insertSentinelText_() {

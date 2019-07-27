@@ -47,8 +47,8 @@ export class FilterDialogView extends View {
 
     this.appendOffices_();
 
-    let cancel = createMktimeButton('cancel', () => this.close_());
-    this.saveButton_ = createMktimeButton('save', () => this.save_());
+    let cancel = createMktimeButton(() => this.close_(), 'cancel');
+    this.saveButton_ = createMktimeButton(() => this.save_(), 'save');
     this.saveButton_.disabled = true;
 
     let buttonContainer = document.createElement('div');
@@ -164,7 +164,7 @@ export class FilterDialogView extends View {
     }
 
     this.label_.append(
-        this.createNameCell_('Only show rows with this label'),
+        this.createNameCell_('Only show rows labeled'),
         this.createValueCell_(select));
   }
 

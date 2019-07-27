@@ -364,8 +364,8 @@ function reloadSoon() {
   container.append(
       'A new version of maketime is available. This window will reload in 60 seconds.');
 
-  let reloadButton = createMktimeButton('reload now', () => reload());
-  let close = createMktimeButton('close', () => dialog.close());
+  let reloadButton = createMktimeButton(() => reload(), 'reload now');
+  let close = createMktimeButton(() => dialog.close(), 'close');
 
   let buttonContainer = document.createElement('div');
   buttonContainer.style.cssText = `

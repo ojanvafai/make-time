@@ -31,7 +31,7 @@ export class HelpDialog extends HTMLElement {
       display: flex;
       justify-content: flex-end;
     `;
-    buttonContainer.append(createMktimeButton('close', () => dialog.close()));
+    buttonContainer.append(createMktimeButton(() => dialog.close(), 'close'));
     container.append(buttonContainer);
   }
 }

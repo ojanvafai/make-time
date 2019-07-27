@@ -195,7 +195,19 @@ export class Actions extends HTMLElement {
     this.menu_ = document.createElement('div');
     this.menu_.className = 'toolbar menu';
     for (let subAction of actions.reverse()) {
-      let button = this.createButton_(subAction);
+      let name = document.createElement('div');
+      name.style.cssText = `
+        flex: 1;
+      `;
+      name.append(subAction.name);
+
+      let shortcut = document.createElement('div');
+      shortcut.style.cssText = `
+        color: var(--dim-text-color);
+      `;
+      shortcut.append(`${shortcutString(subAction.key)}`);
+
+      let button = this.createButton_(subAction, name, shortcut);
       if (button)
         this.menu_.append(button);
     }
@@ -225,11 +237,14 @@ export class Actions extends HTMLElement {
                     (Math.max(0, (menuWidth - buttonRect.width)) / 2)))}px`;
   }
 
-  createButton_(action: Action) {
+  createButton_(action: Action, ...children: (string|Element)[]) {
     if (action.hidden)
       return null;
 
-    let button = createMktimeButton(action.name) as ButtonWithAction;
+    if (!children.length)
+      children.push(action.name);
+
+    let button = createMktimeButton(undefined, ...children) as ButtonWithAction;
     button.action = action;
     button.onpointerleave = () => this.tooltip_!.remove();
     button.onpointerenter = () => this.appendTooltip_(action);

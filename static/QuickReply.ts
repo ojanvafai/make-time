@@ -81,7 +81,7 @@ export class QuickReply extends HTMLElement {
       }
     }
 
-    let cancel = createMktimeButton('cancel', () => this.dispatchEvent(new ReplyCloseEvent()));
+    let cancel = createMktimeButton(() => this.dispatchEvent(new ReplyCloseEvent()), 'cancel');
 
     // Group these together so they wrap atomically.
     let controls = document.createElement('div');

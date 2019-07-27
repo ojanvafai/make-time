@@ -1,5 +1,5 @@
 import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
-import {Action, registerActions, Shortcut} from '../Actions.js';
+import {Action, registerActions, Shortcut, shortcutString} from '../Actions.js';
 import {assert, collapseArrow, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, expandArrow, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
@@ -517,10 +517,11 @@ export class ThreadListView extends View {
   }
 
   createMenuItem_(
-      container: HTMLElement, contents: string, clickHandler: () => void) {
+      container: HTMLElement, clickHandler: () => void,
+      ...contents: (string|Element)[]) {
     let item = document.createElement('div');
     item.className = 'menu-item';
-    item.append(contents);
+    item.append(...contents);
     item.addEventListener('click', () => {
       this.appShell_.closeOverflowMenu();
       clickHandler();
@@ -547,22 +548,32 @@ export class ThreadListView extends View {
 
   openOverflowMenu(container: HTMLElement) {
     this.createMenuItem_(
-        container, 'Force dark mode', () => Themes.toggleDarkMode());
+        container, () => Themes.toggleDarkMode(), 'Force dark mode');
+
+    let name = document.createElement('div');
+    name.style.cssText = `
+      flex: 1;
+    `;
+    name.append(VIEW_IN_GMAIL_ACTION.name);
+    let shortcut = document.createElement('div');
+    shortcut.style.cssText = `
+      color: var(--dim-text-color);
+    `;
+    shortcut.append(`${shortcutString(VIEW_IN_GMAIL_ACTION.key)}`);
 
     this.createMenuItem_(
-        container, `${VIEW_IN_GMAIL_ACTION.name} (${VIEW_IN_GMAIL_ACTION.key})`,
-        () => this.takeAction(VIEW_IN_GMAIL_ACTION));
+        container, () => this.takeAction(VIEW_IN_GMAIL_ACTION), name, shortcut);
 
     this.createMenuItem_(
-        container, 'Apply labels in gmail on next sync',
-        () => this.applyLabelsInGmail_());
+        container, () => this.applyLabelsInGmail_(),
+        'Apply labels in gmail on next sync');
 
     if (!this.renderedRow_ && this.model_.canDisallowViewMessages()) {
       let contents = this.model_.allowViewMessages() ?
           'Disallow viewing messages' :
           'Allow viewing messages';
       this.createMenuItem_(
-          container, contents, () => this.model_.toggleAllowViewMessages());
+          container, () => this.model_.toggleAllowViewMessages(), contents);
     }
   }
 

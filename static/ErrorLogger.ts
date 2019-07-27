@@ -32,7 +32,7 @@ class Logger extends HTMLElement {
       justify-content: center;
       flex-shrink: 0;
     `;
-    buttonContainer.append(createMktimeButton('Close', () => this.close_()));
+    buttonContainer.append(createMktimeButton(() => this.close_(), 'Close'));
     this.append(buttonContainer);
   }
 

@@ -96,6 +96,7 @@ body {
   content: '×';
 }
 .menu-item {
+  display: flex;
   padding: 12px;
 }
 input[type=checkbox], input[type=radio] {
@@ -124,11 +125,12 @@ input:not([type=checkbox]):not([type=radio]),
 .centered-up-arrow::after {
   content: "▲";
   color: grey;
+  display: flex;
+  justify-content: center;
   position: absolute;
-  top: 0px;
-  right: 3px;
-  bottom: 3px;
-  left: 3px;
+  top: 2px;
+  right: 0;
+  left: 0;
   font-size: 9px;
 }
 select.button, .mktime-button {
@@ -145,6 +147,9 @@ select.button {
   margin-right: 4px;
 }
 .mktime-button {
+  display: flex;
+  align-items: space-around;
+  text-align: left;
   margin: 4px 2px;
   white-space: nowrap;
   user-select: none;
