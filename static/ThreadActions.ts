@@ -49,7 +49,7 @@ export let NEEDS_FILTER_ACTION = {
 export let MUTE_ACTION = {
   name: `Mute`,
   description:
-    `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
+      `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
   key: 'm',
 };
 
@@ -200,7 +200,8 @@ function destinationToPriority(destination: Action) {
   }
 }
 
-export async function pickDate(destination: Action): Promise<Date|undefined|null> {
+export async function pickDate(destination: Action):
+    Promise<Date|undefined|null> {
   if (destination === BLOCKED_CUSTOM_ACTION ||
       destination === DUE_CUSTOM_ACTION) {
     let datePicker = new TinyDatePicker({mode: 'dp-modal'});

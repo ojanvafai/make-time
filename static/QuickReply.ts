@@ -1,4 +1,4 @@
-import {defined, createMktimeButton} from './Base.js';
+import {createMktimeButton, defined} from './Base.js';
 import {CancelEvent, EmailCompose, SubmitEvent} from './EmailCompose.js';
 import {SendAs} from './SendAs.js';
 import {ReplyType, Thread} from './Thread.js';
@@ -41,7 +41,7 @@ export class QuickReply extends HTMLElement {
       display: flex;
       flex-direction: column;
       flex-wrap: wrap;
-      width: 100%;
+      width: -webkit-fill-available;
     `;
 
     this.compose_ = this.createCompose_();
@@ -81,7 +81,8 @@ export class QuickReply extends HTMLElement {
       }
     }
 
-    let cancel = createMktimeButton(() => this.dispatchEvent(new ReplyCloseEvent()), 'cancel');
+    let cancel = createMktimeButton(
+        () => this.dispatchEvent(new ReplyCloseEvent()), 'cancel');
 
     // Group these together so they wrap atomically.
     let controls = document.createElement('div');
@@ -103,7 +104,7 @@ export class QuickReply extends HTMLElement {
   private createCompose_() {
     let compose = new EmailCompose(true);
     compose.style.cssText = `
-      width: 100%;
+      width: -webkit-fill-available;
       max-width: var(--max-width);
       align-self: center;
       margin: 4px;

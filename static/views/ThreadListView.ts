@@ -1,5 +1,5 @@
 import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
-import {Action, registerActions, Shortcut, shortcutString} from '../Actions.js';
+import {Action, QUICK_REPLY_ACTION, registerActions, Shortcut, shortcutString} from '../Actions.js';
 import {assert, collapseArrow, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, expandArrow, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
@@ -44,12 +44,6 @@ interface IgnoredEvent {
 interface IgnoredDocumentData extends firebase.firestore.DocumentSnapshot {
   ignored: IgnoredEvent[],
 }
-
-let QUICK_REPLY_ACTION = {
-  name: `Reply`,
-  description: `Give a short reply.`,
-  key: 'r',
-};
 
 let VIEW_IN_GMAIL_ACTION = {
   name: `View in gmail`,

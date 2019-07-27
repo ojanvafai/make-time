@@ -18,6 +18,14 @@ interface ButtonWithAction extends HTMLButtonElement {
 
 const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
 
+// TODO: Move this to ThreadListView once we don't need the click workaround for
+// it below.
+export let QUICK_REPLY_ACTION = {
+  name: `Reply`,
+  description: `Give a short reply.`,
+  key: 'r',
+};
+
 export class Shortcut {
   constructor(
       public key: string, public ctrlMeta?: boolean, public shift?: boolean,
@@ -162,18 +170,24 @@ export class Actions extends HTMLElement {
       }
     });
 
-    button.addEventListener('pointerup', (e: PointerEvent) => {
-      let hitButton = this.hitButton_(e);
-      if (hitButton &&
-          (hitButton === button ||
-           (this.menu_ && this.menu_.contains(hitButton)))) {
-        this.view_.takeAction(hitButton.action);
-      }
+    // Use click on reply action to workaround crbug.com/988262.
+    if (action === QUICK_REPLY_ACTION) {
+      button.addEventListener(
+          'click', () => this.view_.takeAction(QUICK_REPLY_ACTION));
+    } else {
+      button.addEventListener('pointerup', (e: PointerEvent) => {
+        let hitButton = this.hitButton_(e);
+        if (hitButton &&
+            (hitButton === button ||
+             (this.menu_ && this.menu_.contains(hitButton)))) {
+          this.view_.takeAction(hitButton.action);
+        }
 
-      if (this.menu_)
-        this.menu_.remove();
-      this.menu_ = undefined;
-    });
+        if (this.menu_)
+          this.menu_.remove();
+        this.menu_ = undefined;
+      });
+    }
   }
 
   private hitButton_(e: PointerEvent) {
