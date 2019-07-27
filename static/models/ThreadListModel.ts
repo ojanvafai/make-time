@@ -279,15 +279,18 @@ export abstract class ThreadListModel extends Model {
 
     this.resetUndoableActions_();
 
-    let progress = this.updateTitle(
-        'ThreadListModel.markThreadsTriaged', threads.length,
-        'Modifying threads...');
-
-    let pending = [];
-
     // Need to pick the date first for actions that require the date picker
     // since we don't want to show the date picker once per thread.
     let date = await pickDate(destination);
+    // Null means that this is a date action, but no date was selected.
+    if (date === null)
+      return;
+
+    let pending = [];
+
+    let progress = this.updateTitle(
+        'ThreadListModel.markThreadsTriaged', threads.length,
+        'Modifying threads...');
 
     for (let thread of threads) {
       let update = date ?

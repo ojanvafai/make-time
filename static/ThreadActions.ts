@@ -200,15 +200,16 @@ function destinationToPriority(destination: Action) {
   }
 }
 
-export async function pickDate(destination: Action): Promise<Date|undefined> {
+export async function pickDate(destination: Action): Promise<Date|undefined|null> {
   if (destination === BLOCKED_CUSTOM_ACTION ||
       destination === DUE_CUSTOM_ACTION) {
     let datePicker = new TinyDatePicker({mode: 'dp-modal'});
     return new Promise((resolve) => {
-      // TODO: Handle the case where the date picker is closed without
-      // selecting a date.
       datePicker.addEventListener('select', async () => {
         resolve(datePicker.state.selectedDate);
+      });
+      datePicker.addEventListener('cancel', async () => {
+        resolve(null);
       });
     });
   }
@@ -218,6 +219,9 @@ export async function pickDate(destination: Action): Promise<Date|undefined> {
 export async function takeAction(
     thread: Thread, destination: Action, moveToInbox?: boolean) {
   let date = await pickDate(destination);
+  // Null means that this is a date action, but no date was selected.
+  if (date === null)
+    return;
   let update = date ?
       await createDateUpdate(thread, destination, date, moveToInbox) :
       await createUpdate(thread, destination, moveToInbox);

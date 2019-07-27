@@ -488,7 +488,7 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
       return dp.isVisible();
     },
 
-    close: function() {
+    close: function(isCancel?: boolean) {
       var el = dp.el;
 
       if (!dp.isVisible()) {
@@ -509,6 +509,8 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
         closing = false;
       }, 100);
 
+      if (isCancel)
+        emit('cancel');
       emit('close');
     },
 
