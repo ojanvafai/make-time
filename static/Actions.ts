@@ -1,4 +1,4 @@
-import {createMktimeButton, notNull} from './Base.js';
+import {createMktimeButton, isMobileUserAgent, notNull} from './Base.js';
 import {View} from './views/View.js';
 
 export interface Action {
@@ -226,13 +226,20 @@ export class Actions extends HTMLElement {
 
     let buttonRect = button.getBoundingClientRect();
     let menuWidth = this.menu_.offsetWidth;
-    this.menu_.style.bottom = `${window.innerHeight - buttonRect.top + 4}px`;
+    let margin = 4;
+
+    // Put a bigger margin on mobile so that you can see the button under your
+    // finger.
+    let bottomMargin = isMobileUserAgent() ? 20 : margin;
+
+    this.menu_.style.bottom =
+        `${window.innerHeight - buttonRect.top + bottomMargin}px`;
     // Center the menu over the button, but keep it bound withing the window.
     this.menu_.style.left = `${
         Math.max(
-            0,
+            margin,
             Math.min(
-                window.innerWidth - menuWidth,
+                window.innerWidth - menuWidth - margin,
                 buttonRect.left -
                     (Math.max(0, (menuWidth - buttonRect.width)) / 2)))}px`;
   }
