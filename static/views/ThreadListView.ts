@@ -421,6 +421,7 @@ export class ThreadListView extends View {
     `;
     link.className = 'hover';
     link.href = event.editUrl;
+    link.title = event.summary;
     link.append(
         `${event.start.getMonth() + 1}/${event.start.getDate()} `,
         event.summary);
