@@ -679,8 +679,8 @@ export class ThreadListView extends View {
     let previousEntry: {group: ThreadRowGroup, rows: ThreadRow[]}|undefined;
     for (let thread of threads) {
       let originalGroupName = this.model_.getGroupName(thread);
-      let groupName =
-          defined(queueSettings.getMappedGroupName(originalGroupName));
+      let groupName = queueSettings.getMappedGroupName(originalGroupName) ||
+          originalGroupName;
 
       let entry = groupMap.get(groupName);
       // Insertion sort insert new groups
