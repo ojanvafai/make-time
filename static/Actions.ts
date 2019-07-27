@@ -134,7 +134,7 @@ export class Actions extends HTMLElement {
             return;
 
           let hitButton = this.hitButton_(e);
-          this.updateTooltip_(hitButton ? hitButton.action : null);
+          this.updateTooltip_(hitButton ? hitButton.action : null, this.menu_);
 
           for (let child of this.menu_.children) {
             let element = child as HTMLElement;
@@ -189,6 +189,9 @@ export class Actions extends HTMLElement {
         if (this.menu_)
           this.menu_.remove();
         this.menu_ = undefined;
+
+        if (this.tooltip_)
+          this.centerAbove_(this.tooltip_, button!);
       });
     }
   }
@@ -222,8 +225,10 @@ export class Actions extends HTMLElement {
       shortcut.append(`${shortcutString(subAction.key)}`);
 
       let button = this.createButton_(subAction, name, shortcut);
-      if (button)
+      if (button) {
+        button.style.display = 'flex';
         this.menu_.append(button);
+      }
     }
 
     this.menu_.style.cssText = `
@@ -238,26 +243,31 @@ export class Actions extends HTMLElement {
     `;
     document.body.append(this.menu_);
 
-    let buttonRect = button.getBoundingClientRect();
-    let menuWidth = this.menu_.offsetWidth;
-
     // Put a bigger margin on mobile so that you can see the button under your
     // finger.
-    let bottomMargin = isMobileUserAgent() ? 20 : MARGIN;
+    this.centerAbove_(this.menu_, button, isMobileUserAgent() ? 20 : 0);
+    if (this.tooltip_)
+      this.centerAbove_(this.tooltip_, this.menu_);
+  }
 
-    this.menu_.style.bottom =
-        `${window.innerHeight - buttonRect.top + bottomMargin}px`;
-    // Center the menu over the button, but keep it bound withing the window.
-    this.menu_.style.left = `${
+  centerAbove_(
+      element: HTMLElement, relativeTo: HTMLElement,
+      extraBottomMargin?: number) {
+    let rect = relativeTo.getBoundingClientRect();
+    let itemWidth = element.offsetWidth;
+
+    let bottomMargin = MARGIN;
+    if (extraBottomMargin)
+      bottomMargin += extraBottomMargin;
+
+    element.style.bottom = `${window.innerHeight - rect.top + bottomMargin}px`;
+    // Center the menu over the reference, but keep it bound within the window.
+    element.style.left = `${
         Math.max(
             MARGIN,
             Math.min(
-                window.innerWidth - menuWidth - MARGIN,
-                buttonRect.left -
-                    (Math.max(0, (menuWidth - buttonRect.width)) / 2)))}px`;
-
-    if (this.tooltip_)
-      this.positionTooltip_(this.menu_);
+                window.innerWidth - itemWidth - MARGIN,
+                rect.left - (Math.max(0, (itemWidth - rect.width)) / 2)))}px`;
   }
 
   createButton_(action: Action, ...children: (string|Element)[]) {
@@ -270,53 +280,47 @@ export class Actions extends HTMLElement {
     let button = createMktimeButton(undefined, ...children) as ButtonWithAction;
     button.action = action;
     button.onpointerleave = () => this.tooltip_!.remove();
-    button.onpointerenter = () => this.appendTooltip_(action);
+    button.onpointerenter = () => {
+      this.appendTooltip_(action);
+      this.centerAbove_(this.tooltip_!, button);
+    };
     button.oncontextmenu = (e: Event) => e.preventDefault();
     return button;
   }
 
-  private positionTooltip_(relativeTo: HTMLElement) {
+  private updateTooltip_(action: Action|null, relativeTo: HTMLElement) {
     let tooltip = defined(this.tooltip_);
-    tooltip.style.bottom = `${
-        window.innerHeight - relativeTo.getBoundingClientRect().top +
-        MARGIN}px`;
-  }
 
-  private updateTooltip_(action: Action|null) {
-    let tooltip = defined(this.tooltip_);
-    tooltip.textContent = '';
-
-    if (!action)
+    if (!action) {
+      tooltip.style.display = 'none';
       return;
+    }
 
-    let text = document.createElement('div');
-    text.style.cssText = `
-      background-color: var(--overlay-background-color);
-      border: 1px solid;
-      padding: 4px;
-      width: 300px;
-    `;
+    tooltip.style.display = '';
+    tooltip.textContent = '';
 
     let bold = document.createElement('b');
     bold.append(`${shortcutString(action.key)}: `);
-    text.append(bold, action.description);
-    tooltip.append(text);
+    tooltip.append(bold, action.description);
+
+    this.centerAbove_(tooltip, relativeTo);
   }
 
   private appendTooltip_(action: Action) {
     this.tooltip_ = document.createElement('div');
     this.tooltip_.style.cssText = `
       position: absolute;
-      left: 0;
-      right: 0;
       display: flex;
-      justify-content: center;
-      pointer-events: none;
+      background-color: var(--overlay-background-color);
+      border: 1px solid var(--border-and-hover-color);
+      border-radius: 2px;
+      color: var(--dim-text-color);
+      padding: 4px;
+      width: 300px;
     `;
 
-    this.updateTooltip_(action);
     this.append(this.tooltip_);
-    this.positionTooltip_(this);
+    this.updateTooltip_(action, this);
   }
 
   static matchesEvent_(e: KeyboardEvent, shortcut?: string|Shortcut) {
