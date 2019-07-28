@@ -635,6 +635,13 @@ export class ThreadListView extends View {
     this.render_();
   }
 
+  mergedGroupName_(thread: Thread) {
+    let originalGroupName = this.model_.getGroupName(thread);
+    return this.settings_.getQueueSettings().getMappedGroupName(
+               originalGroupName) ||
+        originalGroupName;
+  }
+
   private renderFrame_() {
     this.hasQueuedFrame_ = false;
     let allThreads = this.model_.getThreads();
@@ -650,7 +657,7 @@ export class ThreadListView extends View {
     this.updatePendingArea_(threadsInPending);
 
     let threads = allThreads.filter(x => !x.actionInProgress());
-    let newGroupNames = new Set(threads.map(x => this.model_.getGroupName(x)));
+    let newGroupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
     let removedRows = [];
 
     // Remove groups that no longer exist.
@@ -672,16 +679,11 @@ export class ThreadListView extends View {
               ] as [string, {group: ThreadRowGroup, rows: ThreadRow[]}];
             }));
 
-    let queueSettings = this.settings_.getQueueSettings()
-
     // Threads should be in sorted order already and all threads in the
     // same queue should be adjacent to each other.
     let previousEntry: {group: ThreadRowGroup, rows: ThreadRow[]}|undefined;
     for (let thread of threads) {
-      let originalGroupName = this.model_.getGroupName(thread);
-      let groupName = queueSettings.getMappedGroupName(originalGroupName) ||
-          originalGroupName;
-
+      let groupName = this.mergedGroupName_(thread);
       let entry = groupMap.get(groupName);
       // Insertion sort insert new groups
       if (!entry) {
@@ -829,7 +831,7 @@ export class ThreadListView extends View {
 
       if (this.renderedRow_) {
         if (nextRow) {
-          let nextGroupName = this.model_.getGroupName(nextRow.thread);
+          let nextGroupName = this.mergedGroupName_(nextRow.thread);
           if (this.renderedGroupName_ !== nextGroupName) {
             // If the next group is collapsed, go back to the thread list.
             if (this.model_.isCollapsed(nextGroupName))
@@ -1177,7 +1179,7 @@ export class ThreadListView extends View {
     // This is read in renderFrame_. At that point, the rendered row will have
     // already been triaged and will no longer have a group name.
     this.renderedGroupName_ =
-        (row ? this.model_.getGroupName(row.thread) : null);
+        (row ? this.mergedGroupName_(row.thread) : null);
   }
 
   setRenderedRow_(row: ThreadRow|null) {
