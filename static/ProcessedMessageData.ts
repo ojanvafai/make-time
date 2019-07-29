@@ -77,25 +77,26 @@ export class ProcessedMessageData {
     this.snippet = defined(rawMessages[rawMessages.length - 1].snippet);
     this.from_ = null;
 
-    let oldMessageCount = this.messages.length;
+    let newMessages = [];
+    let previousMessage;
     for (let i = 0; i < rawMessages.length; i++) {
       let message = rawMessages[i];
+      let oldMessage = this.messages[i];
 
-      // In theory, the only thing that can change on old messages is the
-      // labels, which are only stored in the rawMessage_ field of Message. To
-      // avoid recomputing the message body and quote diffs, just set the raw
-      // message instead of fully reprocessing.
-      if (i < oldMessageCount) {
-        this.messages[i].setRawMessage(message);
-        continue;
+      // If the ids are the same, we don't need to reprocess the message data,
+      // but we may need to update labels if the historyIds changed.
+      let newMessage;
+      if (!oldMessage || oldMessage.rawMessage.id !== message.id) {
+        newMessage = new Message(message, previousMessage);
+      } else {
+        newMessage = oldMessage;
+        if (oldMessage.rawMessage.historyId === message.historyId)
+          oldMessage.updateLabels(message.labelIds || []);
       }
 
-      let previousMessage;
-      if (this.messages.length)
-        previousMessage = this.messages[this.messages.length - 1];
-
-      let processed = new Message(message, previousMessage);
-      this.messages.push(processed);
+      newMessages.push(newMessage);
+      previousMessage = newMessage;
     }
+    this.messages = newMessages;
   }
 }

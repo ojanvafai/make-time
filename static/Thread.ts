@@ -634,10 +634,6 @@ export class Thread extends EventTarget {
     return this.processed_.getSnippet();
   }
 
-  private getRawMessages_() {
-    return this.processed_.messages.map(x => x.rawMessage);
-  }
-
   getMetadataDocument_() {
     return Thread.metadataCollection().doc(this.id);
   }
@@ -696,7 +692,7 @@ export class Thread extends EventTarget {
       userId: USER_ID,
       id: this.id,
       format: 'minimal',
-      fields: 'historyId,messages(id,labelIds,internalDate)',
+      fields: 'historyId,messages(id,historyId,labelIds,internalDate)',
     });
 
     let historyId = defined(resp.result.historyId);
@@ -711,23 +707,33 @@ export class Thread extends EventTarget {
         this.getHistoryId() === historyId)
       return;
 
-    // TODO: Need to refetch drafts that were sent. Make the loop below fetch
-    // the message if the messageId has changed.
-    for (let i = 0; i < processedMessages.length; i++) {
-      let labels = messages[i].labelIds || [];
-      processedMessages[i].updateLabels(labels);
-    }
+    let allRawMessages = [];
 
-    let allRawMessages = this.getRawMessages_();
     // Fetch the full message details for any new messages.
     // TODO: If there are many messages to fetch, might be faster to just
     // refetch the whole thread or maybe do a BatchRequest for all the messages.
-    for (let i = allRawMessages.length; i < messages.length; i++) {
-      let resp = await gapiFetch(gapi.client.gmail.users.messages.get, {
-        userId: USER_ID,
-        id: messages[i].id,
-      });
-      allRawMessages.push(resp.result);
+    for (let i = 0; i < messages.length; i++) {
+      let message = messages[i];
+      let processedMessage = processedMessages[i];
+
+      // The order of messages can change due to deleting messages or drafts
+      // coming/going. If the ids or historyIds match, don't refetch the full
+      // message data. ids change on drafts at each autosave, so this
+      // ensures we pull fresh versions of drafts. historyIds change on label
+      // changes.
+      let rawMessage;
+      if (!processedMessage || processedMessage.rawMessage.id !== message.id) {
+        // TODO: Fire a change event in this case so rendered threads update.
+        let resp = await gapiFetch(gapi.client.gmail.users.messages.get, {
+          userId: USER_ID,
+          id: messages[i].id,
+        });
+        rawMessage = resp.result;
+      } else {
+        rawMessage = processedMessage.rawMessage;
+      }
+
+      allRawMessages.push(rawMessage);
     }
 
     await this.saveMessageState_(historyId, allRawMessages);
