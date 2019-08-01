@@ -45,6 +45,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.groupNameContainer_.style.cssText = `
       font-weight: bold;
       font-size: 18px;
+      flex: 1;
       padding: 12px 4px 12px 0;
       display: flex;
       align-items: center;
