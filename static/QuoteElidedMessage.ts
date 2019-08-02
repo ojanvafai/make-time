@@ -32,6 +32,20 @@ const createLink = (href: string) => {
   return link;
 };
 
+let DOM_SANDBOX = document.createElement('iframe');
+DOM_SANDBOX.style.display = 'none';
+DOM_SANDBOX.setAttribute('sandbox', 'allow-same-origin');
+document.documentElement.append(DOM_SANDBOX);
+
+// Need to ensure that all potentially malicious DOM is created sandboxed and
+// that we never innerHTML that DOM elsewhere to avoid event handlers in the
+// message markup from running.
+function sandboxedDom(html: string) {
+  let div = notNull(DOM_SANDBOX.contentDocument).createElement('div');
+  div.innerHTML = html;
+  return div;
+}
+
 export class QuoteElidedMessage {
   // These are initialized in computeHashes_, which is always called from the
   // constructor.
@@ -49,8 +63,8 @@ export class QuoteElidedMessage {
     currentMessage =
         currentMessage.replace('src="https://mail.google.com/', 'src="');
 
-    this.dom_ = document.createElement('div');
-    this.dom_.innerHTML = currentMessage;
+    this.dom_ = sandboxedDom(currentMessage);
+
     this.sanitizeContent_();
     this.linkifyContent_();
 
