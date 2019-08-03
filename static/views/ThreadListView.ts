@@ -1,6 +1,6 @@
 import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action, QUICK_REPLY_ACTION, registerActions, Shortcut, shortcutString} from '../Actions.js';
-import {assert, collapseArrow, createSvg, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, expandArrow, notNull} from '../Base.js';
+import {assert, collapseArrow, defined, expandArrow, leftArrow, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -125,10 +125,11 @@ let UNDO_ACTION = {
   key: 'u',
 };
 
-let downArrow = createSvg(DOWN_ARROW_VIEW_BOX, DOWN_ARROW_SVG);
-let upArrow = downArrow.cloneNode(true) as SVGSVGElement;
 // Too lazy to make an up arrow SVG, so just rotate the down arrow.
-upArrow.style.transform = 'rotate(180deg)';
+let downArrow = leftArrow('down-arrow');
+downArrow.style.transform = 'rotate(270deg)';
+let upArrow = leftArrow('up-arrow');
+upArrow.style.transform = 'rotate(90deg)';
 
 let MOVE_UP_ACTION = {
   name: upArrow,
@@ -1178,8 +1179,7 @@ export class ThreadListView extends View {
     this.renderedRow_ = row;
     // This is read in renderFrame_. At that point, the rendered row will have
     // already been triaged and will no longer have a group name.
-    this.renderedGroupName_ =
-        (row ? this.mergedGroupName_(row.thread) : null);
+    this.renderedGroupName_ = (row ? this.mergedGroupName_(row.thread) : null);
   }
 
   setRenderedRow_(row: ThreadRow|null) {

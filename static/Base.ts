@@ -4,9 +4,6 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 import {gapiFetch} from './Net.js';
 
 export const USER_ID = 'me';
-export const DOWN_ARROW_VIEW_BOX = '0 0 24 24';
-export const DOWN_ARROW_SVG =
-    `<path d="M 12 3 C 11.448 3 11 3.448 11 4 L 11 17.070312 L 7.1367188 13.207031 C 6.7457187 12.816031 6.1126563 12.816031 5.7226562 13.207031 L 5.6367188 13.292969 C 5.2457187 13.683969 5.2457187 14.317031 5.6367188 14.707031 L 11.292969 20.363281 C 11.683969 20.754281 12.317031 20.754281 12.707031 20.363281 L 18.363281 14.707031 C 18.754281 14.316031 18.754281 13.682969 18.363281 13.292969 L 18.277344 13.207031 C 17.886344 12.816031 17.253281 12.816031 16.863281 13.207031 L 13 17.070312 L 13 4 C 13 3.448 12.552 3 12 3 z"></path>`;
 
 const MKTIME_BUTTON_CLASS = 'mktime-button';
 
@@ -24,33 +21,84 @@ export function createMktimeButton(
   return button;
 }
 
-export function createSvg(viewBox: string, innerHTML: string) {
-  let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+export function createSvg(nodeName: string, ...children: SVGElement[]) {
+  let node = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
+  node.append(...children);
+  return node;
+}
+
+export function createSvgContainer(viewBox: string, ...children: SVGElement[]) {
+  let svg = createSvg('svg', ...children);
   svg.setAttribute('viewBox', viewBox);
-  svg.innerHTML = innerHTML;
   return svg;
 }
 
 export function createSvgButton(
-    viewBox: string, onClick: (e: Event) => void, innerHTML: string) {
-  let button = createSvg(viewBox, innerHTML);
+    viewBox: string, onClick?: (e: Event) => void, ...children: SVGElement[]) {
+  let button = createSvgContainer(viewBox, ...children);
   setupMktimeButton(button, onClick);
   return button;
 }
 
-function createArrow(innerHTML: string) {
-  let svg = createSvg('0 0 24 24', innerHTML);
+export function createCircle(cx: number, cy: number, r: number) {
+  let node = createSvg('circle');
+  node.setAttribute('cx', String(cx));
+  node.setAttribute('cy', String(cy));
+  node.setAttribute('r', String(r));
+  return node;
+}
+
+export function createLine(
+    x1: number, y1: number, x2: number, y2: number, strokeWidth: number) {
+  let node = createSvg('line');
+  node.setAttribute('stroke', 'black');
+  node.setAttribute('stroke-linecap', 'round');
+  node.setAttribute('stroke-width', String(strokeWidth));
+  node.setAttribute('x1', String(x1));
+  node.setAttribute('y1', String(y1));
+  node.setAttribute('x2', String(x2));
+  node.setAttribute('y2', String(y2));
+  return node;
+}
+
+export function createPath(path: string) {
+  let node = createSvg('path');
+  node.setAttribute('d', path);
+  return node;
+}
+
+export function collapseArrow() {
+  let one = createLine(7.5, 14, 12, 9.5, 2);
+  let two = createLine(12, 9.5, 16.5, 14, 2);
+  let svg = createSvgContainer('0 0 24 24', one, two);
   svg.style.height = '24px';
   return svg;
 }
-export function collapseArrow() {
-  return createArrow(
-      `<path d="M12,9.929l3.821,3.821c0.414,0.414,1.086,0.414,1.5,0l0,0c0.414-0.414,0.414-1.086,0-1.5l-4.614-4.614 c-0.391-0.391-1.024-0.391-1.414,0L6.679,12.25c-0.414,0.414-0.414,1.086,0,1.5l0,0c0.414,0.414,1.086,0.414,1.5,0L12,9.929z"></path>`);
-}
 
 export function expandArrow() {
-  return createArrow(
-      `<path d="M12,14.071L8.179,10.25c-0.414-0.414-1.086-0.414-1.5,0l0,0c-0.414,0.414-0.414,1.086,0,1.5l4.614,4.614 c0.391,0.391,1.024,0.391,1.414,0l4.614-4.614c0.414-0.414,0.414-1.086,0-1.5v0c-0.414-0.414-1.086-0.414-1.5,0L12,14.071z"></path>`);
+  let one = createLine(7.5, 9, 12, 13.5, 2);
+  let two = createLine(12, 13.5, 16.5, 9, 2);
+  let svg = createSvgContainer('0 0 24 24', one, two);
+  svg.style.height = '24px';
+  return svg;
+}
+
+export function leftArrow(id: string, onClick?: (e: Event) => void) {
+  let marker = createSvg('marker', createPath('M0,0 V5 L2.5,2.5 Z'));
+  marker.setAttribute('id', id);
+  marker.setAttribute('orient', 'auto-start-reverse');
+  marker.setAttribute('markerWidth', '2.5');
+  marker.setAttribute('markerHeight', '5');
+  marker.setAttribute('refY', '2.5');
+
+  let arrow = createLine(10, 12, 20, 12, 2.5);
+  arrow.setAttribute('marker-start', `url(#${id})`);
+
+  let button =
+      createSvgContainer('0 0 24 24', createSvg('defs', marker), arrow);
+  if (onClick)
+    setupMktimeButton(button, onClick);
+  return button;
 }
 
 let DOM_SANDBOX = document.createElement('iframe');

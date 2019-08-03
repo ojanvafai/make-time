@@ -1,4 +1,4 @@
-import {createSvgButton, defined, DOWN_ARROW_SVG, DOWN_ARROW_VIEW_BOX, notNull} from '../Base.js';
+import {createCircle, createLine, createPath, createSvg, createSvgButton, defined, leftArrow, notNull} from '../Base.js';
 import {getSettings, showHelp} from '../BaseMain.js';
 import {COMPLETED_EVENT_NAME, ProgressTracker} from '../ProgressTracker.js';
 
@@ -40,12 +40,12 @@ export class AppShell extends HTMLElement {
   private drawer_: HTMLElement;
   private mainContent_: HTMLElement;
   private content_: HTMLElement;
-  private backArrow_: SVGSVGElement;
+  private backArrow_: SVGElement;
   private toolbar_: HTMLElement;
-  private menuToggle_: SVGSVGElement;
-  private filterToggle_: SVGSVGElement;
-  private viewToggle_: SVGSVGElement;
-  private overflowMenuButton_: SVGSVGElement;
+  private menuToggle_: SVGElement;
+  private filterToggle_: SVGElement;
+  private viewToggle_: SVGElement;
+  private overflowMenuButton_: SVGElement;
   private overflowMenu_?: HTMLElement;
   private clickOverlay_?: HTMLElement;
   private subject_: HTMLElement;
@@ -135,46 +135,44 @@ export class AppShell extends HTMLElement {
 
     this.mainContent_.append(this.toolbar_, contentContainer, AppShell.footer_);
 
-    this.backArrow_ = createSvgButton(
-        DOWN_ARROW_VIEW_BOX, () => this.dispatchEvent(new BackEvent()),
-        DOWN_ARROW_SVG);
-    // Too lazy to rework the arrow to point left, so just use CSS Transforms.
+    this.backArrow_ = leftArrow('back-arrow', () => this.dispatchEvent(new BackEvent()));
     this.backArrow_.style.cssText = `
-      transform: rotate(90deg);
       display: none;
     `;
 
-    const menuToggleContents =
-        `<path d="M4,10h24c1.104,0,2-0.896,2-2s-0.896-2-2-2H4C2.896,6,2,6.896,2,8S2.896,10,4,10z M28,14H4c-1.104,0-2,0.896-2,2 s0.896,2,2,2h24c1.104,0,2-0.896,2-2S29.104,14,28,14z M28,22H4c-1.104,0-2,0.896-2,2s0.896,2,2,2h24c1.104,0,2-0.896,2-2 S29.104,22,28,22z"></path>`;
-    this.menuToggle_ = createSvgButton('0 0 32 32', (e) => {
-      e.stopPropagation();
-      this.toggleMenu();
-    }, menuToggleContents);
+    this.menuToggle_ = createSvgButton(
+        '0 0 24 24',
+        (e) => {
+          e.stopPropagation();
+          this.toggleMenu();
+        },
+        createLine(2, 5, 22, 5, 3),
+        createLine(2, 12, 22, 12, 3),
+        createLine(2, 19, 22, 19, 3),
+    );
 
-    let filterToggleContents =
-        `<g transform="translate(0,1280) scale(0.1,-0.1)">
-      <path d="M102 12678 c58 -68 1233 -1459 2613 -3093 1380 -1633 2542 -3009 2582 -3056 l73 -86 0 -3221 0 -3221 790 792 790 792 0 2430 1 2430 1470 1740 c1881 2225 2386 2823 3193 3780 362 429 670 792 684 808 l26 27 -6163 0 -6163 0 104 -122z"/>
-    </g>`;
-    this.filterToggle_ = createSvgButton(
-        '0 0 1232 1280', () => this.openFilterMenu_(), filterToggleContents);
-    this.filterToggle_.style.cssText = `
-      margin: 0 6px;
-    `;
-
-    let viewToggleContents =
-        `<path d="M 17 2 L 17 6 L 3 6 L 3 8 L 17 8 L 17 12 L 22 7 L 17 2 M 7 12 L 2 17 L 7 22 L 7 18 L 21 18 L 21 16 L 7 16 L 7 12"></path>`;
-    this.viewToggle_ = createSvgButton(
-        '0 0 24 24', () => this.dispatchEvent(new ToggleViewEvent()),
-        viewToggleContents);
+    this.viewToggle_ = this.createViewToggleSVG_();
     this.viewToggle_.style.cssText = `
       display: none;
       margin-left: 6px;
     `;
 
-    let overflowMenuContents =
-        `<circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>`;
+    this.filterToggle_ = createSvgButton(
+        '0 0 24 24',
+        () => this.openFilterMenu_(),
+        createLine(2, 5, 22, 5, 3),
+        createLine(6, 12, 18, 12, 3),
+        createLine(10, 19, 14, 19, 3),
+    );
+    this.filterToggle_.style.margin = '0 6px';
+
     this.overflowMenuButton_ = createSvgButton(
-        '0 0 24 24', () => this.toggleOverflowMenu_(), overflowMenuContents);
+        '0 0 24 24',
+        () => this.toggleOverflowMenu_(),
+        createCircle(12, 5, 2),
+        createCircle(12, 12, 2),
+        createCircle(12, 19, 2),
+    );
 
     let toolbarChildStyle = `
       display: flex;
@@ -216,6 +214,24 @@ export class AppShell extends HTMLElement {
         this.closeMenu();
       }
     });
+  }
+
+  createViewToggleSVG_() {
+    let marker = createSvg('marker', createPath('M0,0 V4 L2,2 Z'));
+    marker.setAttribute('id', 'head');
+    marker.setAttribute('orient', 'auto-start-reverse');
+    marker.setAttribute('markerWidth', '2');
+    marker.setAttribute('markerHeight', '4');
+    marker.setAttribute('refY', '2');
+
+    let rightArrow = createLine(2, 6, 18, 6, 2.5);
+    rightArrow.setAttribute('marker-end', 'url(#head)');
+    let leftArrow = createLine(6, 18, 21, 18, 2.5);
+    leftArrow.setAttribute('marker-start', 'url(#head)');
+
+    return createSvgButton(
+        '0 0 24 24', () => this.dispatchEvent(new ToggleViewEvent()),
+        createSvg('defs', marker), rightArrow, leftArrow);
   }
 
   showViewAndFilterToggles(show: boolean) {
