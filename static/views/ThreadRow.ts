@@ -1,4 +1,4 @@
-import {assert, isMobileUserAgent, notNull} from '../Base.js';
+import {assert, isMobileUserAgent, notNull, sandboxedDom} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
 import {ALL, NONE, SOME} from '../SelectBox.js';
@@ -361,10 +361,8 @@ export class ThreadRow extends HTMLElement {
     ThreadRow.appendLabels(
         labels, state, this.thread, this.labelSelectTemplate_);
 
-    let snippet = document.createElement('span');
-    snippet.style.color = '#666';
-    // Snippet as returned by the gmail API is html escaped.
-    snippet.innerHTML = ` - ${state.snippet}`;
+    let snippet = sandboxedDom(` - ${state.snippet}`);
+    snippet.style.color = 'var(--dim-text-color)';
 
     let justSubject = document.createElement('span');
     justSubject.append(state.subject);

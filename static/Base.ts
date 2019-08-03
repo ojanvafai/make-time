@@ -53,6 +53,20 @@ export function expandArrow() {
       `<path d="M12,14.071L8.179,10.25c-0.414-0.414-1.086-0.414-1.5,0l0,0c-0.414,0.414-0.414,1.086,0,1.5l4.614,4.614 c0.391,0.391,1.024,0.391,1.414,0l4.614-4.614c0.414-0.414,0.414-1.086,0-1.5v0c-0.414-0.414-1.086-0.414-1.5,0L12,14.071z"></path>`);
 }
 
+let DOM_SANDBOX = document.createElement('iframe');
+DOM_SANDBOX.style.display = 'none';
+DOM_SANDBOX.setAttribute('sandbox', 'allow-same-origin');
+document.documentElement.append(DOM_SANDBOX);
+
+// Need to ensure that all potentially malicious DOM is created sandboxed and
+// that we never innerHTML that DOM elsewhere to avoid event handlers in the
+// message markup from running.
+export function sandboxedDom(html: string) {
+  let div = notNull(DOM_SANDBOX.contentDocument).createElement('div');
+  div.innerHTML = html;
+  return div;
+}
+
 // Authorization scopes required by the Google API.
 export let SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',

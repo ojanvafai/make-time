@@ -1,5 +1,5 @@
 import {Action} from './Actions.js';
-import {assert, collapseArrow, expandArrow, notNull} from './Base.js';
+import {assert, collapseArrow, expandArrow, notNull, sandboxedDom} from './Base.js';
 import {Message} from './Message.js';
 import {Thread} from './Thread.js';
 import {NEXT_ACTION, NEXT_FULL_ACTION, PREVIOUS_ACTION, PREVIOUS_FULL_ACTION} from './views/ThreadListView.js';
@@ -115,12 +115,9 @@ export class RenderedThread extends HTMLElement {
       subjectContainer.append(subject);
       subjectContainer.append(this.thread.getSubject());
 
-      let snippet = document.createElement('div');
-      snippet.style.cssText = `
-        color: var(--dim-text-color);
-      `;
       // Snippet returned by the gmail API is html escaped.
-      snippet.innerHTML = this.thread.getSnippet();
+      let snippet = sandboxedDom(this.thread.getSnippet());
+      snippet.style.color = 'var(--dim-text-color)';
       contents.append(snippet);
     } else {
       let messages = this.thread.getMessages();

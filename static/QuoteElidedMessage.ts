@@ -1,4 +1,4 @@
-import {defined, notNull} from './Base.js';
+import {defined, notNull, sandboxedDom} from './Base.js';
 import {Message} from './Message.js';
 
 // Rolling hash taken from https://gist.github.com/i-e-b/b892d95ac7c0cf4b70e4.
@@ -31,20 +31,6 @@ const createLink = (href: string) => {
   link.href = href;
   return link;
 };
-
-let DOM_SANDBOX = document.createElement('iframe');
-DOM_SANDBOX.style.display = 'none';
-DOM_SANDBOX.setAttribute('sandbox', 'allow-same-origin');
-document.documentElement.append(DOM_SANDBOX);
-
-// Need to ensure that all potentially malicious DOM is created sandboxed and
-// that we never innerHTML that DOM elsewhere to avoid event handlers in the
-// message markup from running.
-function sandboxedDom(html: string) {
-  let div = notNull(DOM_SANDBOX.contentDocument).createElement('div');
-  div.innerHTML = html;
-  return div;
-}
 
 export class QuoteElidedMessage {
   // These are initialized in computeHashes_, which is always called from the
