@@ -361,9 +361,6 @@ export class ThreadRow extends HTMLElement {
     ThreadRow.appendLabels(
         labels, state, this.thread, this.labelSelectTemplate_);
 
-    let snippet = sandboxedDom(` - ${state.snippet}`);
-    snippet.style.color = 'var(--dim-text-color)';
-
     let justSubject = document.createElement('span');
     justSubject.append(state.subject);
 
@@ -373,9 +370,19 @@ export class ThreadRow extends HTMLElement {
       text-overflow: ellipsis;
       flex: 1;
       margin-right: 25px;
+      display: flex;
     `;
     subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
-    subject.append(justSubject, snippet);
+    subject.append(justSubject);
+
+    if (state.snippet) {
+      let snippet = sandboxedDom(`- ${state.snippet}`);
+      snippet.style.cssText = `
+        margin-left: 4px;
+        color: var(--dim-text-color);
+      `;
+      subject.append(snippet);
+    }
 
     let date = document.createElement('div');
     date.textContent = this.dateString_(this.thread.getDate());
