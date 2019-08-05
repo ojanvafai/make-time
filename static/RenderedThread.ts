@@ -1,6 +1,7 @@
 import {Action} from './Actions.js';
 import {assert, collapseArrow, expandArrow, notNull, sandboxedDom} from './Base.js';
 import {Message} from './Message.js';
+import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 import {Thread} from './Thread.js';
 import {NEXT_ACTION, NEXT_FULL_ACTION, PREVIOUS_ACTION, PREVIOUS_FULL_ACTION} from './views/ThreadListView.js';
 
@@ -125,11 +126,24 @@ export class RenderedThread extends HTMLElement {
           [...this.children].filter(x => x.classList.contains('message'));
       // Only append new messages.
       messages = messages.slice(alreadyRenderedMessages.length);
-      for (let message of messages) {
-        let rendered = this.renderMessage_(message);
+      for (let i = 0; i < messages.length; i++) {
+        let quoteElidedMessage = messages[i].getQuoteElidedMessage();
+        if (this.contains(quoteElidedMessage))
+          continue;
+
+        let rendered = this.renderMessage_(messages[i], quoteElidedMessage);
         if (this.childElementCount == 0)
           rendered.style.border = '0';
-        this.append(rendered);
+
+        // In theory this should never happen, but it seems to in some cases.
+        // Since we can't figure out what's causing it, do a workaround so the
+        // messages at least render.
+        if (i < alreadyRenderedMessages.length) {
+          console.error('Had to rerender already rendered message.');
+          alreadyRenderedMessages[i].replaceWith(rendered);
+        } else {
+          this.append(rendered);
+        }
       }
     }
   }
@@ -210,7 +224,8 @@ export class RenderedThread extends HTMLElement {
     return header;
   }
 
-  renderMessage_(processedMessage: Message) {
+  renderMessage_(
+      processedMessage: Message, quoteElidedMessage: QuoteElidedMessage) {
     var messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
       padding: 8px 8px 16px;
@@ -310,7 +325,7 @@ export class RenderedThread extends HTMLElement {
     // Rather than have nested scrollbars, clip overflow. This matches gmail.
     bodyContainer.style.overflowY = 'hidden';
     bodyContainer.style.overflowX = 'auto';
-    bodyContainer.append(processedMessage.getQuoteElidedMessage());
+    bodyContainer.append(quoteElidedMessage);
 
     messageDiv.append(headerDiv, bodyContainer);
     return messageDiv;
