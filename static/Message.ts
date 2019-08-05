@@ -260,14 +260,13 @@ export class Message {
       let html = this.getHtmlOrHtmlWrappedPlain();
       this.quoteElidedMessage_ =
           new QuoteElidedMessage(html, this.previousMessage_);
-      let dom = this.quoteElidedMessage_.getDom();
-      let attachments = this.rewriteInlineImages_(dom);
+      let attachments = this.rewriteInlineImages_(this.quoteElidedMessage_);
       // Intentionally don't await this so we show the thread without waiting
       // for attachement image fetches.
       this.fetchInlineImages_(attachments);
-      this.appendAttachments_(dom);
+      this.appendAttachments_(this.quoteElidedMessage_);
     }
-    return <QuoteElidedMessage>this.quoteElidedMessage_;
+    return this.quoteElidedMessage_;
   }
 
   findAttachment_(contentId: string) {

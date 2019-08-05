@@ -32,13 +32,14 @@ const createLink = (href: string) => {
   return link;
 };
 
-export class QuoteElidedMessage {
+export class QuoteElidedMessage extends HTMLElement {
   // These are initialized in computeHashes_, which is always called from the
   // constructor.
   private hashes_!: Map<string, Element[]>;
-  private dom_!: HTMLElement;
 
   constructor(currentMessage: string, previousMessage: Message|undefined) {
+    super();
+
     // Someone got a message with the following image in the message body that
     // would cause gmail to log the user out!
     // <img
@@ -49,7 +50,7 @@ export class QuoteElidedMessage {
     currentMessage =
         currentMessage.replace('src="https://mail.google.com/', 'src="');
 
-    this.dom_ = sandboxedDom(currentMessage);
+    this.append(sandboxedDom(currentMessage));
 
     this.sanitizeContent_();
     this.linkifyContent_();
@@ -81,7 +82,7 @@ export class QuoteElidedMessage {
   }
 
   expandToNonTextSiblings_() {
-    for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
+    for (let match of this.querySelectorAll('[mk-elide]')) {
       let previous = <ChildNode>match;
       // TODO: Include "XXX wrote" prefixes here as well.
       // TODO: Hash the outerHTML of the element to make sure it has at least
@@ -103,7 +104,7 @@ export class QuoteElidedMessage {
   }
 
   undoNestedElides_() {
-    for (let element of this.dom_.querySelectorAll('[mk-elide]')) {
+    for (let element of this.querySelectorAll('[mk-elide]')) {
       let parent = element.parentElement;
       while (parent) {
         if (parent.hasAttribute('mk-elide')) {
@@ -138,7 +139,7 @@ export class QuoteElidedMessage {
   }
 
   insertToggleButtons_() {
-    for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
+    for (let match of this.querySelectorAll('[mk-elide]')) {
       if (!this.isElided_(match.previousElementSibling)) {
         if (this.elidesHaveMinimumLength_(match)) {
           match.before(this.getToggler_());
@@ -150,7 +151,7 @@ export class QuoteElidedMessage {
   }
 
   updateAllStyling_() {
-    for (let match of this.dom_.querySelectorAll('[mk-elide]')) {
+    for (let match of this.querySelectorAll('[mk-elide]')) {
       updateStyling(<HTMLElement>match);
     }
   }
@@ -162,7 +163,7 @@ export class QuoteElidedMessage {
 
   linkifyContent_() {
     var treeWalker = document.createTreeWalker(
-        this.dom_, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+        this, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
           acceptNode: function(node) {
             if (node.nodeType === Node.TEXT_NODE)
               return NodeFilter.FILTER_ACCEPT;
@@ -209,7 +210,7 @@ export class QuoteElidedMessage {
     // - base causes maketime UI links to have a different base url.
     let tagNames = ['meta', 'title', 'link', 'style', 'script', 'base'];
     for (let tagName of tagNames) {
-      for (let node of this.dom_.querySelectorAll(tagName)) {
+      for (let node of this.querySelectorAll(tagName)) {
         node.remove();
       }
     }
@@ -219,7 +220,7 @@ export class QuoteElidedMessage {
   // content (e.g. crbug.com emails) seems to warrant this.
   preWrapElements_() {
     // TODO: Technically this can return non-HTMLElements.
-    let nodes = this.dom_.querySelectorAll<HTMLElement>('*');
+    let nodes = this.querySelectorAll<HTMLElement>('*');
     for (let node of nodes) {
       // TODO: There are other tags that default to white-space:pre as well.
       if (node.tagName === 'PRE' || node.style.whiteSpace === 'pre')
@@ -250,15 +251,11 @@ export class QuoteElidedMessage {
     return defined(this.hashes_);
   }
 
-  getDom() {
-    return defined(this.dom_);
-  }
-
   computeHashes_() {
     // Store diff hashes on the message as a performance optimization since we
     // need to compute once for the current message and once for the previous
     // message == 2x for almost every message.
-    let elements = this.dom_.querySelectorAll('*');
+    let elements = this.querySelectorAll('*');
     this.hashes_ = new Map();
     for (let element of elements) {
       let text = this.quoteStrippedText_(element);
@@ -306,6 +303,7 @@ export class QuoteElidedMessage {
     return element && element.hasAttribute && element.hasAttribute('mk-elide');
   }
 }
+window.customElements.define('mt-quote-elided-message', QuoteElidedMessage);
 
 function updateStyling(element: HTMLElement) {
   // Ideally we'd use clipping instead of display:none so that the toggler

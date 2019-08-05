@@ -27,7 +27,7 @@ export const DEFAULT: Theme = {
     '--dim-text-color': '#666',
     '--inverted-text-color': '#fff',
     '--midpoint-color': '#aaa',
-    '--main-background': 'lavender',
+    '--main-background': '#f0f0ff',
   }
 };
 
