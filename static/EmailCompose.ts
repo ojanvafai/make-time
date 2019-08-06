@@ -1,6 +1,6 @@
 import {Action, Actions, Shortcut} from './Actions.js';
 import {AutoComplete, AutoCompleteEntry, EntrySelectedEvent} from './AutoComplete.js';
-import {notNull, ParsedAddress} from './Base.js';
+import {notNull, ParsedAddress, sandboxedDom} from './Base.js';
 
 const SEPARATOR = ' ';
 const EMAIL_CLASS_NAME = 'mk-email';
@@ -395,8 +395,12 @@ export class EmailCompose extends HTMLElement {
       email.removeAttribute('contentEditable');
       email.removeAttribute('tabIndex');
     }
-    // Compose is white-space:pre-wrap and shift+enter inserts \n's. Convert
-    // them to BRs so they render when shown in white-space:normal contexts.
+    // Need to use innerHTML, but need to be careful never to write this
+    // innerHTML in a non-sandboed context since it could be a reply to an
+    // unsafe email.
+    // Compose is white - space: pre - wrap and shift + enter inserts \n's.
+    // Convert them to BRs so they render when shown in white-space:normal
+    // contexts.
     return cloned.innerHTML.replace('\n', '<br>');
   }
 
@@ -411,7 +415,9 @@ export class EmailCompose extends HTMLElement {
     value = value.replace(/\<mt-/g, '<inert-mt-');
     value = value.replace(/\<\/mt-/g, '</inert-mt-');
 
-    this.content.innerHTML = value;
+    this.content.textContent = '';
+    let newContent = sandboxedDom(value);
+    this.content.append(...newContent.children);
 
     this.updatePlaceholder_();
     if (this.bubble_)
