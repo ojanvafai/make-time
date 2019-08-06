@@ -124,8 +124,6 @@ export class RenderedThread extends HTMLElement {
       let messages = this.thread.getMessages();
       let alreadyRenderedMessages =
           [...this.children].filter(x => x.classList.contains('message'));
-      // Only append new messages.
-      messages = messages.slice(alreadyRenderedMessages.length);
       for (let i = 0; i < messages.length; i++) {
         let quoteElidedMessage = messages[i].getQuoteElidedMessage();
         if (this.contains(quoteElidedMessage))
