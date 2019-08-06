@@ -50,9 +50,10 @@ class Logger extends HTMLElement {
         `${this.messageContainer_.children.length + 1}: ${message}`);
 
     if (details) {
+      let summary = document.createElement('summary');
+      summary.append('Details');
       let detailsElement = document.createElement('details');
-      detailsElement.innerHTML = '<summary>Details</summary>';
-      detailsElement.append(details);
+      detailsElement.append(summary, details);
       container.append(detailsElement);
     }
 

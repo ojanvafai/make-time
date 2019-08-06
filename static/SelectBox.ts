@@ -1,3 +1,5 @@
+import {createRect, createSvgContainer} from './Base.js';
+
 export const ALL = 'all';
 export const SOME = 'some';
 export const NONE = 'none';
@@ -13,7 +15,7 @@ export class SelectChangedEvent extends Event {
 export class SelectBox extends HTMLElement {
   private hovered_: boolean;
   private selected_!: string;
-  private svg_: SVGSVGElement;
+  private svg_: SVGElement;
 
   constructor() {
     super();
@@ -27,8 +29,7 @@ export class SelectBox extends HTMLElement {
 
     this.hovered_ = false;
 
-    this.svg_ = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.svg_.setAttribute('viewbox', '0 0 20 20');
+    this.svg_ = createSvgContainer('0 0 24 24', createRect(5, 5, 14, 14));
     this.svg_.style.cssText = `
       background: var(--inverted-text-color);
       width: 20px;
@@ -36,9 +37,6 @@ export class SelectBox extends HTMLElement {
       border: 2px solid;
       box-sizing: border-box;
       border-radius: 3px;
-    `;
-    this.svg_.innerHTML = `
-      <rect x="3" y="3" width="10" height="10" />
     `;
     this.append(this.svg_);
 

@@ -64,8 +64,11 @@ export interface Setting {
 
 export const ANY_TITLE = '<any>';
 let FINAL_VERSION_DESCRIPTION = document.createElement('span');
-FINAL_VERSION_DESCRIPTION.innerHTML =
-    'Enable <a href="http://markforster.squarespace.com/blog/2015/5/21/the-final-version-perfected-fvp.html">final version prioritiztion</a>.';
+let FINAL_VERSION_LINK = document.createElement('a');
+FINAL_VERSION_LINK.href =
+    'http://markforster.squarespace.com/blog/2015/5/21/the-final-version-perfected-fvp.html';
+FINAL_VERSION_LINK.append('final version prioritiztion');
+FINAL_VERSION_DESCRIPTION.append('Enable ', FINAL_VERSION_LINK, '.');
 
 // TODO: Settings shouldn't have all this calendar specific knowledge.
 export let BuiltInRules: CalendarRule[] = [

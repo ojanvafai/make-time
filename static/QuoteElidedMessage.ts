@@ -1,10 +1,10 @@
-import {defined, notNull, sandboxedDom} from './Base.js';
+import {createCircle, createSvgContainer, defined, notNull, sandboxedDom} from './Base.js';
 import {Message} from './Message.js';
 
 // Rolling hash taken from https://gist.github.com/i-e-b/b892d95ac7c0cf4b70e4.
 let MINIMUM_HASH_LENGTH = 10;
 let MINIMUM_ELIDE_LENGTH = 100;
-let TOGGLER: SVGSVGElement;
+let TOGGLER: SVGElement;
 let strippedTextMap = new WeakMap();
 
 // Forked from https://github.com/sindresorhus/linkify-urls (MIT License).
@@ -230,17 +230,19 @@ export class QuoteElidedMessage extends HTMLElement {
 
   getToggler_() {
     if (!TOGGLER) {
-      TOGGLER = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      TOGGLER = createSvgContainer(
+          '0 0 24 24',
+          createCircle(5, 12, 2),
+          createCircle(12, 12, 2),
+          createCircle(9, 12, 2),
+      );
       TOGGLER.classList.add('toggler');
-      TOGGLER.setAttribute('viewBox', '0 0 24 24');
       TOGGLER.style.cssText = `
         width: 16px;
         padding: 1px 4px;
         user-select: none;
         fill: var(--thread-text-color);
       `;
-      TOGGLER.innerHTML =
-          `<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>`;
     }
     let toggler = <SVGSVGElement>TOGGLER.cloneNode(true);
     toggler.addEventListener('click', toggleElided);

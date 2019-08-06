@@ -97,9 +97,12 @@ export class Timer extends HTMLElement {
       background-color: var(--inverted-overlay-background-color);
       opacity: 0.5;
     `;
+
     let text = document.createElement('div');
-    text.innerHTML =
-        'Out of time. Take an action!<br><br>The timer duration can be configured in the settings dialogs.';
+    text.textContent = `Out of time. Take an action!
+
+Timer duration can be configured in the settings dialogs.`;
+
     text.style.cssText = `
       position: absolute;
       padding: 5px;
@@ -108,6 +111,7 @@ export class Timer extends HTMLElement {
       text-align: center;
       display: flex;
       align-items: center;
+      white-space: pre-wrap;
     `;
 
     let resetButton = this.timerButton_.cloneNode(true) as SVGSVGElement;

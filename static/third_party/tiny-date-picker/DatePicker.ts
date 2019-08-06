@@ -442,7 +442,6 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
     shouldFocusOnRender: true,
     state: initialState(),
     adjustPosition: noop,
-    containerHTML: '<div class="dp"></div>',
 
     attachToDom: function() {
       opts.appendTo.appendChild(dp.el);
@@ -458,7 +457,11 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
       }
 
       if (!dp.el) {
-        dp.el = createContainerElement(opts, dp.containerHTML);
+        dp.el = document.createElement('div');
+        dp.el.className = opts.mode;
+        let dpElement = document.createElement('div');
+        dpElement.className = 'dp';
+        dp.el.append(dpElement);
         attachContainerEvents(dp);
       }
 
@@ -582,16 +585,6 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
   return dp;
 }
 
-function createContainerElement(
-    opts: DatePickerOptions, containerHTML: string) {
-  var el = document.createElement('div');
-
-  el.className = opts.mode;
-  el.innerHTML = containerHTML;
-
-  return el;
-}
-
 function focusCurrent(dp: DatePickerState) {
   var current = dp.el.querySelector('.dp-current');
   return current && current.focus();
@@ -655,7 +648,11 @@ function ModalMode(emit: (name: string) => void, opts: DatePickerOptions) {
   // input. To do this, we add a special element to the DOM.
   // When the user tabs off the bottom of the calendar, they
   // will tab onto this element.
-  dp.containerHTML += '<a href="#" class="dp-focuser">.</a>';
+  let a = document.createElement('a');
+  a.href = '#';
+  a.className = 'dp-focuser';
+  a.append('.');
+  defined(dp.el).append(a);
 
   return dp;
 }

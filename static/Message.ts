@@ -1,6 +1,6 @@
 import {Address} from '../third_party/emailjs-addressparser/addressparser.js';
 
-import {defined, parseAddressList, USER_ID} from './Base.js';
+import {defined, parseAddressList, sandboxedDom, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 
@@ -194,9 +194,7 @@ export class Message {
         return '';
 
       // Extract the text out of the HTML content.
-      let div: HTMLElement = document.createElement('div');
-      div.innerHTML = this.html_;
-      this.plainedHtml_ = div.textContent;
+      this.plainedHtml_ = sandboxedDom(this.html_).textContent;
     }
 
     return this.plainedHtml_;

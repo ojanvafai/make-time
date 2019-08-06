@@ -57,19 +57,22 @@ export class SettingsView extends View {
     this.queues_ = new QueuesView(this.settings_);
     this.queues_.addEventListener('change', () => this.handleChange_());
 
+    let queuesLegend = document.createElement('legend');
+    queuesLegend.append('Email label sort order');
+
     let queuesContainer = document.createElement('div');
-    queuesContainer.innerHTML = '<legend>Email label sort order</legend>';
-    queuesContainer.append(this.queues_);
+    queuesContainer.append(queuesLegend, this.queues_);
     sortContainer.append(queuesContainer);
 
     this.calendarSortView_ = new CalendarSortView(this.settings_);
     this.calendarSortView_.addEventListener(
         'change', () => this.handleChange_());
 
+        let calendarLegend = document.createElement('legend');
+        calendarLegend.append('Calendar label sort order');
+
     let calendarSortContainer = document.createElement('div');
-    calendarSortContainer.innerHTML =
-        '<legend>Calendar label sort order</legend>';
-    calendarSortContainer.append(this.calendarSortView_);
+    calendarSortContainer.append(calendarLegend, this.calendarSortView_);
     sortContainer.append(calendarSortContainer);
 
     queuesContainer.style.cssText = calendarSortContainer.style.cssText = `

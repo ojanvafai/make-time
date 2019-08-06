@@ -49,11 +49,13 @@ export class QuickReply extends HTMLElement {
 
     this.replyType_ = document.createElement('select');
     this.replyType_.classList.add('button');
-    this.replyType_.innerHTML = `
-      <option>${ReplyType.ReplyAll}</option>
-      <option>${ReplyType.Reply}</option>
-      <option>${ReplyType.Forward}</option>
-    `;
+
+    let replyTypes = Object.values(ReplyType).map(x => {
+      let option = document.createElement('option');
+      option.append(x);
+      return option;
+    });
+    this.replyType_.append(...replyTypes);
 
     let sendAs = defined(this.sendAs_);
     if (sendAs.senders && sendAs.senders.length > 1) {

@@ -40,6 +40,16 @@ export function createSvgButton(
   return button;
 }
 
+export function createRect(
+    x: number, y: number, width: number, height: number) {
+  let node = createSvg('rect');
+  node.setAttribute('x', String(x));
+  node.setAttribute('y', String(y));
+  node.setAttribute('width', String(width));
+  node.setAttribute('height', String(height));
+  return node;
+}
+
 export function createCircle(cx: number, cy: number, r: number) {
   let node = createSvg('circle');
   node.setAttribute('cx', String(cx));
