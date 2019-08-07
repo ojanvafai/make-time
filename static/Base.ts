@@ -15,7 +15,7 @@ function setupMktimeButton(button: Element, onClick?: (e: Event) => void) {
 
 export function createMktimeButton(
     onClick?: (e: Event) => void, ...contents: (string|Element)[]) {
-  let button = create('button', ...contents);
+  let button = create('button', ...contents) as HTMLButtonElement;
   setupMktimeButton(button, onClick);
   return button;
 }
