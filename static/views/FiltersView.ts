@@ -1,4 +1,4 @@
-import {createMktimeButton, createTh, defined, Labels, notNull, showDialog} from '../Base.js';
+import {create, createMktimeButton, createTh, defined, Labels, notNull, showDialog} from '../Base.js';
 import {QueueNames} from '../QueueNames.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
 
@@ -8,15 +8,17 @@ const CSV_FIELDS = ['from', 'to'];
 const CURSOR_SENTINEL = '!!!!!!!!';
 const DIRECTIVE_SEPARATOR_ = ':';
 const QUERY_SEPARATOR_ = '&&';
-export const HELP_TEXT = `<b>Help</b>
+export const HELP_TEXT = [
+  create('b', 'Help'),
+  `
 Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "${
-    Labels
-        .Archive}" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
+      Labels
+          .Archive}" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
 
  - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
  - "${
-    Labels
-        .Archive}" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
+      Labels
+          .Archive}" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
  - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
  - The first rule that matches is the one that applies, so order matters.
  - Label is the label that will apply qhen the rule matches.
@@ -26,18 +28,32 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
  - No CCs matches messages that have exactly one email address in the union of the to/cc/bcc fields.
  - Make-time matches all messages in the thread each time the thread is processed, unlike gmail filters which only match the new message.
  - If none of your filters apply to a thread, then make-time will apply a "${
-    Labels
-        .Fallback}" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
+      Labels
+          .Fallback}" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
 
-<b>Rule directives</b>
- - <b>$anything:</b> Matches the raw email header "anything". So, $from matches the From header as plain text instead of the structure match that "from:" below does. You can view raw email headers in gmail by going to a message and opening "Show Original" from the "..." menu.
- - <b>to:</b> Matches the to/cc/bcc fields of the email. It just checks if the name or email address includes the value. Take a comma separated list of values so you don't have to make a different rule for each address you want to match.
- - <b>from:</b> Matches the from field of the email. Same matching rules as the "to" directive.
- - <b>subject:</b> Matches if the subject of the email includes this text.
- - <b>plaintext:</b> Matches if the plain text of the email includes this text.
- - <b>htmlcontent:</b> Matches if the HTML of the email includes this text.
+`,
+  create('b', 'Rule directives'), `
+ - `,
+  create('b', '$anything:'),
+  ` Matches the raw email header "anything". So, $from matches the From header as plain text instead of the structure match that "from:" below does. You can view raw email headers in gmail by going to a message and opening "Show Original" from the "..." menu.
+ - `,
+  create('b', 'to:'),
+  ` Matches the to/cc/bcc fields of the email. It just checks if the name or email address includes the value. Take a comma separated list of values so you don't have to make a different rule for each address you want to match.
+ - `,
+  create('b', 'from:'),
+  ` Matches the from field of the email. Same matching rules as the "to" directive.
+ - `,
+  create('b', 'subject:'),
+  ` Matches if the subject of the email includes this text.
+ - `,
+  create('b', 'plaintext:'),
+  ` Matches if the plain text of the email includes this text.
+ - `,
+  create('b', 'htmlcontent:'),
+  ` Matches if the HTML of the email includes this text.
  - All rules are case insensitive and can be done as regular expressions by prefixing the value with regexp:, so from:regexp:foo will do a regexp on the from field with the value "foo".
-`;
+`
+];
 
 export class FiltersView extends HTMLElement {
   // TODO: Stop using an element for maintaining cursor position. Do what
@@ -153,7 +169,7 @@ export class FiltersView extends HTMLElement {
     this.append(scrollable);
 
     let helpButton =
-        createMktimeButton(() => new HelpDialog(HELP_TEXT), 'Help');
+        createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
     helpButton.style.cssText = `margin-right: auto`;
 
     let cancel = createMktimeButton(() => this.cancel_(), 'cancel');

@@ -1,4 +1,4 @@
-import {createMktimeButton, createTh, defined, Labels, notNull, showDialog} from '../Base.js';
+import {create, createMktimeButton, createTh, defined, Labels, notNull, showDialog} from '../Base.js';
 import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -6,17 +6,24 @@ import {HelpDialog} from './HelpDialog.js';
 const CURSOR_SENTINEL = '!!!!!!!!';
 const DIRECTIVE_SEPARATOR_ = ':';
 const QUERY_SEPARATOR_ = '&&';
-export const HELP_TEXT = `<b>Help</b>
+export const HELP_TEXT = [
+  create('b', 'Help'),
+  `
  - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
  - The first rule that matches is the one that applies, so order matters.
  - Label is the text that will be shown in teh graph.
  - Frequency matches events that are recurring.
  - Attendees is the number of attendees other than yourself
  
-<b>Rule directives</b>
- - <b>title:</b> Matches the to/cc/bcc fields of the email. It just checks if the name or email address includes the value. Take a comma separated list of values so you don't have to make a different rule for each address you want to match.
+`,
+  create('b', 'Rule directives'),
+  `
+ - `,
+  create('b', 'title:'),
+  ` Matches the to/cc/bcc fields of the email. It just checks if the name or email address includes the value. Takes a comma separated list of values so you don't have to make a different rule for each address you want to match.
  - All rules are case insensitive and can be done as regular expressions by prefixing the value with regexp:, so title:regexp:foo will do a regexp on the title field with the value "foo".
-`;
+`,
+];
 
 export class CalendarFiltersView extends HTMLElement {
   // TODO: Stop using an element for maintaining cursor position. Do what
@@ -165,7 +172,7 @@ export class CalendarFiltersView extends HTMLElement {
     this.append(scrollable);
 
     let helpButton =
-        createMktimeButton(() => new HelpDialog(HELP_TEXT), 'Help');
+        createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
     helpButton.style.cssText = `margin-right: auto`;
 
     let cancel = createMktimeButton(() => this.cancel_(), 'cancel');

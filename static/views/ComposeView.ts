@@ -1,6 +1,6 @@
-import {Action, Actions, registerActions, ActionList} from '../Actions.js';
+import {Action, ActionList, Actions, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
-import {defined, getMyEmail, notNull, serializeAddress} from '../Base.js';
+import {createLink, defined, getMyEmail, notNull, serializeAddress} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose, INSERT_LINK} from '../EmailCompose.js';
 import {MailProcessor} from '../MailProcessor.js';
@@ -49,18 +49,21 @@ registerActions('Compose', [
 async function getHelpText() {
   const PRE_FILL_URL =
       '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
-  return `For quick notes to yourself, you can create links and homescreen shortcuts, e.g. click this link: <a href='${
-      PRE_FILL_URL}'>${PRE_FILL_URL}</a>.
+  return [
+    `For quick notes to yourself, you can create links and homescreen shortcuts, e.g. click this link: `,
+    createLink(PRE_FILL_URL, PRE_FILL_URL),
+    `
 
 Even better, you can make a custom search engine on desktop Chrome that will autosend emails with the autosend parameter. In Chrome's Manage Search Engine settings, click the add button and fill in the following:
  - Search engine: Put whatever name you want here
  - Keyword: mk
  - URL with %s in place of query:
      ${window.location.origin}/compose?autosend=1&to=${
-      await getMyEmail()}&subject=%s
+        await getMyEmail()}&subject=%s
 
 Now in chrome you can type "mt", tab, then a message it it will send you an email address that you can triage later. This is great for quick jotting down of thoughts.
-`;
+`
+  ];
 }
 
 interface QueryParameters {
@@ -363,7 +366,7 @@ export class ComposeView extends View {
     }
 
     if (action == HELP) {
-      new HelpDialog(await getHelpText());
+      new HelpDialog(...(await getHelpText()));
       return;
     }
 

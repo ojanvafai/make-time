@@ -15,16 +15,25 @@ function setupMktimeButton(button: Element, onClick?: (e: Event) => void) {
 
 export function createMktimeButton(
     onClick?: (e: Event) => void, ...contents: (string|Element)[]) {
-  let button = document.createElement('button');
+  let button = create('button', ...contents);
   setupMktimeButton(button, onClick);
-  button.append(...contents);
   return button;
 }
 
+export function create(tagName: string, ...contents: (string|Node)[]) {
+  let node = document.createElement(tagName);
+  node.append(...contents);
+  return node;
+}
+
+export function createLink(href: string, ...contents: (string|Node)[]) {
+  let node = create('a', ...contents) as HTMLAnchorElement;
+  node.href = href;
+  return node;
+}
+
 export function createTh(textContent: string) {
-  let th = document.createElement('th');
-  th.append(textContent)
-  return th;
+  return create('th', textContent);
 }
 
 export function createSvg(nodeName: string, ...children: SVGElement[]) {

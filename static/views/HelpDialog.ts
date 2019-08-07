@@ -1,7 +1,7 @@
 import {createMktimeButton, showDialog} from '../Base.js';
 
 export class HelpDialog extends HTMLElement {
-  constructor(helpText: HTMLElement|string) {
+  constructor(...helpText: (HTMLElement|string)[]) {
     super();
 
     let container = document.createElement('div');
@@ -18,12 +18,7 @@ export class HelpDialog extends HTMLElement {
       flex: 1;
       white-space: pre-wrap;
     `;
-
-    if (typeof helpText === 'string')
-      help.innerHTML = <string>helpText;
-    else
-      help.append(helpText);
-
+    help.append(...helpText);
     container.append(help);
 
     let buttonContainer = document.createElement('div');
