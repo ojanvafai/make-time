@@ -1,4 +1,4 @@
-import {createMktimeButton, defined, Labels, notNull, showDialog} from '../Base.js';
+import {createMktimeButton, createTh, defined, Labels, notNull, showDialog} from '../Base.js';
 import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
@@ -114,9 +114,17 @@ export class CalendarFiltersView extends HTMLElement {
     let container = document.createElement('table');
     container.style.cssText = `font-size: 13px;`;
 
+    let ruleHeader = createTh('Rule');
+    ruleHeader.style.width = '100%';
+
     let header = document.createElement('thead');
-    header.innerHTML =
-        `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Frequency</th><th>Attendees</th>`;
+    header.append(
+        createTh(''),
+        createTh('Label'),
+        ruleHeader,
+        createTh('Frequency'),
+        createTh('Attendees'),
+    );
     container.append(header);
 
     let body = document.createElement('tbody');
@@ -129,10 +137,14 @@ export class CalendarFiltersView extends HTMLElement {
     if (!rules.length)
       body.append(await this.createRule_());
 
+    let builtInHeaderCell = document.createElement('td');
+    builtInHeaderCell.setAttribute('colspan', '5');
+    builtInHeaderCell.style.fontWeight = 'bold';
+    builtInHeaderCell.append('Built in rules:');
+
     let builtInHeader = document.createElement('tr');
     builtInHeader.toggleAttribute('fallback');
-    builtInHeader.innerHTML =
-        '<td colspan="5" style="font-weight: bold">Built in rules:</td>';
+    builtInHeader.append(builtInHeaderCell);
     body.append(builtInHeader);
 
     for (let rule of BuiltInRules) {

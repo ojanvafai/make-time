@@ -1,4 +1,4 @@
-import {createMktimeButton, defined, Labels, notNull, showDialog} from '../Base.js';
+import {createMktimeButton, createTh, defined, Labels, notNull, showDialog} from '../Base.js';
 import {QueueNames} from '../QueueNames.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
 
@@ -117,9 +117,18 @@ export class FiltersView extends HTMLElement {
     let container = document.createElement('table');
     container.style.cssText = `font-size: 13px;`;
 
+    let ruleHeader = createTh('Rule');
+    ruleHeader.style.width = '100%';
+
     let header = document.createElement('thead');
-    header.innerHTML =
-        `<th></th><th>Label</th><th style="width:100%">Rule</th><th>Match All Messages</th><th>No List-ID</th><th>No CCs</th>`;
+    header.append(
+        createTh(''),
+        createTh('Label'),
+        ruleHeader,
+        createTh('Match All Messages'),
+        createTh('No List-ID'),
+        createTh('No CCs'),
+    );
     container.append(header);
 
     let body = document.createElement('tbody');

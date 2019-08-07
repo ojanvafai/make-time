@@ -21,6 +21,12 @@ export function createMktimeButton(
   return button;
 }
 
+export function createTh(textContent: string) {
+  let th = document.createElement('th');
+  th.append(textContent)
+  return th;
+}
+
 export function createSvg(nodeName: string, ...children: SVGElement[]) {
   let node = document.createElementNS('http://www.w3.org/2000/svg', nodeName);
   node.append(...children);
