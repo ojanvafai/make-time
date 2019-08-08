@@ -327,7 +327,8 @@ export class ComposeView extends View {
     // again.
     this.handleUpdates_(false, true);
 
-    setTimeout(() => this.showSent_(false), CLOSE_SENT_TOOLBAR_DELAY_MS);
+    if (!this.closeIfHidden())
+      setTimeout(() => this.showSent_(false), CLOSE_SENT_TOOLBAR_DELAY_MS);
   }
 
   private showSent_(show: boolean, preventCloseWindow?: boolean) {
@@ -350,8 +351,15 @@ export class ComposeView extends View {
   }
 
   visibilityChanged() {
-    if (document.visibilityState !== 'visible')
+    this.closeIfHidden();
+  }
+
+  closeIfHidden() {
+    if (document.visibilityState !== 'visible') {
       this.showSent_(false);
+      return true;
+    }
+    return false;
   }
 
   async takeAction(action: Action) {
