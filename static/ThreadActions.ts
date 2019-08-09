@@ -15,10 +15,24 @@ export let PIN_ACTION = {
   key: 'x',
 };
 
+let STICKY_PREFIX = 'Sticky ';
+
+export let STICKY_PIN_ACTION = {
+  name: STICKY_PREFIX + PINNED_PRIORITY_NAME,
+  description: `(sticky) pins to the top at the top of todo.`,
+  key: new Shortcut('x', false, true, 'KeyX'),
+};
+
 export let QUICK_ACTION = {
   name: QUICK_PRIORITY_NAME,
   description: `Quick to take action on.`,
   key: 'q',
+};
+
+export let STICKY_QUICK_ACTION = {
+  name: STICKY_PREFIX + QUICK_PRIORITY_NAME,
+  description: `(sticky) Quick to take action on.`,
+  key: new Shortcut('q', false, true, 'KeyQ'),
 };
 
 export let MUST_DO_ACTION = {
@@ -27,16 +41,35 @@ export let MUST_DO_ACTION = {
   key: '1',
 };
 
+export let STICKY_MUST_DO_ACTION = {
+  name: STICKY_PREFIX + MUST_DO_PRIORITY_NAME,
+  description:
+      `(sticky) Must do today. Literally won't go home till it's done.`,
+  key: new Shortcut('1', false, true, 'Digit1'),
+};
+
 export let URGENT_ACTION = {
   name: URGENT_PRIORITY_NAME,
   description: `Needs to happen ASAP.`,
   key: '2',
 };
 
+export let STICKY_URGENT_ACTION = {
+  name: STICKY_PREFIX + URGENT_PRIORITY_NAME,
+  description: `(sticky) Needs to happen ASAP.`,
+  key: new Shortcut('2', false, true, 'Digit2'),
+};
+
 export let BACKLOG_ACTION = {
   name: BACKLOG_PRIORITY_NAME,
   description: `Important but can be done when I get to it.`,
   key: '3',
+};
+
+export let STICKY_BACKLOG_ACTION = {
+  name: STICKY_PREFIX + BACKLOG_PRIORITY_NAME,
+  description: `(sticky) Important but can be done when I get to it.`,
+  key: new Shortcut('3', false, true, 'Digit3'),
 };
 
 export let NEEDS_FILTER_ACTION = {
@@ -46,10 +79,17 @@ export let NEEDS_FILTER_ACTION = {
   key: 'f',
 };
 
+export let STICKY_NEEDS_FILTER_ACTION = {
+  name: STICKY_PREFIX + NEEDS_FILTER_PRIORITY_NAME,
+  description:
+      `(sticky) Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
+  key: new Shortcut('f', false, true, 'KeyF'),
+};
+
 export let MUTE_ACTION = {
   name: `Mute`,
   description:
-      `Like gmail mute, but more aggressive. Will never appear in your inbox again.`,
+      `(sticky) archive. Only appear for triage again if filters apply a new label.`,
   key: 'm',
 };
 
@@ -171,32 +211,53 @@ export let DUE_ACTIONS = [
 export let BASE_THREAD_ACTIONS = [
   [
     QUICK_ACTION,
+    STICKY_QUICK_ACTION,
     NEEDS_FILTER_ACTION,
+    STICKY_NEEDS_FILTER_ACTION,
     PIN_ACTION,
+    STICKY_PIN_ACTION,
   ],
-  MUST_DO_ACTION,
-  URGENT_ACTION,
-  BACKLOG_ACTION,
+  [MUST_DO_ACTION, STICKY_MUST_DO_ACTION],
+  [URGENT_ACTION, STICKY_URGENT_ACTION],
+  [BACKLOG_ACTION, STICKY_BACKLOG_ACTION],
   BLOCKED_ACTIONS,
   DUE_ACTIONS,
 ];
 
-function destinationToPriority(destination: Action) {
+function destinationToPriority(destination: Action): [Priority|null, boolean] {
   switch (destination) {
     case PIN_ACTION:
-      return Priority.Pin;
+      return [Priority.Pin, false];
+    case STICKY_PIN_ACTION:
+      return [Priority.Pin, true];
+
     case QUICK_ACTION:
-      return Priority.Quick;
+      return [Priority.Quick, false];
+    case STICKY_QUICK_ACTION:
+      return [Priority.Quick, true];
+
     case MUST_DO_ACTION:
-      return Priority.MustDo;
+      return [Priority.MustDo, false];
+    case STICKY_MUST_DO_ACTION:
+      return [Priority.MustDo, true];
+
     case URGENT_ACTION:
-      return Priority.Urgent;
+      return [Priority.Urgent, false];
+    case STICKY_URGENT_ACTION:
+      return [Priority.Urgent, true];
+
     case BACKLOG_ACTION:
-      return Priority.Backlog;
+      return [Priority.Backlog, false];
+    case STICKY_BACKLOG_ACTION:
+      return [Priority.Backlog, true];
+
     case NEEDS_FILTER_ACTION:
-      return Priority.NeedsFilter;
+      return [Priority.NeedsFilter, false];
+    case STICKY_NEEDS_FILTER_ACTION:
+      return [Priority.NeedsFilter, true];
+
     default:
-      return null;
+      return [null, false];
   }
 }
 
@@ -246,9 +307,10 @@ export function createDateUpdate(
 export function createUpdate(
     thread: Thread, destination: Action, moveToInbox?: boolean,
     needsMessageTriage?: boolean) {
-  let priority = destinationToPriority(destination);
+  let [priority, isSticky] = destinationToPriority(destination);
   if (priority) {
-    return thread.priorityUpdate(priority, moveToInbox, needsMessageTriage);
+    return thread.priorityUpdate(
+        priority, isSticky, moveToInbox, needsMessageTriage);
   } else {
     switch (destination) {
       case REPEAT_ACTION:

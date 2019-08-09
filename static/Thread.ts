@@ -48,6 +48,7 @@ export interface ThreadMetadata {
   timestamp: number;
   retriageTimestamp?: number;
   priorityId?: number;
+  priorityIsSticky?: boolean;
   labelId?: number;
   repeat?: Repeat;
   needsRetriage?: boolean;
@@ -89,6 +90,7 @@ export interface ThreadMetadataUpdate {
   timestamp?: number|firebase.firestore.FieldValue;
   retriageTimestamp?: number|firebase.firestore.FieldValue;
   priorityId?: number|firebase.firestore.FieldValue;
+  priorityIsSticky?: boolean|firebase.firestore.FieldValue;
   labelId?: number|firebase.firestore.FieldValue;
   repeat?: Repeat|firebase.firestore.FieldValue;
   needsRetriage?: boolean|firebase.firestore.FieldValue;
@@ -119,6 +121,7 @@ export enum ThreadMetadataKeys {
   timestamp = 'timestamp',
   retriageTimestamp = 'retriageTimestamp',
   priorityId = 'priorityId',
+  priorityIsSticky = 'priorityIsSticky',
   labelId = 'labelId',
   repeat = 'repeat',
   needsRetriage = 'needsRetriage',
@@ -293,6 +296,7 @@ export class Thread extends EventTarget {
       hasLabel: firebase.firestore.FieldValue.delete(),
       hasPriority: firebase.firestore.FieldValue.delete(),
       priorityId: firebase.firestore.FieldValue.delete(),
+      priorityIsSticky: firebase.firestore.FieldValue.delete(),
     };
 
     if (removeFromInbox) {
@@ -405,8 +409,12 @@ export class Thread extends EventTarget {
   }
 
   priorityUpdate(
-      priority: Priority, moveToInbox?: boolean, needsMessageTriage?: boolean) {
+      priority: Priority, isSticky?: boolean, moveToInbox?: boolean,
+      needsMessageTriage?: boolean) {
     let update = this.keepInInboxMetadata_();
+
+    if (isSticky)
+      update.priorityIsSticky = true;
 
     if (moveToInbox)
       update.moveToInbox = true;
@@ -509,6 +517,10 @@ export class Thread extends EventTarget {
       newRepeat = {type: RepeatType.Daily};
     }
     return {repeat: newRepeat} as ThreadMetadataUpdate;
+  }
+
+  priorityIsSticky() {
+    return !!this.metadata_.priorityIsSticky;
   }
 
   finalVersion() {

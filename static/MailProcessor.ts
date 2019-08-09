@@ -572,11 +572,6 @@ export class MailProcessor {
   }
 
   private async applyFilters_(thread: Thread) {
-    if (thread.isMuted()) {
-      await thread.applyMute();
-      return;
-    }
-
     let rules = await this.settings_.getFilters();
     let label = this.getWinningLabel_(thread, rules);
 
@@ -584,6 +579,15 @@ export class MailProcessor {
       await thread.archive(true);
       return;
     }
+
+    let hasNewLabel = thread.getLabel() !== label;
+    if (!hasNewLabel && thread.isMuted()) {
+      await thread.applyMute();
+      return;
+    }
+
+    if (thread.priorityIsSticky())
+      return;
 
     // If it already has a priority, or it's already in dequeued with a
     // labelId, don't queue it.
@@ -600,8 +604,11 @@ export class MailProcessor {
       let ids = x.getLabelIds()
       return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
     });
-    let needsTriage = newMessages.length !== 0 ||
-        !(thread.getPriorityId() || thread.isStuck());
+    // Don't make you retriage if a thread has a sticky priority and the new
+    // message didn't cause it it's label to change.
+    let needsTriage = (!thread.priorityIsSticky() || hasNewLabel) &&
+        (newMessages.length !== 0 ||
+         !(thread.getPriorityId() || thread.isStuck()));
 
     await thread.setLabelAndQueued(shouldQueue, label, needsTriage);
     await this.addMakeTimeLabel_(thread.id);
