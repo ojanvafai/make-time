@@ -234,7 +234,7 @@ export class QuoteElidedMessage extends HTMLElement {
           '0 0 24 24',
           createCircle(5, 12, 2),
           createCircle(12, 12, 2),
-          createCircle(9, 12, 2),
+          createCircle(19, 12, 2),
       );
       TOGGLER.classList.add('toggler');
       TOGGLER.style.cssText = `
