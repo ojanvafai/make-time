@@ -586,9 +586,6 @@ export class MailProcessor {
       return;
     }
 
-    if (thread.priorityIsSticky())
-      return;
-
     // If it already has a priority, or it's already in dequeued with a
     // labelId, don't queue it.
     let shouldQueue = !thread.getPriorityId() &&
@@ -596,17 +593,20 @@ export class MailProcessor {
         (this.settings_.getQueueSettings().get(label).queue !=
          QueueSettings.IMMEDIATE);
 
-    // If all the new messages have the sent label and the thread already
-    // has a priority, then don't make you retriage since you sent the
-    // messages yourself and could have retriaged at that point.
     let makeTimeLabelId = defined(this.makeTimeLabelId_);
     let newMessages = thread.getMessages().filter(x => {
       let ids = x.getLabelIds()
       return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
     });
-    // Don't make you retriage if a thread has a sticky priority and the new
-    // message didn't cause it it's label to change.
-    let needsTriage = (!thread.priorityIsSticky() || hasNewLabel) &&
+    let oldMessagesWereUnread =
+        thread.readCount() < (thread.getMessages().length - newMessages.length);
+    // Skip triage if:
+    // - all the new messages have the sent label and the thread already
+    // has a priority, since you sent the messages yourself and could have
+    // retriaged at that point.
+    // - thread has unread messages and the new message didn't cause it
+    // it's label to change.
+    let needsTriage = (!oldMessagesWereUnread || hasNewLabel) &&
         (newMessages.length !== 0 ||
          !(thread.getPriorityId() || thread.isStuck()));
 

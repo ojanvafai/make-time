@@ -48,7 +48,6 @@ export interface ThreadMetadata {
   timestamp: number;
   retriageTimestamp?: number;
   priorityId?: number;
-  priorityIsSticky?: boolean;
   labelId?: number;
   repeat?: Repeat;
   needsRetriage?: boolean;
@@ -90,7 +89,6 @@ export interface ThreadMetadataUpdate {
   timestamp?: number|firebase.firestore.FieldValue;
   retriageTimestamp?: number|firebase.firestore.FieldValue;
   priorityId?: number|firebase.firestore.FieldValue;
-  priorityIsSticky?: boolean|firebase.firestore.FieldValue;
   labelId?: number|firebase.firestore.FieldValue;
   repeat?: Repeat|firebase.firestore.FieldValue;
   needsRetriage?: boolean|firebase.firestore.FieldValue;
@@ -121,7 +119,6 @@ export enum ThreadMetadataKeys {
   timestamp = 'timestamp',
   retriageTimestamp = 'retriageTimestamp',
   priorityId = 'priorityId',
-  priorityIsSticky = 'priorityIsSticky',
   labelId = 'labelId',
   repeat = 'repeat',
   needsRetriage = 'needsRetriage',
@@ -296,7 +293,6 @@ export class Thread extends EventTarget {
       hasLabel: firebase.firestore.FieldValue.delete(),
       hasPriority: firebase.firestore.FieldValue.delete(),
       priorityId: firebase.firestore.FieldValue.delete(),
-      priorityIsSticky: firebase.firestore.FieldValue.delete(),
     };
 
     if (removeFromInbox) {
@@ -409,12 +405,8 @@ export class Thread extends EventTarget {
   }
 
   priorityUpdate(
-      priority: Priority, isSticky?: boolean, moveToInbox?: boolean,
-      needsMessageTriage?: boolean) {
+      priority: Priority, moveToInbox?: boolean, needsMessageTriage?: boolean) {
     let update = this.keepInInboxMetadata_();
-
-    if (isSticky)
-      update.priorityIsSticky = true;
 
     if (moveToInbox)
       update.moveToInbox = true;
@@ -519,8 +511,8 @@ export class Thread extends EventTarget {
     return {repeat: newRepeat} as ThreadMetadataUpdate;
   }
 
-  priorityIsSticky() {
-    return !!this.metadata_.priorityIsSticky;
+  readCount() {
+    return this.metadata_.readCount || 0;
   }
 
   finalVersion() {
@@ -743,6 +735,14 @@ export class Thread extends EventTarget {
         rawMessage = resp.result;
       } else {
         rawMessage = processedMessage.rawMessage;
+
+        // If the message is the same message we have in the case, but the
+        // historyIds are different, then this means the labels have changed.
+        // Update them in place rather than fetching all the message data again.
+        if (rawMessage.historyId !== message.historyId) {
+          rawMessage.historyId = message.historyId;
+          rawMessage.labelIds = message.labelIds;
+        }
       }
 
       allRawMessages.push(rawMessage);
