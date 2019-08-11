@@ -61,7 +61,7 @@ export class ThreadRowGroup extends HTMLElement {
 
     this.expander_ = document.createElement('div');
     this.expander_.style.cssText = `
-      color: grey;
+      color: var(--dim-text-color);
       margin-top: 2px;
       font-weight: bold;
       font-size: 12px;

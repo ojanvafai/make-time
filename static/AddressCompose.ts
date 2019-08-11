@@ -36,7 +36,7 @@ export class AddressCompose extends HTMLElement {
 
     if (disabled_) {
       this.style.border = '0';
-      this.style.color = 'grey';
+      this.style.color = 'var(--dim-text-color)';
       this.input_.style.display = 'none';
       return;
     }

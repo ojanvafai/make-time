@@ -124,13 +124,8 @@ export class ComposeView extends View {
     this.appendLine_(this.subject_);
 
     this.body_ = new EmailCompose();
-    this.body_.style.cssText = `
-      flex: 1 1 0;
-      margin: 4px;
-      display: flex;
-      background-color: var(--nested-background-color);
-      min-height: 50px;
-    `;
+    this.body_.style.flex = '1 1 0';
+    this.body_.style.minHeight = '50px';
 
     this.body_.addEventListener('email-added', () => this.handleUpdates_());
     this.body_.addEventListener(

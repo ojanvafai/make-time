@@ -42,7 +42,10 @@ export class EmailCompose extends HTMLElement {
   constructor(private isSingleline_?: boolean) {
     super();
 
-    this.style.display = 'flex';
+    this.style.cssText = `
+      display: flex;
+      margin: 4px;
+    `;
 
     this.autocompleteRange_ = null;
 
@@ -59,6 +62,7 @@ export class EmailCompose extends HTMLElement {
     // Put contain:content so things inside the email can't be positioned
     // outside of it.
     this.content.style.cssText = `
+      background-color: var(--nested-background-color);
       contain: content;
       flex: 1;
       min-width: 200px;
@@ -309,7 +313,7 @@ export class EmailCompose extends HTMLElement {
       content.style.color = '';
     } else {
       content.setAttribute('placeholder', this.placeholder_ || '');
-      content.style.color = 'grey';
+      content.style.color = 'var(--dim-text-color)';
     }
   }
 

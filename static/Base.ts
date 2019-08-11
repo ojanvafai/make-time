@@ -76,9 +76,11 @@ export function createCircle(cx: number, cy: number, r: number) {
 export function createLine(
     x1: number, y1: number, x2: number, y2: number, strokeWidth: number) {
   let node = createSvg('line');
-  node.setAttribute('stroke', 'black');
-  node.setAttribute('stroke-linecap', 'round');
-  node.setAttribute('stroke-width', String(strokeWidth));
+  node.style.cssText = `
+    stroke: var(--text-color);
+    stroke-linecap: round;
+    stroke-width: ${strokeWidth};
+  `;
   node.setAttribute('x1', String(x1));
   node.setAttribute('y1', String(y1));
   node.setAttribute('x2', String(x2));

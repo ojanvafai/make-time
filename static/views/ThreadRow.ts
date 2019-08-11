@@ -351,7 +351,7 @@ export class ThreadRow extends HTMLElement {
       count.style.cssText = `
         font-size: 80%;
         margin: 0 6px;
-        color: grey;
+        color: var(--dim-text-color);
       `;
       count.textContent = String(state.count);
       fromContainer.append(count);

@@ -105,14 +105,9 @@ export class QuickReply extends HTMLElement {
 
   private createCompose_() {
     let compose = new EmailCompose(true);
-    compose.style.cssText = `
-      width: -webkit-fill-available;
-      max-width: var(--max-width);
-      align-self: center;
-      margin: 4px;
-      display: flex;
-      background-color: var(--nested-background-color);
-    `;
+    compose.style.width = '-webkit-fill-available';
+    compose.style.maxWidth = 'var(--max-width)';
+    compose.style.alignSelf = 'center';
     compose.placeholder = '<enter> to send, <esc> to cancel.';
     compose.addEventListener(
         CancelEvent.NAME, () => this.dispatchEvent(new ReplyCloseEvent()));
