@@ -823,8 +823,6 @@ export class MailProcessor {
     let storage = await getServerStorage();
     await storage.fetch();
 
-    await this.processSoftMute_();
-
     let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
     // Leaving in for easy manual testing of dequeuing code. Delete if this
     // is in the way of a code change.
