@@ -11,7 +11,7 @@ import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
 import {InProgressChangedEvent, Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, DUE_ACTIONS, MUTE_ACTION, REPEAT_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, DUE_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 
@@ -148,6 +148,7 @@ let MOVE_DOWN_ACTION = {
 };
 
 let BASE_ACTIONS = [
+  SOFT_MUTE_ACTION,
   [
     ARCHIVE_ACTION,
     MUTE_ACTION,

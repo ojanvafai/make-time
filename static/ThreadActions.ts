@@ -48,9 +48,14 @@ export let NEEDS_FILTER_ACTION = {
 
 export let MUTE_ACTION = {
   name: `Mute`,
-  description:
-      `(sticky) archive. Only appear for triage again if filters apply a new label.`,
+  description: `Only appear for triage again if filters apply a new label.`,
   key: 'm',
+};
+
+export let SOFT_MUTE_ACTION = {
+  name: `Soft Mute`,
+  description: `Mute for 7 days.`,
+  key: 's',
 };
 
 export let REPEAT_ACTION = {
@@ -302,6 +307,9 @@ export function createUpdate(
 
       case MUTE_ACTION:
         return thread.muteUpdate();
+
+      case SOFT_MUTE_ACTION:
+        return thread.softMuteUpdate();
     }
   }
   assert(false, 'This should never happen.');

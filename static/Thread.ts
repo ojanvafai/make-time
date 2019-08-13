@@ -64,6 +64,8 @@ export interface ThreadMetadata {
   // overdue repeatedly unless the user changes the due date again.
   dueDateExpired?: boolean;
   muted?: boolean;
+  softMuted?: boolean;
+  newMessagesSinceSoftMuted?: boolean;
   archivedByFilter?: boolean;
   finalVersion?: boolean;
   // Threads that were added back to the inbox in maketime, so syncWithGmail
@@ -100,6 +102,8 @@ export interface ThreadMetadataUpdate {
   due?: boolean|number|firebase.firestore.FieldValue;
   dueDateExpired?: boolean|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
+  softMuted?: boolean|firebase.firestore.FieldValue;
+  newMessagesSinceSoftMuted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
   finalVersion?: boolean|firebase.firestore.FieldValue;
   moveToInbox?: boolean|firebase.firestore.FieldValue;
@@ -130,6 +134,8 @@ export enum ThreadMetadataKeys {
   due = 'due',
   dueDateExpired = 'dueDateExpired',
   muted = 'muted',
+  softMuted = 'softMuted',
+  newMessagesSinceSoftMuted = 'newMessagesSinceSoftMuted',
   archivedByFilter = 'archivedByFilter',
   finalVersion = 'finalVersion',
   moveToInbox = 'moveToInbox',
@@ -283,6 +289,7 @@ export class Thread extends EventTarget {
       needsMessageTriage: firebase.firestore.FieldValue.delete(),
       blocked: firebase.firestore.FieldValue.delete(),
       muted: firebase.firestore.FieldValue.delete(),
+      softMuted: firebase.firestore.FieldValue.delete(),
       archivedByFilter: firebase.firestore.FieldValue.delete(),
       finalVersion: firebase.firestore.FieldValue.delete(),
       queued: firebase.firestore.FieldValue.delete(),
@@ -326,8 +333,12 @@ export class Thread extends EventTarget {
   }
 
   removeFromInboxMetadata_() {
+    return Thread.baseArchiveUpdate(this.messageCount_());
+  }
+
+  static baseArchiveUpdate(messageCount: number) {
     let update = Thread.clearedMetadata_(true);
-    update.countToArchive = this.messageCount_();
+    update.countToArchive = messageCount;
     return update;
   }
 
@@ -337,8 +348,11 @@ export class Thread extends EventTarget {
       return this.stuckDaysUpdate(1);
 
     let update = this.removeFromInboxMetadata_();
-    if (archivedByFilter)
+    if (archivedByFilter) {
       update.archivedByFilter = true;
+      if (this.metadata_.softMuted)
+        update.newMessagesSinceSoftMuted = true;
+    }
     return update;
   }
 
@@ -361,6 +375,24 @@ export class Thread extends EventTarget {
     let update = this.removeFromInboxMetadata_();
     update.muted = true;
     return update;
+  }
+
+  softMuteUpdate() {
+    if (this.hasRepeat()) {
+      alert('Cannot mute a repeating item.');
+      return;
+    }
+
+    let update = this.keepInInboxMetadata_();
+    update.softMuted = true;
+    return update;
+  }
+
+  async softMute() {
+    let update = this.softMuteUpdate();
+    if (!update)
+      return;
+    await this.updateMetadata(update);
   }
 
   async mute() {
@@ -628,6 +660,10 @@ export class Thread extends EventTarget {
 
   isMuted() {
     return this.metadata_.muted;
+  }
+
+  isSoftMuted() {
+    return this.metadata_.softMuted;
   }
 
   getFrom() {

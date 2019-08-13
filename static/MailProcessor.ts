@@ -16,9 +16,11 @@ import {AppShell} from './views/AppShell.js';
 let MAKE_TIME_LABEL_NAME = 'mktime';
 let LABEL_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/label`;
 let PRIORITY_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/priority`;
+let MAX_RETRIAGE_COUNT = 10;
 let MUST_DO_RETRIAGE_FREQUENCY_DAYS = 1;
 let URGENT_RETRIAGE_FREQUENCY_DAYS = 7;
 let BACKLOG_RETRIAGE_FREQUENCY_DAYS = 28;
+let SOFT_MUTE_EXPIRATION_DAYS = 7;
 
 export class MailProcessor {
   private makeTimeLabelId_?: string;
@@ -586,31 +588,40 @@ export class MailProcessor {
       return;
     }
 
-    // If it already has a priority, or it's already in dequeued with a
-    // labelId, don't queue it.
-    let shouldQueue = !thread.getPriorityId() &&
-        (!thread.getLabelId() || thread.isQueued()) &&
-        (this.settings_.getQueueSettings().get(label).queue !=
-         QueueSettings.IMMEDIATE);
+    if (!thread.isSoftMuted()) {
+      // If it already has a priority, or it's already in dequeued with a
+      // labelId, don't queue it.
+      let shouldQueue = !thread.getPriorityId() &&
+          (!thread.getLabelId() || thread.isQueued()) &&
+          (this.settings_.getQueueSettings().get(label).queue !=
+           QueueSettings.IMMEDIATE);
 
-    let makeTimeLabelId = defined(this.makeTimeLabelId_);
-    let newMessages = thread.getMessages().filter(x => {
-      let ids = x.getLabelIds()
-      return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
-    });
-    let oldMessagesWereUnread =
-        thread.readCount() < (thread.getMessages().length - newMessages.length);
-    // Skip triage if:
-    // - all the new messages have the sent label and the thread already
-    // has a priority, since you sent the messages yourself and could have
-    // retriaged at that point.
-    // - thread has unread messages and the new message didn't cause it
-    // it's label to change.
-    let needsTriage = (!oldMessagesWereUnread || hasNewLabel) &&
-        (newMessages.length !== 0 ||
-         !(thread.getPriorityId() || thread.isStuck()));
+      let makeTimeLabelId = defined(this.makeTimeLabelId_);
+      let newMessages = thread.getMessages().filter(x => {
+        let ids = x.getLabelIds()
+        return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
+      });
+      let oldMessagesWereUnread = thread.readCount() <
+          (thread.getMessages().length - newMessages.length);
+      // Skip triage if:
+      // - all the new messages have the sent label and the thread already
+      // has a priority, since you sent the messages yourself and could have
+      // retriaged at that point.
+      // - thread has unread messages and the new message didn't cause it
+      // it's label to change. If a thread doesn't have a priorityId though,
+      // then that means it's been archived and still needs to be triaged again.
+      let needsTriage =
+          (!oldMessagesWereUnread || hasNewLabel || !thread.getPriorityId()) &&
+          (newMessages.length !== 0 ||
+           !(thread.getPriorityId() || thread.isStuck()));
 
-    await thread.setLabelAndQueued(shouldQueue, label, needsTriage);
+      // TODO: Skip this if needsTriage is false? Don't want to queue thigns
+      // that don't need triage.
+      await thread.setLabelAndQueued(shouldQueue, label, needsTriage);
+    }
+
+    // Do this at the end to ensure that the label is set before clearing the
+    // label in gmail.
     await this.addMakeTimeLabel_(thread.id);
   }
 
@@ -657,7 +668,8 @@ export class MailProcessor {
             .get();
 
     let count = querySnapshot.docs.length;
-    let amountToRetriage = Math.ceil(count / retriageDays);
+    let amountToRetriage =
+        Math.min(MAX_RETRIAGE_COUNT, Math.ceil(count / retriageDays));
     var oneDay = 24 * 60 * 60 * 1000;
     let now = Date.now();
 
@@ -710,11 +722,49 @@ export class MailProcessor {
     }
   }
 
+  private async processSoftMute_() {
+    let querySnapshot = await this.metadataCollection_()
+                            .where(ThreadMetadataKeys.softMuted, '==', true)
+                            .get();
+
+    var oneDay = 24 * 60 * 60 * 1000;
+    let now = Date.now();
+
+    // For manual testing: artificially set the date in the future so these get
+    // processed.
+    // let time = new Date(now);
+    // time.setDate(time.getDate() + SOFT_MUTE_EXPIRATION_DAYS);
+    // now = time.getTime();
+
+    let muteExpired = querySnapshot.docs.filter(x => {
+      let daysSinceLastTriaged = (now - x.data().retriageTimestamp) / oneDay;
+      return daysSinceLastTriaged > SOFT_MUTE_EXPIRATION_DAYS;
+    });
+
+    await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
+        muteExpired, async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          let update: ThreadMetadataUpdate;
+
+          let data = doc.data() as ThreadMetadata;
+          if (data.newMessagesSinceSoftMuted) {
+            update = {
+              softMuted: firebase.firestore.FieldValue.delete(),
+              hasLabel: true,
+            };
+          } else {
+            update = Thread.baseArchiveUpdate(data.messageIds.length);
+          }
+
+          await doc.ref.update(update);
+        });
+  }
+
   private async processSingleQueue_(queue: string) {
     if (queue === QueueSettings.DAILY) {
       await this.dequeueDateKeys_(ThreadMetadataKeys.blocked);
       await this.dequeueDateKeys_(ThreadMetadataKeys.due);
       await this.processRetriage_();
+      await this.processSoftMute_();
     }
 
     let queueNames = QueueNames.create();
@@ -772,6 +822,8 @@ export class MailProcessor {
   private async processQueues_() {
     let storage = await getServerStorage();
     await storage.fetch();
+
+    await this.processSoftMute_();
 
     let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
     // Leaving in for easy manual testing of dequeuing code. Delete if this

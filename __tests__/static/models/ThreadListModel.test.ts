@@ -4,7 +4,7 @@ import 'css-paint-polyfill'
 import {firestoreUserCollection} from '../../../static/BaseMain.js';
 import {ThreadListModel} from '../../../static/models/ThreadListModel';
 import {Thread} from '../../../static/Thread';
-import {MUTE_ACTION} from '../../../static/views/ThreadListView.js';
+import { MUTE_ACTION } from '../../../static/ThreadActions.js';
 
 const fs = require('fs');
 const util = require('util');
@@ -77,6 +77,6 @@ test('Mute thread', async () => {
   const thread = testThreadListModel.getThreads()[0];
 
   expect(thread.isMuted()).toBe(false);
-  await testThreadListModel.markSingleThreadTriaged(thread, MUTE_ACTION)
+  await testThreadListModel.markTriaged(MUTE_ACTION, [thread]);
   // expect(thread.isMuted()).toBe(true);
 });

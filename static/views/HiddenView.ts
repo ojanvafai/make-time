@@ -14,6 +14,7 @@ let FIRESTORE_KEYS = [
   ThreadMetadataKeys.blocked,
   ThreadMetadataKeys.queued,
   ThreadMetadataKeys.muted,
+  ThreadMetadataKeys.softMuted,
   ThreadMetadataKeys.archivedByFilter,
 ];
 
@@ -89,6 +90,7 @@ class HiddenModel extends ThreadListModel {
   // we need to mvoe it back into the inbox.
   triageMovesToInbox_() {
     return this.queryKey_() === ThreadMetadataKeys.muted ||
+        this.queryKey_() === ThreadMetadataKeys.softMuted ||
         this.queryKey_() === ThreadMetadataKeys.archivedByFilter;
   }
 
@@ -101,6 +103,10 @@ class HiddenModel extends ThreadListModel {
   // if the thread was already put back in the inbox.
   async handleUndoAction(action: TriageResult) {
     switch (this.queryKey_()) {
+      case ThreadMetadataKeys.softMuted:
+        await action.thread.softMute();
+        return;
+
       case ThreadMetadataKeys.muted:
         await action.thread.mute();
         return;
