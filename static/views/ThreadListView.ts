@@ -597,9 +597,10 @@ export class ThreadListView extends View {
     if (!this.model_.allowViewMessages())
       return;
 
+    let row = assert(this.renderedRow_);
     let timer = new Timer(
-        !!this.model_.timerCountsDown, this.timerDuration_,
-        this.singleThreadContainer_);
+        !!this.model_.timerCountsDown || row.thread.needsMessageTriage(),
+        this.timerDuration_, this.singleThreadContainer_);
     AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;
   }
