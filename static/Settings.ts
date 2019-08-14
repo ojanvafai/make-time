@@ -227,8 +227,7 @@ export class Settings extends EventTarget {
   private static FILTER_RULE_FIELDS_ = ['label'].concat(
       Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
 
-  static SINGLE_GROUP = 'Single group';
-  static GROUP_PER_LABEL = 'Group per label';
+  static SINGLE_GROUP = 'Group important threads';
   static IGNORE_IMPORTANCE = 'Ignore importance';
 
   static fields = [
@@ -244,10 +243,10 @@ export class Settings extends EventTarget {
       description: `Configure how important messages are grouped.`,
       values:
           [
-            Settings.SINGLE_GROUP, Settings.GROUP_PER_LABEL,
+            Settings.SINGLE_GROUP,
             Settings.IGNORE_IMPORTANCE
           ],
-      default: Settings.GROUP_PER_LABEL,
+      default: Settings.SINGLE_GROUP,
     },
     {
       key: ServerStorage.KEYS.BACKGROUND,

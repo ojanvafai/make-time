@@ -1,5 +1,5 @@
 import {assert, defined} from './Base.js';
-import {RETRIAGE_LABEL_NAME} from './models/TriageModel.js';
+import {IMPORTANT_NAME, RETRIAGE_LABEL_NAME} from './models/TriageModel.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
 import {STUCK_LABEL_NAME} from './Thread.js';
 
@@ -28,6 +28,7 @@ export class QueueSettings {
   private mergeMap_?: Map<string, string>;
   private retriageQueueData_: QueueListEntry;
   private stuckQueueData_: QueueListEntry;
+  private importantQueueData_: QueueListEntry;
 
   private static BUFFER_ = 10000;
   static MONTHLY = 'Monthly';
@@ -56,6 +57,11 @@ export class QueueSettings {
     this.stuckQueueData_ = {
       label: STUCK_LABEL_NAME,
       data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex - 1)
+    };
+
+    this.importantQueueData_ = {
+      label: IMPORTANT_NAME,
+      data: this.queueData_(QueueSettings.IMMEDIATE, 0)
     };
   }
 
@@ -144,6 +150,9 @@ export class QueueSettings {
 
     if (label === STUCK_LABEL_NAME)
       return this.stuckQueueData_;
+
+    if (label === IMPORTANT_NAME)
+      return this.importantQueueData_;
 
     let data = this.get(label);
     return {label: label, data: data};

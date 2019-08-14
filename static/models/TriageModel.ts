@@ -1,4 +1,4 @@
-import {notNull} from '../Base.js';
+import {defined, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {Calendar} from '../calendar/Calendar.js';
 import {QueueSettings} from '../QueueSettings.js';
@@ -11,7 +11,7 @@ import {ThreadListModel} from './ThreadListModel.js';
 
 export const RETRIAGE_LABEL_NAME = 'Retriage';
 export const NO_OFFICES = 'none';
-const IMPORTANT_NAME = 'important';
+export const IMPORTANT_NAME = 'important';
 
 export class TriageModel extends ThreadListModel {
   private offices_?: string;
@@ -90,21 +90,20 @@ export class TriageModel extends ThreadListModel {
   static getGroupName(settings: Settings, thread: Thread) {
     if (thread.hasDueDate())
       return OVERDUE_LABEL_NAME;
+
     if (thread.isStuck())
       return STUCK_LABEL_NAME;
+
     if (thread.needsRetriage())
       return RETRIAGE_LABEL_NAME;
 
-    let name = notNull(thread.getLabel());
-
-    let priorityInbox = settings.get(ServerStorage.KEYS.PRIORITY_INBOX);
-    if (thread.isImportant() && priorityInbox !== Settings.IGNORE_IMPORTANCE) {
-      return priorityInbox === Settings.SINGLE_GROUP ?
-          IMPORTANT_NAME :
-          `${name} - ${IMPORTANT_NAME}`;
+    if (thread.isImportant() &&
+        settings.get(ServerStorage.KEYS.PRIORITY_INBOX) ===
+            Settings.SINGLE_GROUP) {
+      return IMPORTANT_NAME;
     }
 
-    return name;
+    return notNull(thread.getLabel());
   }
 
   protected compareThreads(a: Thread, b: Thread) {
@@ -112,18 +111,20 @@ export class TriageModel extends ThreadListModel {
   }
 
   static compareThreads(settings: Settings, a: Thread, b: Thread) {
-    // Important things always come before not important.
-    if (a.isImportant() != b.isImportant() &&
-        settings.get(ServerStorage.KEYS.PRIORITY_INBOX) !==
-            Settings.IGNORE_IMPORTANCE) {
-      return a.isImportant() ? -1 : 1;
-    }
-
     // Sort by queue, then by date.
     let aGroup = TriageModel.getGroupName(settings, a);
     let bGroup = TriageModel.getGroupName(settings, b);
-    if (aGroup == bGroup)
+
+    if (aGroup == bGroup) {
+      // Sort within retriage by priority first.
+      if (a.needsRetriage() && a.getPriorityId() !== b.getPriorityId()) {
+        let aPriority = defined(a.getPriorityId());
+        let bPriority = defined(b.getPriorityId());
+        return Thread.comparePriorities(aPriority, bPriority);
+      }
       return ThreadListModel.compareDates(a, b);
+    }
+
     return settings.getQueueSettings().queueNameComparator(aGroup, bGroup);
   }
 }

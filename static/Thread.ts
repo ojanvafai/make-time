@@ -181,7 +181,7 @@ export const STUCK_LABEL_NAME = 'Stuck';
 export const OVERDUE_LABEL_NAME = 'Overdue';
 export const FALLBACK_LABEL_NAME = 'No label';
 
-export const PrioritySortOrder = [
+const PrioritySortOrder = [
   Priority.Pin,
   Priority.MustDo,
   Priority.Quick,
@@ -249,6 +249,13 @@ export class Thread extends EventTarget {
     this.queueNames_ = QueueNames.create();
     this.sentMessageIds_ = [];
   }
+
+  static comparePriorities(a: Priority, b: Priority) {
+    let aOrder = PrioritySortOrder.indexOf(a);
+    let bOrder = PrioritySortOrder.indexOf(b);
+    return aOrder - bOrder;
+  }
+
 
   private messageCount_() {
     let count = this.metadata_.messageIds.length + this.sentMessageIds_.length;
