@@ -42,10 +42,6 @@ class TestThreadListModel extends ThreadListModel {
     return 0;
   }
 
-  public defaultCollapsedState() {
-    return true;
-  }
-
   public setFakeQuery() {
     console.log(JSON.stringify(firestoreUserCollection()));
     let metadataCollection =

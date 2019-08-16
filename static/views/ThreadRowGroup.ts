@@ -1,16 +1,8 @@
 import {collapseArrow, expandArrow} from '../Base.js';
-import {ThreadListModel} from '../models/ThreadListModel.js';
 import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
 import {ALL, NONE, SOME} from '../SelectBox.js';
 
 import {SelectRowEvent, ThreadRow} from './ThreadRow.js';
-
-export class ToggleCollapsedEvent extends Event {
-  static NAME = 'toggle-collapsed';
-  constructor() {
-    super(ToggleCollapsedEvent.NAME);
-  }
-}
 
 export class ThreadRowGroup extends HTMLElement {
   private rowContainer_: HTMLElement;
@@ -21,10 +13,12 @@ export class ThreadRowGroup extends HTMLElement {
   private expander_: HTMLElement;
   private lastRowHeight_?: number;
   private wasCollapsed_?: boolean;
+  private inViewport_: boolean;
+  private wasInViewport_: boolean;
+  private collapsed_: boolean;
+  private rows_?: ThreadRow[];
 
-  constructor(
-      private groupName_: string, private model_: ThreadListModel,
-      private allowedCount_?: number) {
+  constructor(private groupName_: string, private allowedCount_?: number) {
     super();
     // Use negative margin and width to make is so that the rounded corners are
     // clipped when filling the width of the window.
@@ -35,6 +29,10 @@ export class ThreadRowGroup extends HTMLElement {
       border-radius: 3px;
       background-color: var(--nested-background-color);
     `;
+
+    this.wasInViewport_ = true;
+    this.inViewport_ = false;
+    this.collapsed_ = true;
 
     this.selectBox_ = new SelectBox();
     this.selectBox_.addEventListener(SelectChangedEvent.NAME, () => {
@@ -55,7 +53,7 @@ export class ThreadRowGroup extends HTMLElement {
     `;
     this.groupNameContainer_.className = 'hover';
     this.groupNameContainer_.addEventListener(
-        'click', () => this.toggleCollapsed_());
+        'click', () => this.setCollapsed(!this.collapsed_));
 
     this.rowCountDisplay_ = new Text();
 
@@ -87,6 +85,11 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   setInViewport(inViewport: boolean) {
+    this.inViewport_ = inViewport;
+
+    if (this.collapsed_)
+      return;
+
     this.rowContainer_.style.display = inViewport ? '' : 'none';
     this.placeholder_.style.display = inViewport ? 'none' : '';
 
@@ -135,12 +138,9 @@ export class ThreadRowGroup extends HTMLElement {
     this.rowCountDisplay_.textContent = text;
   }
 
-  isCollapsed() {
-    return this.model_.isCollapsed(this.groupName_);
-  }
-
-  private toggleCollapsed_() {
-    this.model_.toggleCollapsed(this.groupName_);
+  setCollapsed(collapsed: boolean) {
+    this.collapsed_ = collapsed;
+    this.render_();
   }
 
   getRows() {
@@ -150,7 +150,6 @@ export class ThreadRowGroup extends HTMLElement {
   getFirstRow() {
     return this.rowContainer_.firstChild as ThreadRow | null;
   }
-
   hasRows() {
     return !!this.rowContainer_.childElementCount;
   }
@@ -166,49 +165,58 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   setRows(rows: ThreadRow[]) {
+    this.rows_ = rows;
+    return this.render_();
+  }
+
+  render_() {
+    if (!this.rows_)
+      return [];
+
     // Minimize DOM modifications to only the cases where something has changed.
-    let rowListChanged = this.rowsChanged_(rows);
+    let rowListChanged = this.rowsChanged_(this.rows_);
     if (rowListChanged || this.lastRowHeight_ !== ThreadRow.lastHeight()) {
       this.lastRowHeight_ = ThreadRow.lastHeight();
-      this.placeholder_.style.height = `${rows.length * this.lastRowHeight_}px`;
+      this.placeholder_.style.height = this.collapsed_ ?
+          '0' :
+          `${this.rows_.length * this.lastRowHeight_}px`;
     }
 
-    let collapsed = this.isCollapsed();
-
+    let collapseChanged = this.wasCollapsed_ !== this.collapsed_;
     // Performance optimization to avoid doing a bunch of DOM if the count and
     // sort order of rows didn't change.
-    if (!rowListChanged && this.wasCollapsed_ === collapsed)
+    if (!rowListChanged && !collapseChanged)
       return [];
 
-    this.wasCollapsed_ = collapsed;
-    this.updateRowCount_(rows.length, collapsed);
+    // We early return in setInViewport, so we need to call it again when
+    // collapse state changes.
+    if (collapseChanged && this.wasInViewport_ !== this.inViewport_) {
+      this.setInViewport(this.inViewport_);
+      this.wasInViewport_ = this.inViewport_;
+    }
+
+    this.wasCollapsed_ = this.collapsed_;
+    this.updateRowCount_(this.rows_.length, this.collapsed_);
 
     this.expander_.textContent = '';
-    this.expander_.append(collapsed ? expandArrow() : collapseArrow());
-    this.selectBox_.setDisabled(collapsed);
+    this.expander_.append(this.collapsed_ ? expandArrow() : collapseArrow());
+    this.selectBox_.setDisabled(this.collapsed_);
 
-    if (collapsed) {
-      // TODO: Should we retain the rows but display:none rowContainer_
-      // instead?
-      this.rowContainer_.textContent = '';
-      return [];
-    }
+    this.rowContainer_.style.display = this.collapsed_ ? 'none' : '';
 
     let removed = [];
     // Remove rows that no longer exist.
     for (let row of Array.from(this.rowContainer_.children) as ThreadRow[]) {
-      if (!rows.includes(row)) {
+      if (!this.rows_.includes(row)) {
         row.remove();
         removed.push(row);
       }
     }
 
-    let isGroupInViewport = !!this.rowContainer_.parentNode;
-
     let previousRow;
     // Ensure the order of rows match the new order, but also try to
     // minimize moving things around in the DOM to minimize style recalc.
-    for (let row of rows) {
+    for (let row of this.rows_) {
       if (previousRow ? row.previousSibling !== previousRow :
                         row !== this.rowContainer_.firstChild) {
         if (previousRow)
@@ -217,7 +225,7 @@ export class ThreadRowGroup extends HTMLElement {
           this.rowContainer_.prepend(row);
       }
 
-      row.setInViewport(isGroupInViewport);
+      row.setInViewport(this.inViewport_);
       previousRow = row;
     }
 
@@ -225,16 +233,16 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   removeIfEmpty() {
-    if (!this.rowContainer_.childElementCount)
+    if (!this.hasRows())
       this.remove();
   }
 
   private selectRows_(select: boolean) {
-    if (this.isCollapsed())
+    if (this.collapsed_)
       return;
 
     this.selectBox_.select(select ? ALL : NONE);
-    let rows = <NodeListOf<ThreadRow>>this.rowContainer_.childNodes;
+    let rows = this.getRows();
     for (let child of rows) {
       child.setChecked(select);
       if (!select)

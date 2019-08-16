@@ -691,7 +691,7 @@ export class ThreadListView extends View {
       // Insertion sort insert new groups
       if (!entry) {
         let allowedCount = this.model_.allowedCount(groupName);
-        let group = new ThreadRowGroup(groupName, this.model_, allowedCount);
+        let group = new ThreadRowGroup(groupName, allowedCount);
 
         if (previousEntry)
           previousEntry.group.after(group);
@@ -707,6 +707,9 @@ export class ThreadListView extends View {
       }
 
       entry.rows.push(this.getThreadRow_(thread));
+
+      if (!previousEntry)
+        entry.group.setCollapsed(false);
       previousEntry = entry;
     }
 
@@ -835,13 +838,8 @@ export class ThreadListView extends View {
       if (this.renderedRow_) {
         if (nextRow) {
           let nextGroupName = this.mergedGroupName_(nextRow.thread);
-          if (this.renderedGroupName_ !== nextGroupName) {
-            // If the next group is collapsed, go back to the thread list.
-            if (this.model_.isCollapsed(nextGroupName))
-              nextRow = null;
-            else
-              toast = new Toast(`Now in: ${nextGroupName}`);
-          }
+          if (this.renderedGroupName_ !== nextGroupName)
+            toast = new Toast(`Now in: ${nextGroupName}`);
         }
         if (nextRow) {
           this.setRenderedRowInternal_(nextRow);
@@ -938,8 +936,13 @@ export class ThreadListView extends View {
 
   private setFocusAndScrollIntoView_(row: ThreadRow|null) {
     this.setFocus_(row);
-    if (this.focusedRow_)
+    if (this.focusedRow_) {
+      // If the row was in a previously collapsed ThreadRowGroup, then we need
+      // to render before trying to scroll it into view.
+      if (this.focusedRow_.getBoundingClientRect().height === 0)
+        this.renderFrame_();
       this.focusedRow_.scrollIntoView({'block': 'center'});
+    }
   }
 
   private moveRow_(action: Action) {
@@ -1004,18 +1007,12 @@ export class ThreadListView extends View {
       case NEXT_FULL_ACTION: {
         let currentGroup = focused.getGroup();
         let newGroup = currentGroup.nextElementSibling as ThreadRowGroup;
-        while (newGroup && newGroup.isCollapsed()) {
-          newGroup = newGroup.nextElementSibling as ThreadRowGroup;
-        }
         this.focusFirstRowOfGroup_(newGroup);
         break;
       }
       case PREVIOUS_FULL_ACTION: {
         let currentGroup = focused.getGroup();
         let newGroup = currentGroup.previousElementSibling as ThreadRowGroup;
-        while (newGroup && newGroup.isCollapsed()) {
-          newGroup = newGroup.previousElementSibling as ThreadRowGroup;
-        }
         this.focusFirstRowOfGroup_(newGroup);
         break;
       }

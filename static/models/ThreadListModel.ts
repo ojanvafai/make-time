@@ -31,7 +31,6 @@ export abstract class ThreadListModel extends Model {
   public timerCountsDown: boolean;
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
-  private collapsedGroupNames_: Map<string, boolean>;
   private snapshotToProcess_?: firebase.firestore.QuerySnapshot|null;
   private processSnapshotTimeout_?: number;
   private faviconCount_: number;
@@ -46,12 +45,10 @@ export abstract class ThreadListModel extends Model {
     this.timerCountsDown = false;
     this.resetUndoableActions_();
     this.threads_ = [];
-    this.collapsedGroupNames_ = new Map();
     this.snapshotToProcess_ = null;
     this.faviconCount_ = showFaviconCount ? 0 : -1;
   }
 
-  protected abstract defaultCollapsedState(groupName: string): boolean;
   protected abstract compareThreads(a: Thread, b: Thread): number;
   abstract getGroupName(thread: Thread): string;
 
@@ -118,19 +115,6 @@ export abstract class ThreadListModel extends Model {
     if (thread.getMessageIds().length === thread.getCountToArchive())
       return false;
     return true;
-  }
-
-  toggleCollapsed(groupName: string) {
-    let isCollapsed = this.isCollapsed(groupName);
-    this.collapsedGroupNames_.set(groupName, !isCollapsed);
-    this.dispatchEvent(new ThreadListChangedEvent());
-  }
-
-  isCollapsed(groupName: string) {
-    let isCollapsed = this.collapsedGroupNames_.get(groupName);
-    if (isCollapsed === undefined)
-      return this.defaultCollapsedState(groupName);
-    return isCollapsed;
   }
 
   allowedCount(_groupName: string) {

@@ -1,7 +1,7 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {compareDates, defined, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
-import {BACKLOG_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
@@ -55,16 +55,6 @@ export class TodoModel extends ThreadListModel {
       return false;
 
     return super.shouldShowThread(thread);
-  }
-
-  defaultCollapsedState(groupName: string) {
-    return groupName === BACKLOG_PRIORITY_NAME ||
-        groupName === this.unreadGroupName_(BACKLOG_PRIORITY_NAME);
-    ;
-  }
-
-  private unreadGroupName_(priority: string) {
-    return `${priority} - unread`;
   }
 
   getGroupName(thread: Thread) {

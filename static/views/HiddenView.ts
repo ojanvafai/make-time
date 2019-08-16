@@ -39,10 +39,6 @@ class HiddenModel extends ThreadListModel {
     return FIRESTORE_KEYS[this.keyIndex_];
   }
 
-  defaultCollapsedState(_groupName: string) {
-    return false;
-  }
-
   compareThreads(a: Thread, b: Thread) {
     switch (this.queryKey_()) {
       case ThreadMetadataKeys.blocked:

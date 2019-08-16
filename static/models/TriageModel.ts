@@ -1,7 +1,6 @@
 import {defined, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {Calendar} from '../calendar/Calendar.js';
-import {QueueSettings} from '../QueueSettings.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
@@ -68,12 +67,6 @@ export class TriageModel extends ThreadListModel {
     await model.init();
 
     return model.getEventsWithoutLocalRoom(this.offices_);
-  }
-
-  defaultCollapsedState(groupName: string) {
-    let queue = this.settings_.getQueueSettings().get(groupName).queue;
-    return QueueSettings.WEEKDAYS.includes(queue) ||
-        queue === QueueSettings.MONTHLY;
   }
 
   protected shouldShowThread(thread: Thread) {
