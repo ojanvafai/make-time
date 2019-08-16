@@ -124,7 +124,11 @@ class RowState extends LabelState {
   equals(other: RowState): boolean {
     return super.equals(other) && this.isSmallScreen === other.isSmallScreen &&
         this.subject === other.subject && this.snippet === other.snippet &&
-        this.from === other.from && this.count === other.count &&
+        // TODO: Change this to use pointer equality.
+        // getFrom() clones a new copy, so use textContent instead of pointer
+        // equality.
+        this.from.textContent === other.from.textContent &&
+        this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&
         this.finalVersionSkipped === other.finalVersionSkipped;
@@ -342,7 +346,7 @@ export class ThreadRow extends HTMLElement {
       text-transform: uppercase;
       font-size: 12px;
       color: var(--dim-text-color);
-  `;
+    `;
     from.append(state.from)
     fromContainer.append(from);
 
