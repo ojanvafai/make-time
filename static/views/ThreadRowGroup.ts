@@ -16,6 +16,7 @@ export class ThreadRowGroup extends HTMLElement {
   private inViewport_: boolean;
   private wasInViewport_: boolean;
   private collapsed_: boolean;
+  private manuallyCollapsed_: boolean;
   private rows_?: ThreadRow[];
 
   constructor(private groupName_: string, private allowedCount_?: number) {
@@ -33,6 +34,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.wasInViewport_ = true;
     this.inViewport_ = false;
     this.collapsed_ = true;
+    this.manuallyCollapsed_ = false;
 
     this.selectBox_ = new SelectBox();
     this.selectBox_.addEventListener(SelectChangedEvent.NAME, () => {
@@ -52,8 +54,10 @@ export class ThreadRowGroup extends HTMLElement {
       overflow: hidden;
     `;
     this.groupNameContainer_.className = 'hover';
-    this.groupNameContainer_.addEventListener(
-        'click', () => this.setCollapsed(!this.collapsed_));
+    this.groupNameContainer_.addEventListener('click', () => {
+      this.manuallyCollapsed_ = true;
+      this.setCollapsed(!this.collapsed_, true);
+    });
 
     this.rowCountDisplay_ = new Text();
 
@@ -138,7 +142,10 @@ export class ThreadRowGroup extends HTMLElement {
     this.rowCountDisplay_.textContent = text;
   }
 
-  setCollapsed(collapsed: boolean) {
+  setCollapsed(collapsed: boolean, force?: boolean) {
+    if (!force && this.manuallyCollapsed_)
+      return;
+
     this.collapsed_ = collapsed;
     this.render_();
   }
