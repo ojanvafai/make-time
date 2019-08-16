@@ -163,8 +163,7 @@ export abstract class ThreadListModel extends Model {
         continue;
 
       if (data.priorityId === Priority.Quick ||
-          data.priorityId === Priority.MustDo ||
-          data.priorityId === Priority.NeedsFilter) {
+          data.priorityId === Priority.MustDo) {
         faviconCount++;
       }
 
