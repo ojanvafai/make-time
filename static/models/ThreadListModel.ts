@@ -178,6 +178,7 @@ export abstract class ThreadListModel extends Model {
       if (!snapshot)
         continue;
 
+      this.perSnapshotThreads_[i] = [];
       this.processSnapshot_(snapshot, this.perSnapshotThreads_[i]);
       didProcess = true;
     }
