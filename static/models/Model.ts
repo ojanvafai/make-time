@@ -6,12 +6,7 @@ export abstract class Model extends EventTarget {
   }
 
   async loadFromDisk() {}
-
   async update() {}
-
-  allowViewMessages() {
-    return true
-  }
 
   protected updateTitle(
       key: string, count: number, ...title: (HTMLElement|string)[]) {

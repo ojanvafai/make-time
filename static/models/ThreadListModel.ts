@@ -60,15 +60,10 @@ export abstract class ThreadListModel extends Model {
     return this.haveEverProcessedSnapshot_;
   }
 
-  canDisallowViewMessages() {
-    return false;
-  }
-
   allowViewMessages() {
     return true;
   }
 
-  toggleAllowViewMessages() {}
   postProcessThreads(_threads: Thread[]) {}
 
   // Mark a bit that this thread was triaged with unread messages so it can be

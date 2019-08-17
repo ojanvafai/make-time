@@ -563,14 +563,6 @@ export class ThreadListView extends View {
     this.createMenuItem_(
         container, () => this.applyLabelsInGmail_(),
         'Apply labels in gmail on next sync');
-
-    if (!this.renderedRow_ && this.model_.canDisallowViewMessages()) {
-      let contents = this.model_.allowViewMessages() ?
-          'Disallow viewing messages' :
-          'Allow viewing messages';
-      this.createMenuItem_(
-          container, () => this.model_.toggleAllowViewMessages(), contents);
-    }
   }
 
   async goBack() {

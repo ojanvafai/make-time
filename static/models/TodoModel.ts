@@ -71,6 +71,10 @@ export class TodoModel extends ThreadListModel {
     this.timerCountsDown = isTriage;
   }
 
+  allowViewMessages() {
+    return !this.isTriage_;
+  }
+
   handleSortChanged_() {
     this.sort();
     this.dispatchEvent(new ThreadListChangedEvent());
