@@ -1,9 +1,11 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action} from '../Actions.js';
-import {assert, compareDates, setFaviconCount as setFavicon} from '../Base.js';
-import {CalendarEvent} from '../calendar/CalendarEvent.js';
+import {assert, compareDates} from '../Base.js';
+import {Calendar} from '../calendar/Calendar.js';
 import {SendAs} from '../SendAs.js';
-import {Priority, ThreadMetadataUpdate} from '../Thread.js';
+import {ServerStorage} from '../ServerStorage.js';
+import {Settings} from '../Settings.js';
+import {ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
 import {createDateUpdate, createUpdate, pickDate} from '../ThreadActions.js';
 
@@ -31,22 +33,24 @@ export abstract class ThreadListModel extends Model {
   public timerCountsDown: boolean;
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
-  private snapshotToProcess_?: firebase.firestore.QuerySnapshot|null;
+  private perSnapshotThreads_: Thread[][];
+  private snapshotsToProcess_: firebase.firestore.QuerySnapshot[];
   private processSnapshotTimeout_?: number;
-  private faviconCount_: number;
   private filter_?: string;
   private days_?: number;
   private threadGenerator_?: IterableIterator<Thread>;
   private haveEverProcessedSnapshot_?: boolean;
+  private offices_?: string;
 
-  constructor(showFaviconCount?: boolean) {
+  constructor(protected settings_: Settings) {
     super();
 
     this.timerCountsDown = false;
     this.resetUndoableActions_();
+
+    this.perSnapshotThreads_ = [];
     this.threads_ = [];
-    this.snapshotToProcess_ = null;
-    this.faviconCount_ = showFaviconCount ? 0 : -1;
+    this.snapshotsToProcess_ = [];
   }
 
   protected abstract compareThreads(a: Thread, b: Thread): number;
@@ -65,21 +69,51 @@ export abstract class ThreadListModel extends Model {
   }
 
   toggleAllowViewMessages() {}
+  postProcessThreads(_threads: Thread[]) {}
 
-  needsMessageTriage(_thread: Thread, _sendAs: SendAs) {
-    return false;
+  // Mark a bit that this thread was triaged with unread messages so it can be
+  // grouped differently in todo view. Don't mark this bit for things that are
+  // overdue, stuck, or retriage since those have already been fully triaged
+  // once. If the unread messages were all sent by me, then consider them read
+  // as well since I don't need to read messages I sent.
+  private needsMessageTriage_(thread: Thread, sendAs: SendAs) {
+    return thread.needsTriage() && thread.unreadNotSentByMe(sendAs) &&
+        !thread.hasDueDate() && !thread.isStuck() && !thread.needsRetriage();
   }
 
   async getNoMeetingRoomEvents() {
-    return [] as CalendarEvent[];
+    let offices =
+        this.offices_ || this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
+
+    if (!offices)
+      return [];
+
+    let end = new Date();
+    end.setDate(end.getDate() + 28);
+
+    let model = new Calendar(this.settings_, new Date(), end);
+    await model.init();
+
+    return model.getEventsWithoutLocalRoom(offices);
   }
 
   setSortOrder(_threads: Thread[]) {
     assert(false);
   }
 
-  protected setQuery(query: firebase.firestore.Query) {
-    query.onSnapshot((snapshot) => this.queueProcessSnapshot_(snapshot));
+  protected setQueries(...queries: firebase.firestore.Query[]) {
+    for (let i = 0; i < queries.length; i++) {
+      this.perSnapshotThreads_[i] = [];
+
+      queries[i].onSnapshot((snapshot) => {
+        this.snapshotsToProcess_[i] = snapshot;
+        this.queueProcessSnapshot_();
+      });
+    }
+  }
+
+  setOffices(offices?: string) {
+    this.offices_ = offices;
   }
 
   setViewFilters(filter?: string, days?: string) {
@@ -127,58 +161,51 @@ export abstract class ThreadListModel extends Model {
 
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.
-  private async queueProcessSnapshot_(snapshot:
-                                          firebase.firestore.QuerySnapshot) {
-    // In the debounce case, intentionally only process the last snapshot since
-    // that has the most up to date data.
-    this.snapshotToProcess_ = snapshot;
+  private async queueProcessSnapshot_() {
     window.clearTimeout(this.processSnapshotTimeout_);
-    this.processSnapshotTimeout_ = window.setTimeout(async () => {
-      if (!this.snapshotToProcess_)
-        return;
-
-      this.processSnapshot_();
-      // Intentionally do this after processing all the threads in the disk
-      // cache so that they show up atomically and so we spend less CPU
-      // rendering incremental frames.
-      // TODO: Should probably call this occasionaly in the above loop if that
-      // loop is taking too long to run.
-      this.threadListChanged_();
-    }, 100);
+    this.processSnapshotTimeout_ =
+        window.setTimeout(async () => this.processAllSnapshots_(true), 100);
   }
 
-  private processSnapshot_() {
+  // TODO: have this.threads be an array of arrays so each snapshot gets its own
+  // and then when we read threads we need to concat them all together.
+  private processAllSnapshots_(fireChange?: boolean) {
+    let didProcess = false;
+    for (let i = 0; i < this.snapshotsToProcess_.length; i++) {
+      let snapshot = this.snapshotsToProcess_[i];
+
+      // This can happen since we use a sparse array.
+      if (!snapshot)
+        continue;
+
+      this.processSnapshot_(snapshot, this.perSnapshotThreads_[i]);
+      didProcess = true;
+    }
+    this.snapshotsToProcess_ = [];
+
+    this.threads_ = ([] as Thread[]).concat(...this.perSnapshotThreads_);
+    this.postProcessThreads(this.threads_);
+    this.sort();
+    this.fetchThreads_();
+
+    // Intentionally do this after processing all the threads in the disk
+    // cache so that they show up atomically and so we spend less CPU
+    // rendering incremental frames.
+    // TODO: Should probably call this occasionaly in the above loop if that
+    // loop is taking too long to run.
+    if (didProcess && fireChange)
+      this.threadListChanged_();
+  }
+
+  private processSnapshot_(
+      snapshot: firebase.firestore.QuerySnapshot, output: Thread[]) {
     this.haveEverProcessedSnapshot_ = true;
 
-    let snapshot = assert(this.snapshotToProcess_);
-    this.snapshotToProcess_ = null;
-
-    let faviconCount = 0;
-    this.threads_ = [];
     for (let doc of snapshot.docs) {
       let data = doc.data() as ThreadMetadata;
       let thread = Thread.create(doc.id, data as ThreadMetadata);
-
-      if (!this.shouldShowThread(thread))
-        continue;
-
-      if (data.priorityId === Priority.Quick ||
-          data.priorityId === Priority.MustDo) {
-        faviconCount++;
-      }
-
-      this.threads_.push(thread);
+      output.push(thread);
     };
-
-    // The favicon doesn't support showing 3 digets so cap at 99.
-    faviconCount = Math.min(99, faviconCount);
-    if (this.faviconCount_ >= 0 && faviconCount !== this.faviconCount_) {
-      this.faviconCount_ = faviconCount;
-      setFavicon(faviconCount);
-    }
-
-    this.sort();
-    this.fetchThreads_();
   }
 
   protected sort() {
@@ -242,8 +269,7 @@ export abstract class ThreadListModel extends Model {
 
   getThreads() {
     // Make sure any in progress snapshot updates get flushed.
-    if (this.snapshotToProcess_)
-      this.processSnapshot_();
+    this.processAllSnapshots_();
     return this.threads_.filter(
         (thread: Thread) => this.shouldShowThread(thread));
   }
@@ -281,7 +307,7 @@ export abstract class ThreadListModel extends Model {
           createDateUpdate(thread, destination, date, moveToInbox) :
           createUpdate(
               thread, destination, moveToInbox,
-              this.needsMessageTriage(thread, await SendAs.getDefault()));
+              this.needsMessageTriage_(thread, await SendAs.getDefault()));
 
       if (!update)
         continue;

@@ -10,7 +10,6 @@ import {ComposeModel} from './models/ComposeModel.js';
 import {Model} from './models/Model.js';
 import {TodoModel} from './models/TodoModel.js';
 import {TrackingModel} from './models/TrackingModel.js';
-import {TriageModel} from './models/TriageModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {SendAs} from './SendAs.js';
@@ -126,14 +125,12 @@ async function createModel(viewType: VIEW, params?: any) {
       return new TrackingModel();
 
     case VIEW.Todo:
+    case VIEW.Triage:
       let todoModel = await getTodoModel();
+      todoModel.setIsTriage(viewType === VIEW.Triage);
+      todoModel.setOffices(params.offices);
       todoModel.setViewFilters(params.label, params.days);
       return todoModel;
-
-    case VIEW.Triage:
-      let triageModel = await getTriageModel(params.offices);
-      triageModel.setViewFilters(params.label, params.days);
-      return triageModel;
 
     case VIEW.Settings:
       return null;
@@ -165,7 +162,7 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Triage:
       return new ThreadListView(
-          <TriageModel>model, appShell_, await getSettings(), '/todo');
+          <TodoModel>model, appShell_, await getSettings(), '/todo');
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
@@ -221,7 +218,6 @@ function preventUpdates() {
 
 function resetModels() {
   calendarModel_ = undefined;
-  triageModel_ = undefined;
   todoModel_ = undefined;
 }
 
@@ -232,23 +228,10 @@ async function getCalendarModel() {
   return calendarModel_;
 }
 
-let triageModel_: TriageModel|undefined;
-async function getTriageModel(offices?: string) {
-  if (!triageModel_)
-    triageModel_ = new TriageModel(await getSettings(), offices);
-  return triageModel_;
-}
-
 let todoModel_: TodoModel|undefined;
 async function getTodoModel() {
   if (!todoModel_) {
-    let settings = await getSettings();
-    todoModel_ = new TodoModel(
-        settings.get(ServerStorage.KEYS.VACATION),
-        settings.get(ServerStorage.KEYS.ALLOWED_PIN_COUNT),
-        settings.get(ServerStorage.KEYS.ALLOWED_MUST_DO_COUNT),
-        settings.get(ServerStorage.KEYS.ALLOWED_URGENT_COUNT),
-        settings.get(ServerStorage.KEYS.FINAL_VERSION));
+    todoModel_ = new TodoModel(await getSettings());
   }
   return todoModel_;
 }

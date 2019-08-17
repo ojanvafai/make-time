@@ -1,5 +1,5 @@
 import {assert, createMktimeButton, notNull, showDialog} from '../Base.js';
-import {NO_OFFICES} from '../models/TriageModel.js';
+import {NO_OFFICES} from '../models/TodoModel.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 

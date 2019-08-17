@@ -78,7 +78,6 @@ interface KeyTypes {
   PRIORITY_INBOX: string;
   BACKGROUND: string;
   VACATION: string;
-  ALLOW_VIEW_MESSAGES_IN_TRIAGE: string;
   FINAL_VERSION: string;
   TIMER_DURATION: string;
   ALLOWED_PIN_COUNT: string;
@@ -98,7 +97,6 @@ let keys: KeyTypes = {
   PRIORITY_INBOX: 'priority_inbox',
   BACKGROUND: 'background',
   VACATION: 'vacation',
-  ALLOW_VIEW_MESSAGES_IN_TRIAGE: 'allow_view_messages_in_triage',
   FINAL_VERSION: 'final_version',
   TIMER_DURATION: 'timeout',
   ALLOWED_PIN_COUNT: 'allowed_pin_count',
@@ -118,7 +116,6 @@ let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.PRIORITY_INBOX,
   keys.BACKGROUND,
   keys.VACATION,
-  keys.ALLOW_VIEW_MESSAGES_IN_TRIAGE,
   keys.FINAL_VERSION,
   keys.TIMER_DURATION,
   keys.ALLOWED_PIN_COUNT,

@@ -261,14 +261,6 @@ export class Settings extends EventTarget {
           `Label to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
     },
     {
-      key: ServerStorage.KEYS.ALLOW_VIEW_MESSAGES_IN_TRIAGE,
-      name: 'Allow view messages in triage',
-      description:
-          `If you have more email than you can read, triage subject lines and then read in Todo view so that you get to the must do items before reading all the backlog items.`,
-      type: 'checkbox',
-      default: true,
-    },
-    {
       key: ServerStorage.KEYS.FINAL_VERSION,
       name: 'Final version',
       description: FINAL_VERSION_DESCRIPTION,

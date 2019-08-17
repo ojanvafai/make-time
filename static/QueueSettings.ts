@@ -1,5 +1,5 @@
 import {assert, defined} from './Base.js';
-import {IMPORTANT_NAME, RETRIAGE_LABEL_NAME} from './models/TriageModel.js';
+import {IMPORTANT_NAME, RETRIAGE_LABEL_NAME} from './models/TodoModel.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
 import {STUCK_LABEL_NAME} from './Thread.js';
 

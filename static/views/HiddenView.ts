@@ -2,7 +2,7 @@ import {Action} from '../Actions.js';
 import {compareDates, defined, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
-import {TriageModel} from '../models/TriageModel.js';
+import {TodoModel} from '../models/TodoModel.js';
 import {Settings} from '../Settings.js';
 import {STUCK_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
 
@@ -19,19 +19,19 @@ let FIRESTORE_KEYS = [
 ];
 
 class HiddenModel extends ThreadListModel {
-  constructor(private settings_: Settings, private keyIndex_: number) {
+  constructor(settings_: Settings, private keyIndex_: number) {
     // For muted, don't put undo items back in the inbox.
-    super(false);
+    super(settings_);
 
     if (this.queryKey_() === ThreadMetadataKeys.blocked) {
       // TODO: Exclude hasLabel threads
       let metadataCollection =
           firestoreUserCollection().doc('threads').collection('metadata');
-      this.setQuery(metadataCollection.orderBy('blocked', 'asc'));
+      this.setQueries(metadataCollection.orderBy('blocked', 'asc'));
     } else {
       let metadataCollection =
           firestoreUserCollection().doc('threads').collection('metadata');
-      this.setQuery(metadataCollection.where(this.queryKey_(), '==', true));
+      this.setQueries(metadataCollection.where(this.queryKey_(), '==', true));
     }
   }
 
@@ -47,7 +47,7 @@ class HiddenModel extends ThreadListModel {
             notNull(b.getStuckDate()), notNull(a.getStuckDate()));
 
       case ThreadMetadataKeys.queued:
-        return TriageModel.compareThreads(this.settings_, a, b);
+        return TodoModel.compareTriageThreads(this.settings_, a, b);
 
       default:
         return ThreadListModel.compareDates(a, b);
@@ -75,7 +75,7 @@ class HiddenModel extends ThreadListModel {
         return STUCK_LABEL_NAME;
 
       case ThreadMetadataKeys.queued:
-        return TriageModel.getGroupName(this.settings_, thread);
+        return TodoModel.getTriageGroupName(this.settings_, thread);
 
       default:
         return this.queryKey_();
