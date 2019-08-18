@@ -15,6 +15,7 @@ import {Router} from './Router.js';
 import {SendAs} from './SendAs.js';
 import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
 import {Themes} from './Themes.js';
+import {Toast} from './Toast.js';
 import {AppShell, BackEvent, OverflowMenuOpenEvent, ToggleViewEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
 import {ComposeView} from './views/ComposeView.js';
@@ -177,9 +178,53 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
   }
 }
 
+let previousViewType: VIEW|undefined;
+let timeSinceViewSet: number;
+let timePerViewJson = localStorage[viewAnalyticsKey()];
+let timePerView: {[property: string]: number} =
+    timePerViewJson ? JSON.parse(timePerViewJson) : {};
 let viewGeneration = 0;
+
+function viewAnalyticsKey() {
+  let date = new Date();
+  return `analytics-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+function flushViewAnalytics() {
+  if (!timeSinceViewSet)
+    return;
+  let view = defined(previousViewType);
+  timePerView[view] = (Date.now() - timeSinceViewSet) + (timePerView[view] || 0)
+
+  timeSinceViewSet = 0;
+  previousViewType = undefined;
+
+  localStorage[viewAnalyticsKey()] = JSON.stringify(timePerView);
+}
+
+function showViewAnalytics() {
+  let output = [];
+  for (let entry of Object.entries(timePerView)) {
+    output.push(`${VIEW[(entry[0] as unknown as VIEW)]}: ${
+        (entry[1] / 1000 / 60).toFixed(1)} minutes`);
+  }
+  if (!output.length)
+    return;
+
+  let toast = new Toast(`Time spent today:\n\n${output.join('\n')}`);
+  toast.style.whiteSpace = 'pre-wrap';
+  document.body.append(toast);
+}
+
 async function setView(
     viewType: VIEW, params?: any, shouldHideToolbar?: boolean) {
+  flushViewAnalytics();
+  timeSinceViewSet = Date.now();
+  previousViewType = viewType;
+
+  if (viewType === VIEW.Todo || viewType === VIEW.Triage)
+    showViewAnalytics();
+
   let thisViewGeneration = ++viewGeneration;
 
   appShell_.showToolbar(!shouldHideToolbar);
@@ -551,12 +596,15 @@ function isEditable(element: Element) {
   return false;
 }
 
+window.addEventListener('focus', () => showViewAnalytics());
+window.addEventListener('blur', () => flushViewAnalytics());
+
 document.addEventListener('visibilitychange', async () => {
   let view = await getView();
   if (view)
     view.visibilityChanged();
 
-  if (document.visibilityState == 'visible')
+  if (document.visibilityState === 'visible')
     await update();
 });
 

@@ -9,13 +9,9 @@ export class Toast extends HTMLElement {
       bottom: 0;
       left: 0;
       font-size: 20px;
-      opacity: 0.5;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.5s;
-      transition-delay: 3s;
-      opacity: 0.95;
       pointer-events: none;
     `;
 
@@ -29,9 +25,19 @@ export class Toast extends HTMLElement {
     `;
     text.append(message);
     this.append(text);
+  }
 
-    setTimeout(() => this.style.opacity = '0');
-    this.addEventListener('transitionend', () => {this.remove()});
+  connectedCallback() {
+    let animation = this.animate(
+        [
+          {opacity: '0.95'},
+          {opacity: '0'},
+        ],
+        {
+          duration: 500,
+          delay: 3000,
+        });
+    animation.onfinish = () => this.remove();
   }
 }
 window.customElements.define('mt-toast', Toast);
