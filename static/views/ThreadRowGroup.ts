@@ -239,11 +239,6 @@ export class ThreadRowGroup extends HTMLElement {
     return removed;
   }
 
-  removeIfEmpty() {
-    if (!this.hasRows())
-      this.remove();
-  }
-
   private selectRows_(select: boolean) {
     if (this.collapsed_)
       return;

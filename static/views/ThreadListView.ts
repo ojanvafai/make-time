@@ -711,7 +711,10 @@ export class ThreadListView extends View {
     }
 
     for (let entry of groupMap.values()) {
-      removedRows.push(...entry.group.setRows(entry.rows));
+      if (!entry.rows.length)
+        entry.group.remove();
+      else
+        removedRows.push(...entry.group.setRows(entry.rows));
     }
 
     this.handleRowsRemoved_(removedRows, oldRows);
