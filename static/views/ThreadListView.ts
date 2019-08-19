@@ -195,6 +195,7 @@ export class ThreadListView extends View {
   private timerDuration_: number;
   private modelListeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
+  private triageOverrideThreadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
   private noMeetingRoomEvents_?: HTMLElement;
   private rowGroupContainer_: HTMLElement;
@@ -235,6 +236,7 @@ export class ThreadListView extends View {
 
     this.modelListeners_ = [];
     this.threadToRow_ = new WeakMap();
+    this.triageOverrideThreadToRow_ = new WeakMap();
     this.focusedRow_ = null;
     this.renderedRow_ = null;
     this.autoFocusedRow_ = null;
@@ -462,13 +464,16 @@ export class ThreadListView extends View {
   }
 
   private getThreadRow_(thread: Thread) {
-    let row = this.threadToRow_.get(thread);
+    let map = thread.forceTriage() ? this.triageOverrideThreadToRow_ : this.threadToRow_;
+
+    let row = map.get(thread);
     if (!row) {
       row = new ThreadRow(
           thread, this.model_.showFinalVersion(),
           defined(this.labelSelectTemplate_));
-      this.threadToRow_.set(thread, row);
+      map.set(thread, row);
     }
+
     return row;
   };
 

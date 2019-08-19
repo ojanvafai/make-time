@@ -42,7 +42,8 @@ export abstract class ThreadListModel extends Model {
   private haveEverProcessedSnapshot_?: boolean;
   private offices_?: string;
 
-  constructor(protected settings_: Settings) {
+  constructor(
+      protected settings_: Settings, private forceTriageIndex_?: number) {
     super();
 
     this.timerCountsDown = false;
@@ -174,7 +175,8 @@ export abstract class ThreadListModel extends Model {
         continue;
 
       this.perSnapshotThreads_[i] = [];
-      this.processSnapshot_(snapshot, this.perSnapshotThreads_[i]);
+      this.processSnapshot_(
+          snapshot, this.perSnapshotThreads_[i], i === this.forceTriageIndex_);
       didProcess = true;
     }
     this.snapshotsToProcess_ = [];
@@ -194,12 +196,13 @@ export abstract class ThreadListModel extends Model {
   }
 
   private processSnapshot_(
-      snapshot: firebase.firestore.QuerySnapshot, output: Thread[]) {
+      snapshot: firebase.firestore.QuerySnapshot, output: Thread[],
+      forceTriage: boolean) {
     this.haveEverProcessedSnapshot_ = true;
 
     for (let doc of snapshot.docs) {
       let data = doc.data() as ThreadMetadata;
-      let thread = Thread.create(doc.id, data as ThreadMetadata);
+      let thread = Thread.create(doc.id, data as ThreadMetadata, forceTriage);
       output.push(thread);
     };
   }

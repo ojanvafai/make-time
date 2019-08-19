@@ -9,7 +9,9 @@ import {ProcessedMessageData} from './ProcessedMessageData.js';
 import {QueueNames} from './QueueNames.js';
 import {SendAs} from './SendAs.js';
 
+// TODO: Clear out old threads so these caches don't grow indefinitely.
 let memoryCache_: Map<string, Thread> = new Map();
+let forceTriageMemoryCache_: Map<string, Thread> = new Map();
 
 interface SerializedMessages {
   historyId: string;
@@ -242,12 +244,28 @@ export class Thread extends EventTarget {
   private actionInProgress_?: boolean;
   private actionInProgressTimestamp_?: number;
 
-  constructor(public id: string, private metadata_: ThreadMetadata) {
+  constructor(
+      public id: string, private metadata_: ThreadMetadata,
+      private forceTriage_: boolean) {
     super();
 
     this.processed_ = new ProcessedMessageData();
     this.queueNames_ = QueueNames.create();
     this.sentMessageIds_ = [];
+  }
+
+  // Ensure there's only one Thread per id so that we can use reference
+  // equality.
+  static create(id: string, metadata: ThreadMetadata, forceTriage?: boolean) {
+    let cache = forceTriage ? forceTriageMemoryCache_ : memoryCache_;
+    let entry = cache.get(id);
+    if (entry) {
+      entry.metadata_ = metadata;
+    } else {
+      entry = new Thread(id, metadata, !!forceTriage);
+      cache.set(id, entry);
+    }
+    return entry;
   }
 
   static comparePriorities(a: Priority, b: Priority) {
@@ -256,13 +274,16 @@ export class Thread extends EventTarget {
     return aOrder - bOrder;
   }
 
-
   private messageCount_() {
     let count = this.metadata_.messageIds.length + this.sentMessageIds_.length;
     assert(
         count,
         `Can't modify thread before message details have loaded. Please wait and try again.`);
     return count;
+  }
+
+  forceTriage() {
+    return this.forceTriage_;
   }
 
   oldMetadataState(updates: ThreadMetadataUpdate) {
@@ -865,19 +886,6 @@ export class Thread extends EventTarget {
     this.processed_.process(historyId, messages);
     await this.generateMetadataFromGmailState_(historyId, messages);
     await this.serializeMessageData_(historyId, messages);
-  }
-
-  // Ensure there's only one Thread per id so that we can use reference
-  // equality.
-  static create(id: string, metadata: ThreadMetadata) {
-    let entry = memoryCache_.get(id);
-    if (entry) {
-      entry.metadata_ = metadata;
-    } else {
-      entry = new Thread(id, metadata);
-      memoryCache_.set(id, entry);
-    }
-    return entry;
   }
 
   private getKey_(weekNumber: number, threadId: string) {

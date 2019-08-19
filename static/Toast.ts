@@ -30,7 +30,7 @@ export class Toast extends HTMLElement {
   connectedCallback() {
     let animation = this.animate(
         [
-          {opacity: '0.95'},
+          {opacity: '0.8'},
           {opacity: '0'},
         ],
         {

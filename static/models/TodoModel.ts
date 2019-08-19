@@ -20,7 +20,12 @@ export class TodoModel extends ThreadListModel {
   private faviconCount_: number;
 
   constructor(settings_: Settings) {
-    super(settings_);
+    // TODO: Fix this to be less gross. The forceTriageIndex should match the
+    // index of the hasLabel query in the setQueries call below.
+    // Instead make it so that setQuery only takes a single query and there's an
+    // explict setForceTriageQuery.
+    let forceTriageIndex = 1;
+    super(settings_, forceTriageIndex);
     this.sortCount_ = 0;
     this.isTriage_ = false;
     this.faviconCount_ = 0;
@@ -80,7 +85,7 @@ export class TodoModel extends ThreadListModel {
   }
 
   private shouldShowTriageThread_(thread: Thread) {
-    if (!thread.needsTriage())
+    if (!thread.needsTriage() || (this.isTriage_ && !thread.forceTriage()))
       return false;
 
     let vacation = this.settings_.get(ServerStorage.KEYS.VACATION);
@@ -131,7 +136,7 @@ export class TodoModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    if (this.isTriage_ || thread.needsTriage())
+    if (thread.forceTriage())
       return TodoModel.getTriageGroupName(this.settings_, thread);
 
     let priority = notNull(thread.getPriority());
@@ -198,13 +203,10 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected compareThreads(a: Thread, b: Thread) {
-    if (this.isTriage_)
-      return TodoModel.compareTriageThreads(this.settings_, a, b);
-
-    if (a.needsTriage() || b.needsTriage()) {
-      if (a.needsTriage() && b.needsTriage())
+    if (a.forceTriage() || b.forceTriage()) {
+      if (a.forceTriage() && b.forceTriage())
         return TodoModel.compareTriageThreads(this.settings_, a, b);
-      return a.needsTriage() ? -1 : 1;
+      return a.forceTriage() ? -1 : 1;
     }
 
     let aPriority = defined(a.getPriorityId());
