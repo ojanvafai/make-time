@@ -9,7 +9,6 @@ import {Thread} from '../Thread.js';
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
 
 const NEEDS_TRIAGE_SUFFIX = ' - needs triage';
-const UNTRIAGED_NAME = 'Untriaged';
 export const RETRIAGE_LABEL_NAME = 'Retriage';
 export const NO_OFFICES = 'none';
 export const IMPORTANT_NAME = 'important';
@@ -131,12 +130,9 @@ export class TodoModel extends ThreadListModel {
     return notNull(thread.getLabel());
   }
 
-  getGroupName(thread: Thread) {
-    if (this.isTriage_)
+  getGroupName(thread: Thread, secondary?: boolean) {
+    if (this.isTriage_ || secondary === false)
       return TodoModel.getTriageGroupName(this.settings_, thread);
-
-    if (thread.needsTriage())
-      return UNTRIAGED_NAME;
 
     let priority = notNull(thread.getPriority());
     if (thread.needsMessageTriage())
