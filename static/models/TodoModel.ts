@@ -130,8 +130,8 @@ export class TodoModel extends ThreadListModel {
     return notNull(thread.getLabel());
   }
 
-  getGroupName(thread: Thread, secondary?: boolean) {
-    if (this.isTriage_ || secondary === false)
+  getGroupName(thread: Thread) {
+    if (this.isTriage_ || thread.needsTriage())
       return TodoModel.getTriageGroupName(this.settings_, thread);
 
     let priority = notNull(thread.getPriority());
