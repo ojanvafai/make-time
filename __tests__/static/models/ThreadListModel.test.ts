@@ -1,10 +1,13 @@
 import 'document-register-element'
 import 'css-paint-polyfill'
 
+import {firebase} from '../../../public/third_party/firebasejs/5.8.2/firebase-app.js';
 import {firestoreUserCollection} from '../../../static/BaseMain.js';
 import {ThreadListModel} from '../../../static/models/ThreadListModel';
+import {ServerStorage} from '../../../static/ServerStorage.js';
+import {Settings} from '../../../static/Settings.js';
 import {Thread} from '../../../static/Thread';
-import { MUTE_ACTION } from '../../../static/ThreadActions.js';
+import {MUTE_ACTION} from '../../../static/ThreadActions.js';
 
 const fs = require('fs');
 const util = require('util');
@@ -35,12 +38,16 @@ class ThreadFactory {
 const threadFactory = new ThreadFactory();
 
 class TestThreadListModel extends ThreadListModel {
+  constructor() {
+    super(new Settings(new ServerStorage()));
+  }
   public getGroupName() {
     return 'test';
   }
   public compareThreads(_a: Thread, _b: Thread) {
     return 0;
   }
+  setQuery(query: firebase.firestore.Query) {}
 
   public setFakeQuery() {
     console.log(JSON.stringify(firestoreUserCollection()));
