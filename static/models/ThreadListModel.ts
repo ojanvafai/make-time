@@ -61,8 +61,8 @@ export abstract class ThreadListModel extends Model {
     return this.haveEverProcessedSnapshot_;
   }
 
-  allowViewMessages() {
-    return true;
+  isTriage() {
+    return false;
   }
 
   postProcessThreads(_threads: Thread[]) {}

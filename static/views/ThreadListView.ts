@@ -16,7 +16,9 @@ import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 
 import {AppShell} from './AppShell.js';
-import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, SelectRowEvent, ThreadRow} from './ThreadRow.js';
+import {BaseThreadRowGroup, SelectRowEvent} from './BaseThreadRowGroup.js';
+import {MetaThreadRowGroup} from './MetaThreadRowGroup.js';
+import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
@@ -213,6 +215,7 @@ export class ThreadListView extends View {
   private isVisibleObserver_: IntersectionObserver;
   private isHiddenObserver_: IntersectionObserver;
   private updateVisibilityTimer_?: number;
+  private untriagedContainer_?: MetaThreadRowGroup;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
       [REPEAT_ACTION, ...DUE_ACTIONS];
@@ -464,7 +467,8 @@ export class ThreadListView extends View {
   }
 
   private getThreadRow_(thread: Thread) {
-    let map = thread.forceTriage() ? this.triageOverrideThreadToRow_ : this.threadToRow_;
+    let map = thread.forceTriage() ? this.triageOverrideThreadToRow_ :
+                                     this.threadToRow_;
 
     let row = map.get(thread);
     if (!row) {
@@ -591,7 +595,7 @@ export class ThreadListView extends View {
   private addTimer_() {
     // Having a timer when you can only read the subject and the snippet is not
     // helpful and adds visual clutter.
-    if (!this.model_.allowViewMessages())
+    if (this.model_.isTriage())
       return;
 
     let row = assert(this.renderedRow_);
@@ -615,15 +619,15 @@ export class ThreadListView extends View {
 
   private getRows_() {
     let rows = [];
-    for (let group of this.rowGroupContainer_.children as
-         HTMLCollectionOf<ThreadRowGroup>) {
+    let groups = this.getGroups_();
+    for (let group of groups) {
       rows.push(group.getRows());
     }
     return rows.flat();
   }
 
   private getFirstRow_() {
-    let group = this.rowGroupContainer_.firstChild as ThreadRowGroup;
+    let group = this.rowGroupContainer_.firstChild as BaseThreadRowGroup;
     return group && group.getFirstRow();
   }
 
@@ -635,11 +639,17 @@ export class ThreadListView extends View {
     this.render_();
   }
 
-  mergedGroupName_(thread: Thread) {
+  private mergedGroupName_(thread: Thread) {
     let originalGroupName = this.model_.getGroupName(thread);
     return this.settings_.getQueueSettings().getMappedGroupName(
                originalGroupName) ||
         originalGroupName;
+  }
+
+  private getGroups_() {
+    let groups =
+        (Array.from(this.rowGroupContainer_.children) as BaseThreadRowGroup[]);
+    return groups.map(x => x.getSubGroups()).flat() as ThreadRowGroup[];
   }
 
   private renderFrame_() {
@@ -660,24 +670,19 @@ export class ThreadListView extends View {
     let newGroupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
     let removedRows = [];
 
+    let oldGroups = this.getGroups_();
+    let groupMap = new Map();
     // Remove groups that no longer exist.
-    for (let group of this.rowGroupContainer_.children as
-         HTMLCollectionOf<ThreadRowGroup>) {
-      if (!newGroupNames.has(group.name)) {
+    for (let group of oldGroups) {
+      if (newGroupNames.has(group.name)) {
+        groupMap.set(group.name, {group: group, rows: []});
+      } else {
         group.remove();
         this.isVisibleObserver_.unobserve(group);
         this.isHiddenObserver_.unobserve(group);
         removedRows.push(...group.getRows());
       }
     }
-
-    let groupMap = new Map(
-        (Array.from(this.rowGroupContainer_.children) as ThreadRowGroup[])
-            .map(x => {
-              return [
-                x.name, {group: x, rows: []}
-              ] as [string, {group: ThreadRowGroup, rows: ThreadRow[]}];
-            }));
 
     // Threads should be in sorted order already and all threads in the
     // same queue should be adjacent to each other.
@@ -690,10 +695,24 @@ export class ThreadListView extends View {
         let allowedCount = this.model_.allowedCount(groupName);
         let group = new ThreadRowGroup(groupName, allowedCount);
 
-        if (previousEntry)
-          previousEntry.group.after(group);
-        else
-          this.rowGroupContainer_.prepend(group);
+        if (previousEntry) {
+          if (!this.model_.isTriage() && !thread.forceTriage() &&
+              previousEntry.rows[0].thread.forceTriage()) {
+            this.rowGroupContainer_.append(group);
+          } else {
+            previousEntry.group.after(group);
+          }
+        } else {
+          if (!this.model_.isTriage() && thread.forceTriage()) {
+            if (!this.untriagedContainer_) {
+              this.untriagedContainer_ = new MetaThreadRowGroup('Untriaged');
+              this.rowGroupContainer_.prepend(this.untriagedContainer_);
+            }
+            this.untriagedContainer_.push(group);
+          } else {
+            this.rowGroupContainer_.prepend(group);
+          }
+        }
 
         entry = {group: group, rows: []};
         groupMap.set(groupName, entry);
@@ -804,8 +823,7 @@ export class ThreadListView extends View {
     if (!this.model_.showFinalVersion())
       return;
 
-    let groups =
-        Array.from(this.rowGroupContainer_.children) as ThreadRowGroup[];
+    let groups = this.getGroups_();
     for (let group of groups) {
       let rows = Array.from(group.getRows()).reverse();
       let hasHitFinalVersionRow = false;
@@ -860,7 +878,7 @@ export class ThreadListView extends View {
   }
 
   private prerender_() {
-    if (!this.model_.allowViewMessages())
+    if (this.model_.isTriage())
       return;
 
     let row;
@@ -1202,7 +1220,7 @@ export class ThreadListView extends View {
     if (toast)
       AppShell.addToFooter(toast);
 
-    if (!this.model_.allowViewMessages()) {
+    if (this.model_.isTriage()) {
       this.renderOneWithoutMessages_();
       return;
     }
@@ -1299,7 +1317,7 @@ export class ThreadListView extends View {
     reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActions_());
 
     reply.addEventListener(ReplyScrollEvent.NAME, async () => {
-      if (!this.renderedRow_ || !this.model_.allowViewMessages())
+      if (!this.renderedRow_ || this.model_.isTriage())
         return;
 
       let row = this.renderedRow_;

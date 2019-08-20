@@ -75,8 +75,8 @@ export class TodoModel extends ThreadListModel {
     this.timerCountsDown = isTriage;
   }
 
-  allowViewMessages() {
-    return !this.isTriage_;
+  isTriage() {
+    return this.isTriage_
   }
 
   handleSortChanged_() {

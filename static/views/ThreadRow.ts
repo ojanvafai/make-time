@@ -4,6 +4,7 @@ import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
 import {ALL, NONE, SOME} from '../SelectBox.js';
 import {InProgressChangedEvent, Thread, UpdatedEvent} from '../Thread.js';
 
+import {SelectRowEvent} from './BaseThreadRowGroup.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 
 let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -39,13 +40,6 @@ export class FocusRowEvent extends Event {
   static NAME = 'focus-row';
   constructor() {
     super(FocusRowEvent.NAME, {bubbles: true});
-  }
-}
-
-export class SelectRowEvent extends Event {
-  static NAME = 'select-row';
-  constructor(public selected: boolean, public shiftKey: boolean) {
-    super(SelectRowEvent.NAME, {bubbles: true});
   }
 }
 
@@ -578,6 +572,14 @@ export class ThreadRow extends HTMLElement {
 
   get checked() {
     return this.checkBox_.isFullySelected();
+  }
+
+  hasChecked() {
+    return this.checked;
+  }
+
+  hasUnchecked() {
+    return !this.checked;
   }
 
   setChecked(value: boolean, rangeSelect?: boolean) {
