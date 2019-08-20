@@ -91,7 +91,7 @@ router.add('/compose', async (params) => {
 router.add('/track', async (_params) => {
   await setView(VIEW.Tracking);
 });
-router.add('/', routeToTriage);
+router.add('/', routeToDefault);
 router.add('/triage', routeToTriage);
 router.add('/todo', async (params) => {
   await setView(VIEW.Todo, params);
@@ -105,6 +105,11 @@ router.add('/calendar', async (_parans) => {
 router.add('/settings', async (_parans) => {
   await setView(VIEW.Settings);
 });
+
+async function routeToDefault(params: any) {
+  let view = VIEW[localStorage.lastThreadListView as keyof typeof VIEW];
+  await setView(view || VIEW.Triage, params);
+}
 
 async function routeToTriage(params: any) {
   await setView(VIEW.Triage, params);
@@ -222,8 +227,10 @@ async function setView(
   timeSinceViewSet = Date.now();
   previousViewType = viewType;
 
-  if (viewType === VIEW.Todo || viewType === VIEW.Triage)
+  if (viewType === VIEW.Todo || viewType === VIEW.Triage) {
+    localStorage.lastThreadListView = VIEW[viewType];
     showViewAnalytics();
+  }
 
   let thisViewGeneration = ++viewGeneration;
 
