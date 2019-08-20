@@ -1,5 +1,5 @@
 export class Toast extends HTMLElement {
-  constructor(message: string) {
+  constructor(...message: (string|Node)[]) {
     super();
 
     this.style.cssText = `
@@ -13,6 +13,7 @@ export class Toast extends HTMLElement {
       align-items: center;
       justify-content: center;
       pointer-events: none;
+      opacity: 0.85;
     `;
 
     let text = document.createElement('div');
@@ -23,14 +24,14 @@ export class Toast extends HTMLElement {
       border: 1px solid var(--border-and-hover-color);
       color: var(--inverted-text-color);
     `;
-    text.append(message);
+    text.append(...message);
     this.append(text);
   }
 
   connectedCallback() {
     let animation = this.animate(
         [
-          {opacity: '0.8'},
+          {opacity: '0.85'},
           {opacity: '0'},
         ],
         {

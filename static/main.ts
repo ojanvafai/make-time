@@ -210,14 +210,27 @@ function flushViewAnalytics() {
 function showViewAnalytics() {
   let output = [];
   for (let entry of Object.entries(timePerView)) {
-    output.push(`${VIEW[(entry[0] as unknown as VIEW)]}: ${
-        (entry[1] / 1000 / 60).toFixed(1)} minutes`);
+    let div = document.createElement('div');
+    let right = document.createElement('div');
+    right.style.cssFloat = 'right';
+    right.style.marginLeft = '8px';
+    right.append(`${(entry[1] / 1000 / 60).toFixed(1)} mins`);
+    div.append(VIEW[(entry[0] as unknown as VIEW)], right);
+    output.push(div);
   }
   if (!output.length)
     return;
 
-  let toast = new Toast(`Time spent today:\n\n${output.join('\n')}`);
+  let header = document.createElement('div');
+  header.style.cssText = `
+    text-align: center;
+    margin-bottom: 4px;
+  `;
+  header.append('Time spent today')
+
+  let toast = new Toast(header, ...output);
   toast.style.whiteSpace = 'pre-wrap';
+  toast.style.fontSize = '16px';
   document.body.append(toast);
 }
 
