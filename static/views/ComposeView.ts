@@ -1,6 +1,6 @@
 import {Action, ActionList, Actions, registerActions} from '../Actions.js';
 import {AddressCompose} from '../AddressCompose.js';
-import {createLink, defined, getMyEmail, notNull, serializeAddress} from '../Base.js';
+import {createLink, defined, getMyEmail, isMobileUserAgent, notNull, serializeAddress} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {EmailCompose, INSERT_LINK} from '../EmailCompose.js';
 import {MailProcessor} from '../MailProcessor.js';
@@ -336,7 +336,8 @@ export class ComposeView extends View {
       // Intentionally only autoclose the window if the sent toolbar is still
       // visible. window.close only works when there's nothing in the back
       // history unfortunately.
-      if (!preventCloseWindow)
+      // Can't do this on mobile due to crbug.com/988330.
+      if (!preventCloseWindow && !isMobileUserAgent())
         window.close();
 
       this.sentToolbar_.remove();
