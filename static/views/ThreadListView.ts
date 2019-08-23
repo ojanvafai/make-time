@@ -216,6 +216,7 @@ export class ThreadListView extends View {
   private isHiddenObserver_: IntersectionObserver;
   private updateVisibilityTimer_?: number;
   private untriagedContainer_?: MetaThreadRowGroup;
+  private hasHadAction_?: boolean;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
       [REPEAT_ACTION, ...DUE_ACTIONS];
@@ -724,8 +725,9 @@ export class ThreadListView extends View {
 
       entry.rows.push(this.getThreadRow_(thread));
 
-      if (!previousEntry)
-        entry.group.setCollapsed(false);
+      if (!this.hasHadAction_)
+        entry.group.setCollapsed(true);
+
       previousEntry = entry;
     }
 
@@ -736,7 +738,21 @@ export class ThreadListView extends View {
         removedRows.push(...entry.group.setRows(entry.rows));
     }
 
+    if (this.untriagedContainer_ &&
+        !this.untriagedContainer_.getSubGroups().length) {
+      this.untriagedContainer_.remove();
+      this.untriagedContainer_ = undefined;
+    }
+
     this.handleRowsRemoved_(removedRows, oldRows);
+
+    let firstGroup = this.rowGroupContainer_.firstChild as BaseThreadRowGroup;
+    if (firstGroup) {
+      // If it's a meta group, then expand both the meta group and it's first
+      // item.
+      firstGroup.setCollapsed(false);
+      firstGroup.getSubGroups()[0].setCollapsed(false);
+    }
 
     this.updateFinalVersionRendering_();
 
@@ -1044,6 +1060,8 @@ export class ThreadListView extends View {
   }
 
   async takeAction(action: Action) {
+    this.hasHadAction_ = true;
+
     switch (action) {
       case UNDO_ACTION:
         this.model_.undoLastAction();

@@ -90,21 +90,21 @@ export abstract class BaseThreadRowGroup extends HTMLElement {
   protected abstract getItems(): Item[];
   abstract getRows(): ThreadRow[];
   abstract getFirstRow(): ThreadRow|null;
-  abstract getSubGroups(): Item[];
+  abstract getSubGroups(): BaseThreadRowGroup[];
 
   private updateSelectBox_() {
     // This needs to look at all the row groups
     // let rows = this.getRows();
     let hasChecked = false;
     let hasUnchecked = false;
-    let groups = this.getItems();
-    for (let group of groups) {
+    let items = this.getItems();
+    for (let item of items) {
       if (hasChecked && hasUnchecked)
         break;
       if (!hasChecked)
-        hasChecked = group.hasChecked();
+        hasChecked = item.hasChecked();
       if (!hasUnchecked)
-        hasUnchecked = group.hasUnchecked();
+        hasUnchecked = item.hasUnchecked();
     }
 
     let select;
