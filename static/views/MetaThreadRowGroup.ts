@@ -8,6 +8,11 @@ export class MetaThreadRowGroup extends BaseThreadRowGroup {
     super(groupName_);
 
     this.rowContainer_ = document.createElement('div');
+    this.rowContainer_.style.cssText = `
+      margin-left: 18px;
+      padding-left: 6px;
+      border-left: 1px solid var(--midpoint-color);
+    `;
     this.append(this.rowContainer_);
     this.render();
   }
