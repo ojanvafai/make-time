@@ -748,6 +748,10 @@ export class Thread extends EventTarget {
     // thread from the network and fetching the indivudal messages.
     if (!this.processed_.messages.length) {
       let data = await this.fetchFromNetwork_();
+      // This happens when a thread disappears from gmail but mktime still knows
+      // about it.
+      if (!data)
+        return;
       let historyId = defined(data.historyId);
       let messages = defined(data.messages);
       await this.saveMessageState_(historyId, messages);
@@ -876,9 +880,27 @@ export class Thread extends EventTarget {
         id: this.id,
       })
     }
-    let resp = await this.fetchPromise_;
-    this.fetchPromise_ = null;
-    return resp.result;
+
+    let resp;
+    try {
+      resp = await this.fetchPromise_;
+      return resp.result;
+    } catch (e) {
+      // Threads sometimes disappear from gmail. Hard to figure out why. 404
+      // implies it's gone gone, so remove it from the views in maketime so it
+      // doesn't spew errors indefinitely. Clearing metadata is kind of scary,
+      // but not sure what else to do as this appears to be gmail bugs.
+      if (e.status === 404) {
+        // Intentionaly don't pass the removeFromInbox argument as we want to
+        // leave the labelId on it should gmail decide to show the thread again
+        // (not sure if that's even possible).
+        let update = Thread.clearedMetadata_();
+        await Thread.metadataCollection().doc(this.id).update(update);
+      }
+      return null;
+    } finally {
+      this.fetchPromise_ = null;
+    }
   }
 
   async saveMessageState_(
