@@ -14,17 +14,19 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
   private wasInViewport_: boolean;
   private rows_?: ThreadRow[];
 
-  constructor(groupName: string, private allowedCount_?: number) {
+  constructor(
+      groupName: string, private allowedCount_: number, isSubGroup: boolean) {
     super(groupName);
     // Use negative margin and width to make is so that the rounded corners are
     // clipped when filling the width of the window.
     this.style.cssText = `
       display: block;
-      margin-bottom: 12px;
-      margin-top: 12px;
       border-radius: 3px;
       background-color: var(--nested-background-color);
     `;
+
+    if (!isSubGroup)
+      this.style.margin = '12px 0';
 
     this.wasInViewport_ = true;
     this.inViewport_ = false;
@@ -172,13 +174,11 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
   }
 
   selectRows(select: boolean) {
-    if (this.collapsed_)
-      return;
-
     this.selectBox_.select(select ? ALL : NONE);
     let rows = this.getRows();
     for (let child of rows) {
-      child.setChecked(select);
+      if (child.checked !== select)
+        child.setChecked(select);
       if (!select)
         child.clearFocusImpliesSelected();
     }

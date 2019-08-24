@@ -50,6 +50,9 @@ export class SelectBox extends HTMLElement {
     });
 
     this.addEventListener('click', e => {
+      if (this.selected_ === DISABLED)
+        return;
+
       this.select(this.selected_ === NONE ? ALL : NONE);
       this.dispatchEvent(new SelectChangedEvent(e.shiftKey));
     });

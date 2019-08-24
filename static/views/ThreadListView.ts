@@ -694,7 +694,8 @@ export class ThreadListView extends View {
       // Insertion sort insert new groups
       if (!entry) {
         let allowedCount = this.model_.allowedCount(groupName);
-        let group = new ThreadRowGroup(groupName, allowedCount);
+        let isSubGroup = !this.model_.isTriage() && thread.forceTriage();
+        let group = new ThreadRowGroup(groupName, allowedCount, isSubGroup);
 
         if (previousEntry) {
           if (!this.model_.isTriage() && !thread.forceTriage() &&
@@ -704,7 +705,7 @@ export class ThreadListView extends View {
             previousEntry.group.after(group);
           }
         } else {
-          if (!this.model_.isTriage() && thread.forceTriage()) {
+          if (isSubGroup) {
             if (!this.untriagedContainer_) {
               this.untriagedContainer_ = new MetaThreadRowGroup('Untriaged');
               this.rowGroupContainer_.prepend(this.untriagedContainer_);

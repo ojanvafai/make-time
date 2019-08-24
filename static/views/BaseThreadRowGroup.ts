@@ -123,6 +123,9 @@ export abstract class BaseThreadRowGroup extends HTMLElement {
     if (!force && this.manuallyCollapsed_)
       return;
 
+    if (collapsed)
+      this.selectRows(false);
+
     this.collapsed_ = collapsed;
     this.render();
   }

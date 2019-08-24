@@ -39,8 +39,6 @@ export class MetaThreadRowGroup extends BaseThreadRowGroup {
   }
 
   selectRows(select: boolean) {
-    if (this.collapsed_)
-      return;
     this.getItems().map(x => x.selectRows(select));
   }
 }
