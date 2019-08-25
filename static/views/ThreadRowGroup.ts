@@ -7,7 +7,6 @@ import {ThreadRow} from './ThreadRow.js';
 export class ThreadRowGroup extends BaseThreadRowGroup {
   private rowContainer_: HTMLElement;
   private placeholder_: HTMLElement;
-  private rowCountDisplay_: Text;
   private lastRowHeight_?: number;
   private wasCollapsed_?: boolean;
   private inViewport_: boolean;
@@ -15,8 +14,8 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
   private rows_?: ThreadRow[];
 
   constructor(
-      groupName: string, private allowedCount_: number, isSubGroup: boolean) {
-    super(groupName);
+      groupName: string, allowedCount: number, isSubGroup: boolean) {
+    super(groupName, allowedCount);
     // Use negative margin and width to make is so that the rounded corners are
     // clipped when filling the width of the window.
     this.style.cssText = `
@@ -31,9 +30,6 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     this.wasInViewport_ = true;
     this.inViewport_ = false;
     this.collapsed_ = true;
-
-    this.rowCountDisplay_ = new Text();
-    this.groupNameContainer_.append(this.rowCountDisplay_);
 
     this.rowContainer_ = document.createElement('div');
     this.placeholder_ = document.createElement('div');
@@ -62,20 +58,6 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
 
   hasUnchecked() {
     return this.selectBox_.selected() !== ALL;
-  }
-
-  private updateRowCount_(count: number, collapsed: boolean) {
-    let overLimit = this.allowedCount_ && count > this.allowedCount_;
-    this.groupNameContainer_.style.color = overLimit ? 'red' : '';
-
-    let text;
-    if (overLimit)
-      text = ` (${count}/${this.allowedCount_})`;
-    else if (collapsed)
-      text = ` (${count})`;
-    else
-      text = '';
-    this.rowCountDisplay_.textContent = text;
   }
 
   getRows() {
@@ -137,7 +119,7 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     }
 
     this.wasCollapsed_ = this.collapsed_;
-    this.updateRowCount_(this.rows_.length, this.collapsed_);
+    this.updateRowCount_();
 
     this.expander_.textContent = '';
     this.expander_.append(this.collapsed_ ? expandArrow() : collapseArrow());

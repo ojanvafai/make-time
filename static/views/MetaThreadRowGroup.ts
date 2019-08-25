@@ -41,6 +41,7 @@ export class MetaThreadRowGroup extends BaseThreadRowGroup {
   render() {
     super.render();
     this.rowContainer_.style.display = this.collapsed_ ? 'none' : '';
+    this.updateRowCount_();
   }
 
   selectRows(select: boolean) {

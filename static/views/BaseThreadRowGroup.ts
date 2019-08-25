@@ -21,11 +21,12 @@ interface Item {
 export abstract class BaseThreadRowGroup extends HTMLElement {
   protected selectBox_: SelectBox;
   protected groupNameContainer_: HTMLElement;
+  protected rowCountDisplay_: Text;
   protected expander_: HTMLElement;
   protected collapsed_: boolean;
   private manuallyCollapsed_: boolean;
 
-  constructor(public name: string) {
+  constructor(public name: string, private allowedCount_?: number) {
     super();
     // Use negative margin and width to make is so that the rounded corners are
     // clipped when filling the width of the window.
@@ -71,7 +72,9 @@ export abstract class BaseThreadRowGroup extends HTMLElement {
       font-size: 12px;
     `;
 
-    this.groupNameContainer_.append(this.expander_, name);
+    this.rowCountDisplay_ = new Text();
+    this.groupNameContainer_.append(
+        this.expander_, name, this.rowCountDisplay_);
 
     let header = document.createElement('div');
     header.style.cssText = `
@@ -91,6 +94,21 @@ export abstract class BaseThreadRowGroup extends HTMLElement {
   abstract getRows(): ThreadRow[];
   abstract getFirstRow(): ThreadRow|null;
   abstract getSubGroups(): BaseThreadRowGroup[];
+
+  protected updateRowCount_() {
+    let count = this.getRows().length;
+    let overLimit = this.allowedCount_ && count > this.allowedCount_;
+    this.groupNameContainer_.style.color = overLimit ? 'red' : '';
+
+    let text;
+    if (overLimit)
+      text = ` (${count}/${this.allowedCount_})`;
+    else if (this.collapsed_)
+      text = ` (${count})`;
+    else
+      text = '';
+    this.rowCountDisplay_.textContent = text;
+  }
 
   private updateSelectBox_() {
     // This needs to look at all the row groups
