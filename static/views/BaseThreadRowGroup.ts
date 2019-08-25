@@ -51,7 +51,7 @@ export abstract class BaseThreadRowGroup extends HTMLElement {
       font-weight: bold;
       font-size: 18px;
       flex: 1;
-      padding: 12px 4px 12px 0;
+      padding: 12px 4px 12px 7px;
       display: flex;
       align-items: center;
       border-radius: 3px;
