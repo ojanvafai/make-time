@@ -112,7 +112,6 @@ export abstract class BaseThreadRowGroup extends HTMLElement {
 
   private updateSelectBox_() {
     // This needs to look at all the row groups
-    // let rows = this.getRows();
     let hasChecked = false;
     let hasUnchecked = false;
     let items = this.getItems();

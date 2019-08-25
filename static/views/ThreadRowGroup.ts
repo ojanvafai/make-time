@@ -119,7 +119,6 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     }
 
     this.wasCollapsed_ = this.collapsed_;
-    this.updateRowCount_();
 
     this.expander_.textContent = '';
     this.expander_.append(this.collapsed_ ? expandArrow() : collapseArrow());
@@ -151,6 +150,8 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
       row.setInViewport(this.inViewport_);
       previousRow = row;
     }
+
+    this.updateRowCount_();
 
     return removed;
   }
