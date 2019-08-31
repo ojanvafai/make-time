@@ -335,9 +335,10 @@ export class Thread extends EventTarget {
     };
 
     if (removeFromInbox) {
+      // Intentionally keep labelId so that muted threads can see if their
+      // labelId changes when new messages come in.
       update.moveToInbox = firebase.firestore.FieldValue.delete();
       update.due = firebase.firestore.FieldValue.delete();
-      update.labelId = firebase.firestore.FieldValue.delete();
     }
     return update;
   }
@@ -666,12 +667,8 @@ export class Thread extends EventTarget {
     return !!this.metadata_.throttled;
   }
 
-  getLabelId() {
-    return this.metadata_.labelId;
-  }
-
   getLabel() {
-    return getLabelName(this.queueNames_, this.getLabelId());
+    return getLabelName(this.queueNames_, this.metadata_.labelId);
   }
 
   needsTriage() {
