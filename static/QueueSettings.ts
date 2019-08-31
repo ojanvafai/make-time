@@ -8,10 +8,16 @@ export enum MergeOption {
   merge = 'Merge',
 }
 
+export enum ThrottleOption {
+  throttle = 'Throttle',
+  immediate = 'Immediate',
+}
+
 export interface QueueData {
   queue: string;
   index: number;
   merge: MergeOption;
+  throttle: ThrottleOption;
 }
 
 export interface QueueListEntry {
@@ -81,6 +87,11 @@ export class QueueSettings {
     if (!this.queueDatas_)
       return;
 
+    // Legacy queue datas don't have the throttle field set.
+    for (let queueData of Object.values(this.queueDatas_)) {
+      queueData.throttle = queueData.throttle || ThrottleOption.throttle;
+    }
+
     let datas = Object.entries(this.queueDatas_)
                     .sort(
                         (a, b) => QueueSettings.queueIndex_(a[1]) -
@@ -135,13 +146,16 @@ export class QueueSettings {
     return aIndex - bIndex;
   }
 
-  queueData_(opt_queue?: string, opt_index?: number, mergeOption?: MergeOption):
-      QueueData {
+  queueData_(
+      opt_queue?: string, opt_index?: number, mergeOption?: MergeOption,
+      throttleOption?: ThrottleOption): QueueData {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
-          // For unknown queues, put them first.
-          index: opt_index || 0, merge: mergeOption || MergeOption.separate,
-    }
+      // For unknown queues, put them first.
+      index: opt_index || 0,
+      merge: mergeOption || MergeOption.separate,
+      throttle: throttleOption || ThrottleOption.throttle,
+    };
   }
 
   queueEntry_(label: string): QueueListEntry {

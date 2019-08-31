@@ -125,7 +125,7 @@ export abstract class ThreadListModel extends Model {
   }
 
   protected shouldShowThread(thread: Thread, showQueued?: boolean) {
-    if (!showQueued && thread.isQueued())
+    if (!showQueued && (thread.isQueued() || thread.isThrottled()))
       return false;
 
     let label = thread.getLabel();

@@ -12,6 +12,7 @@ import {View} from './View.js';
 
 let FIRESTORE_KEYS = [
   ThreadMetadataKeys.blocked,
+  ThreadMetadataKeys.throttled,
   ThreadMetadataKeys.queued,
   ThreadMetadataKeys.muted,
   ThreadMetadataKeys.softMuted,
@@ -46,6 +47,7 @@ class HiddenModel extends ThreadListModel {
         return compareDates(
             notNull(b.getStuckDate()), notNull(a.getStuckDate()));
 
+      case ThreadMetadataKeys.throttled:
       case ThreadMetadataKeys.queued:
         return TodoModel.compareTriageThreads(this.settings_, a, b);
 
@@ -62,6 +64,7 @@ class HiddenModel extends ThreadListModel {
           return false;
         break;
 
+      case ThreadMetadataKeys.throttled:
       case ThreadMetadataKeys.queued:
         return super.shouldShowThread(thread, true);
     }
@@ -74,6 +77,7 @@ class HiddenModel extends ThreadListModel {
       case ThreadMetadataKeys.blocked:
         return STUCK_LABEL_NAME;
 
+      case ThreadMetadataKeys.throttled:
       case ThreadMetadataKeys.queued:
         return TodoModel.getTriageGroupName(this.settings_, thread);
 

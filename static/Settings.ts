@@ -241,11 +241,7 @@ export class Settings extends EventTarget {
       key: ServerStorage.KEYS.PRIORITY_INBOX,
       name: 'Priority inbox',
       description: `Configure how important messages are grouped.`,
-      values:
-          [
-            Settings.SINGLE_GROUP,
-            Settings.IGNORE_IMPORTANCE
-          ],
+      values: [Settings.SINGLE_GROUP, Settings.IGNORE_IMPORTANCE],
       default: Settings.SINGLE_GROUP,
     },
     {
@@ -266,6 +262,14 @@ export class Settings extends EventTarget {
       description: FINAL_VERSION_DESCRIPTION,
       type: 'checkbox',
       default: false,
+    },
+    {
+      key: ServerStorage.KEYS.THROTTLE_DURATION,
+      name: 'Untriaged frequency',
+      description:
+          `How frequently, in hours, to show untriaged threads in throttled queues.`,
+      default: 2,
+      type: 'number',
     },
     {
       key: ServerStorage.KEYS.TIMER_DURATION,

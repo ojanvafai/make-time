@@ -1,6 +1,6 @@
 import {defined, notNull} from '../Base.js';
 import {QueueNames, SnapshotEvent} from '../QueueNames.js';
-import {AllQueueDatas, MergeOption, QueueListEntry, QueueSettings} from '../QueueSettings.js';
+import {AllQueueDatas, MergeOption, QueueListEntry, QueueSettings, ThrottleOption} from '../QueueSettings.js';
 import {FiltersChangedEvent, Settings} from '../Settings.js';
 
 export class QueuesView extends HTMLElement {
@@ -162,7 +162,10 @@ export class QueuesView extends HTMLElement {
       let merge = (<HTMLSelectElement>selector.querySelector('.merge')!)
                       .selectedOptions[0]
                       .value as MergeOption;
-      output[label] = {queue, index: i + 1, merge};
+      let throttle = (<HTMLSelectElement>selector.querySelector('.throttle')!)
+                         .selectedOptions[0]
+                         .value as ThrottleOption;
+      output[label] = {queue, index: i + 1, merge, throttle};
     }
   }
 
@@ -248,6 +251,13 @@ export class QueuesView extends HTMLElement {
     mergeSelect.className = 'merge';
     mergeSelect.style.cssText = 'margin-left: 4px;';
     row.append(mergeSelect);
+
+    let throttle = queueData.data.throttle;
+    let throttleSelect =
+        this.createSelect_(Object.values(ThrottleOption), throttle);
+    throttleSelect.className = 'throttle';
+    throttleSelect.style.cssText = 'margin-left: 4px;';
+    row.append(throttleSelect);
 
     let deleteLabel = document.createElement('div');
     deleteLabel.className = 'x-button';

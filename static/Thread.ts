@@ -60,6 +60,7 @@ export interface ThreadMetadata {
   hasLabel?: boolean;
   hasPriority?: boolean;
   queued?: boolean;
+  throttled?: boolean;
   blocked?: boolean|number;
   due?: number;
   // Record whether we marked an item as overdue so we don't keep marking it
@@ -100,6 +101,7 @@ export interface ThreadMetadataUpdate {
   hasLabel?: boolean|firebase.firestore.FieldValue;
   hasPriority?: boolean|firebase.firestore.FieldValue;
   queued?: boolean|firebase.firestore.FieldValue;
+  throttled?: boolean|firebase.firestore.FieldValue;
   blocked?: boolean|number|firebase.firestore.FieldValue;
   due?: boolean|number|firebase.firestore.FieldValue;
   dueDateExpired?: boolean|firebase.firestore.FieldValue;
@@ -132,6 +134,7 @@ export enum ThreadMetadataKeys {
   hasLabel = 'hasLabel',
   hasPriority = 'hasPriority',
   queued = 'queued',
+  throttled = 'throttled',
   blocked = 'blocked',
   due = 'due',
   dueDateExpired = 'dueDateExpired',
@@ -321,6 +324,7 @@ export class Thread extends EventTarget {
       archivedByFilter: firebase.firestore.FieldValue.delete(),
       finalVersion: firebase.firestore.FieldValue.delete(),
       queued: firebase.firestore.FieldValue.delete(),
+      throttled: firebase.firestore.FieldValue.delete(),
       // Intentionally keep only the labelId and not the hasLabel so we can
       // show what label a thread came from even after it's been triaged.
       // hasLabel the latter is for deciding whether to show the thread in
@@ -658,6 +662,10 @@ export class Thread extends EventTarget {
     return !!this.metadata_.queued;
   }
 
+  isThrottled() {
+    return !!this.metadata_.throttled;
+  }
+
   getLabelId() {
     return this.metadata_.labelId;
   }
@@ -721,22 +729,6 @@ export class Thread extends EventTarget {
     } as ThreadMetadata;
     await doc.set(data);
     return data;
-  }
-
-  async setLabelAndQueued(
-      shouldQueue: boolean, label: string, hasLabel: boolean) {
-    let update: ThreadMetadataUpdate = {
-      queued: shouldQueue,
-      labelId: await this.queueNames_.getId(label),
-      hasLabel: hasLabel,
-    };
-
-    // If we're not putting the item into the triage queue, then we should leave
-    // it's blocked state untouched as it is the case where the user sent
-    // themself a new message and then immediately marked it blocked.
-    if (hasLabel)
-      update.blocked = firebase.firestore.FieldValue.delete();
-    await this.updateMetadata(update);
   }
 
   getData() {

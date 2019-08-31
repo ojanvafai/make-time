@@ -74,12 +74,14 @@ export class ServerStorage extends EventTarget {
 interface KeyTypes {
   HAS_SHOWN_FIRST_RUN: string;
   LAST_DEQUEUE_TIME: string;
+  LAST_DETHROTTLE_TIME: string;
   THEME: string;
   PRIORITY_INBOX: string;
   BACKGROUND: string;
   VACATION: string;
   FINAL_VERSION: string;
   TIMER_DURATION: string;
+  THROTTLE_DURATION: string;
   ALLOWED_PIN_COUNT: string;
   ALLOWED_MUST_DO_COUNT: string;
   ALLOWED_URGENT_COUNT: string;
@@ -93,12 +95,14 @@ interface KeyTypes {
 let keys: KeyTypes = {
   HAS_SHOWN_FIRST_RUN: 'has_shown_first_run',
   LAST_DEQUEUE_TIME: 'Last dequeue time',
+  LAST_DETHROTTLE_TIME: 'last_dethrottle_time',
   THEME: 'theme',
   PRIORITY_INBOX: 'priority_inbox',
   BACKGROUND: 'background',
   VACATION: 'vacation',
   FINAL_VERSION: 'final_version',
   TIMER_DURATION: 'timeout',
+  THROTTLE_DURATION: 'throttle_duration',
   ALLOWED_PIN_COUNT: 'allowed_pin_count',
   ALLOWED_MUST_DO_COUNT: 'allowed_must_do_count',
   ALLOWED_URGENT_COUNT: 'allowed_urgent_count',
@@ -118,6 +122,7 @@ let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.VACATION,
   keys.FINAL_VERSION,
   keys.TIMER_DURATION,
+  keys.THROTTLE_DURATION,
   keys.ALLOWED_PIN_COUNT,
   keys.ALLOWED_MUST_DO_COUNT,
   keys.ALLOWED_URGENT_COUNT,

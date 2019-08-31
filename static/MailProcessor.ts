@@ -6,7 +6,7 @@ import {ErrorLogger} from './ErrorLogger.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {QueueNames} from './QueueNames.js';
-import {QueueSettings} from './QueueSettings.js';
+import {QueueSettings, ThrottleOption} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, ruleRegexp, Settings, stringFilterMatches} from './Settings.js';
 import {TaskQueue} from './TaskQueue.js';
@@ -24,6 +24,7 @@ let SOFT_MUTE_EXPIRATION_DAYS = 7;
 
 export class MailProcessor {
   private makeTimeLabelId_?: string;
+  private queueNames_?: QueueNames;
 
   constructor(private settings_: Settings) {}
 
@@ -36,6 +37,7 @@ export class MailProcessor {
       return;
     let labels = await this.ensureLabelsExist_(MAKE_TIME_LABEL_NAME);
     this.makeTimeLabelId_ = labels[0].id;
+    this.queueNames_ = QueueNames.create();
   }
 
   private async getExistingMakeTimeLabels_() {
@@ -65,6 +67,7 @@ export class MailProcessor {
   }
 
   async process() {
+    await this.processThrottled_();
     await this.processQueues_();
     await this.syncWithGmail_();
   }
@@ -206,8 +209,6 @@ export class MailProcessor {
     let labelPrefix = `${LABEL_LABEL_NAME}/`;
     let priorityPrefix = `${PRIORITY_LABEL_NAME}/`;
 
-    let queueNames = new QueueNames();
-
     let mktimeLabelAndPriorityLabels =
         (await this.getExistingMakeTimeLabels_()).filter(x => {
           let name = defined(x.name);
@@ -248,8 +249,8 @@ export class MailProcessor {
           else if (existingLabelIds.has('MUTE'))
             removeLabelIds.push('MUTE');
 
-          let labelName =
-              `${LABEL_LABEL_NAME}/${getLabelName(queueNames, data.labelId)}`;
+          let labelName = `${LABEL_LABEL_NAME}/${
+              getLabelName(defined(this.queueNames_), data.labelId)}`;
           await this.addRemoveLabel_(
               mktimeLabelAndPriorityLabels, existingMktimeLabelIds, labelName,
               addLabelIds, removeLabelIds);
@@ -588,54 +589,77 @@ export class MailProcessor {
       return;
     }
 
-    if (!thread.isSoftMuted()) {
-      // If it already has a priority, or it's already in dequeued with a
-      // labelId, don't queue it.
-      let shouldQueue = !thread.getPriorityId() &&
-          (!thread.getLabelId() || thread.isQueued()) &&
-          (this.settings_.getQueueSettings().get(label).queue !=
-           QueueSettings.IMMEDIATE);
-
-      let makeTimeLabelId = defined(this.makeTimeLabelId_);
-      let newMessages = thread.getMessages().filter(x => {
-        let ids = x.getLabelIds()
-        return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
-      });
-      let oldMessagesWereUnread = thread.readCount() <
-          (thread.getMessages().length - newMessages.length);
-      // Skip triage if:
-      // - all the new messages have the sent label and the thread already
-      // has a priority, since you sent the messages yourself and could have
-      // retriaged at that point.
-      // - thread has unread messages and the new message didn't cause it
-      // it's label to change. If a thread doesn't have a priorityId though,
-      // then that means it's been archived and still needs to be triaged again.
-      let needsTriage =
-          (!oldMessagesWereUnread || hasNewLabel || !thread.getPriorityId()) &&
-          (newMessages.length !== 0 ||
-           !(thread.getPriorityId() || thread.isStuck()));
-
-      // TODO: Skip this if needsTriage is false? Don't want to queue thigns
-      // that don't need triage.
-      await thread.setLabelAndQueued(shouldQueue, label, needsTriage);
-    }
+    if (!thread.isSoftMuted())
+      await this.applyLabel_(thread, label, hasNewLabel);
 
     // Do this at the end to ensure that the label is set before clearing the
     // label in gmail.
     await this.addMakeTimeLabel_(thread.id);
   }
 
-  async dequeue(labelId: number) {
-    let querySnapshot = await this.metadataCollection_()
-                            .where(ThreadMetadataKeys.labelId, '==', labelId)
-                            .where(ThreadMetadataKeys.queued, '==', true)
-                            .get();
+  async applyLabel_(thread: Thread, label: string, hasNewLabel: boolean) {
+    let makeTimeLabelId = defined(this.makeTimeLabelId_);
+    let newMessages = thread.getMessages().filter(x => {
+      let ids = x.getLabelIds()
+      return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
+    });
 
+    // If all the new messages are from me, then don't mark it as needing
+    // triage.
+    if (newMessages.length === 0)
+      return;
+
+    let oldMessagesWereUnread =
+        thread.readCount() < (thread.getMessages().length - newMessages.length);
+
+    if (thread.getPriorityId() && !hasNewLabel && oldMessagesWereUnread)
+      return;
+
+    let queueSettings = this.settings_.getQueueSettings().get(label);
+    // Don't queue if it already has a priority or is in the triage queue.
+    let shouldQueue = !thread.getPriorityId() && !thread.needsTriage() &&
+        queueSettings.queue !== QueueSettings.IMMEDIATE;
+
+    // Queue durations are longer than the throttle duration, so no need to mark
+    // it as throttled if it's going to be queued. If the throttle duration is
+    // 0, then don't throttle it just to unthrottled the next update.
+    // If no filters applied and we're applying the fallback label, don't
+    // throttle that either since it may be something new and unknown.
+    let shouldThrottle = !shouldQueue && label !== Labels.Fallback &&
+        queueSettings.throttle === ThrottleOption.throttle &&
+        this.settings_.get(ServerStorage.KEYS.THROTTLE_DURATION) != 0;
+
+    let update: ThreadMetadataUpdate = {
+      labelId: await defined(this.queueNames_).getId(label),
+      hasLabel: true,
+    };
+
+    if (shouldQueue)
+      update.queued = true;
+
+    if (shouldThrottle)
+      update.throttled = shouldThrottle;
+
+    // New message putting the thread back into triage should remove it from
+    // stuck.
+    // TODO: Keep the stuck date and use a boolean to track whether a stuck
+    // thread is in the triage queue or not. That way we can show the stuck date
+    // in the UI so the user can see that they had marked it stuck.
+    if (!shouldQueue && !shouldThrottle)
+      update.blocked = firebase.firestore.FieldValue.delete();
+
+    await thread.updateMetadata(update);
+  }
+
+  async dequeue(query: firebase.firestore.Query) {
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
-        querySnapshot.docs,
+        (await query.get()).docs,
         async (doc: firebase.firestore.QueryDocumentSnapshot) => {
           await doc.ref.update({
+            hasLabel: true,
             queued: firebase.firestore.FieldValue.delete(),
+            blocked: firebase.firestore.FieldValue.delete(),
+            throttled: firebase.firestore.FieldValue.delete(),
           });
         });
   }
@@ -767,11 +791,15 @@ export class MailProcessor {
       await this.processSoftMute_();
     }
 
-    let queueNames = QueueNames.create();
     let queueDatas = this.settings_.getQueueSettings().entries();
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)
-        await this.dequeue(await queueNames.getId(queueData[0]));
+        await this.dequeue(
+            this.metadataCollection_()
+                .where(
+                    ThreadMetadataKeys.labelId,
+                    '==', await defined(this.queueNames_).getId(queueData[0]))
+                .where(ThreadMetadataKeys.queued, '==', true));
     }
   }
 
@@ -817,6 +845,28 @@ export class MailProcessor {
       days.push(QueueSettings.MONTHLY);
 
     return days;
+  }
+
+  private async processThrottled_() {
+    let storage = await getServerStorage();
+    await storage.fetch();
+    let lastDethrottleTime =
+        storage.get(ServerStorage.KEYS.LAST_DETHROTTLE_TIME);
+
+    let msPerHour = 1000 * 60 * 60;
+    let hours = (Date.now() - Number(lastDethrottleTime)) / msPerHour;
+    let throttleDuration =
+        Number(this.settings_.get(ServerStorage.KEYS.THROTTLE_DURATION));
+
+    if (hours < throttleDuration)
+      return;
+
+    await this.dequeue(this.metadataCollection_().where(
+        ThreadMetadataKeys.throttled, '==', true));
+
+    let updates: StorageUpdates = {};
+    updates[ServerStorage.KEYS.LAST_DETHROTTLE_TIME] = Date.now();
+    await storage.writeUpdates(updates);
   }
 
   private async processQueues_() {
