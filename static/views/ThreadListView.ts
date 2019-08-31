@@ -698,9 +698,10 @@ export class ThreadListView extends View {
         let group = new ThreadRowGroup(groupName, allowedCount, isSubGroup);
 
         if (previousEntry) {
-          if (!this.model_.isTriage() && !thread.forceTriage() &&
+          if (this.untriagedContainer_ && !this.model_.isTriage() &&
+              !thread.forceTriage() &&
               previousEntry.rows[0].thread.forceTriage()) {
-            this.rowGroupContainer_.append(group);
+            this.untriagedContainer_.after(group);
           } else {
             previousEntry.group.after(group);
           }
