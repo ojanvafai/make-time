@@ -73,7 +73,7 @@ export abstract class ThreadListModel extends Model {
   // once. If the unread messages were all sent by me, then consider them read
   // as well since I don't need to read messages I sent.
   private needsMessageTriage_(thread: Thread, sendAs: SendAs) {
-    return thread.needsTriage() && thread.unreadNotSentByMe(sendAs) &&
+    return this.isTriage() && thread.unreadNotSentByMe(sendAs) &&
         !thread.hasDueDate() && !thread.isStuck() && !thread.needsRetriage();
   }
 
