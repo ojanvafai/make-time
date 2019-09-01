@@ -589,7 +589,7 @@ export class MailProcessor {
       return;
     }
 
-    if (!thread.isSoftMuted())
+    if (hasNewLabel || !thread.isSoftMuted())
       await this.applyLabel_(thread, label, hasNewLabel);
 
     // Do this at the end to ensure that the label is set before clearing the
@@ -598,22 +598,26 @@ export class MailProcessor {
   }
 
   async applyLabel_(thread: Thread, label: string, hasNewLabel: boolean) {
-    let makeTimeLabelId = defined(this.makeTimeLabelId_);
-    let newMessages = thread.getMessages().filter(x => {
-      let ids = x.getLabelIds()
-      return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
-    });
+    // If a thread already has a priority ID and the label isn't changing, skip
+    // putting it back in the triage queue if the new messages were sent myself
+    // or if some of the previous messages were unread.
+    if (!hasNewLabel && thread.getPriorityId()) {
+      let makeTimeLabelId = defined(this.makeTimeLabelId_);
+      let newMessages = thread.getMessages().filter(x => {
+        let ids = x.getLabelIds()
+        return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
+      });
 
-    // If all the new messages are from me, then don't mark it as needing
-    // triage.
-    if (newMessages.length === 0)
-      return;
+      // If all the new messages are from me, then don't mark it as needing
+      // triage.
+      if (newMessages.length === 0)
+        return;
 
-    let oldMessagesWereUnread =
-        thread.readCount() < (thread.getMessages().length - newMessages.length);
-
-    if (thread.getPriorityId() && !hasNewLabel && oldMessagesWereUnread)
-      return;
+      let oldMessagesWereUnread = thread.readCount() <
+          (thread.getMessages().length - newMessages.length);
+      if (oldMessagesWereUnread)
+        return;
+    }
 
     let queueSettings = this.settings_.getQueueSettings().get(label);
     // Don't queue if it already has a priority or is in the triage queue.
@@ -629,26 +633,9 @@ export class MailProcessor {
         queueSettings.throttle === ThrottleOption.throttle &&
         this.settings_.get(ServerStorage.KEYS.THROTTLE_DURATION) != 0;
 
-    let update: ThreadMetadataUpdate = {
-      labelId: await defined(this.queueNames_).getId(label),
-      hasLabel: true,
-    };
-
-    if (shouldQueue)
-      update.queued = true;
-
-    if (shouldThrottle)
-      update.throttled = shouldThrottle;
-
-    // New message putting the thread back into triage should remove it from
-    // stuck.
-    // TODO: Keep the stuck date and use a boolean to track whether a stuck
-    // thread is in the triage queue or not. That way we can show the stuck date
-    // in the UI so the user can see that they had marked it stuck.
-    if (!shouldQueue && !shouldThrottle)
-      update.blocked = firebase.firestore.FieldValue.delete();
-
-    await thread.updateMetadata(update);
+    thread.applyLabel(
+        await defined(this.queueNames_).getId(label), shouldQueue,
+        shouldThrottle);
   }
 
   async dequeue(query: firebase.firestore.Query) {

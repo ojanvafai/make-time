@@ -565,6 +565,31 @@ export class Thread extends EventTarget {
     await this.updateMetadata({labelId: await this.queueNames_.getId(label)});
   }
 
+  async applyLabel(labelId: number, shouldQueue: boolean, shouldThrottle: boolean) {
+    let update: ThreadMetadataUpdate = {
+      labelId: labelId,
+      hasLabel: true,
+      muted: false,
+      softMuted: false,
+    };
+
+    if (shouldQueue)
+      update.queued = true;
+
+    if (shouldThrottle)
+      update.throttled = shouldThrottle;
+
+    // New message putting the thread back into triage should remove it from
+    // stuck.
+    // TODO: Keep the stuck date and use a boolean to track whether a stuck
+    // thread is in the triage queue or not. That way we can show the stuck date
+    // in the UI so the user can see that they had marked it stuck.
+    if (!shouldQueue && !shouldThrottle)
+      update.blocked = firebase.firestore.FieldValue.delete();
+
+    await this.updateMetadata(update);
+  }
+
   repeatUpdate() {
     let current = this.metadata_.repeat;
     let newRepeat;
