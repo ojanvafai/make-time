@@ -155,7 +155,7 @@ export class ThreadRow extends HTMLElement {
 
     this.inViewport_ = false;
     this.focused_ = false;
-    this.focusImpliesSelected_ = false;
+    this.focusImpliesSelected_ = true;
     this.finalVersionSkipped_ = false;
 
     this.checkBox_ = new SelectBox();
@@ -559,7 +559,7 @@ export class ThreadRow extends HTMLElement {
   }
 
   clearFocus() {
-    this.setFocus(false, false);
+    this.setFocus(false, true);
   }
 
   clearFocusImpliesSelected() {

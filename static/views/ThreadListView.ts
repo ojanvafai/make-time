@@ -664,9 +664,6 @@ export class ThreadListView extends View {
         !allThreads.includes(this.renderedRow_.thread))
       return;
 
-    let threadsInPending = allThreads.filter(x => x.actionInProgress());
-    this.updatePendingArea_(threadsInPending);
-
     let threads = allThreads.filter(x => !x.actionInProgress());
     let newGroupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
     let removedRows = [];
@@ -747,6 +744,12 @@ export class ThreadListView extends View {
     }
 
     this.handleRowsRemoved_(removedRows, oldRows);
+
+    // Have to do this after we gether the list of removedRows so that
+    // handleRowsRemoved_ gets called on the pending threads and focus is
+    // updated appropriately.
+    let threadsInPending = allThreads.filter(x => x.actionInProgress());
+    this.updatePendingArea_(threadsInPending);
 
     let firstGroup = this.rowGroupContainer_.firstChild as BaseThreadRowGroup;
     if (firstGroup) {
@@ -927,13 +930,9 @@ export class ThreadListView extends View {
       if (!row.parentNode)
         this.setFocusInternal_(row);
     } else {
-      this.clearFocus_();
+      this.autoFocusedRow_ = null;
+      this.setFocusInternal_(null);
     }
-  }
-
-  clearFocus_() {
-    this.autoFocusedRow_ = null;
-    this.setFocusInternal_(null);
   }
 
   private setFocusInternal_(row: ThreadRow|null) {
@@ -1189,20 +1188,12 @@ export class ThreadListView extends View {
   }
 
   private collectThreadsToTriage_(keepRows: boolean) {
-    if (this.renderedRow_) {
-      // Save off the row since handleRowsRemoved_ sets this.renderedRow_ in
-      // some cases.
-      let row = this.renderedRow_;
-      // Do this here so that we show the next thread instantly rather than
-      // waiting for the action to complete.
-      if (!keepRows)
-        this.handleRowsRemoved_([row], this.getRows_());
-      return [row.thread];
-    }
+    let rows = this.renderedRow_ ? [this.renderedRow_] :
+                                   this.getRows_().filter(x => x.selected);
 
-    return this.getRows_().filter(x => x.selected).map(x => {
-      // This causes the row to be removed instantely rather than waiting for
-      // the action to completely.
+    return rows.map(x => {
+      // This causes the row to be removed instantly rather than waiting for
+      // the action to complete.
       if (!keepRows)
         x.thread.setActionInProgress(true);
       return x.thread;

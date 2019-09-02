@@ -23,7 +23,7 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     `;
 
     if (!isSubGroup) {
-      this.style.backgroundColor=  'var(--nested-background-color)';
+      this.style.backgroundColor = 'var(--nested-background-color)';
       this.style.margin = '12px 0';
     }
 
@@ -168,7 +168,7 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
 
     if (select) {
       let lastRow = rows[rows.length - 1];
-      lastRow.setFocus(true, false);
+      lastRow.setFocus(true, true);
     }
   }
 }
