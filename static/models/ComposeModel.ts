@@ -13,6 +13,7 @@ export class ComposeModel extends Model {
   private inlineTo_: string;
   private subject_: string;
   private body_: string;
+  private bodyPlainText_: string;
 
   constructor() {
     super();
@@ -22,6 +23,7 @@ export class ComposeModel extends Model {
     this.inlineTo_ = '';
     this.subject_ = '';
     this.body_ = '';
+    this.bodyPlainText_ = '';
   }
 
   async update() {}
@@ -42,8 +44,9 @@ export class ComposeModel extends Model {
     this.subject_ = value;
   }
 
-  setBody(value: string) {
+  setBody(value: string, plainText: string) {
     this.body_ = value;
+    this.bodyPlainText_ = plainText;
   }
 
   // TODO: Move this to firestore so it syncs across clients.
@@ -52,11 +55,12 @@ export class ComposeModel extends Model {
   }
 
   async flush() {
-    // Intentionally only flush if the body is filled out to try to balance not
+    // Intentionally only flush if the body has non-whitespace to balance not
     // accidentally sending emails to people because you didn't notice that the
     // to field had old values but also not losing a long email if maketime
-    // crashes or something.
-    if (!this.body_) {
+    // crashes or something. Look for any whitespace so that you don't end up
+    // with stray whitespace prefilling the body when trying to autosend.
+    if (this.bodyPlainText_.match(/^\s*$/)) {
       await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
       return;
     }

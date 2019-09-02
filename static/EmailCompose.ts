@@ -421,7 +421,7 @@ export class EmailCompose extends HTMLElement {
 
     this.content.textContent = '';
     let newContent = sandboxedDom(value);
-    this.content.append(...newContent.children);
+    this.content.append(...newContent.childNodes);
 
     this.updatePlaceholder_();
     if (this.bubble_)

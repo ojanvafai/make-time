@@ -247,7 +247,7 @@ export class ComposeView extends View {
     this.model_.setTo(this.to_.value);
     this.model_.setInlineTo(this.inlineToText_());
     this.model_.setSubject(this.subject_.value);
-    this.model_.setBody(this.body_.rawValue);
+    this.model_.setBody(this.body_.rawValue, this.body_.plainText);
     if (!skipFlushToDisk)
       await this.model_.flush();
   }
