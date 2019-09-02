@@ -598,10 +598,12 @@ export class MailProcessor {
   }
 
   async applyLabel_(thread: Thread, label: string, hasNewLabel: boolean) {
+    let labelId = await defined(this.queueNames_).getId(label);
+
     // If a thread already has a priority ID and the label isn't changing, skip
     // putting it back in the triage queue if the new messages were sent myself
     // or if some of the previous messages were unread.
-    if (!hasNewLabel && thread.getPriorityId()) {
+    if (thread.getPriorityId()) {
       let makeTimeLabelId = defined(this.makeTimeLabelId_);
       let newMessages = thread.getMessages().filter(x => {
         let ids = x.getLabelIds()
@@ -610,12 +612,19 @@ export class MailProcessor {
 
       // If all the new messages are from me, then don't mark it as needing
       // triage.
-      if (newMessages.length === 0)
+      if (newMessages.length === 0) {
+        // Early return even if the thread has a new label since that's  the
+        // case of sending yourself a message and then immediately triaging it
+        // from the compose view. But apply the new label still since we don't
+        // want messages sent to yourself to not have any label.
+        if (hasNewLabel)
+          await thread.setOnlyLabel(labelId);
         return;
+      }
 
       let oldMessagesWereUnread = thread.readCount() <
           (thread.getMessages().length - newMessages.length);
-      if (oldMessagesWereUnread)
+      if (!hasNewLabel && oldMessagesWereUnread)
         return;
     }
 
@@ -633,9 +642,7 @@ export class MailProcessor {
         queueSettings.throttle === ThrottleOption.throttle &&
         this.settings_.get(ServerStorage.KEYS.THROTTLE_DURATION) != 0;
 
-    thread.applyLabel(
-        await defined(this.queueNames_).getId(label), shouldQueue,
-        shouldThrottle);
+    thread.applyLabel(labelId, shouldQueue, shouldThrottle);
   }
 
   async dequeue(query: firebase.firestore.Query) {
