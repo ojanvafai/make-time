@@ -215,6 +215,7 @@ export class Actions extends HTMLElement {
       let name = document.createElement('div');
       name.style.cssText = `
         flex: 1;
+        text-align: left;
       `;
       name.append(subAction.name);
 
