@@ -267,7 +267,7 @@ export class ThreadRow extends HTMLElement {
     this.setChecked(false);
   }
 
-  private getGroupMaybeNull_() {
+  getGroupMaybeNull() {
     let parent = this.parentElement;
     while (parent && !(parent instanceof ThreadRowGroup)) {
       parent = parent.parentElement
@@ -276,7 +276,7 @@ export class ThreadRow extends HTMLElement {
   }
 
   getGroup() {
-    let parent = this.getGroupMaybeNull_();
+    let parent = this.getGroupMaybeNull();
     return assert(
         parent,
         'Attempted to get the parent group of a ThreadRow not in a group.');
@@ -311,7 +311,7 @@ export class ThreadRow extends HTMLElement {
     if (this.thread.actionInProgress())
       return;
 
-    let group = this.getGroupMaybeNull_();
+    let group = this.getGroupMaybeNull();
     if (!group)
       return;
 

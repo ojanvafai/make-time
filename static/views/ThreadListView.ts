@@ -918,6 +918,9 @@ export class ThreadListView extends View {
 
   private setFocus_(row: ThreadRow|null) {
     if (row) {
+      let previouslyFocusedGroup =
+          this.focusedRow_ && this.focusedRow_.getGroupMaybeNull();
+
       let areAnyRowsChecked = this.getRows_().some(x => x.checked);
       let focusImpliesSelected = !areAnyRowsChecked;
       row.setFocus(true, focusImpliesSelected);
@@ -925,6 +928,14 @@ export class ThreadListView extends View {
       // bubble up to the ThreadListView, so manually set this.focusedRow_.
       if (!row.parentNode)
         this.setFocusInternal_(row);
+
+      let newGroup = row.getGroup();
+      // Ensure the focused group is actually expanded.
+      newGroup.setCollapsed(false, true);
+
+      // Collapse the previous group if focused is being moved out of it.
+      if (previouslyFocusedGroup && previouslyFocusedGroup !== newGroup)
+        previouslyFocusedGroup.setCollapsed(true, true);
     } else {
       this.autoFocusedRow_ = null;
       this.setFocusInternal_(null);
