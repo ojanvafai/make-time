@@ -860,12 +860,11 @@ export class ThreadListView extends View {
   }
 
   private handleRowsRemoved_(removedRows: ThreadRow[], oldRows: ThreadRow[]) {
-    let toast: HTMLElement|undefined;
-    let focused = this.renderedRow_ || this.focusedRow_;
-    if (focused && removedRows.find(x => x == focused)) {
+    let current = this.renderedRow_ || this.focusedRow_;
+    if (current && removedRows.find(x => x == current)) {
       // Find the next row in oldRows that isn't also removed.
       let nextRow = null;
-      let index = oldRows.findIndex(x => x == focused);
+      let index = oldRows.findIndex(x => x == current);
       for (var i = index + 1; i < oldRows.length; i++) {
         let row = oldRows[i];
         if (!removedRows.find(x => x == row)) {
@@ -875,16 +874,13 @@ export class ThreadListView extends View {
       }
 
       if (this.renderedRow_) {
-        if (nextRow) {
-          let nextGroupName = this.mergedGroupName_(nextRow.thread);
-          if (this.renderedGroupName_ !== nextGroupName)
-            toast = new Toast(`Now in: ${nextGroupName}`);
-        }
-        if (nextRow) {
-          this.setRenderedRowInternal_(nextRow);
-        } else {
+        if (!nextRow ||
+            this.renderedGroupName_ !== this.mergedGroupName_(nextRow.thread)) {
           this.transitionToThreadList_(null);
+          return;
         }
+
+        this.setRenderedRowInternal_(nextRow);
       } else {
         // Intentionally call even if nextRow is null to clear out the focused
         // row if there's nothing left to focus.
@@ -894,7 +890,7 @@ export class ThreadListView extends View {
 
     if (this.hasNewRenderedRow_) {
       this.hasNewRenderedRow_ = false;
-      this.renderOne_(toast);
+      this.renderOne_();
     }
   }
 
@@ -1223,13 +1219,11 @@ export class ThreadListView extends View {
     this.singleThreadContainer_.append(renderedRow.rendered);
   }
 
-  renderOne_(toast?: HTMLElement) {
+  renderOne_() {
     if (this.rowGroupContainer_.style.display !== 'none')
       this.transitionToSingleThread_();
 
     this.updateActions_();
-    if (toast)
-      AppShell.addToFooter(toast);
 
     if (this.model_.isTriage()) {
       this.renderOneWithoutMessages_();
