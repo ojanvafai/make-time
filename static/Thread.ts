@@ -4,6 +4,7 @@ import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddre
 import {firestoreUserCollection} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {send} from './Mail.js';
+import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {ProcessedMessageData} from './ProcessedMessageData.js';
 import {QueueNames} from './QueueNames.js';
@@ -246,6 +247,7 @@ export class Thread extends EventTarget {
   private sentMessageIds_: string[];
   private actionInProgress_?: boolean;
   private actionInProgressTimestamp_?: number;
+  private from_: HTMLElement|null;
 
   constructor(
       public id: string, private metadata_: ThreadMetadata,
@@ -255,6 +257,7 @@ export class Thread extends EventTarget {
     this.processed_ = new ProcessedMessageData();
     this.queueNames_ = QueueNames.create();
     this.sentMessageIds_ = [];
+    this.from_ = null;
   }
 
   // Ensure there's only one Thread per id so that we can use reference
@@ -466,7 +469,51 @@ export class Thread extends EventTarget {
       let messageCount = this.messageCount_();
       await this.updateMetadata(
           {readCount: messageCount, countToMarkRead: messageCount});
+      // Marking read needs to rerender the from so that the bolds are removed.
+      this.clearCachedFrom();
     }
+  }
+
+  clearCachedFrom() {
+    this.from_ = null;
+  }
+
+  updateFrom_(container: HTMLElement) {
+    let read: Set<string> = new Set();
+    let unread: Set<string> = new Set();
+
+    this.getMessages().map((x, index) => {
+      if (!x.from)
+        return;
+      let set = index >= this.readCount() ? unread : read;
+      let parsed = parseAddressList(x.from);
+      parsed.map(y => {
+        set.add(y.name || y.address.split('@')[0]);
+      });
+    });
+
+    let minify = (unread.size + read.size) > 1;
+
+    if (unread.size) {
+      let unreadContainer = document.createElement('b');
+      unreadContainer.textContent =
+          Message.minifyAddressNames(Array.from(unread), minify);
+      container.append(unreadContainer);
+    }
+
+    let onlyReadAddresses = Array.from(read).filter(x => !unread.has(x));
+    if (onlyReadAddresses.length) {
+      if (container.firstChild)
+        container.append(', ');
+
+      let readContainer = document.createElement('span');
+      readContainer.textContent =
+          Message.minifyAddressNames(onlyReadAddresses, minify);
+      container.append(readContainer);
+    }
+
+    if (!container.firstChild)
+      container.append('\xa0');
   }
 
   priorityUpdate(
@@ -565,7 +612,8 @@ export class Thread extends EventTarget {
     await this.updateMetadata({labelId: await this.queueNames_.getId(label)});
   }
 
-  async applyLabel(labelId: number, shouldQueue: boolean, shouldThrottle: boolean) {
+  async applyLabel(
+      labelId: number, shouldQueue: boolean, shouldThrottle: boolean) {
     let update: ThreadMetadataUpdate = {
       labelId: labelId,
       hasLabel: true,
@@ -725,7 +773,17 @@ export class Thread extends EventTarget {
   }
 
   getFrom() {
-    return this.processed_.getFrom();
+    if (!this.from_) {
+      let from = document.createElement('span');
+      if (!this.getMessages().length)
+        return from;
+
+      this.from_ = from;
+      this.updateFrom_(from);
+    }
+    // Clone so that different callers get different spans and don't reparent
+    // the other's spans.
+    return this.from_.cloneNode(true) as HTMLSpanElement;
   }
 
   getSnippet() {
