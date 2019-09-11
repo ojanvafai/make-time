@@ -207,7 +207,8 @@ export class ThreadListView extends View {
   private autoFocusedRow_: ThreadRow|null;
   private lastCheckedRow_: ThreadRow|null;
   private renderedGroupName_: string|null;
-  private scrollOffset_: number|undefined;
+  private renderedGroupIsTriaged_: boolean|null;
+  private scrollOffset_?: number;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
   private labelSelectTemplate_?: HTMLSelectElement;
@@ -215,7 +216,7 @@ export class ThreadListView extends View {
   private isVisibleObserver_: IntersectionObserver;
   private isHiddenObserver_: IntersectionObserver;
   private updateVisibilityTimer_?: number;
-  private untriagedContainer_?: MetaThreadRowGroup;
+  private untriagedContainer_: MetaThreadRowGroup|null;
   private hasHadAction_?: boolean;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
@@ -246,8 +247,10 @@ export class ThreadListView extends View {
     this.autoFocusedRow_ = null;
     this.lastCheckedRow_ = null;
     this.renderedGroupName_ = null;
+    this.renderedGroupIsTriaged_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
+    this.untriagedContainer_ = null;
 
     // Use a larger margin for hiding content than for creating it so that small
     // scrolls up and down don't't repeatedly doing rendering work.
@@ -740,7 +743,7 @@ export class ThreadListView extends View {
     if (this.untriagedContainer_ &&
         !this.untriagedContainer_.getSubGroups().length) {
       this.untriagedContainer_.remove();
-      this.untriagedContainer_ = undefined;
+      this.untriagedContainer_ = null;
     }
 
     this.handleRowsRemoved_(removedRows, oldRows);
@@ -860,6 +863,7 @@ export class ThreadListView extends View {
   }
 
   private handleRowsRemoved_(removedRows: ThreadRow[], oldRows: ThreadRow[]) {
+    let toast: Toast|undefined;
     let current = this.renderedRow_ || this.focusedRow_;
     if (current && removedRows.find(x => x == current)) {
       // Find the next row in oldRows that isn't also removed.
@@ -875,10 +879,14 @@ export class ThreadListView extends View {
 
       if (this.renderedRow_) {
         if (!nextRow ||
-            this.renderedGroupName_ !== this.mergedGroupName_(nextRow.thread)) {
+            this.renderedGroupIsTriaged_ !== this.rowInTriaged_(nextRow)) {
           this.transitionToThreadList_(null);
           return;
         }
+
+        let newGroupName = this.mergedGroupName_(nextRow.thread);
+        if (this.renderedGroupName_ !== newGroupName)
+          toast = new Toast(`Now in ${newGroupName}`);
 
         this.setRenderedRowInternal_(nextRow);
       } else {
@@ -890,7 +898,7 @@ export class ThreadListView extends View {
 
     if (this.hasNewRenderedRow_) {
       this.hasNewRenderedRow_ = false;
-      this.renderOne_();
+      this.renderOne_(toast);
     }
   }
 
@@ -1207,6 +1215,10 @@ export class ThreadListView extends View {
     });
   }
 
+  private rowInTriaged_(row: ThreadRow) {
+    return this.untriagedContainer_ && !this.untriagedContainer_.contains(row);
+  }
+
   setRenderedRowInternal_(row: ThreadRow|null) {
     this.hasNewRenderedRow_ = !!row;
     if (this.renderedRow_)
@@ -1215,6 +1227,7 @@ export class ThreadListView extends View {
     // This is read in renderFrame_. At that point, the rendered row will have
     // already been triaged and will no longer have a group name.
     this.renderedGroupName_ = (row ? this.mergedGroupName_(row.thread) : null);
+    this.renderedGroupIsTriaged_ = row && this.rowInTriaged_(row);
   }
 
   setRenderedRow_(row: ThreadRow|null) {
@@ -1230,11 +1243,13 @@ export class ThreadListView extends View {
     this.singleThreadContainer_.append(renderedRow.rendered);
   }
 
-  renderOne_() {
+  renderOne_(toast?: Toast) {
     if (this.rowGroupContainer_.style.display !== 'none')
       this.transitionToSingleThread_();
 
     this.updateActions_();
+    if (toast)
+      AppShell.addToFooter(toast);
 
     if (this.model_.isTriage()) {
       this.renderOneWithoutMessages_();
