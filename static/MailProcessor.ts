@@ -618,7 +618,7 @@ export class MailProcessor {
         // from the compose view. But apply the new label still since we don't
         // want messages sent to yourself to not have any label.
         if (hasNewLabel)
-          await thread.setOnlyLabel(labelId);
+          await thread.setOnlyLabel(label);
         return;
       }
 
