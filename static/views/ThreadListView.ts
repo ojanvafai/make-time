@@ -199,6 +199,7 @@ export class ThreadListView extends View {
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private triageOverrideThreadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
+  private undoRow_: ThreadRow|null;
   private noMeetingRoomEvents_?: HTMLElement;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
@@ -243,6 +244,7 @@ export class ThreadListView extends View {
     this.threadToRow_ = new WeakMap();
     this.triageOverrideThreadToRow_ = new WeakMap();
     this.focusedRow_ = null;
+    this.undoRow_ = null;
     this.renderedRow_ = null;
     this.autoFocusedRow_ = null;
     this.lastCheckedRow_ = null;
@@ -328,7 +330,7 @@ export class ThreadListView extends View {
     this.addListenerToModel(ThreadListChangedEvent.NAME, () => this.render_());
     this.addListenerToModel('undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
-      this.handleUndo_(undoEvent.thread);
+      this.undoRow_ = this.getThreadRow_(undoEvent.thread);
     });
 
     this.transitionToThreadList_(null);
@@ -493,14 +495,6 @@ export class ThreadListView extends View {
     this.model_.addEventListener(eventName, handler);
   }
 
-  private handleUndo_(thread: Thread) {
-    let row = this.getThreadRow_(thread);
-    if (this.renderedRow_)
-      this.setRenderedRow_(row);
-    else
-      this.setFocus_(row);
-  }
-
   tearDown() {
     for (let listener of this.modelListeners_) {
       this.model_.removeEventListener(listener.name, listener.handler);
@@ -661,12 +655,6 @@ export class ThreadListView extends View {
     let allThreads = this.model_.getThreads();
     let oldRows = this.getRows_();
 
-    // This happens when an undo has happened, but the model hasn't yet seen
-    // the update from the undo.
-    if (this.renderedRow_ && !oldRows.includes(this.renderedRow_) &&
-        !allThreads.includes(this.renderedRow_.thread))
-      return;
-
     let threads = allThreads.filter(x => !x.actionInProgress());
     let newGroupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
     let removedRows = [];
@@ -725,7 +713,8 @@ export class ThreadListView extends View {
         this.isHiddenObserver_.observe(group);
       }
 
-      entry.rows.push(this.getThreadRow_(thread));
+      let row = this.getThreadRow_(thread);
+      entry.rows.push(row);
 
       if (!this.hasHadAction_)
         entry.group.setCollapsed(true);
@@ -763,6 +752,14 @@ export class ThreadListView extends View {
     }
 
     this.updateFinalVersionRendering_();
+
+    if (this.undoRow_) {
+      if (this.renderedRow_)
+        this.setRenderedRow_(this.undoRow_);
+      else
+        this.setFocus_(this.undoRow_);
+      this.undoRow_ = null;
+    }
 
     if (!this.renderedRow_ && (!this.focusedRow_ || this.autoFocusedRow_)) {
       this.autoFocusedRow_ = this.getFirstRow_();
