@@ -24,7 +24,7 @@ export class TodoModel extends ThreadListModel {
     // index of the hasLabel query in the setQueries call below.
     // Instead make it so that setQuery only takes a single query and there's an
     // explict setForceTriageQuery.
-    let forceTriageIndex = 1;
+    let forceTriageIndex = 0;
     super(settings_, forceTriageIndex);
     this.sortCount_ = 0;
     this.isTriage_ = false;
@@ -33,9 +33,12 @@ export class TodoModel extends ThreadListModel {
     let threadsDoc = firestoreUserCollection().doc('threads');
     let metadataCollection = threadsDoc.collection('metadata');
 
+    // Fetch hasLabel first since that gets sorted at the top and is often what
+    // the user wants to see first.
     this.setQueries(
+        metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true),
         metadataCollection.where(ThreadMetadataKeys.hasPriority, '==', true),
-        metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true));
+    );
 
     threadsDoc.onSnapshot((snapshot) => {
       // Don't want snapshot updates to get called in response to local sort

@@ -49,11 +49,17 @@ export class TaskQueue extends EventTarget {
     this.dispatchEvent(new TaskCompletedEvent());
   }
 
-  public flush() {
+  flush() {
     return new Promise(resolve => {
       if (!this.tasks.length && this.inProgressTaskCount == 0)
         resolve();
       this.resolves.push(resolve);
     });
+  }
+
+  async cancel() {
+    this.tasks = [];
+    // Flush the in progress tasks.
+    await this.flush();
   }
 }

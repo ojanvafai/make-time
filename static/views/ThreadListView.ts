@@ -1203,6 +1203,11 @@ export class ThreadListView extends View {
     let rows = this.renderedRow_ ? [this.renderedRow_] :
                                    this.getRows_().filter(x => x.selected);
 
+    // Queue rerender so that we update the visible threadlist without waiting
+    // for firestore changes.
+    if (!keepRows && rows.length)
+      this.render_();
+
     return rows.map(x => {
       // This causes the row to be removed instantly rather than waiting for
       // the action to complete.

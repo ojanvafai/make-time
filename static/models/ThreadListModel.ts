@@ -5,6 +5,7 @@ import {Calendar} from '../calendar/Calendar.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
+import {TaskQueue} from '../TaskQueue.js';
 import {ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
 import {createDateUpdate, createUpdate, pickDate} from '../ThreadActions.js';
@@ -38,9 +39,10 @@ export abstract class ThreadListModel extends Model {
   private processSnapshotTimeout_?: number;
   private filter_?: string;
   private days_?: number;
-  private threadGenerator_?: IterableIterator<Thread>;
+  private threadFetcher_: TaskQueue;
   private haveEverProcessedSnapshot_?: boolean;
   private offices_?: string;
+  private haveLoadedFirstQuery_: boolean;
 
   constructor(
       protected settings_: Settings, private forceTriageIndex_?: number) {
@@ -52,6 +54,9 @@ export abstract class ThreadListModel extends Model {
     this.perSnapshotThreads_ = [];
     this.threads_ = [];
     this.snapshotsToProcess_ = [];
+    this.threadFetcher_ = new TaskQueue(3);
+
+    this.haveLoadedFirstQuery_ = false;
   }
 
   protected abstract compareThreads(a: Thread, b: Thread): number;
@@ -164,8 +169,17 @@ export abstract class ThreadListModel extends Model {
   }
 
   // TODO: have this.threads be an array of arrays so each snapshot gets its own
-  // and then when we read threads we need to concat them all together.
+  // array and then when we read threads we need to concat them all together.
   private processAllSnapshots_(fireChange?: boolean) {
+    // Wait until all the snapshots have loaded once to start processiing them.
+    // This helps avoid clogging the main thread with work for a secondary
+    // snapshot before we've gotten the first.
+    if (!this.haveLoadedFirstQuery_ &&
+        this.snapshotsToProcess_[0] === undefined) {
+      return;
+    }
+    this.haveLoadedFirstQuery_ = true;
+
     let didProcess = false;
     for (let i = 0; i < this.snapshotsToProcess_.length; i++) {
       let snapshot = this.snapshotsToProcess_[i];
@@ -180,6 +194,11 @@ export abstract class ThreadListModel extends Model {
       didProcess = true;
     }
     this.snapshotsToProcess_ = [];
+
+    if (!didProcess)
+      return;
+
+    this.threadFetcher_.cancel();
 
     this.threads_ = ([] as Thread[]).concat(...this.perSnapshotThreads_);
     this.postProcessThreads(this.threads_);
@@ -211,55 +230,19 @@ export abstract class ThreadListModel extends Model {
     this.threads_.sort(this.compareThreads.bind(this));
   }
 
-  * getThreadGenerator() {
-    for (const event of this.threads_)
-      yield event;
-  }
-
-  // Intentionally use a member variable for the thread generator since we want
-  // to preempt finishing a previous run of threads if the snapshot changes.
-  processThreadsInIdleTime_(callback: (thread: Thread) => Promise<void>) {
-    return new Promise((resolve) => {
-      window.requestIdleCallback(async (deadline) => {
-        let handler = async () => {
-          if (!this.threadGenerator_)
-            return;
-          let item = this.threadGenerator_.next();
-
-          while (!item.done) {
-            await callback(item.value);
-            if (deadline && deadline.timeRemaining() === 0) {
-              window.requestIdleCallback(() => handler());
-              return;
-            }
-
-            // threadGenerator_ can be set to null while we are yielding for the
-            // callback.
-            if (!this.threadGenerator_)
-              return;
-            item = this.threadGenerator_.next();
-          }
-          resolve();
-        };
-        handler();
-      });
-    });
-  }
-
   private async fetchThreads_() {
-    // Do this fetching in idle time so it doesn't block other work like
-    // switching views. If there's a lot of threads in this model, then we want
-    // to interleave work for the other view's model as well so it can make
-    // progress.
     // TODO: When the view switches, deprioritize all these fetches until the
     // new view is finished.
-    this.threadGenerator_ = this.getThreadGenerator();
-    await this.processThreadsInIdleTime_(
-        async (thread) => await thread.fetchFromDisk());
+    await this.threadFetcher_.cancel();
 
-    this.threadGenerator_ = this.getThreadGenerator();
-    await this.processThreadsInIdleTime_(
-        async (thread) => await thread.syncMessagesInFirestore());
+    for (let thread of this.threads_) {
+      this.threadFetcher_.queueTask(async () => {
+        await thread.fetchFromDisk();
+        await thread.syncMessagesInFirestore();
+      });
+    }
+
+    await this.threadFetcher_.flush();
   }
 
   static compareDates(a: Thread, b: Thread) {
