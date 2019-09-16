@@ -19,14 +19,6 @@ interface ButtonWithAction extends HTMLButtonElement {
 const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
 const MARGIN = 4;
 
-// TODO: Move this to ThreadListView once we don't need the click workaround for
-// it below.
-export let QUICK_REPLY_ACTION = {
-  name: `Reply`,
-  description: `Give a short reply.`,
-  key: 'r',
-};
-
 export class Shortcut {
   constructor(
       public key: string, public ctrlMeta?: boolean, public shift?: boolean,
@@ -173,30 +165,26 @@ export class Actions extends HTMLElement {
       }
     });
 
-    // Use click on reply action to workaround crbug.com/988262.
-    if (action === QUICK_REPLY_ACTION) {
-      button.addEventListener(
-          'click', () => this.view_.takeAction(QUICK_REPLY_ACTION));
-    } else {
-      button.addEventListener('pointerup', (e: PointerEvent) => {
-        let hitButton = this.hitButton_(e);
-        if (hitButton &&
-            (hitButton === button ||
-             (this.menu_ && this.menu_.contains(hitButton)))) {
-          this.view_.takeAction(hitButton.action);
-        }
+    // Use mouseup instead of pointerup to avoid triggering click events on
+    // elements that weren't in the DOM on pointerdown to workaround crbug.com/988262.
+    button.addEventListener('mouseup', (e: MouseEvent) => {
+      let hitButton = this.hitButton_(e);
+      if (hitButton &&
+          (hitButton === button ||
+           (this.menu_ && this.menu_.contains(hitButton)))) {
+        this.view_.takeAction(hitButton.action);
+      }
 
-        if (this.menu_)
-          this.menu_.remove();
-        this.menu_ = undefined;
+      if (this.menu_)
+        this.menu_.remove();
+      this.menu_ = undefined;
 
-        if (this.tooltip_)
-          this.centerAbove_(this.tooltip_, button!);
-      });
-    }
+      if (this.tooltip_)
+        this.centerAbove_(this.tooltip_, button!);
+    });
   }
 
-  private hitButton_(e: PointerEvent) {
+  private hitButton_(e: MouseEvent) {
     let hitElement = document.elementFromPoint(e.x, e.y) as Node | null;
     let buttonWithAction;
     while (hitElement && !buttonWithAction) {

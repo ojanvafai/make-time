@@ -275,6 +275,8 @@ export abstract class ThreadListModel extends Model {
     // since we don't want to show the date picker once per thread.
     let date = await pickDate(destination);
     // Null means that this is a date action, but no date was selected.
+    // TODO: Move this up so we avoid setting actionInProgress in the early
+    // return case. Or return a bool that unsets actionInProgress?
     if (date === null)
       return;
 
