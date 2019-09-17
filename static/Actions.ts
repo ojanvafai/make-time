@@ -165,23 +165,27 @@ export class Actions extends HTMLElement {
       }
     });
 
-    // Use mouseup instead of pointerup to avoid triggering click events on
-    // elements that weren't in the DOM on pointerdown to workaround crbug.com/988262.
-    button.addEventListener('mouseup', (e: MouseEvent) => {
-      let hitButton = this.hitButton_(e);
-      if (hitButton &&
-          (hitButton === button ||
-           (this.menu_ && this.menu_.contains(hitButton)))) {
-        this.view_.takeAction(hitButton.action);
-      }
-
-      if (this.menu_)
-        this.menu_.remove();
-      this.menu_ = undefined;
-
-      if (this.tooltip_)
-        this.centerAbove_(this.tooltip_, button!);
+    button.addEventListener('pointerup', (e: MouseEvent) => {
+      // rAF to avoid triggering click events on elements that aren't yet in the
+      // DOM to workaround crbug.com/988262.
+      requestAnimationFrame(() => this.handlePointerUp_(button!, e));
     });
+  }
+
+  private handlePointerUp_(button: ButtonWithAction, e: MouseEvent) {
+    let hitButton = this.hitButton_(e);
+    if (hitButton &&
+        (hitButton === button ||
+         (this.menu_ && this.menu_.contains(hitButton)))) {
+      this.view_.takeAction(hitButton.action);
+    }
+
+    if (this.menu_)
+      this.menu_.remove();
+    this.menu_ = undefined;
+
+    if (this.tooltip_)
+      this.centerAbove_(this.tooltip_, button!);
   }
 
   private hitButton_(e: MouseEvent) {
