@@ -658,7 +658,7 @@ export class ThreadListView extends View {
 
   private renderFrame_() {
     this.hasQueuedFrame_ = false;
-    let allThreads = this.model_.getThreads();
+    let allThreads = this.model_.getThreads(true);
     let oldRows = this.getRows_();
 
     let threads = allThreads.filter(x => !x.actionInProgress());

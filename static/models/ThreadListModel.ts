@@ -205,7 +205,7 @@ export abstract class ThreadListModel extends Model {
       this.processAllSnapshots_(fireChange);
   }
 
-  private async processAllSnapshotsHelper_(fireChange?: boolean) {
+  private processAllSnapshotsHelper_(fireChange?: boolean) {
     let snapshotsToProcess = this.snapshotsToProcess_;
     this.snapshotsToProcess_ = [];
 
@@ -226,7 +226,7 @@ export abstract class ThreadListModel extends Model {
     if (!didProcess)
       return;
 
-    await this.threadFetcher_.cancel();
+    this.threadFetcher_.cancel();
 
     // TODO: have this.threads be an array of arrays so each snapshot gets its
     // own array and then when we read threads we need to concat them all
@@ -275,9 +275,9 @@ export abstract class ThreadListModel extends Model {
     return compareDates(a.getDate(), b.getDate());
   }
 
-  getThreads() {
+  getThreads(skipFireChangeEvent?: boolean) {
     // Make sure any in progress snapshot updates get flushed.
-    this.processAllSnapshots_();
+    this.processAllSnapshots_(!skipFireChangeEvent);
     return this.threads_.filter(
         (thread: Thread) => this.shouldShowThread(thread));
   }
