@@ -170,6 +170,7 @@ export enum Priority {
   Backlog = 4,
   Pin = 5,
   Quick = 6,
+  Icebox = 7,
 }
 
 // The number values get stored in firestore, so should never be changed.
@@ -178,6 +179,7 @@ export enum RepeatType {
 }
 
 export const QUICK_PRIORITY_NAME = 'Quick';
+export const ICEBOX_PRIORITY_NAME = 'Icebox';
 export const NEEDS_FILTER_PRIORITY_NAME = 'Filter';
 export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
@@ -194,6 +196,7 @@ const PrioritySortOrder = [
   Priority.Urgent,
   Priority.NeedsFilter,
   Priority.Backlog,
+  Priority.Icebox,
 ];
 
 // Use negative values for built-in labels.
@@ -208,6 +211,8 @@ export function getPriorityName(id: Priority) {
       return PINNED_PRIORITY_NAME;
     case Priority.Quick:
       return QUICK_PRIORITY_NAME;
+    case Priority.Icebox:
+      return ICEBOX_PRIORITY_NAME;
     case Priority.NeedsFilter:
       return NEEDS_FILTER_PRIORITY_NAME;
     case Priority.MustDo:
