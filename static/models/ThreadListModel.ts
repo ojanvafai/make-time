@@ -43,6 +43,7 @@ export abstract class ThreadListModel extends Model {
   private haveEverProcessedSnapshot_?: boolean;
   private offices_?: string;
   private haveLoadedFirstQuery_: boolean;
+  private isProcessingSnapshots_: boolean;
 
   constructor(
       protected settings_: Settings, private forceTriageIndex_?: number) {
@@ -57,6 +58,7 @@ export abstract class ThreadListModel extends Model {
     this.threadFetcher_ = new TaskQueue(3);
 
     this.haveLoadedFirstQuery_ = false;
+    this.isProcessingSnapshots_ = false;
   }
 
   protected abstract compareThreads(a: Thread, b: Thread): number;
@@ -162,15 +164,22 @@ export abstract class ThreadListModel extends Model {
 
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.
+  // TODO: Do we need this debounce still now that processAllSnapshots early
+  // returns if we are already processing snapshots?
   private async queueProcessSnapshot_() {
     window.clearTimeout(this.processSnapshotTimeout_);
     this.processSnapshotTimeout_ =
         window.setTimeout(async () => this.processAllSnapshots_(true), 100);
   }
 
-  // TODO: have this.threads be an array of arrays so each snapshot gets its own
-  // array and then when we read threads we need to concat them all together.
   private processAllSnapshots_(fireChange?: boolean) {
+    // this.fetchThreads_ modifies threads when it does network fetches, which
+    // in turn modifies the snapshot, and causes us to loop back through this
+    // code. Early return and process snapshots again when we're one rather than
+    // trying to make snapshot processing interruptible.
+    if (this.isProcessingSnapshots_)
+      return;
+
     // Wait until all the snapshots have loaded once to start processiing them.
     // This helps avoid clogging the main thread with work for a secondary
     // snapshot before we've gotten the first.
@@ -178,11 +187,31 @@ export abstract class ThreadListModel extends Model {
         this.snapshotsToProcess_[0] === undefined) {
       return;
     }
+
     this.haveLoadedFirstQuery_ = true;
+    this.isProcessingSnapshots_ = true;
+
+    // If there's an error thrown in processAllSnapshotsHelper_, we don't want
+    // to get stuck never processing snapshots again, so put in a try-finally.
+    try {
+      this.processAllSnapshotsHelper_(fireChange);
+    } finally {
+      this.isProcessingSnapshots_ = false;
+    }
+
+    // If new snapshots have been added since we started processing these ones,
+    // then keep processing.
+    if (this.snapshotsToProcess_.length)
+      this.processAllSnapshots_(fireChange);
+  }
+
+  private async processAllSnapshotsHelper_(fireChange?: boolean) {
+    let snapshotsToProcess = this.snapshotsToProcess_;
+    this.snapshotsToProcess_ = [];
 
     let didProcess = false;
-    for (let i = 0; i < this.snapshotsToProcess_.length; i++) {
-      let snapshot = this.snapshotsToProcess_[i];
+    for (let i = 0; i < snapshotsToProcess.length; i++) {
+      let snapshot = snapshotsToProcess[i];
 
       // This can happen since we use a sparse array.
       if (!snapshot)
@@ -193,24 +222,21 @@ export abstract class ThreadListModel extends Model {
           snapshot, this.perSnapshotThreads_[i], i === this.forceTriageIndex_);
       didProcess = true;
     }
-    this.snapshotsToProcess_ = [];
 
     if (!didProcess)
       return;
 
-    this.threadFetcher_.cancel();
+    await this.threadFetcher_.cancel();
 
+    // TODO: have this.threads be an array of arrays so each snapshot gets its
+    // own array and then when we read threads we need to concat them all
+    // together.
     this.threads_ = ([] as Thread[]).concat(...this.perSnapshotThreads_);
     this.postProcessThreads(this.threads_);
     this.sort();
     this.fetchThreads_();
 
-    // Intentionally do this after processing all the threads in the disk
-    // cache so that they show up atomically and so we spend less CPU
-    // rendering incremental frames.
-    // TODO: Should probably call this occasionaly in the above loop if that
-    // loop is taking too long to run.
-    if (didProcess && fireChange)
+    if (fireChange)
       this.threadListChanged_();
   }
 

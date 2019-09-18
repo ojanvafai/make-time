@@ -22,7 +22,7 @@ export class TaskQueue extends EventTarget {
   public doTasks() {
     if (this.inProgressTaskCount >= this.maxTasks)
       return;
-    let task = this.tasks.pop();
+    let task = this.tasks.shift();
     if (task === undefined) {
       for (let resolve of this.resolves)
         resolve();
