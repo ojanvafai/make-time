@@ -600,10 +600,10 @@ export class MailProcessor {
   async applyLabel_(thread: Thread, label: string, hasNewLabel: boolean) {
     let labelId = await defined(this.queueNames_).getId(label);
 
-    // If a thread already has a priority ID and the label isn't changing, skip
-    // putting it back in the triage queue if the new messages were sent myself
-    // or if some of the previous messages were unread.
-    if (thread.getPriorityId()) {
+    // If a thread already has a priority ID or blocked date and the label isn't
+    // changing, skip putting it back in the triage queue if the new messages
+    // were sent myself or if some of the previous messages were unread.
+    if (thread.getPriorityId() || thread.isStuck()) {
       let makeTimeLabelId = defined(this.makeTimeLabelId_);
       let newMessages = thread.getMessages().filter(x => {
         let ids = x.getLabelIds()
