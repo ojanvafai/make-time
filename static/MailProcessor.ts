@@ -529,7 +529,7 @@ export class MailProcessor {
       matches = true;
     }
     if (rule.htmlcontent) {
-      if (!stringFilterMatches(message.getHtmlOrPlain(), rule.htmlcontent))
+      if (!stringFilterMatches(rule.htmlcontent, message.getHtmlOrPlain()))
         return false;
       matches = true;
     }
