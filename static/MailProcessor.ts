@@ -67,9 +67,14 @@ export class MailProcessor {
   }
 
   async process() {
-    await this.processThrottled_();
     await this.processQueues_();
     await this.syncWithGmail_();
+
+    // Process thorttled after syncWithGmail for the case of the first sync in
+    // the morning where we want to sync and then immediately show all the
+    // threads rather than show the throttled threads, then sync, then wait 2hrs
+    // to show the synced threads.
+    await this.processThrottled_();
   }
 
   // Only remove labels from messages that were seen by the user at the time
