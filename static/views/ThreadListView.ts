@@ -36,7 +36,7 @@ let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
 };
 
 interface ListenerData {
-  name: string, handler: (e: Event) => void,
+  target: EventTarget, name: string, handler: (e: Event) => void,
 }
 
 interface IgnoredEvent {
@@ -201,7 +201,7 @@ registerActions('Triage or Todo', [
 
 export class ThreadListView extends View {
   private timerDuration_: number;
-  private modelListeners_: ListenerData[];
+  private listeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private triageOverrideThreadToRow_: WeakMap<Thread, ThreadRow>;
   private focusedRow_: ThreadRow|null;
@@ -246,7 +246,7 @@ export class ThreadListView extends View {
 
     this.timerDuration_ = settings_.get(ServerStorage.KEYS.TIMER_DURATION);
 
-    this.modelListeners_ = [];
+    this.listeners_ = [];
     this.threadToRow_ = new WeakMap();
     this.triageOverrideThreadToRow_ = new WeakMap();
     this.focusedRow_ = null;
@@ -291,8 +291,9 @@ export class ThreadListView extends View {
       overflow: auto;
     `;
     this.append(this.pendingContainer_);
-    this.pendingContainer_.addEventListener(
-        InProgressChangedEvent.NAME, (e) => this.handleInProgressChanged_(e));
+    this.listen_(
+        this.pendingContainer_, InProgressChangedEvent.NAME,
+        (e) => this.handleInProgressChanged_(e));
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -300,23 +301,23 @@ export class ThreadListView extends View {
       flex-direction: column;
     `;
     this.append(this.rowGroupContainer_);
-    this.rowGroupContainer_.addEventListener(
-        InProgressChangedEvent.NAME, (e) => this.handleInProgressChanged_(e));
+    this.listen_(
+        this.rowGroupContainer_, InProgressChangedEvent.NAME,
+        (e) => this.handleInProgressChanged_(e));
 
-    this.rowGroupContainer_.addEventListener(
-        RenderThreadEvent.NAME, (e: Event) => {
+    this.listen_(
+        this.rowGroupContainer_, RenderThreadEvent.NAME, (e: Event) => {
           this.setRenderedRowIfAllowed_(e.target as ThreadRow);
         });
-    this.rowGroupContainer_.addEventListener(FocusRowEvent.NAME, (e: Event) => {
+    this.listen_(this.rowGroupContainer_, FocusRowEvent.NAME, (e: Event) => {
       this.handleFocusRow_(<ThreadRow>e.target);
     });
-    this.rowGroupContainer_.addEventListener(
-        SelectRowEvent.NAME, (e: Event) => {
-          let event = (e as SelectRowEvent);
-          if (event.selected)
-            this.handleCheckRow_(<ThreadRow>e.target, event.shiftKey);
-        });
-    this.rowGroupContainer_.addEventListener(HeightChangedEvent.NAME, () => {
+    this.listen_(this.rowGroupContainer_, SelectRowEvent.NAME, (e: Event) => {
+      let event = (e as SelectRowEvent);
+      if (event.selected)
+        this.handleCheckRow_(<ThreadRow>e.target, event.shiftKey);
+    });
+    this.listen_(this.rowGroupContainer_, HeightChangedEvent.NAME, () => {
       this.forceRender();
     });
 
@@ -333,8 +334,9 @@ export class ThreadListView extends View {
     `;
     this.append(this.buttonContainer_);
 
-    this.addListenerToModel(ThreadListChangedEvent.NAME, () => this.render_());
-    this.addListenerToModel('undo', (e: Event) => {
+    this.listen_(
+        this.model_, ThreadListChangedEvent.NAME, () => this.render_());
+    this.listen_(this.model_, 'undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.undoRow_ = this.getThreadRow_(undoEvent.thread);
     });
@@ -493,17 +495,19 @@ export class ThreadListView extends View {
     return row;
   };
 
-  addListenerToModel(eventName: string, handler: (e: Event) => void) {
-    this.modelListeners_.push({
+  private listen_(
+      target: EventTarget, eventName: string, handler: (e: Event) => void) {
+    this.listeners_.push({
+      target: target,
       name: eventName,
       handler: handler,
     });
-    this.model_.addEventListener(eventName, handler);
+    target.addEventListener(eventName, handler);
   }
 
   tearDown() {
-    for (let listener of this.modelListeners_) {
-      this.model_.removeEventListener(listener.name, listener.handler);
+    for (let listener of this.listeners_) {
+      listener.target.removeEventListener(listener.name, listener.handler);
     }
     this.appShell_.setSubject('');
     this.appShell_.showBackArrow(false);
