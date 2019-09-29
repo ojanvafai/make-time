@@ -48,7 +48,14 @@ export class QuoteElidedMessage extends HTMLElement {
     // until we see a reason to do otherwise, just mangle the URL to make it
     // 404. It needs both the ik and view parameters to force the logout.
     currentMessage =
-        currentMessage.replace('src="https://mail.google.com/', 'src="');
+        currentMessage.replace(/src="https:\/\/mail\.google\.com\//g, 'src="');
+
+    // Body elements get stripped by sandboxedDom. This matters for cases where
+    // there is inline styling on the body element (e.g. a background color).
+    // Convert them to divs first. This matches gmail's behavior, although this
+    // specific code for it is pretty hacky. Don't need to bother with the
+    // closing tag since the HTML parser will insert it and drop the </body>.
+    currentMessage = currentMessage.replace(/<body/g, '<div');
 
     this.append(sandboxedDom(currentMessage));
 
