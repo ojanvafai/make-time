@@ -6,10 +6,10 @@ typo fixes to substantial changes are very welcome.
 
 ## Install dependencies
 1. Checkout https://github.com/ojanvafai/make-time
-2. npm install
-
-  ^^^^ This installs type script, firebase, gulp, etc.
-
+2. installs type script, firebase, gulp, etc:
+```
+npm install
+```
 3. Firebase serving needs permissions to start even a local server. To get these permissions,
 join this mailing list: https://groups.google.com/forum/#!forum/make-time.
 4. Login to firebase:
