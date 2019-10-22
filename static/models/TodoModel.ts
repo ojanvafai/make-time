@@ -206,6 +206,15 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected compareThreads(a: Thread, b: Thread) {
+
+    let aPinned = (a.getPriority() === 'Pin');
+    let bPinned = (b.getPriority() === 'Pin');
+
+    // Pull pinned threads out first
+    if (!(aPinned === bPinned)) {
+      return aPinned ? -1 : 1;
+    }
+
     if (a.forceTriage() || b.forceTriage()) {
       if (a.forceTriage() && b.forceTriage())
         return TodoModel.compareTriageThreads(this.settings_, a, b);

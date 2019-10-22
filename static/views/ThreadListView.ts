@@ -697,7 +697,8 @@ export class ThreadListView extends View {
         let isSubGroup = !this.model_.isTriage() && thread.forceTriage();
         let group = new ThreadRowGroup(groupName, allowedCount, isSubGroup);
 
-        if (previousEntry) {
+        if (previousEntry
+           && !(previousEntry.rows[0].thread.getPriority() === 'Pin')) {
           if (this.untriagedContainer_ && !this.model_.isTriage() &&
               !thread.forceTriage() &&
               previousEntry.rows[0].thread.forceTriage()) {
@@ -709,7 +710,7 @@ export class ThreadListView extends View {
           if (isSubGroup) {
             if (!this.untriagedContainer_) {
               this.untriagedContainer_ = new MetaThreadRowGroup('Untriaged');
-              this.rowGroupContainer_.prepend(this.untriagedContainer_);
+              this.rowGroupContainer_.append(this.untriagedContainer_);
             }
             this.untriagedContainer_.push(group);
           } else {
@@ -756,11 +757,18 @@ export class ThreadListView extends View {
     this.updatePendingArea_(threadsInPending);
 
     let firstGroup = this.rowGroupContainer_.firstChild as BaseThreadRowGroup;
+    let secondGroup;
     if (firstGroup) {
       // If it's a meta group, then expand both the meta group and it's first
       // item.
       firstGroup.setCollapsed(false);
       firstGroup.getSubGroups()[0].setCollapsed(false);
+      secondGroup = firstGroup.nextSibling as BaseThreadRowGroup;
+    }
+    if (secondGroup) {
+      // hacky way to force re-render when untriaged group is after pinned
+      secondGroup.setCollapsed(false);
+      secondGroup.setCollapsed(true);
     }
 
     this.updateFinalVersionRendering_();
