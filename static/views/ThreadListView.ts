@@ -131,6 +131,7 @@ let UNDO_ACTION = {
   name: `Undo`,
   description: `Undoes the last action taken.`,
   key: 'u',
+  actionGroup: 'undo',
 };
 
 // Too lazy to make an up arrow SVG, so just rotate the down arrow.
@@ -145,6 +146,7 @@ let MOVE_UP_ACTION = {
   key: '[',
   secondaryKey: new Shortcut('ArrowUp', true, false),
   repeatable: true,
+  actionGroup: 'sort',
 };
 
 let MOVE_DOWN_ACTION = {
@@ -153,6 +155,7 @@ let MOVE_DOWN_ACTION = {
   key: ']',
   secondaryKey: new Shortcut('ArrowDown', true, false),
   repeatable: true,
+  actionGroup: 'sort',
 };
 
 let BASE_ACTIONS = [
@@ -162,10 +165,7 @@ let BASE_ACTIONS = [
     MUTE_ACTION,
   ],
   ...BASE_THREAD_ACTIONS,
-  [
-    UNDO_ACTION,
-    REPEAT_ACTION,
-  ],
+  UNDO_ACTION,
   PREVIOUS_ACTION,
   PREVIOUS_FULL_ACTION,
   NEXT_ACTION,

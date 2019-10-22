@@ -11,6 +11,11 @@ interface Theme {
     '--inverted-text-color': string;
     '--midpoint-color': string;
     '--main-background': string;
+    '--button-group-1-bgcolor': string,
+    '--button-group-2-bgcolor': string,
+    '--button-group-3-bgcolor': string,
+    '--button-group-4-bgcolor': string,
+    '--button-group-5-bgcolor': string,
   }
 }
 
@@ -28,6 +33,11 @@ export const DEFAULT: Theme = {
     '--inverted-text-color': '#fff',
     '--midpoint-color': '#aaa',
     '--main-background': '#f0f0ff',
+    '--button-group-1-bgcolor': '#b3cce6',
+    '--button-group-2-bgcolor': '#b3e5e6',
+    '--button-group-3-bgcolor': '#b3e6bb',
+    '--button-group-4-bgcolor': '#e1ebad',
+    '--button-group-5-bgcolor': '#e6d5b3',
   }
 };
 
@@ -45,6 +55,11 @@ export const DARK: Theme = {
     '--inverted-text-color': '#000',
     '--midpoint-color': '#888',
     '--main-background': '#000',
+    '--button-group-1-bgcolor': '#264b73',
+    '--button-group-2-bgcolor': '#267073',
+    '--button-group-3-bgcolor': '#267332',
+    '--button-group-4-bgcolor': '#6b7c1d',
+    '--button-group-5-bgcolor': '#736726',
   }
 };
 
@@ -71,6 +86,11 @@ export const RANDOM: Theme = {
     '--inverted-text-color': randomColor(),
     '--midpoint-color': randomColor(),
     '--main-background': randomColor(),
+    '--button-group-0-bgcolor': randomColor(),
+    '--button-group-1-bgcolor': randomColor(),
+    '--button-group-2-bgcolor': randomColor(),
+    '--button-group-3-bgcolor': randomColor(),
+    '--button-group-4-bgcolor': randomColor(),
   }
 };
 

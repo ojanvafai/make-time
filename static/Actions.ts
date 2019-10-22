@@ -8,6 +8,7 @@ export interface Action {
   secondaryKey?: Shortcut|string;
   hidden?: boolean;
   repeatable?: boolean;
+  actionGroup?: 'ignore' | 'prioritize' | 'date' | 'undo' | 'sort';
 }
 
 export type ActionList = (Action|Action[])[];
@@ -278,6 +279,9 @@ export class Actions extends HTMLElement {
       this.centerAbove_(this.tooltip_!, button);
     };
     button.oncontextmenu = (e: Event) => e.preventDefault();
+    if (action.actionGroup) {
+      button.classList.add(`group-${action.actionGroup}`);
+    }
     return button;
   }
 

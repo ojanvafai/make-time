@@ -7,42 +7,49 @@ export let ARCHIVE_ACTION = {
   name: `Archive`,
   description: `Archive and remove from the current group.`,
   key: 'a',
+  actionGroup: 'ignore',
 };
 
 export let PIN_ACTION = {
   name: PINNED_PRIORITY_NAME,
   description: `Pins to the top at the top of todo.`,
   key: 'x',
+  actionGroup: 'prioritize',
 };
 
 export let ICEBOX_ACTION = {
   name: ICEBOX_PRIORITY_NAME,
   description: `Move to icebox.`,
   key: 'i',
+  actionGroup: 'prioritize',
 };
 
 export let QUICK_ACTION = {
   name: QUICK_PRIORITY_NAME,
   description: `Quick to take action on.`,
   key: 'q',
+  actionGroup: 'prioritize',
 };
 
 export let MUST_DO_ACTION = {
   name: MUST_DO_PRIORITY_NAME,
   description: `Must do today. Literally won't go home till it's done.`,
   key: '1',
+  actionGroup: 'prioritize',
 };
 
 export let URGENT_ACTION = {
   name: URGENT_PRIORITY_NAME,
   description: `Needs to happen ASAP.`,
   key: '2',
+  actionGroup: 'prioritize',
 };
 
 export let BACKLOG_ACTION = {
   name: BACKLOG_PRIORITY_NAME,
   description: `Important but can be done when I get to it.`,
   key: '3',
+  actionGroup: 'prioritize',
 };
 
 export let NEEDS_FILTER_ACTION = {
@@ -50,24 +57,28 @@ export let NEEDS_FILTER_ACTION = {
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   key: 'f',
+  actionGroup: 'prioritize',
 };
 
 export let MUTE_ACTION = {
   name: `Mute`,
   description: `Only appear for triage again if filters apply a new label.`,
   key: 'm',
+  actionGroup: 'ignore',
 };
 
 export let SOFT_MUTE_ACTION = {
   name: `Soft Mute`,
   description: `Mute for 7 days.`,
   key: 's',
+  actionGroup: 'ignore',
 };
 
 export let REPEAT_ACTION = {
   name: 'Repeats',
   description: `Makes this task repeat daily.`,
   key: 't',
+  actionGroup: 'date',
 };
 
 let BLOCKED_1D_ACTION = {
@@ -75,6 +86,7 @@ let BLOCKED_1D_ACTION = {
   description:
       `Block on action from someone else. Shows up tomorrow to retriage.`,
   key: '5',
+  actionGroup: 'date',
 };
 
 let BLOCKED_2D_ACTION = {
@@ -82,6 +94,7 @@ let BLOCKED_2D_ACTION = {
   description:
       `Block on action from someone else. Shows up in 2 days to retriage.`,
   key: '6',
+  actionGroup: 'date',
 };
 
 let BLOCKED_7D_ACTION = {
@@ -89,6 +102,7 @@ let BLOCKED_7D_ACTION = {
   description:
       `Block on action from someone else. Shows up in 7 days to retriage.`,
   key: '7',
+  actionGroup: 'date',
 };
 
 let BLOCKED_14D_ACTION = {
@@ -96,6 +110,7 @@ let BLOCKED_14D_ACTION = {
   description:
       `Block on action from someone else. Shows up in 14 days to retriage.`,
   key: '8',
+  actionGroup: 'date',
 };
 
 let BLOCKED_30D_ACTION = {
@@ -103,18 +118,21 @@ let BLOCKED_30D_ACTION = {
   description:
       `Block on action from someone else. Shows up in 30 days to retriage.`,
   key: '9',
+  actionGroup: 'date',
 };
 
 let BLOCKED_CUSTOM_ACTION = {
   name: 'Stuck',
   description: `Block on action from someone else. Pick a date to retriage.`,
   key: '0',
+  actionGroup: 'date',
 }
 
 let BLOCKED_NONE_ACTION = {
   name: 'Clear',
   description: `Removes the stuck date.`,
   key: '-',
+  actionGroup: 'date',
 };
 
 export let BLOCKED_ACTIONS = [
@@ -125,48 +143,56 @@ export let BLOCKED_ACTIONS = [
   BLOCKED_14D_ACTION,
   BLOCKED_30D_ACTION,
   BLOCKED_NONE_ACTION,
+  REPEAT_ACTION,
 ];
 
 let DUE_1D_ACTION = {
   name: '1 day',
   description: `Shows up tomorrow to retriage.`,
   key: new Shortcut('5', false, true, 'Digit5'),
+  actionGroup: 'date',
 };
 
 let DUE_2D_ACTION = {
   name: '2 days',
   description: `Shows up in 2 days to retriage.`,
   key: new Shortcut('6', false, true, 'Digit6'),
+  actionGroup: 'date',
 };
 
 let DUE_7D_ACTION = {
   name: '7 days',
   description: `Shows up in 7 days to retriage.`,
   key: new Shortcut('7', false, true, 'Digit7'),
+  actionGroup: 'date',
 };
 
 let DUE_14D_ACTION = {
   name: '14 days',
   description: `Shows up in 14 days to retriage.`,
   key: new Shortcut('8', false, true, 'Digit8'),
+  actionGroup: 'date',
 };
 
 let DUE_30D_ACTION = {
   name: '30 days',
   description: `Shows up in 30 days to retriage.`,
   key: new Shortcut('9', false, true, 'Digit9'),
+  actionGroup: 'date',
 };
 
 let DUE_CUSTOM_ACTION = {
   name: 'Due',
   description: `Pick a due date to retriage.`,
   key: new Shortcut('0', false, true, 'Digit0'),
+  actionGroup: 'date',
 };
 
 let DUE_NONE_ACTION = {
   name: 'Clear',
   description: `Removes the due date.`,
   key: new Shortcut('-', false, true, 'Minus'),
+  actionGroup: 'date',
 };
 
 export let DUE_ACTIONS = [
@@ -184,11 +210,13 @@ export let BASE_THREAD_ACTIONS = [
     QUICK_ACTION,
     NEEDS_FILTER_ACTION,
     PIN_ACTION,
-    ICEBOX_ACTION,
   ],
   MUST_DO_ACTION,
   URGENT_ACTION,
-  BACKLOG_ACTION,
+  [
+    BACKLOG_ACTION,
+    ICEBOX_ACTION,
+  ],
   BLOCKED_ACTIONS,
   DUE_ACTIONS,
 ];
