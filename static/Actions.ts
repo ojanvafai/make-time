@@ -8,7 +8,7 @@ export interface Action {
   secondaryKey?: Shortcut|string;
   hidden?: boolean;
   repeatable?: boolean;
-  actionGroup?: 'ignore' | 'prioritize' | 'date' | 'undo' | 'sort';
+  actionGroup?: 'ignore' | 'prioritize' | 'date' | 'undo' | 'sort' | 'reply';
 }
 
 export type ActionList = (Action|Action[])[];

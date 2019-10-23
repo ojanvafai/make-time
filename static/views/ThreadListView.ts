@@ -51,6 +51,7 @@ let QUICK_REPLY_ACTION = {
   name: `Reply`,
   description: `Give a short reply.`,
   key: 'r',
+  actionGroup: 'reply'
 };
 
 let VIEW_IN_GMAIL_ACTION = {
