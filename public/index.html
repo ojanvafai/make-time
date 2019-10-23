@@ -105,7 +105,7 @@ input[type=checkbox], input[type=radio] {
   margin: 0 4px 0 0;
 }
 select.label-chip {
-  background: none;
+  background-color: inherit;
 }
 select, mt-address-compose, [contentEditable=true],
 input:not([type=checkbox]):not([type=radio]),
@@ -115,6 +115,12 @@ input:not([type=checkbox]):not([type=radio]),
   border-radius: 3px;
   border: 1px solid var(--border-and-hover-color);
   margin: 0;
+}
+select, select.label-chip {
+  background-image: url('data:image/svg+xml;utf8,<svg height="6" width="12" xmlns="http://www.w3.org/2000/svg"><polygon points="0,0 4,6 8,0" /></svg>');
+  background-repeat: no-repeat;
+  background-position: right center;
+  padding-right: 15px;
 }
 .toolbar .mktime-button {
   border: 0;
@@ -156,14 +162,16 @@ select.button, .mktime-button {
   font-size: 16px;
   display: block;
   text-align: center;
-  background: none;
 }
 select.button {
   margin-right: 4px;
+  padding-right: 18px;
+  background-color: inherit;
 }
 .mktime-button {
   margin: 4px 2px;
   white-space: nowrap;
+  background: none;
   user-select: none;
   touch-action: none;
   /* These are for buttons that have the :after up arrow. */
