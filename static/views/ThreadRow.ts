@@ -367,10 +367,14 @@ export class ThreadRow extends HTMLElement {
       overflow: hidden;
       text-overflow: ellipsis;
       flex: 1;
-      margin-right: 25px;
       display: flex;
     `;
+
+    if (!state.isSmallScreen)
+      subject.style.marginRight = '25px';
+
     subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
+
     subject.append(justSubject);
 
     if (state.snippet) {
