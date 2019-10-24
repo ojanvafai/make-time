@@ -688,7 +688,6 @@ export class ThreadListView extends View {
 
     // Threads should be in sorted order already and all threads in the
     // same queue should be adjacent to each other.
-    let previousEntry: {group: ThreadRowGroup, rows: ThreadRow[]}|undefined;
     for (let thread of threads) {
       let groupName = this.mergedGroupName_(thread);
       let entry = groupMap.get(groupName);
@@ -698,25 +697,14 @@ export class ThreadListView extends View {
         let isSubGroup = !this.model_.isTriage() && thread.forceTriage();
         let group = new ThreadRowGroup(groupName, allowedCount, isSubGroup);
 
-        if (previousEntry
-           && !(previousEntry.rows[0].thread.getPriority() === 'Pin')) {
-          if (this.untriagedContainer_ && !this.model_.isTriage() &&
-              !thread.forceTriage() &&
-              previousEntry.rows[0].thread.forceTriage()) {
-            this.untriagedContainer_.after(group);
-          } else {
-            previousEntry.group.after(group);
+        if (isSubGroup) {
+          if (!this.untriagedContainer_) {
+            this.untriagedContainer_ = new MetaThreadRowGroup('Untriaged');
+            this.rowGroupContainer_.append(this.untriagedContainer_);
           }
+          this.untriagedContainer_.push(group);
         } else {
-          if (isSubGroup) {
-            if (!this.untriagedContainer_) {
-              this.untriagedContainer_ = new MetaThreadRowGroup('Untriaged');
-              this.rowGroupContainer_.append(this.untriagedContainer_);
-            }
-            this.untriagedContainer_.push(group);
-          } else {
-            this.rowGroupContainer_.prepend(group);
-          }
+          this.rowGroupContainer_.append(group);
         }
 
         entry = {group: group, rows: []};
@@ -732,8 +720,6 @@ export class ThreadListView extends View {
 
       if (!this.hasHadAction_)
         entry.group.setCollapsed(true);
-
-      previousEntry = entry;
     }
 
     for (let entry of groupMap.values()) {
