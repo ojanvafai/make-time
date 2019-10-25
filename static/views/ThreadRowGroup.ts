@@ -43,13 +43,17 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     if (this.collapsed_)
       return;
 
-    this.rowContainer_.style.display = inViewport ? '' : 'none';
-    this.placeholder_.style.display = inViewport ? 'none' : '';
+    this.showRows_(inViewport);
 
     let rows = Array.from(this.rowContainer_.children) as ThreadRow[];
     for (let row of rows) {
       row.setInViewport(inViewport);
     }
+  }
+
+  private showRows_(show: boolean) {
+    this.rowContainer_.style.display = show ? '' : 'none';
+    this.placeholder_.style.display = show ? 'none' : '';
   }
 
   hasChecked() {
@@ -124,7 +128,7 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     this.expander_.append(this.collapsed_ ? expandArrow() : collapseArrow());
     this.selectBox_.setDisabled(this.collapsed_);
 
-    this.rowContainer_.style.display = this.collapsed_ ? 'none' : '';
+    this.showRows_(!this.collapsed_);
 
     let removed = [];
     // Remove rows that no longer exist.
