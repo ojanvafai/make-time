@@ -43,7 +43,7 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     if (this.collapsed_)
       return;
 
-    this.showRows_(inViewport);
+    this.showRows_();
 
     let rows = Array.from(this.rowContainer_.children) as ThreadRow[];
     for (let row of rows) {
@@ -51,9 +51,9 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     }
   }
 
-  private showRows_(show: boolean) {
-    this.rowContainer_.style.display = show ? '' : 'none';
-    this.placeholder_.style.display = show ? 'none' : '';
+  private showRows_() {
+    this.rowContainer_.style.display = this.inViewport_ ? '' : 'none';
+    this.placeholder_.style.display = this.inViewport_ ? 'none' : '';
   }
 
   hasChecked() {
@@ -128,7 +128,12 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     this.expander_.append(this.collapsed_ ? expandArrow() : collapseArrow());
     this.selectBox_.setDisabled(this.collapsed_);
 
-    this.showRows_(!this.collapsed_);
+    if (this.collapsed_) {
+      this.rowContainer_.style.display = 'none';
+      this.placeholder_.style.display = 'none';
+    } else {
+      this.showRows_();
+    }
 
     let removed = [];
     // Remove rows that no longer exist.
