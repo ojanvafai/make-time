@@ -1,5 +1,5 @@
 import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
-import {Action, registerActions, Shortcut, shortcutString} from '../Actions.js';
+import {Action, ActionGroup, registerActions, Shortcut, shortcutString} from '../Actions.js';
 import {assert, collapseArrow, defined, expandArrow, leftArrow, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
@@ -51,7 +51,7 @@ let QUICK_REPLY_ACTION = {
   name: `Reply`,
   description: `Give a short reply.`,
   key: 'r',
-  actionGroup: 'reply'
+  actionGroup: ActionGroup.Reply
 };
 
 let VIEW_IN_GMAIL_ACTION = {
@@ -132,7 +132,7 @@ let UNDO_ACTION = {
   name: `Undo`,
   description: `Undoes the last action taken.`,
   key: 'u',
-  actionGroup: 'undo',
+  actionGroup: ActionGroup.Undo,
 };
 
 // Too lazy to make an up arrow SVG, so just rotate the down arrow.
@@ -147,7 +147,7 @@ let MOVE_UP_ACTION = {
   key: '[',
   secondaryKey: new Shortcut('ArrowUp', true, false),
   repeatable: true,
-  actionGroup: 'sort',
+  actionGroup: ActionGroup.Sort,
 };
 
 let MOVE_DOWN_ACTION = {
@@ -156,7 +156,7 @@ let MOVE_DOWN_ACTION = {
   key: ']',
   secondaryKey: new Shortcut('ArrowDown', true, false),
   repeatable: true,
-  actionGroup: 'sort',
+  actionGroup: ActionGroup.Sort,
 };
 
 let BASE_ACTIONS = [
