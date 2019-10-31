@@ -437,7 +437,7 @@ export class EmailCompose extends HTMLElement {
     this.updatePlaceholder_();
   }
 
-  enterKeySend() {
+  setEnterKeyHintSend() {
     this.content.setAttribute('enterkeyhint', 'send');
   }
 
