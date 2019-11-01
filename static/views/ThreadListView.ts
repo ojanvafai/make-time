@@ -729,10 +729,12 @@ export class ThreadListView extends View {
         removedRows.push(...entry.group.setRows(entry.rows));
     }
 
-    if (this.untriagedContainer_ &&
-        !this.untriagedContainer_.getSubGroups().length) {
-      this.untriagedContainer_.remove();
-      this.untriagedContainer_ = null;
+    if (this.untriagedContainer_) {
+      if (!this.untriagedContainer_.getSubGroups().length) {
+        this.untriagedContainer_.remove();
+        this.untriagedContainer_ = null;
+      } else
+        this.untriagedContainer_.render();
     }
 
     this.handleRowsRemoved_(removedRows, oldRows);
@@ -744,18 +746,11 @@ export class ThreadListView extends View {
     this.updatePendingArea_(threadsInPending);
 
     let firstGroup = this.rowGroupContainer_.firstChild as BaseThreadRowGroup;
-    let secondGroup;
     if (firstGroup) {
       // If it's a meta group, then expand both the meta group and it's first
       // item.
       firstGroup.setCollapsed(false);
       firstGroup.getSubGroups()[0].setCollapsed(false);
-      secondGroup = firstGroup.nextSibling as BaseThreadRowGroup;
-    }
-    if (secondGroup) {
-      // hacky way to force re-render when untriaged group is after pinned
-      secondGroup.setCollapsed(false);
-      secondGroup.setCollapsed(true);
     }
 
     this.updateFinalVersionRendering_();
