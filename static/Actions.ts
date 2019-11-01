@@ -3,7 +3,7 @@ import {View} from './views/View.js';
 
 export enum ActionGroup {
   Ignore = 'ignore',
-  Prioritize = 'prioritize',
+  Priority = 'priority',
   Date = 'date',
   Undo = 'undo',
   Sort = 'sort',

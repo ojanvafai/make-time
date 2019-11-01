@@ -14,42 +14,42 @@ export let PIN_ACTION = {
   name: PINNED_PRIORITY_NAME,
   description: `Pins to the top at the top of todo.`,
   key: 'x',
-  actionGroup: ActionGroup.Prioritize,
+  actionGroup: ActionGroup.Priority,
 };
 
 export let ICEBOX_ACTION = {
   name: ICEBOX_PRIORITY_NAME,
   description: `Move to icebox.`,
   key: 'i',
-  actionGroup: ActionGroup.Prioritize,
+  actionGroup: ActionGroup.Priority,
 };
 
 export let QUICK_ACTION = {
   name: QUICK_PRIORITY_NAME,
   description: `Quick to take action on.`,
   key: 'q',
-  actionGroup: ActionGroup.Prioritize,
+  actionGroup: ActionGroup.Priority,
 };
 
 export let MUST_DO_ACTION = {
   name: MUST_DO_PRIORITY_NAME,
   description: `Must do today. Literally won't go home till it's done.`,
   key: '1',
-  actionGroup: ActionGroup.Prioritize,
+  actionGroup: ActionGroup.Priority,
 };
 
 export let URGENT_ACTION = {
   name: URGENT_PRIORITY_NAME,
   description: `Needs to happen ASAP.`,
   key: '2',
-  actionGroup: ActionGroup.Prioritize,
+  actionGroup: ActionGroup.Priority,
 };
 
 export let BACKLOG_ACTION = {
   name: BACKLOG_PRIORITY_NAME,
   description: `Important but can be done when I get to it.`,
   key: '3',
-  actionGroup: ActionGroup.Prioritize,
+  actionGroup: ActionGroup.Priority,
 };
 
 export let NEEDS_FILTER_ACTION = {
@@ -57,7 +57,7 @@ export let NEEDS_FILTER_ACTION = {
   description:
       `Needs a new/different filter, but don't want to interrupt triaging to do that now.`,
   key: 'f',
-  actionGroup: ActionGroup.Prioritize,
+  actionGroup: ActionGroup.Priority,
 };
 
 export let MUTE_ACTION = {

@@ -86,11 +86,11 @@ export const RANDOM: Theme = {
     '--inverted-text-color': randomColor(),
     '--midpoint-color': randomColor(),
     '--main-background': randomColor(),
-    '--button-group-0-bgcolor': randomColor(),
     '--button-group-1-bgcolor': randomColor(),
     '--button-group-2-bgcolor': randomColor(),
     '--button-group-3-bgcolor': randomColor(),
     '--button-group-4-bgcolor': randomColor(),
+    '--button-group-5-bgcolor': randomColor(),
   }
 };
 
