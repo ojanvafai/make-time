@@ -183,8 +183,8 @@ export class Message {
     return this.parsedBcc_;
   }
 
-  getPlain() {
-    this.parseMessageBody_();
+  async getPlain() {
+    await this.parseMessageBody_();
     if (this.plain_)
       return this.plain_;
 
@@ -200,18 +200,18 @@ export class Message {
     return this.plainedHtml_;
   }
 
-  getHtml() {
-    this.parseMessageBody_();
+  async getHtml() {
+    await this.parseMessageBody_();
     return this.html_;
   }
 
-  getHtmlOrPlain() {
-    this.parseMessageBody_();
+  async getHtmlOrPlain() {
+    await this.parseMessageBody_();
     return this.html_ || this.plain_ || '';
   }
 
-  getHtmlOrHtmlWrappedPlain() {
-    this.parseMessageBody_();
+  async getHtmlOrHtmlWrappedPlain() {
+    await this.parseMessageBody_();
     if (this.html_)
       return this.html_;
 
@@ -233,7 +233,7 @@ export class Message {
     return html.replace(/<div><\/div>/g, '<br>');
   }
 
-  parseMessageBody_() {
+  async parseMessageBody_() {
     if (this.plain_ || this.html_)
       return;
 
@@ -242,10 +242,10 @@ export class Message {
 
     let payload = defined(this.rawMessage_.payload);
     if (payload.parts) {
-      this.getMessageBody_(payload.parts);
+      await this.getMessageBody_(payload.parts);
     } else {
       let body = defined(payload.body);
-      let messageText = Message.base64_.urlDecode(defined(body.data));
+      let messageText = await Message.base64_.urlDecode(defined(body.data));
       if (payload.mimeType == 'text/html')
         this.html_ = messageText;
       else
@@ -253,9 +253,9 @@ export class Message {
     }
   }
 
-  getQuoteElidedMessage() {
+  async getQuoteElidedMessage() {
     if (!this.quoteElidedMessage_) {
-      let html = this.getHtmlOrHtmlWrappedPlain();
+      let html = await this.getHtmlOrHtmlWrappedPlain();
       this.quoteElidedMessage_ =
           new QuoteElidedMessage(html, this.previousMessage_);
       let attachments = this.rewriteInlineImages_(this.quoteElidedMessage_);
@@ -326,7 +326,7 @@ export class Message {
         'messageId': this.id,
         'userId': USER_ID,
       });
-      let data = Message.base64_.decode(fetched.result.data || '');
+      let data = await Message.base64_.decode(fetched.result.data || '');
       attachmentData.image.src =
           `data:${attachmentData.attachment.contentType},${data}`;
     }
@@ -353,11 +353,11 @@ export class Message {
     return result;
   }
 
-  getMessageBody_(mimeParts: gapi.client.gmail.MessagePart[]) {
+  async getMessageBody_(mimeParts: gapi.client.gmail.MessagePart[]) {
     for (var part of mimeParts) {
       // For the various 'multipart/*" mime types.
       if (part.parts)
-        this.getMessageBody_(part.parts);
+        await this.getMessageBody_(part.parts);
 
       let body = defined(part.body);
       let attachmentId = body.attachmentId;
@@ -371,13 +371,13 @@ export class Message {
           // Sometimes there are multiple text/plain blocks. Gmail seems to use
           // the first one and some messages clearly require that.
           if (!this.plain_)
-            this.plain_ = Message.base64_.urlDecode(defined(body.data));
+            this.plain_ = await Message.base64_.urlDecode(defined(body.data));
           break;
         case 'text/html':
           // Sometimes there are multiple text/html blocks. Gmail seems to use
           // the first one and some messages clearly require that.
           if (!this.html_)
-            this.html_ = Message.base64_.urlDecode(defined(body.data));
+            this.html_ = await Message.base64_.urlDecode(defined(body.data));
           break;
       }
     }

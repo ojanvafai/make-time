@@ -21,6 +21,8 @@ window.addEventListener('online', (_e) => {
 
 // TODO: Parameterize the return value of this so that we can have strong types
 // for all the code that calls gapiFetch.
+// TODO: Have this do the fetch in a worker so that jank in gapi code doesn't
+// jank the page (e.g. fetching a 25mb attachment janks a pixelbook for 500ms).
 export async function gapiFetch<T>(
     method: (params: any, body?: any) => gapi.client.Request<T>,
     requestParams: any, requestBody?: any) {

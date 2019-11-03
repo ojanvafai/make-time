@@ -63,18 +63,22 @@ export class QuoteElidedMessage extends HTMLElement {
     this.linkifyContent_();
 
     this.computeHashes_();
-    if (!previousMessage)
-      return;
 
-    this.elideAllMatches_(previousMessage);
+    if (previousMessage)
+      this.processQuoteElides_(previousMessage);
+  }
+
+  async processQuoteElides_(previousMessage: Message) {
+    await this.elideAllMatches_(previousMessage);
     this.expandToNonTextSiblings_();
     this.undoNestedElides_();
     this.insertToggleButtons_();
     this.updateAllStyling_();
   }
 
-  elideAllMatches_(previousMessage: Message) {
-    let previousHashes = previousMessage.getQuoteElidedMessage().getHashes();
+  async elideAllMatches_(previousMessage: Message) {
+    let previousHashes =
+        (await previousMessage.getQuoteElidedMessage()).getHashes();
     for (let entry of this.hashes_) {
       if (previousHashes.has(entry[0])) {
         for (let match of entry[1]) {

@@ -78,7 +78,7 @@ export class RenderedThread extends HTMLElement {
     }
   }
 
-  render() {
+  async render() {
     if (this.excludeMessages_) {
       this.textContent = '';
 
@@ -125,7 +125,7 @@ export class RenderedThread extends HTMLElement {
       let alreadyRenderedMessages =
           [...this.children].filter(x => x.classList.contains('message'));
       for (let i = 0; i < messages.length; i++) {
-        let quoteElidedMessage = messages[i].getQuoteElidedMessage();
+        let quoteElidedMessage = await messages[i].getQuoteElidedMessage();
         if (this.contains(quoteElidedMessage))
           continue;
 
@@ -146,9 +146,9 @@ export class RenderedThread extends HTMLElement {
     }
   }
 
-  renderWithoutMessages() {
+  async renderWithoutMessages() {
     this.excludeMessages_ = true;
-    this.render();
+    await this.render();
   }
 
   focusFirstUnread() {
