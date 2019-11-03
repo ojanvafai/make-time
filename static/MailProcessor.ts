@@ -488,7 +488,7 @@ export class MailProcessor {
     return headerValue && stringFilterMatches(header.value, headerValue);
   }
 
-  matchesRule(rule: FilterRule, message: Message) {
+  async matchesRule(rule: FilterRule, message: Message) {
     var matches = false;
     if (rule.nolistid) {
       if (message.listId)
@@ -529,12 +529,13 @@ export class MailProcessor {
       matches = true;
     }
     if (rule.plaintext) {
-      if (!stringFilterMatches(rule.plaintext, message.getPlain()))
+      if (!stringFilterMatches(rule.plaintext, await message.getPlain()))
         return false;
       matches = true;
     }
     if (rule.htmlcontent) {
-      if (!stringFilterMatches(rule.htmlcontent, message.getHtmlOrPlain()))
+      if (!stringFilterMatches(
+              rule.htmlcontent, await message.getHtmlOrPlain()))
         return false;
       matches = true;
     }
@@ -549,14 +550,14 @@ export class MailProcessor {
     }
   }
 
-  private getWinningLabel_(thread: Thread, rules: FilterRule[]) {
+  private async getWinningLabel_(thread: Thread, rules: FilterRule[]) {
     var messages = thread.getMessages();
 
     for (let rule of rules) {
       if (rule.matchallmessages) {
         let matches = false;
         for (let message of messages) {
-          matches = this.matchesRule(rule, message);
+          matches = await this.matchesRule(rule, message);
           if (!matches)
             break;
         }
@@ -566,7 +567,7 @@ export class MailProcessor {
         }
       } else {
         for (let message of messages) {
-          if (this.matchesRule(rule, message)) {
+          if (await this.matchesRule(rule, message)) {
             this.logMatchingRule_(thread, rule);
             return rule.label;
           }
@@ -581,7 +582,7 @@ export class MailProcessor {
 
   private async applyFilters_(thread: Thread) {
     let rules = await this.settings_.getFilters();
-    let label = this.getWinningLabel_(thread, rules);
+    let label = await this.getWinningLabel_(thread, rules);
 
     if (label == Labels.Archive) {
       await thread.archive(true);

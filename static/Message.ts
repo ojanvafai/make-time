@@ -200,11 +200,6 @@ export class Message {
     return this.plainedHtml_;
   }
 
-  async getHtml() {
-    await this.parseMessageBody_();
-    return this.html_;
-  }
-
   async getHtmlOrPlain() {
     await this.parseMessageBody_();
     return this.html_ || this.plain_ || '';
@@ -303,7 +298,7 @@ export class Message {
       // Clear out the image src until we have the actual attachment data to put
       // in a data URL. This way we avoid console and mixed content warnings
       // with trying to fetch cid: URLs.
-      image.src = 'about:blank';
+      image.src = '';
 
       // There can be images from quoted sections that no longer have the
       // attachments. So handle them gracefully.
