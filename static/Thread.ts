@@ -574,12 +574,47 @@ export class Thread extends EventTarget {
     return this.setDateDays_(ThreadMetadataKeys.due, days, moveToInbox, true);
   }
 
+  // The next lower priority isn't always the next priority in sort order, e.g.
+  // MustDo should drop to Urgent, not Quick and NeedsFilter isn't really a
+  // priority, so dropping it doesn't make sense.
+  nextLowerPriority(id: Priority) {
+    switch (id) {
+      case Priority.Pin:
+        return Priority.MustDo;
+      case Priority.MustDo:
+        return Priority.Urgent;
+      case Priority.Quick:
+        return Priority.Urgent;
+      case Priority.Urgent:
+        return Priority.Backlog;
+      case Priority.Backlog:
+        return Priority.Icebox;
+      case Priority.NeedsFilter:
+        return Priority.NeedsFilter;
+      case Priority.Icebox:
+        return Priority.Icebox;
+    }
+    throw new Error('This should never happen');
+  }
+
+  dropPriority_(update: ThreadMetadataUpdate) {
+    let id = this.getPriorityId();
+    if (!id)
+      return;
+
+    update.priorityId = this.nextLowerPriority(id);
+    console.log(id, update.priorityId);
+  }
+
   setDate(
       key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, date: Date,
       moveToInbox?: boolean, keepMetadata?: boolean) {
-    // Don't want setting the due date to reset retriageTimestamp or reset
-    // other fields.
-    let update = keepMetadata ? {} : this.keepInInboxMetadata_();
+    // Don't want setting the due date to reset other fields.
+    let update = keepMetadata ? {retriageTimestamp: Date.now()} :
+                                this.keepInInboxMetadata_();
+
+    if (key === ThreadMetadataKeys.due)
+      this.dropPriority_(update);
 
     if (moveToInbox)
       update.moveToInbox = true;

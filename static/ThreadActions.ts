@@ -1,7 +1,7 @@
 import {Action, Shortcut} from './Actions.js';
 import {assert} from './Base.js';
 import {TinyDatePicker} from './third_party/tiny-date-picker/DatePicker.js';
-import {BACKLOG_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, QUICK_PRIORITY_NAME, Thread, URGENT_PRIORITY_NAME, ICEBOX_PRIORITY_NAME} from './Thread.js';
+import {BACKLOG_PRIORITY_NAME, ICEBOX_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, NEEDS_FILTER_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, QUICK_PRIORITY_NAME, Thread, URGENT_PRIORITY_NAME} from './Thread.js';
 
 export let ARCHIVE_ACTION = {
   name: `Archive`,
@@ -129,43 +129,43 @@ export let BLOCKED_ACTIONS = [
 
 let DUE_1D_ACTION = {
   name: '1 day',
-  description: `Shows up tomorrow to retriage.`,
+  description: `Lowers the priority and shows up tomorrow to retriage.`,
   key: new Shortcut('5', false, true, 'Digit5'),
 };
 
 let DUE_2D_ACTION = {
   name: '2 days',
-  description: `Shows up in 2 days to retriage.`,
+  description: `Lowers the priority and shows up in 2 days to retriage.`,
   key: new Shortcut('6', false, true, 'Digit6'),
 };
 
 let DUE_7D_ACTION = {
   name: '7 days',
-  description: `Shows up in 7 days to retriage.`,
+  description: `Lowers the priority and shows up in 7 days to retriage.`,
   key: new Shortcut('7', false, true, 'Digit7'),
 };
 
 let DUE_14D_ACTION = {
   name: '14 days',
-  description: `Shows up in 14 days to retriage.`,
+  description: `Lowers the priority and shows up in 14 days to retriage.`,
   key: new Shortcut('8', false, true, 'Digit8'),
 };
 
 let DUE_30D_ACTION = {
   name: '30 days',
-  description: `Shows up in 30 days to retriage.`,
+  description: `Lowers the priority and shows up in 30 days to retriage.`,
   key: new Shortcut('9', false, true, 'Digit9'),
 };
 
 let DUE_CUSTOM_ACTION = {
-  name: 'Due',
-  description: `Pick a due date to retriage.`,
+  name: 'Snooze',
+  description: `Pick a date to retriage and lower the priority of this thread.`,
   key: new Shortcut('0', false, true, 'Digit0'),
 };
 
 let DUE_NONE_ACTION = {
   name: 'Clear',
-  description: `Removes the due date.`,
+  description: `Clears the snooze date.`,
   key: new Shortcut('-', false, true, 'Minus'),
 };
 
