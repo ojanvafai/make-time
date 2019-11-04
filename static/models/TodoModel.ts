@@ -211,7 +211,7 @@ export class TodoModel extends ThreadListModel {
     let bPinned = (b.getPriorityId() === Priority.Pin);
 
     // Pull pinned threads out first
-    if (!(aPinned === bPinned))
+    if (aPinned !== bPinned)
       return aPinned ? -1 : 1;
 
     if (a.forceTriage() || b.forceTriage()) {

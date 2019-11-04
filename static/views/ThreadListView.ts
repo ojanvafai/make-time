@@ -733,8 +733,10 @@ export class ThreadListView extends View {
       if (!this.untriagedContainer_.getSubGroups().length) {
         this.untriagedContainer_.remove();
         this.untriagedContainer_ = null;
-      } else
+      } else {
+        // Force re-render to update untriaged item count
         this.untriagedContainer_.render();
+      }
     }
 
     this.handleRowsRemoved_(removedRows, oldRows);
