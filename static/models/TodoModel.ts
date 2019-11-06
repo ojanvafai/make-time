@@ -192,9 +192,10 @@ export class TodoModel extends ThreadListModel {
     let aGroup = TodoModel.getTriageGroupName(settings, a);
     let bGroup = TodoModel.getTriageGroupName(settings, b);
 
-    if (aGroup == bGroup) {
+    if (aGroup === bGroup) {
       // Sort within retriage by priority first.
-      if (a.needsRetriage() && a.getPriorityId() !== b.getPriorityId()) {
+      if (aGroup === RETRIAGE_LABEL_NAME &&
+          a.getPriorityId() !== b.getPriorityId()) {
         let aPriority = defined(a.getPriorityId());
         let bPriority = defined(b.getPriorityId());
         return Thread.comparePriorities(aPriority, bPriority);
