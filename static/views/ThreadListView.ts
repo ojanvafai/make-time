@@ -11,7 +11,7 @@ import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
 import {InProgressChangedEvent, Thread} from '../Thread.js';
-import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, DUE_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
+import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 
@@ -226,8 +226,7 @@ export class ThreadListView extends View {
   private untriagedContainer_: MetaThreadRowGroup|null;
   private hasHadAction_?: boolean;
 
-  private static ACTIONS_THAT_KEEP_ROWS_: Action[] =
-      [REPEAT_ACTION, ...DUE_ACTIONS];
+  private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,

@@ -158,8 +158,9 @@ let DUE_30D_ACTION = {
 };
 
 let DUE_CUSTOM_ACTION = {
-  name: 'Snooze',
-  description: `Pick a date to retriage and lower the priority of this thread.`,
+  name: 'Punt',
+  description:
+      `Pick a date to retriage and lower the priority of this thread. Defaults to urgent priority.`,
   key: new Shortcut('0', false, true, 'Digit0'),
 };
 

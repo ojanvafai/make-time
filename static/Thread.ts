@@ -567,11 +567,11 @@ export class Thread extends EventTarget {
   }
 
   dueUpdate(date: Date, moveToInbox?: boolean) {
-    return this.setDate(ThreadMetadataKeys.due, date, moveToInbox, true);
+    return this.setDate(ThreadMetadataKeys.due, date, moveToInbox);
   }
 
   dueDaysUpdate(days: number, moveToInbox?: boolean) {
-    return this.setDateDays_(ThreadMetadataKeys.due, days, moveToInbox, true);
+    return this.setDateDays_(ThreadMetadataKeys.due, days, moveToInbox);
   }
 
   // The next lower priority isn't always the next priority in sort order, e.g.
@@ -597,24 +597,21 @@ export class Thread extends EventTarget {
     throw new Error('This should never happen');
   }
 
-  dropPriority_(update: ThreadMetadataUpdate) {
-    let id = this.getPriorityId();
-    if (!id)
-      return;
-
-    update.priorityId = this.nextLowerPriority(id);
-    console.log(id, update.priorityId);
-  }
-
   setDate(
       key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, date: Date,
-      moveToInbox?: boolean, keepMetadata?: boolean) {
-    // Don't want setting the due date to reset other fields.
-    let update = keepMetadata ? {retriageTimestamp: Date.now()} :
-                                this.keepInInboxMetadata_();
-
-    if (key === ThreadMetadataKeys.due)
-      this.dropPriority_(update);
+      moveToInbox?: boolean) {
+    let update;
+    if (key === ThreadMetadataKeys.due) {
+      let id = this.getPriorityId();
+      // Assume that setting a due date on something with no priority wants it's
+      // priority to be urgent, otherwise, you'd set a MustDo priority without a
+      // due date for more pressing, and a Backlog priority with no due date if
+      // it's less pressing.
+      update = this.priorityUpdate(
+          id ? this.nextLowerPriority(id) : Priority.Urgent);
+    } else {
+      update = this.keepInInboxMetadata_();
+    }
 
     if (moveToInbox)
       update.moveToInbox = true;
@@ -630,14 +627,14 @@ export class Thread extends EventTarget {
 
   setDateDays_(
       key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, days: number,
-      moveToInbox?: boolean, keepMetadata?: boolean) {
+      moveToInbox?: boolean) {
     let date = new Date();
     // Set the time to midnight to ensure consistency since we only care about
     // day boundaries.
     date.setHours(0, 0, 0);
     date.setDate(date.getDate() + days);
 
-    return this.setDate(key, date, moveToInbox, keepMetadata);
+    return this.setDate(key, date, moveToInbox);
   }
 
   async pushLabelsToGmail() {
