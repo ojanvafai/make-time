@@ -96,6 +96,11 @@ export abstract class BaseThreadRowGroup extends HTMLElement {
   abstract getSubGroups(): BaseThreadRowGroup[];
 
   protected updateRowCount_() {
+    // -1 is a magic value for allowed count to hide the count of threads
+    // entirely.
+    if (this.allowedCount_ === -1)
+      return;
+
     let count = this.getRows().length;
     let overLimit = this.allowedCount_ && count > this.allowedCount_;
     this.groupNameContainer_.style.color = overLimit ? 'red' : '';
