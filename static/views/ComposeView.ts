@@ -37,8 +37,6 @@ let SENT_ACTIONS: ActionList = [
 
 const ACTIONS = [SEND, INSERT_LINK, HELP];
 
-const CLOSE_SENT_TOOLBAR_DELAY_MS = 30000;
-
 // TODO: Make insert link a proper action on both ComposeView and
 // ThreadListView's quick reply.
 registerActions('Compose', [
@@ -321,9 +319,6 @@ export class ComposeView extends View {
     // Flush the model so that sending doesn't try to send the same message
     // again.
     this.handleUpdates_(false, true);
-
-    if (!this.closeIfHidden())
-      setTimeout(() => this.showSent_(false), CLOSE_SENT_TOOLBAR_DELAY_MS);
   }
 
   private showSent_(show: boolean, preventCloseWindow?: boolean) {
