@@ -572,6 +572,17 @@ document.body.addEventListener('click', async (e) => {
         return;
       }
 
+      // Don't run link clicks inside message bodies through the router. There
+      // are emails with buggy URLs like href="?foo=bar" where the router will
+      // think you're trying to go to "/".
+      if (anchor.closest('mt-quote-elided-message')) {
+        if (location.origin === anchor.origin) {
+          e.preventDefault();
+          alert('This link is invalid.');
+        }
+        return;
+      }
+
       let willHandlePromise = router.run(anchor);
       if (willHandlePromise) {
         // Need to preventDefault before the await, otherwise the browsers
