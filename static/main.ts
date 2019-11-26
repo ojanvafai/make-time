@@ -580,6 +580,10 @@ document.body.addEventListener('click', async (e) => {
           e.preventDefault();
           alert('This link is invalid.');
         }
+
+        // Always open link clicks inside messages in a new window.
+        anchor.target = '_blank';
+        anchor.rel = 'noopener';
         return;
       }
 
@@ -589,11 +593,7 @@ document.body.addEventListener('click', async (e) => {
         // default action kicks in.
         e.preventDefault();
         await willHandlePromise;
-        return;
       }
-
-      anchor.target = '_blank';
-      anchor.rel = 'noopener';
     }
   }
 });
