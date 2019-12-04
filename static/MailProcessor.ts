@@ -116,29 +116,42 @@ export class MailProcessor {
     // it complicates the code and makes remove labels slower due to the extra
     // network request, so meh.
     if (firestoreKey === 'countToArchive') {
-      let newMessageData =
-          await gapiFetch(gapi.client.gmail.users.threads.get, {
-            userId: USER_ID,
-            id: doc.id,
-            fields: 'messages(labelIds)',
-          });
+      let newMessageData;
 
-      let newMessages = newMessageData.result.messages;
-      // newMessages can be undefined in the case where all the messages on this
-      // thread have no labelIds since we restrict the query to ones with
-      // labelIds.
-      if (newMessages && newMessages.length === count) {
-        let modifyFailed =
-            newMessages.some(x => defined(x.labelIds).includes('INBOX'));
-        if (modifyFailed) {
-          // If new messages haven't come in, then we can safely archive the
-          // whole thread. If new messages have come in, then we can do
-          // nothing and leave the thread in the inbox.
-          await gapiFetch(gapi.client.gmail.users.threads.modify, {
-            'userId': USER_ID,
-            'id': doc.id,
-            'removeLabelIds': removeLabelIds,
-          });
+      try {
+        newMessageData = await gapiFetch(gapi.client.gmail.users.threads.get, {
+          userId: USER_ID,
+          id: doc.id,
+          fields: 'messages(labelIds)',
+        });
+      } catch (e) {
+        // Threads and messages seem to randomly disappear from gmail, so
+        // special case 404s as something that is this case. Technically it
+        // could also be mktime bugs where we put an invalid threadId as the
+        // doc.id.
+        if (e.status !== 404)
+          throw e;
+        console.log(`Thread no longer exists: ${doc.id}`);
+      }
+
+      if (newMessageData) {
+        let newMessages = newMessageData.result.messages;
+        // newMessages can be undefined in the case where all the messages on
+        // this thread have no labelIds since we restrict the query to ones with
+        // labelIds.
+        if (newMessages && newMessages.length === count) {
+          let modifyFailed =
+              newMessages.some(x => defined(x.labelIds).includes('INBOX'));
+          if (modifyFailed) {
+            // If new messages haven't come in, then we can safely archive the
+            // whole thread. If new messages have come in, then we can do
+            // nothing and leave the thread in the inbox.
+            await gapiFetch(gapi.client.gmail.users.threads.modify, {
+              'userId': USER_ID,
+              'id': doc.id,
+              'removeLabelIds': removeLabelIds,
+            });
+          }
         }
       }
     }
