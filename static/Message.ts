@@ -1,5 +1,6 @@
 import {Address} from '../third_party/emailjs-addressparser/addressparser.js';
 
+import {AsyncOnce} from './AsyncOnce.js';
 import {defined, parseAddressList, sandboxedDom, USER_ID} from './Base.js';
 import {Base64} from './base64.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
@@ -27,6 +28,7 @@ export class Message {
   private plainedHtml_: string|undefined;
   private html_: string|undefined;
   private quoteElidedMessage_: QuoteElidedMessage|undefined;
+  private quoteElidedMessageCreator_?: AsyncOnce<QuoteElidedMessage>;
   private rawMessage_!: gapi.client.gmail.Message;
 
   id: string;
@@ -249,17 +251,23 @@ export class Message {
   }
 
   async getQuoteElidedMessage() {
-    if (!this.quoteElidedMessage_) {
-      let html = await this.getHtmlOrHtmlWrappedPlain();
-      this.quoteElidedMessage_ =
-          new QuoteElidedMessage(html, this.previousMessage_);
-      let attachments = this.rewriteInlineImages_(this.quoteElidedMessage_);
-      // Intentionally don't await this so we show the thread without waiting
-      // for attachement image fetches.
-      this.fetchInlineImages_(attachments);
-      this.appendAttachments_(this.quoteElidedMessage_);
+    if (!this.quoteElidedMessageCreator_) {
+      // Only create the QuoteElidedMessage once per Message since
+      // getQuoteElidedMessage can get called while there's an existing
+      // getQuoteElidedMessage call in progress.
+      this.quoteElidedMessageCreator_ = new AsyncOnce(async () => {
+        let html = await this.getHtmlOrHtmlWrappedPlain();
+        this.quoteElidedMessage_ =
+            new QuoteElidedMessage(html, this.previousMessage_);
+        let attachments = this.rewriteInlineImages_(this.quoteElidedMessage_);
+        // Intentionally don't await this so we show the thread without waiting
+        // for attachement image fetches.
+        this.fetchInlineImages_(attachments);
+        this.appendAttachments_(this.quoteElidedMessage_);
+        return this.quoteElidedMessage_;
+      });
     }
-    return this.quoteElidedMessage_;
+    return await this.quoteElidedMessageCreator_.do();
   }
 
   findAttachment_(contentId: string) {
