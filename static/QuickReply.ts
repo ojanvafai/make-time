@@ -113,6 +113,7 @@ export class QuickReply extends HTMLElement {
         CancelEvent.NAME, () => this.dispatchEvent(new ReplyCloseEvent()));
     compose.addEventListener(SubmitEvent.NAME, () => this.handleSubmit_());
     compose.addEventListener('input', () => this.updateProgress_());
+    compose.setEnterKeyHintSend();
     return compose;
   }
 

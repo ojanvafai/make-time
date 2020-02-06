@@ -26,6 +26,14 @@ export function create(tagName: string, ...contents: (string|Node)[]) {
   return node;
 }
 
+export function createWithStyle(
+  tagName: string, style: string, ...contents: (string|Node)[]) {
+  let node = document.createElement(tagName);
+  node.append(...contents);
+  node.style.cssText = style;
+  return node;
+}
+
 export function createLink(href: string, ...contents: (string|Node)[]) {
   let node = create('a', ...contents) as HTMLAnchorElement;
   node.href = href;

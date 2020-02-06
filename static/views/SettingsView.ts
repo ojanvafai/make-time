@@ -1,4 +1,4 @@
-import {assert, createMktimeButton, notNull} from '../Base.js';
+import {assert, create, createMktimeButton, notNull} from '../Base.js';
 import {ServerStorage, StorageUpdates} from '../ServerStorage.js';
 import {Setting, Settings} from '../Settings.js';
 
@@ -10,11 +10,11 @@ import {HelpDialog} from './HelpDialog.js';
 import {QueuesView} from './QueuesView.js';
 import {View} from './View.js';
 
-let HELP_TEXT = `<b>Reordering labels:</b>
-Use ctrl+up/down or cmd+up/down to reorder the focused label. Hold shift to move 10 rows at a time.
-
-Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then its just archived immediately.
-`;
+let HELP_TEXT = [
+  create('b', 'Reordering labels:'),
+  create('p', 'Use ctrl+up/down or cmd+up/down to reorder the focused label. Hold shift to move 10 rows at a time.'),
+  create('p', `Pro-tip: I have emails to me from VIPs show up immediately. All other emails are queued to either be daily (to me or one of my primary project's lists), weekly (to lists I need to pay attention to and sometimes reply to) or monthly (to lists I need to keep abrest of but basically never need to reply to). And if it's not something I need to pay attention to, but occasionally need to search for, then it's just archived immediately.`)
+];
 
 export class SettingsView extends View {
   private scrollable_: HTMLElement;
@@ -85,7 +85,7 @@ export class SettingsView extends View {
     `;
 
     let helpButton =
-        createMktimeButton(() => new HelpDialog(HELP_TEXT), 'Help');
+        createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
 
     this.saveButton_ = createMktimeButton(() => this.save_(), 'Save Changes');
     this.saveButton_.disabled = true;

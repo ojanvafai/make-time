@@ -1,6 +1,15 @@
 import {createMktimeButton, defined, isMobileUserAgent, notNull} from './Base.js';
 import {View} from './views/View.js';
 
+export enum ActionGroup {
+  Ignore = 'ignore',
+  Priority = 'priority',
+  Date = 'date',
+  Undo = 'undo',
+  Sort = 'sort',
+  Reply = 'reply'
+};
+
 export interface Action {
   name: string|HTMLElement|SVGElement;
   description: string;
@@ -8,6 +17,7 @@ export interface Action {
   secondaryKey?: Shortcut|string;
   hidden?: boolean;
   repeatable?: boolean;
+  actionGroup?: ActionGroup;
 }
 
 export type ActionList = (Action|Action[])[];
@@ -278,6 +288,10 @@ export class Actions extends HTMLElement {
       this.centerAbove_(this.tooltip_!, button);
     };
     button.oncontextmenu = (e: Event) => e.preventDefault();
+
+    if (action.actionGroup)
+      button.classList.add(`group-${action.actionGroup}`);
+
     return button;
   }
 
