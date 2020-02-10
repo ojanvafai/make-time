@@ -38,6 +38,10 @@ export class MetaThreadRowGroup extends BaseThreadRowGroup {
     this.rowContainer_.append(group);
   }
 
+  shift(group: ThreadRowGroup) {
+    this.rowContainer_.prepend(group);
+  }
+
   render() {
     super.render();
     this.rowContainer_.style.display = this.collapsed_ ? 'none' : '';

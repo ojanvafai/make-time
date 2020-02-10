@@ -687,26 +687,49 @@ export class ThreadListView extends View {
 
     // Threads should be in sorted order already and all threads in the
     // same queue should be adjacent to each other.
+    let previousEntry: {group: ThreadRowGroup, rows: ThreadRow[]}|undefined;
+
     for (let thread of threads) {
       let groupName = this.mergedGroupName_(thread);
       let entry = groupMap.get(groupName);
       // Insertion sort insert new groups
       if (!entry) {
         let allowedCount = this.model_.allowedCount(groupName);
-        let isSubGroup = !this.model_.isTriage() && thread.forceTriage();
-        let group = new ThreadRowGroup(groupName, allowedCount, isSubGroup);
+        let isUntriagedSubGroup =
+            !this.model_.isTriage() && thread.forceTriage();
+        let group =
+            new ThreadRowGroup(groupName, allowedCount, isUntriagedSubGroup);
 
-        if (isSubGroup) {
+        if (isUntriagedSubGroup) {
           if (!this.untriagedContainer_) {
             this.untriagedContainer_ = new MetaThreadRowGroup('Untriaged');
-            this.rowGroupContainer_.append(this.untriagedContainer_);
+            if (previousEntry)
+              previousEntry.group.after(this.untriagedContainer_);
+            else
+              this.rowGroupContainer_.prepend(this.untriagedContainer_);
           }
-          this.untriagedContainer_.push(group);
+
+          // When transitioning from triage to untriaged, put the group at the
+          // beginning of untriaged.
+          if (!previousEntry || !previousEntry.rows[0].thread.forceTriage()) {
+            this.untriagedContainer_!.shift(group);
+          } else {
+            previousEntry.group.after(group);
+          }
         } else {
-          this.rowGroupContainer_.append(group);
+          if (previousEntry) {
+            // When transitioning from untriaged to triaged, put the group after
+            // the untriage meta group.
+            if (previousEntry.rows[0].thread.forceTriage())
+              assert(this.untriagedContainer_).after(group);
+            else
+              previousEntry.group.after(group);
+          } else {
+            this.rowGroupContainer_.prepend(group);
+          }
         }
 
-        entry = {group: group, rows: []};
+        entry = {group, isUntriagedSubGroup, rows: []};
         groupMap.set(groupName, entry);
         // Call observe after putting the group in the DOM so we don't have a
         // race condition where sometimes the group has no dimensions/position.
@@ -719,6 +742,8 @@ export class ThreadListView extends View {
 
       if (!this.hasHadAction_)
         entry.group.setCollapsed(true);
+
+      previousEntry = entry;
     }
 
     for (let entry of groupMap.values()) {
