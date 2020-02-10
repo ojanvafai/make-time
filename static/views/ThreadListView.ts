@@ -695,8 +695,9 @@ export class ThreadListView extends View {
       // Insertion sort insert new groups
       if (!entry) {
         let allowedCount = this.model_.allowedCount(groupName);
+        let putUntriageInMetaGroup = !this.model_.isTriage();
         let isUntriagedSubGroup =
-            !this.model_.isTriage() && thread.forceTriage();
+            putUntriageInMetaGroup && thread.forceTriage();
         let group =
             new ThreadRowGroup(groupName, allowedCount, isUntriagedSubGroup);
 
@@ -711,16 +712,16 @@ export class ThreadListView extends View {
 
           // When transitioning from triage to untriaged, put the group at the
           // beginning of untriaged.
-          if (!previousEntry || !previousEntry.rows[0].thread.forceTriage()) {
+          if (!previousEntry || !previousEntry.rows[0].thread.forceTriage())
             this.untriagedContainer_!.shift(group);
-          } else {
+          else
             previousEntry.group.after(group);
-          }
         } else {
           if (previousEntry) {
             // When transitioning from untriaged to triaged, put the group after
             // the untriage meta group.
-            if (previousEntry.rows[0].thread.forceTriage())
+            if (putUntriageInMetaGroup &&
+                previousEntry.rows[0].thread.forceTriage())
               assert(this.untriagedContainer_).after(group);
             else
               previousEntry.group.after(group);
