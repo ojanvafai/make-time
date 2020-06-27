@@ -1,6 +1,6 @@
 import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action, ActionGroup, registerActions, Shortcut, shortcutString} from '../Actions.js';
-import {assert, collapseArrow, defined, expandArrow, leftArrow, notNull} from '../Base.js';
+import {assert, collapseArrow, defined, expandArrow, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -135,14 +135,8 @@ let UNDO_ACTION = {
   actionGroup: ActionGroup.Undo,
 };
 
-// Too lazy to make an up arrow SVG, so just rotate the down arrow.
-let downArrow = leftArrow('down-arrow');
-downArrow.style.transform = 'rotate(270deg)';
-let upArrow = leftArrow('up-arrow');
-upArrow.style.transform = 'rotate(90deg)';
-
 let MOVE_UP_ACTION = {
-  name: upArrow,
+  name: 'mv up',
   description: `Moves the row up in sort order in the Todo view.`,
   key: '[',
   secondaryKey: new Shortcut('ArrowUp', true, false),
@@ -151,7 +145,7 @@ let MOVE_UP_ACTION = {
 };
 
 let MOVE_DOWN_ACTION = {
-  name: downArrow,
+  name: 'mv down',
   description: `Moves the row down in sort order in the Todo view.`,
   key: ']',
   secondaryKey: new Shortcut('ArrowDown', true, false),

@@ -8,7 +8,7 @@ export enum ActionGroup {
   Undo = 'undo',
   Sort = 'sort',
   Reply = 'reply'
-};
+}
 
 export interface Action {
   name: string|HTMLElement|SVGElement;
@@ -277,8 +277,21 @@ export class Actions extends HTMLElement {
     if (action.hidden)
       return null;
 
-    if (!children.length)
-      children.push(action.name);
+    if (!children.length) {
+      children.push(shortcutString(action.key));
+
+      let name = document.createElement('div');
+      name.style.cssText = `
+        position: absolute;
+        left: 0px;
+        right: 0px;
+        bottom: 2px;
+        color: var(--dim-text-color);
+        font-size: 10px;
+      `;
+      name.append(action.name);
+      children.push(name);
+    }
 
     let button = createMktimeButton(undefined, ...children) as ButtonWithAction;
     button.action = action;

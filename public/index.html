@@ -70,13 +70,13 @@ mt-queues fieldset {
   max-width: fill-available;
 }
 .message-body * {
-  /* Gmail strips position:absolute, so this might not be a great fix, but we need
-  something to prevent messages from being moved outside the bounds of the UI,
-  e.g. TripIt emails do this. */
+  /* Gmail strips position:absolute, so this might not be a great fix, but we
+need something to prevent messages from being moved outside the bounds of the
+UI, e.g. TripIt emails do this. */
   position: static !important;
 }
 html {
-  font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
+  font-family: Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
   height: 100%;
 }
 body {
@@ -109,7 +109,7 @@ select.label-chip {
 }
 select, mt-address-compose, [contentEditable=true],
 input:not([type=checkbox]):not([type=radio]),
-.mktime-button, .x-button, .row-button, .toggler, .link-bubble, .label-chip  {
+.mktime-button, .x-button, .row-button, .toggler, .link-bubble, .label-chip {
   padding: 4px;
   -webkit-appearance: none;
   border-radius: 3px;
@@ -165,6 +165,12 @@ select.button, .mktime-button {
   font-size: 16px;
   display: block;
   text-align: center;
+}
+mt-actions .mktime-button {
+  height: 50px;
+  min-width: 50px;
+  font-size: 20px;
+  padding: 4px;
 }
 select.button {
   margin-right: 4px;
@@ -267,12 +273,6 @@ html.dark-mode .message-body * {
   color: var(--thread-text-color) !important;
   background-color: var(--thread-background-color) !important;
 }
-/* Regular font-size looks good on mobile but large on desktop. */
-html.desktop,
-html.desktop select.button,
-html.desktop button {
-  font-size: 0.875rem;
-}
 @keyframes blinker {
   50% {
     opacity: 0;
@@ -341,7 +341,7 @@ html.desktop button {
   max-width: 100vw;
 }
 
-.dp-permanent .dp{
+.dp-permanent .dp {
   z-index: 0;
 }
 
@@ -605,7 +605,8 @@ html.desktop button {
   100% {
     transform: translate(-50%, -50%);
   }
-}</style>
+}
+</style>
 </head>
 <body>
 </body>
