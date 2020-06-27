@@ -8,7 +8,7 @@ import {Settings} from '../Settings.js';
 import {TaskQueue} from '../TaskQueue.js';
 import {ThreadMetadataUpdate} from '../Thread.js';
 import {Thread, ThreadMetadata} from '../Thread.js';
-import {createDateUpdate, createUpdate, pickDate} from '../ThreadActions.js';
+import {createStuckUpdate, createUpdate, pickDate} from '../ThreadActions.js';
 
 import {Model} from './Model.js';
 
@@ -76,12 +76,12 @@ export abstract class ThreadListModel extends Model {
 
   // Mark a bit that this thread was triaged with unread messages so it can be
   // grouped differently in todo view. Don't mark this bit for things that are
-  // overdue, stuck, or retriage since those have already been fully triaged
-  // once. If the unread messages were all sent by me, then consider them read
-  // as well since I don't need to read messages I sent.
+  // stuck or retriage since those have already been fully triaged once. If the
+  // unread messages were all sent by me, then consider them read as well since
+  // I don't need to read messages I sent.
   private needsMessageTriage_(thread: Thread, sendAs: SendAs) {
     return this.isTriage() && thread.unreadNotSentByMe(sendAs) &&
-        !thread.hasDueDate() && !thread.isStuck() && !thread.needsRetriage();
+        !thread.isStuck() && !thread.needsRetriage();
   }
 
   async getNoMeetingRoomEvents() {
@@ -314,7 +314,7 @@ export abstract class ThreadListModel extends Model {
 
     for (let thread of threads) {
       let update = date ?
-          createDateUpdate(thread, destination, date, moveToInbox) :
+          await createStuckUpdate(thread, date, moveToInbox) :
           createUpdate(
               thread, destination, moveToInbox,
               this.needsMessageTriage_(thread, await SendAs.getDefault()));

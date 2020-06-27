@@ -677,9 +677,10 @@ export class MailProcessor {
         });
   }
 
-  async dequeueDateKeys_(key: ThreadMetadataKeys) {
-    let querySnapshot =
-        await this.metadataCollection_().where(key, '<=', Date.now()).get();
+  async dequeueStuck_() {
+    let querySnapshot = await this.metadataCollection_()
+                            .where(ThreadMetadataKeys.blocked, '<=', Date.now())
+                            .get();
 
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
         querySnapshot.docs,
@@ -687,13 +688,6 @@ export class MailProcessor {
           let update: ThreadMetadataUpdate = {
             hasLabel: true,
           };
-
-          if (key === ThreadMetadataKeys.due) {
-            if (doc.data().dueDateExpired)
-              return;
-            update.dueDateExpired = true;
-          }
-
           await doc.ref.update(update);
         });
   }
@@ -798,8 +792,7 @@ export class MailProcessor {
 
   private async processSingleQueue_(queue: string) {
     if (queue === QueueSettings.DAILY) {
-      await this.dequeueDateKeys_(ThreadMetadataKeys.blocked);
-      await this.dequeueDateKeys_(ThreadMetadataKeys.due);
+      await this.dequeueStuck_();
       await this.processRetriage_();
       await this.processSoftMute_();
     }

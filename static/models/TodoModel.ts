@@ -3,7 +3,7 @@ import {assert, compareDates, defined, notNull, setFaviconCount} from '../Base.j
 import {firestoreUserCollection} from '../BaseMain.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
-import {ICEBOX_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, OVERDUE_LABEL_NAME, PINNED_PRIORITY_NAME, Priority, STUCK_LABEL_NAME, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, STUCK_LABEL_NAME, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {Thread} from '../Thread.js';
 
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
@@ -61,7 +61,7 @@ export class TodoModel extends ThreadListModel {
         threads.reduce((accumulator: number, currentValue: Thread) => {
           let priorityId = currentValue.getPriorityId();
           let shouldCount =
-              priorityId === Priority.Quick || priorityId === Priority.MustDo;
+              priorityId === Priority.Pin || priorityId === Priority.MustDo;
           return accumulator + (shouldCount ? 1 : 0);
         }, 0);
 
@@ -120,9 +120,6 @@ export class TodoModel extends ThreadListModel {
   }
 
   static getTriageGroupName(settings: Settings, thread: Thread) {
-    if (thread.hasDueDate())
-      return OVERDUE_LABEL_NAME;
-
     if (thread.isStuck())
       return STUCK_LABEL_NAME;
 
@@ -160,10 +157,6 @@ export class TodoModel extends ThreadListModel {
         return this.settings_.get(ServerStorage.KEYS.ALLOWED_MUST_DO_COUNT);
       case URGENT_PRIORITY_NAME:
         return this.settings_.get(ServerStorage.KEYS.ALLOWED_URGENT_COUNT);
-      case ICEBOX_PRIORITY_NAME:
-        // Don't show counts at all for IceBox so you can not be anxious about
-        // the pile of threads there.
-        return -1;
     }
     // 0 represents no limit.
     return 0;
@@ -211,7 +204,6 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected compareThreads(a: Thread, b: Thread) {
-
     let aPinned = (a.getPriorityId() === Priority.Pin);
     let bPinned = (b.getPriorityId() === Priority.Pin);
 

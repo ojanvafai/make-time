@@ -61,14 +61,12 @@ export class LabelState {
   public label: string|null;
   public priority: string|null;
   public blocked: Date|null;
-  public due: Date|null;
   public hasRepeat: boolean;
 
   constructor(thread: Thread, public group: string) {
     this.label = thread.getLabel();
     this.priority = thread.getPriority();
     this.blocked = thread.getStuckDate();
-    this.due = thread.getDueDate();
     this.hasRepeat = thread.hasRepeat();
   }
 
@@ -76,7 +74,6 @@ export class LabelState {
     return this.group === other.group && this.label === other.label &&
         this.priority === other.priority &&
         this.datesEqual_(this.blocked, other.blocked) &&
-        this.datesEqual_(this.due, other.due) &&
         this.hasRepeat === other.hasRepeat;
   }
 
@@ -441,15 +438,6 @@ export class ThreadRow extends HTMLElement {
     if (state.blocked) {
       let blockedString = `Stuck: ${DAY_MONTH_FORMATTER.format(state.blocked)}`;
       let label = this.createLabel_(blockedString);
-      container.append(label);
-    }
-
-    // TODO: Make this a date picker for changing the due date.
-    if (state.due) {
-      let blockedString = `Due: ${DAY_MONTH_FORMATTER.format(state.due)}`;
-      let label = this.createLabel_(blockedString);
-      if (state.due < new Date())
-        label.style.color = 'red';
       container.append(label);
     }
 

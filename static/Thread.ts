@@ -3,7 +3,7 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
-import {send, AddressHeaders} from './Mail.js';
+import {AddressHeaders, send} from './Mail.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {ProcessedMessageData} from './ProcessedMessageData.js';
@@ -63,10 +63,8 @@ export interface ThreadMetadata {
   queued?: boolean;
   throttled?: boolean;
   blocked?: boolean|number;
-  due?: number;
-  // Record whether we marked an item as overdue so we don't keep marking it
-  // overdue repeatedly unless the user changes the due date again.
-  dueDateExpired?: boolean;
+  removeDue?: number;
+  removedDueDateExpired?: boolean;
   muted?: boolean;
   softMuted?: boolean;
   newMessagesSinceSoftMuted?: boolean;
@@ -104,8 +102,8 @@ export interface ThreadMetadataUpdate {
   queued?: boolean|firebase.firestore.FieldValue;
   throttled?: boolean|firebase.firestore.FieldValue;
   blocked?: boolean|number|firebase.firestore.FieldValue;
-  due?: boolean|number|firebase.firestore.FieldValue;
-  dueDateExpired?: boolean|firebase.firestore.FieldValue;
+  removedDue?: boolean|number|firebase.firestore.FieldValue;
+  removedDueDateExpired?: boolean|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
   softMuted?: boolean|firebase.firestore.FieldValue;
   newMessagesSinceSoftMuted?: boolean|firebase.firestore.FieldValue;
@@ -137,8 +135,8 @@ export enum ThreadMetadataKeys {
   queued = 'queued',
   throttled = 'throttled',
   blocked = 'blocked',
-  due = 'due',
-  dueDateExpired = 'dueDateExpired',
+  removedDue = 'due',
+  removedDueDateExpired = 'dueDateExpired',
   muted = 'muted',
   softMuted = 'softMuted',
   newMessagesSinceSoftMuted = 'newMessagesSinceSoftMuted',
@@ -164,13 +162,13 @@ let FWD_THREAD_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
 
 // The number values get stored in firestore, so should never be changed.
 export enum Priority {
-  NeedsFilter = 1,
+  RemovedNeedsFilter = 1,
   MustDo = 2,
   Urgent = 3,
   Backlog = 4,
   Pin = 5,
-  Quick = 6,
-  Icebox = 7,
+  RemovedQuick = 6,
+  RemovedIcebox = 7,
 }
 
 // The number values get stored in firestore, so should never be changed.
@@ -178,25 +176,18 @@ export enum RepeatType {
   Daily = 1,
 }
 
-export const QUICK_PRIORITY_NAME = 'Quick';
-export const ICEBOX_PRIORITY_NAME = 'Icebox';
-export const NEEDS_FILTER_PRIORITY_NAME = 'Filter';
 export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
 export const URGENT_PRIORITY_NAME = 'Urgent';
 export const BACKLOG_PRIORITY_NAME = 'Backlog';
 export const STUCK_LABEL_NAME = 'Stuck';
-export const OVERDUE_LABEL_NAME = 'Overdue';
 export const FALLBACK_LABEL_NAME = 'No label';
 
 const PrioritySortOrder = [
   Priority.Pin,
   Priority.MustDo,
-  Priority.Quick,
   Priority.Urgent,
-  Priority.NeedsFilter,
   Priority.Backlog,
-  Priority.Icebox,
 ];
 
 // Use negative values for built-in labels.
@@ -209,12 +200,6 @@ export function getPriorityName(id: Priority) {
   switch (id) {
     case Priority.Pin:
       return PINNED_PRIORITY_NAME;
-    case Priority.Quick:
-      return QUICK_PRIORITY_NAME;
-    case Priority.Icebox:
-      return ICEBOX_PRIORITY_NAME;
-    case Priority.NeedsFilter:
-      return NEEDS_FILTER_PRIORITY_NAME;
     case Priority.MustDo:
       return MUST_DO_PRIORITY_NAME;
     case Priority.Urgent:
@@ -322,7 +307,6 @@ export class Thread extends EventTarget {
 
   private static clearedMetadata_(removeFromInbox?: boolean):
       ThreadMetadataUpdate {
-    // Intentionally don't delete due date if we're leaving it in the inbox.
     let update: ThreadMetadataUpdate = {
       needsRetriage: firebase.firestore.FieldValue.delete(),
       needsMessageTriage: firebase.firestore.FieldValue.delete(),
@@ -346,7 +330,6 @@ export class Thread extends EventTarget {
       // Intentionally keep labelId so that muted threads can see if their
       // labelId changes when new messages come in.
       update.moveToInbox = firebase.firestore.FieldValue.delete();
-      update.due = firebase.firestore.FieldValue.delete();
     }
     return update;
   }
@@ -528,7 +511,7 @@ export class Thread extends EventTarget {
     if (moveToInbox)
       update.moveToInbox = true;
 
-    if (needsMessageTriage && priority !== Priority.NeedsFilter)
+    if (needsMessageTriage)
       update.needsMessageTriage = true;
 
     update.hasPriority = true;
@@ -537,7 +520,10 @@ export class Thread extends EventTarget {
   }
 
   clearStuckUpdate(moveToInbox?: boolean) {
-    let update = this.clearDate_(ThreadMetadataKeys.blocked, moveToInbox);
+    let update: ThreadMetadataUpdate = {};
+    if (moveToInbox)
+      update.moveToInbox = true;
+    update[ThreadMetadataKeys.blocked] = firebase.firestore.FieldValue.delete();
     // Clearing blocked should put the thread back in the triage queue,
     // otherwise the thread just disappears. If the user wants a queue other
     // than triage, they can just use that action directly instead of clearing
@@ -546,95 +532,29 @@ export class Thread extends EventTarget {
     return update;
   }
 
-  clearDueUpdate(moveToInbox?: boolean) {
-    return this.clearDate_(ThreadMetadataKeys.due, moveToInbox);
-  }
-
-  private clearDate_(key: ThreadMetadataKeys, moveToInbox?: boolean) {
-    let update: ThreadMetadataUpdate = {};
-    if (moveToInbox)
-      update.moveToInbox = true;
-    update[key] = firebase.firestore.FieldValue.delete();
-    return update;
-  }
-
   stuckUpdate(date: Date, moveToInbox?: boolean) {
-    return this.setDate(ThreadMetadataKeys.blocked, date, moveToInbox);
+    return this.setDate(date, moveToInbox);
   }
 
   stuckDaysUpdate(days: number, moveToInbox?: boolean) {
-    return this.setDateDays_(ThreadMetadataKeys.blocked, days, moveToInbox);
+    return this.setDateDays_(days, moveToInbox);
   }
 
-  dueUpdate(date: Date, moveToInbox?: boolean) {
-    return this.setDate(ThreadMetadataKeys.due, date, moveToInbox);
-  }
-
-  dueDaysUpdate(days: number, moveToInbox?: boolean) {
-    return this.setDateDays_(ThreadMetadataKeys.due, days, moveToInbox);
-  }
-
-  // The next lower priority isn't always the next priority in sort order, e.g.
-  // MustDo should drop to Urgent, not Quick and NeedsFilter isn't really a
-  // priority, so dropping it doesn't make sense.
-  nextLowerPriority(id: Priority) {
-    switch (id) {
-      case Priority.Pin:
-        return Priority.MustDo;
-      case Priority.MustDo:
-        return Priority.Urgent;
-      case Priority.Quick:
-        return Priority.Urgent;
-      case Priority.Urgent:
-        return Priority.Backlog;
-      case Priority.Backlog:
-        return Priority.Icebox;
-      case Priority.NeedsFilter:
-        return Priority.NeedsFilter;
-      case Priority.Icebox:
-        return Priority.Icebox;
-    }
-    throw new Error('This should never happen');
-  }
-
-  setDate(
-      key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, date: Date,
-      moveToInbox?: boolean) {
-    let update;
-    if (key === ThreadMetadataKeys.due) {
-      let id = this.getPriorityId();
-      // Assume that setting a due date on something with no priority wants it's
-      // priority to be urgent, otherwise, you'd set a MustDo priority without a
-      // due date for more pressing, and a Backlog priority with no due date if
-      // it's less pressing.
-      update = this.priorityUpdate(
-          id ? this.nextLowerPriority(id) : Priority.Urgent);
-    } else {
-      update = this.keepInInboxMetadata_();
-    }
-
+  setDate(date: Date, moveToInbox?: boolean) {
+    let update = this.keepInInboxMetadata_();
     if (moveToInbox)
       update.moveToInbox = true;
-
-    // Setting a new due date resets the bit that prevents the thread from being
-    // marked overdue.
-    if (key === ThreadMetadataKeys.due)
-      update.dueDateExpired = firebase.firestore.FieldValue.delete();
-
-    update[key] = date.getTime();
+    update[ThreadMetadataKeys.blocked] = date.getTime();
     return update;
   }
 
-  setDateDays_(
-      key: ThreadMetadataKeys.due|ThreadMetadataKeys.blocked, days: number,
-      moveToInbox?: boolean) {
+  setDateDays_(days: number, moveToInbox?: boolean) {
     let date = new Date();
     // Set the time to midnight to ensure consistency since we only care about
     // day boundaries.
     date.setHours(0, 0, 0);
     date.setDate(date.getDate() + days);
-
-    return this.setDate(key, date, moveToInbox);
+    return this.setDate(date, moveToInbox);
   }
 
   async pushLabelsToGmail() {
@@ -698,10 +618,6 @@ export class Thread extends EventTarget {
     return !!this.metadata_.repeat;
   }
 
-  hasDueDate() {
-    return !!this.metadata_.due;
-  }
-
   isStuck() {
     return !!this.metadata_.blocked;
   }
@@ -740,13 +656,6 @@ export class Thread extends EventTarget {
     if (blocked === false)
       assert(false);
     return new Date(blocked as number);
-  }
-
-  getDueDate() {
-    if (!this.hasDueDate())
-      return null;
-    let due = defined(this.metadata_.due);
-    return new Date(due as number);
   }
 
   isImportant() {
