@@ -1,6 +1,6 @@
 import {defined, parseAddressList} from '../Base.js';
 import {IDBKeyVal} from '../idb-keyval.js';
-import {send} from '../Mail.js';
+import {AddressHeaders, send} from '../Mail.js';
 
 import {Model} from './Model.js';
 
@@ -111,11 +111,13 @@ export class ComposeModel extends Model {
       return;
     this.sending_ = true;
 
+    let addressHeaders = new Map();
+    addressHeaders.set(AddressHeaders.To, parseAddressList(to));
+
     let sent;
     try {
       sent = await send(
-          this.body_, parseAddressList(to), this.subject_,
-          defined(this.sender_));
+          this.body_, addressHeaders, this.subject_, defined(this.sender_));
       await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
     } finally {
       this.sending_ = false;

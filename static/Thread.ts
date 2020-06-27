@@ -3,7 +3,7 @@ import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
-import {send} from './Mail.js';
+import {send, AddressHeaders} from './Mail.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {ProcessedMessageData} from './ProcessedMessageData.js';
@@ -1063,7 +1063,9 @@ export class Thread extends EventTarget {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
-    let to = [];
+    let addressHeaders = new Map();
+    addressHeaders.set(AddressHeaders.To, []);
+
     if (replyType === ReplyType.Forward) {
       assert(
           extraEmails.length,
@@ -1073,26 +1075,26 @@ export class Thread extends EventTarget {
       // overlap.
       let from = lastMessage.replyTo || lastMessage.from;
       if (from)
-        to.push(...parseAddressList(from));
+        addressHeaders.get(AddressHeaders.To).push(...parseAddressList(from));
 
       if (replyType === ReplyType.ReplyAll && lastMessage.to) {
         let excludeMe =
             lastMessage.parsedTo.filter(x => x.address !== sender.sendAsEmail);
-        to.push(...excludeMe);
+        addressHeaders.get(AddressHeaders.To).push(...excludeMe);
       }
     }
 
     if (extraEmails.length)
-      to.push(...extraEmails);
+      addressHeaders.get(AddressHeaders.To).push(...extraEmails);
+
+    if (replyType === ReplyType.ReplyAll && lastMessage.cc) {
+      addressHeaders.set(AddressHeaders.Cc, lastMessage.parsedCc);
+    }
 
     let subject = lastMessage.subject || '';
     let replyPrefix = replyType === ReplyType.Forward ? 'Fwd: ' : 'Re: ';
     if (subject && !subject.startsWith(replyPrefix))
       subject = replyPrefix + subject;
-
-    let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
-    if (replyType === ReplyType.ReplyAll && lastMessage.cc)
-      headers += `Cc: ${lastMessage.cc}\n`;
 
     let text;
     if (replyType === ReplyType.Forward) {
@@ -1112,7 +1114,9 @@ export class Thread extends EventTarget {
   </blockquote>`;
     }
 
-    let message = await send(text, to, subject, sender, headers, this.id);
+    let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
+    let message =
+        await send(text, addressHeaders, subject, sender, headers, this.id);
     // If the message is in this same thread, then account for it appropriately
     // in the message counts. This can happen even if it's a forward, e.g. if
     // you forward to yourself.
