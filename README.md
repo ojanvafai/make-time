@@ -35,7 +35,13 @@ Start http://localhost:5000 serves make-time for consumer accounts, and http://l
 $ ./gulp deploy
 ```
 
-In order to deploy, Ojan will need to make you a collaborator on the relevant appengine projects first. Use --skip-google to only upload to the mk-time project and skip google.com:mktime.
+Or for Google instance:
+```
+$ ./gulp deploy-google
+```
+
+In order to deploy, Ojan will need to make you a collaborator on the relevant
+appengine projects first.
 
 ## Bundling
 By default, running locally will serve unbundled and deploying will bundle.
