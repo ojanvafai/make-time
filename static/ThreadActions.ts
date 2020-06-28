@@ -19,7 +19,7 @@ export let PIN_ACTION = {
 
 export let MUST_DO_ACTION = {
   name: MUST_DO_PRIORITY_NAME,
-  description: `Must do today. Literally won't go home till it's done.`,
+  description: `Must do today. Should be completely emptied daily.`,
   key: '1',
   actionGroup: ActionGroup.Priority,
 };
@@ -46,14 +46,14 @@ export let MUTE_ACTION = {
 };
 
 export let SOFT_MUTE_ACTION = {
-  name: `Soft Mute`,
+  name: `Mute 7d`,
   description: `Mute for 7 days.`,
   key: 's',
   actionGroup: ActionGroup.Ignore,
 };
 
 export let REPEAT_ACTION = {
-  name: 'Repeats',
+  name: 'Daily',
   description: `Makes this task repeat daily.`,
   key: 't',
   actionGroup: ActionGroup.Date,
@@ -115,21 +115,29 @@ let BLOCKED_NONE_ACTION = {
 
 export let BLOCKED_ACTIONS = [
   BLOCKED_CUSTOM_ACTION,
-  BLOCKED_1D_ACTION,
-  BLOCKED_2D_ACTION,
-  BLOCKED_7D_ACTION,
-  BLOCKED_14D_ACTION,
-  BLOCKED_30D_ACTION,
-  BLOCKED_NONE_ACTION,
-  REPEAT_ACTION,
+  [
+    BLOCKED_2D_ACTION,
+    BLOCKED_1D_ACTION,
+    BLOCKED_7D_ACTION,
+  ],
+  [
+    BLOCKED_14D_ACTION,
+    BLOCKED_30D_ACTION,
+  ],
+  [
+    BLOCKED_NONE_ACTION,
+    REPEAT_ACTION,
+  ],
 ];
 
 export let BASE_THREAD_ACTIONS = [
   PIN_ACTION,
   [
     MUST_DO_ACTION,
-    URGENT_ACTION,
-    BACKLOG_ACTION,
+    [
+      URGENT_ACTION,
+      BACKLOG_ACTION,
+    ],
   ],
   BLOCKED_ACTIONS,
 ];

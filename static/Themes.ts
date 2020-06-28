@@ -1,16 +1,17 @@
 interface Theme {
   name: string;
   styles: {
-    '--border-and-hover-color': string; '--row-hover-color': string;
-    '--nested-background-color': string;
-    '--overlay-background-color': string;
-    '--inverted-overlay-background-color': string;
-    '--selected-background-color': string;
-    '--text-color': string;
-    '--dim-text-color': string;
-    '--inverted-text-color': string;
-    '--midpoint-color': string;
-    '--main-background': string;
+    '--border-and-hover-color': string,
+    '--row-hover-color': string,
+    '--nested-background-color': string,
+    '--overlay-background-color': string,
+    '--inverted-overlay-background-color': string,
+    '--selected-background-color': string,
+    '--text-color': string,
+    '--dim-text-color': string,
+    '--inverted-text-color': string,
+    '--midpoint-color': string,
+    '--main-background': string,
     '--button-group-1-bgcolor': string,
     '--button-group-2-bgcolor': string,
     '--button-group-3-bgcolor': string,

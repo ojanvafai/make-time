@@ -20,7 +20,9 @@ export interface Action {
   actionGroup?: ActionGroup;
 }
 
-export type ActionList = (Action|Action[])[];
+type SubActionRow = Action[];
+type GroupedActions = (Action|SubActionRow)[];
+export type ActionList = (Action|GroupedActions)[];
 
 interface ButtonWithAction extends HTMLButtonElement {
   action: Action;
@@ -121,7 +123,8 @@ export class Actions extends HTMLElement {
     }
   }
 
-  private createButtonList_(action: Action|Action[], container: HTMLElement) {
+  private createButtonList_(
+      action: Action|GroupedActions, container: HTMLElement) {
     let button: ButtonWithAction|null;
     if (Array.isArray(action)) {
       let actionList = action as Action[];
@@ -138,18 +141,18 @@ export class Actions extends HTMLElement {
           let hitButton = this.hitButton_(e);
           this.updateTooltip_(hitButton ? hitButton.action : null, this.menu_);
 
-          for (let child of this.menu_.children) {
+          for (let child of this.menu_.querySelectorAll('.mktime-button')) {
             let element = child as HTMLElement;
-            element.style.backgroundColor = element === hitButton ?
-                'var(--border-and-hover-color)' :
-                'var(--overlay-background-color)';
+            element.style.backgroundColor =
+                element === hitButton ? 'var(--border-and-hover-color)' : '';
           }
         };
 
         button.addEventListener('pointermove', updateMenuItemHover);
 
         button.addEventListener('pointerdown', (e: PointerEvent) => {
-          this.openMenu_(e.target as HTMLButtonElement, actionList.slice(1));
+          let firstAction = actionList.slice(1);
+          this.openMenu_(e.target as HTMLButtonElement, firstAction);
           updateMenuItemHover(e);
 
           // Set this so we can have the same implementation for touch and
@@ -210,41 +213,36 @@ export class Actions extends HTMLElement {
     return null;
   }
 
-  private openMenu_(button: HTMLElement, actions: Action[]) {
+  private openMenu_(button: HTMLElement, actions: ActionList) {
     this.menu_ = document.createElement('div');
-    this.menu_.className = 'toolbar menu';
-    for (let subAction of actions.reverse()) {
-      let name = document.createElement('div');
-      name.style.cssText = `
-        flex: 1;
-        text-align: left;
-      `;
-      name.append(subAction.name);
-
-      let shortcut = document.createElement('div');
-      shortcut.style.cssText = `
-        color: var(--dim-text-color);
-      `;
-      shortcut.append(`${shortcutString(subAction.key)}`);
-
-      let button = this.createButton_(subAction, name, shortcut);
-      if (button) {
-        button.style.display = 'flex';
-        this.menu_.append(button);
-      }
-    }
-
+    this.menu_.className = 'toolbar';
     this.menu_.style.cssText = `
       position: fixed;
-      display: flex;
-      flex-direction: column;
-      border-radius: 3px;
-      width: 50vw;
-      max-width: 200px;
-      background-color: var(--overlay-background-color);
-      border: 1px solid var(--border-and-hover-color);
+      margin: 0;
+      border-radius: 5px 5px 0 0;
+      overflow: hidden;
+      background-color: var(--main-background);
     `;
     document.body.append(this.menu_);
+
+    for (let subActionList of actions) {
+      if (!Array.isArray(subActionList))
+        subActionList = [subActionList];
+      const row = document.createElement('div');
+      row.style.cssText = `
+        display: flex;
+        justify-content: center;
+        background-color: var(--nested-background-color);
+      `;
+      for (let subAction of subActionList) {
+        let menuButton = this.createButton_(subAction as Action);
+        if (menuButton) {
+          menuButton.style.margin = '6px';
+          row.append(menuButton);
+        }
+      }
+      this.menu_.prepend(row);
+    }
 
     // Put a bigger margin on mobile so that you can see the button under your
     // finger.
@@ -273,15 +271,12 @@ export class Actions extends HTMLElement {
                 rect.left - (Math.max(0, (itemWidth - rect.width)) / 2)))}px`;
   }
 
-  createButton_(action: Action, ...children: (string|Element)[]) {
+  createButton_(action: Action) {
     if (action.hidden)
       return null;
 
-    if (!children.length) {
-      children.push(shortcutString(action.key));
-
-      let name = document.createElement('div');
-      name.style.cssText = `
+    let name = document.createElement('div');
+    name.style.cssText = `
         position: absolute;
         left: 0px;
         right: 0px;
@@ -289,11 +284,12 @@ export class Actions extends HTMLElement {
         color: var(--dim-text-color);
         font-size: 10px;
       `;
-      name.append(action.name);
-      children.push(name);
-    }
+    name.append(action.name);
 
-    let button = createMktimeButton(undefined, ...children) as ButtonWithAction;
+    let button =
+        createMktimeButton(undefined, shortcutString(action.key), name) as
+        ButtonWithAction;
+    button.classList.add('action-button');
     button.action = action;
     button.onpointerleave = () => this.tooltip_!.remove();
     button.onpointerenter = () => {
@@ -310,19 +306,13 @@ export class Actions extends HTMLElement {
 
   private updateTooltip_(action: Action|null, relativeTo: HTMLElement) {
     let tooltip = defined(this.tooltip_);
-
     if (!action) {
       tooltip.style.display = 'none';
       return;
     }
-
     tooltip.style.display = '';
     tooltip.textContent = '';
-
-    let bold = document.createElement('b');
-    bold.append(`${shortcutString(action.key)}: `);
-    tooltip.append(bold, action.description);
-
+    tooltip.append(action.description);
     this.centerAbove_(tooltip, relativeTo);
   }
 
@@ -365,7 +355,7 @@ export class Actions extends HTMLElement {
   }
 
   static getMatchingAction(e: KeyboardEvent, actions: ActionList) {
-    for (let action of actions) {
+    for (let action of actions.flat()) {
       if (Array.isArray(action)) {
         let match = action.find(x => this.matchesAction(e, x));
         if (match)
