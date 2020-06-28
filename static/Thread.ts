@@ -176,6 +176,7 @@ export enum RepeatType {
   Daily = 1,
 }
 
+export const UNKNOWN_PRIORITY_NAME = 'Unknown priority';
 export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
 export const URGENT_PRIORITY_NAME = 'Urgent';
@@ -206,6 +207,10 @@ export function getPriorityName(id: Priority) {
       return URGENT_PRIORITY_NAME;
     case Priority.Backlog:
       return BACKLOG_PRIORITY_NAME;
+    case Priority.RemovedNeedsFilter:
+    case Priority.RemovedQuick:
+    case Priority.RemovedIcebox:
+      return UNKNOWN_PRIORITY_NAME;
   }
   throw new Error('This should never happen');
 }
