@@ -39,9 +39,9 @@ export class Shortcut {
   toString() {
     let val = '';
     if (this.ctrlMeta)
-      val += USES_META_FOR_CTRL ? '<cmd> + ' : '<ctrl> + ';
+      val += USES_META_FOR_CTRL ? '⌘+' : '^+';
     if (this.shift)
-      val += '<shift> + ';
+      val += '<shift>+';
     return val + humanReadableKeyName(this.key);
   }
 

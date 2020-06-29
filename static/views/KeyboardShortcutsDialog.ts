@@ -28,7 +28,7 @@ export class KeyboardShortcutsDialog {
       let actions = entry[1];
       // TODO: These should probably be presented in a deliberate order and
       // grouped, e.g. navigation actions adjacent to each other.
-      let flatActions = actions.flat();
+      let flatActions = actions.flat(2);
       for (let action of flatActions) {
         this.appendActions_(action, table);
       }
