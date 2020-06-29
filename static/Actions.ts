@@ -152,7 +152,7 @@ export class Actions extends HTMLElement {
 
         button.addEventListener('pointerdown', (e: PointerEvent) => {
           let firstAction = actionList.slice(1);
-          this.openMenu_(e.target as HTMLButtonElement, firstAction);
+          this.openMenu_(button!, firstAction);
           updateMenuItemHover(e);
 
           // Set this so we can have the same implementation for touch and
@@ -237,7 +237,12 @@ export class Actions extends HTMLElement {
       for (let subAction of subActionList) {
         let menuButton = this.createButton_(subAction as Action);
         if (menuButton) {
-          menuButton.style.margin = '6px';
+          menuButton.style.cssText = `
+            margin: 6px;
+            width: 70px;
+            height: 70px;
+            font-size: 30px;
+          `;
           row.append(menuButton);
         }
       }
@@ -282,7 +287,7 @@ export class Actions extends HTMLElement {
         right: 0px;
         bottom: 2px;
         color: var(--dim-text-color);
-        font-size: 10px;
+        font-size: 0.5em;
       `;
     name.append(action.name);
 
