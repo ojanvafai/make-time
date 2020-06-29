@@ -154,10 +154,12 @@ let MOVE_DOWN_ACTION = {
 };
 
 let BASE_ACTIONS = [
-  SOFT_MUTE_ACTION,
   [
     ARCHIVE_ACTION,
-    MUTE_ACTION,
+    [
+      SOFT_MUTE_ACTION,
+      MUTE_ACTION,
+    ],
   ],
   ...BASE_THREAD_ACTIONS,
   UNDO_ACTION,

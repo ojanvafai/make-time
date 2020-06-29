@@ -39,7 +39,7 @@ export let BACKLOG_ACTION = {
 };
 
 export let MUTE_ACTION = {
-  name: `Mute`,
+  name: `Mute ∞`,
   description: `Only appear for triage again if filters apply a new label.`,
   key: 'm',
   actionGroup: ActionGroup.Ignore,
@@ -116,8 +116,8 @@ let BLOCKED_NONE_ACTION = {
 export let BLOCKED_ACTIONS = [
   BLOCKED_CUSTOM_ACTION,
   [
-    BLOCKED_2D_ACTION,
     BLOCKED_1D_ACTION,
+    BLOCKED_2D_ACTION,
     BLOCKED_7D_ACTION,
   ],
   [
@@ -131,10 +131,10 @@ export let BLOCKED_ACTIONS = [
 ];
 
 export let BASE_THREAD_ACTIONS = [
-  PIN_ACTION,
   [
     MUST_DO_ACTION,
     [
+      PIN_ACTION,
       URGENT_ACTION,
       BACKLOG_ACTION,
     ],
