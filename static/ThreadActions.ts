@@ -134,9 +134,9 @@ export let BASE_THREAD_ACTIONS = [
   [
     MUST_DO_ACTION,
     [
-      PIN_ACTION,
       URGENT_ACTION,
       BACKLOG_ACTION,
+      PIN_ACTION,
     ],
   ],
   BLOCKED_ACTIONS,
