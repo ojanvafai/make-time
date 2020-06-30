@@ -5,7 +5,7 @@ enum WorkerCommand {
   urlEncode,
 }
 
-let worker = new Worker(`data:,
+let workerScript = `
 let b64UrlEncodeDictionary = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 let b64pad = '=';
 
@@ -113,10 +113,11 @@ self.onmessage = (msg) => {
     response: response,
   });
 }
-`);
+`;
 
 let sent = new Map();
-
+let blob = new Blob([workerScript], {type: 'application/javascript'});
+let worker = new Worker(URL.createObjectURL(blob));
 worker.addEventListener('message', (msg: MessageEvent) => {
   let id = msg.data.id;
   sent.get(id)(msg.data.response);
