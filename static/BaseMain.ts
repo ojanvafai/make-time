@@ -31,7 +31,6 @@ let firebaseConfig: {apiKey: string, authDomain: string, projectId: string};
 let isGoogle = location.toString().includes(':8000/') ||
     location.toString().includes('https://com-mktime');
 
-
 if (isGoogle) {
   apiKey = 'AIzaSyCcuBNlI6FgtgiLub2ihGInrNwDc3_UZSY';
   firebaseConfig = {

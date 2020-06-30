@@ -29,6 +29,10 @@ export class Toast extends HTMLElement {
   }
 
   connectedCallback() {
+    if (!this.animate) {
+      setTimeout(() => this.remove(), 3500);
+      return;
+    }
     let animation = this.animate(
         [
           {opacity: '0.85'},
