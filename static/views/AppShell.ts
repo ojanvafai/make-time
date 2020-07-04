@@ -111,9 +111,6 @@ export class AppShell extends HTMLElement {
     this.content_.style.cssText = `
       flex: 1;
       height: 100%;
-      width: 100%;
-      max-width: var(--max-width);
-      margin: auto;
     `;
     contentContainer.append(this.content_);
 

@@ -306,7 +306,6 @@ export class Thread extends EventTarget {
     this.dispatchEvent(new UpdatedEvent());
     if (this.actionInProgress_) {
       this.setActionInProgress(false);
-      this.dispatchEvent(new InProgressChangedEvent());
     }
   }
 
@@ -351,6 +350,7 @@ export class Thread extends EventTarget {
   setActionInProgress(inProgress: boolean) {
     this.actionInProgress_ = inProgress;
     this.actionInProgressTimestamp_ = inProgress ? Date.now() : undefined;
+    this.dispatchEvent(new InProgressChangedEvent());
   }
 
   actionInProgress() {

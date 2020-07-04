@@ -187,8 +187,6 @@ let RENDER_ONE_ACTIONS = [
   VIEW_THREADLIST_ACTION,
 ];
 
-const SHOW_PENDING_DELAY = 1000;
-
 registerActions('Triage or Todo', [
   ...BASE_ACTIONS,
   ...SORT_ACTIONS,
@@ -207,6 +205,7 @@ export class ThreadListView extends View {
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private pendingContainer_: HTMLElement;
+  private pendingWithSpinner_: HTMLElement;
   private renderedRow_: ThreadRow|null;
   private autoFocusedRow_: ThreadRow|null;
   private lastCheckedRow_: ThreadRow|null;
@@ -218,7 +217,6 @@ export class ThreadListView extends View {
   private buttonContainer_: HTMLElement;
   private isVisibleObserver_: IntersectionObserver;
   private isHiddenObserver_: IntersectionObserver;
-  private updateVisibilityTimer_?: number;
   private lowPriorityContainer_: MetaThreadRowGroup;
   private highPriorityContainer_: MetaThreadRowGroup;
   private hasHadAction_?: boolean;
@@ -235,7 +233,6 @@ export class ThreadListView extends View {
       display: flex;
       flex-direction: column;
       width: 100%;
-      max-width: var(--max-width);
       margin: auto;
       position: relative;
     `;
@@ -272,39 +269,68 @@ export class ThreadListView extends View {
       });
     }, {root: this.appShell_.getScroller(), rootMargin: '50%'});
 
-    this.pendingContainer_ = document.createElement('div');
-    this.pendingContainer_.style.cssText = `
-      position: sticky;
+    this.pendingWithSpinner_ = document.createElement('div');
+    this.pendingWithSpinner_.style.cssText = `
+      position: fixed;
       z-index: 10;
-      top: 0;
-      max-width: var(--max-width);
+      bottom: 100px;
+      right: 10px;
+      max-width: 300px;
       box-shadow: 0px 0px 8px var(--border-and-hover-color);
       background-color: var(--overlay-background-color);
-      max-height: 7em;
-      opacity: 0.5;
+      height: 7em;
       overflow: auto;
     `;
-    this.append(this.pendingContainer_);
+    this.append(this.pendingWithSpinner_);
+
+    const spinnerContainer = document.createElement('div');
+    spinnerContainer.style.cssText = `
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      opacity: 0.4;
+      background-color: var(--overlay-background-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    `;
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    spinnerContainer.append(spinner);
+    this.pendingContainer_ = document.createElement('div');
+    this.pendingContainer_.className = 'pending-changes';
+    this.pendingContainer_.style.cssText = `
+      overflow: auto;
+    `;
+    this.pendingWithSpinner_.append(spinnerContainer, this.pendingContainer_);
     this.listen_(
         this.pendingContainer_, InProgressChangedEvent.NAME,
-        (e) => this.handleInProgressChanged_(e));
+        () => this.handleInProgressChanged_());
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
       display: flex;
       flex-direction: column;
+      margin-top: 10px;
     `;
     this.append(this.rowGroupContainer_);
 
     this.highPriorityContainer_ = new MetaThreadRowGroup();
+    this.highPriorityContainer_.style.cssText = `
+      background-color: var(--nested-background-color);
+      min-height: calc(100vh - 215px);
+      margin-bottom: 16px;
+    `;
     this.lowPriorityContainer_ = new MetaThreadRowGroup();
     this.rowGroupContainer_.append(
         this.highPriorityContainer_, this.lowPriorityContainer_);
 
     this.listen_(
         this.rowGroupContainer_, InProgressChangedEvent.NAME,
-        (e) => this.handleInProgressChanged_(e));
-
+        () => this.handleInProgressChanged_());
     this.listen_(
         this.rowGroupContainer_, RenderThreadEvent.NAME, (e: Event) => {
           this.setRenderedRowIfAllowed_(e.target as ThreadRow);
@@ -344,10 +370,8 @@ export class ThreadListView extends View {
     this.transitionToThreadList_(null);
   }
 
-  private handleInProgressChanged_(e: InProgressChangedEvent) {
-    let row = notNull(e.target && (e.target as ThreadRow));
-    if (!row.thread.actionInProgress())
-      this.setPendingStyling_(row, false);
+  private handleInProgressChanged_() {
+    this.updatePendingStyling_();
     this.render_();
   }
 
@@ -764,8 +788,10 @@ export class ThreadListView extends View {
 
     // Only set this after the initial update so we don't show the all done
     // indication incorrectly.
-    if (this.model_.hasFetchedThreads())
-      this.rowGroupContainer_.className = 'row-group-container';
+    const isHighPriorityDone = this.model_.hasFetchedThreads() &&
+        !this.highPriorityContainer_.getFirstRow();
+    this.highPriorityContainer_.className =
+        isHighPriorityDone ? 'all-done' : '';
 
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());
@@ -774,66 +800,28 @@ export class ThreadListView extends View {
   private updatePendingArea_(threads: Thread[]) {
     let oldPending = new Set(Array.from(
         this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>));
-
     for (let thread of threads) {
       let row = this.getThreadRow_(thread);
       if (oldPending.has(row)) {
         oldPending.delete(row);
         continue;
       }
-
-      this.setPendingStyling_(row, true);
       this.pendingContainer_.prepend(row);
     }
-
-    // If a thread is archived, it's metadata isn't updated until it's shown
-    // in some view, so it will still be styled for the pending queue.
     for (let row of oldPending) {
-      this.setPendingStyling_(row, false);
       row.remove();
     }
-
-    // Schedule an update so that we show the rows after a second if they are
-    // still in the pending area.
-    this.scheduleUpdatePendingVisibility_();
+    this.updatePendingStyling_();
   }
 
-  private scheduleUpdatePendingVisibility_() {
-    if (this.updateVisibilityTimer_)
-      return;
-    this.updateVisibilityTimer_ = window.setTimeout(() => {
-      this.updateVisibilityTimer_ = undefined;
-
-      let rows = this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>;
-      for (let row of rows) {
-        if (this.hasPendingStyling_(row)) {
-          // If there are still rows that are hidden, then schedule another
-          // update so they get caught later.
-          let timestamp = defined(row.thread.actionInProgressTimestamp());
-          if ((Date.now() - timestamp) < SHOW_PENDING_DELAY) {
-            this.scheduleUpdatePendingVisibility_();
-          } else {
-            // Intentionally don't call setPendingStyling_ since we want to show
-            // the row but keep the rest of the pending styling (e.g.
-            // pointer-events).
-            row.style.display = 'flex';
-          }
-        }
-      }
-    }, SHOW_PENDING_DELAY);
-  }
-
-  private hasPendingStyling_(row: ThreadRow) {
-    return row.style.display === 'none';
-  }
-
-  private setPendingStyling_(row: ThreadRow, set: boolean) {
-    // Show pending threads after a timeout to avoid excessive flickering.
-    // Kind of gross to hide with CSS instead of just not putting in the DOM,
-    // but we rely on the InProgressChangeEvents bubbling up to the
-    // ThreadListView, so they need to be in the DOM for that.
-    row.style.display = set ? 'none' : 'flex';
-    row.style.pointerEvents = set ? 'none' : '';
+  private updatePendingStyling_() {
+    const stillHasPendingRows =
+        Array
+            .from(
+                this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>)
+            .some(x => x.thread.actionInProgress());
+    this.pendingWithSpinner_.style.display =
+        stillHasPendingRows ? 'flex' : 'none';
   }
 
   private updateFinalVersionRendering_() {

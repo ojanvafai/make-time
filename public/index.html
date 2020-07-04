@@ -255,12 +255,17 @@ mt-thread-row:hover,
 blockquote {
   min-width: 300px;
 }
-.row-group-container:empty:after {
-  content: "All done! Go you!\A ٩( ′ㅂ`)و ";
+.all-done:after {
+  content: "٩( ′ㅂ`)و\A\A All done for the day! You got this!";
   text-align: center;
   margin-top: 40px;
   font-size: 20px;
   white-space: pre-wrap;
+  display: flex;
+  justify-content: center;
+}
+.pending-changes mt-thread-row {
+  pointer-events: none;
 }
 div[contenteditable]::before {
   content: attr(placeholder);
@@ -274,6 +279,20 @@ html.dark-mode .message-body * {
   50% {
     opacity: 0;
   }
+}
+
+.spinner {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--border-and-hover-color);
+  border-radius: 50%;
+  border-top-color: var(--overlay-background-color);
+  animation: spin 1s ease-in-out infinite;
+  content: " ";
+}
+@keyframes spin {
+  to {transform: rotate(360deg); }
 }
 
 /* Regular font-size looks good on mobile but large on desktop. */
