@@ -10,13 +10,13 @@ import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
-import {InProgressChangedEvent, Thread} from '../Thread.js';
+import {BACKLOG_PRIORITY_NAME, InProgressChangedEvent, Thread, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 
 import {AppShell} from './AppShell.js';
-import {BaseThreadRowGroup, SelectRowEvent} from './BaseThreadRowGroup.js';
+import {SelectRowEvent} from './BaseThreadRowGroup.js';
 import {MetaThreadRowGroup} from './MetaThreadRowGroup.js';
 import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, ThreadRow} from './ThreadRow.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
@@ -211,7 +211,6 @@ export class ThreadListView extends View {
   private autoFocusedRow_: ThreadRow|null;
   private lastCheckedRow_: ThreadRow|null;
   private renderedGroupName_: string|null;
-  private renderedGroupIsTriaged_: boolean|null;
   private scrollOffset_?: number;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
@@ -220,7 +219,8 @@ export class ThreadListView extends View {
   private isVisibleObserver_: IntersectionObserver;
   private isHiddenObserver_: IntersectionObserver;
   private updateVisibilityTimer_?: number;
-  private untriagedContainer_: MetaThreadRowGroup|null;
+  private lowPriorityContainer_: MetaThreadRowGroup;
+  private highPriorityContainer_: MetaThreadRowGroup;
   private hasHadAction_?: boolean;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
@@ -251,10 +251,8 @@ export class ThreadListView extends View {
     this.autoFocusedRow_ = null;
     this.lastCheckedRow_ = null;
     this.renderedGroupName_ = null;
-    this.renderedGroupIsTriaged_ = null;
     this.hasQueuedFrame_ = false;
     this.hasNewRenderedRow_ = false;
-    this.untriagedContainer_ = null;
 
     // Use a larger margin for hiding content than for creating it so that small
     // scrolls up and down don't't repeatedly doing rendering work.
@@ -297,6 +295,12 @@ export class ThreadListView extends View {
       flex-direction: column;
     `;
     this.append(this.rowGroupContainer_);
+
+    this.highPriorityContainer_ = new MetaThreadRowGroup();
+    this.lowPriorityContainer_ = new MetaThreadRowGroup();
+    this.rowGroupContainer_.append(
+        this.highPriorityContainer_, this.lowPriorityContainer_);
+
     this.listen_(
         this.rowGroupContainer_, InProgressChangedEvent.NAME,
         (e) => this.handleInProgressChanged_(e));
@@ -633,8 +637,8 @@ export class ThreadListView extends View {
   }
 
   private getFirstRow_() {
-    let group = this.rowGroupContainer_.firstChild as BaseThreadRowGroup;
-    return group && group.getFirstRow();
+    return this.highPriorityContainer_.getFirstRow() ||
+        this.lowPriorityContainer_.getFirstRow();
   }
 
   forceRender() {
@@ -653,9 +657,10 @@ export class ThreadListView extends View {
   }
 
   private getGroups_() {
-    let groups =
-        (Array.from(this.rowGroupContainer_.children) as BaseThreadRowGroup[]);
-    return groups.map(x => x.getSubGroups()).flat() as ThreadRowGroup[];
+    return [
+      ...this.highPriorityContainer_.getSubGroups(),
+      ...this.lowPriorityContainer_.getSubGroups()
+    ];
   }
 
   private renderFrame_() {
@@ -683,50 +688,32 @@ export class ThreadListView extends View {
 
     // Threads should be in sorted order already and all threads in the
     // same queue should be adjacent to each other.
-    let previousEntry: {group: ThreadRowGroup, rows: ThreadRow[]}|undefined;
+    let previousEntry:
+        {group: ThreadRowGroup, isLowPriority: boolean, rows: ThreadRow[]}|
+        undefined;
 
-    for (let thread of threads) {
-      let groupName = this.mergedGroupName_(thread);
+    const groupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
+    for (const groupName of groupNames) {
       let entry = groupMap.get(groupName);
       // Insertion sort insert new groups
       if (!entry) {
-        let allowedCount = this.model_.allowedCount(groupName);
-        let putUntriageInMetaGroup = !this.model_.isTriage();
-        let isUntriagedSubGroup =
-            putUntriageInMetaGroup && thread.forceTriage();
-        let group =
-            new ThreadRowGroup(groupName, allowedCount, isUntriagedSubGroup);
-
-        if (isUntriagedSubGroup) {
-          if (!this.untriagedContainer_) {
-            this.untriagedContainer_ = new MetaThreadRowGroup('Untriaged');
-            if (previousEntry)
-              previousEntry.group.after(this.untriagedContainer_);
-            else
-              this.rowGroupContainer_.prepend(this.untriagedContainer_);
-          }
-
-          // When transitioning from triage to untriaged, put the group at the
-          // beginning of untriaged.
-          if (!previousEntry || !previousEntry.rows[0].thread.forceTriage())
-            this.untriagedContainer_!.shift(group);
-          else
-            previousEntry.group.after(group);
-        } else {
-          if (previousEntry) {
-            // When transitioning from untriaged to triaged, put the group after
-            // the untriage meta group.
-            if (putUntriageInMetaGroup &&
-                previousEntry.rows[0].thread.forceTriage())
-              assert(this.untriagedContainer_).after(group);
-            else
-              previousEntry.group.after(group);
+        const group =
+            new ThreadRowGroup(groupName, this.model_.allowedCount(groupName));
+        const isLowPriority =
+            [URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME].includes(groupName);
+        if (previousEntry) {
+          if (isLowPriority && !previousEntry.isLowPriority) {
+            this.lowPriorityContainer_.prepend(group);
           } else {
-            this.rowGroupContainer_.prepend(group);
+            previousEntry.group.after(group);
           }
+        } else {
+          const container = isLowPriority ? this.lowPriorityContainer_ :
+                                            this.highPriorityContainer_;
+          container.prepend(group);
         }
 
-        entry = {group, isUntriagedSubGroup, rows: []};
+        entry = {group, isLowPriority, rows: []};
         groupMap.set(groupName, entry);
         // Call observe after putting the group in the DOM so we don't have a
         // race condition where sometimes the group has no dimensions/position.
@@ -734,13 +721,16 @@ export class ThreadListView extends View {
         this.isHiddenObserver_.observe(group);
       }
 
+      previousEntry = entry;
+    }
+
+    for (let thread of threads) {
+      let groupName = this.mergedGroupName_(thread);
+      let entry = groupMap.get(groupName);
       let row = this.getThreadRow_(thread);
       entry.rows.push(row);
-
       if (!this.hasHadAction_)
         entry.group.setCollapsed(true);
-
-      previousEntry = entry;
     }
 
     for (let entry of groupMap.values()) {
@@ -750,16 +740,6 @@ export class ThreadListView extends View {
         removedRows.push(...entry.group.setRows(entry.rows));
     }
 
-    if (this.untriagedContainer_) {
-      if (!this.untriagedContainer_.getSubGroups().length) {
-        this.untriagedContainer_.remove();
-        this.untriagedContainer_ = null;
-      } else {
-        // Force re-render to update untriaged item count
-        this.untriagedContainer_.render();
-      }
-    }
-
     this.handleRowsRemoved_(removedRows, oldRows);
 
     // Have to do this after we gether the list of removedRows so that
@@ -767,15 +747,6 @@ export class ThreadListView extends View {
     // updated appropriately.
     let threadsInPending = allThreads.filter(x => x.actionInProgress());
     this.updatePendingArea_(threadsInPending);
-
-    let firstGroup = this.rowGroupContainer_.firstChild as BaseThreadRowGroup;
-    if (firstGroup) {
-      // If it's a meta group, then expand both the meta group and it's first
-      // item.
-      firstGroup.setCollapsed(false);
-      firstGroup.getSubGroups()[0].setCollapsed(false);
-    }
-
     this.updateFinalVersionRendering_();
 
     if (this.undoRow_) {
@@ -900,8 +871,7 @@ export class ThreadListView extends View {
       }
 
       if (this.renderedRow_) {
-        if (!nextRow ||
-            this.renderedGroupIsTriaged_ !== this.rowInTriaged_(nextRow)) {
+        if (!nextRow) {
           this.transitionToThreadList_(null);
           return;
         }
@@ -1242,10 +1212,6 @@ export class ThreadListView extends View {
     });
   }
 
-  private rowInTriaged_(row: ThreadRow) {
-    return this.untriagedContainer_ && !this.untriagedContainer_.contains(row);
-  }
-
   setRenderedRowInternal_(row: ThreadRow|null) {
     this.hasNewRenderedRow_ = !!row;
     if (this.renderedRow_)
@@ -1254,7 +1220,6 @@ export class ThreadListView extends View {
     // This is read in renderFrame_. At that point, the rendered row will have
     // already been triaged and will no longer have a group name.
     this.renderedGroupName_ = (row ? this.mergedGroupName_(row.thread) : null);
-    this.renderedGroupIsTriaged_ = row && this.rowInTriaged_(row);
   }
 
   setRenderedRow_(row: ThreadRow|null) {

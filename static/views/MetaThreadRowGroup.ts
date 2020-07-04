@@ -1,25 +1,8 @@
-import {BaseThreadRowGroup} from './BaseThreadRowGroup.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
 
-export class MetaThreadRowGroup extends BaseThreadRowGroup {
-  private rowContainer_: HTMLElement;
-
-  constructor(groupName_: string) {
-    super(groupName_);
-
-    this.rowContainer_ = document.createElement('div');
-    this.rowContainer_.style.cssText = `
-    margin: 0px 0px 6px 20px;
-    padding-left: 19px;
-      border-left: 1px solid var(--midpoint-color);
-    `;
-    this.append(this.rowContainer_);
-    this.render();
-  }
-
+export class MetaThreadRowGroup extends HTMLElement {
   getItems() {
-    return Array.from(
-        this.rowContainer_.childNodes as NodeListOf<ThreadRowGroup>);
+    return Array.from(this.childNodes as NodeListOf<ThreadRowGroup>);
   }
 
   getSubGroups() {
@@ -31,25 +14,21 @@ export class MetaThreadRowGroup extends BaseThreadRowGroup {
   }
 
   getFirstRow() {
-    return (this.rowContainer_.firstChild as ThreadRowGroup).getFirstRow();
+    return this.firstChild && (this.firstChild as ThreadRowGroup).getFirstRow();
   }
 
   push(group: ThreadRowGroup) {
-    this.rowContainer_.append(group);
+    this.append(group);
   }
 
   shift(group: ThreadRowGroup) {
-    this.rowContainer_.prepend(group);
-  }
-
-  render() {
-    super.render();
-    this.rowContainer_.style.display = this.collapsed_ ? 'none' : '';
-    this.updateRowCount_();
+    this.prepend(group);
   }
 
   selectRows(select: boolean) {
     this.getItems().map(x => x.selectRows(select));
   }
+
+  setCollapsed(_shouldCollapse: boolean) {}
 }
 window.customElements.define('mt-meta-thread-row-group', MetaThreadRowGroup);

@@ -13,7 +13,7 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
   private wasInViewport_: boolean;
   private rows_?: ThreadRow[];
 
-  constructor(groupName: string, allowedCount: number, isSubGroup: boolean) {
+  constructor(groupName: string, allowedCount: number) {
     super(groupName, allowedCount);
     // Use negative margin and width to make is so that the rounded corners are
     // clipped when filling the width of the window.
@@ -21,11 +21,6 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
       display: block;
       border-radius: 3px;
     `;
-
-    if (!isSubGroup) {
-      this.style.backgroundColor = 'var(--nested-background-color)';
-      this.style.margin = '12px 0';
-    }
 
     this.wasInViewport_ = true;
     this.inViewport_ = false;
