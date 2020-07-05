@@ -22,6 +22,8 @@ export interface Action {
 
 type SubActionRow = Action[];
 type GroupedActions = (Action|SubActionRow)[];
+// TODO: Make this a proper class so it can have an iterator instead of needing
+// to know to use flat(2).
 export type ActionList = (Action|GroupedActions)[];
 
 interface ButtonWithAction extends HTMLButtonElement {
