@@ -93,6 +93,7 @@ export class ComposeView extends View {
       flex-direction: column;
       height: 100%;
       max-width: var(--max-width);
+      margin: auto;
     `;
 
     this.autoSend_ = this.params_ && this.params_.autosend === '1';

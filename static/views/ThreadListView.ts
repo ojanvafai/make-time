@@ -314,7 +314,6 @@ export class ThreadListView extends View {
     this.rowGroupContainer_.style.cssText = `
       display: flex;
       flex-direction: column;
-      margin-top: 10px;
     `;
     this.append(this.rowGroupContainer_);
 

@@ -95,10 +95,8 @@ export class AppShell extends HTMLElement {
       flex-wrap: wrap;
       align-items: center;
       position: relative;
-      width: -webkit-fill-available;
-      box-shadow: var(--border-and-hover-color) 0 0 4px;
-      z-index: 20;
-      background-color: var(--nested-background-color);
+      max-width: var(--max-width);
+      margin: auto;
     `;
 
     let contentContainer = document.createElement('div');
@@ -130,9 +128,18 @@ export class AppShell extends HTMLElement {
       pointer-events: none;
     `;
 
-    this.mainContent_.append(this.toolbar_, contentContainer, AppShell.footer_);
+    let toolbarWrapper = document.createElement('div');
+    toolbarWrapper.style.cssText = `
+      box-shadow: var(--border-and-hover-color) 0 0 4px;
+      z-index: 20;
+    `;
+    toolbarWrapper.append(this.toolbar_);
 
-    this.backArrow_ = leftArrow('back-arrow', () => this.dispatchEvent(new BackEvent()));
+    this.mainContent_.append(
+        toolbarWrapper, contentContainer, AppShell.footer_);
+
+    this.backArrow_ =
+        leftArrow('back-arrow', () => this.dispatchEvent(new BackEvent()));
     this.backArrow_.style.cssText = `
       display: none;
     `;
@@ -202,7 +209,6 @@ export class AppShell extends HTMLElement {
         this.backArrow_, this.menuToggle_, this.viewToggle_, this.filterToggle_,
         AppShell.title_, this.subject_, AppShell.loader_,
         this.overflowMenuButton_);
-
     this.appendMenu_();
 
     this.mainContent_.addEventListener('click', (e) => {
