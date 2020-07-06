@@ -35,12 +35,12 @@ export abstract class ThreadListModel extends Model {
   private undoableActions_!: TriageResult[];
   private threads_: Thread[];
   private perSnapshotThreads_: Thread[][];
+  private haveEverLoadedSnapshot_: boolean[];
   private snapshotsToProcess_: firebase.firestore.QuerySnapshot[];
   private processSnapshotTimeout_?: number;
   private filter_?: string;
   private days_?: number;
   private threadFetcher_: TaskQueue;
-  private haveEverProcessedSnapshot_?: boolean;
   private offices_?: string;
   private haveLoadedFirstQuery_: boolean;
   private isProcessingSnapshots_: boolean;
@@ -53,6 +53,7 @@ export abstract class ThreadListModel extends Model {
     this.resetUndoableActions_();
 
     this.perSnapshotThreads_ = [];
+    this.haveEverLoadedSnapshot_ = [];
     this.threads_ = [];
     this.snapshotsToProcess_ = [];
     this.threadFetcher_ = new TaskQueue(3);
@@ -65,7 +66,7 @@ export abstract class ThreadListModel extends Model {
   abstract getGroupName(thread: Thread): string;
 
   hasFetchedThreads() {
-    return this.haveEverProcessedSnapshot_;
+    return this.haveEverLoadedSnapshot_.every(x => x);
   }
 
   isTriage() {
@@ -107,7 +108,7 @@ export abstract class ThreadListModel extends Model {
   protected setQueries(...queries: firebase.firestore.Query[]) {
     for (let i = 0; i < queries.length; i++) {
       this.perSnapshotThreads_[i] = [];
-
+      this.haveEverLoadedSnapshot_[i] = false;
       queries[i].onSnapshot((snapshot) => {
         this.snapshotsToProcess_[i] = snapshot;
         this.queueProcessSnapshot_();
@@ -217,6 +218,7 @@ export abstract class ThreadListModel extends Model {
       if (!snapshot)
         continue;
 
+      this.haveEverLoadedSnapshot_[i] = true;
       this.perSnapshotThreads_[i] = [];
       this.processSnapshot_(
           snapshot, this.perSnapshotThreads_[i], i === this.forceTriageIndex_);
@@ -243,8 +245,6 @@ export abstract class ThreadListModel extends Model {
   private processSnapshot_(
       snapshot: firebase.firestore.QuerySnapshot, output: Thread[],
       forceTriage: boolean) {
-    this.haveEverProcessedSnapshot_ = true;
-
     for (let doc of snapshot.docs) {
       let data = doc.data() as ThreadMetadata;
       let thread = Thread.create(doc.id, data as ThreadMetadata, forceTriage);
