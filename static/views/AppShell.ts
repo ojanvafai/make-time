@@ -130,7 +130,7 @@ export class AppShell extends HTMLElement {
     // iphones have a gutter for the swipe up gesture that gets pointerdown
     // events but not a pointer up. So move the toolbar up to avoid that.
     if (navigator.standalone) {
-      AppShell.footer_.style.paddingBottom = '20px';
+      AppShell.footer_.style.paddingBottom = '40px';
     }
 
     let toolbarWrapper = document.createElement('div');
