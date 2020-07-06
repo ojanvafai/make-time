@@ -99,12 +99,6 @@ export class AppShell extends HTMLElement {
       margin: auto;
     `;
 
-    // iphones have a gutter for the swipe up gesture that gets pointerdown
-    // events but not a pointer up. So move the toolbar up to avoid that.
-    if (navigator.userAgent.toLowerCase().includes('iphone')) {
-      this.toolbar_.style.paddingBottom = '50px';
-    }
-
     let contentContainer = document.createElement('div');
     contentContainer.style.cssText = `
       overflow: auto;
@@ -133,6 +127,11 @@ export class AppShell extends HTMLElement {
       /* Don't eat clicks in the transparent background of the footer. */
       pointer-events: none;
     `;
+    // iphones have a gutter for the swipe up gesture that gets pointerdown
+    // events but not a pointer up. So move the toolbar up to avoid that.
+    if (navigator.userAgent.toLowerCase().includes('iphone')) {
+      AppShell.footer_.style.paddingBottom = '50px';
+    }
 
     let toolbarWrapper = document.createElement('div');
     toolbarWrapper.style.cssText = `
