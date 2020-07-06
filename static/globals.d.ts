@@ -16,6 +16,10 @@ declare global {
     cancelIdleCallback: ((handle: RequestIdleCallbackHandle) => void);
   }
 
+  interface Navigator {
+    standalone: boolean;
+  }
+
   interface Node {
     after: ((...nodes: Node[]|string[]) => void);
     before: ((...nodes: Node[]|string[]) => void);
