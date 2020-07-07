@@ -27,7 +27,7 @@ export function create(tagName: string, ...contents: (string|Node)[]) {
 }
 
 export function createWithStyle(
-  tagName: string, style: string, ...contents: (string|Node)[]) {
+    tagName: string, style: string, ...contents: (string|Node)[]) {
   let node = document.createElement(tagName);
   node.append(...contents);
   node.style.cssText = style;
@@ -317,7 +317,7 @@ export function compareDates(a: Date, b: Date) {
 }
 
 export function isMobileUserAgent() {
-  return navigator.userAgent.includes(' Mobile ')
+  return navigator.userAgent.includes(' Mobile');
 }
 
 export function setFaviconCount(count: number) {
