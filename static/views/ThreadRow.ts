@@ -2,7 +2,7 @@ import {assert, isMobileUserAgent, notNull, sandboxedDom} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
 import {ALL, NONE, SOME} from '../SelectBox.js';
-import {InProgressChangedEvent, Thread, UpdatedEvent} from '../Thread.js';
+import {InProgressChangedEvent, Priority, Thread, UpdatedEvent} from '../Thread.js';
 
 import {SelectRowEvent} from './BaseThreadRowGroup.js';
 import {ThreadRowGroup} from './ThreadRowGroup.js';
@@ -132,11 +132,13 @@ export class ThreadRow extends HTMLElement {
   private inViewport_: boolean;
   private focused_: boolean;
   private focusImpliesSelected_: boolean;
+  private useCardStyle_: boolean;
   private checkBox_: SelectBox;
   private finalVersionCheckbox_?: SelectBox;
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
   private finalVersionSkipped_: boolean;
+  private display_: string;
   private static lastHeightIsSmallScreen_: boolean;
   private static lastHeight_: number;
 
@@ -144,10 +146,18 @@ export class ThreadRow extends HTMLElement {
       public thread: Thread, private showFinalVersion_: boolean,
       private labelSelectTemplate_: HTMLSelectElement) {
     super();
+
+    this.useCardStyle_ = thread.getPriorityId() === Priority.Pin;
+    this.display_ = this.useCardStyle_ ? 'flex' : 'flex';
     this.style.cssText = `
-      display: flex;
+      display: ${this.display_};
       white-space: nowrap;
       padding-right: 12px;
+      ${
+    !this.useCardStyle_ ? `` : `width: 300px;
+      box-shadow: var(--border-and-hover-color) 0 0 4px;
+      z-index: 100;
+      margin-bottom: 12px;`}
     `;
 
     this.inViewport_ = false;
@@ -322,8 +332,84 @@ export class ThreadRow extends HTMLElement {
       return;
 
     this.lastRowState_ = state;
-    this.style.display = state.finalVersionSkipped ? 'none' : 'flex';
+    this.style.display = state.finalVersionSkipped ? 'none' : this.display_;
 
+    const fromContainer = this.appendFromContainer_(state);
+
+    let labels = document.createElement('div');
+    if (!this.useCardStyle_) {
+      ThreadRow.appendLabels(
+          labels, state, this.thread, this.labelSelectTemplate_);
+    }
+
+    let justSubject = document.createElement('span');
+    justSubject.append(state.subject);
+
+    let subject = document.createElement('span');
+    subject.style.cssText = `
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      display: flex;
+    `;
+
+    const renderMultiline = state.isSmallScreen || this.useCardStyle_;
+    if (!renderMultiline)
+      subject.style.marginRight = '25px';
+
+    subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
+
+    subject.append(justSubject);
+
+    if (state.snippet) {
+      let snippet = sandboxedDom(`- ${state.snippet}`);
+      snippet.style.cssText = `
+        margin-left: 4px;
+        color: var(--dim-text-color);
+      `;
+      subject.append(snippet);
+    }
+
+    let date = this.appendDate_();
+    let boldState = state.isUnread ? '600' : '';
+    justSubject.style.fontWeight = boldState;
+    date.style.fontWeight = boldState;
+
+    this.messageDetails_.textContent = '';
+    this.messageDetails_.style.flexDirection = renderMultiline ? 'column' : '';
+
+    if (renderMultiline) {
+      this.messageDetails_.style.padding = '12px 0 12px 4px';
+      this.messageDetails_.style.alignItems = '';
+      let topRow = document.createElement('div');
+      topRow.style.cssText = `
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+      `;
+      topRow.append(fromContainer, labels, date);
+      this.messageDetails_.append(topRow, subject);
+
+      fromContainer.style.flex = '1';
+    } else {
+      this.messageDetails_.style.padding = '0 0 0 4px';
+      this.messageDetails_.style.alignItems = 'center';
+      this.messageDetails_.append(fromContainer, labels, subject, date);
+    }
+
+    // All rows are the same height, so we can save the last rendered height in
+    // a static variable that we can then use to estimate heights for the
+    // virtual scrolling. The height of rows only changes if the screen width
+    // changes or if the user zooms. We don't currently handle the latter.
+    // TODO: Handle pinned cards being a different height.
+    // TODO: Make the in progress change card the same size and pinned.
+    if (state.isSmallScreen !== ThreadRow.lastHeightIsSmallScreen_) {
+      ThreadRow.lastHeightIsSmallScreen_ = state.isSmallScreen;
+      ThreadRow.lastHeight_ = this.offsetHeight;
+    }
+  }
+
+  private appendFromContainer_(state: RowState) {
     let fromContainer = document.createElement('div');
     fromContainer.style.cssText = `
       width: 150px;
@@ -351,39 +437,14 @@ export class ThreadRow extends HTMLElement {
       count.textContent = String(state.count);
       fromContainer.append(count);
     }
+    return fromContainer;
+  }
 
-    let labels = document.createElement('div');
-    ThreadRow.appendLabels(
-        labels, state, this.thread, this.labelSelectTemplate_);
-
-    let justSubject = document.createElement('span');
-    justSubject.append(state.subject);
-
-    let subject = document.createElement('span');
-    subject.style.cssText = `
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-      display: flex;
-    `;
-
-    if (!state.isSmallScreen)
-      subject.style.marginRight = '25px';
-
-    subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
-
-    subject.append(justSubject);
-
-    if (state.snippet) {
-      let snippet = sandboxedDom(`- ${state.snippet}`);
-      snippet.style.cssText = `
-        margin-left: 4px;
-        color: var(--dim-text-color);
-      `;
-      subject.append(snippet);
-    }
-
+  private appendDate_() {
     let date = document.createElement('div');
+    if (this.useCardStyle_) {
+      return date;
+    }
     date.textContent = this.dateString_(this.thread.getDate());
     date.style.cssText = `
       text-align: right;
@@ -393,42 +454,7 @@ export class ThreadRow extends HTMLElement {
       display: flex;
       align-items: center;
     `;
-
-    let boldState = state.isUnread ? '600' : '';
-    justSubject.style.fontWeight = boldState;
-    date.style.fontWeight = boldState;
-
-    this.messageDetails_.textContent = '';
-    this.messageDetails_.style.flexDirection =
-        state.isSmallScreen ? 'column' : '';
-
-    if (state.isSmallScreen) {
-      this.messageDetails_.style.padding = '12px 0 12px 4px';
-      this.messageDetails_.style.alignItems = '';
-      let topRow = document.createElement('div');
-      topRow.style.cssText = `
-        display: flex;
-        align-items: center;
-        margin-bottom: 4px;
-      `;
-      topRow.append(fromContainer, labels, date);
-      this.messageDetails_.append(topRow, subject);
-
-      fromContainer.style.flex = '1';
-    } else {
-      this.messageDetails_.style.padding = '0 0 0 4px';
-      this.messageDetails_.style.alignItems = 'center';
-      this.messageDetails_.append(fromContainer, labels, subject, date);
-    }
-
-    // All rows are the same height, so we can save the last rendered height in
-    // a static variable that we can then use to estimate heights for the
-    // virtual scrolling. The height of rows only changes if the screen width
-    // changes or if the user zooms. We don't currently handle the latter.
-    if (state.isSmallScreen !== ThreadRow.lastHeightIsSmallScreen_) {
-      ThreadRow.lastHeightIsSmallScreen_ = state.isSmallScreen;
-      ThreadRow.lastHeight_ = this.offsetHeight;
-    }
+    return date;
   }
 
   static appendLabels(

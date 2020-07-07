@@ -1,5 +1,6 @@
 import {collapseArrow, expandArrow} from '../Base.js';
 import {ALL, NONE} from '../SelectBox.js';
+import {PINNED_PRIORITY_NAME} from '../Thread.js';
 
 import {BaseThreadRowGroup} from './BaseThreadRowGroup.js';
 import {ThreadRow} from './ThreadRow.js';
@@ -27,6 +28,13 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     this.collapsed_ = true;
 
     this.rowContainer_ = document.createElement('div');
+    if (groupName === PINNED_PRIORITY_NAME) {
+      this.rowContainer_.style.cssText = `
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+      `;
+    }
     this.placeholder_ = document.createElement('div');
     this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
     this.append(this.rowContainer_, this.placeholder_);
@@ -47,7 +55,7 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
   }
 
   private showRows_() {
-    this.rowContainer_.style.display = this.inViewport_ ? '' : 'none';
+    this.rowContainer_.style.display = this.inViewport_ ? 'flex' : 'none';
     this.placeholder_.style.display = this.inViewport_ ? 'none' : '';
   }
 
