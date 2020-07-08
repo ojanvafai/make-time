@@ -14,12 +14,10 @@ import {BACKLOG_PRIORITY_NAME, InProgressChangedEvent, Thread, URGENT_PRIORITY_N
 import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
-
 import {AppShell} from './AppShell.js';
-import {SelectRowEvent} from './BaseThreadRowGroup.js';
-import {MetaThreadRowGroup} from './MetaThreadRowGroup.js';
+import {ThreadRowGroupList} from './ThreadRowGroupList.js';
 import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, ThreadRow} from './ThreadRow.js';
-import {ThreadRowGroup} from './ThreadRowGroup.js';
+import {SelectRowEvent, ThreadRowGroup} from './ThreadRowGroup.js';
 import {View} from './View.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
@@ -217,8 +215,8 @@ export class ThreadListView extends View {
   private buttonContainer_: HTMLElement;
   private isVisibleObserver_: IntersectionObserver;
   private isHiddenObserver_: IntersectionObserver;
-  private lowPriorityContainer_: MetaThreadRowGroup;
-  private highPriorityContainer_: MetaThreadRowGroup;
+  private lowPriorityContainer_: ThreadRowGroupList;
+  private highPriorityContainer_: ThreadRowGroupList;
   private hasHadAction_?: boolean;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
@@ -317,13 +315,13 @@ export class ThreadListView extends View {
     `;
     this.append(this.rowGroupContainer_);
 
-    this.highPriorityContainer_ = new MetaThreadRowGroup();
+    this.highPriorityContainer_ = new ThreadRowGroupList();
     this.highPriorityContainer_.style.cssText = `
       background-color: var(--nested-background-color);
       min-height: calc(100vh - 215px);
       margin-bottom: 16px;
     `;
-    this.lowPriorityContainer_ = new MetaThreadRowGroup();
+    this.lowPriorityContainer_ = new ThreadRowGroupList();
     this.rowGroupContainer_.append(
         this.highPriorityContainer_, this.lowPriorityContainer_);
 

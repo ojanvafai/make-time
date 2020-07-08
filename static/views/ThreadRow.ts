@@ -1,11 +1,8 @@
 import {assert, isMobileUserAgent, notNull, sandboxedDom} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
-import {SelectBox, SelectChangedEvent} from '../SelectBox.js';
-import {ALL, NONE, SOME} from '../SelectBox.js';
+import {SelectBox, SelectChangedEvent, ALL, NONE, SOME} from '../SelectBox.js';
 import {InProgressChangedEvent, Priority, Thread, UpdatedEvent} from '../Thread.js';
-
-import {SelectRowEvent} from './BaseThreadRowGroup.js';
-import {ThreadRowGroup} from './ThreadRowGroup.js';
+import {SelectRowEvent, ThreadRowGroup} from './ThreadRowGroup.js';
 
 let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
