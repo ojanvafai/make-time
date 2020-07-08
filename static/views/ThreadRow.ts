@@ -1,7 +1,8 @@
 import {assert, isMobileUserAgent, notNull, sandboxedDom} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
-import {SelectBox, SelectChangedEvent, ALL, NONE, SOME} from '../SelectBox.js';
+import {ALL, NONE, SelectBox, SelectChangedEvent, SOME} from '../SelectBox.js';
 import {InProgressChangedEvent, Priority, Thread, UpdatedEvent} from '../Thread.js';
+
 import {SelectRowEvent, ThreadRowGroup} from './ThreadRowGroup.js';
 
 let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -350,7 +351,7 @@ export class ThreadRow extends HTMLElement {
       display: flex;
     `;
 
-    const renderMultiline = state.isSmallScreen || this.useCardStyle_;
+    const renderMultiline = state.isSmallScreen;
     if (!renderMultiline)
       subject.style.marginRight = '25px';
 
@@ -408,6 +409,9 @@ export class ThreadRow extends HTMLElement {
 
   private appendFromContainer_(state: RowState) {
     let fromContainer = document.createElement('div');
+    if (this.useCardStyle_) {
+      return fromContainer;
+    }
     fromContainer.style.cssText = `
       width: 150px;
       display: flex;
