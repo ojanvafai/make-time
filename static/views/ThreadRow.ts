@@ -136,6 +136,7 @@ export class ThreadRow extends HTMLElement {
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
   private finalVersionSkipped_: boolean;
+  private hideIfNotHighlighted_: boolean;
   private display_: string;
   private static lastHeightIsSmallScreen_: boolean;
   private static lastHeight_: number;
@@ -162,6 +163,7 @@ export class ThreadRow extends HTMLElement {
     this.focused_ = false;
     this.focusImpliesSelected_ = true;
     this.finalVersionSkipped_ = false;
+    this.hideIfNotHighlighted_ = false;
 
     this.checkBox_ = new SelectBox();
     this.append(this.checkBox_);
@@ -309,6 +311,10 @@ export class ThreadRow extends HTMLElement {
     this.render();
   }
 
+  private setIsShown_(shouldShow: boolean) {
+    this.style.display = shouldShow ? this.display_ : 'none';
+  }
+
   render() {
     if (!this.inViewport_)
       return;
@@ -330,10 +336,7 @@ export class ThreadRow extends HTMLElement {
       return;
 
     this.lastRowState_ = state;
-    this.style.display = state.finalVersionSkipped ? 'none' : this.display_;
-
-    const fromContainer = this.appendFromContainer_(state);
-
+    this.setIsShown_(!state.finalVersionSkipped);
     let labels = document.createElement('div');
     if (!this.useCardStyle_) {
       ThreadRow.appendLabels(
@@ -342,7 +345,6 @@ export class ThreadRow extends HTMLElement {
 
     let justSubject = document.createElement('span');
     justSubject.append(state.subject);
-
     let subject = document.createElement('span');
     subject.style.cssText = `
       overflow: hidden;
@@ -376,6 +378,7 @@ export class ThreadRow extends HTMLElement {
     this.messageDetails_.textContent = '';
     this.messageDetails_.style.flexDirection = renderMultiline ? 'column' : '';
 
+    const fromContainer = this.appendFromContainer_(state);
     if (renderMultiline) {
       this.messageDetails_.style.padding = '12px 0 12px 4px';
       this.messageDetails_.style.alignItems = '';
@@ -566,6 +569,16 @@ export class ThreadRow extends HTMLElement {
     return formatter.format(date);
   }
 
+  setHideIfNotHighlighted(shouldHide: boolean) {
+    this.hideIfNotHighlighted_ = shouldHide;
+    this.updateHighlightHideState_();
+  }
+
+  private updateHighlightHideState_() {
+    this.setIsShown_(
+        !this.hideIfNotHighlighted_ || this.focused_ || this.checked);
+  }
+
   setFocus(value: boolean, focusImpliesSelected: boolean) {
     this.focusImpliesSelected_ = focusImpliesSelected;
     this.focused_ = value;
@@ -618,6 +631,8 @@ export class ThreadRow extends HTMLElement {
   }
 
   private updateCheckbox_() {
+    this.updateHighlightHideState_();
+
     let newState;
     if (this.checked)
       newState = ALL;

@@ -10,14 +10,15 @@ import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
-import {BACKLOG_PRIORITY_NAME, InProgressChangedEvent, Thread, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {BACKLOG_PRIORITY_NAME, InProgressChangedEvent, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Thread, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
+
 import {AppShell} from './AppShell.js';
-import {ThreadRowGroupList} from './ThreadRowGroupList.js';
 import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, ThreadRow} from './ThreadRow.js';
 import {SelectRowEvent, ThreadRowGroup} from './ThreadRowGroup.js';
+import {ThreadRowGroupList} from './ThreadRowGroupList.js';
 import {View} from './View.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
@@ -718,10 +719,13 @@ export class ThreadListView extends View {
       let entry = groupMap.get(groupName);
       // Insertion sort insert new groups
       if (!entry) {
-        const group =
-            new ThreadRowGroup(groupName, this.model_.allowedCount(groupName));
+        const isHighPriority =
+            [PINNED_PRIORITY_NAME, MUST_DO_PRIORITY_NAME].includes(groupName);
         const isLowPriority =
             [URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME].includes(groupName);
+        const isPriorityGroup = isHighPriority || isLowPriority;
+        const group = new ThreadRowGroup(
+            groupName, this.model_.allowedCount(groupName), !isPriorityGroup);
         if (previousEntry) {
           if (isLowPriority && !previousEntry.isLowPriority) {
             this.lowPriorityContainer_.prepend(group);

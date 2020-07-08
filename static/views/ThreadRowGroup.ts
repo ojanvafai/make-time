@@ -28,7 +28,9 @@ export class ThreadRowGroup extends HTMLElement {
   private collapsed_: boolean;
   private manuallyCollapsed_: boolean;
 
-  constructor(public name: string, private allowedCount_: number) {
+  constructor(
+      public name: string, private allowedCount_: number,
+      private showOnlyHighlightedRows_: boolean) {
     super();
     this.style.cssText = `
       display: block;
@@ -280,6 +282,7 @@ export class ThreadRowGroup extends HTMLElement {
       }
 
       row.setInViewport(this.inViewport_);
+      row.setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
       previousRow = row;
     }
 
