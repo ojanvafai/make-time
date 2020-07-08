@@ -157,10 +157,8 @@ export class ThreadRowGroup extends HTMLElement {
     let text;
     if (overLimit)
       text = ` (${count}/${this.allowedCount_})`;
-    else if (this.collapsed_)
-      text = ` (${count})`;
     else
-      text = '';
+      text = ` (${count})`;
     this.rowCountDisplay_.textContent = text;
   }
 
