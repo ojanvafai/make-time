@@ -41,6 +41,13 @@ export class FocusRowEvent extends Event {
   }
 }
 
+export class RowHighlightChangeEvent extends Event {
+  static NAME = 'row-highlight-change';
+  constructor() {
+    super(RowHighlightChangeEvent.NAME, {bubbles: true});
+  }
+}
+
 export class RenderThreadEvent extends Event {
   static NAME = 'render-thread';
   constructor(public shiftKey: boolean) {
@@ -92,7 +99,7 @@ class RowState extends LabelState {
   lastMessageId: string;
 
   constructor(
-      thread: Thread, public group: string,
+      thread: Thread, group: string, public renderTiny: boolean,
       public finalVersionSkipped: boolean) {
     super(thread, group);
 
@@ -120,6 +127,7 @@ class RowState extends LabelState {
         this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&
+        this.renderTiny === other.renderTiny &&
         this.finalVersionSkipped === other.finalVersionSkipped;
   }
 }
@@ -155,8 +163,7 @@ export class ThreadRow extends HTMLElement {
       ${
     !this.useCardStyle_ ? `` : `width: 300px;
       box-shadow: var(--border-and-hover-color) 0 0 4px;
-      z-index: 100;
-      margin-bottom: 12px;`}
+      z-index: 100;`}
     `;
 
     this.inViewport_ = false;
@@ -186,7 +193,6 @@ export class ThreadRow extends HTMLElement {
 
     this.messageDetails_ = document.createElement('div');
     this.messageDetails_.style.cssText = `
-      display: flex;
       overflow: hidden;
       flex: 1;
       min-height: 40px;
@@ -311,10 +317,6 @@ export class ThreadRow extends HTMLElement {
     this.render();
   }
 
-  private setIsShown_(shouldShow: boolean) {
-    this.style.display = shouldShow ? this.display_ : 'none';
-  }
-
   render() {
     if (!this.inViewport_)
       return;
@@ -326,8 +328,10 @@ export class ThreadRow extends HTMLElement {
     if (!group)
       return;
 
+    let renderTiny = this.hideIfNotHighlighted_ && !this.highlighted;
+
     let state = new RowState(
-        this.thread, group.name,
+        this.thread, group.name, renderTiny,
         this.showFinalVersion_ && this.finalVersionSkipped_);
 
     // Keep track of the last state we used to render this row so we can avoid
@@ -336,7 +340,23 @@ export class ThreadRow extends HTMLElement {
       return;
 
     this.lastRowState_ = state;
-    this.setIsShown_(!state.finalVersionSkipped);
+    this.style.display = state.finalVersionSkipped ? 'none' : this.display_;
+
+    this.messageDetails_.textContent = '';
+
+    this.messageDetails_.style.display = state.renderTiny ? 'none' : 'flex';
+    this.checkBox_.style.display = state.renderTiny ? 'none' : '';
+    if (this.finalVersionCheckbox_)
+      this.finalVersionCheckbox_.style.display = state.renderTiny ? 'none' : '';
+    this.style.borderBottom =
+        state.renderTiny ? '1px solid var(--border-and-hover-color)' : '';
+    this.style.margin =
+        state.renderTiny ? '4px 0' : (this.useCardStyle_ ? '0 0 12px' : '');
+
+    if (state.renderTiny) {
+      return;
+    }
+
     let labels = document.createElement('div');
     if (!this.useCardStyle_) {
       ThreadRow.appendLabels(
@@ -375,7 +395,6 @@ export class ThreadRow extends HTMLElement {
     justSubject.style.fontWeight = boldState;
     date.style.fontWeight = boldState;
 
-    this.messageDetails_.textContent = '';
     this.messageDetails_.style.flexDirection = renderMultiline ? 'column' : '';
 
     const fromContainer = this.appendFromContainer_(state);
@@ -571,12 +590,7 @@ export class ThreadRow extends HTMLElement {
 
   setHideIfNotHighlighted(shouldHide: boolean) {
     this.hideIfNotHighlighted_ = shouldHide;
-    this.updateHighlightHideState_();
-  }
-
-  private updateHighlightHideState_() {
-    this.setIsShown_(
-        !this.hideIfNotHighlighted_ || this.focused_ || this.checked);
+    this.render();
   }
 
   setFocus(value: boolean, focusImpliesSelected: boolean) {
@@ -586,8 +600,10 @@ export class ThreadRow extends HTMLElement {
         this.focused_ ? 'var(--border-and-hover-color)' : '';
     this.updateCheckbox_();
     // TODO: Technically we probably want a blur event as well for !value.
-    if (value)
+    if (value) {
       this.dispatchEvent(new FocusRowEvent());
+    }
+    this.render();
   }
 
   clearFocus() {
@@ -598,20 +614,16 @@ export class ThreadRow extends HTMLElement {
     this.setFocus(this.focused_, false);
   }
 
+  get highlighted() {
+    return this.focused_ || this.checked;
+  }
+
   get selected() {
     return this.checked || (this.focused_ && this.focusImpliesSelected_);
   }
 
   get checked() {
     return this.checkBox_.isFullySelected();
-  }
-
-  hasChecked() {
-    return this.checked;
-  }
-
-  hasUnchecked() {
-    return !this.checked;
   }
 
   setChecked(value: boolean, rangeSelect?: boolean) {
@@ -622,6 +634,7 @@ export class ThreadRow extends HTMLElement {
 
   private handleCheckedChanged_(rangeSelect?: boolean) {
     this.dispatchEvent(new SelectRowEvent(this.checked, !!rangeSelect));
+    this.render();
   }
 
   private setHovered_(hovered: boolean) {
@@ -631,8 +644,6 @@ export class ThreadRow extends HTMLElement {
   }
 
   private updateCheckbox_() {
-    this.updateHighlightHideState_();
-
     let newState;
     if (this.checked)
       newState = ALL;

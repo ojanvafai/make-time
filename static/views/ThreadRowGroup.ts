@@ -1,8 +1,8 @@
-import {collapseArrow, expandArrow} from '../Base.js';
+import {assert, collapseArrow, expandArrow} from '../Base.js';
 import {ALL, NONE, SelectBox, SelectChangedEvent, SOME} from '../SelectBox.js';
 import {PINNED_PRIORITY_NAME} from '../Thread.js';
 
-import {ThreadRow} from './ThreadRow.js';
+import {RowHighlightChangeEvent, ThreadRow} from './ThreadRow.js';
 
 // TODO: Find a better home for this. In theory it should be in ThreadRow.ts,
 // but that creates a circular reference loading ThreadRowGroup.
@@ -103,6 +103,8 @@ export class ThreadRowGroup extends HTMLElement {
     header.append(this.selectBox_, this.groupNameContainer_);
     this.append(header);
     this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
+    this.addEventListener(
+        RowHighlightChangeEvent.NAME, () => this.handleRowHighlightChanged_());
   }
 
   setInViewport(inViewport: boolean) {
@@ -173,10 +175,11 @@ export class ThreadRowGroup extends HTMLElement {
     for (let item of items) {
       if (hasChecked && hasUnchecked)
         break;
-      if (!hasChecked)
-        hasChecked = item.hasChecked();
-      if (!hasUnchecked)
-        hasUnchecked = item.hasUnchecked();
+      if (item.checked) {
+        hasChecked = true;
+      } else {
+        hasUnchecked = true;
+      }
     }
 
     let select;
@@ -280,14 +283,32 @@ export class ThreadRowGroup extends HTMLElement {
         else
           this.rowContainer_.prepend(row);
       }
-
       row.setInViewport(this.inViewport_);
       row.setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
       previousRow = row;
     }
-
+    this.handleRowHighlightChanged_();
     this.updateRowCount_();
     return removed;
+  }
+
+  private handleRowHighlightChanged_() {
+    let rows = assert(this.rows_);
+    // Ensure at least one row is always shown in uncollapsed groups.
+    const anyRowIsHighlighted = rows.some(x => x.highlighted);
+    if (anyRowIsHighlighted) {
+      rows[0].setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
+    } else {
+      rows[0].setHideIfNotHighlighted(false);
+    }
+  }
+
+  hasSelectedRows() {
+    if (!this.selectBox_) {
+      return false;
+    }
+    const selected = this.selectBox_.selected();
+    return [ALL, SOME].includes(selected);
   }
 
   selectRows(select: boolean) {

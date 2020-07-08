@@ -923,8 +923,10 @@ export class ThreadListView extends View {
       newGroup.setCollapsed(false, true);
 
       // Collapse the previous group if focused is being moved out of it.
-      if (previouslyFocusedGroup && previouslyFocusedGroup !== newGroup)
+      if (previouslyFocusedGroup && previouslyFocusedGroup !== newGroup &&
+          !previouslyFocusedGroup.hasSelectedRows()) {
         previouslyFocusedGroup.setCollapsed(true, true);
+      }
     } else {
       this.autoFocusedRow_ = null;
       this.setFocusInternal_(null);
