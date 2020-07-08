@@ -28,13 +28,16 @@ export class ThreadRowGroup extends BaseThreadRowGroup {
     this.collapsed_ = true;
 
     this.rowContainer_ = document.createElement('div');
+    this.rowContainer_.style.cssText = `
+      display: flex;
+      justify-content: space-evenly;
+    `;
     if (groupName === PINNED_PRIORITY_NAME) {
-      this.rowContainer_.style.cssText = `
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-evenly;
-      `;
+      this.rowContainer_.style.flexWrap = 'wrap';
+    } else {
+      this.rowContainer_.style.flexDirection = 'column';
     }
+
     this.placeholder_ = document.createElement('div');
     this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
     this.append(this.rowContainer_, this.placeholder_);
