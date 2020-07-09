@@ -60,7 +60,6 @@ export class ThreadRowGroup extends HTMLElement {
     `;
     if (this.useCardStyle_) {
       this.rowContainer_.style.flexWrap = 'wrap';
-      // this.rowContainer_.style.flexDirection = 'column';
       this.rowContainer_.style.marginTop = '12px';
     } else {
       this.appendHeader_();
@@ -134,17 +133,8 @@ export class ThreadRowGroup extends HTMLElement {
     return Array.from(this.rowContainer_.childNodes) as ThreadRow[];
   }
 
-  getItems() {
-    return this.getRows();
-  }
-
   getFirstRow() {
     return this.rowContainer_.firstChild as ThreadRow | null;
-  }
-
-  // ThreadRowGroups don't have subgroups.
-  getSubGroups() {
-    return [this];
   }
 
   private updateRowCount_() {
@@ -172,11 +162,11 @@ export class ThreadRowGroup extends HTMLElement {
     // This needs to look at all the row groups
     let hasChecked = false;
     let hasUnchecked = false;
-    let items = this.getItems();
-    for (let item of items) {
+    let rows = this.getRows();
+    for (let row of rows) {
       if (hasChecked && hasUnchecked)
         break;
-      if (item.checked) {
+      if (row.checked) {
         hasChecked = true;
       } else {
         hasUnchecked = true;
@@ -276,7 +266,6 @@ export class ThreadRowGroup extends HTMLElement {
     let previousRow;
     // Ensure the order of rows match the new order, but also try to
     // minimize moving things around in the DOM to minimize style recalc.
-    // let i = 0;
     for (let row of this.rows_) {
       if (previousRow ? row.previousSibling !== previousRow :
                         row !== this.rowContainer_.firstChild) {
@@ -287,22 +276,6 @@ export class ThreadRowGroup extends HTMLElement {
       }
       row.setInViewport(this.inViewport_);
       row.setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
-
-      // const numCardsToShow = 3;
-      // const useCardStyle = this.useCardStyle_;
-      // if (useCardStyle && i > numCardsToShow) {
-      //   row.style.left = `${(i - numCardsToShow)* 8}px`;
-      // }
-      // const shouldLayer = useCardStyle && (i++ > numCardsToShow);
-      // row.style.position = shouldLayer ? 'absolute' : '';
-      // row.style.bottom = shouldLayer ? '0' : '';
-      // row.style.backgroundColor =
-      //     shouldLayer ? 'var(--overlay-background-color)' : '';
-      // const angles = [5, 10, -5, -10];
-      // row.style.transform = shouldLayer ?
-      //     `rotate(${angles[Math.floor(Math.random() * angles.length)]}deg)` :
-      //     '';
-
       previousRow = row;
     }
     this.handleRowHighlightChanged_();
