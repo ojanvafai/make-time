@@ -21,7 +21,7 @@ export class ThreadRowGroup extends HTMLElement {
   private inViewport_: boolean;
   private wasInViewport_: boolean;
   private rows_?: ThreadRow[];
-  private selectBox_?: SelectBox;
+  private selectBox_: SelectBox;
   private groupNameContainer_?: HTMLElement;
   private rowCountDisplay_?: Text;
   private expander_?: HTMLElement;
@@ -44,6 +44,12 @@ export class ThreadRowGroup extends HTMLElement {
     this.wasInViewport_ = true;
     this.inViewport_ = false;
     this.collapsed_ = true;
+
+    this.selectBox_ = new SelectBox();
+    this.selectBox_.addEventListener(SelectChangedEvent.NAME, () => {
+      this.selectRows(this.selectBox_!.selected() === ALL);
+    });
+    this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
 
     this.rowContainer_ = document.createElement('div');
     this.rowContainer_.style.cssText = `
@@ -91,10 +97,6 @@ export class ThreadRowGroup extends HTMLElement {
     this.groupNameContainer_.append(
         this.expander_, this.name, this.rowCountDisplay_);
 
-    this.selectBox_ = new SelectBox();
-    this.selectBox_.addEventListener(SelectChangedEvent.NAME, () => {
-      this.selectRows(this.selectBox_!.selected() === ALL);
-    });
     let header = document.createElement('div');
     header.style.cssText = `
       display: flex;
@@ -102,7 +104,6 @@ export class ThreadRowGroup extends HTMLElement {
     `;
     header.append(this.selectBox_, this.groupNameContainer_);
     this.append(header);
-    this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
     this.addEventListener(
         RowHighlightChangeEvent.NAME, () => this.handleRowHighlightChanged_());
   }
@@ -165,9 +166,6 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   private updateSelectBox_() {
-    if (!this.selectBox_) {
-      return;
-    }
     // This needs to look at all the row groups
     let hasChecked = false;
     let hasUnchecked = false;
@@ -251,7 +249,7 @@ export class ThreadRowGroup extends HTMLElement {
     }
 
     this.wasCollapsed_ = this.collapsed_;
-    if (this.expander_ && this.selectBox_) {
+    if (this.expander_) {
       this.expander_.textContent = '';
       this.expander_.append(this.collapsed_ ? expandArrow() : collapseArrow());
       this.selectBox_.setDisabled(this.collapsed_);
@@ -304,17 +302,12 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   hasSelectedRows() {
-    if (!this.selectBox_) {
-      return false;
-    }
     const selected = this.selectBox_.selected();
     return [ALL, SOME].includes(selected);
   }
 
   selectRows(select: boolean) {
-    if (this.selectBox_) {
-      this.selectBox_.select(select ? ALL : NONE);
-    }
+    this.selectBox_.select(select ? ALL : NONE);
     let rows = this.getRows();
     for (let child of rows) {
       if (child.checked !== select)

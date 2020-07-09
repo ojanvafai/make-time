@@ -95,6 +95,7 @@ class RowState extends LabelState {
   snippet: string;
   from: HTMLElement;
   isUnread: boolean;
+  useCardStyle: boolean;
   count: number;
   lastMessageId: string;
 
@@ -111,6 +112,7 @@ class RowState extends LabelState {
     this.snippet = thread.getSnippet();
     this.from = thread.getFrom();
     this.isUnread = thread.isUnread();
+    this.useCardStyle = thread.getPriorityId() === Priority.Pin;
 
     let messageIds = thread.getMessageIds();
     this.count = messageIds.length;
@@ -127,6 +129,7 @@ class RowState extends LabelState {
         this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&
+        this.useCardStyle === other.useCardStyle &&
         this.renderTiny === other.renderTiny &&
         this.finalVersionSkipped === other.finalVersionSkipped;
   }
@@ -138,14 +141,12 @@ export class ThreadRow extends HTMLElement {
   private inViewport_: boolean;
   private focused_: boolean;
   private focusImpliesSelected_: boolean;
-  private useCardStyle_: boolean;
   private checkBox_: SelectBox;
   private finalVersionCheckbox_?: SelectBox;
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
   private finalVersionSkipped_: boolean;
   private hideIfNotHighlighted_: boolean;
-  private display_: string;
   private static lastHeightIsSmallScreen_: boolean;
   private static lastHeight_: number;
 
@@ -154,18 +155,11 @@ export class ThreadRow extends HTMLElement {
       private labelSelectTemplate_: HTMLSelectElement) {
     super();
 
-    this.useCardStyle_ = thread.getPriorityId() === Priority.Pin;
-    this.display_ = this.useCardStyle_ ? 'flex' : 'flex';
     this.style.cssText = `
-      display: ${this.display_};
+      display: flex;
       white-space: nowrap;
       padding-right: 12px;
-      ${
-    !this.useCardStyle_ ? `` : `width: 300px;
-      box-shadow: var(--border-and-hover-color) 0 0 4px;
-      z-index: 100;`}
     `;
-
     this.inViewport_ = false;
     this.focused_ = false;
     this.focusImpliesSelected_ = true;
@@ -340,10 +334,11 @@ export class ThreadRow extends HTMLElement {
       return;
 
     this.lastRowState_ = state;
-    this.style.display = state.finalVersionSkipped ? 'none' : this.display_;
-
     this.messageDetails_.textContent = '';
 
+    this.style.display = state.finalVersionSkipped ? 'none' : 'flex';
+    this.style.width = state.useCardStyle ? '300px' : '';
+    this.style.boxShadow = state.useCardStyle ? '300px' : '';
     this.messageDetails_.style.display = state.renderTiny ? 'none' : 'flex';
     this.checkBox_.style.display = state.renderTiny ? 'none' : '';
     if (this.finalVersionCheckbox_)
@@ -351,14 +346,14 @@ export class ThreadRow extends HTMLElement {
     this.style.borderBottom =
         state.renderTiny ? '1px solid var(--border-and-hover-color)' : '';
     this.style.margin =
-        state.renderTiny ? '4px 0' : (this.useCardStyle_ ? '0 0 12px' : '');
+        state.renderTiny ? '4px 0' : (state.useCardStyle ? '0 0 12px' : '');
 
     if (state.renderTiny) {
       return;
     }
 
     let labels = document.createElement('div');
-    if (!this.useCardStyle_) {
+    if (!state.useCardStyle) {
       ThreadRow.appendLabels(
           labels, state, this.thread, this.labelSelectTemplate_);
     }
@@ -390,14 +385,20 @@ export class ThreadRow extends HTMLElement {
       subject.append(snippet);
     }
 
-    let date = this.appendDate_();
+    let date = document.createElement('div');
+    if (state.useCardStyle) {
+      this.appendDate_(date);
+    }
     let boldState = state.isUnread ? '600' : '';
     justSubject.style.fontWeight = boldState;
     date.style.fontWeight = boldState;
 
     this.messageDetails_.style.flexDirection = renderMultiline ? 'column' : '';
 
-    const fromContainer = this.appendFromContainer_(state);
+    let fromContainer = document.createElement('div');
+    if (!state.useCardStyle) {
+      this.appendFromContainer_(fromContainer, state);
+    }
     if (renderMultiline) {
       this.messageDetails_.style.padding = '12px 0 12px 4px';
       this.messageDetails_.style.alignItems = '';
@@ -429,11 +430,7 @@ export class ThreadRow extends HTMLElement {
     }
   }
 
-  private appendFromContainer_(state: RowState) {
-    let fromContainer = document.createElement('div');
-    if (this.useCardStyle_) {
-      return fromContainer;
-    }
+  private appendFromContainer_(fromContainer: HTMLElement, state: RowState) {
     fromContainer.style.cssText = `
       width: 150px;
       display: flex;
@@ -460,16 +457,11 @@ export class ThreadRow extends HTMLElement {
       count.textContent = String(state.count);
       fromContainer.append(count);
     }
-    return fromContainer;
   }
 
-  private appendDate_() {
-    let date = document.createElement('div');
-    if (this.useCardStyle_) {
-      return date;
-    }
-    date.textContent = this.dateString_(this.thread.getDate());
-    date.style.cssText = `
+  private appendDate_(dateContainer: HTMLElement) {
+    dateContainer.textContent = this.dateString_(this.thread.getDate());
+    dateContainer.style.cssText = `
       text-align: right;
       text-transform: uppercase;
       font-size: 12px;
@@ -477,7 +469,6 @@ export class ThreadRow extends HTMLElement {
       display: flex;
       align-items: center;
     `;
-    return date;
   }
 
   static appendLabels(
