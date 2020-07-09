@@ -159,6 +159,7 @@ export class ThreadRow extends HTMLElement {
       display: flex;
       white-space: nowrap;
       padding-right: 12px;
+      align-items: center;
     `;
     this.inViewport_ = false;
     this.focused_ = false;
@@ -338,7 +339,8 @@ export class ThreadRow extends HTMLElement {
 
     this.style.display = state.finalVersionSkipped ? 'none' : 'flex';
     this.style.width = state.useCardStyle ? '300px' : '';
-    this.style.boxShadow = state.useCardStyle ? '300px' : '';
+    this.style.boxShadow =
+        state.useCardStyle ? 'var(--border-and-hover-color) 0 0 4px' : '';
     this.messageDetails_.style.display = state.renderTiny ? 'none' : 'flex';
     this.checkBox_.style.display = state.renderTiny ? 'none' : '';
     if (this.finalVersionCheckbox_)
@@ -366,10 +368,11 @@ export class ThreadRow extends HTMLElement {
       text-overflow: ellipsis;
       flex: 1;
       display: flex;
+      align-items: center;
     `;
 
     const renderMultiline = state.isSmallScreen;
-    if (!renderMultiline)
+    if (!renderMultiline && !state.useCardStyle)
       subject.style.marginRight = '25px';
 
     subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
@@ -386,7 +389,7 @@ export class ThreadRow extends HTMLElement {
     }
 
     let date = document.createElement('div');
-    if (state.useCardStyle) {
+    if (!state.useCardStyle) {
       this.appendDate_(date);
     }
     let boldState = state.isUnread ? '600' : '';

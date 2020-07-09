@@ -37,6 +37,7 @@ export class ThreadRowGroup extends HTMLElement {
       border-radius: 3px;
       margin: auto;
       max-width: var(--max-width);
+      position: relative;
     `;
 
     this.collapsed_ = true;
@@ -58,6 +59,7 @@ export class ThreadRowGroup extends HTMLElement {
     `;
     if (name === PINNED_PRIORITY_NAME) {
       this.rowContainer_.style.flexWrap = 'wrap';
+      // this.rowContainer_.style.flexDirection = 'column';
       this.rowContainer_.style.marginTop = '12px';
     } else {
       this.appendHeader_();
@@ -273,6 +275,7 @@ export class ThreadRowGroup extends HTMLElement {
     let previousRow;
     // Ensure the order of rows match the new order, but also try to
     // minimize moving things around in the DOM to minimize style recalc.
+    let i = 0;
     for (let row of this.rows_) {
       if (previousRow ? row.previousSibling !== previousRow :
                         row !== this.rowContainer_.firstChild) {
@@ -283,6 +286,22 @@ export class ThreadRowGroup extends HTMLElement {
       }
       row.setInViewport(this.inViewport_);
       row.setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
+
+      // const numCardsToShow = 3;
+      // const useCardStyle = this.name === PINNED_PRIORITY_NAME;
+      // if (useCardStyle && i > numCardsToShow) {
+      //   row.style.left = `${(i - numCardsToShow)* 8}px`;
+      // }
+      // const shouldLayer = useCardStyle && (i++ > numCardsToShow);
+      // row.style.position = shouldLayer ? 'absolute' : '';
+      // row.style.bottom = shouldLayer ? '0' : '';
+      // row.style.backgroundColor =
+      //     shouldLayer ? 'var(--overlay-background-color)' : '';
+      // const angles = [5, 10, -5, -10];
+      // row.style.transform = shouldLayer ?
+      //     `rotate(${angles[Math.floor(Math.random() * angles.length)]}deg)` :
+      //     '';
+
       previousRow = row;
     }
     this.handleRowHighlightChanged_();
