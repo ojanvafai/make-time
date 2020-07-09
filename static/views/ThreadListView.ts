@@ -10,7 +10,7 @@ import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
-import {BACKLOG_PRIORITY_NAME, InProgressChangedEvent, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Thread, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {BACKLOG_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, InProgressChangedEvent, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Thread, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
@@ -719,8 +719,9 @@ export class ThreadListView extends View {
       let entry = groupMap.get(groupName);
       // Insertion sort insert new groups
       if (!entry) {
-        const isHighPriority =
-            [PINNED_PRIORITY_NAME, MUST_DO_PRIORITY_NAME].includes(groupName);
+        const isHighPriority = [
+          PINNED_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, MUST_DO_PRIORITY_NAME
+        ].includes(groupName);
         const isLowPriority =
             [URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME].includes(groupName);
         const isPriorityGroup = isHighPriority || isLowPriority;

@@ -169,6 +169,7 @@ export enum Priority {
   Pin = 5,
   RemovedQuick = 6,
   RemovedIcebox = 7,
+  Bookmark = 8,
 }
 
 // The number values get stored in firestore, so should never be changed.
@@ -177,6 +178,7 @@ export enum RepeatType {
 }
 
 export const UNKNOWN_PRIORITY_NAME = 'Unknown priority';
+export const BOOKMARK_PRIORITY_NAME = 'Bookmark';
 export const PINNED_PRIORITY_NAME = 'Pin';
 export const MUST_DO_PRIORITY_NAME = 'Must do';
 export const URGENT_PRIORITY_NAME = 'Urgent';
@@ -186,6 +188,7 @@ export const FALLBACK_LABEL_NAME = 'No label';
 
 const PrioritySortOrder = [
   Priority.Pin,
+  Priority.Bookmark,
   Priority.MustDo,
   Priority.Urgent,
   Priority.Backlog,
@@ -201,6 +204,8 @@ export function getPriorityName(id: Priority) {
   switch (id) {
     case Priority.Pin:
       return PINNED_PRIORITY_NAME;
+    case Priority.Bookmark:
+      return BOOKMARK_PRIORITY_NAME;
     case Priority.MustDo:
       return MUST_DO_PRIORITY_NAME;
     case Priority.Urgent:

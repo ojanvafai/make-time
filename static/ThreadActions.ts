@@ -1,13 +1,20 @@
 import {Action, ActionGroup} from './Actions.js';
 import {assert} from './Base.js';
 import {TinyDatePicker} from './third_party/tiny-date-picker/DatePicker.js';
-import {BACKLOG_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, Thread, URGENT_PRIORITY_NAME} from './Thread.js';
+import {BACKLOG_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, Thread, URGENT_PRIORITY_NAME} from './Thread.js';
 
 export let ARCHIVE_ACTION = {
   name: `Archive`,
   description: `Archive and remove from the current group.`,
   key: 'a',
   actionGroup: ActionGroup.Ignore,
+};
+
+export let BOOKMARK_ACTION = {
+  name: BOOKMARK_PRIORITY_NAME,
+  description: `Bookmark to reference later.`,
+  key: 'b',
+  actionGroup: ActionGroup.Priority,
 };
 
 export let PIN_ACTION = {
@@ -137,6 +144,7 @@ export let BASE_THREAD_ACTIONS = [
       URGENT_ACTION,
       BACKLOG_ACTION,
       PIN_ACTION,
+      BOOKMARK_ACTION,
     ],
   ],
   BLOCKED_ACTIONS,
@@ -146,6 +154,9 @@ function destinationToPriority(destination: Action) {
   switch (destination) {
     case PIN_ACTION:
       return Priority.Pin;
+
+    case BOOKMARK_ACTION:
+      return Priority.Bookmark;
 
     case MUST_DO_ACTION:
       return Priority.MustDo;
