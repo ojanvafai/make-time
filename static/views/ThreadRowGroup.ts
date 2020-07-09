@@ -27,6 +27,7 @@ export class ThreadRowGroup extends HTMLElement {
   private expander_?: HTMLElement;
   private collapsed_: boolean;
   private manuallyCollapsed_: boolean;
+  private useCardStyle_: boolean;
 
   constructor(
       public name: string, private allowedCount_: number,
@@ -40,11 +41,11 @@ export class ThreadRowGroup extends HTMLElement {
       position: relative;
     `;
 
-    this.collapsed_ = true;
+    this.useCardStyle_ = name === PINNED_PRIORITY_NAME;
+    this.collapsed_ = !this.useCardStyle_;
     this.manuallyCollapsed_ = false;
     this.wasInViewport_ = true;
     this.inViewport_ = false;
-    this.collapsed_ = true;
 
     this.selectBox_ = new SelectBox();
     this.selectBox_.addEventListener(SelectChangedEvent.NAME, () => {
@@ -57,7 +58,7 @@ export class ThreadRowGroup extends HTMLElement {
       display: flex;
       justify-content: space-evenly;
     `;
-    if (name === PINNED_PRIORITY_NAME) {
+    if (this.useCardStyle_) {
       this.rowContainer_.style.flexWrap = 'wrap';
       // this.rowContainer_.style.flexDirection = 'column';
       this.rowContainer_.style.marginTop = '12px';
@@ -195,7 +196,7 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   setCollapsed(collapsed: boolean, force?: boolean) {
-    if (!force && this.manuallyCollapsed_)
+    if (this.useCardStyle_ || !force && this.manuallyCollapsed_)
       return;
 
     // Performance optimization to avoid rendering when nothing has changed.
@@ -288,7 +289,7 @@ export class ThreadRowGroup extends HTMLElement {
       row.setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
 
       // const numCardsToShow = 3;
-      // const useCardStyle = this.name === PINNED_PRIORITY_NAME;
+      // const useCardStyle = this.useCardStyle_;
       // if (useCardStyle && i > numCardsToShow) {
       //   row.style.left = `${(i - numCardsToShow)* 8}px`;
       // }
