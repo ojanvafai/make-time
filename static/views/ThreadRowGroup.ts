@@ -276,7 +276,7 @@ export class ThreadRowGroup extends HTMLElement {
     let previousRow;
     // Ensure the order of rows match the new order, but also try to
     // minimize moving things around in the DOM to minimize style recalc.
-    let i = 0;
+    // let i = 0;
     for (let row of this.rows_) {
       if (previousRow ? row.previousSibling !== previousRow :
                         row !== this.rowContainer_.firstChild) {
