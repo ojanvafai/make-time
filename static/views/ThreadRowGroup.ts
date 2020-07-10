@@ -54,16 +54,10 @@ export class ThreadRowGroup extends HTMLElement {
     this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
 
     this.rowContainer_ = document.createElement('div');
-    this.rowContainer_.style.cssText = `
-      display: flex;
-      justify-content: space-evenly;
-    `;
     if (this.useCardStyle_) {
-      this.rowContainer_.style.flexWrap = 'wrap';
       this.rowContainer_.style.marginTop = '12px';
     } else {
       this.appendHeader_();
-      this.rowContainer_.style.flexDirection = 'column';
     }
     this.placeholder_ = document.createElement('div');
     this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
@@ -125,7 +119,7 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   private showRows_() {
-    this.rowContainer_.style.display = this.inViewport_ ? 'flex' : 'none';
+    this.rowContainer_.style.display = this.inViewport_ ? '' : 'none';
     this.placeholder_.style.display = this.inViewport_ ? 'none' : '';
   }
 

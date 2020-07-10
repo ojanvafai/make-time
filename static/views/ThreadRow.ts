@@ -322,18 +322,12 @@ export class ThreadRow extends HTMLElement {
     this.lastRowState_ = state;
     this.messageDetails_.textContent = '';
 
-    this.style.display = state.finalVersionSkipped ? 'none' : 'flex';
-    this.style.width = state.useCardStyle ? '300px' : '';
-    this.style.boxShadow =
-        state.useCardStyle ? 'var(--border-and-hover-color) 0 0 4px' : '';
+    this.style.display = state.finalVersionSkipped ?
+        'none' :
+        (state.renderTiny ? 'inline-flex' : 'flex');
     this.messageDetails_.style.display = state.renderTiny ? 'none' : 'flex';
-    this.checkBox_.style.display = state.renderTiny ? 'none' : '';
     if (this.finalVersionCheckbox_)
       this.finalVersionCheckbox_.style.display = state.renderTiny ? 'none' : '';
-    this.style.borderBottom =
-        state.renderTiny ? '1px solid var(--border-and-hover-color)' : '';
-    this.style.margin =
-        state.renderTiny ? '4px 0' : (state.useCardStyle ? '0 0 12px' : '');
 
     if (state.renderTiny) {
       return;
