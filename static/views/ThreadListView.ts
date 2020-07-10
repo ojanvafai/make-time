@@ -318,7 +318,6 @@ export class ThreadListView extends View {
     this.highPriorityContainer_ = new ThreadRowGroupList();
     this.highPriorityContainer_.style.cssText = `
       background-color: var(--nested-background-color);
-      min-height: calc(100vh - 215px);
       margin-bottom: 16px;
     `;
     this.lowPriorityContainer_ = new ThreadRowGroupList();
@@ -601,6 +600,12 @@ export class ThreadListView extends View {
     let includeSortActions = this.isTodoView_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
     this.setActions([...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
+
+    // Need to do this after we update the toolbar since it can change height.
+    // TODO: We should also do this when the window resizes since the toolbars
+    // can wrap and change height.
+    this.highPriorityContainer_.style.minHeight =
+        `${this.appShell_.getContentHeight() - 70}px`;
 
     if (this.renderedRow_)
       this.addTimer_();

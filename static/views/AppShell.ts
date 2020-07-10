@@ -383,6 +383,10 @@ export class AppShell extends HTMLElement {
     this.filterToggle_.style.fill = hasFilterParams ? 'red' : '';
   }
 
+  getContentHeight() {
+    return this.content_.offsetHeight;
+  }
+
   showToolbar(show?: boolean) {
     this.toolbar_.style.display = show ? 'flex' : 'none';
   }
