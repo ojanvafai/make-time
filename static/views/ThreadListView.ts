@@ -131,7 +131,7 @@ let UNDO_ACTION = {
   name: `Undo`,
   description: `Undoes the last action taken.`,
   key: 'u',
-  actionGroup: ActionGroup.Undo,
+  actionGroup: ActionGroup.Other,
 };
 
 let MOVE_UP_ACTION = {
@@ -140,7 +140,7 @@ let MOVE_UP_ACTION = {
   key: '[',
   secondaryKey: new Shortcut('ArrowUp', true, false),
   repeatable: true,
-  actionGroup: ActionGroup.Sort,
+  actionGroup: ActionGroup.Other,
 };
 
 let MOVE_DOWN_ACTION = {
@@ -149,7 +149,14 @@ let MOVE_DOWN_ACTION = {
   key: ']',
   secondaryKey: new Shortcut('ArrowDown', true, false),
   repeatable: true,
-  actionGroup: ActionGroup.Sort,
+  actionGroup: ActionGroup.Other,
+};
+
+const OTHER_MENU_ACTION = {
+  name: 'other',
+  description: `Other buttons`,
+  key: '...',  // Intentionally a noop.
+  actionGroup: ActionGroup.Other,
 };
 
 let BASE_ACTIONS = [
@@ -161,7 +168,6 @@ let BASE_ACTIONS = [
     ],
   ],
   ...BASE_THREAD_ACTIONS,
-  UNDO_ACTION,
   PREVIOUS_ACTION,
   PREVIOUS_FULL_ACTION,
   NEXT_ACTION,
@@ -599,7 +605,10 @@ export class ThreadListView extends View {
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.isTodoView_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
-    this.setActions([...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
+    this.setActions([
+      ...BASE_ACTIONS, ...viewSpecific,
+      [OTHER_MENU_ACTION, [UNDO_ACTION, ...sortActions]]
+    ]);
 
     // Need to do this after we update the toolbar since it can change height.
     // TODO: We should also do this when the window resizes since the toolbars
@@ -1029,6 +1038,9 @@ export class ThreadListView extends View {
     this.hasHadAction_ = true;
 
     switch (action) {
+      case OTHER_MENU_ACTION:
+        return;
+
       case UNDO_ACTION:
         this.model_.undoLastAction();
         return;

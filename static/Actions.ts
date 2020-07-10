@@ -5,8 +5,7 @@ export enum ActionGroup {
   Ignore = 'ignore',
   Priority = 'priority',
   Date = 'date',
-  Undo = 'undo',
-  Sort = 'sort',
+  Other = 'other',
   Reply = 'reply'
 }
 
