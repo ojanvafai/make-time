@@ -192,20 +192,6 @@ export class ThreadRow extends HTMLElement {
       flex: 1;
       min-height: 40px;
     `;
-
-    // Pevent the default behavior of text selection on shift+click this is
-    // used for range selections. Need to do it on mousedown unfortunately
-    // since that's when the selection is modified on some platforms (e.g.
-    // mac). Need to do this on messageDetails_ in additon to the label since
-    // the whole row is clickable in Skim view.
-    // TODO: See if we need this now that we no longer have Skim view. Should
-    // we make the whole row clickable when viewing messages is disallowed in
-    // Triage view?
-    this.messageDetails_.addEventListener('mousedown', e => {
-      if (e.shiftKey)
-        e.preventDefault();
-    });
-
     this.messageDetails_.addEventListener('click', (e) => {
       // If the user is selecting the subject line in the row, have that
       // prevent rendering the thread so they can copy-paste the subject.
@@ -213,7 +199,6 @@ export class ThreadRow extends HTMLElement {
         this.dispatchEvent(new RenderThreadEvent(e.shiftKey));
     });
     this.append(this.messageDetails_);
-
 
     this.addEventListener('pointerover', () => {
       this.setHovered_(true);

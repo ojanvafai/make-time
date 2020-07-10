@@ -53,7 +53,7 @@ declare global {
   }
 
   interface InputEvent extends UIEvent {
-    readonly data: string;
+    readonly data: string|null;
     readonly inputType: string;
     readonly isComposing: boolean;
 
@@ -64,6 +64,7 @@ declare global {
 
   interface CSSStyleDeclaration {
     webkitLineClamp: string;
+    webkitUserModify: string;
   }
 }
 

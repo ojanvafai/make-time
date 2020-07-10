@@ -1,5 +1,5 @@
 import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
-import {assert, compareDates, defined, notNull, setFaviconCount} from '../Base.js';
+import {compareDates, defined, notNull, setFaviconCount} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
@@ -15,7 +15,6 @@ export const IMPORTANT_NAME = 'important';
 export class TodoModel extends ThreadListModel {
   private threadsData_?: firebase.firestore.DocumentData;
   private sortCount_: number;
-  private isTriage_: boolean;
   private faviconCount_: number;
 
   constructor(settings_: Settings) {
@@ -26,7 +25,6 @@ export class TodoModel extends ThreadListModel {
     let forceTriageIndex = 0;
     super(settings_, forceTriageIndex);
     this.sortCount_ = 0;
-    this.isTriage_ = false;
     this.faviconCount_ = 0;
 
     let threadsDoc = firestoreUserCollection().doc('threads');
@@ -72,24 +70,14 @@ export class TodoModel extends ThreadListModel {
     }
   }
 
-  setIsTriage(isTriage: boolean) {
-    this.isTriage_ = isTriage;
-    this.timerCountsDown = isTriage;
-  }
-
-  isTriage() {
-    return this.isTriage_
-  }
-
   handleSortChanged_() {
     this.sort();
     this.dispatchEvent(new ThreadListChangedEvent());
   }
 
   private shouldShowTriageThread_(thread: Thread) {
-    if (!thread.needsTriage() || (this.isTriage_ && !thread.forceTriage()))
+    if (!thread.needsTriage())
       return false;
-
     let vacation = this.settings_.get(ServerStorage.KEYS.VACATION);
     if (vacation && (vacation !== thread.getLabel()))
       return false;
@@ -97,24 +85,18 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected shouldShowThread(thread: Thread) {
-    if (this.isTriage_) {
+    if (thread.needsTriage()) {
       if (!this.shouldShowTriageThread_(thread))
         return false;
     } else {
-      if (thread.needsTriage()) {
-        if (!this.shouldShowTriageThread_(thread))
-          return false;
-      } else {
-        let priority = thread.getPriorityId();
-        if (!priority)
-          return false;
+      let priority = thread.getPriorityId();
+      if (!priority)
+        return false;
 
-        if (this.settings_.get(ServerStorage.KEYS.VACATION) &&
-            priority !== Priority.MustDo && priority !== Priority.Pin)
-          return false;
-      }
+      if (this.settings_.get(ServerStorage.KEYS.VACATION) &&
+          priority !== Priority.MustDo && priority !== Priority.Pin)
+        return false;
     }
-
     return super.shouldShowThread(thread);
   }
 
@@ -246,8 +228,6 @@ export class TodoModel extends ThreadListModel {
   // TODO: only enable the sort buttons for priority group names and move this
   // into ThreadListModel.
   setSortOrder(threads: Thread[]) {
-    assert(!this.isTriage_);
-
     let threadIds = threads.map(x => x.id);
 
     let update: any = {};

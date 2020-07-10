@@ -68,10 +68,6 @@ export abstract class ThreadListModel extends Model {
     return this.haveEverLoadedSnapshot_.every(x => x);
   }
 
-  isTriage() {
-    return false;
-  }
-
   postProcessThreads(_threads: Thread[]) {}
 
   async getNoMeetingRoomEvents() {

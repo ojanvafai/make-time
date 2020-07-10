@@ -211,7 +211,6 @@ export function firestoreUserCollection() {
 }
 
 export function showHelp() {
-
   let headingStyle = `
     font-weight: bold;
     font-size: 120%;
@@ -222,43 +221,57 @@ export function showHelp() {
     create('p', 'make-time is an opinionated way of handling email.'),
 
     createWithStyle('b', headingStyle, 'Disclaimers'),
-    create('p',
-      'Make-time is built in free time and ',
-      create('b', 'makes no guarantees about quality'),
-      '. We use it for day to day email management, but you might not want to. It has bugs. Sometimes REALLY BAD bugs.'
-    ),
-    create('p',
-      'Bugs, feature requests, and patches are very welcome. File issues, requests, random musings in the ',
-      createLink('https://github.com/ojanvafai/make-time', 'github repo'),
-      '.'
-    ),
+    create(
+        'p', 'Make-time is built in free time and ',
+        create('b', 'makes no guarantees about quality'),
+        '. We use it for day to day email management, but you might not want to. It has bugs.'),
+    create(
+        'p',
+        'Bugs, feature requests, and patches are very welcome. File issues, requests, random musings in the ',
+        createLink('https://github.com/ojanvafai/make-time', 'github repo'),
+        '.'),
 
     createWithStyle('b', headingStyle, 'Getting started'),
-    create('p',
-      'See this ',
-      createLink('https://docs.google.com/presentation/d/1qwlKIQBnfDzzYdSQD-JE5cFGXiunV41uRQX0enBSoAU/edit', 'slide deck'),
-      ' for getting started with make-time.'
-    ),
+    create(
+        'p', 'See this ',
+        createLink(
+            'https://docs.google.com/presentation/d/1qwlKIQBnfDzzYdSQD-JE5cFGXiunV41uRQX0enBSoAU/edit',
+            'slide deck'),
+        ' for getting started with make-time.'),
 
     createWithStyle('b', headingStyle, 'Keyboard shortcuts'),
     create('p', `Type '?' anywhere in make-time to see keyboard shortcuts.`),
 
     createWithStyle('b', headingStyle, 'Triage'),
-    create('p', `Make-time only marks messages read when you take a triage action on them. Some actions also archive the thread in gmail. Aside from bugs, make-time will only archive messages and/or mark them as read.`),
-    create('p', `The goal of triage is to get in the flow of quickly prioritizing or archiving all your mail. Once triage is done, the Todo view shows your email in priority order. This helps avoid flip-flopping between quick triage and deep thinking.`),
+    create(
+        'p',
+        `Make-time only marks messages read in gmail when you take a triage action on them. Some actions also archive the thread in gmail. Aside from bugs, make-time will only archive messages and/or mark them as read.`),
+    create(
+        'p',
+        `The goal of triage is to get in the flow of quickly prioritizing or archiving all your mail. Once triage is done, you are left with your email in priority order. This helps avoid flip-flopping between quick triage and deep thinking.`),
 
     createWithStyle('b', headingStyle, 'Filtering'),
-    create('p', `Philosopy: labels are a triage tool, not a search/organization tool.`),
-    create('p',
-      `Make-time has it's own labeling and filtering system (totally independent from gmail labels). It processes all emails in your inbox. `,
-      create('b', `Emails are only processed when MakeTime is open in a browser tab. `),
-      `Some people choose to leave a make-time tab open (e.g. on a desktop computer) so their email is already processed when they open make-time.`
-    ),
-    create('p', `The first filter that applies to a thread wins, so every thread gets exactly one label. This enables rich filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day. See the filter settings dialog for more information.`),
-    create('p', `See the Settings dialog for adding filters and modifying queues. Queues can be setup to show up in a specific order and/or only show once a day/week/month. See the queues settings dialog for more information.`),
+    create(
+        'p',
+        `Philosopy: labels are a triage tool, not a search/organization tool.`),
+    create(
+        'p',
+        `Make-time has it's own labeling and filtering system (totally independent from gmail labels). It processes all emails in your inbox. `,
+        create(
+            'b',
+            `Emails are only processed when MakeTime is open in a browser tab. `),
+        `Some people choose to leave a make-time tab open (e.g. on a desktop computer) so their email is already processed when they open make-time.`),
+    create(
+        'p',
+        `The first filter that applies to a thread wins, so every thread gets exactly one label. This enables rich filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day. See the filter settings dialog for more information.`),
+    create(
+        'p',
+        `See the Settings dialog for adding filters and modifying queues. Queues can be setup to show up in a specific order and/or only show once a day/week/month. See the queues settings dialog for more information.`),
 
     createWithStyle('b', headingStyle, 'Privacy'),
-    create('p', `In theory we could move email processing to the server, but then we would need to store private email data on the server. make-time only stores message data and email addresses in your local browser. make-time specific data (e.g. your make-time filters) and anonymous gmail data (e.g. thread and message IDs) are stored on the make-time server.`)
+    create(
+        'p',
+        `In theory we could move email processing to the server, but then we would need to store private email data on the server. make-time only stores message data and email addresses in your local browser. make-time specific data (e.g. your make-time filters) and anonymous gmail data (e.g. thread and message IDs) are stored on the make-time server.`)
 
   ];
 

@@ -44,7 +44,6 @@ export class AppShell extends HTMLElement {
   private toolbar_: HTMLElement;
   private menuToggle_: SVGElement;
   private filterToggle_: SVGElement;
-  private viewToggle_: SVGElement;
   private overflowMenuButton_: SVGElement;
   private overflowMenu_?: HTMLElement;
   private clickOverlay_?: HTMLElement;
@@ -160,12 +159,6 @@ export class AppShell extends HTMLElement {
         createLine(2, 19, 22, 19, 3),
     );
 
-    this.viewToggle_ = this.createViewToggleSVG_();
-    this.viewToggle_.style.cssText = `
-      display: none;
-      margin-left: 6px;
-    `;
-
     this.filterToggle_ = createSvgButton(
         '0 0 24 24',
         () => this.openFilterMenu_(),
@@ -211,9 +204,8 @@ export class AppShell extends HTMLElement {
     `;
 
     this.toolbar_.append(
-        this.backArrow_, this.menuToggle_, this.viewToggle_, this.filterToggle_,
-        AppShell.title_, this.subject_, AppShell.loader_,
-        this.overflowMenuButton_);
+        this.backArrow_, this.menuToggle_, this.filterToggle_, AppShell.title_,
+        this.subject_, AppShell.loader_, this.overflowMenuButton_);
     this.appendMenu_();
 
     this.mainContent_.addEventListener('click', (e) => {
@@ -242,9 +234,8 @@ export class AppShell extends HTMLElement {
         createSvg('defs', marker), rightArrow, leftArrow);
   }
 
-  showViewAndFilterToggles(show: boolean) {
+  showFilterToggle(show: boolean) {
     this.filterToggle_.style.display = show ? '' : 'none';
-    this.viewToggle_.style.display = show ? '' : 'none';
   }
 
   showOverflowMenuButton(show: boolean) {
@@ -419,7 +410,6 @@ export class AppShell extends HTMLElement {
   private appendMenu_() {
     this.drawer_.append(
         this.createMenuItem_('Compose', {href: '/compose'}),
-        this.createMenuItem_('Triage', {href: '/triage'}),
         this.createMenuItem_('Todo', {href: '/todo'}),
         this.createMenuItem_('Hidden', {href: '/hidden'}),
         this.createMenuItem_('Calendar (alpha)', {href: '/calendar'}),

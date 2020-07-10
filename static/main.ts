@@ -63,7 +63,6 @@ enum VIEW {
   Settings,
   Todo,
   Tracking,
-  Triage,
 }
 
 async function routeToCurrentLocation() {
@@ -92,7 +91,6 @@ router.add('/track', async (_params) => {
   await setView(VIEW.Tracking);
 });
 router.add('/', routeToDefault);
-router.add('/triage', routeToTriage);
 router.add('/todo', async (params) => {
   await setView(VIEW.Todo, params);
 });
@@ -108,11 +106,7 @@ router.add('/settings', async (_parans) => {
 
 async function routeToDefault(params: any) {
   let view = VIEW[localStorage.lastThreadListView as keyof typeof VIEW];
-  await setView(view || VIEW.Triage, params);
-}
-
-async function routeToTriage(params: any) {
-  await setView(VIEW.Triage, params);
+  await setView(view || VIEW.Todo, params);
 }
 
 function getView() {
@@ -131,9 +125,7 @@ async function createModel(viewType: VIEW, params?: any) {
       return new TrackingModel();
 
     case VIEW.Todo:
-    case VIEW.Triage:
       let todoModel = await getTodoModel();
-      todoModel.setIsTriage(viewType === VIEW.Triage);
       todoModel.setOffices(params.offices);
       todoModel.setViewFilters(params.label, params.days);
       return todoModel;
@@ -164,11 +156,7 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Todo:
       return new ThreadListView(
-          <TodoModel>model, appShell_, await getSettings(), '/triage', true);
-
-    case VIEW.Triage:
-      return new ThreadListView(
-          <TodoModel>model, appShell_, await getSettings(), '/todo');
+          <TodoModel>model, appShell_, await getSettings(), true);
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
@@ -240,18 +228,16 @@ async function setView(
   timeSinceViewSet = Date.now();
   previousViewType = viewType;
 
-  if (viewType === VIEW.Todo || viewType === VIEW.Triage) {
+  if (viewType === VIEW.Todo) {
     localStorage.lastThreadListView = VIEW[viewType];
     showViewAnalytics();
   }
 
   let thisViewGeneration = ++viewGeneration;
-
   appShell_.showToolbar(!shouldHideToolbar);
-  appShell_.showViewAndFilterToggles(false);
+  appShell_.showFilterToggle(false);
   // TODO: Make this work for VIEW.Hidden as well.
-  appShell_.showOverflowMenuButton(
-      viewType === VIEW.Todo || viewType === VIEW.Triage);
+  appShell_.showOverflowMenuButton(viewType === VIEW.Todo);
   appShell_.setQueryParameters(params);
 
   if (currentView_)

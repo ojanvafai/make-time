@@ -224,8 +224,8 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      private settings_: Settings, private toggleViewUrl_?: string,
-      private includeSortActions_?: boolean) {
+      private settings_: Settings,
+      private includeSortActionsAndFilterButton_: boolean) {
     super();
 
     this.style.cssText = `
@@ -541,16 +541,6 @@ export class ThreadListView extends View {
     await this.model_.update();
   }
 
-  toggleView() {
-    // TODO: Do this in a less hacky way.
-    // Use a link instead of setting window.location so it goes through the
-    // router.
-    let a = document.createElement('a');
-    a.href = defined(this.toggleViewUrl_);
-    this.append(a);
-    a.click();
-  }
-
   createMenuItem_(
       container: HTMLElement, clickHandler: () => void,
       ...contents: (string|Element)[]) {
@@ -611,7 +601,8 @@ export class ThreadListView extends View {
   updateActions_() {
     let viewSpecific =
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
-    let includeSortActions = this.includeSortActions_ && !this.renderedRow_;
+    let includeSortActions =
+        this.includeSortActionsAndFilterButton_ && !this.renderedRow_;
     // TODO: Move this into the model so that we can have the TodoModel not
     // show sort actions for FinalVersion mode.
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
@@ -623,11 +614,6 @@ export class ThreadListView extends View {
   }
 
   private addTimer_() {
-    // Having a timer when you can only read the subject and the snippet is not
-    // helpful and adds visual clutter.
-    if (this.model_.isTriage())
-      return;
-
     let row = assert(this.renderedRow_);
     // Timer counts down if in triage view or in any untriaged group.
     let timer = new Timer(
@@ -884,9 +870,6 @@ export class ThreadListView extends View {
   }
 
   private prerender_() {
-    if (this.model_.isTriage())
-      return;
-
     let row;
     if (this.renderedRow_) {
       row = rowAtOffset(this.getRows_(), this.renderedRow_, 1);
@@ -1138,7 +1121,7 @@ export class ThreadListView extends View {
   }
 
   private transitionToThreadList_(focusedRow: ThreadRow|null) {
-    this.appShell_.showViewAndFilterToggles(!!this.toggleViewUrl_);
+    this.appShell_.showFilterToggle(this.includeSortActionsAndFilterButton_);
     this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';
@@ -1156,7 +1139,7 @@ export class ThreadListView extends View {
   }
 
   transitionToSingleThread_() {
-    this.appShell_.showViewAndFilterToggles(false);
+    this.appShell_.showFilterToggle(false);
     this.appShell_.showBackArrow(true);
 
     this.scrollOffset_ = this.appShell_.contentScrollTop;
@@ -1219,13 +1202,6 @@ export class ThreadListView extends View {
       this.render_();
   }
 
-  renderOneWithoutMessages_() {
-    let renderedRow = notNull(this.renderedRow_);
-    renderedRow.rendered.renderWithoutMessages();
-    this.singleThreadContainer_.textContent = '';
-    this.singleThreadContainer_.append(renderedRow.rendered);
-  }
-
   renderOne_(toast?: Toast) {
     if (this.rowGroupContainer_.style.display !== 'none')
       this.transitionToSingleThread_();
@@ -1234,13 +1210,7 @@ export class ThreadListView extends View {
     if (toast)
       AppShell.addToFooter(toast);
 
-    if (this.model_.isTriage()) {
-      this.renderOneWithoutMessages_();
-      return;
-    }
-
     let renderedRow = notNull(this.renderedRow_);
-
     let rendered = renderedRow.rendered;
     assert(
         !rendered.isAttached() ||
@@ -1331,7 +1301,7 @@ export class ThreadListView extends View {
     reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActions_());
 
     reply.addEventListener(ReplyScrollEvent.NAME, async () => {
-      if (!this.renderedRow_ || this.model_.isTriage())
+      if (!this.renderedRow_)
         return;
 
       let row = this.renderedRow_;

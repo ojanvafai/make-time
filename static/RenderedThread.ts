@@ -1,5 +1,5 @@
 import {Action} from './Actions.js';
-import {assert, collapseArrow, expandArrow, notNull, sandboxedDom} from './Base.js';
+import {assert, collapseArrow, expandArrow, notNull} from './Base.js';
 import {Message} from './Message.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 import {Thread} from './Thread.js';
@@ -38,7 +38,6 @@ if (CSS && CSS.paintWorklet)
 export class RenderedThread extends HTMLElement {
   private spinner_?: HTMLElement;
   private focused_: HTMLElement|null;
-  private excludeMessages_: boolean;
 
   constructor(public thread: Thread) {
     super();
@@ -52,7 +51,6 @@ export class RenderedThread extends HTMLElement {
       margin: auto;
     `;
     this.focused_ = null;
-    this.excludeMessages_ = false;
   }
 
   isAttached() {
@@ -80,76 +78,28 @@ export class RenderedThread extends HTMLElement {
   }
 
   async render() {
-    if (this.excludeMessages_) {
-      this.textContent = '';
+    let messages = this.thread.getMessages();
+    let alreadyRenderedMessages =
+        [...this.children].filter(x => x.classList.contains('message'));
+    for (let i = 0; i < messages.length; i++) {
+      let quoteElidedMessage = await messages[i].getQuoteElidedMessage();
+      if (this.contains(quoteElidedMessage))
+        continue;
 
-      let contents = document.createElement('div');
-      contents.style.cssText = `
-        margin: 30px auto;
-        padding: 10px;
-        font-size: 16px;
-        width: -webkit-fill-available;
-        max-width: 600px;
-      `;
-      this.append(contents);
+      let rendered = this.renderMessage_(messages[i], quoteElidedMessage);
+      if (this.childElementCount == 0)
+        rendered.style.border = '0';
 
-      let fromContainer = document.createElement('div');
-      fromContainer.style.cssText = `
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      `;
-      contents.append(fromContainer);
-
-      let from = document.createElement('b');
-      from.append('From: ');
-      fromContainer.append(from);
-      fromContainer.append(this.thread.getFrom());
-
-      let subjectContainer = document.createElement('div')
-      subjectContainer.style.cssText = `
-        margin: 16px 0;
-      `;
-      contents.append(subjectContainer);
-
-      let subject = document.createElement('b');
-      subject.append('Subject: ');
-      subjectContainer.append(subject);
-      subjectContainer.append(this.thread.getSubject());
-
-      // Snippet returned by the gmail API is html escaped.
-      let snippet = sandboxedDom(this.thread.getSnippet());
-      snippet.style.color = 'var(--dim-text-color)';
-      contents.append(snippet);
-    } else {
-      let messages = this.thread.getMessages();
-      let alreadyRenderedMessages =
-          [...this.children].filter(x => x.classList.contains('message'));
-      for (let i = 0; i < messages.length; i++) {
-        let quoteElidedMessage = await messages[i].getQuoteElidedMessage();
-        if (this.contains(quoteElidedMessage))
-          continue;
-
-        let rendered = this.renderMessage_(messages[i], quoteElidedMessage);
-        if (this.childElementCount == 0)
-          rendered.style.border = '0';
-
-        // In theory this should never happen, but it seems to in some cases.
-        // Since we can't figure out what's causing it, do a workaround so the
-        // messages at least render.
-        if (i < alreadyRenderedMessages.length) {
-          console.error('Had to rerender already rendered message.');
-          alreadyRenderedMessages[i].replaceWith(rendered);
-        } else {
-          this.append(rendered);
-        }
+      // In theory this should never happen, but it seems to in some cases.
+      // Since we can't figure out what's causing it, do a workaround so the
+      // messages at least render.
+      if (i < alreadyRenderedMessages.length) {
+        console.error('Had to rerender already rendered message.');
+        alreadyRenderedMessages[i].replaceWith(rendered);
+      } else {
+        this.append(rendered);
       }
     }
-  }
-
-  async renderWithoutMessages() {
-    this.excludeMessages_ = true;
-    await this.render();
   }
 
   focusFirstUnread() {

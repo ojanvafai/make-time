@@ -168,7 +168,7 @@ export class HiddenView extends View {
     // TODO: Make ThreadListView take a property back for all it's optional
     // arguments.
     this.threadListView_ = new ThreadListView(
-        model, this.appShell_, this.settings_, undefined, false);
+        model, this.appShell_, this.settings_, false);
     this.append(this.threadListView_);
   }
 
