@@ -26,7 +26,7 @@ export let PIN_ACTION = {
 
 export let MUST_DO_ACTION = {
   name: MUST_DO_PRIORITY_NAME,
-  description: `Must do today. Should be completely emptied daily.`,
+  description: `Should be completely emptied daily.`,
   key: '1',
   actionGroup: ActionGroup.Priority,
 };

@@ -180,7 +180,7 @@ export enum RepeatType {
 export const UNKNOWN_PRIORITY_NAME = 'Unknown priority';
 export const BOOKMARK_PRIORITY_NAME = 'Bookmark';
 export const PINNED_PRIORITY_NAME = 'Pin';
-export const MUST_DO_PRIORITY_NAME = 'Must do';
+export const MUST_DO_PRIORITY_NAME = 'Empty daily';
 export const URGENT_PRIORITY_NAME = 'Urgent';
 export const BACKLOG_PRIORITY_NAME = 'Backlog';
 export const STUCK_LABEL_NAME = 'Stuck';
