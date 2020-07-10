@@ -305,10 +305,8 @@ export class ThreadRow extends HTMLElement {
     }
 
     let labels = document.createElement('div');
-    if (!state.useCardStyle) {
-      ThreadRow.appendLabels(
-          labels, state, this.thread, this.labelSelectTemplate_);
-    }
+    ThreadRow.appendLabels(
+        labels, state, this.thread, this.labelSelectTemplate_);
 
     let justSubject = document.createElement('span');
     justSubject.append(state.subject);
