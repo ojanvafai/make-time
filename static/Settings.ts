@@ -242,7 +242,7 @@ export class Settings extends EventTarget {
       name: 'Priority inbox',
       description: `Configure how important messages are grouped.`,
       values: [Settings.SINGLE_GROUP, Settings.IGNORE_IMPORTANCE],
-      default: Settings.SINGLE_GROUP,
+      default: Settings.IGNORE_IMPORTANCE,
     },
     {
       key: ServerStorage.KEYS.BACKGROUND,
