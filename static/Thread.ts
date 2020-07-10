@@ -68,7 +68,6 @@ export interface ThreadMetadata {
   softMuted?: boolean;
   newMessagesSinceSoftMuted?: boolean;
   archivedByFilter?: boolean;
-  finalVersion?: boolean;
   // Threads that were added back to the inbox in maketime, so syncWithGmail
   // should move them into the inbox instead of clearing their metadata.
   moveToInbox?: boolean;
@@ -106,7 +105,6 @@ export interface ThreadMetadataUpdate {
   softMuted?: boolean|firebase.firestore.FieldValue;
   newMessagesSinceSoftMuted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
-  finalVersion?: boolean|firebase.firestore.FieldValue;
   moveToInbox?: boolean|firebase.firestore.FieldValue;
   readCount?: number|firebase.firestore.FieldValue;
   countToArchive?: number|firebase.firestore.FieldValue;
@@ -138,7 +136,6 @@ export enum ThreadMetadataKeys {
   softMuted = 'softMuted',
   newMessagesSinceSoftMuted = 'newMessagesSinceSoftMuted',
   archivedByFilter = 'archivedByFilter',
-  finalVersion = 'finalVersion',
   moveToInbox = 'moveToInbox',
   readCount = 'readCount',
   countToArchive = 'countToArchive',
@@ -319,7 +316,6 @@ export class Thread extends EventTarget {
       muted: firebase.firestore.FieldValue.delete(),
       softMuted: firebase.firestore.FieldValue.delete(),
       archivedByFilter: firebase.firestore.FieldValue.delete(),
-      finalVersion: firebase.firestore.FieldValue.delete(),
       queued: firebase.firestore.FieldValue.delete(),
       throttled: firebase.firestore.FieldValue.delete(),
       // Intentionally keep only the labelId and not the hasLabel so we can
@@ -563,10 +559,6 @@ export class Thread extends EventTarget {
     await this.updateMetadata({pushLabelsToGmail: true});
   }
 
-  async setOnlyFinalVersion(value: boolean) {
-    await this.updateMetadata({finalVersion: value});
-  }
-
   async setOnlyLabel(label: string) {
     await this.updateMetadata({labelId: await this.queueNames_.getId(label)});
   }
@@ -610,10 +602,6 @@ export class Thread extends EventTarget {
 
   readCount() {
     return this.metadata_.readCount || 0;
-  }
-
-  finalVersion() {
-    return !!this.metadata_.finalVersion;
   }
 
   hasRepeat() {

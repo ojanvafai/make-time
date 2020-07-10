@@ -144,10 +144,6 @@ export abstract class ThreadListModel extends Model {
     return 0;
   }
 
-  showFinalVersion() {
-    return false;
-  }
-
   // onSnapshot is called sync for local changes. If we modify a bunch of things
   // locally in rapid succession we want to debounce to avoid hammering the CPU.
   // TODO: Do we need this debounce still now that processAllSnapshots early

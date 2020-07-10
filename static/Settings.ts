@@ -63,12 +63,6 @@ export interface Setting {
 }
 
 export const ANY_TITLE = '<any>';
-let FINAL_VERSION_DESCRIPTION = document.createElement('span');
-let FINAL_VERSION_LINK = document.createElement('a');
-FINAL_VERSION_LINK.href =
-    'http://markforster.squarespace.com/blog/2015/5/21/the-final-version-perfected-fvp.html';
-FINAL_VERSION_LINK.append('final version prioritiztion');
-FINAL_VERSION_DESCRIPTION.append('Enable ', FINAL_VERSION_LINK, '.');
 
 // TODO: Settings shouldn't have all this calendar specific knowledge.
 export let BuiltInRules: CalendarRule[] = [
@@ -255,13 +249,6 @@ export class Settings extends EventTarget {
       name: 'Vacation',
       description:
           `Label to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
-    },
-    {
-      key: ServerStorage.KEYS.FINAL_VERSION,
-      name: 'Final version',
-      description: FINAL_VERSION_DESCRIPTION,
-      type: 'checkbox',
-      default: false,
     },
     {
       key: ServerStorage.KEYS.THROTTLE_DURATION,

@@ -99,9 +99,7 @@ class RowState extends LabelState {
   count: number;
   lastMessageId: string;
 
-  constructor(
-      thread: Thread, group: string, public renderTiny: boolean,
-      public finalVersionSkipped: boolean) {
+  constructor(thread: Thread, group: string, public renderTiny: boolean) {
     super(thread, group);
 
     // window.innerWidth makes more logical sense for this, but chrome has
@@ -130,8 +128,7 @@ class RowState extends LabelState {
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&
         this.useCardStyle === other.useCardStyle &&
-        this.renderTiny === other.renderTiny &&
-        this.finalVersionSkipped === other.finalVersionSkipped;
+        this.renderTiny === other.renderTiny;
   }
 }
 
@@ -142,17 +139,14 @@ export class ThreadRow extends HTMLElement {
   private focused_: boolean;
   private focusImpliesSelected_: boolean;
   private checkBox_: SelectBox;
-  private finalVersionCheckbox_?: SelectBox;
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
-  private finalVersionSkipped_: boolean;
   private hideIfNotHighlighted_: boolean;
   private static lastHeightIsSmallScreen_: boolean;
   private static lastHeight_: number;
 
   constructor(
-      public thread: Thread, private showFinalVersion_: boolean,
-      private labelSelectTemplate_: HTMLSelectElement) {
+      public thread: Thread, private labelSelectTemplate_: HTMLSelectElement) {
     super();
 
     this.style.cssText = `
@@ -164,21 +158,10 @@ export class ThreadRow extends HTMLElement {
     this.inViewport_ = false;
     this.focused_ = false;
     this.focusImpliesSelected_ = true;
-    this.finalVersionSkipped_ = false;
     this.hideIfNotHighlighted_ = false;
 
     this.checkBox_ = new SelectBox();
     this.append(this.checkBox_);
-
-    if (showFinalVersion_) {
-      let checkbox = new SelectBox();
-      this.finalVersionCheckbox_ = checkbox;
-      this.append(checkbox);
-      checkbox.select(thread.finalVersion() ? ALL : NONE);
-      checkbox.addEventListener(SelectChangedEvent.NAME, async () => {
-        await this.thread.setOnlyFinalVersion(checkbox.isFullySelected());
-      });
-    }
 
     this.checkBox_.addEventListener(SelectChangedEvent.NAME, e => {
       let rangeSelect = (e as SelectChangedEvent).rangeSelect;
@@ -292,11 +275,6 @@ export class ThreadRow extends HTMLElement {
     this.render();
   }
 
-  setFinalVersionSkipped(value: boolean) {
-    this.finalVersionSkipped_ = value;
-    this.render();
-  }
-
   render() {
     if (!this.inViewport_)
       return;
@@ -310,9 +288,7 @@ export class ThreadRow extends HTMLElement {
 
     let renderTiny = this.hideIfNotHighlighted_ && !this.highlighted;
 
-    let state = new RowState(
-        this.thread, group.name, renderTiny,
-        this.showFinalVersion_ && this.finalVersionSkipped_);
+    let state = new RowState(this.thread, group.name, renderTiny);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -321,13 +297,8 @@ export class ThreadRow extends HTMLElement {
 
     this.lastRowState_ = state;
     this.messageDetails_.textContent = '';
-
-    this.style.display = state.finalVersionSkipped ?
-        'none' :
-        (state.renderTiny ? 'inline-flex' : 'flex');
+    this.style.display = state.renderTiny ? 'inline-flex' : 'flex';
     this.messageDetails_.style.display = state.renderTiny ? 'none' : 'flex';
-    if (this.finalVersionCheckbox_)
-      this.finalVersionCheckbox_.style.display = state.renderTiny ? 'none' : '';
 
     if (state.renderTiny) {
       return;
@@ -612,8 +583,6 @@ export class ThreadRow extends HTMLElement {
 
   private setHovered_(hovered: boolean) {
     this.checkBox_.setHovered(hovered);
-    if (this.finalVersionCheckbox_)
-      this.finalVersionCheckbox_.setHovered(hovered);
   }
 
   private updateCheckbox_() {

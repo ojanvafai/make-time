@@ -79,7 +79,6 @@ interface KeyTypes {
   PRIORITY_INBOX: string;
   BACKGROUND: string;
   VACATION: string;
-  FINAL_VERSION: string;
   TIMER_DURATION: string;
   THROTTLE_DURATION: string;
   ALLOWED_PIN_COUNT: string;
@@ -100,7 +99,6 @@ let keys: KeyTypes = {
   PRIORITY_INBOX: 'priority_inbox',
   BACKGROUND: 'background',
   VACATION: 'vacation',
-  FINAL_VERSION: 'final_version',
   TIMER_DURATION: 'timeout',
   THROTTLE_DURATION: 'throttle_duration',
   ALLOWED_PIN_COUNT: 'allowed_pin_count',
@@ -120,7 +118,6 @@ let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.PRIORITY_INBOX,
   keys.BACKGROUND,
   keys.VACATION,
-  keys.FINAL_VERSION,
   keys.TIMER_DURATION,
   keys.THROTTLE_DURATION,
   keys.ALLOWED_PIN_COUNT,

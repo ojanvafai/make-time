@@ -507,9 +507,7 @@ export class ThreadListView extends View {
 
     let row = map.get(thread);
     if (!row) {
-      row = new ThreadRow(
-          thread, this.model_.showFinalVersion(),
-          defined(this.labelSelectTemplate_));
+      row = new ThreadRow(thread, defined(this.labelSelectTemplate_));
       map.set(thread, row);
     }
 
@@ -601,10 +599,7 @@ export class ThreadListView extends View {
     let viewSpecific =
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.isTodoView_ && !this.renderedRow_;
-    // TODO: Move this into the model so that we can have the TodoModel not
-    // show sort actions for FinalVersion mode.
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
-
     this.setActions([...BASE_ACTIONS, ...viewSpecific, ...sortActions]);
 
     if (this.renderedRow_)
@@ -760,7 +755,6 @@ export class ThreadListView extends View {
     // updated appropriately.
     let threadsInPending = allThreads.filter(x => x.actionInProgress());
     this.updatePendingArea_(threadsInPending);
-    this.updateFinalVersionRendering_();
 
     if (this.undoRow_) {
       if (this.renderedRow_)
@@ -811,25 +805,6 @@ export class ThreadListView extends View {
             .some(x => x.thread.actionInProgress());
     this.pendingWithSpinner_.style.display =
         stillHasPendingRows ? 'flex' : 'none';
-  }
-
-  private updateFinalVersionRendering_() {
-    if (!this.model_.showFinalVersion())
-      return;
-
-    let groups = this.getGroups_();
-    for (let group of groups) {
-      let rows = Array.from(group.getRows()).reverse();
-      let hasHitFinalVersionRow = false;
-      for (let row of rows) {
-        if (!hasHitFinalVersionRow) {
-          hasHitFinalVersionRow = row.thread.finalVersion();
-          row.setFinalVersionSkipped(false);
-        } else {
-          row.setFinalVersionSkipped(!row.thread.finalVersion());
-        }
-      }
-    }
   }
 
   private handleRowsRemoved_(removedRows: ThreadRow[], oldRows: ThreadRow[]) {

@@ -123,10 +123,6 @@ export class TodoModel extends ThreadListModel {
     return notNull(thread.getPriority());
   }
 
-  showFinalVersion() {
-    return !!this.settings_.get(ServerStorage.KEYS.FINAL_VERSION);
-  }
-
   allowedCount(groupName: string) {
     switch (groupName) {
       case PINNED_PRIORITY_NAME:
