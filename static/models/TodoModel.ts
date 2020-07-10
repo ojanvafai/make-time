@@ -8,7 +8,6 @@ import {Thread} from '../Thread.js';
 
 import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
 
-const NEEDS_TRIAGE_SUFFIX = ' - needs triage';
 export const RETRIAGE_LABEL_NAME = 'Retriage';
 export const NO_OFFICES = 'none';
 export const IMPORTANT_NAME = 'important';
@@ -139,10 +138,7 @@ export class TodoModel extends ThreadListModel {
     if (thread.forceTriage())
       return TodoModel.getTriageGroupName(this.settings_, thread);
 
-    let priority = notNull(thread.getPriority());
-    if (thread.needsMessageTriage())
-      return `${priority}${NEEDS_TRIAGE_SUFFIX}`;
-    return priority;
+    return notNull(thread.getPriority());
   }
 
   showFinalVersion() {
@@ -224,8 +220,8 @@ export class TodoModel extends ThreadListModel {
     if (aPriority !== bPriority)
       return Thread.comparePriorities(aPriority, bPriority);
 
-    if (a.needsMessageTriage() != b.needsMessageTriage())
-      return a.needsMessageTriage() ? -1 : 1;
+    if (a.isUnread() != b.isUnread())
+      return a.isUnread() ? -1 : 1;
 
     let sortData = this.getSortData_(aPriority);
     if (sortData) {

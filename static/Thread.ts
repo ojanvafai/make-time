@@ -54,7 +54,6 @@ export interface ThreadMetadata {
   labelId?: number;
   repeat?: Repeat;
   needsRetriage?: boolean;
-  needsMessageTriage?: boolean;
   // These booleans are so we can query for things that have a label but still
   // orderBy timestamp. We can just priorityId>0 because firestore doesn't
   // support range queries on a different field than the orderBy field.
@@ -96,7 +95,6 @@ export interface ThreadMetadataUpdate {
   labelId?: number|firebase.firestore.FieldValue;
   repeat?: Repeat|firebase.firestore.FieldValue;
   needsRetriage?: boolean|firebase.firestore.FieldValue;
-  needsMessageTriage?: boolean|firebase.firestore.FieldValue;
   hasLabel?: boolean|firebase.firestore.FieldValue;
   hasPriority?: boolean|firebase.firestore.FieldValue;
   queued?: boolean|firebase.firestore.FieldValue;
@@ -129,7 +127,6 @@ export enum ThreadMetadataKeys {
   labelId = 'labelId',
   repeat = 'repeat',
   needsRetriage = 'needsRetriage',
-  needsMessageTriage = 'needsMessageTriage',
   hasLabel = 'hasLabel',
   hasPriority = 'hasPriority',
   queued = 'queued',
@@ -318,7 +315,6 @@ export class Thread extends EventTarget {
       ThreadMetadataUpdate {
     let update: ThreadMetadataUpdate = {
       needsRetriage: firebase.firestore.FieldValue.delete(),
-      needsMessageTriage: firebase.firestore.FieldValue.delete(),
       blocked: firebase.firestore.FieldValue.delete(),
       muted: firebase.firestore.FieldValue.delete(),
       softMuted: firebase.firestore.FieldValue.delete(),
@@ -515,15 +511,11 @@ export class Thread extends EventTarget {
   }
 
   priorityUpdate(
-      priority: Priority, moveToInbox?: boolean, needsMessageTriage?: boolean) {
+      priority: Priority, moveToInbox?: boolean) {
     let update = this.keepInInboxMetadata_();
 
     if (moveToInbox)
       update.moveToInbox = true;
-
-    if (needsMessageTriage)
-      update.needsMessageTriage = true;
-
     update.hasPriority = true;
     update.priorityId = priority;
     return update;
@@ -634,10 +626,6 @@ export class Thread extends EventTarget {
 
   needsRetriage() {
     return !!this.metadata_.needsRetriage;
-  }
-
-  needsMessageTriage() {
-    return !!this.metadata_.needsMessageTriage;
   }
 
   getDate() {

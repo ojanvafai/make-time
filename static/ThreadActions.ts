@@ -207,11 +207,10 @@ export async function createStuckUpdate(
 }
 
 export function createUpdate(
-    thread: Thread, destination: Action, moveToInbox?: boolean,
-    needsMessageTriage?: boolean) {
+    thread: Thread, destination: Action, moveToInbox?: boolean) {
   let priority = destinationToPriority(destination);
   if (priority) {
-    return thread.priorityUpdate(priority, moveToInbox, needsMessageTriage);
+    return thread.priorityUpdate(priority, moveToInbox);
   } else {
     switch (destination) {
       case REPEAT_ACTION:

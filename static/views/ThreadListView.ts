@@ -631,8 +631,7 @@ export class ThreadListView extends View {
     let row = assert(this.renderedRow_);
     // Timer counts down if in triage view or in any untriaged group.
     let timer = new Timer(
-        !!this.model_.timerCountsDown || row.thread.needsMessageTriage() ||
-            row.thread.forceTriage(),
+        !!this.model_.timerCountsDown || row.thread.forceTriage(),
         this.timerDuration_, this.singleThreadContainer_);
     AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;

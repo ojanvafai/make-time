@@ -2,7 +2,6 @@ import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.j
 import {Action} from '../Actions.js';
 import {assert, compareDates} from '../Base.js';
 import {Calendar} from '../calendar/Calendar.js';
-import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {TaskQueue} from '../TaskQueue.js';
@@ -74,16 +73,6 @@ export abstract class ThreadListModel extends Model {
   }
 
   postProcessThreads(_threads: Thread[]) {}
-
-  // Mark a bit that this thread was triaged with unread messages so it can be
-  // grouped differently in todo view. Don't mark this bit for things that are
-  // stuck or retriage since those have already been fully triaged once. If the
-  // unread messages were all sent by me, then consider them read as well since
-  // I don't need to read messages I sent.
-  private needsMessageTriage_(thread: Thread, sendAs: SendAs) {
-    return this.isTriage() && thread.unreadNotSentByMe(sendAs) &&
-        !thread.isStuck() && !thread.needsRetriage();
-  }
 
   async getNoMeetingRoomEvents() {
     let offices =
@@ -313,12 +302,8 @@ export abstract class ThreadListModel extends Model {
         'Modifying threads...');
 
     for (let thread of threads) {
-      let update = date ?
-          await createStuckUpdate(thread, date, moveToInbox) :
-          createUpdate(
-              thread, destination, moveToInbox,
-              this.needsMessageTriage_(thread, await SendAs.getDefault()));
-
+      let update = date ? await createStuckUpdate(thread, date, moveToInbox) :
+                          createUpdate(thread, destination, moveToInbox);
       if (!update)
         continue;
 
