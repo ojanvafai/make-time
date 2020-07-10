@@ -224,8 +224,7 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      private settings_: Settings,
-      private includeSortActionsAndFilterButton_: boolean) {
+      private settings_: Settings, private isTodoView_: boolean) {
     super();
 
     this.style.cssText = `
@@ -601,8 +600,7 @@ export class ThreadListView extends View {
   updateActions_() {
     let viewSpecific =
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
-    let includeSortActions =
-        this.includeSortActionsAndFilterButton_ && !this.renderedRow_;
+    let includeSortActions = this.isTodoView_ && !this.renderedRow_;
     // TODO: Move this into the model so that we can have the TodoModel not
     // show sort actions for FinalVersion mode.
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
@@ -709,9 +707,13 @@ export class ThreadListView extends View {
         ].includes(groupName);
         const isLowPriority =
             [URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME].includes(groupName);
-        const isPriorityGroup = isHighPriority || isLowPriority;
+        const showOnlyHighlightedRows =
+            this.isTodoView_ && !isHighPriority && !isLowPriority;
+        const useCardStyle = this.isTodoView_ && name === PINNED_PRIORITY_NAME;
+
         const group = new ThreadRowGroup(
-            groupName, this.model_.allowedCount(groupName), !isPriorityGroup);
+            groupName, this.model_.allowedCount(groupName),
+            showOnlyHighlightedRows, useCardStyle);
         if (previousEntry) {
           if (isLowPriority && !previousEntry.isLowPriority) {
             this.lowPriorityContainer_.prepend(group);
@@ -1121,7 +1123,7 @@ export class ThreadListView extends View {
   }
 
   private transitionToThreadList_(focusedRow: ThreadRow|null) {
-    this.appShell_.showFilterToggle(this.includeSortActionsAndFilterButton_);
+    this.appShell_.showFilterToggle(this.isTodoView_);
     this.appShell_.showBackArrow(false);
 
     this.rowGroupContainer_.style.display = 'flex';

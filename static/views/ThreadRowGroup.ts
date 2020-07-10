@@ -1,6 +1,5 @@
 import {assert, collapseArrow, expandArrow} from '../Base.js';
 import {ALL, NONE, SelectBox, SelectChangedEvent, SOME} from '../SelectBox.js';
-import {PINNED_PRIORITY_NAME} from '../Thread.js';
 
 import {RowHighlightChangeEvent, ThreadRow} from './ThreadRow.js';
 
@@ -27,11 +26,10 @@ export class ThreadRowGroup extends HTMLElement {
   private expander_?: HTMLElement;
   private collapsed_: boolean;
   private manuallyCollapsed_: boolean;
-  private useCardStyle_: boolean;
 
   constructor(
       public name: string, private allowedCount_: number,
-      private showOnlyHighlightedRows_: boolean) {
+      private showOnlyHighlightedRows_: boolean, private useCardStyle_: boolean) {
     super();
     this.style.cssText = `
       display: block;
@@ -41,7 +39,6 @@ export class ThreadRowGroup extends HTMLElement {
       position: relative;
     `;
 
-    this.useCardStyle_ = name === PINNED_PRIORITY_NAME;
     this.collapsed_ = !this.useCardStyle_;
     this.manuallyCollapsed_ = false;
     this.wasInViewport_ = true;
