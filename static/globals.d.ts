@@ -64,7 +64,7 @@ declare global {
 
   interface CSSStyleDeclaration {
     webkitLineClamp: string;
-    webkitUserModify: string;
+    webkitUserModify: string|null;
   }
 }
 
