@@ -705,8 +705,9 @@ export class ThreadListView extends View {
         const isHighPriority = [
           PINNED_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, MUST_DO_PRIORITY_NAME
         ].includes(groupName);
-        const isLowPriority =
-            [URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME].includes(groupName);
+        const isLowPriority = [
+          BOOKMARK_PRIORITY_NAME, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME
+        ].includes(groupName);
         const showOnlyHighlightedRows =
             this.isTodoView_ && !isHighPriority && !isLowPriority;
         const useCardStyle =

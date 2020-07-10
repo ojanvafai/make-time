@@ -182,8 +182,8 @@ export const FALLBACK_LABEL_NAME = 'No label';
 
 const PrioritySortOrder = [
   Priority.Pin,
-  Priority.Bookmark,
   Priority.MustDo,
+  Priority.Bookmark,
   Priority.Urgent,
   Priority.Backlog,
 ];
