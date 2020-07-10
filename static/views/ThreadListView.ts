@@ -709,11 +709,12 @@ export class ThreadListView extends View {
             [URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME].includes(groupName);
         const showOnlyHighlightedRows =
             this.isTodoView_ && !isHighPriority && !isLowPriority;
-        const useCardStyle = this.isTodoView_ && name === PINNED_PRIORITY_NAME;
-
+        const useCardStyle =
+            this.isTodoView_ && groupName === PINNED_PRIORITY_NAME;
         const group = new ThreadRowGroup(
             groupName, this.model_.allowedCount(groupName),
             showOnlyHighlightedRows, useCardStyle);
+
         if (previousEntry) {
           if (isLowPriority && !previousEntry.isLowPriority) {
             this.lowPriorityContainer_.prepend(group);

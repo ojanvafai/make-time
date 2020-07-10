@@ -29,7 +29,8 @@ export class ThreadRowGroup extends HTMLElement {
 
   constructor(
       public name: string, private allowedCount_: number,
-      private showOnlyHighlightedRows_: boolean, private useCardStyle_: boolean) {
+      private showOnlyHighlightedRows_: boolean,
+      private useCardStyle_: boolean) {
     super();
     this.style.cssText = `
       display: block;
@@ -51,9 +52,7 @@ export class ThreadRowGroup extends HTMLElement {
     this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
 
     this.rowContainer_ = document.createElement('div');
-    if (this.useCardStyle_) {
-      this.rowContainer_.style.marginTop = '12px';
-    } else {
+    if (!this.useCardStyle_) {
       this.appendHeader_();
     }
     this.placeholder_ = document.createElement('div');
