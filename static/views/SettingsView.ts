@@ -28,6 +28,8 @@ export class SettingsView extends View {
 
     this.style.cssText = `
       display: block;
+      max-width: var(--max-width);
+      margin: auto;
     `;
 
     this.scrollable_ = document.createElement('div');
