@@ -96,13 +96,10 @@ export const RANDOM: Theme = {
 };
 
 export const THEMES = [DEFAULT, DARK, RANDOM];
-
 const MAIN_BACKGROUND_PROPERTY = '--main-background';
 const DARK_MODE_CLASSNAME = 'dark-mode';
 
 export class Themes {
-  static overrideBackground_?: string;
-
   static toggleDarkMode() {
     // Put dark mode in storage separate from the theme so that toggling dark
     // mode doesn't lose the chosen theme.
@@ -112,13 +109,6 @@ export class Themes {
 
   static isDarkMode() {
     return localStorage.darkMode === 'true';
-  }
-
-  static setOverrideBackground(overrideBackground?: string) {
-    if (this.overrideBackground_ !== overrideBackground) {
-      this.overrideBackground_ = overrideBackground;
-      this.apply();
-    }
   }
 
   static setTheme(themeName: string) {
@@ -145,16 +135,10 @@ export class Themes {
         theme = JSON.parse(localStorage.theme) as Theme;
       else
         theme = DEFAULT;
-
-      if (this.overrideBackground_) {
-        // Deep clone the object to avoid modifying the actual theme.
-        theme = JSON.parse(JSON.stringify(theme)) as Theme;
-        theme.styles[MAIN_BACKGROUND_PROPERTY] = this.overrideBackground_;
-      }
     }
 
-    // Cache in localstorage so we can set this without flash of white on
-    // reload.
+    // Cache in localstorage so we can set this in index.html without flash of
+    // white on reload.
     localStorage.background = theme.styles[MAIN_BACKGROUND_PROPERTY];
 
     let root = document.documentElement;

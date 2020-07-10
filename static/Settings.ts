@@ -239,12 +239,6 @@ export class Settings extends EventTarget {
       default: Settings.IGNORE_IMPORTANCE,
     },
     {
-      key: ServerStorage.KEYS.BACKGROUND,
-      name: 'Background',
-      description:
-          `Override the theme's background. Can be any CSS background including "url(image-url-here)".`,
-    },
-    {
       key: ServerStorage.KEYS.VACATION,
       name: 'Vacation',
       description:

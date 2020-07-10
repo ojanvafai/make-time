@@ -298,9 +298,6 @@ async function getMailProcessor() {
 
 async function updateBackground() {
   let settings = await getSettings();
-  let background = settings.get(ServerStorage.KEYS.BACKGROUND);
-  Themes.setOverrideBackground(background);
-
   let theme = settings.get(ServerStorage.KEYS.THEME);
   Themes.setTheme(theme);
 }

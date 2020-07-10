@@ -77,7 +77,6 @@ interface KeyTypes {
   LAST_DETHROTTLE_TIME: string;
   THEME: string;
   PRIORITY_INBOX: string;
-  BACKGROUND: string;
   VACATION: string;
   TIMER_DURATION: string;
   THROTTLE_DURATION: string;
@@ -97,7 +96,6 @@ let keys: KeyTypes = {
   LAST_DETHROTTLE_TIME: 'last_dethrottle_time',
   THEME: 'theme',
   PRIORITY_INBOX: 'priority_inbox',
-  BACKGROUND: 'background',
   VACATION: 'vacation',
   TIMER_DURATION: 'timeout',
   THROTTLE_DURATION: 'throttle_duration',
@@ -116,7 +114,6 @@ let keys: KeyTypes = {
 let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.THEME,
   keys.PRIORITY_INBOX,
-  keys.BACKGROUND,
   keys.VACATION,
   keys.TIMER_DURATION,
   keys.THROTTLE_DURATION,
