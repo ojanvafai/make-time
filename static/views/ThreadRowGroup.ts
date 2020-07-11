@@ -214,8 +214,11 @@ export class ThreadRowGroup extends HTMLElement {
     if (this.collapsed_ === collapsed)
       return;
 
-    if (collapsed)
+    if (collapsed) {
       this.selectRows(false);
+    } else {
+      this.ensureHasFocusedRow_();
+    }
 
     this.collapsed_ = collapsed;
     this.render();
@@ -236,17 +239,25 @@ export class ThreadRowGroup extends HTMLElement {
     return this.render();
   }
 
-  updateSliderPositionFromFocus_() {
+  private getFocusedIndex_() {
     const rows = assert(this.rows_);
-    let focusedIndex = rows.findIndex(row => row.focused);
-    if (focusedIndex === -1) {
-      focusedIndex = 0;
-      rows[focusedIndex].setFocus(true, true);
-    }
-    assert(this.slider_).value = String(focusedIndex);
+    return rows.findIndex(row => row.focused);
   }
 
-  updateTickmarks_() {
+  private updateSliderPositionFromFocus_() {
+    const focusedIndex = this.getFocusedIndex_();
+    if (focusedIndex !== -1)
+      assert(this.slider_).value = String(focusedIndex);
+  }
+
+  private ensureHasFocusedRow_() {
+    const focusedIndex = this.getFocusedIndex_();
+    if (focusedIndex === -1) {
+      assert(this.rows_)[0].setFocus(true, true);
+    }
+  }
+
+  private updateTickmarks_() {
     const tickmarks = assert(this.tickmarks_);
     tickmarks.innerHTML = '';
     for (let i = 0; i < assert(this.rows_).length; i++) {
@@ -296,10 +307,15 @@ export class ThreadRowGroup extends HTMLElement {
       }
     } else {
       if (this.slider_) {
-        this.updateTickmarks_();
-        this.slider_.style.display = '';
-        this.slider_.setAttribute('max', String(this.rows_.length - 1));
-        this.updateSliderPositionFromFocus_();
+        const rowCount = this.rows_.length;
+        if (rowCount <= 1) {
+          this.slider_.style.display = 'none';
+        } else {
+          this.updateTickmarks_();
+          this.slider_.style.display = '';
+          this.slider_.setAttribute('max', String(rowCount - 1));
+          this.updateSliderPositionFromFocus_();
+        }
       }
       this.showRows_();
     }
