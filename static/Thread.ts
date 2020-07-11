@@ -74,6 +74,8 @@ export interface ThreadMetadata {
   // Count of number of messages read. We don't attempt to keep this in sync
   // with gmail's sense of read state.
   readCount?: number;
+  // Timestamp the last of the readCount messages was marked read.
+  readCountTimestamp?: number;
   countToArchive?: number;
   countToMarkRead?: number;
   // Queue pushing maketime labels to gmail as gmail labels.
@@ -107,6 +109,7 @@ export interface ThreadMetadataUpdate {
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
   moveToInbox?: boolean|firebase.firestore.FieldValue;
   readCount?: number|firebase.firestore.FieldValue;
+  readCountTimestamp?: number|firebase.firestore.FieldValue;
   countToArchive?: number|firebase.firestore.FieldValue;
   countToMarkRead?: number|firebase.firestore.FieldValue;
   pushLabelsToGmail?: boolean|firebase.firestore.FieldValue;
@@ -138,6 +141,7 @@ export enum ThreadMetadataKeys {
   archivedByFilter = 'archivedByFilter',
   moveToInbox = 'moveToInbox',
   readCount = 'readCount',
+  readCountTimestamp = 'readCountTimestamp',
   countToArchive = 'countToArchive',
   countToMarkRead = 'countToMarkRead',
   pushLabelsToGmail = 'pushLabelsToGmail',
@@ -457,8 +461,11 @@ export class Thread extends EventTarget {
     if (this.metadata_.readCount === undefined ||
         this.metadata_.readCount < this.metadata_.messageIds.length) {
       let messageCount = this.messageCount_();
-      await this.updateMetadata(
-          {readCount: messageCount, countToMarkRead: messageCount});
+      await this.updateMetadata({
+        readCount: messageCount,
+        countToMarkRead: messageCount,
+        readCountTimestamp: Date.now()
+      });
       // Marking read needs to rerender the from so that the bolds are removed.
       this.clearCachedFrom();
     }
@@ -506,8 +513,7 @@ export class Thread extends EventTarget {
       container.append('\xa0');
   }
 
-  priorityUpdate(
-      priority: Priority, moveToInbox?: boolean) {
+  priorityUpdate(priority: Priority, moveToInbox?: boolean) {
     let update = this.keepInInboxMetadata_();
 
     if (moveToInbox)
@@ -620,12 +626,16 @@ export class Thread extends EventTarget {
     return new Date(defined(this.metadata_.timestamp));
   }
 
-  getLastTriagedDate() {
+  getLastModifiedDate() {
     // Fallback to the timestamp of the last message in the thread if for some
     // reason we don't have a retriageTimestamp (e.g. threads that are triaged
     // before we added retriageTimestamps to them).
-    return new Date(
-        this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp));
+    let triageTime =
+        this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp);
+    if (this.metadata_.readCountTimestamp) {
+      triageTime = Math.max(this.metadata_.readCountTimestamp, triageTime);
+    }
+    return new Date(triageTime);
   }
 
   getStuckDate() {

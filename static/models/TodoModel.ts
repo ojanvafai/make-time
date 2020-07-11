@@ -214,7 +214,7 @@ export class TodoModel extends ThreadListModel {
       }
     }
 
-    return compareDates(a.getLastTriagedDate(), b.getLastTriagedDate());
+    return compareDates(a.getLastModifiedDate(), b.getLastModifiedDate());
   }
 
   private getSortKey_(priority: number) {
