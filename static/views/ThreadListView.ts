@@ -681,6 +681,9 @@ export class ThreadListView extends View {
     this.hasQueuedFrame_ = false;
     let allThreads = this.model_.getThreads(true);
     let oldRows = this.getRows_();
+    // Need to grab this before removing the row.
+    const oldRenderedRowGroupList =
+        this.renderedRow_ ? this.getGroupList_(this.renderedRow_) : null;
 
     let threads = allThreads.filter(x => !x.actionInProgress());
     let newGroupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
@@ -764,7 +767,7 @@ export class ThreadListView extends View {
         removedRows.push(...entry.group.setRows(entry.rows));
     }
 
-    this.handleRowsRemoved_(removedRows, oldRows);
+    this.handleRowsRemoved_(removedRows, oldRows, oldRenderedRowGroupList);
 
     // Have to do this after we gether the list of removedRows so that
     // handleRowsRemoved_ gets called on the pending threads and focus is
@@ -823,7 +826,18 @@ export class ThreadListView extends View {
         stillHasPendingRows ? 'flex' : 'none';
   }
 
-  private handleRowsRemoved_(removedRows: ThreadRow[], oldRows: ThreadRow[]) {
+  private getGroupList_(row: ThreadRow) {
+    let parent = row.parentNode;
+    while (parent && parent !== this.highPriorityContainer_ &&
+           parent !== this.lowPriorityContainer_) {
+      parent = parent.parentNode;
+    }
+    return parent as ThreadRowGroupList | null;
+  }
+
+  private handleRowsRemoved_(
+      removedRows: ThreadRow[], oldRows: ThreadRow[],
+      rendereedRowGroupList: ThreadRowGroupList|null) {
     let toast: Toast|undefined;
     let current = this.renderedRow_ || this.focusedRow_;
     if (current && removedRows.find(x => x == current)) {
@@ -844,10 +858,14 @@ export class ThreadListView extends View {
           return;
         }
 
+        if (rendereedRowGroupList !== this.getGroupList_(nextRow)) {
+          this.transitionToThreadList_(nextRow);
+          return;
+        }
+
         let newGroupName = this.mergedGroupName_(nextRow.thread);
         if (this.renderedGroupName_ !== newGroupName)
           toast = new Toast(`Now in ${newGroupName}`);
-
         this.setRenderedRowInternal_(nextRow);
       } else {
         // Intentionally call even if nextRow is null to clear out the focused
