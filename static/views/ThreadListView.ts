@@ -224,6 +224,8 @@ export class ThreadListView extends View {
   private isHiddenObserver_: IntersectionObserver;
   private lowPriorityContainer_: ThreadRowGroupList;
   private highPriorityContainer_: ThreadRowGroupList;
+  private untriagedContainer_: ThreadRowGroupList;
+  private nonLowPriorityWrapper_: HTMLElement;
   private hasHadAction_?: boolean;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
@@ -327,8 +329,17 @@ export class ThreadListView extends View {
       margin-bottom: 16px;
     `;
     this.lowPriorityContainer_ = new ThreadRowGroupList();
+    this.untriagedContainer_ = new ThreadRowGroupList();
+    this.untriagedContainer_.style.marginBottom = '16px';
+    this.nonLowPriorityWrapper_ = document.createElement('div');
+    this.nonLowPriorityWrapper_.style.cssText = `
+      display: flex;
+      flex-direction: column;
+    `;
+    this.nonLowPriorityWrapper_.append(
+        this.untriagedContainer_, this.highPriorityContainer_);
     this.rowGroupContainer_.append(
-        this.highPriorityContainer_, this.lowPriorityContainer_);
+        this.nonLowPriorityWrapper_, this.lowPriorityContainer_);
 
     this.listen_(
         this.rowGroupContainer_, InProgressChangedEvent.NAME,
@@ -613,7 +624,7 @@ export class ThreadListView extends View {
     // Need to do this after we update the toolbar since it can change height.
     // TODO: We should also do this when the window resizes since the toolbars
     // can wrap and change height.
-    this.highPriorityContainer_.style.minHeight =
+    this.nonLowPriorityWrapper_.style.minHeight =
         `${this.appShell_.getContentHeight() - 70}px`;
 
     if (this.renderedRow_)
@@ -651,7 +662,8 @@ export class ThreadListView extends View {
   }
 
   private getFirstRow_() {
-    return this.highPriorityContainer_.getFirstRow() ||
+    return this.untriagedContainer_.getFirstRow() ||
+        this.highPriorityContainer_.getFirstRow() ||
         this.lowPriorityContainer_.getFirstRow();
   }
 
@@ -672,6 +684,7 @@ export class ThreadListView extends View {
 
   private getGroups_() {
     return [
+      ...this.untriagedContainer_.getSubGroups(),
       ...this.highPriorityContainer_.getSubGroups(),
       ...this.lowPriorityContainer_.getSubGroups()
     ];
@@ -705,18 +718,20 @@ export class ThreadListView extends View {
 
     // Threads should be in sorted order already and all threads in the
     // same queue should be adjacent to each other.
-    let previousEntry:
-        {group: ThreadRowGroup, isLowPriority: boolean, rows: ThreadRow[]}|
-        undefined;
+    let previousEntry: {
+      group: ThreadRowGroup,
+      isLowPriority: boolean,
+      isHighPriority: boolean,
+      rows: ThreadRow[]
+    }|undefined;
 
     const groupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
     for (const groupName of groupNames) {
       let entry = groupMap.get(groupName);
       // Insertion sort insert new groups
       if (!entry) {
-        const isHighPriority = [
-          PINNED_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, MUST_DO_PRIORITY_NAME
-        ].includes(groupName);
+        const isHighPriority =
+            [PINNED_PRIORITY_NAME, MUST_DO_PRIORITY_NAME].includes(groupName);
         const isLowPriority = [
           BOOKMARK_PRIORITY_NAME, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME
         ].includes(groupName);
@@ -731,16 +746,20 @@ export class ThreadListView extends View {
         if (previousEntry) {
           if (isLowPriority && !previousEntry.isLowPriority) {
             this.lowPriorityContainer_.prepend(group);
+          } else if (isHighPriority && !previousEntry.isHighPriority) {
+            this.highPriorityContainer_.prepend(group);
           } else {
             previousEntry.group.after(group);
           }
         } else {
-          const container = isLowPriority ? this.lowPriorityContainer_ :
-                                            this.highPriorityContainer_;
+          const container = isLowPriority ?
+              this.lowPriorityContainer_ :
+              (isHighPriority ? this.highPriorityContainer_ :
+                                this.untriagedContainer_);
           container.prepend(group);
         }
 
-        entry = {group, isLowPriority, rows: []};
+        entry = {group, isLowPriority, isHighPriority, rows: []};
         groupMap.set(groupName, entry);
         // Call observe after putting the group in the DOM so we don't have a
         // race condition where sometimes the group has no dimensions/position.
@@ -828,11 +847,10 @@ export class ThreadListView extends View {
 
   private getGroupList_(row: ThreadRow) {
     let parent = row.parentNode;
-    while (parent && parent !== this.highPriorityContainer_ &&
-           parent !== this.lowPriorityContainer_) {
+    while (parent && !(parent instanceof ThreadRowGroupList)) {
       parent = parent.parentNode;
     }
-    return parent as ThreadRowGroupList | null;
+    return parent;
   }
 
   private handleRowsRemoved_(

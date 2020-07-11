@@ -96,6 +96,7 @@ export class AppShell extends HTMLElement {
       position: relative;
       max-width: var(--max-width);
       margin: auto;
+      background-color: var(--nested-background-color);
     `;
 
     let contentContainer = document.createElement('div');
