@@ -1,7 +1,7 @@
 import {create, createMktimeButton, defined, Labels, showDialog} from '../Base.js';
-import {FilterRule, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
+import {FilterRule, Settings} from '../Settings.js';
 
-import {FilterRuleComponent} from './FilterRuleComponent.js';
+import {FilterRuleComponent, LabelCreatedEvent} from './FilterRuleComponent.js';
 import {HelpDialog} from './HelpDialog.js';
 
 export const HELP_TEXT = [
@@ -66,7 +66,17 @@ export class FiltersView extends HTMLElement {
     `;
 
     this.addEventListener('keydown', e => this.handleKeyDown_(e));
+    this.addEventListener(
+        LabelCreatedEvent.NAME,
+        e => {this.handleLabelCreated_((e as LabelCreatedEvent).labelOption)});
     this.render_();
+  }
+
+  private handleLabelCreated_(labelOption: HTMLOptionElement) {
+    const filterRuleComponents = this.getFilterRuleComponents_();
+    for (let rule of filterRuleComponents) {
+      rule.prependLabel(labelOption.cloneNode(true) as HTMLOptionElement);
+    }
   }
 
   handleKeyDown_(e: KeyboardEvent) {
@@ -178,54 +188,25 @@ export class FiltersView extends HTMLElement {
     });
     addButton.style.marginRight = '16px';
     row.append(
-        addButton, `The "${Labels.Fallback}" label is applied when no filters match.`);
+        addButton,
+        `The "${Labels.Fallback}" label is applied when no filters match.`);
     return row;
   }
 
-  convertToFilterRule(obj: any) {
-    let rule: FilterRule = {
-      label: obj.label,
-    };
-    let headerRules: HeaderFilterRule[] = [];
-    for (let key in obj) {
-      if (isHeaderFilterField(key)) {
-        headerRules.push({name: key.substring(1), value: String(obj[key])});
-      } else {
-        let validField = setFilterStringField(rule, key, obj[key]);
-        if (!validField)
-          return null;
-      }
-    }
-    if (headerRules.length)
-      rule.header = headerRules;
-    return rule;
+  private getFilterRuleComponents_() {
+    return this.querySelectorAll('mt-filter-rule') as
+        NodeListOf<FilterRuleComponent>;
   }
 
   async save_() {
-    let filterRuleComponents = this.querySelectorAll('mt-filter-rule') as
-        NodeListOf<FilterRuleComponent>;
+    let filterRuleComponents = this.getFilterRuleComponents_();
     let rules: FilterRule[] = [];
-
     for (let filterRuleComponent of filterRuleComponents) {
-      let parsed = filterRuleComponent.getParsedQuery();
-      let rule = this.convertToFilterRule(parsed);
+      let rule = filterRuleComponent.getJson();
       if (!rule) {
-        alert('Rule has invalid field. Not saving filters.');
+        // We should already have shown the user an alert here since this
+        // happens when they use an invalid field.
         return;
-      }
-      rule.label = filterRuleComponent.getSelectedLabel();
-      if (rule.label === '') {
-        alert('Filter rule has no label. Not saving filters.');
-        return;
-      }
-      if (filterRuleComponent.getMatchAll()) {
-        rule.matchallmessages = true;
-      }
-      if (filterRuleComponent.getNoListId()) {
-        rule.nolistid = true;
-      }
-      if (filterRuleComponent.getNoCc()) {
-        rule.nocc = true;
       }
       rules.push(rule);
     }
@@ -260,7 +241,7 @@ export class FiltersView extends HTMLElement {
     topButtons.append(
         this.createButton_('+', 'Add new row above', insertRowBefore),
         this.createButton_('-', 'Delete this rule', () => {
-          if (confirm(`Delete this rule? This can't be undone.`)) {
+          if (confirm(`Delete this rule? This can't be undone after saving.`)) {
             row.remove();
           }
         }));

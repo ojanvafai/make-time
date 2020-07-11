@@ -440,7 +440,7 @@ export class MailProcessor {
       }
     }
 
-    await this.applyFilters_(thread);
+    await this.applyFilters(thread);
   }
 
   private async refetchIsInInbox_(threadId: string) {
@@ -593,19 +593,19 @@ export class MailProcessor {
     return Labels.Fallback;
   }
 
-  private async applyFilters_(thread: Thread) {
+  async applyFilters(thread: Thread) {
     let rules = await this.settings_.getFilters();
     let label = await this.getWinningLabel_(thread, rules);
 
     if (label == Labels.Archive) {
       await thread.archive(true);
-      return;
+      return label;
     }
 
     let hasNewLabel = thread.getLabel() !== label;
     if (!hasNewLabel && thread.isMuted()) {
       await thread.applyMute();
-      return;
+      return label;
     }
 
     if (hasNewLabel || !thread.isSoftMuted())
@@ -614,6 +614,7 @@ export class MailProcessor {
     // Do this at the end to ensure that the label is set before clearing the
     // label in gmail.
     await this.addMakeTimeLabel_(thread.id);
+    return label;
   }
 
   async applyLabel_(thread: Thread, label: string, hasNewLabel: boolean) {

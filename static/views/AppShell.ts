@@ -294,14 +294,18 @@ export class AppShell extends HTMLElement {
       AppShell.addToFooter(dom);
   }
 
-  static addToFooter(dom: HTMLElement) {
+  static addToFooter(...nodes: (string|HTMLElement)[]) {
     // Set pointerEvents if it's not already set so that the pointer-events:none
     // on the footer itself doesn't prevent clicks.
     // TODO: This is brittle (e.g. doens't work with stylesheets). Find a better
     // way.
-    if (!dom.style.pointerEvents)
-      dom.style.pointerEvents = 'all';
-    AppShell.footer_.append(dom);
+    for (let node of nodes) {
+      let style = (node as HTMLElement).style;
+      if (style && !style.pointerEvents) {
+        style.pointerEvents = 'all';
+      }
+      AppShell.footer_.append(node);
+    }
   }
 
   static updateTitle(key: string, ...opt_title: string[]) {

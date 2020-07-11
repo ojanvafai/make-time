@@ -1,11 +1,18 @@
 import {assert, defined, notNull} from '../Base.js';
 import {QueueNames} from '../QueueNames.js';
-import {HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, Settings} from '../Settings.js';
+import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
 
 const CSV_FIELDS = ['from', 'to'];
 const CURSOR_SENTINEL = '!!!!!!!!';
 const DIRECTIVE_SEPARATOR_ = ':';
 const QUERY_SEPARATOR_ = '&&';
+
+export class LabelCreatedEvent extends Event {
+  static NAME = 'label-created';
+  constructor(public labelOption: HTMLOptionElement) {
+    super(LabelCreatedEvent.NAME, {bubbles: true});
+  }
+}
 
 export class FilterRuleComponent extends HTMLElement {
   // TODO: Stop using an element for maintaining cursor position. Do what
@@ -53,6 +60,45 @@ export class FilterRuleComponent extends HTMLElement {
     `;
     container.append(checkbox, label);
     return container;
+  }
+
+  getJson() {
+    let parsed = this.getParsedQuery();
+    let rule = this.convertToFilterRule_(parsed);
+    if (!rule) {
+      alert('Rule has invalid field.');
+      return;
+    }
+    rule.label = this.getSelectedLabel();
+    if (this.getMatchAll()) {
+      rule.matchallmessages = true;
+    }
+    if (this.getNoListId()) {
+      rule.nolistid = true;
+    }
+    if (this.getNoCc()) {
+      rule.nocc = true;
+    }
+    return rule;
+  }
+
+  private convertToFilterRule_(obj: any) {
+    let rule: FilterRule = {
+      label: obj.label,
+    };
+    let headerRules: HeaderFilterRule[] = [];
+    for (let key in obj) {
+      if (isHeaderFilterField(key)) {
+        headerRules.push({name: key.substring(1), value: String(obj[key])});
+      } else {
+        let validField = setFilterStringField(rule, key, obj[key]);
+        if (!validField)
+          return null;
+      }
+    }
+    if (headerRules.length)
+      rule.header = headerRules;
+    return rule;
   }
 
   private async prependLabelPicker_(topRow: HTMLElement) {
@@ -115,11 +161,12 @@ export class FilterRuleComponent extends HTMLElement {
     // Ensure the new label is stores in the QueueNames map in firestore.
     let queueNames = QueueNames.create();
     queueNames.getId(newLabel);
-
     let option = this.settings_.addLabel(newLabel);
-    for (let label of assert(this.label_)) {
-      label.prepend(option.cloneNode(true));
-    }
+    this.dispatchEvent(new LabelCreatedEvent(option));
+  }
+
+  prependLabel(option: HTMLOptionElement) {
+    assert(this.label_).prepend(option);
   }
 
   private createCheckbox_(checked: boolean) {

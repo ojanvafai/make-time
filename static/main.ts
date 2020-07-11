@@ -156,7 +156,7 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Todo:
       return new ThreadListView(
-          <TodoModel>model, appShell_, await getSettings(), true);
+          <TodoModel>model, appShell_, await getSettings(), true, getMailProcessor);
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());

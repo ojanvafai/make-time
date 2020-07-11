@@ -1,21 +1,23 @@
 import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
 import {Action, ActionGroup, registerActions, Shortcut, shortcutString} from '../Actions.js';
-import {assert, collapseArrow, defined, expandArrow, notNull} from '../Base.js';
+import {assert, collapseArrow, createMktimeButton, defined, expandArrow, Labels, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
+import {MailProcessor} from '../MailProcessor.js';
 import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
 import {Themes} from '../Themes.js';
-import {BACKLOG_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, InProgressChangedEvent, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Thread, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {BACKLOG_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, InProgressChangedEvent, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Thread, UpdatedEvent, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
 import {Timer} from '../Timer.js';
 import {Toast} from '../Toast.js';
 
 import {AppShell} from './AppShell.js';
+import {FilterRuleComponent, LabelCreatedEvent} from './FilterRuleComponent.js';
 import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, ThreadRow} from './ThreadRow.js';
 import {SelectRowEvent, ThreadRowGroup} from './ThreadRowGroup.js';
 import {ThreadRowGroupList} from './ThreadRowGroupList.js';
@@ -164,6 +166,15 @@ const OTHER_MENU_ACTION = {
   actionGroup: ActionGroup.Other,
 };
 
+let NAVIGATION_ACTIONS = [
+  PREVIOUS_ACTION,
+  PREVIOUS_FULL_ACTION,
+  NEXT_ACTION,
+  NEXT_FULL_ACTION,
+  INSERT_LINK_HIDDEN,
+  VIEW_IN_GMAIL_ACTION,
+];
+
 let BASE_ACTIONS = [
   [
     ARCHIVE_ACTION,
@@ -173,12 +184,7 @@ let BASE_ACTIONS = [
     ],
   ],
   ...BASE_THREAD_ACTIONS,
-  PREVIOUS_ACTION,
-  PREVIOUS_FULL_ACTION,
-  NEXT_ACTION,
-  NEXT_FULL_ACTION,
-  INSERT_LINK_HIDDEN,
-  VIEW_IN_GMAIL_ACTION,
+  ...NAVIGATION_ACTIONS,
 ];
 
 let SORT_ACTIONS = [
@@ -237,7 +243,8 @@ export class ThreadListView extends View {
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
-      private settings_: Settings, private isTodoView_: boolean) {
+      private settings_: Settings, private isTodoView_: boolean,
+      private getMailProcessor_?: () => Promise<MailProcessor>) {
     super();
 
     this.style.cssText = `
@@ -619,7 +626,93 @@ export class ThreadListView extends View {
     this.transitionToThreadList_(this.renderedRow_);
   }
 
-  updateActions_() {
+  private async saveFilterRule_(filterRuleComponent: FilterRuleComponent) {
+    const ruleJson = filterRuleComponent.getJson();
+    if (!ruleJson) {
+      // We should already have shown the user an alert here since this
+      // happens when they use an invalid field.
+      return;
+    }
+    const existingFilterRules = await this.settings_.getFilters();
+    await this.settings_.writeFilters([...existingFilterRules, ruleJson]);
+
+    const unfilteredGroup = this.untriagedContainer_.getSubGroups().find(
+        x => x.name === Labels.Fallback);
+    let rows = assert(unfilteredGroup).getRows();
+    for (const row of rows) {
+      const mailProcessor = await assert(this.getMailProcessor_)();
+      const newLabel = await mailProcessor.applyFilters(row.thread);
+      if (newLabel !== Labels.Fallback && row.focused) {
+        this.moveFocus_(NEXT_ACTION);
+      }
+    }
+    this.updateActions_();
+  }
+
+  private addFilterToolbar_(row: ThreadRow) {
+    this.setActions(NAVIGATION_ACTIONS);
+    const messages = row.thread.getMessages();
+    if (messages.length) {
+      this.populateFilterToolbar_(row);
+    } else {
+      // If a thread is still loading, then we have to wait for it's messages to
+      // load in order to be able to setup the filter toolbar.
+      row.thread.addEventListener(
+          UpdatedEvent.NAME, () => this.populateFilterToolbar_(row),
+          {once: true});
+    }
+  }
+
+  private populateFilterToolbar_(row: ThreadRow) {
+    if (!this.focusedRow_ || this.focusedRow_ !== row) {
+      return;
+    }
+    // Prefill the rule with the first sender of the first message.
+    const rule = {from: row.thread.getMessages()[0].parsedFrom[0].address};
+    const filterRuleComponent = new FilterRuleComponent(this.settings_, rule);
+    filterRuleComponent.addEventListener(LabelCreatedEvent.NAME, e => {
+      const labelOption = (e as LabelCreatedEvent).labelOption;
+      filterRuleComponent.prependLabel(
+          labelOption.cloneNode(true) as HTMLOptionElement);
+    });
+
+    const saveButton = createMktimeButton(
+        () => this.saveFilterRule_(filterRuleComponent), 'Save New Filter');
+    saveButton.style.marginLeft = '16px';
+    saveButton.classList.add('action-button');
+
+    let toolbar = document.createElement('div');
+    toolbar.style.display = 'flex';
+    let helpText = document.createElement('div');
+    helpText.style.cssText = `
+      font-size: 12px;
+      text-align: center;
+      margin: 8px 0;
+      color: var(--dim-text-color);
+    `;
+    helpText.append(
+        'This thread is unfiltered. Add a filter rule so future messages get the appropriate label.');
+    toolbar.append(filterRuleComponent);
+
+    let container = document.createElement('div');
+    container.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    `;
+    container.append(helpText, filterRuleComponent, saveButton);
+    AppShell.addToFooter(container);
+  }
+
+  private updateActions_() {
+    if (!this.focusedRow_) {
+      this.setActions([]);
+      return;
+    }
+    if (this.focusedRow_.thread.getLabel() === Labels.Fallback) {
+      this.addFilterToolbar_(this.focusedRow_);
+      return;
+    }
     let viewSpecific =
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.isTodoView_ && !this.renderedRow_;
@@ -717,8 +810,11 @@ export class ThreadListView extends View {
 
       let entry = groupMap.get(groupName);
       if (!entry) {
-        const showOnlyHighlightedRows =
-            this.isTodoView_ && !isHighPriority && !isLowPriority;
+        // Don't elide rows in Hidden or other views and don't elide Fallback
+        // threads since it's useful to see multiple at the same time when
+        // designing filter rules.
+        const showOnlyHighlightedRows = this.isTodoView_ && !isHighPriority &&
+            !isLowPriority && groupName !== Labels.Fallback;
         const useCardStyle =
             this.isTodoView_ && groupName === PINNED_PRIORITY_NAME;
         const group = new ThreadRowGroup(
@@ -971,6 +1067,7 @@ export class ThreadListView extends View {
     if (this.focusedRow_)
       this.focusedRow_.clearFocus();
     this.focusedRow_ = row;
+    this.updateActions_();
   }
 
   private preventAutoFocusFirstRow_() {

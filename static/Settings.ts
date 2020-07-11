@@ -1,7 +1,7 @@
 import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
 
 import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined} from './Base.js';
+import {assert, defined, Labels} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, DEFAULT_CALENDAR_DATA, EventType, UNBOOKED_TYPES} from './calendar/Constants.js';
 import {QueueNames} from './QueueNames.js';
@@ -433,7 +433,8 @@ export class Settings extends EventTarget {
           x => !Settings.CALENDAR_RULE_FIELDS_.includes(x));
       assert(!invalidField && rule.label !== '');
     }
-    this.getFiltersDocument_().update(this.filtersObject_(undefined, rules));
+    await this.getFiltersDocument_().update(
+        this.filtersObject_(undefined, rules));
   }
 
   async writeFilters(rules: FilterRule[]) {
@@ -442,7 +443,7 @@ export class Settings extends EventTarget {
           x => !Settings.FILTER_RULE_FIELDS_.includes(x));
       assert(!invalidField && rule.label !== '');
     }
-    this.getFiltersDocument_().update(this.filtersObject_(rules));
+    await this.getFiltersDocument_().update(this.filtersObject_(rules));
   }
 
   async getCalendarLabels() {
@@ -461,7 +462,29 @@ export class Settings extends EventTarget {
         this.labelSelect_ = document.createElement('select');
         let queueNames = QueueNames.create();
         let labels = await queueNames.getAllNames(true);
-        labels.sort();
+        // Put Fallback at the top of the list so that it is the default
+        // selected in new filter rule components.
+        labels.sort((a, b) => {
+          if (a === Labels.Fallback) {
+            return -1;
+          }
+          if (b === Labels.Fallback) {
+            return 1;
+          }
+          if (a === Labels.Archive) {
+            return -1;
+          }
+          if (b === Labels.Archive) {
+            return 1;
+          }
+          if (a < b) {
+            return -1;
+          }
+          if (a > b) {
+            return 1;
+          }
+          return 0;
+        });
         for (let label of labels) {
           let option = document.createElement('option');
           option.append(label);
