@@ -1223,8 +1223,14 @@ export class ThreadListView extends View {
 
   setRenderedRowInternal_(row: ThreadRow|null) {
     this.hasNewRenderedRow_ = !!row;
-    if (this.renderedRow_)
+    if (this.renderedRow_) {
+      // Mark read after leaving the rendered thread instead of when first
+      // viewing it so that viewing the thread doesn't cause it to change it's
+      // sort order as you are reading mail. Technically this is async, but it's
+      // OK if this happens async with respect to the surrounding code as well.
+      this.renderedRow_.thread.markRead();
       this.renderedRow_.rendered.remove();
+    }
     this.renderedRow_ = row;
     // This is read in renderFrame_. At that point, the rendered row will have
     // already been triaged and will no longer have a group name.
@@ -1319,10 +1325,6 @@ export class ThreadListView extends View {
       subject.before(arrow);
 
     rendered.focusFirstUnread();
-
-    // Technically this is async, but it's OK if this happens async with
-    // respect to the surrounding code as well.
-    renderedRow.thread.markRead();
 
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to

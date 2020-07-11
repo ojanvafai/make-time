@@ -265,10 +265,10 @@ export class ThreadRow extends HTMLElement {
       // Rerender messages even if the thread is only prerendred in case new
       // messages came in.
       this.rendered.render();
-      // If the thread is the actual rendered thread, mark new messages as
-      // read.
-      if (this.rendered.isRendered())
-        this.thread.markRead();
+      // // If the thread is the actual rendered thread, mark new messages as
+      // // read.
+      // if (this.rendered.isRendered())
+      //   this.thread.markRead();
     }
   }
 
