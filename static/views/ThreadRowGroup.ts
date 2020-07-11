@@ -293,6 +293,8 @@ export class ThreadRowGroup extends HTMLElement {
       this.wasInViewport_ = this.inViewport_;
     }
 
+    const shouldShowOnlyHighlightedRows =
+        this.showOnlyHighlightedRows_ && this.rows_.length > 2;
     this.wasCollapsed_ = this.collapsed_;
     if (this.expander_) {
       this.expander_.textContent = '';
@@ -308,13 +310,13 @@ export class ThreadRowGroup extends HTMLElement {
     } else {
       if (this.slider_) {
         const rowCount = this.rows_.length;
-        if (rowCount <= 1) {
-          this.slider_.style.display = 'none';
-        } else {
+        if (shouldShowOnlyHighlightedRows) {
           this.updateTickmarks_();
           this.slider_.style.display = '';
           this.slider_.setAttribute('max', String(rowCount - 1));
           this.updateSliderPositionFromFocus_();
+        } else {
+          this.slider_.style.display = 'none';
         }
       }
       this.showRows_();
@@ -341,7 +343,7 @@ export class ThreadRowGroup extends HTMLElement {
           this.rowContainer_.prepend(row);
       }
       row.setInViewport(this.inViewport_);
-      row.setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
+      row.setHideIfNotHighlighted(shouldShowOnlyHighlightedRows);
       previousRow = row;
     }
     this.updateRowCount_();
