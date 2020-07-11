@@ -41,10 +41,10 @@ export class FocusRowEvent extends Event {
   }
 }
 
-export class RowHighlightChangeEvent extends Event {
-  static NAME = 'row-highlight-change';
+export class AfterFocusRowEvent extends Event {
+  static NAME = 'after-focus-row';
   constructor() {
-    super(RowHighlightChangeEvent.NAME, {bubbles: true});
+    super(AfterFocusRowEvent.NAME, {bubbles: true});
   }
 }
 
@@ -99,7 +99,7 @@ class RowState extends LabelState {
   count: number;
   lastMessageId: string;
 
-  constructor(thread: Thread, group: string, public renderTiny: boolean) {
+  constructor(thread: Thread, group: string, public shouldHide: boolean) {
     super(thread, group);
 
     // window.innerWidth makes more logical sense for this, but chrome has
@@ -128,7 +128,7 @@ class RowState extends LabelState {
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&
         this.useCardStyle === other.useCardStyle &&
-        this.renderTiny === other.renderTiny;
+        this.shouldHide === other.shouldHide;
   }
 }
 
@@ -174,6 +174,7 @@ export class ThreadRow extends HTMLElement {
       overflow: hidden;
       flex: 1;
       min-height: 40px;
+      display: flex;
     `;
     this.messageDetails_.addEventListener('click', (e) => {
       // If the user is selecting the subject line in the row, have that
@@ -286,9 +287,8 @@ export class ThreadRow extends HTMLElement {
     if (!group)
       return;
 
-    let renderTiny = this.hideIfNotHighlighted_ && !this.highlighted;
-
-    let state = new RowState(this.thread, group.name, renderTiny);
+    let shouldHide = this.hideIfNotHighlighted_ && !this.highlighted;
+    let state = new RowState(this.thread, group.name, shouldHide);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -296,11 +296,8 @@ export class ThreadRow extends HTMLElement {
       return;
 
     this.lastRowState_ = state;
-    this.messageDetails_.textContent = '';
-    this.style.display = state.renderTiny ? 'inline-flex' : 'flex';
-    this.messageDetails_.style.display = state.renderTiny ? 'none' : 'flex';
-
-    if (state.renderTiny) {
+    this.style.display = state.shouldHide ? 'none' : 'flex';
+    if (state.shouldHide) {
       return;
     }
 
@@ -344,6 +341,7 @@ export class ThreadRow extends HTMLElement {
     justSubject.style.fontWeight = boldState;
     date.style.fontWeight = boldState;
 
+    this.messageDetails_.textContent = '';
     this.messageDetails_.style.flexDirection = renderMultiline ? 'column' : '';
 
     let fromContainer = document.createElement('div');
@@ -544,6 +542,7 @@ export class ThreadRow extends HTMLElement {
     // TODO: Technically we probably want a blur event as well for !value.
     if (value) {
       this.dispatchEvent(new FocusRowEvent());
+      this.dispatchEvent(new AfterFocusRowEvent());
     }
     this.render();
   }
@@ -554,6 +553,10 @@ export class ThreadRow extends HTMLElement {
 
   clearFocusImpliesSelected() {
     this.setFocus(this.focused_, false);
+  }
+
+  get focused() {
+    return this.focused_;
   }
 
   get highlighted() {

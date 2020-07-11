@@ -1,7 +1,7 @@
 import {assert, collapseArrow, expandArrow} from '../Base.js';
 import {ALL, NONE, SelectBox, SelectChangedEvent, SOME} from '../SelectBox.js';
 
-import {RowHighlightChangeEvent, ThreadRow} from './ThreadRow.js';
+import {AfterFocusRowEvent, ThreadRow} from './ThreadRow.js';
 
 // TODO: Find a better home for this. In theory it should be in ThreadRow.ts,
 // but that creates a circular reference loading ThreadRowGroup.
@@ -21,6 +21,8 @@ export class ThreadRowGroup extends HTMLElement {
   private wasInViewport_: boolean;
   private rows_?: ThreadRow[];
   private selectBox_: SelectBox;
+  private slider_?: HTMLInputElement;
+  private tickmarks_?: HTMLDataListElement;
   private groupNameContainer_?: HTMLElement;
   private rowCountDisplay_?: Text;
   private expander_?: HTMLElement;
@@ -58,6 +60,37 @@ export class ThreadRowGroup extends HTMLElement {
     this.placeholder_ = document.createElement('div');
     this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
     this.append(this.rowContainer_, this.placeholder_);
+
+    if (this.showOnlyHighlightedRows_) {
+      this.tickmarks_ = document.createElement('datalist');
+      this.slider_ = document.createElement('input');
+      this.append(this.slider_, this.tickmarks_);
+      this.setupRangeSlider_(this.slider_, this.tickmarks_);
+    }
+  }
+
+  private setupRangeSlider_(
+      slider: HTMLInputElement, tickmarks: HTMLDataListElement) {
+    const tickmarksId = `${this.name}-tickmarks`;
+    tickmarks.id = tickmarksId;
+
+    slider.type = 'range';
+    slider.setAttribute('list', tickmarksId);
+    slider.style.cssText = `
+      width: 100%;
+    `;
+    slider.addEventListener('input', () => {
+      const index = Number(this.slider_!.value);
+      assert(this.rows_)[index].setFocus(true, true);
+    });
+    slider.addEventListener('keydown', (e) => {
+      // When you click on the slider in Chrome it gets focus and then eats
+      // all key presses, not just the ones it consumes.
+      this.dispatchEvent(new KeyboardEvent(e.type, e));
+    });
+
+    this.addEventListener(
+        AfterFocusRowEvent.NAME, () => this.updateSliderPositionFromFocus_());
   }
 
   private appendHeader_() {
@@ -96,8 +129,6 @@ export class ThreadRowGroup extends HTMLElement {
     `;
     header.append(this.selectBox_, this.groupNameContainer_);
     this.append(header);
-    this.addEventListener(
-        RowHighlightChangeEvent.NAME, () => this.handleRowHighlightChanged_());
   }
 
   setInViewport(inViewport: boolean) {
@@ -205,6 +236,26 @@ export class ThreadRowGroup extends HTMLElement {
     return this.render();
   }
 
+  updateSliderPositionFromFocus_() {
+    const rows = assert(this.rows_);
+    let focusedIndex = rows.findIndex(row => row.focused);
+    if (focusedIndex === -1) {
+      focusedIndex = 0;
+      rows[focusedIndex].setFocus(true, true);
+    }
+    assert(this.slider_).value = String(focusedIndex);
+  }
+
+  updateTickmarks_() {
+    const tickmarks = assert(this.tickmarks_);
+    tickmarks.innerHTML = '';
+    for (let i = 0; i < assert(this.rows_).length; i++) {
+      const option = document.createElement('option');
+      option.value = String(i);
+      tickmarks.append(option);
+    }
+  }
+
   render() {
     if (!this.rows_)
       return [];
@@ -240,7 +291,16 @@ export class ThreadRowGroup extends HTMLElement {
     if (this.collapsed_) {
       this.rowContainer_.style.display = 'none';
       this.placeholder_.style.display = 'none';
+      if (this.slider_) {
+        this.slider_.style.display = 'none';
+      }
     } else {
+      if (this.slider_) {
+        this.updateTickmarks_();
+        this.slider_.style.display = '';
+        this.slider_.setAttribute('max', String(this.rows_.length - 1));
+        this.updateSliderPositionFromFocus_();
+      }
       this.showRows_();
     }
 
@@ -268,20 +328,8 @@ export class ThreadRowGroup extends HTMLElement {
       row.setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
       previousRow = row;
     }
-    this.handleRowHighlightChanged_();
     this.updateRowCount_();
     return removed;
-  }
-
-  private handleRowHighlightChanged_() {
-    let rows = assert(this.rows_);
-    // Ensure at least one row is always shown in uncollapsed groups.
-    const anyRowIsHighlighted = rows.some(x => x.highlighted);
-    if (anyRowIsHighlighted) {
-      rows[0].setHideIfNotHighlighted(this.showOnlyHighlightedRows_);
-    } else {
-      rows[0].setHideIfNotHighlighted(false);
-    }
   }
 
   hasSelectedRows() {
