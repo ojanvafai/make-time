@@ -20,7 +20,7 @@ export class FilterRuleComponent extends HTMLElement {
   constructor(private settings_: Settings, private rule_: any) {
     super();
     this.style.cssText = `
-      line-height: 1.7em;
+      flex: 1;
     `;
 
     this.matchAll_ = this.createCheckbox_(this.rule_.matchallmessages);
@@ -31,6 +31,7 @@ export class FilterRuleComponent extends HTMLElement {
     let topRow = document.createElement('div');
     topRow.style.cssText = `
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
     `;
     topRow.append(
@@ -46,7 +47,9 @@ export class FilterRuleComponent extends HTMLElement {
     container.style.cssText = `
       display: flex;
       align-items: center;
-      margin-left: 16px;
+      white-space: nowrap;
+      margin-right: 24px;
+      margin-bottom: 4px;
     `;
     container.append(checkbox, label);
     return container;
@@ -56,6 +59,10 @@ export class FilterRuleComponent extends HTMLElement {
     // Add a "new label" option that prompts and then adds that option to all
     // the filter rows.
     let label = await this.settings_.getLabelSelect();
+    label.style.cssText = `
+      margin-right: 16px;
+      margin-bottom: 4px;
+    `;
     topRow.prepend(label);
     this.label_ = label;
 
@@ -287,6 +294,7 @@ export class FilterRuleComponent extends HTMLElement {
     editor.contentEditable = 'plaintext-only';
     editor.style.cssText = `
       padding: 1px;
+      line-height: 1.7em;
       font-family: system-ui;
       white-space: pre-wrap;
       word-break: break-word;

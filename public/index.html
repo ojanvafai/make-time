@@ -108,7 +108,7 @@ input[type=checkbox], input[type=radio] {
 select.label-chip {
   background-color: inherit;
 }
-select, mt-address-compose, [contentEditable=true],
+select, mt-address-compose, [contentEditable=true], [contentEditable=plaintext-only],
 input:not([type=checkbox]):not([type=radio]):not([type=range]),
 .mktime-button, .x-button, .row-button, .toggler, .link-bubble, .label-chip {
   padding: 4px;
@@ -152,7 +152,7 @@ select, select.label-chip {
   left: 0;
   font-size: 9px;
 }
-select.button, .mktime-button {
+select.button, .mktime-button, .row-button {
   padding: 8px;
   height: 40px;
   min-width: 40px;
@@ -202,8 +202,6 @@ mt-select-box:hover,
   background: none;
 }
 .row-button {
-  width: 16px;
-  height: 16px;
   margin-right: 3px;
   display: flex;
   align-items: center;
