@@ -325,14 +325,17 @@ export class ThreadListView extends View {
 
     this.highPriorityContainer_ = new ThreadRowGroupList();
     this.highPriorityContainer_.style.cssText = `
-      background-color: var(--nested-background-color);
       margin-bottom: 16px;
     `;
     this.lowPriorityContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_ = new ThreadRowGroupList();
-    this.untriagedContainer_.style.marginBottom = '16px';
+    this.untriagedContainer_.style.cssText = `
+      padding-bottom: 16px;
+      background-color: var(--main-background);
+    `;
     this.nonLowPriorityWrapper_ = document.createElement('div');
     this.nonLowPriorityWrapper_.style.cssText = `
+      background-color: var(--nested-background-color);
       display: flex;
       flex-direction: column;
     `;
