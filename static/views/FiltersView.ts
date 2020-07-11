@@ -1,13 +1,9 @@
-import {create, createMktimeButton, createTh, defined, Labels, notNull, showDialog} from '../Base.js';
-import {QueueNames} from '../QueueNames.js';
-import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
+import {create, createMktimeButton, defined, Labels, showDialog} from '../Base.js';
+import {FilterRule, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
 
+import {FilterRuleComponent} from './FilterRuleComponent.js';
 import {HelpDialog} from './HelpDialog.js';
 
-const CSV_FIELDS = ['from', 'to'];
-const CURSOR_SENTINEL = '!!!!!!!!';
-const DIRECTIVE_SEPARATOR_ = ':';
-const QUERY_SEPARATOR_ = '&&';
 export const HELP_TEXT = [
   create('b', 'Help'),
   `
@@ -56,10 +52,9 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
 ];
 
 export class FiltersView extends HTMLElement {
-  // TODO: Stop using an element for maintaining cursor position. Do what
-  // AddressCompose does with Ranges instead.
-  private cursorSentinelElement_?: HTMLElement;
   private dialog_?: HTMLDialogElement;
+
+  private static ROW_CLASSNAME_ = 'filter-rule-row';
 
   constructor(private settings_: Settings) {
     super();
@@ -70,7 +65,7 @@ export class FiltersView extends HTMLElement {
       max-width: 95vw;
     `;
 
-    this.onkeydown = (e) => this.handleKeyDown_(e);
+    this.addEventListener('keydown', e => this.handleKeyDown_(e));
     this.render_();
   }
 
@@ -82,21 +77,21 @@ export class FiltersView extends HTMLElement {
 
     switch (e.key) {
       case 'ArrowUp':
-        this.moveRow_(e.key, e.shiftKey);
+        this.moveFocusedRow_(e.key, e.shiftKey);
         break;
 
       case 'ArrowDown':
-        this.moveRow_(e.key, e.shiftKey);
+        this.moveFocusedRow_(e.key, e.shiftKey);
         break;
     }
   }
 
-  moveRow_(direction: string, move10: boolean) {
+  private moveFocusedRow_(direction: string, move10: boolean) {
     // TODO: Put a proper type on this.
     let focused = <any>document.activeElement;
 
     let row = focused.parentElement;
-    while (row && row.tagName != 'TR') {
+    while (row && !row.classList.contains(FiltersView.ROW_CLASSNAME_)) {
       row = row.parentElement;
     }
     if (!row)
@@ -106,9 +101,15 @@ export class FiltersView extends HTMLElement {
     while (parent && parent != this) {
       parent = parent.parentElement;
     }
-    if (!parent)
+    if (!parent) {
       return;
+    }
 
+    this.moveRow_(parent, direction, move10);
+    focused.focus();
+  }
+
+  private moveRow_(row: HTMLElement, direction: string, move10: boolean) {
     let count = move10 ? 10 : 1;
 
     if (direction == 'ArrowUp') {
@@ -116,56 +117,35 @@ export class FiltersView extends HTMLElement {
         row.previousSibling.before(row);
       }
     } else if (direction == 'ArrowDown') {
-      while (count-- && row.nextSibling &&
-             !row.nextSibling.hasAttribute('fallback')) {
+      while (count-- && row.nextSibling) {
         row.nextSibling.after(row);
       }
     } else {
       throw `Tried to move row in invalid direction: ${direction}`;
     }
-
-    focused.focus();
   }
 
   async render_() {
     let rules = await this.settings_.getFilters();
 
-    let container = document.createElement('table');
+    let container = document.createElement('div');
     container.style.cssText = `font-size: 13px;`;
 
-    let ruleHeader = createTh('Rule');
-    ruleHeader.style.width = '100%';
-
-    let header = document.createElement('thead');
-    header.append(
-        createTh(''),
-        createTh('Label'),
-        ruleHeader,
-        createTh('Match All Messages'),
-        createTh('No List-ID'),
-        createTh('No CCs'),
-    );
-    container.append(header);
-
-    let body = document.createElement('tbody');
     for (let rule of rules) {
-      body.append(await this.createRule_(rule));
+      container.append(await this.createRule_(rule));
     }
 
     // Ensure there's at least one row since there's no other way to add the
     // first row.
     if (!rules.length)
-      body.append(await this.createRule_({}));
-
-    body.append(this.createUnfileredRule_());
-    container.append(body);
+      container.append(await this.createRule_({}));
 
     let scrollable = document.createElement('div');
     scrollable.style.cssText = `
       overflow: auto;
       flex: 1;
     `;
-    scrollable.append(container);
+    scrollable.append(container, this.createUnfileredRule_());
     this.append(scrollable);
 
     let helpButton =
@@ -187,34 +167,19 @@ export class FiltersView extends HTMLElement {
   }
 
   createUnfileredRule_() {
-    let container = document.createElement('tr');
-    container.toggleAttribute('fallback');
-    container.style.cssText = `
-      line-height: 1.7em;
+    let row = document.createElement('div');
+    row.style.cssText = `
+      display: flex;
+      align-items: center;
     `;
-
-    let buttons = document.createElement('div');
-    buttons.style.display = 'flex';
-    this.appendCell_(container, buttons);
-
-    let addButton = document.createElement('span');
-    addButton.append('+');
-    addButton.classList.add('row-button');
-    addButton.onclick = async () => {
+    const addButton = this.createButton_('+', 'Add new row above', async () => {
       let emptyRule = await this.createRule_({});
-      container.before(emptyRule);
-    };
-    buttons.append(addButton);
-
-    let label = document.createElement('select');
-    label.disabled = true;
-    let option = document.createElement('option');
-    option.append(Labels.Fallback);
-    label.append(option);
-    this.appendCell_(container, label);
-
-    this.appendCell_(container, 'This label is applied when no filters match.');
-    return container;
+      row.before(emptyRule);
+    });
+    addButton.style.marginRight = '16px';
+    row.append(
+        addButton, `The "${Labels.Fallback}" label is applied when no filters match.`);
+    return row;
   }
 
   convertToFilterRule(obj: any) {
@@ -237,40 +202,31 @@ export class FiltersView extends HTMLElement {
   }
 
   async save_() {
-    let rows = this.querySelectorAll('tbody > tr');
+    let filterRuleComponents = this.querySelectorAll('mt-filter-rule') as
+        NodeListOf<FilterRuleComponent>;
     let rules: FilterRule[] = [];
 
-    for (let row of rows) {
-      if (row.hasAttribute('fallback'))
-        continue;
-      let query = (<HTMLElement>row.querySelector('.query')).textContent;
-      let parsed = this.parseQuery_(query, true);
+    for (let filterRuleComponent of filterRuleComponents) {
+      let parsed = filterRuleComponent.getParsedQuery();
       let rule = this.convertToFilterRule(parsed);
       if (!rule) {
         alert('Rule has invalid field. Not saving filters.');
         return;
       }
-
-      let label = <HTMLSelectElement>row.querySelector('select');
-      rule.label = label.selectedOptions[0].value;
-
+      rule.label = filterRuleComponent.getSelectedLabel();
       if (rule.label === '') {
         alert('Filter rule has no label. Not saving filters.');
         return;
       }
-
-      let matchAll = <HTMLInputElement>row.querySelector('.matchallmessages');
-      if (matchAll.checked)
+      if (filterRuleComponent.getMatchAll()) {
         rule.matchallmessages = true;
-
-      let noListId = <HTMLInputElement>row.querySelector('.nolistid');
-      if (noListId.checked)
+      }
+      if (filterRuleComponent.getNoListId()) {
         rule.nolistid = true;
-
-      let noCc = <HTMLInputElement>row.querySelector('.nocc');
-      if (noCc.checked)
+      }
+      if (filterRuleComponent.getNoCc()) {
         rule.nocc = true;
-
+      }
       rules.push(rule);
     }
     await this.settings_.writeFilters(rules);
@@ -283,322 +239,61 @@ export class FiltersView extends HTMLElement {
     defined(this.dialog_).close();
   }
 
-  appendCell_(container: HTMLElement, item: HTMLElement|string) {
-    let td = document.createElement('td');
-    td.append(item);
-    container.append(td);
-    return td;
-  }
-
   async createRule_(rule: any) {
-    let container = document.createElement('tr');
-    container.style.cssText = `
-      line-height: 1.7em;
+    let row = document.createElement('div');
+    row.className = FiltersView.ROW_CLASSNAME_;
+    row.style.cssText = `
+      margin-bottom: 16px;
+      display: flex;
     `;
 
-    let buttons = document.createElement('div');
-    buttons.style.display = 'flex';
-    this.appendCell_(container, buttons);
-
-    let addButton = document.createElement('span');
-    addButton.append('+');
-    addButton.classList.add('row-button');
-    addButton.onclick = async () => {
-      let emptyRule =
-          await this.createRule_({label: label.selectedOptions[0].value});
-      container.before(emptyRule);
+    const insertRowBefore = async () => {
+      let emptyRule = await this.createRule_(
+          {label: filterRuleComponent.getSelectedLabel()});
+      row.before(emptyRule);
     };
-    buttons.append(addButton);
-
-    let minusButton = document.createElement('span');
-    minusButton.append('-');
-    minusButton.classList.add('row-button');
-    minusButton.onclick = () => {
-      container.remove();
-    };
-    buttons.append(minusButton);
-
-    // Add a "new label" option that prompts and then adds that option to all
-    // the filter rows.
-    let label = await this.settings_.getLabelSelect();
-
-    let option = document.createElement('option');
-    option.append('Create new...');
-    label.append(option);
-
-    for (let option of label.options) {
-      if (option.value === rule.label) {
-        option.selected = true;
-        break;
-      }
-    }
-    label.addEventListener('change', () => {
-      // The last item is the "Create new" label option.
-      if (label.selectedIndex !== label.options.length - 1)
-        return;
-      this.createLabel_();
-      // createLabel_ prepends the new label as the first item.
-      label.selectedIndex = 0;
-    });
-    this.appendCell_(container, label);
-
-    let queryParts: any = {};
-    for (let field in rule) {
-      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(field))
-        continue;
-      if (field == 'header') {
-        let headers = <HeaderFilterRule[]>rule[field];
-        for (let header of headers) {
-          queryParts[`${HEADER_FILTER_PREFIX}${header.name}`] = header.value;
-        }
-      } else {
-        queryParts[field] = rule[field];
-      }
-    }
-
-    let editor = this.createQueryEditor_(queryParts);
-    editor.classList.add('query');
-    this.appendCell_(container, editor);
-
-    this.appendCheckbox_(container, 'matchallmessages', rule.matchallmessages);
-    this.appendCheckbox_(container, 'nolistid', rule.nolistid);
-    this.appendCheckbox_(container, 'nocc', rule.nocc);
-
-    return container;
-  }
-
-  createLabel_() {
-    let newLabel = prompt(`Type the new label name`);
-    if (!newLabel)
-      return;
-
-    newLabel = newLabel.replace(/\s+/g, '');
-    if (!newLabel)
-      return;
-
-    // Ensure the new label is stores in the QueueNames map in firestore.
-    let queueNames = QueueNames.create();
-    queueNames.getId(newLabel);
-
-    let option = this.settings_.addLabel(newLabel);
-    let allLabels = this.querySelectorAll('select');
-    for (let label of allLabels) {
-      label.prepend(option.cloneNode(true));
-    }
-  }
-
-  appendCheckbox_(container: HTMLElement, className: string, checked: boolean) {
-    let checkbox = document.createElement('input');
-    checkbox.classList.add(className);
-    checkbox.type = 'checkbox';
-    checkbox.checked = checked;
-    let cell = this.appendCell_(container, checkbox);
-    cell.style.textAlign = 'center';
-  }
-
-  appendWithSentinel_(container: HTMLElement, text: string) {
-    let index = text.indexOf(CURSOR_SENTINEL);
-    if (index == -1) {
-      container.append(text);
-      return;
-    }
-
-    container.append(text.substring(0, index));
-    this.appendSentinelElement_(container);
-    container.append(text.substring(index + CURSOR_SENTINEL.length));
-  }
-
-  appendSentinelElement_(container: HTMLElement) {
-    this.cursorSentinelElement_ = document.createElement('span');
-    container.append(this.cursorSentinelElement_);
-  }
-
-  appendQueryParts_(container: HTMLElement, queryParts: any) {
-    let isFirst = true;
-    let previousEndedInWhiteSpace = false;
-    let space = ' ';
-
-    for (let field in queryParts) {
-      let fieldText = field;
-      if (!isFirst) {
-        if (!previousEndedInWhiteSpace)
-          container.append(space);
-        container.append(QUERY_SEPARATOR_);
-        if (fieldText.charAt(0) == space) {
-          container.append(space);
-          fieldText = fieldText.substring(1);
-        } else if (field != CURSOR_SENTINEL) {
-          container.append(space);
-        }
-      }
-      isFirst = false;
-
-      if (field == CURSOR_SENTINEL) {
-        container.append(queryParts[field]);
-        this.appendSentinelElement_(container);
-        continue;
-      }
-
-      let fieldElement = document.createElement('span');
-      fieldElement.style.cssText = `
-        padding: 1px 2px;
-        font-weight: bold;
-      `;
-
-      let fieldTextWithoutSentinel =
-          fieldText.replace(CURSOR_SENTINEL, '').trim();
-      if (!isHeaderFilterField(fieldTextWithoutSentinel) &&
-          !Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
-        fieldElement.classList.add('invalid-directive');
-
-      this.appendWithSentinel_(fieldElement, fieldText);
-      container.append(fieldElement);
-
-      let value = queryParts[field];
-      previousEndedInWhiteSpace =
-          value && value.charAt(value.length - 1) == space;
-      if (value) {
-        fieldElement.append(DIRECTIVE_SEPARATOR_);
-
-        if (CSV_FIELDS.includes(field)) {
-          let values = value.split(',');
-          for (var i = 0; i < values.length; i++) {
-            this.appendValue_(container, values[i]);
-            if (i + 1 < values.length) {
-              let comma = document.createElement('span');
-              comma.append(',');
-              comma.style.marginRight = '2px';
-              container.append(comma);
-            }
+    let topButtons = document.createElement('div');
+    topButtons.style.cssText = `
+      display: flex;
+      margin-bottom: 4px;
+    `;
+    topButtons.append(
+        this.createButton_('+', 'Add new row above', insertRowBefore),
+        this.createButton_('-', 'Delete this rule', () => {
+          if (confirm(`Delete this rule? This can't be undone.`)) {
+            row.remove();
           }
-        } else {
-          this.appendValue_(container, value);
-        }
-      }
-    }
+        }));
+    let bottomButtons = document.createElement('div');
+    bottomButtons.style.cssText = `
+          display: flex;
+        `;
+    bottomButtons.append(
+        this.createButton_(
+            '⇧', 'Move rule up', () => this.moveRow_(row, 'ArrowUp', false)),
+        this.createButton_(
+            '⇩', 'Move rule down',
+            () => this.moveRow_(row, 'ArrowDown', false)));
+
+    let buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+          margin-right: 16px;
+        `;
+    buttonContainer.append(topButtons, bottomButtons);
+
+    let filterRuleComponent = new FilterRuleComponent(this.settings_, rule);
+    row.append(buttonContainer, filterRuleComponent);
+
+    return row;
   }
 
-  appendValue_(container: HTMLElement, value: string) {
-    let valueElement = document.createElement('span');
-    valueElement.style.cssText = `
-      padding: 1px 2px;
-      text-decoration: underline var(--dim-text-color);
-    `;
-    this.appendWithSentinel_(valueElement, value);
-    container.append(valueElement);
-  }
-
-  parseQuery_(query: string, trimWhitespace: boolean) {
-    let queryParts: any = {};
-    query = query.replace(/[\n\r]/g, '');
-    let directives = query.split(QUERY_SEPARATOR_);
-    for (let directive of directives) {
-      if (!directive)
-        continue;
-
-      let colonIndex = directive.indexOf(DIRECTIVE_SEPARATOR_);
-      let hasColon = colonIndex != -1;
-      let field = hasColon ? directive.substring(0, colonIndex) : directive;
-      let value = hasColon ? directive.substring(colonIndex + 1) : '';
-
-      if (trimWhitespace) {
-        field = field.trim();
-        value = value.trim();
-        if (CSV_FIELDS.includes(field))
-          value = value.split(',').map(x => x.trim()).join(',');
-      }
-
-      if (hasColon && !value)
-        field = field + DIRECTIVE_SEPARATOR_;
-      queryParts[field] = value;
-    }
-    return queryParts;
-  }
-
-  setEditorText_(editor: HTMLElement, text: string, trimWhitespace: boolean) {
-    editor.textContent = '';
-    let newParts = this.parseQuery_(text, trimWhitespace);
-    this.appendQueryParts_(editor, newParts);
-  }
-
-  setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
-    this.setEditorText_(editor, text, false);
-    notNull(window.getSelection())
-        .selectAllChildren(defined(this.cursorSentinelElement_));
-  }
-
-  insertSentinelText_() {
-    let range = notNull(window.getSelection()).getRangeAt(0);
-    let node = new Text(CURSOR_SENTINEL);
-    range.insertNode(node);
-    return node;
-  }
-
-  getEditorTextContentWithSentinel_(editor: HTMLElement) {
-    let sentinel = this.insertSentinelText_();
-    let content = editor.textContent;
-    sentinel.remove();
-    return content;
-  }
-
-  createQueryEditor_(queryParts: any) {
-    let editor = document.createElement('div');
-    editor.contentEditable = 'plaintext-only';
-    editor.style.cssText = `
-      padding: 1px;
-      font-family: system-ui;
-      white-space: pre-wrap;
-      word-break: break-word;
-    `;
-    this.appendQueryParts_(editor, queryParts);
-
-    let undoStack: string[] = [];
-    let redoStack_: string[] = [];
-
-    editor.addEventListener('beforeinput', (e) => {
-      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo')
-        return;
-
-      redoStack_ = [];
-      undoStack.push(this.getEditorTextContentWithSentinel_(editor));
-    });
-
-    editor.oninput = (e) => {
-      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo')
-        return;
-
-      let content = this.getEditorTextContentWithSentinel_(editor);
-      this.setEditorTextAndSelectSentinel_(editor, content);
-    };
-
-    editor.onkeydown = (e) => {
-      // TODO: Only do metaKey on mac and ctrlKey on non-mac.
-      if (e.key == 'z' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-
-        let popStack = e.shiftKey ? redoStack_ : undoStack;
-        let pushStack = e.shiftKey ? undoStack : redoStack_;
-
-        let newValue = popStack.pop();
-        if (newValue) {
-          pushStack.push(this.getEditorTextContentWithSentinel_(editor));
-          this.setEditorTextAndSelectSentinel_(editor, newValue);
-        }
-      }
-    };
-
-    editor.onblur = () => {
-      this.setEditorText_(editor, editor.textContent, true)
-    };
-
-    return editor;
-  }
-
-  createOption_(value: string) {
-    let option = document.createElement('option');
-    option.value = value;
-    option.append(value);
-    return option;
+  private createButton_(text: string, title: string, onClick: () => void) {
+    let button = document.createElement('span');
+    button.append(text);
+    button.classList.add('row-button');
+    button.setAttribute('title', title);
+    button.onclick = onClick;
+    return button;
   }
 }
 
