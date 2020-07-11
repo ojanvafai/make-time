@@ -117,9 +117,14 @@ export class TodoModel extends ThreadListModel {
   }
 
   getGroupName(thread: Thread) {
-    if (thread.forceTriage())
+    // Since we artifically sort pinned items to the top, we need to also
+    // artificially set their group name.
+    if (thread.getPriorityId() === Priority.Pin) {
+      return notNull(thread.getPriority());
+    }
+    if (thread.forceTriage()) {
       return TodoModel.getTriageGroupName(this.settings_, thread);
-
+    }
     return notNull(thread.getPriority());
   }
 
