@@ -822,9 +822,9 @@ export class ThreadListView extends View {
     let previousHighPriority;
     let previousLowPriority;
     for (const groupName of groupNames) {
-      const isHighPriority =
+      const isHighPriority = !this.isTodoView_ ||
           [PINNED_PRIORITY_NAME, MUST_DO_PRIORITY_NAME].includes(groupName);
-      const isLowPriority = [
+      const isLowPriority = this.isTodoView_ && [
         BOOKMARK_PRIORITY_NAME, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME
       ].includes(groupName);
 
