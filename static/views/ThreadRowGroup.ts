@@ -299,7 +299,6 @@ export class ThreadRowGroup extends HTMLElement {
     if (this.expander_) {
       this.expander_.textContent = '';
       this.expander_.append(this.collapsed_ ? expandArrow() : collapseArrow());
-      this.selectBox_.setDisabled(this.collapsed_);
     }
     if (this.collapsed_) {
       this.rowContainer_.style.display = 'none';
@@ -356,6 +355,9 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   selectRows(select: boolean) {
+    if (select) {
+      this.setCollapsed(false, true);
+    }
     this.selectBox_.select(select ? ALL : NONE);
     let rows = this.getRows();
     for (let child of rows) {
