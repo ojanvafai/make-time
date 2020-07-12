@@ -697,9 +697,21 @@ export class ThreadListView extends View {
 
     const saveButton = createMktimeButton(
         () => this.saveFilterRule_(saveButton, filterRuleComponent, row.thread),
-        'Save New Filter');
+        'Save new filter');
     saveButton.style.marginLeft = '16px';
     saveButton.classList.add('action-button');
+
+    const showToolbarButton = createMktimeButton(
+        () => this.setActionsToRegularToolbar_(), 'Show regular toolbar');
+    showToolbarButton.style.marginLeft = '16px';
+    showToolbarButton.classList.add('action-button');
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+      display: flex;
+      justify-content: center;
+    `;
+    buttonContainer.append(saveButton, showToolbarButton);
 
     let toolbar = document.createElement('div');
     toolbar.style.display = 'flex';
@@ -720,7 +732,7 @@ export class ThreadListView extends View {
       flex-direction: column;
       justify-content: center;
     `;
-    container.append(helpText, filterRuleComponent, saveButton);
+    container.append(helpText, filterRuleComponent, buttonContainer);
     AppShell.addToFooter(container);
   }
 
@@ -733,6 +745,11 @@ export class ThreadListView extends View {
       this.addFilterToolbar_(this.focusedRow_);
       return;
     }
+
+    this.setActionsToRegularToolbar_();
+  }
+
+  private setActionsToRegularToolbar_() {
     let viewSpecific =
         this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.isTodoView_ && !this.renderedRow_;
