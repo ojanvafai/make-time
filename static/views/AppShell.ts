@@ -96,7 +96,6 @@ export class AppShell extends HTMLElement {
       position: relative;
       max-width: var(--max-width);
       margin: auto;
-      background-color: var(--nested-background-color);
     `;
 
     let contentContainer = document.createElement('div');
@@ -136,6 +135,7 @@ export class AppShell extends HTMLElement {
     let toolbarWrapper = document.createElement('div');
     toolbarWrapper.style.cssText = `
       box-shadow: var(--border-and-hover-color) 0 0 4px;
+      background-color: var(--nested-background-color);
       z-index: 20;
     `;
     toolbarWrapper.append(this.toolbar_);

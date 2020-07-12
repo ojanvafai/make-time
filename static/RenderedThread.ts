@@ -42,7 +42,6 @@ export class RenderedThread extends HTMLElement {
   constructor(public thread: Thread) {
     super();
     this.style.cssText = `
-      background-color: var(--thread-background-color);
       color: var(--thread-text-color);
       position: absolute;
       left: 0;
@@ -177,9 +176,11 @@ export class RenderedThread extends HTMLElement {
       processedMessage: Message, quoteElidedMessage: QuoteElidedMessage) {
     var messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
-      padding: 8px 8px 16px;
-      border-top: 1px dotted var(--border-and-hover-color);
+      padding: 8px;
       word-break: break-word;
+      margin: 16px 0 24px;
+      box-shadow: 0px 0px 8px var(--border-and-hover-color);
+      background-color: var(--thread-background-color);
     `;
     messageDiv.className = 'message';
     messageDiv.classList.add(processedMessage.isUnread ? 'unread' : 'read');
