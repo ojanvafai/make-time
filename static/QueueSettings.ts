@@ -89,7 +89,7 @@ export class QueueSettings {
 
     // Legacy queue datas don't have the throttle field set.
     for (let queueData of Object.values(this.queueDatas_)) {
-      queueData.throttle = queueData.throttle || ThrottleOption.throttle;
+      queueData.throttle = queueData.throttle || ThrottleOption.immediate;
     }
 
     let datas = Object.entries(this.queueDatas_)
@@ -154,7 +154,7 @@ export class QueueSettings {
       // For unknown queues, put them first.
       index: opt_index || 0,
       merge: mergeOption || MergeOption.separate,
-      throttle: throttleOption || ThrottleOption.throttle,
+      throttle: throttleOption || ThrottleOption.immediate,
     };
   }
 
