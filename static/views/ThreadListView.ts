@@ -626,13 +626,33 @@ export class ThreadListView extends View {
     this.transitionToThreadList_(this.renderedRow_);
   }
 
-  private async saveFilterRule_(filterRuleComponent: FilterRuleComponent) {
+  private async saveFilterRule_(
+      saveButton: HTMLButtonElement, filterRuleComponent: FilterRuleComponent,
+      thread: Thread) {
     const ruleJson = filterRuleComponent.getJson();
     if (!ruleJson) {
       // We should already have shown the user an alert here since this
       // happens when they use an invalid field.
       return;
     }
+
+    if (ruleJson.label === Labels.Fallback) {
+      alert(`The ${
+          Labels
+              .Fallback} label is selected. Please choose a different label.`);
+      return;
+    }
+
+    const mailProcessor = await assert(this.getMailProcessor_)();
+    const ruleMatches =
+        await mailProcessor.ruleMatchesMessages(ruleJson, thread.getMessages());
+    if (!ruleMatches) {
+      alert('This filter rule doesn\'t match the current thread.');
+      return;
+    }
+
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving...';
     const existingFilterRules = await this.settings_.getFilters();
     await this.settings_.writeFilters([...existingFilterRules, ruleJson]);
 
@@ -640,7 +660,6 @@ export class ThreadListView extends View {
         x => x.name === Labels.Fallback);
     let rows = assert(unfilteredGroup).getRows();
     for (const row of rows) {
-      const mailProcessor = await assert(this.getMailProcessor_)();
       const newLabel = await mailProcessor.applyFilters(row.thread);
       if (newLabel !== Labels.Fallback && row.focused) {
         this.moveFocus_(NEXT_ACTION);
@@ -677,7 +696,8 @@ export class ThreadListView extends View {
     });
 
     const saveButton = createMktimeButton(
-        () => this.saveFilterRule_(filterRuleComponent), 'Save New Filter');
+        () => this.saveFilterRule_(saveButton, filterRuleComponent, row.thread),
+        'Save New Filter');
     saveButton.style.marginLeft = '16px';
     saveButton.classList.add('action-button');
 

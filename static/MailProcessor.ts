@@ -501,7 +501,7 @@ export class MailProcessor {
     return headerValue && stringFilterMatches(header.value, headerValue);
   }
 
-  async matchesRule(rule: FilterRule, message: Message) {
+  async ruleMatchesMessage(rule: FilterRule, message: Message) {
     var matches = false;
     if (rule.nolistid) {
       if (message.listId)
@@ -563,31 +563,33 @@ export class MailProcessor {
     }
   }
 
-  private async getWinningLabel_(thread: Thread, rules: FilterRule[]) {
-    var messages = thread.getMessages();
-
-    for (let rule of rules) {
-      if (rule.matchallmessages) {
-        let matches = false;
-        for (let message of messages) {
-          matches = await this.matchesRule(rule, message);
-          if (!matches)
-            break;
-        }
-        if (matches) {
-          this.logMatchingRule_(thread, rule);
-          return rule.label;
-        }
-      } else {
-        for (let message of messages) {
-          if (await this.matchesRule(rule, message)) {
-            this.logMatchingRule_(thread, rule);
-            return rule.label;
-          }
+  async ruleMatchesMessages(rule: FilterRule, messages: Message[]) {
+    if (rule.matchallmessages) {
+      let matches = false;
+      for (let message of messages) {
+        matches = await this.ruleMatchesMessage(rule, message);
+        if (!matches)
+          break;
+      }
+      return matches;
+    } else {
+      for (let message of messages) {
+        if (await this.ruleMatchesMessage(rule, message)) {
+          return true;
         }
       }
     }
+    return false;
+  }
 
+  private async getWinningLabel_(thread: Thread, rules: FilterRule[]) {
+    var messages = thread.getMessages();
+    for (let rule of rules) {
+      if (await this.ruleMatchesMessages(rule, messages)) {
+        this.logMatchingRule_(thread, rule);
+        return rule.label;
+      }
+    }
     // Ensure there's always some label to make sure bugs don't cause emails
     // to get lost silently.
     return Labels.Fallback;
