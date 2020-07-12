@@ -665,7 +665,7 @@ export class ThreadListView extends View {
         this.moveFocus_(NEXT_ACTION);
       }
     }
-    this.updateActions_();
+    this.updateActionsAndMainBodyMinHeight_();
   }
 
   private addFilterToolbar_(row: ThreadRow) {
@@ -742,14 +742,18 @@ export class ThreadListView extends View {
       [OTHER_MENU_ACTION, [UNDO_ACTION, ...sortActions]]
     ]);
 
+    if (this.renderedRow_)
+      this.addTimer_();
+  }
+
+  private updateActionsAndMainBodyMinHeight_() {
+    this.updateActions_();
+
     // Need to do this after we update the toolbar since it can change height.
     // TODO: We should also do this when the window resizes since the toolbars
     // can wrap and change height.
     this.nonLowPriorityWrapper_.style.minHeight =
         `${this.appShell_.getContentHeight() - 70}px`;
-
-    if (this.renderedRow_)
-      this.addTimer_();
   }
 
   private addTimer_() {
@@ -1087,7 +1091,7 @@ export class ThreadListView extends View {
     if (this.focusedRow_)
       this.focusedRow_.clearFocus();
     this.focusedRow_ = row;
-    this.updateActions_();
+    this.updateActionsAndMainBodyMinHeight_();
   }
 
   private preventAutoFocusFirstRow_() {
@@ -1303,7 +1307,7 @@ export class ThreadListView extends View {
     this.setFocusAndScrollIntoView_(focusedRow);
     this.setRenderedRow_(null);
     this.appShell_.setSubject('');
-    this.updateActions_();
+    this.updateActionsAndMainBodyMinHeight_();
 
     this.render_();
     this.renderCalendar_();
@@ -1383,7 +1387,7 @@ export class ThreadListView extends View {
     if (this.rowGroupContainer_.style.display !== 'none')
       this.transitionToSingleThread_();
 
-    this.updateActions_();
+    this.updateActionsAndMainBodyMinHeight_();
     if (toast)
       AppShell.addToFooter(toast);
 
@@ -1471,7 +1475,7 @@ export class ThreadListView extends View {
   async showQuickReply() {
     let reply = new QuickReply(
         notNull(this.renderedRow_).thread, await SendAs.getDefault());
-    reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActions_());
+    reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActionsAndMainBodyMinHeight_());
 
     reply.addEventListener(ReplyScrollEvent.NAME, async () => {
       if (!this.renderedRow_)
