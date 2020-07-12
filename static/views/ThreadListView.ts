@@ -46,6 +46,11 @@ interface IgnoredDocumentData extends firebase.firestore.DocumentSnapshot {
   ignored: IgnoredEvent[],
 }
 
+type ThreadRowGroupMetadata = {
+  group: ThreadRowGroup,
+  rows: ThreadRow[],
+};
+
 let QUICK_REPLY_ACTION = {
   name: `Reply`,
   description: `Give a short reply.`,
@@ -693,6 +698,72 @@ export class ThreadListView extends View {
     ];
   }
 
+  // Threads should be in sorted order already and all threads in the same
+  // queue should be adjacent to each other. Ensure the order of groups match
+  // the new order, but also try to minimize moving things around in the DOM
+  // to minimize style recalc.
+  private ensureGroupExistenceAndOrder(
+      groupMap: Map<string, ThreadRowGroupMetadata>,
+      groupNames: Iterable<string>) {
+    let previousUntriaged;
+    let previousHighPriority;
+    let previousLowPriority;
+    for (const groupName of groupNames) {
+      const isHighPriority =
+          [PINNED_PRIORITY_NAME, MUST_DO_PRIORITY_NAME].includes(groupName);
+      const isLowPriority = [
+        BOOKMARK_PRIORITY_NAME, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME
+      ].includes(groupName);
+
+      let entry = groupMap.get(groupName);
+      if (!entry) {
+        const showOnlyHighlightedRows =
+            this.isTodoView_ && !isHighPriority && !isLowPriority;
+        const useCardStyle =
+            this.isTodoView_ && groupName === PINNED_PRIORITY_NAME;
+        const group = new ThreadRowGroup(
+            groupName, this.model_.allowedCount(groupName),
+            showOnlyHighlightedRows, useCardStyle);
+
+        let previousGroup;
+        let groupList;
+        if (isHighPriority) {
+          previousGroup = previousHighPriority && previousHighPriority.group;
+          groupList = this.highPriorityContainer_;
+        } else if (isLowPriority) {
+          previousGroup = previousLowPriority && previousLowPriority.group;
+          groupList = this.lowPriorityContainer_;
+        } else {
+          previousGroup = previousUntriaged && previousUntriaged.group;
+          groupList = this.untriagedContainer_;
+        }
+
+        if (previousGroup ? group.previousSibling !== previousGroup :
+                            group !== groupList.firstChild) {
+          if (previousGroup)
+            previousGroup.after(group);
+          else
+            groupList.prepend(group);
+        }
+
+        entry = {group, rows: []};
+        groupMap.set(groupName, entry);
+        // Call observe after putting the group in the DOM so we don't have a
+        // race condition where sometimes the group has no dimensions/position.
+        this.isVisibleObserver_.observe(group);
+        this.isHiddenObserver_.observe(group);
+      }
+
+      if (isHighPriority) {
+        previousHighPriority = entry;
+      } else if (isLowPriority) {
+        previousLowPriority = entry;
+      } else {
+        previousUntriaged = entry;
+      }
+    }
+  }
+
   private renderFrame_() {
     this.hasQueuedFrame_ = false;
     let allThreads = this.model_.getThreads(true);
@@ -704,9 +775,8 @@ export class ThreadListView extends View {
     let threads = allThreads.filter(x => !x.actionInProgress());
     let newGroupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
     let removedRows = [];
-
     let oldGroups = this.getGroups_();
-    let groupMap = new Map();
+    let groupMap: Map<string, ThreadRowGroupMetadata> = new Map();
     // Remove groups that no longer exist.
     for (let group of oldGroups) {
       if (newGroupNames.has(group.name)) {
@@ -719,63 +789,12 @@ export class ThreadListView extends View {
       }
     }
 
-    // Threads should be in sorted order already and all threads in the
-    // same queue should be adjacent to each other.
-    let previousEntry: {
-      group: ThreadRowGroup,
-      isLowPriority: boolean,
-      isHighPriority: boolean,
-      rows: ThreadRow[]
-    }|undefined;
-
     const groupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
-    for (const groupName of groupNames) {
-      let entry = groupMap.get(groupName);
-      // Insertion sort insert new groups
-      if (!entry) {
-        const isHighPriority =
-            [PINNED_PRIORITY_NAME, MUST_DO_PRIORITY_NAME].includes(groupName);
-        const isLowPriority = [
-          BOOKMARK_PRIORITY_NAME, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME
-        ].includes(groupName);
-        const showOnlyHighlightedRows =
-            this.isTodoView_ && !isHighPriority && !isLowPriority;
-        const useCardStyle =
-            this.isTodoView_ && groupName === PINNED_PRIORITY_NAME;
-        const group = new ThreadRowGroup(
-            groupName, this.model_.allowedCount(groupName),
-            showOnlyHighlightedRows, useCardStyle);
-
-        if (previousEntry) {
-          if (isLowPriority && !previousEntry.isLowPriority) {
-            this.lowPriorityContainer_.prepend(group);
-          } else if (isHighPriority && !previousEntry.isHighPriority) {
-            this.highPriorityContainer_.prepend(group);
-          } else {
-            previousEntry.group.after(group);
-          }
-        } else {
-          const container = isLowPriority ?
-              this.lowPriorityContainer_ :
-              (isHighPriority ? this.highPriorityContainer_ :
-                                this.untriagedContainer_);
-          container.prepend(group);
-        }
-
-        entry = {group, isLowPriority, isHighPriority, rows: []};
-        groupMap.set(groupName, entry);
-        // Call observe after putting the group in the DOM so we don't have a
-        // race condition where sometimes the group has no dimensions/position.
-        this.isVisibleObserver_.observe(group);
-        this.isHiddenObserver_.observe(group);
-      }
-
-      previousEntry = entry;
-    }
+    this.ensureGroupExistenceAndOrder(groupMap, groupNames);
 
     for (let thread of threads) {
       let groupName = this.mergedGroupName_(thread);
-      let entry = groupMap.get(groupName);
+      let entry = assert(groupMap.get(groupName));
       let row = this.getThreadRow_(thread);
       entry.rows.push(row);
       if (!this.hasHadAction_)
