@@ -1435,6 +1435,10 @@ export class ThreadListView extends View {
     subject.append(renderedRow.thread.getSubject());
 
     let toggleClamp = () => {
+      // Don't toggle if the user has selected part of the subject text.
+      if (!(notNull(window.getSelection()).isCollapsed)) {
+        return;
+      }
       let shouldClamp = subject.style.overflow === '';
       arrow.textContent = '';
       if (shouldClamp) {
@@ -1475,7 +1479,8 @@ export class ThreadListView extends View {
   async showQuickReply() {
     let reply = new QuickReply(
         notNull(this.renderedRow_).thread, await SendAs.getDefault());
-    reply.addEventListener(ReplyCloseEvent.NAME, () => this.updateActionsAndMainBodyMinHeight_());
+    reply.addEventListener(
+        ReplyCloseEvent.NAME, () => this.updateActionsAndMainBodyMinHeight_());
 
     reply.addEventListener(ReplyScrollEvent.NAME, async () => {
       if (!this.renderedRow_)
