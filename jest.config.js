@@ -26,8 +26,10 @@ module.exports = {
         // Maybe we should just rename them?
         "./idb-keyval.js": "./idb-keyval.ts",
         "./base64.js": "./base64.ts",
-        // We need to mock out firebase, or fix the way we wrap it.
-        // This is a hacky way of mocking it out.
-        "(.*)third_party/firebasejs/5.8.2/firebase-(.*).js" : "$1test_support/firebase-mock.ts"
+        // We need to mock out firebase, or fix the way we wrap it. This is a
+        // hacky way of mocking it out. We now import firebase like a regular
+        // import from npm, so this can probably be done the right way.
+        // "(.*)third_party/firebasejs/5.8.2/firebase-(.*).js" :
+        // "$1test_support/firebase-mock.ts"
     }
   }

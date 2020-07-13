@@ -1,4 +1,4 @@
-import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
+import type * as firebase from "firebase/app";
 import {compareDates, defined, notNull, setFaviconCount} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {ServerStorage} from '../ServerStorage.js';

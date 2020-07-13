@@ -1,4 +1,4 @@
-import {firebase} from '../../third_party/firebasejs/5.8.2/firebase-app.js';
+import type * as firebase from 'firebase/app';
 import {Action, ActionGroup, registerActions, Shortcut, shortcutString} from '../Actions.js';
 import {assert, collapseArrow, createMktimeButton, defined, expandArrow, Labels, notNull} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';

@@ -1,4 +1,4 @@
-import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
+import * as firebase from "firebase/app";
 
 import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';

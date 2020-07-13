@@ -1,5 +1,5 @@
 import emailJsParseAddressList from '../third_party/emailjs-addressparser/addressparser.js';
-import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
+import * as firebase from "firebase/app";
 
 import {gapiFetch} from './Net.js';
 

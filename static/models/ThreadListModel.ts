@@ -1,4 +1,4 @@
-import {firebase} from '../../public/third_party/firebasejs/5.8.2/firebase-app.js';
+import type * as firebase from "firebase/app";
 import {Action} from '../Actions.js';
 import {assert, compareDates} from '../Base.js';
 import {Calendar} from '../calendar/Calendar.js';

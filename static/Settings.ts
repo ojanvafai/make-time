@@ -1,4 +1,4 @@
-import {firebase} from '../third_party/firebasejs/5.8.2/firebase-app.js';
+import type * as firebase from "firebase/app";
 
 import {AsyncOnce} from './AsyncOnce.js';
 import {assert, defined, Labels} from './Base.js';

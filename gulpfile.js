@@ -2,6 +2,7 @@ let fs = require('fs');
 let gulp = require('gulp');
 let {watch} = require('gulp');
 let md5 = require('md5');
+let changedInPlace = require('gulp-changed-in-place');
 let rename = require('gulp-rename');
 let replace = require('gulp-string-replace');
 let shell = require('gulp-shell')
@@ -12,6 +13,8 @@ let terser = require('gulp-terser');
 let rollupStream = require('@rollup/stream');
 let source = require('vinyl-source-stream');
 let buffer = require('vinyl-buffer');
+// map-stream is used to create a stream that runs an async function
+var map = require('map-stream');
 
 let mainFilename = '/main.js';
 let bundleDir = '/bundle';
@@ -54,6 +57,38 @@ gulp.task('compile', () => {
       .pipe(gulp.dest(getOutDir()));
 });
 
+function getFilesWithFirebaseImports() {
+  return ['Base.js', 'BaseMain.js', 'MailProcessor.js', 'Thread.js'].map(
+      x => `${getOutDir()}/${x}`);
+}
+
+// TODO: Add a watcher that checks for any other files that use firebase imports
+// or generate this list from the actual files themselves. const
+gulp.task('transform-firebase-imports', function() {
+  let didModify = false;
+  return gulp.src(getFilesWithFirebaseImports())
+      .pipe(changedInPlace({firstPass: true}))
+      .pipe(map(function(file, cb) {
+        const original = file.contents.toString();
+        // Make "firebase/app" be "../node_modules/firebase/firebase-app.js"
+        // allowing both single and double quotes.
+        const transformed = Buffer.from(original.replace(
+            /\ ["']firebase\/([^'"]+)["']/g, (match, p1, offset, string) => {
+              return ` '../node_modules/firebase/firebase-${p1}.js'`;
+            }));
+        file.contents = transformed;
+        let error = null;
+        cb(error, file);
+      }))
+      .pipe(gulp.dest(getOutDir()));
+});
+
+gulp.task(
+    'transform-firebase-imports-watch',
+    () => {watch(getFilesWithFirebaseImports(), {queue: true}, () => {
+      return gulp.task('transform-firebase-imports')();
+    })});
+
 gulp.task('bundle', function() {
   fs.mkdirSync(getOutDir() + bundleDir, {recursive: true});
   return rollupStream(
@@ -92,14 +127,11 @@ gulp.task(
     'npm-install',
     gulp.series([shell.task('npm install --no-fund'), 'symlink-node-modules']));
 
-function firebaseServeCommand(port) {
-  return shell.task(
-      `./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time --port=${
-          port}`)
-}
 gulp.task(
     'firebase-serve',
-    gulp.parallel([firebaseServeCommand(5000), firebaseServeCommand(8000)]));
+    shell.task(
+        `./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time --port=${
+            process.argv.includes('--google') ? 8000 : 5000}`));
 
 gulp.task(
     'tsc-watch',
@@ -108,8 +140,11 @@ gulp.task(
 
 let compileWatch =
     process.argv.includes('--bundle') ? 'bundle-watch' : 'tsc-watch';
+
 gulp.task('serve', gulp.series([
-  'npm-install', gulp.parallel(['firebase-serve', compileWatch])
+  'npm-install',
+  gulp.parallel(
+      ['firebase-serve', compileWatch, 'transform-firebase-imports-watch'])
 ]));
 
 // TODO: Really we should have the server generate the bundle on demand instead
@@ -117,7 +152,7 @@ gulp.task('serve', gulp.series([
 gulp.task(
     'bundle-watch-help',
     () => {watch(
-        'public/gen/**/*.js', {queue: true, ignored:['public/gen/bundle']},
+        'public/gen/**/*.js', {queue: true, ignored: ['public/gen/bundle']},
         () => {
           return gulp.task('bundle')();
         })});
