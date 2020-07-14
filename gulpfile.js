@@ -1,18 +1,17 @@
-var batch = require('gulp-batch');
 let fs = require('fs');
 let gulp = require('gulp');
-let gulpif = require('gulp-if');
+let {watch} = require('gulp');
 let md5 = require('md5');
 let rename = require('gulp-rename');
 let replace = require('gulp-string-replace');
-let rollup = require('gulp-better-rollup');
 let shell = require('gulp-shell')
 let sourcemaps = require('gulp-sourcemaps');
 let stripJsonComments = require('strip-json-comments');
 let typescript = require('gulp-typescript');
 let terser = require('gulp-terser');
-let watch = require('gulp-watch');
-var jest = require('gulp-jest').default;
+let rollupStream = require('@rollup/stream');
+let source = require('vinyl-source-stream');
+let buffer = require('vinyl-buffer');
 
 let mainFilename = '/main.js';
 let bundleDir = '/bundle';
@@ -55,26 +54,16 @@ gulp.task('compile', () => {
       .pipe(gulp.dest(getOutDir()));
 });
 
-// TODO: Figure out why loadMaps:true isn't pulling in the sourcemaps generated
-// by the typescript compile step.
 gulp.task('bundle', function() {
-  return gulp.src(getOutDir() + mainFilename)
-      .pipe(sourcemaps.init({loadMaps: true}))
-      .pipe(rollup({}, 'esm'))
+  fs.mkdirSync(getOutDir() + bundleDir, {recursive: true});
+  return rollupStream(
+             {input: getOutDir() + mainFilename, output: {sourcemap: true}})
+      .pipe(source(getOutDir() + bundleDir + mainFilename))
+      .pipe(buffer())
       .pipe(terser())
-      // save sourcemap as separate file (in the same folder)
-      .pipe(sourcemaps.write(''))
-      .pipe(gulp.dest(getOutDir() + bundleDir));
-});
-
-// TODO: Really we should have the serve generate the bundle on demand instead
-// of generating it on every file change.
-gulp.task('bundle-watch', () => {
-  // ignoreInitial:false means it always runs the task on startup.
-  // Use batch to avoid bundling once per file.
-  watch('static/**/*.ts', {ignoreInitial: false}, batch(function(events, done) {
-          return gulp.task(gulp.series(['compile', 'bundle'])())();
-        }));
+      .pipe(sourcemaps.init({loadMaps: true}))
+      .pipe(sourcemaps.write('.'))
+      .pipe(gulp.dest('.'));
 });
 
 gulp.task('symlink-node-modules', (done) => {
@@ -101,7 +90,7 @@ gulp.task('symlink-node-modules', (done) => {
 
 gulp.task(
     'npm-install',
-    gulp.series([shell.task('npm install'), 'symlink-node-modules']));
+    gulp.series([shell.task('npm install --no-fund'), 'symlink-node-modules']));
 
 function firebaseServeCommand(port) {
   return shell.task(
@@ -122,6 +111,18 @@ let compileWatch =
 gulp.task('serve', gulp.series([
   'npm-install', gulp.parallel(['firebase-serve', compileWatch])
 ]));
+
+// TODO: Really we should have the server generate the bundle on demand instead
+// of generating it on every file change.
+gulp.task(
+    'bundle-watch-help',
+    () => {watch(
+        'public/gen/**/*.js', {queue: true, ignored:['public/gen/bundle']},
+        () => {
+          return gulp.task('bundle')();
+        })});
+
+gulp.task('bundle-watch', gulp.parallel([compileWatch, 'bundle-watch-help']));
 
 function deploy(projectName) {
   let checksumKeyword = '-checksum-';
@@ -174,15 +175,6 @@ gulp.task('upload', () => {
 
 gulp.task('upload-google', () => {
   return deploy('google.com:mktime');
-});
-
-gulp.task('jest', function() {
-  return gulp.src('__tests__/').pipe(jest({
-    //"preprocessorIgnorePatterns": [
-    //  "<rootDir>/dist/", "<rootDir>/node_modules/", "<rootDir>/third_party/"
-    //],
-    'automock': false
-  }));
 });
 
 gulp.task('fresh-bundle', gulp.series('delete', 'compile', 'bundle'));

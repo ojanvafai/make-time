@@ -3,6 +3,8 @@ module.exports = {
     "roots": [
       "<rootDir>",
     ],
+    // This doens't seem to work. Removed rollup-jest from package.json since it
+    // prints warnings on npm install.
     "preset": "rollup-jest",
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
