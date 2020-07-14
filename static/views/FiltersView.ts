@@ -1,20 +1,20 @@
-import {create, createMktimeButton, defined, Labels, showDialog} from '../Base.js';
-import {FilterRule, Settings} from '../Settings.js';
+import { create, createMktimeButton, defined, Labels, showDialog } from '../Base.js';
+import { FilterRule, Settings } from '../Settings.js';
 
-import {FilterRuleComponent, LabelCreatedEvent} from './FilterRuleComponent.js';
-import {HelpDialog} from './HelpDialog.js';
+import { FilterRuleComponent, LabelCreatedEvent } from './FilterRuleComponent.js';
+import { HelpDialog } from './HelpDialog.js';
 
 export const HELP_TEXT = [
   create('b', 'Help'),
   `
 Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "${
-      Labels
-          .Archive}" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
+  Labels
+    .Archive}" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
 
  - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
  - "${
-      Labels
-          .Archive}" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
+  Labels
+    .Archive}" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
  - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
  - The first rule that matches is the one that applies, so order matters.
  - Label is the label that will apply qhen the rule matches.
@@ -24,8 +24,8 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
  - No CCs matches messages that have exactly one email address in the union of the to/cc/bcc fields.
  - Make-time matches all messages in the thread each time the thread is processed, unlike gmail filters which only match the new message.
  - If none of your filters apply to a thread, then make-time will apply a "${
-      Labels
-          .Fallback}" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
+  Labels
+    .Fallback}" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
 
 `,
   create('b', 'Rule directives'), `
@@ -67,8 +67,8 @@ export class FiltersView extends HTMLElement {
 
     this.addEventListener('keydown', e => this.handleKeyDown_(e));
     this.addEventListener(
-        LabelCreatedEvent.NAME,
-        e => {this.handleLabelCreated_((e as LabelCreatedEvent).labelOption)});
+      LabelCreatedEvent.NAME,
+      e => { this.handleLabelCreated_((e as LabelCreatedEvent).labelOption) });
     this.render_();
   }
 
@@ -159,7 +159,7 @@ export class FiltersView extends HTMLElement {
     this.append(scrollable);
 
     let helpButton =
-        createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
+      createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
     helpButton.style.cssText = `margin-right: auto`;
 
     let cancel = createMktimeButton(() => this.cancel_(), 'cancel');
@@ -188,14 +188,14 @@ export class FiltersView extends HTMLElement {
     });
     addButton.style.marginRight = '16px';
     row.append(
-        addButton,
-        `The "${Labels.Fallback}" label is applied when no filters match.`);
+      addButton,
+      `The "${Labels.Fallback}" label is applied when no filters match.`);
     return row;
   }
 
   private getFilterRuleComponents_() {
     return this.querySelectorAll('mt-filter-rule') as
-        NodeListOf<FilterRuleComponent>;
+      NodeListOf<FilterRuleComponent>;
   }
 
   async save_() {
@@ -230,7 +230,7 @@ export class FiltersView extends HTMLElement {
 
     const insertRowBefore = async () => {
       let emptyRule = await this.createRule_(
-          {label: filterRuleComponent.getSelectedLabel()});
+        { label: filterRuleComponent.getSelectedLabel() });
       row.before(emptyRule);
     };
     let topButtons = document.createElement('div');
@@ -239,22 +239,22 @@ export class FiltersView extends HTMLElement {
       margin-bottom: 4px;
     `;
     topButtons.append(
-        this.createButton_('+', 'Add new row above', insertRowBefore),
-        this.createButton_('-', 'Delete this rule', () => {
-          if (confirm(`Delete this rule? This can't be undone after saving.`)) {
-            row.remove();
-          }
-        }));
+      this.createButton_('+', 'Add new row above', insertRowBefore),
+      this.createButton_('-', 'Delete this rule', () => {
+        if (confirm(`Delete this rule? This can't be undone after saving.`)) {
+          row.remove();
+        }
+      }));
     let bottomButtons = document.createElement('div');
     bottomButtons.style.cssText = `
           display: flex;
         `;
     bottomButtons.append(
-        this.createButton_(
-            '⇧', 'Move rule up', () => this.moveRow_(row, 'ArrowUp', false)),
-        this.createButton_(
-            '⇩', 'Move rule down',
-            () => this.moveRow_(row, 'ArrowDown', false)));
+      this.createButton_(
+        '⇧', 'Move rule up', () => this.moveRow_(row, 'ArrowUp', false)),
+      this.createButton_(
+        '⇩', 'Move rule down',
+        () => this.moveRow_(row, 'ArrowDown', false)));
 
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
@@ -269,8 +269,7 @@ export class FiltersView extends HTMLElement {
   }
 
   private createButton_(text: string, title: string, onClick: () => void) {
-    let button = document.createElement('span');
-    button.append(text);
+    const button = create('span', text);
     button.classList.add('row-button');
     button.setAttribute('title', title);
     button.onclick = onClick;

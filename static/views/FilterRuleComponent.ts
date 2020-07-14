@@ -1,6 +1,6 @@
-import {assert, defined, notNull} from '../Base.js';
-import {QueueNames} from '../QueueNames.js';
-import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
+import { assert, defined, notNull } from '../Base.js';
+import { QueueNames } from '../QueueNames.js';
+import { FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings } from '../Settings.js';
 
 const CSV_FIELDS = ['from', 'to'];
 const CURSOR_SENTINEL = '!!!!!!!!';
@@ -10,7 +10,7 @@ const QUERY_SEPARATOR_ = '&&';
 export class LabelCreatedEvent extends Event {
   static NAME = 'label-created';
   constructor(public labelOption: HTMLOptionElement) {
-    super(LabelCreatedEvent.NAME, {bubbles: true});
+    super(LabelCreatedEvent.NAME, { bubbles: true });
   }
 }
 
@@ -42,9 +42,9 @@ export class FilterRuleComponent extends HTMLElement {
       align-items: center;
     `;
     topRow.append(
-        this.attachLabel_('Match All Messages', this.matchAll_),
-        this.attachLabel_('No List-ID', this.noListId_),
-        this.attachLabel_('No CCs', this.noCc_));
+      this.attachLabel_('Match All Messages', this.matchAll_),
+      this.attachLabel_('No List-ID', this.noListId_),
+      this.attachLabel_('No CCs', this.noCc_));
     this.append(topRow, this.editor_);
     this.prependLabelPicker_(topRow);
   }
@@ -89,7 +89,7 @@ export class FilterRuleComponent extends HTMLElement {
     let headerRules: HeaderFilterRule[] = [];
     for (let key in obj) {
       if (isHeaderFilterField(key)) {
-        headerRules.push({name: key.substring(1), value: String(obj[key])});
+        headerRules.push({ name: key.substring(1), value: String(obj[key]) });
       } else {
         let validField = setFilterStringField(rule, key, obj[key]);
         if (!validField)
@@ -147,6 +147,13 @@ export class FilterRuleComponent extends HTMLElement {
   }
   getSelectedLabel() {
     return assert(this.label_).selectedOptions[0].value;
+  }
+
+  add(name: string, value: string) {
+    let parsed = this.getParsedQuery();
+    parsed[name] = value;
+    this.editor_.textContent = '';
+    this.appendQueryParts_(this.editor_, parsed);
   }
 
   private createLabel_() {
@@ -226,9 +233,9 @@ export class FilterRuleComponent extends HTMLElement {
       `;
 
       let fieldTextWithoutSentinel =
-          fieldText.replace(CURSOR_SENTINEL, '').trim();
+        fieldText.replace(CURSOR_SENTINEL, '').trim();
       if (!isHeaderFilterField(fieldTextWithoutSentinel) &&
-          !Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
+        !Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
         fieldElement.classList.add('invalid-directive');
 
       this.appendWithSentinel_(fieldElement, fieldText);
@@ -236,7 +243,7 @@ export class FilterRuleComponent extends HTMLElement {
 
       let value = queryParts[field];
       previousEndedInWhiteSpace =
-          value && value.charAt(value.length - 1) == space;
+        value && value.charAt(value.length - 1) == space;
       if (value) {
         fieldElement.append(DIRECTIVE_SEPARATOR_);
 
@@ -296,7 +303,7 @@ export class FilterRuleComponent extends HTMLElement {
   }
 
   private setEditorText_(
-      editor: HTMLElement, text: string, trimWhitespace: boolean) {
+    editor: HTMLElement, text: string, trimWhitespace: boolean) {
     editor.textContent = '';
     let newParts = this.parseQuery_(text, trimWhitespace);
     this.appendQueryParts_(editor, newParts);
@@ -305,7 +312,7 @@ export class FilterRuleComponent extends HTMLElement {
   private setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
     notNull(window.getSelection())
-        .selectAllChildren(defined(this.cursorSentinelElement_));
+      .selectAllChildren(defined(this.cursorSentinelElement_));
   }
 
   private insertSentinelText_() {
