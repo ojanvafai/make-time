@@ -212,7 +212,9 @@ gulp.task('upload-google', () => {
   return deploy('google.com:mktime');
 });
 
-gulp.task('fresh-bundle', gulp.series('delete', 'compile', 'bundle'));
+gulp.task(
+    'fresh-bundle',
+    gulp.series('delete', 'compile', 'transform-firebase-imports', 'bundle'));
 gulp.task('default', gulp.series('fresh-bundle'));
 gulp.task('deploy', gulp.series('fresh-bundle', 'upload'));
 gulp.task('deploy-google', gulp.series('fresh-bundle', 'upload-google'));
