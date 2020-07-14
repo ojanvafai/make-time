@@ -775,7 +775,7 @@ export class ThreadListView extends View {
       width: -webkit-fill-available;
     `;
     container.append(
-      helpText, filterRuleComponent, headerMenu, headerOverflow,
+      helpText, filterRuleComponent, headerMenu,
       buttonContainer);
     AppShell.addToFooter(container);
   }
