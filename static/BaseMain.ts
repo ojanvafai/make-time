@@ -162,7 +162,7 @@ async function loginToGapi() {
 async function enablePersistence() {
   try {
     await window.firebase.firestore().enablePersistence(
-      { experimentalTabSynchronization: true });
+      { synchronizeTabs: true });
   } catch (e) {
     // Currently offline is only enabled for one tab at a time and also
     // doesn't work on some browsers.
