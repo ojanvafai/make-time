@@ -3,10 +3,9 @@
 // modules. It's not trivial to detangle though. It's mostly reused functions
 // that have to know about Threads and things like that.
 
+import 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
-
-import * as firebase from 'firebase/app';
 
 import {AsyncOnce} from './AsyncOnce.js';
 import {assert, create, createLink, createWithStyle, notNull, redirectToSignInPage, SCOPES} from './Base.js';
@@ -16,11 +15,6 @@ import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {Settings} from './Settings.js';
 import {AppShell} from './views/AppShell.js';
 import {HelpDialog} from './views/HelpDialog.js';
-
-// Gross hack to prevent typescript from stripping the firebase import since we
-// always use it as window.firebase.
-if (false)
-  console.log(firebase);
 
 let storage_ = new ServerStorage();
 let settings_: Settings;
