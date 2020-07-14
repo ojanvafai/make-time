@@ -161,7 +161,7 @@ export class MailProcessor {
     // archives it before this runs and that archive would get lost due to
     // this delete.
     let update: any = {};
-    update[firestoreKey] = firebase.firestore.FieldValue.delete();
+    update[firestoreKey] = window.firebase.firestore.FieldValue.delete();
     await doc.ref.update(update);
   }
 
@@ -175,7 +175,7 @@ export class MailProcessor {
         async (doc: firebase.firestore.QueryDocumentSnapshot) => {
           await this.addLabels_(doc.id, ['INBOX']);
           let update: ThreadMetadataUpdate = {
-            moveToInbox: firebase.firestore.FieldValue.delete(),
+            moveToInbox: window.firebase.firestore.FieldValue.delete(),
           };
           await doc.ref.update(update);
         });
@@ -283,7 +283,7 @@ export class MailProcessor {
 
           await this.modifyLabels_(doc.id, addLabelIds, removeLabelIds);
           let update: ThreadMetadataUpdate = {
-            pushLabelsToGmail: firebase.firestore.FieldValue.delete(),
+            pushLabelsToGmail: window.firebase.firestore.FieldValue.delete(),
           };
           await doc.ref.update(update);
         });
@@ -673,9 +673,9 @@ export class MailProcessor {
         async (doc: firebase.firestore.QueryDocumentSnapshot) => {
           await doc.ref.update({
             hasLabel: true,
-            queued: firebase.firestore.FieldValue.delete(),
-            blocked: firebase.firestore.FieldValue.delete(),
-            throttled: firebase.firestore.FieldValue.delete(),
+            queued: window.firebase.firestore.FieldValue.delete(),
+            blocked: window.firebase.firestore.FieldValue.delete(),
+            throttled: window.firebase.firestore.FieldValue.delete(),
           });
         });
   }
@@ -782,7 +782,7 @@ export class MailProcessor {
           let data = doc.data() as ThreadMetadata;
           if (data.newMessagesSinceSoftMuted) {
             update = {
-              softMuted: firebase.firestore.FieldValue.delete(),
+              softMuted: window.firebase.firestore.FieldValue.delete(),
               hasLabel: true,
             };
           } else {

@@ -9,7 +9,7 @@ class Collection {
   doc(): any {
     return {
       collection: () => {
-        return firebase.firestore().collection(0);
+        return window.firebase.firestore().collection(0);
       }, update: () => {
 
       }

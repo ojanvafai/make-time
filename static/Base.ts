@@ -1,5 +1,4 @@
 import emailJsParseAddressList from '../third_party/emailjs-addressparser/addressparser.js';
-import * as firebase from "firebase/app";
 
 import {gapiFetch} from './Net.js';
 
@@ -159,9 +158,9 @@ export let SCOPES = [
 ];
 
 export function redirectToSignInPage() {
-  var provider = new firebase.auth.GoogleAuthProvider();
+  var provider = new window.firebase.auth.GoogleAuthProvider();
   SCOPES.forEach(x => provider.addScope(x));
-  firebase.auth().signInWithRedirect(provider);
+  window.firebase.auth().signInWithRedirect(provider);
 }
 
 if (!window.requestIdleCallback) {

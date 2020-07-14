@@ -16,6 +16,11 @@ import { Settings } from './Settings.js';
 import { AppShell } from './views/AppShell.js';
 import { HelpDialog } from './views/HelpDialog.js';
 
+// Gross hack to prevent typescript from stripping the firebase import since we
+// always use it as window.firebase.
+if (false)
+  console.log(firebase);
+
 let storage_ = new ServerStorage();
 let settings_: Settings;
 
