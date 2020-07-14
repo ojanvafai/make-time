@@ -316,7 +316,7 @@ export class ThreadRow extends HTMLElement {
       align-items: center;
     `;
 
-    const renderMultiline = state.isSmallScreen;
+    const renderMultiline = state.isSmallScreen && !state.useCardStyle;
     if (!renderMultiline && !state.useCardStyle)
       subject.style.marginRight = '25px';
 
