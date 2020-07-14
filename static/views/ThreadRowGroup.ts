@@ -107,10 +107,8 @@ export class ThreadRowGroup extends HTMLElement {
       overflow: hidden;
     `;
     this.groupNameContainer_.className = 'hover';
-    this.groupNameContainer_.addEventListener('click', () => {
-      this.manuallyCollapsed_ = true;
-      this.setCollapsed(!this.collapsed_, true);
-    });
+    this.groupNameContainer_.addEventListener(
+        'click', () => this.setManuallyCollapsed_(!this.collapsed_));
     this.expander_ = document.createElement('div');
     this.expander_.style.cssText = `
       color: var(--dim-text-color);
@@ -204,6 +202,11 @@ export class ThreadRowGroup extends HTMLElement {
     }
 
     this.selectBox_.select(select);
+  }
+
+  private setManuallyCollapsed_(shouldCollapse: boolean) {
+    this.manuallyCollapsed_ = true;
+    this.setCollapsed(shouldCollapse, true);
   }
 
   setCollapsed(collapsed: boolean, force?: boolean) {
@@ -356,7 +359,7 @@ export class ThreadRowGroup extends HTMLElement {
 
   selectRows(select: boolean) {
     if (select) {
-      this.setCollapsed(false, true);
+      this.setManuallyCollapsed_(false);
     }
     this.selectBox_.select(select ? ALL : NONE);
     let rows = this.getRows();
