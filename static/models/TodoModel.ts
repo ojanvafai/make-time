@@ -1,4 +1,4 @@
-import type * as firebase from "firebase/app";
+import type * as firebase from 'firebase/app';
 import {compareDates, defined, notNull, setFaviconCount} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {ServerStorage} from '../ServerStorage.js';

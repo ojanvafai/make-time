@@ -1,30 +1,30 @@
 import type * as firebase from 'firebase/app';
-import { Action, ActionGroup, registerActions, Shortcut, shortcutString } from '../Actions.js';
-import { assert, collapseArrow, createMktimeButton, defined, expandArrow, Labels, notNull, create } from '../Base.js';
-import { firestoreUserCollection, login } from '../BaseMain.js';
-import { CalendarEvent, NO_ROOM_NEEDED } from '../calendar/CalendarEvent.js';
-import { INSERT_LINK_HIDDEN } from '../EmailCompose.js';
-import { MailProcessor } from '../MailProcessor.js';
-import { ThreadListChangedEvent, ThreadListModel, UndoEvent } from '../models/ThreadListModel.js';
-import { QuickReply, ReplyCloseEvent, ReplyScrollEvent } from '../QuickReply.js';
-import { SendAs } from '../SendAs.js';
-import { ServerStorage } from '../ServerStorage.js';
-import { Settings } from '../Settings.js';
-import { Themes } from '../Themes.js';
-import { BACKLOG_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, InProgressChangedEvent, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Thread, UpdatedEvent, URGENT_PRIORITY_NAME } from '../Thread.js';
-import { ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION } from '../ThreadActions.js';
-import { Timer } from '../Timer.js';
-import { Toast } from '../Toast.js';
+import {Action, ActionGroup, registerActions, Shortcut, shortcutString} from '../Actions.js';
+import {assert, collapseArrow, createMktimeButton, defined, expandArrow, Labels, notNull, create} from '../Base.js';
+import {firestoreUserCollection, login} from '../BaseMain.js';
+import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
+import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
+import {MailProcessor} from '../MailProcessor.js';
+import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/ThreadListModel.js';
+import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
+import {SendAs} from '../SendAs.js';
+import {ServerStorage} from '../ServerStorage.js';
+import {Settings} from '../Settings.js';
+import {Themes} from '../Themes.js';
+import {BACKLOG_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, InProgressChangedEvent, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Thread, UpdatedEvent, URGENT_PRIORITY_NAME} from '../Thread.js';
+import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
+import {Timer} from '../Timer.js';
+import {Toast} from '../Toast.js';
 
-import { AppShell } from './AppShell.js';
-import { FilterRuleComponent, LabelCreatedEvent } from './FilterRuleComponent.js';
-import { FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, ThreadRow } from './ThreadRow.js';
-import { SelectRowEvent, ThreadRowGroup } from './ThreadRowGroup.js';
-import { ThreadRowGroupList } from './ThreadRowGroupList.js';
-import { View } from './View.js';
+import {AppShell} from './AppShell.js';
+import {FilterRuleComponent, LabelCreatedEvent} from './FilterRuleComponent.js';
+import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, ThreadRow} from './ThreadRow.js';
+import {SelectRowEvent, ThreadRowGroup} from './ThreadRowGroup.js';
+import {ThreadRowGroupList} from './ThreadRowGroupList.js';
+import {View} from './View.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
-  ThreadRow | null) => {
+    ThreadRow|null) => {
   if (offset != -1 && offset != 1)
     throw `getRowFromRelativeOffset called with offset of ${offset}`;
 
@@ -88,7 +88,7 @@ export let PREVIOUS_ACTION = {
 export let NEXT_FULL_ACTION = {
   name: `Next group or last message`,
   description:
-    `Focus the first email of the next group or scroll thread to the last message.`,
+      `Focus the first email of the next group or scroll thread to the last message.`,
   key: 'n',
   secondaryKey: new Shortcut('ArrowDown', false, true),
   hidden: true,
@@ -98,7 +98,7 @@ export let NEXT_FULL_ACTION = {
 export let PREVIOUS_FULL_ACTION = {
   name: `Previous group or first message`,
   description:
-    `Focus the first email of the previous group or scroll thread to the first message..`,
+      `Focus the first email of the previous group or scroll thread to the first message..`,
   key: 'p',
   secondaryKey: new Shortcut('ArrowUp', false, true),
   hidden: true,
@@ -215,17 +215,17 @@ export class ThreadListView extends View {
   private listeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private triageOverrideThreadToRow_: WeakMap<Thread, ThreadRow>;
-  private focusedRow_: ThreadRow | null;
-  private undoRow_: ThreadRow | null;
+  private focusedRow_: ThreadRow|null;
+  private undoRow_: ThreadRow|null;
   private noMeetingRoomEvents_?: HTMLElement;
   private rowGroupContainer_: HTMLElement;
   private singleThreadContainer_: HTMLElement;
   private pendingContainer_: HTMLElement;
   private pendingWithSpinner_: HTMLElement;
-  private renderedRow_: ThreadRow | null;
-  private autoFocusedRow_: ThreadRow | null;
-  private lastCheckedRow_: ThreadRow | null;
-  private renderedGroupName_: string | null;
+  private renderedRow_: ThreadRow|null;
+  private autoFocusedRow_: ThreadRow|null;
+  private lastCheckedRow_: ThreadRow|null;
+  private renderedGroupName_: string|null;
   private scrollOffset_?: number;
   private hasQueuedFrame_: boolean;
   private hasNewRenderedRow_: boolean;
@@ -242,9 +242,9 @@ export class ThreadListView extends View {
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
 
   constructor(
-    private model_: ThreadListModel, private appShell_: AppShell,
-    private settings_: Settings, private isTodoView_: boolean,
-    private getMailProcessor_?: () => Promise<MailProcessor>) {
+      private model_: ThreadListModel, private appShell_: AppShell,
+      private settings_: Settings, private isTodoView_: boolean,
+      private getMailProcessor_?: () => Promise<MailProcessor>) {
     super();
 
     this.style.cssText = `
@@ -278,14 +278,14 @@ export class ThreadListView extends View {
         if (!x.isIntersecting)
           (x.target as ThreadRowGroup).setInViewport(false);
       });
-    }, { root: this.appShell_.getScroller(), rootMargin: '100%' });
+    }, {root: this.appShell_.getScroller(), rootMargin: '100%'});
 
     this.isVisibleObserver_ = new IntersectionObserver((entries) => {
       entries.map(x => {
         if (x.isIntersecting)
           (x.target as ThreadRowGroup).setInViewport(true);
       });
-    }, { root: this.appShell_.getScroller(), rootMargin: '50%' });
+    }, {root: this.appShell_.getScroller(), rootMargin: '50%'});
 
     this.pendingWithSpinner_ = document.createElement('div');
     this.pendingWithSpinner_.style.cssText = `
@@ -325,8 +325,8 @@ export class ThreadListView extends View {
     `;
     this.pendingWithSpinner_.append(spinnerContainer, this.pendingContainer_);
     this.listen_(
-      this.pendingContainer_, InProgressChangedEvent.NAME,
-      () => this.handleInProgressChanged_());
+        this.pendingContainer_, InProgressChangedEvent.NAME,
+        () => this.handleInProgressChanged_());
 
     this.rowGroupContainer_ = document.createElement('div');
     this.rowGroupContainer_.style.cssText = `
@@ -352,17 +352,17 @@ export class ThreadListView extends View {
       flex-direction: column;
     `;
     this.nonLowPriorityWrapper_.append(
-      this.untriagedContainer_, this.highPriorityContainer_);
+        this.untriagedContainer_, this.highPriorityContainer_);
     this.rowGroupContainer_.append(
-      this.nonLowPriorityWrapper_, this.lowPriorityContainer_);
+        this.nonLowPriorityWrapper_, this.lowPriorityContainer_);
 
     this.listen_(
-      this.rowGroupContainer_, InProgressChangedEvent.NAME,
-      () => this.handleInProgressChanged_());
+        this.rowGroupContainer_, InProgressChangedEvent.NAME,
+        () => this.handleInProgressChanged_());
     this.listen_(
-      this.rowGroupContainer_, RenderThreadEvent.NAME, (e: Event) => {
-        this.setRenderedRowIfAllowed_(e.target as ThreadRow);
-      });
+        this.rowGroupContainer_, RenderThreadEvent.NAME, (e: Event) => {
+          this.setRenderedRowIfAllowed_(e.target as ThreadRow);
+        });
     this.listen_(this.rowGroupContainer_, FocusRowEvent.NAME, (e: Event) => {
       this.handleFocusRow_(<ThreadRow>e.target);
     });
@@ -389,7 +389,7 @@ export class ThreadListView extends View {
     this.append(this.buttonContainer_);
 
     this.listen_(
-      this.model_, ThreadListChangedEvent.NAME, () => this.render_());
+        this.model_, ThreadListChangedEvent.NAME, () => this.render_());
     this.listen_(this.model_, 'undo', (e: Event) => {
       let undoEvent = <UndoEvent>e;
       this.undoRow_ = this.getThreadRow_(undoEvent.thread);
@@ -422,7 +422,7 @@ export class ThreadListView extends View {
     let ignoredData = await this.ignoredMeetings_();
     let ignored = ignoredData ? ignoredData.ignored : [];
     let notIgnored =
-      events.filter(x => !ignored.find(y => y.eventId === x.eventId));
+        events.filter(x => !ignored.find(y => y.eventId === x.eventId));
     if (!notIgnored.length)
       return;
 
@@ -449,9 +449,9 @@ export class ThreadListView extends View {
     `;
 
     this.noMeetingRoomEvents_.append(
-      `Meetings without a local room. Ignore by adding "${
-      NO_ROOM_NEEDED}" to the location.`,
-      eventContainer);
+        `Meetings without a local room. Ignore by adding "${
+            NO_ROOM_NEEDED}" to the location.`,
+        eventContainer);
 
     for (let event of notIgnored) {
       this.appendNoMeetingRoomEvent(eventContainer, event);
@@ -464,12 +464,12 @@ export class ThreadListView extends View {
     let filteredIgnored = ignored.filter(x => x.end > time);
     if (filteredIgnored.length != ignored.length) {
       await this.meetingsDocument_().set(
-        { ignored: filteredIgnored }, { merge: true });
+          {ignored: filteredIgnored}, {merge: true});
     }
   }
 
   private appendNoMeetingRoomEvent(
-    container: HTMLElement, event: CalendarEvent) {
+      container: HTMLElement, event: CalendarEvent) {
     let item = document.createElement('div');
     item.style.cssText = `
       display: flex;
@@ -490,8 +490,8 @@ export class ThreadListView extends View {
     link.href = event.editUrl;
     link.title = event.summary;
     link.append(
-      `${event.start.getMonth() + 1}/${event.start.getDate()} `,
-      event.summary);
+        `${event.start.getMonth() + 1}/${event.start.getDate()} `,
+        event.summary);
 
     let xButton = document.createElement('div');
     xButton.title = `Click here to remove if this meeting doesn't need a room.`;
@@ -518,7 +518,7 @@ export class ThreadListView extends View {
       if (!container.childElementCount)
         this.clearNoMeetingRooms_();
 
-      await this.meetingsDocument_().set({ ignored: newIgnored }, { merge: true });
+      await this.meetingsDocument_().set({ignored: newIgnored}, {merge: true});
     });
 
     item.append(link, xButton);
@@ -534,7 +534,7 @@ export class ThreadListView extends View {
 
   private getThreadRow_(thread: Thread) {
     let map = thread.forceTriage() ? this.triageOverrideThreadToRow_ :
-      this.threadToRow_;
+                                     this.threadToRow_;
 
     let row = map.get(thread);
     if (!row) {
@@ -546,7 +546,7 @@ export class ThreadListView extends View {
   };
 
   private listen_(
-    target: EventTarget, eventName: string, handler: (e: Event) => void) {
+      target: EventTarget, eventName: string, handler: (e: Event) => void) {
     this.listeners_.push({
       target: target,
       name: eventName,
@@ -570,8 +570,8 @@ export class ThreadListView extends View {
   }
 
   createMenuItem_(
-    container: HTMLElement, clickHandler: () => void,
-    ...contents: (string | Element)[]) {
+      container: HTMLElement, clickHandler: () => void,
+      ...contents: (string|Element)[]) {
     let item = document.createElement('div');
     item.className = 'menu-item';
     item.append(...contents);
@@ -601,7 +601,7 @@ export class ThreadListView extends View {
 
   openOverflowMenu(container: HTMLElement) {
     this.createMenuItem_(
-      container, () => Themes.toggleDarkMode(), 'Force dark mode');
+        container, () => Themes.toggleDarkMode(), 'Force dark mode');
 
     let name = document.createElement('div');
     name.style.cssText = `
@@ -615,11 +615,11 @@ export class ThreadListView extends View {
     shortcut.append(`${shortcutString(VIEW_IN_GMAIL_ACTION.key)}`);
 
     this.createMenuItem_(
-      container, () => this.takeAction(VIEW_IN_GMAIL_ACTION), name, shortcut);
+        container, () => this.takeAction(VIEW_IN_GMAIL_ACTION), name, shortcut);
 
     this.createMenuItem_(
-      container, () => this.applyLabelsInGmail_(),
-      'Apply labels in gmail on next sync');
+        container, () => this.applyLabelsInGmail_(),
+        'Apply labels in gmail on next sync');
   }
 
   async goBack() {
@@ -627,8 +627,8 @@ export class ThreadListView extends View {
   }
 
   private async saveFilterRule_(
-    saveButton: HTMLButtonElement, filterRuleComponent: FilterRuleComponent,
-    thread: Thread) {
+      saveButton: HTMLButtonElement, filterRuleComponent: FilterRuleComponent,
+      thread: Thread) {
     const ruleJson = filterRuleComponent.getJson();
     if (!ruleJson) {
       // We should already have shown the user an alert here since this
@@ -638,14 +638,14 @@ export class ThreadListView extends View {
 
     if (ruleJson.label === Labels.Fallback) {
       alert(`The ${
-        Labels
-          .Fallback} label is selected. Please choose a different label.`);
+          Labels
+              .Fallback} label is selected. Please choose a different label.`);
       return;
     }
 
     const mailProcessor = await assert(this.getMailProcessor_)();
     const ruleMatches =
-      await mailProcessor.ruleMatchesMessages(ruleJson, thread.getMessages());
+        await mailProcessor.ruleMatchesMessages(ruleJson, thread.getMessages());
     if (!ruleMatches) {
       alert('This filter rule doesn\'t match the current thread.');
       return;
@@ -657,7 +657,7 @@ export class ThreadListView extends View {
     await this.settings_.writeFilters([...existingFilterRules, ruleJson]);
 
     const unfilteredGroup = this.untriagedContainer_.getSubGroups().find(
-      x => x.name === Labels.Fallback);
+        x => x.name === Labels.Fallback);
     let rows = assert(unfilteredGroup).getRows();
     for (const row of rows) {
       const newLabel = await mailProcessor.applyFilters(row.thread);
@@ -677,8 +677,8 @@ export class ThreadListView extends View {
       // If a thread is still loading, then we have to wait for it's messages to
       // load in order to be able to setup the filter toolbar.
       row.thread.addEventListener(
-        UpdatedEvent.NAME, () => this.populateFilterToolbar_(row),
-        { once: true });
+          UpdatedEvent.NAME, () => this.populateFilterToolbar_(row),
+          {once: true});
     }
   }
 
@@ -688,12 +688,12 @@ export class ThreadListView extends View {
     }
     // Prefill the rule with the first sender of the first message.
     const firstMessage = row.thread.getMessages()[0];
-    const rule = { from: firstMessage.parsedFrom[0].address };
+    const rule = {from: firstMessage.parsedFrom[0].address};
     const filterRuleComponent = new FilterRuleComponent(this.settings_, rule);
     filterRuleComponent.addEventListener(LabelCreatedEvent.NAME, e => {
       const labelOption = (e as LabelCreatedEvent).labelOption;
       filterRuleComponent.prependLabel(
-        labelOption.cloneNode(true) as HTMLOptionElement);
+          labelOption.cloneNode(true) as HTMLOptionElement);
     });
 
     const headers = firstMessage.getHeaders();
@@ -740,13 +740,13 @@ export class ThreadListView extends View {
     }
 
     const saveButton = createMktimeButton(
-      () => this.saveFilterRule_(saveButton, filterRuleComponent, row.thread),
-      'Save new filter');
+        () => this.saveFilterRule_(saveButton, filterRuleComponent, row.thread),
+        'Save new filter');
     saveButton.style.marginLeft = '16px';
     saveButton.classList.add('action-button');
 
     const showToolbarButton = createMktimeButton(
-      () => this.setActionsToRegularToolbar_(), 'Show regular toolbar');
+        () => this.setActionsToRegularToolbar_(), 'Show regular toolbar');
     showToolbarButton.style.marginLeft = '16px';
     showToolbarButton.classList.add('action-button');
 
@@ -765,7 +765,7 @@ export class ThreadListView extends View {
       color: var(--dim-text-color);
     `;
     helpText.append(
-      'This thread is unfiltered. Add a filter rule so future messages get the appropriate label.');
+        'This thread is unfiltered. Add a filter rule so future messages get the appropriate label.');
 
     let container = document.createElement('div');
     container.style.cssText = `
@@ -775,8 +775,7 @@ export class ThreadListView extends View {
       width: -webkit-fill-available;
     `;
     container.append(
-      helpText, filterRuleComponent, headerMenu,
-      buttonContainer);
+        helpText, filterRuleComponent, headerMenu, buttonContainer);
     AppShell.addToFooter(container);
   }
 
@@ -795,7 +794,7 @@ export class ThreadListView extends View {
 
   private setActionsToRegularToolbar_() {
     let viewSpecific =
-      this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
+        this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.isTodoView_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
     this.setActions([
@@ -814,15 +813,15 @@ export class ThreadListView extends View {
     // TODO: We should also do this when the window resizes since the toolbars
     // can wrap and change height.
     this.nonLowPriorityWrapper_.style.minHeight =
-      `${this.appShell_.getContentHeight() - 70}px`;
+        `${this.appShell_.getContentHeight() - 70}px`;
   }
 
   private addTimer_() {
     let row = assert(this.renderedRow_);
     // Timer counts down if in triage view or in any untriaged group.
     let timer = new Timer(
-      !!this.model_.timerCountsDown || row.thread.forceTriage(),
-      this.timerDuration_, this.singleThreadContainer_);
+        !!this.model_.timerCountsDown || row.thread.forceTriage(),
+        this.timerDuration_, this.singleThreadContainer_);
     AppShell.addToFooter(timer);
     timer.style.top = `-${timer.offsetHeight}px`;
   }
@@ -849,8 +848,8 @@ export class ThreadListView extends View {
 
   private getFirstRow_() {
     return this.untriagedContainer_.getFirstRow() ||
-      this.highPriorityContainer_.getFirstRow() ||
-      this.lowPriorityContainer_.getFirstRow();
+        this.highPriorityContainer_.getFirstRow() ||
+        this.lowPriorityContainer_.getFirstRow();
   }
 
   forceRender() {
@@ -864,8 +863,8 @@ export class ThreadListView extends View {
   private mergedGroupName_(thread: Thread) {
     let originalGroupName = this.model_.getGroupName(thread);
     return this.settings_.getQueueSettings().getMappedGroupName(
-      originalGroupName) ||
-      originalGroupName;
+               originalGroupName) ||
+        originalGroupName;
   }
 
   private getGroups_() {
@@ -881,14 +880,14 @@ export class ThreadListView extends View {
   // the new order, but also try to minimize moving things around in the DOM
   // to minimize style recalc.
   private ensureGroupExistenceAndOrder(
-    groupMap: Map<string, ThreadRowGroupMetadata>,
-    groupNames: Iterable<string>) {
+      groupMap: Map<string, ThreadRowGroupMetadata>,
+      groupNames: Iterable<string>) {
     let previousUntriaged;
     let previousHighPriority;
     let previousLowPriority;
     for (const groupName of groupNames) {
       const isHighPriority = !this.isTodoView_ ||
-        [PINNED_PRIORITY_NAME, MUST_DO_PRIORITY_NAME].includes(groupName);
+          [PINNED_PRIORITY_NAME, MUST_DO_PRIORITY_NAME].includes(groupName);
       const isLowPriority = this.isTodoView_ && [
         BOOKMARK_PRIORITY_NAME, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME
       ].includes(groupName);
@@ -899,12 +898,12 @@ export class ThreadListView extends View {
         // threads since it's useful to see multiple at the same time when
         // designing filter rules.
         const showOnlyHighlightedRows = this.isTodoView_ && !isHighPriority &&
-          !isLowPriority && groupName !== Labels.Fallback;
+            !isLowPriority && groupName !== Labels.Fallback;
         const useCardStyle =
-          this.isTodoView_ && groupName === PINNED_PRIORITY_NAME;
+            this.isTodoView_ && groupName === PINNED_PRIORITY_NAME;
         const group = new ThreadRowGroup(
-          groupName, this.model_.allowedCount(groupName),
-          showOnlyHighlightedRows, useCardStyle);
+            groupName, this.model_.allowedCount(groupName),
+            showOnlyHighlightedRows, useCardStyle);
 
         let previousGroup;
         let groupList;
@@ -920,14 +919,14 @@ export class ThreadListView extends View {
         }
 
         if (previousGroup ? group.previousSibling !== previousGroup :
-          group !== groupList.firstChild) {
+                            group !== groupList.firstChild) {
           if (previousGroup)
             previousGroup.after(group);
           else
             groupList.prepend(group);
         }
 
-        entry = { group, rows: [] };
+        entry = {group, rows: []};
         groupMap.set(groupName, entry);
         // Call observe after putting the group in the DOM so we don't have a
         // race condition where sometimes the group has no dimensions/position.
@@ -951,7 +950,7 @@ export class ThreadListView extends View {
     let oldRows = this.getRows_();
     // Need to grab this before removing the row.
     const oldRenderedRowGroupList =
-      this.renderedRow_ ? this.getGroupList_(this.renderedRow_) : null;
+        this.renderedRow_ ? this.getGroupList_(this.renderedRow_) : null;
 
     let threads = allThreads.filter(x => !x.actionInProgress());
     let newGroupNames = new Set(threads.map(x => this.mergedGroupName_(x)));
@@ -961,7 +960,7 @@ export class ThreadListView extends View {
     // Remove groups that no longer exist.
     for (let group of oldGroups) {
       if (newGroupNames.has(group.name)) {
-        groupMap.set(group.name, { group: group, rows: [] });
+        groupMap.set(group.name, {group: group, rows: []});
       } else {
         group.remove();
         this.isVisibleObserver_.unobserve(group);
@@ -1013,9 +1012,9 @@ export class ThreadListView extends View {
     // Only set this after the initial update so we don't show the all done
     // indication incorrectly.
     const isHighPriorityDone = this.model_.hasFetchedThreads() &&
-      !this.highPriorityContainer_.getFirstRow();
+        !this.highPriorityContainer_.getFirstRow();
     this.highPriorityContainer_.className =
-      isHighPriorityDone ? 'all-done' : '';
+        isHighPriorityDone ? 'all-done' : '';
 
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());
@@ -1023,7 +1022,7 @@ export class ThreadListView extends View {
 
   private updatePendingArea_(threads: Thread[]) {
     let oldPending = new Set(Array.from(
-      this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>));
+        this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>));
     for (let thread of threads) {
       let row = this.getThreadRow_(thread);
       if (oldPending.has(row)) {
@@ -1040,12 +1039,12 @@ export class ThreadListView extends View {
 
   private updatePendingStyling_() {
     const stillHasPendingRows =
-      Array
-        .from(
-          this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>)
-        .some(x => x.thread.actionInProgress());
+        Array
+            .from(
+                this.pendingContainer_.children as HTMLCollectionOf<ThreadRow>)
+            .some(x => x.thread.actionInProgress());
     this.pendingWithSpinner_.style.display =
-      stillHasPendingRows ? 'flex' : 'none';
+        stillHasPendingRows ? 'flex' : 'none';
   }
 
   private getGroupList_(row: ThreadRow) {
@@ -1057,9 +1056,9 @@ export class ThreadListView extends View {
   }
 
   private handleRowsRemoved_(
-    removedRows: ThreadRow[], oldRows: ThreadRow[],
-    rendereedRowGroupList: ThreadRowGroupList | null) {
-    let toast: Toast | undefined;
+      removedRows: ThreadRow[], oldRows: ThreadRow[],
+      rendereedRowGroupList: ThreadRowGroupList|null) {
+    let toast: Toast|undefined;
     let current = this.renderedRow_ || this.focusedRow_;
     if (current && removedRows.find(x => x == current)) {
       // Find the next row in oldRows that isn't also removed.
@@ -1120,10 +1119,10 @@ export class ThreadListView extends View {
     this.singleThreadContainer_.append(rendered);
   }
 
-  private setFocus_(row: ThreadRow | null) {
+  private setFocus_(row: ThreadRow|null) {
     if (row) {
       let previouslyFocusedGroup =
-        this.focusedRow_ && this.focusedRow_.getGroupMaybeNull();
+          this.focusedRow_ && this.focusedRow_.getGroupMaybeNull();
 
       let areAnyRowsChecked = this.getRows_().some(x => x.checked);
       let focusImpliesSelected = !areAnyRowsChecked;
@@ -1139,7 +1138,7 @@ export class ThreadListView extends View {
 
       // Collapse the previous group if focused is being moved out of it.
       if (previouslyFocusedGroup && previouslyFocusedGroup !== newGroup &&
-        !previouslyFocusedGroup.hasSelectedRows()) {
+          !previouslyFocusedGroup.hasSelectedRows()) {
         previouslyFocusedGroup.setCollapsed(true, true);
       }
     } else {
@@ -1148,7 +1147,7 @@ export class ThreadListView extends View {
     }
   }
 
-  private setFocusInternal_(row: ThreadRow | null) {
+  private setFocusInternal_(row: ThreadRow|null) {
     if (this.focusedRow_)
       this.focusedRow_.clearFocus();
     this.focusedRow_ = row;
@@ -1183,14 +1182,14 @@ export class ThreadListView extends View {
     this.lastCheckedRow_ = row;
   }
 
-  private setFocusAndScrollIntoView_(row: ThreadRow | null) {
+  private setFocusAndScrollIntoView_(row: ThreadRow|null) {
     this.setFocus_(row);
     if (this.focusedRow_) {
       // If the row was in a previously collapsed ThreadRowGroup, then we need
       // to render before trying to scroll it into view.
       if (this.focusedRow_.getBoundingClientRect().height === 0)
         this.renderFrame_();
-      this.focusedRow_.scrollIntoView({ 'block': 'center' });
+      this.focusedRow_.scrollIntoView({'block': 'center'});
     }
   }
 
@@ -1356,7 +1355,7 @@ export class ThreadListView extends View {
     this.setRenderedRowIfAllowed_(this.focusedRow_);
   }
 
-  private transitionToThreadList_(focusedRow: ThreadRow | null) {
+  private transitionToThreadList_(focusedRow: ThreadRow|null) {
     this.appShell_.showFilterToggle(this.isTodoView_);
     this.appShell_.showBackArrow(false);
 
@@ -1394,7 +1393,7 @@ export class ThreadListView extends View {
 
   private async markTriaged_(destination: Action) {
     let threads = this.collectThreadsToTriage_(
-      ThreadListView.ACTIONS_THAT_KEEP_ROWS_.includes(destination));
+        ThreadListView.ACTIONS_THAT_KEEP_ROWS_.includes(destination));
 
     if (threads.length > 1) {
       let toast = new Toast(`Triaged ${threads.length} threads`);
@@ -1406,7 +1405,7 @@ export class ThreadListView extends View {
 
   private collectThreadsToTriage_(keepRows: boolean) {
     let rows = this.renderedRow_ ? [this.renderedRow_] :
-      this.getRows_().filter(x => x.selected);
+                                   this.getRows_().filter(x => x.selected);
 
     // Queue rerender so that we update the visible threadlist without waiting
     // for firestore changes.
@@ -1422,7 +1421,7 @@ export class ThreadListView extends View {
     });
   }
 
-  setRenderedRowInternal_(row: ThreadRow | null) {
+  setRenderedRowInternal_(row: ThreadRow|null) {
     this.hasNewRenderedRow_ = !!row;
     if (this.renderedRow_) {
       // Mark read after leaving the rendered thread instead of when first
@@ -1438,7 +1437,7 @@ export class ThreadListView extends View {
     this.renderedGroupName_ = (row ? this.mergedGroupName_(row.thread) : null);
   }
 
-  setRenderedRow_(row: ThreadRow | null) {
+  setRenderedRow_(row: ThreadRow|null) {
     this.setRenderedRowInternal_(row);
     if (row)
       this.render_();
@@ -1455,9 +1454,9 @@ export class ThreadListView extends View {
     let renderedRow = notNull(this.renderedRow_);
     let rendered = renderedRow.rendered;
     assert(
-      !rendered.isAttached() ||
-      rendered.parentNode === this.singleThreadContainer_,
-      'Tried to rerender already rendered thread. This should never happen.');
+        !rendered.isAttached() ||
+            rendered.parentNode === this.singleThreadContainer_,
+        'Tried to rerender already rendered thread. This should never happen.');
 
     if (!rendered.isAttached()) {
       rendered.render();
@@ -1519,8 +1518,8 @@ export class ThreadListView extends View {
     let labelContainer = document.createElement('div');
     let labelState = new LabelState(renderedRow.thread, '');
     ThreadRow.appendLabels(
-      labelContainer, labelState, renderedRow.thread,
-      defined(this.labelSelectTemplate_));
+        labelContainer, labelState, renderedRow.thread,
+        defined(this.labelSelectTemplate_));
 
     this.appShell_.setSubject(subject, labelContainer);
 
@@ -1539,9 +1538,9 @@ export class ThreadListView extends View {
 
   async showQuickReply() {
     let reply = new QuickReply(
-      notNull(this.renderedRow_).thread, await SendAs.getDefault());
+        notNull(this.renderedRow_).thread, await SendAs.getDefault());
     reply.addEventListener(
-      ReplyCloseEvent.NAME, () => this.updateActionsAndMainBodyMinHeight_());
+        ReplyCloseEvent.NAME, () => this.updateActionsAndMainBodyMinHeight_());
 
     reply.addEventListener(ReplyScrollEvent.NAME, async () => {
       if (!this.renderedRow_)
@@ -1552,7 +1551,7 @@ export class ThreadListView extends View {
         row.rendered.showSpinner(true);
         await row.thread.update();
         row.rendered.showSpinner(false);
-        row.rendered.moveFocus(NEXT_FULL_ACTION, { behavior: 'smooth' });
+        row.rendered.moveFocus(NEXT_FULL_ACTION, {behavior: 'smooth'});
       }
     });
 

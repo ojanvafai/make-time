@@ -1,7 +1,7 @@
 import 'document-register-element'
 import 'css-paint-polyfill'
 
-import type * as firebase from "firebase";
+import type * as firebase from 'firebase';
 import {firestoreUserCollection} from '../../../static/BaseMain.js';
 import {ThreadListModel} from '../../../static/models/ThreadListModel';
 import {ServerStorage} from '../../../static/ServerStorage.js';

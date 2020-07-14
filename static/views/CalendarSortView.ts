@@ -94,7 +94,7 @@ export class CalendarSortView extends HTMLElement {
     }
 
     let button =
-        createMktimeButton( () => this.resetToDefaults_(), 'Reset to defaults');
+        createMktimeButton(() => this.resetToDefaults_(), 'Reset to defaults');
     button.style.alignSelf = 'center';
     this.append(button);
   }

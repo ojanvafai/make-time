@@ -1,9 +1,9 @@
-import { Address } from '../third_party/emailjs-addressparser/addressparser.js';
+import {Address} from '../third_party/emailjs-addressparser/addressparser.js';
 
-import { AsyncOnce } from './AsyncOnce.js';
-import { defined, parseAddressList, sandboxedDom, USER_ID } from './Base.js';
-import { Base64 } from './base64.js';
-import { QuoteElidedMessage } from './QuoteElidedMessage.js';
+import {AsyncOnce} from './AsyncOnce.js';
+import {defined, parseAddressList, sandboxedDom, USER_ID} from './Base.js';
+import {Base64} from './base64.js';
+import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 
 interface AttachmentResult {
   id: string;
@@ -24,30 +24,30 @@ export class Message {
   private parsedCc_?: Address[];
   private parsedBcc_?: Address[];
 
-  private plain_: string | undefined;
-  private plainedHtml_: string | undefined;
-  private html_: string | undefined;
-  private quoteElidedMessage_: QuoteElidedMessage | undefined;
+  private plain_: string|undefined;
+  private plainedHtml_: string|undefined;
+  private html_: string|undefined;
+  private quoteElidedMessage_: QuoteElidedMessage|undefined;
   private quoteElidedMessageCreator_?: AsyncOnce<QuoteElidedMessage>;
   private rawMessage_!: gapi.client.gmail.Message;
 
   id: string;
   attachments_: AttachmentResult[];
-  subject: string | undefined;
+  subject: string|undefined;
   date!: Date;
-  from: string | undefined;
-  replyTo: string | undefined;
-  deliveredTo: string | undefined;
-  to: string | undefined;
-  cc: string | undefined;
-  bcc: string | undefined;
-  messageId: string | undefined;
-  listId: string | undefined;
+  from: string|undefined;
+  replyTo: string|undefined;
+  deliveredTo: string|undefined;
+  to: string|undefined;
+  cc: string|undefined;
+  bcc: string|undefined;
+  messageId: string|undefined;
+  listId: string|undefined;
   isUnread!: boolean;
   isDraft!: boolean;
 
   constructor(
-    message: gapi.client.gmail.Message, private previousMessage_?: Message) {
+      message: gapi.client.gmail.Message, private previousMessage_?: Message) {
     this.id = defined(message.id);
 
     // This is a setter that also sets isUnread and isDraft
@@ -117,7 +117,7 @@ export class Message {
         let parts = x.split(' ');
         // Exclude things like Dr., Mr., etc.
         return (parts[0].endsWith('.') && parts.length > 1) ? parts[1] :
-          parts[0];
+                                                              parts[0];
       });
     }
     return addresses.join(', ');
@@ -225,9 +225,9 @@ export class Message {
 
     // Normalize newlines to simplify the logic.
     let paragraphs =
-      escaped.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+        escaped.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
     let html = `<div style="white-space:pre-wrap"><div>${
-      paragraphs.join('</div><div>')}</div></div>`;
+        paragraphs.join('</div><div>')}</div></div>`;
 
     // For multiple newlines in a row, put <br>s since empty divs don't render.
     return html.replace(/<div><\/div>/g, '<br>');
@@ -261,7 +261,7 @@ export class Message {
       this.quoteElidedMessageCreator_ = new AsyncOnce(async () => {
         let html = await this.getHtmlOrHtmlWrappedPlain();
         this.quoteElidedMessage_ =
-          new QuoteElidedMessage(html, this.previousMessage_);
+            new QuoteElidedMessage(html, this.previousMessage_);
         let attachments = this.rewriteInlineImages_(this.quoteElidedMessage_);
         // Intentionally don't await this so we show the thread without waiting
         // for attachement image fetches.
@@ -300,7 +300,7 @@ export class Message {
   rewriteInlineImages_(dom: HTMLElement) {
     let imageData: ImageAttachmentData[] = [];
     let inlineImages =
-      <NodeListOf<HTMLImageElement>>dom.querySelectorAll('img[src^=cid]');
+        <NodeListOf<HTMLImageElement>>dom.querySelectorAll('img[src^=cid]');
     for (let image of inlineImages) {
       let match = <any>image.src.match(/^cid:([^>]*)$/);
       let contentId = `<${match[1]}>`;
@@ -334,7 +334,7 @@ export class Message {
       });
       let data = await Message.base64_.decode(fetched.result.data || '');
       attachmentData.image.src =
-        `data:${attachmentData.attachment.contentType},${data}`;
+          `data:${attachmentData.attachment.contentType},${data}`;
     }
   }
 
@@ -390,7 +390,7 @@ export class Message {
   }
 
   htmlEscape_(html: string) {
-    return html.replace(/[&<>"']/g, function (m) {
+    return html.replace(/[&<>"']/g, function(m) {
       switch (m) {
         case '&':
           return '&amp;';

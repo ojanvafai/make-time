@@ -1,6 +1,6 @@
 
 import {AutoComplete, EntrySelectedEvent} from './AutoComplete.js';
-import {assert, defined, parseAddressList, ParsedAddress, serializeAddress, notNull} from './Base.js';
+import {assert, defined, notNull, parseAddressList, ParsedAddress, serializeAddress} from './Base.js';
 
 export class AddressCompose extends HTMLElement {
   private preventAutoComplete_: boolean;

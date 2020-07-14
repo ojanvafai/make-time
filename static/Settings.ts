@@ -1,4 +1,4 @@
-import type * as firebase from "firebase/app";
+import type * as firebase from 'firebase/app';
 
 import {AsyncOnce} from './AsyncOnce.js';
 import {assert, defined, Labels} from './Base.js';

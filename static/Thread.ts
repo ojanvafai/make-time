@@ -1,14 +1,14 @@
-import * as firebase from "firebase/app";
+import * as firebase from 'firebase/app';
 
-import { assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID } from './Base.js';
-import { firestoreUserCollection } from './BaseMain.js';
-import { IDBKeyVal } from './idb-keyval.js';
-import { AddressHeaders, send } from './Mail.js';
-import { Message } from './Message.js';
-import { gapiFetch } from './Net.js';
-import { ProcessedMessageData } from './ProcessedMessageData.js';
-import { QueueNames } from './QueueNames.js';
-import { SendAs } from './SendAs.js';
+import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
+import {firestoreUserCollection} from './BaseMain.js';
+import {IDBKeyVal} from './idb-keyval.js';
+import {AddressHeaders, send} from './Mail.js';
+import {Message} from './Message.js';
+import {gapiFetch} from './Net.js';
+import {ProcessedMessageData} from './ProcessedMessageData.js';
+import {QueueNames} from './QueueNames.js';
+import {SendAs} from './SendAs.js';
 
 // TODO: Clear out old threads so these caches don't grow indefinitely.
 let memoryCache_: Map<string, Thread> = new Map();
@@ -29,7 +29,7 @@ export class UpdatedEvent extends Event {
 export class InProgressChangedEvent extends Event {
   static NAME = 'in-progress-changed';
   constructor() {
-    super(InProgressChangedEvent.NAME, { bubbles: true });
+    super(InProgressChangedEvent.NAME, {bubbles: true});
   }
 }
 
@@ -61,7 +61,7 @@ export interface ThreadMetadata {
   hasPriority?: boolean;
   queued?: boolean;
   throttled?: boolean;
-  blocked?: boolean | number;
+  blocked?: boolean|number;
   removeDue?: number;
   removedDueDateExpired?: boolean;
   muted?: boolean;
@@ -88,32 +88,32 @@ export interface ThreadMetadata {
 // the getters to have to manage them.
 // TODO: Find a more don't-repeat-yourself way of doing this?
 export interface ThreadMetadataUpdate {
-  historyId?: string | firebase.firestore.FieldValue;
-  messageIds?: string[] | firebase.firestore.FieldValue;
-  timestamp?: number | firebase.firestore.FieldValue;
-  retriageTimestamp?: number | firebase.firestore.FieldValue;
-  priorityId?: number | firebase.firestore.FieldValue;
-  labelId?: number | firebase.firestore.FieldValue;
-  repeat?: Repeat | firebase.firestore.FieldValue;
-  needsRetriage?: boolean | firebase.firestore.FieldValue;
-  hasLabel?: boolean | firebase.firestore.FieldValue;
-  hasPriority?: boolean | firebase.firestore.FieldValue;
-  queued?: boolean | firebase.firestore.FieldValue;
-  throttled?: boolean | firebase.firestore.FieldValue;
-  blocked?: boolean | number | firebase.firestore.FieldValue;
-  removedDue?: boolean | number | firebase.firestore.FieldValue;
-  removedDueDateExpired?: boolean | firebase.firestore.FieldValue;
-  muted?: boolean | firebase.firestore.FieldValue;
-  softMuted?: boolean | firebase.firestore.FieldValue;
-  newMessagesSinceSoftMuted?: boolean | firebase.firestore.FieldValue;
-  archivedByFilter?: boolean | firebase.firestore.FieldValue;
-  moveToInbox?: boolean | firebase.firestore.FieldValue;
-  readCount?: number | firebase.firestore.FieldValue;
-  readCountTimestamp?: number | firebase.firestore.FieldValue;
-  countToArchive?: number | firebase.firestore.FieldValue;
-  countToMarkRead?: number | firebase.firestore.FieldValue;
-  pushLabelsToGmail?: boolean | firebase.firestore.FieldValue;
-  important?: boolean | firebase.firestore.FieldValue;
+  historyId?: string|firebase.firestore.FieldValue;
+  messageIds?: string[]|firebase.firestore.FieldValue;
+  timestamp?: number|firebase.firestore.FieldValue;
+  retriageTimestamp?: number|firebase.firestore.FieldValue;
+  priorityId?: number|firebase.firestore.FieldValue;
+  labelId?: number|firebase.firestore.FieldValue;
+  repeat?: Repeat|firebase.firestore.FieldValue;
+  needsRetriage?: boolean|firebase.firestore.FieldValue;
+  hasLabel?: boolean|firebase.firestore.FieldValue;
+  hasPriority?: boolean|firebase.firestore.FieldValue;
+  queued?: boolean|firebase.firestore.FieldValue;
+  throttled?: boolean|firebase.firestore.FieldValue;
+  blocked?: boolean|number|firebase.firestore.FieldValue;
+  removedDue?: boolean|number|firebase.firestore.FieldValue;
+  removedDueDateExpired?: boolean|firebase.firestore.FieldValue;
+  muted?: boolean|firebase.firestore.FieldValue;
+  softMuted?: boolean|firebase.firestore.FieldValue;
+  newMessagesSinceSoftMuted?: boolean|firebase.firestore.FieldValue;
+  archivedByFilter?: boolean|firebase.firestore.FieldValue;
+  moveToInbox?: boolean|firebase.firestore.FieldValue;
+  readCount?: number|firebase.firestore.FieldValue;
+  readCountTimestamp?: number|firebase.firestore.FieldValue;
+  countToArchive?: number|firebase.firestore.FieldValue;
+  countToMarkRead?: number|firebase.firestore.FieldValue;
+  pushLabelsToGmail?: boolean|firebase.firestore.FieldValue;
+  important?: boolean|firebase.firestore.FieldValue;
 }
 
 // Firestore queries take the key as a string. Use an enum so we can avoid silly
@@ -238,18 +238,18 @@ export class Thread extends EventTarget {
   private processed_: ProcessedMessageData;
   private queueNames_: QueueNames;
   private fetchPromise_:
-    Promise<gapi.client.Response<gapi.client.gmail.Thread>> | null = null;
+      Promise<gapi.client.Response<gapi.client.gmail.Thread>>|null = null;
   // Keep track of messages sent until an update pulls them in properly so that
   // we can queue up archives/mark-reads with the right count of messages to
   // archive/mark-read.
   private sentMessageIds_: string[];
   private actionInProgress_?: boolean;
   private actionInProgressTimestamp_?: number;
-  private from_: HTMLElement | null;
+  private from_: HTMLElement|null;
 
   constructor(
-    public id: string, private metadata_: ThreadMetadata,
-    private forceTriage_: boolean) {
+      public id: string, private metadata_: ThreadMetadata,
+      private forceTriage_: boolean) {
     super();
 
     this.processed_ = new ProcessedMessageData();
@@ -281,8 +281,8 @@ export class Thread extends EventTarget {
   private messageCount_() {
     let count = this.metadata_.messageIds.length + this.sentMessageIds_.length;
     assert(
-      count,
-      `Can't modify thread before message details have loaded. Please wait and try again.`);
+        count,
+        `Can't modify thread before message details have loaded. Please wait and try again.`);
     return count;
   }
 
@@ -313,7 +313,7 @@ export class Thread extends EventTarget {
   }
 
   private static clearedMetadata_(removeFromInbox?: boolean):
-    ThreadMetadataUpdate {
+      ThreadMetadataUpdate {
     let update: ThreadMetadataUpdate = {
       needsRetriage: window.firebase.firestore.FieldValue.delete(),
       blocked: window.firebase.firestore.FieldValue.delete(),
@@ -393,7 +393,7 @@ export class Thread extends EventTarget {
   // For muted threads that get new messages, all we need to do is archive the
   // messages in gmail during the sync.
   async applyMute() {
-    await this.updateMetadata({ countToArchive: this.messageCount_() });
+    await this.updateMetadata({countToArchive: this.messageCount_()});
   }
 
   muteUpdate() {
@@ -447,19 +447,19 @@ export class Thread extends EventTarget {
     let senders = defined(sendAs.senders).map(x => x.sendAsEmail);
     let unread = this.processed_.messages.slice(this.metadata_.readCount);
     return unread.some(
-      x => x.parsedFrom.some(y => !senders.includes(y.address)));
+        x => x.parsedFrom.some(y => !senders.includes(y.address)));
   }
 
   isUnread() {
     // Old threads don't have a readCount since we added that field later.
     return this.metadata_.readCount !== undefined &&
-      this.metadata_.readCount < this.metadata_.messageIds.length;
+        this.metadata_.readCount < this.metadata_.messageIds.length;
   }
 
   async markRead() {
     // Old threads don't have a readCount since we added that field later.
     if (this.metadata_.readCount === undefined ||
-      this.metadata_.readCount < this.metadata_.messageIds.length) {
+        this.metadata_.readCount < this.metadata_.messageIds.length) {
       let messageCount = this.messageCount_();
       await this.updateMetadata({
         readCount: messageCount,
@@ -494,7 +494,7 @@ export class Thread extends EventTarget {
     if (unread.size) {
       let unreadContainer = document.createElement('b');
       unreadContainer.textContent =
-        Message.minifyAddressNames(Array.from(unread), minify);
+          Message.minifyAddressNames(Array.from(unread), minify);
       container.append(unreadContainer);
     }
 
@@ -505,7 +505,7 @@ export class Thread extends EventTarget {
 
       let readContainer = document.createElement('span');
       readContainer.textContent =
-        Message.minifyAddressNames(onlyReadAddresses, minify);
+          Message.minifyAddressNames(onlyReadAddresses, minify);
       container.append(readContainer);
     }
 
@@ -527,7 +527,8 @@ export class Thread extends EventTarget {
     let update: ThreadMetadataUpdate = {};
     if (moveToInbox)
       update.moveToInbox = true;
-    update[ThreadMetadataKeys.blocked] = window.firebase.firestore.FieldValue.delete();
+    update[ThreadMetadataKeys.blocked] =
+        window.firebase.firestore.FieldValue.delete();
     // Clearing blocked should put the thread back in the triage queue,
     // otherwise the thread just disappears. If the user wants a queue other
     // than triage, they can just use that action directly instead of clearing
@@ -562,15 +563,15 @@ export class Thread extends EventTarget {
   }
 
   async pushLabelsToGmail() {
-    await this.updateMetadata({ pushLabelsToGmail: true });
+    await this.updateMetadata({pushLabelsToGmail: true});
   }
 
   async setOnlyLabel(label: string) {
-    await this.updateMetadata({ labelId: await this.queueNames_.getId(label) });
+    await this.updateMetadata({labelId: await this.queueNames_.getId(label)});
   }
 
   async applyLabel(
-    labelId: number, shouldQueue: boolean, shouldThrottle: boolean) {
+      labelId: number, shouldQueue: boolean, shouldThrottle: boolean) {
     let update: ThreadMetadataUpdate = {
       labelId: labelId,
       hasLabel: true,
@@ -601,9 +602,9 @@ export class Thread extends EventTarget {
     if (current) {
       newRepeat = window.firebase.firestore.FieldValue.delete();
     } else {
-      newRepeat = { type: RepeatType.Daily };
+      newRepeat = {type: RepeatType.Daily};
     }
-    return { repeat: newRepeat } as ThreadMetadataUpdate;
+    return {repeat: newRepeat} as ThreadMetadataUpdate;
   }
 
   readCount() {
@@ -631,7 +632,7 @@ export class Thread extends EventTarget {
     // reason we don't have a retriageTimestamp (e.g. threads that are triaged
     // before we added retriageTimestamps to them).
     let triageTime =
-      this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp);
+        this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp);
     if (this.metadata_.readCountTimestamp) {
       triageTime = Math.max(this.metadata_.readCountTimestamp, triageTime);
     }
@@ -790,7 +791,7 @@ export class Thread extends EventTarget {
     // races with different clients, it's possible for an older client's write
     // to override a newer client's write.
     if (defined(this.processed_).historyId === historyId &&
-      this.getHistoryId() === historyId)
+        this.getHistoryId() === historyId)
       return;
 
     let allRawMessages = [];
@@ -839,7 +840,7 @@ export class Thread extends EventTarget {
   }
 
   async generateMetadataFromGmailState_(
-    historyId: string, messages: gapi.client.gmail.Message[]) {
+      historyId: string, messages: gapi.client.gmail.Message[]) {
     let lastMessage = messages[messages.length - 1];
 
     let newMetadata: ThreadMetadata = {
@@ -847,11 +848,11 @@ export class Thread extends EventTarget {
       messageIds: messages.flatMap(x => defined(x.id)),
       timestamp: Thread.getTimestamp_(lastMessage),
       important:
-        messages.some(x => x.labelIds && x.labelIds.includes('IMPORTANT')),
+          messages.some(x => x.labelIds && x.labelIds.includes('IMPORTANT')),
     };
 
     this.sentMessageIds_ =
-      this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
+        this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
 
     await this.updateMetadata(newMetadata);
 
@@ -918,7 +919,7 @@ export class Thread extends EventTarget {
   }
 
   async saveMessageState_(
-    historyId: string, messages: gapi.client.gmail.Message[]) {
+      historyId: string, messages: gapi.client.gmail.Message[]) {
     this.processed_.process(historyId, messages);
     await this.generateMetadataFromGmailState_(historyId, messages);
     await this.serializeMessageData_(historyId, messages);
@@ -928,7 +929,7 @@ export class Thread extends EventTarget {
     return `thread-${weekNumber}-${threadId}`;
   }
 
-  private async deserializeMessageData_(): Promise<SerializedMessages | null> {
+  private async deserializeMessageData_(): Promise<SerializedMessages|null> {
     let currentWeekKey = this.getKey_(getCurrentWeekNumber(), this.id);
     let localData = await IDBKeyVal.getDefault().get(currentWeekKey);
 
@@ -950,7 +951,7 @@ export class Thread extends EventTarget {
   }
 
   private async serializeMessageData_(
-    historyId: string, messages: gapi.client.gmail.Message[]) {
+      historyId: string, messages: gapi.client.gmail.Message[]) {
     let key = this.getKey_(getCurrentWeekNumber(), this.id);
     try {
       await IDBKeyVal.getDefault().set(key, JSON.stringify({
@@ -963,8 +964,8 @@ export class Thread extends EventTarget {
   }
 
   async sendReply(
-    replyText: string, extraEmails: ParsedAddress[], replyType: ReplyType,
-    sender: gapi.client.gmail.SendAs) {
+      replyText: string, extraEmails: ParsedAddress[], replyType: ReplyType,
+      sender: gapi.client.gmail.SendAs) {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
@@ -973,8 +974,8 @@ export class Thread extends EventTarget {
 
     if (replyType === ReplyType.Forward) {
       assert(
-        extraEmails.length,
-        'Add recipients by typing +email in the reply box.')
+          extraEmails.length,
+          'Add recipients by typing +email in the reply box.')
     } else {
       // Gmail will remove dupes for us if the to and from fields have
       // overlap.
@@ -984,7 +985,7 @@ export class Thread extends EventTarget {
 
       if (replyType === ReplyType.ReplyAll && lastMessage.to) {
         let excludeMe =
-          lastMessage.parsedTo.filter(x => x.address !== sender.sendAsEmail);
+            lastMessage.parsedTo.filter(x => x.address !== sender.sendAsEmail);
         addressHeaders.get(AddressHeaders.To).push(...excludeMe);
       }
     }
@@ -1005,13 +1006,13 @@ export class Thread extends EventTarget {
     if (replyType === ReplyType.Forward) {
       let from = lastMessage.from ? `From: ${lastMessage.from}<br>` : '';
       let date = lastMessage.from ?
-        `Date: ${FWD_THREAD_DATE_FORMATTER.format(lastMessage.date)}<br>` :
-        '';
+          `Date: ${FWD_THREAD_DATE_FORMATTER.format(lastMessage.date)}<br>` :
+          '';
       let subject =
-        lastMessage.from ? `Subject: ${lastMessage.subject}<br>` : '';
+          lastMessage.from ? `Subject: ${lastMessage.subject}<br>` : '';
       let to = lastMessage.from ? `To: ${lastMessage.to}<br>` : '';
       text = `${replyText}<br><br>---------- Forwarded message ---------<br>${
-        from}${date}${subject}${to}<br>${await lastMessage.getHtmlOrPlain()}`;
+          from}${date}${subject}${to}<br>${await lastMessage.getHtmlOrPlain()}`;
     } else {
       text = `${replyText}<br><br>${lastMessage.from} wrote:<br>
   <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px solid var(--border-and-hover-color);padding-left:1ex">
@@ -1021,7 +1022,7 @@ export class Thread extends EventTarget {
 
     let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
     let message =
-      await send(text, addressHeaders, subject, sender, headers, this.id);
+        await send(text, addressHeaders, subject, sender, headers, this.id);
     // If the message is in this same thread, then account for it appropriately
     // in the message counts. This can happen even if it's a forward, e.g. if
     // you forward to yourself.
