@@ -698,18 +698,6 @@ export class ThreadListView extends View {
 
     const headers = firstMessage.getHeaders();
     const headerMenu = document.createElement('div');
-    headerMenu.style.cssText = `
-      display: flex;
-      flex-wrap: wrap;
-    `;
-
-    // TODO: Make this an expandable menu.
-    const headerOverflow = document.createElement('div');
-    headerOverflow.style.cssText = `
-      display: none;
-      flex-wrap: wrap;
-    `;
-    headerOverflow.append('overflow');
 
     headers.sort((a, b) => {
       if (a < b)
@@ -727,7 +715,6 @@ export class ThreadListView extends View {
         display: flex;
         align-items: center;
         white-space: nowrap;
-        min-width: 300px;
         overflow: hidden;
         text-overflow: ellipsis;
         margin: 4px;
@@ -748,9 +735,8 @@ export class ThreadListView extends View {
 
       // Use - as a heuristic for rare headers the user is unlikely to want.
       const headerExcludes = ['-', 'Received', 'Precedence', 'Date'];
-      const menu =
-        headerExcludes.some(x => name.includes(x)) ? headerOverflow : headerMenu;
-      menu.append(container);
+      if (!headerExcludes.some(x => name.includes(x)))
+        headerMenu.append(container);
     }
 
     const saveButton = createMktimeButton(
@@ -771,8 +757,6 @@ export class ThreadListView extends View {
     `;
     buttonContainer.append(saveButton, showToolbarButton);
 
-    let toolbar = document.createElement('div');
-    toolbar.style.display = 'flex';
     let helpText = document.createElement('div');
     helpText.style.cssText = `
       font-size: 12px;
@@ -782,13 +766,13 @@ export class ThreadListView extends View {
     `;
     helpText.append(
       'This thread is unfiltered. Add a filter rule so future messages get the appropriate label.');
-    toolbar.append(filterRuleComponent);
 
     let container = document.createElement('div');
     container.style.cssText = `
       display: flex;
       flex-direction: column;
       justify-content: center;
+      width: -webkit-fill-available;
     `;
     container.append(
       helpText, filterRuleComponent, headerMenu, headerOverflow,
