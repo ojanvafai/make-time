@@ -1012,7 +1012,8 @@ export class ThreadListView extends View {
     // Only set this after the initial update so we don't show the all done
     // indication incorrectly.
     const isHighPriorityDone = this.model_.hasFetchedThreads() &&
-        !this.highPriorityContainer_.getFirstRow();
+        !this.highPriorityContainer_.getFirstRow() &&
+        !this.untriagedContainer_.getFirstRow();
     this.highPriorityContainer_.className =
         isHighPriorityDone ? 'all-done' : '';
 
