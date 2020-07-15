@@ -118,9 +118,6 @@ export class AppShell extends HTMLElement {
       position: sticky;
       bottom: 0;
       width: -webkit-fill-available;
-      display: flex;
-      justify-content: center;
-      align-self: center;
       box-shadow: var(--border-and-hover-color) 0 0 4px;
       background-color: var(--nested-background-color);
       /* Don't eat clicks in the transparent background of the footer. */

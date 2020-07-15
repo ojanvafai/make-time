@@ -2,6 +2,7 @@ import {createMktimeButton, defined, isMobileUserAgent, notNull} from './Base.js
 import {View} from './views/View.js';
 
 export enum ActionGroup {
+  Filter = 'filter',
   Ignore = 'ignore',
   Priority = 'priority',
   Date = 'date',
@@ -98,6 +99,16 @@ export class Actions extends HTMLElement {
     this.style.display = 'flex';
     this.actions_ = [];
     this.supplementalActions_ = [];
+  }
+
+  enable() {
+    this.style.pointerEvents = '';
+    this.style.opacity = '';
+  }
+
+  disable() {
+    this.style.pointerEvents = 'none';
+    this.style.opacity = '0.6';
   }
 
   setActions(actions: ActionList, supplementalActions?: ActionList) {

@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 import {Action, ActionGroup, registerActions, Shortcut, shortcutString} from '../Actions.js';
-import {assert, collapseArrow, createMktimeButton, defined, expandArrow, Labels, notNull, create, parseAddressList} from '../Base.js';
+import {assert, collapseArrow, defined, expandArrow, Labels, notNull, create, parseAddressList} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -166,6 +166,27 @@ const OTHER_MENU_ACTION = {
   actionGroup: ActionGroup.Other,
 };
 
+let REJECT_ACTION = {
+  name: `Reject`,
+  description: `Adds the filter rule above with an archive label.`,
+  key: 'r',
+  actionGroup: ActionGroup.Filter,
+};
+
+let ADD_FILTER_ACTION = {
+  name: `Add filter`,
+  description: `Adds the filter rule above with a label you choose.`,
+  key: 'f',
+  actionGroup: ActionGroup.Filter,
+};
+
+let SHOW_TOOLBAR_ACTION = {
+  name: `Triage toolbar`,
+  description: `Shows the regular triage toolbar.`,
+  key: 't',
+  actionGroup: ActionGroup.Filter,
+};
+
 let NAVIGATION_ACTIONS = [
   PREVIOUS_ACTION,
   PREVIOUS_FULL_ACTION,
@@ -173,6 +194,13 @@ let NAVIGATION_ACTIONS = [
   NEXT_FULL_ACTION,
   INSERT_LINK_HIDDEN,
   VIEW_IN_GMAIL_ACTION,
+];
+
+let FILTER_TOOLBAR = [
+  REJECT_ACTION,
+  ADD_FILTER_ACTION,
+  SHOW_TOOLBAR_ACTION,
+  ...NAVIGATION_ACTIONS,
 ];
 
 let BASE_ACTIONS = [
@@ -237,12 +265,13 @@ export class ThreadListView extends View {
   private highPriorityContainer_: ThreadRowGroupList;
   private untriagedContainer_: ThreadRowGroupList;
   private nonLowPriorityWrapper_: HTMLElement;
+  private filterRuleComponent_?: FilterRuleComponent;
   private hasHadAction_?: boolean;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
   // Use - as a heuristic for rare headers the user is unlikely to want.
   private static HEADER_FILTER_MENU_EXCLUDES_ =
-      ['-', 'Received', 'Precedence', 'Date'];
+      ['-', 'received', 'precedence', 'date'];
   // Fields that contain email addresses and are handled specially by
   // MailProcessor need to inject different filter values.
   private static EMAIL_ADDRESS_HEADERS_ = ['from', 'to', 'cc', 'bcc'];
@@ -632,14 +661,17 @@ export class ThreadListView extends View {
     this.transitionToThreadList_(this.renderedRow_);
   }
 
-  private async saveFilterRule_(
-      saveButton: HTMLButtonElement, filterRuleComponent: FilterRuleComponent,
-      thread: Thread) {
-    const ruleJson = filterRuleComponent.getJson();
+  private async saveFilterRule_(overrideLabel?: Labels) {
+    const thread = assert(this.focusedRow_ ?? this.renderedRow_).thread;
+    const ruleJson = assert(this.filterRuleComponent_).getJson();
     if (!ruleJson) {
       // We should already have shown the user an alert here since this
       // happens when they use an invalid field.
       return;
+    }
+
+    if (overrideLabel) {
+      ruleJson.label = overrideLabel;
     }
 
     if (ruleJson.label === Labels.Fallback) {
@@ -657,8 +689,7 @@ export class ThreadListView extends View {
       return;
     }
 
-    saveButton.disabled = true;
-    saveButton.textContent = 'Saving...';
+    this.disableActionToolbar();
     const existingFilterRules = await this.settings_.getFilters();
     await this.settings_.writeFilters([...existingFilterRules, ruleJson]);
 
@@ -675,7 +706,7 @@ export class ThreadListView extends View {
   }
 
   private addFilterToolbar_(row: ThreadRow) {
-    this.setActions(NAVIGATION_ACTIONS);
+    this.setActions(FILTER_TOOLBAR);
     const messages = row.thread.getMessages();
     if (messages.length) {
       this.populateFilterToolbar_(row);
@@ -701,10 +732,10 @@ export class ThreadListView extends View {
       filterRuleComponent.prependLabel(
           labelOption.cloneNode(true) as HTMLOptionElement);
     });
+    this.filterRuleComponent_ = filterRuleComponent;
 
     const headers = firstMessage.getHeaders();
     const headerMenu = document.createElement('div');
-
     headers.sort((a, b) => {
       if (a < b)
         return -1;
@@ -714,9 +745,11 @@ export class ThreadListView extends View {
     });
     for (const header of headers) {
       const name = header.name ?? '';
+      const lowercaseName = name.toLowerCase();
 
       let value = header.value ?? '';
-      if (ThreadListView.EMAIL_ADDRESS_HEADERS_.some(x => name.includes(x))) {
+      if (ThreadListView.EMAIL_ADDRESS_HEADERS_.some(
+              x => lowercaseName.includes(x))) {
         value = parseAddressList(value)[0].address;
       }
 
@@ -741,31 +774,20 @@ export class ThreadListView extends View {
         filterRuleComponent.add(name.toLowerCase(), value);
       };
 
-      container.append(addButton, nameContainer, value);
+      const minusButton = create('span', '-');
+      minusButton.classList.add('row-button');
+      minusButton.setAttribute('title', 'Remove from filter rule');
+      minusButton.onclick = () => {
+        filterRuleComponent.delete(name.toLowerCase());
+      };
+
+      container.append(addButton, minusButton, nameContainer, value);
 
       if (!ThreadListView.HEADER_FILTER_MENU_EXCLUDES_.some(
-              x => name.includes(x))) {
+              x => lowercaseName.includes(x))) {
         headerMenu.append(container);
       }
     }
-
-    const saveButton = createMktimeButton(
-        () => this.saveFilterRule_(saveButton, filterRuleComponent, row.thread),
-        'Save new filter');
-    saveButton.style.marginLeft = '16px';
-    saveButton.classList.add('action-button');
-
-    const showToolbarButton = createMktimeButton(
-        () => this.setActionsToRegularToolbar_(), 'Show regular toolbar');
-    showToolbarButton.style.marginLeft = '16px';
-    showToolbarButton.classList.add('action-button');
-
-    const buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
-      display: flex;
-      justify-content: center;
-    `;
-    buttonContainer.append(saveButton, showToolbarButton);
 
     let helpText = document.createElement('div');
     helpText.style.cssText = `
@@ -784,8 +806,7 @@ export class ThreadListView extends View {
       justify-content: center;
       width: -webkit-fill-available;
     `;
-    container.append(
-        helpText, filterRuleComponent, headerMenu, buttonContainer);
+    container.append(helpText, filterRuleComponent, headerMenu);
     AppShell.addToFooter(container);
   }
 
@@ -1289,6 +1310,18 @@ export class ThreadListView extends View {
 
     switch (action) {
       case OTHER_MENU_ACTION:
+        return;
+
+      case ADD_FILTER_ACTION:
+        this.saveFilterRule_();
+        return;
+
+      case REJECT_ACTION:
+        this.saveFilterRule_(Labels.Archive);
+        return;
+
+      case SHOW_TOOLBAR_ACTION:
+        this.setActionsToRegularToolbar_();
         return;
 
       case UNDO_ACTION:

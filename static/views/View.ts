@@ -27,7 +27,16 @@ export abstract class View extends HTMLElement {
   };
 
   protected setActions(actions: ActionList, supplementalActions?: ActionList) {
+    this.enableActionToolbar();
     this.actions_.setActions(actions, supplementalActions);
     AppShell.setFooter(this.actions_);
+  }
+
+  protected disableActionToolbar() {
+    this.actions_.disable();
+  }
+
+  protected enableActionToolbar() {
+    this.actions_.enable();
   }
 }

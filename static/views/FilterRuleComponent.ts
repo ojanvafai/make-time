@@ -150,8 +150,16 @@ export class FilterRuleComponent extends HTMLElement {
   }
 
   add(name: string, value: string) {
+    this.modify_((parsed: any) => parsed[name] = value);
+  }
+
+  delete(name: string) {
+    this.modify_((parsed: any) => delete parsed[name]);
+  }
+
+  modify_(callback: (parsed: any) => {}) {
     let parsed = this.getParsedQuery();
-    parsed[name] = value;
+    callback(parsed);
     this.editor_.textContent = '';
     this.appendQueryParts_(this.editor_, parsed);
   }
