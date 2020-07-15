@@ -194,6 +194,27 @@ export function assert<T>(x: T|null|undefined, message?: string): T {
   return x;
 }
 
+export function deepEqual(a: any, b: any) {
+  if (Object.is(a, b)) {
+    return true;
+  }
+
+  if (a === null || a === undefined || b === null || b === undefined) {
+    return false;
+  }
+
+  const aEntries = Object.entries(a);
+  if (aEntries.length !== Object.entries(b).length) {
+    return false;
+  }
+  for (let aEntry of aEntries) {
+    if (!deepEqual(aEntry[1], b[aEntry[0]])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export interface FetchRequestParameters {
   userId: string;
   q: string;

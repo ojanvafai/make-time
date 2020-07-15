@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 
-import {notNull} from './Base.js';
+import {notNull, deepEqual} from './Base.js';
 import {firebaseAuth, firestore} from './BaseMain.js';
 
 export interface StorageUpdates {
@@ -37,8 +37,7 @@ export class ServerStorage extends EventTarget {
         return;
 
       for (let key of KEYS_TO_DISPATCH_UPDATE_EVENT) {
-        if (JSON.stringify(oldData.get(key)) !==
-            JSON.stringify(this.data_.get(key))) {
+        if (!deepEqual(oldData.get(key), this.data_.get(key))) {
           this.dispatchEvent(new Event(ServerStorageUpdateEventName));
           return;
         }
