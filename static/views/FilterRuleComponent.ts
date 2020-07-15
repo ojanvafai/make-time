@@ -24,7 +24,9 @@ export class FilterRuleComponent extends HTMLElement {
   private noCc_: HTMLInputElement;
   private editor_: HTMLElement;
 
-  constructor(private settings_: Settings, private rule_: any) {
+  constructor(
+      private settings_: Settings, private rule_: any,
+      excludeLabelPicker?: boolean) {
     super();
     this.style.cssText = `
       flex: 1;
@@ -46,7 +48,9 @@ export class FilterRuleComponent extends HTMLElement {
         this.attachLabel_('No List-ID', this.noListId_),
         this.attachLabel_('No CCs', this.noCc_));
     this.append(topRow, this.editor_);
-    this.prependLabelPicker_(topRow);
+    if (!excludeLabelPicker) {
+      this.prependLabelPicker_(topRow);
+    }
   }
 
   private attachLabel_(label: string, checkbox: HTMLInputElement) {
@@ -69,7 +73,9 @@ export class FilterRuleComponent extends HTMLElement {
       alert('Rule has invalid field.');
       return;
     }
-    rule.label = this.getSelectedLabel();
+    if (this.label_) {
+      rule.label = this.getSelectedLabel();
+    }
     if (this.getMatchAll()) {
       rule.matchallmessages = true;
     }
@@ -101,7 +107,7 @@ export class FilterRuleComponent extends HTMLElement {
     return rule;
   }
 
-  private async prependLabelPicker_(topRow: HTMLElement) {
+  async createLabelPicker() {
     // Add a "new label" option that prompts and then adds that option to all
     // the filter rows.
     let label = await this.settings_.getLabelSelect();
@@ -109,7 +115,6 @@ export class FilterRuleComponent extends HTMLElement {
       margin-right: 16px;
       margin-bottom: 4px;
     `;
-    topRow.prepend(label);
     this.label_ = label;
 
     let option = document.createElement('option');
@@ -130,6 +135,13 @@ export class FilterRuleComponent extends HTMLElement {
       // createLabel_ prepends the new label as the first item.
       label.selectedIndex = 0;
     });
+
+    return label;
+  }
+
+  private async prependLabelPicker_(topRow: HTMLElement) {
+    const label = await this.createLabelPicker();
+    topRow.prepend(label);
   }
 
   getParsedQuery() {

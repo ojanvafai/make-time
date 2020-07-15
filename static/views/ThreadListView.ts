@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 import {Action, ActionGroup, registerActions, Shortcut, shortcutString} from '../Actions.js';
-import {assert, collapseArrow, defined, expandArrow, Labels, notNull, create, parseAddressList} from '../Base.js';
+import {createMktimeButton, assert, collapseArrow, defined, expandArrow, Labels, notNull, create, parseAddressList, showDialog} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -661,7 +661,59 @@ export class ThreadListView extends View {
     this.transitionToThreadList_(this.renderedRow_);
   }
 
-  private async saveFilterRule_(overrideLabel?: Labels) {
+  private async promptForLabel_() {
+    const labelPicker =
+        await assert(this.filterRuleComponent_).createLabelPicker();
+    return new Promise((resolve: (label?: string) => void) => {
+      labelPicker.style.cssText = `
+        margin: 4px 0;
+        flex: 1;
+      `;
+
+      let label: string|undefined;
+
+      let saveButton = createMktimeButton(() => {
+        label = assert(labelPicker.selectedOptions[0].value);
+        dialog.close();
+      }, 'save');
+
+      let cancelButton = createMktimeButton(() => {
+        dialog.close();
+      }, 'cancel');
+
+      let bottomRow = document.createElement('div');
+      bottomRow.style.cssText = `
+        display: flex;
+        margin-top: 16px;
+      `;
+      bottomRow.append(labelPicker, cancelButton, saveButton);
+
+      let body = document.createElement('div');
+      body.append('Which label should this filter rule apply?');
+
+      const dialogContents = document.createElement('div');
+      dialogContents.append(body, bottomRow);
+      const dialog = showDialog(dialogContents);
+      dialog.style.cssText = `
+        bottom: 100px;
+        top: unset;
+      `;
+      dialog.addEventListener('close', () => resolve(label));
+    });
+  }
+
+  private async saveFilterRule_(label?: string) {
+    while (!label || label === Labels.Fallback) {
+      label = await this.promptForLabel_();
+      if (!label) {
+        return;
+      }
+      if (label === Labels.Fallback) {
+        alert(`The ${
+            Labels
+                .Fallback} label is selected. Please choose a different label.`);
+      }
+    };
     const thread = assert(this.focusedRow_ ?? this.renderedRow_).thread;
     const ruleJson = assert(this.filterRuleComponent_).getJson();
     if (!ruleJson) {
@@ -670,15 +722,8 @@ export class ThreadListView extends View {
       return;
     }
 
-    if (overrideLabel) {
-      ruleJson.label = overrideLabel;
-    }
-
-    if (ruleJson.label === Labels.Fallback) {
-      alert(`The ${
-          Labels
-              .Fallback} label is selected. Please choose a different label.`);
-      return;
+    if (label) {
+      ruleJson.label = label;
     }
 
     const mailProcessor = await assert(this.getMailProcessor_)();
@@ -711,8 +756,8 @@ export class ThreadListView extends View {
     if (messages.length) {
       this.populateFilterToolbar_(row);
     } else {
-      // If a thread is still loading, then we have to wait for it's messages to
-      // load in order to be able to setup the filter toolbar.
+      // If a thread is still loading, then we have to wait for it's messages
+      // to load in order to be able to setup the filter toolbar.
       row.thread.addEventListener(
           UpdatedEvent.NAME, () => this.populateFilterToolbar_(row),
           {once: true});
@@ -726,7 +771,9 @@ export class ThreadListView extends View {
     // Prefill the rule with the first sender of the first message.
     const firstMessage = row.thread.getMessages()[0];
     const rule = {from: firstMessage.parsedFrom[0].address};
-    const filterRuleComponent = new FilterRuleComponent(this.settings_, rule);
+    const filterRuleComponent =
+        new FilterRuleComponent(this.settings_, rule, true);
+    filterRuleComponent.style.margin = '4px';
     filterRuleComponent.addEventListener(LabelCreatedEvent.NAME, e => {
       const labelOption = (e as LabelCreatedEvent).labelOption;
       filterRuleComponent.prependLabel(
@@ -960,7 +1007,8 @@ export class ThreadListView extends View {
         entry = {group, rows: []};
         groupMap.set(groupName, entry);
         // Call observe after putting the group in the DOM so we don't have a
-        // race condition where sometimes the group has no dimensions/position.
+        // race condition where sometimes the group has no
+        // dimensions/position.
         this.isVisibleObserver_.observe(group);
         this.isHiddenObserver_.observe(group);
       }
@@ -1313,11 +1361,11 @@ export class ThreadListView extends View {
         return;
 
       case ADD_FILTER_ACTION:
-        this.saveFilterRule_();
+        await this.saveFilterRule_();
         return;
 
       case REJECT_ACTION:
-        this.saveFilterRule_(Labels.Archive);
+        await this.saveFilterRule_(Labels.Archive);
         return;
 
       case SHOW_TOOLBAR_ACTION:
@@ -1470,8 +1518,9 @@ export class ThreadListView extends View {
     if (this.renderedRow_) {
       // Mark read after leaving the rendered thread instead of when first
       // viewing it so that viewing the thread doesn't cause it to change it's
-      // sort order as you are reading mail. Technically this is async, but it's
-      // OK if this happens async with respect to the surrounding code as well.
+      // sort order as you are reading mail. Technically this is async, but
+      // it's OK if this happens async with respect to the surrounding code as
+      // well.
       this.renderedRow_.thread.markRead();
       this.renderedRow_.rendered.remove();
     }
@@ -1568,7 +1617,8 @@ export class ThreadListView extends View {
     this.appShell_.setSubject(subject, labelContainer);
 
     // Only show the arrow if there's actual overflow.
-    // TODO: Technically we should recompute this when the window changes width.
+    // TODO: Technically we should recompute this when the window changes
+    // width.
     if (subject.offsetHeight < subject.scrollHeight)
       subject.before(arrow);
 
