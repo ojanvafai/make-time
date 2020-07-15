@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 import {Action, ActionGroup, registerActions, Shortcut, shortcutString} from '../Actions.js';
-import {assert, collapseArrow, createMktimeButton, defined, expandArrow, Labels, notNull, create} from '../Base.js';
+import {assert, collapseArrow, createMktimeButton, defined, expandArrow, Labels, notNull, create, parseAddressList} from '../Base.js';
 import {firestoreUserCollection, login} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -240,6 +240,12 @@ export class ThreadListView extends View {
   private hasHadAction_?: boolean;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
+  // Use - as a heuristic for rare headers the user is unlikely to want.
+  private static HEADER_FILTER_MENU_EXCLUDES_ =
+      ['-', 'Received', 'Precedence', 'Date'];
+  // Fields that contain email addresses and are handled specially by
+  // MailProcessor need to inject different filter values.
+  private static EMAIL_ADDRESS_HEADERS_ = ['from', 'to', 'cc', 'bcc'];
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
@@ -708,7 +714,11 @@ export class ThreadListView extends View {
     });
     for (const header of headers) {
       const name = header.name ?? '';
-      const value = header.value ?? '';
+
+      let value = header.value ?? '';
+      if (ThreadListView.EMAIL_ADDRESS_HEADERS_.some(x => name.includes(x))) {
+        value = parseAddressList(value)[0].address;
+      }
 
       const container = document.createElement('label');
       container.style.cssText = `
@@ -733,10 +743,10 @@ export class ThreadListView extends View {
 
       container.append(addButton, nameContainer, value);
 
-      // Use - as a heuristic for rare headers the user is unlikely to want.
-      const headerExcludes = ['-', 'Received', 'Precedence', 'Date'];
-      if (!headerExcludes.some(x => name.includes(x)))
+      if (!ThreadListView.HEADER_FILTER_MENU_EXCLUDES_.some(
+              x => name.includes(x))) {
         headerMenu.append(container);
+      }
     }
 
     const saveButton = createMktimeButton(
