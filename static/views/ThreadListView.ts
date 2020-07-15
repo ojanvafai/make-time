@@ -181,7 +181,7 @@ let ADD_FILTER_ACTION = {
 };
 
 let SHOW_TOOLBAR_ACTION = {
-  name: `Triage toolbar`,
+  name: `Triage`,
   description: `Shows the regular triage toolbar.`,
   key: 't',
   actionGroup: ActionGroup.Filter,
