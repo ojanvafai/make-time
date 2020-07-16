@@ -107,7 +107,7 @@ export class FilterRuleComponent extends HTMLElement {
     return rule;
   }
 
-  async createLabelPicker() {
+  private async createLabelPicker_() {
     // Add a "new label" option that prompts and then adds that option to all
     // the filter rows.
     let label = await this.settings_.getLabelSelect();
@@ -131,7 +131,13 @@ export class FilterRuleComponent extends HTMLElement {
       // The last item is the "Create new" label option.
       if (label.selectedIndex !== label.options.length - 1)
         return;
-      this.createLabel_();
+      const queueNames = QueueNames.create();
+      const newLabel = queueNames.promptForNewLabel();
+      if (!newLabel) {
+        return;
+      }
+      const option = this.settings_.addLabel(newLabel);
+      this.dispatchEvent(new LabelCreatedEvent(option));
       // createLabel_ prepends the new label as the first item.
       label.selectedIndex = 0;
     });
@@ -140,8 +146,7 @@ export class FilterRuleComponent extends HTMLElement {
   }
 
   private async prependLabelPicker_(topRow: HTMLElement) {
-    const label = await this.createLabelPicker();
-    topRow.prepend(label);
+    topRow.prepend(await this.createLabelPicker_());
   }
 
   getParsedQuery() {
@@ -174,22 +179,6 @@ export class FilterRuleComponent extends HTMLElement {
     callback(parsed);
     this.editor_.textContent = '';
     this.appendQueryParts_(this.editor_, parsed);
-  }
-
-  private createLabel_() {
-    let newLabel = prompt(`Type the new label name`);
-    if (!newLabel)
-      return;
-
-    newLabel = newLabel.replace(/\s+/g, '');
-    if (!newLabel)
-      return;
-
-    // Ensure the new label is stores in the QueueNames map in firestore.
-    let queueNames = QueueNames.create();
-    queueNames.getId(newLabel);
-    let option = this.settings_.addLabel(newLabel);
-    this.dispatchEvent(new LabelCreatedEvent(option));
   }
 
   prependLabel(option: HTMLOptionElement) {

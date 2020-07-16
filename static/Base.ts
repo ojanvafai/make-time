@@ -253,8 +253,9 @@ export function showDialog(contents: HTMLElement|string) {
     padding: 0;
     margin: 8px auto;
     border: 1px solid var(--border-and-hover-color);
+    box-sizing: border-box;
     box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
-    max-height: calc(100vh - 2px);
+    max-height: calc(100vh - 8px);
     position: fixed;
     display: flex;
     overscroll-behavior: none;
@@ -330,6 +331,10 @@ export function serializeAddress(address: ParsedAddress) {
 export enum Labels {
   Fallback = 'unfiltered',
   Archive = 'archive',
+  Instant = 'instant',
+  Daily = 'daily',
+  Weekly = 'weekly',
+  Monthly = 'monthly',
 }
 
 export function compareDates(a: Date, b: Date) {

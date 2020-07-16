@@ -22,6 +22,7 @@ import {FocusRowEvent, HeightChangedEvent, LabelState, RenderThreadEvent, Thread
 import {SelectRowEvent, ThreadRowGroup} from './ThreadRowGroup.js';
 import {ThreadRowGroupList} from './ThreadRowGroupList.js';
 import {View} from './View.js';
+import {QueueNames} from '../QueueNames.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): (
     ThreadRow|null) => {
@@ -166,13 +167,6 @@ const OTHER_MENU_ACTION = {
   actionGroup: ActionGroup.Other,
 };
 
-let REJECT_ACTION = {
-  name: `Reject`,
-  description: `Adds the filter rule above with an archive label.`,
-  key: 'r',
-  actionGroup: ActionGroup.Filter,
-};
-
 let ADD_FILTER_ACTION = {
   name: `Add filter`,
   description: `Adds the filter rule above with a label you choose.`,
@@ -197,7 +191,6 @@ let NAVIGATION_ACTIONS = [
 ];
 
 let FILTER_TOOLBAR = [
-  REJECT_ACTION,
   ADD_FILTER_ACTION,
   SHOW_TOOLBAR_ACTION,
   ...NAVIGATION_ACTIONS,
@@ -661,59 +654,77 @@ export class ThreadListView extends View {
     this.transitionToThreadList_(this.renderedRow_);
   }
 
+  private createLabelPicker_(labels: string[], callback: (e: Event) => void) {
+    const labelPicker = document.createElement('div');
+    labelPicker.style.cssText = `
+      margin: 4px 0;
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    `;
+    for (const label of labels) {
+      labelPicker.append(createMktimeButton(callback, label));
+    }
+    return labelPicker;
+  }
+
   private async promptForLabel_() {
-    const labelPicker =
-        await assert(this.filterRuleComponent_).createLabelPicker();
+    const labels = await this.settings_.getSortedLabels();
     return new Promise((resolve: (label?: string) => void) => {
-      labelPicker.style.cssText = `
-        margin: 4px 0;
-        flex: 1;
-      `;
-
-      let label: string|undefined;
-
-      let saveButton = createMktimeButton(() => {
-        label = assert(labelPicker.selectedOptions[0].value);
+      let selectedLabel: string|undefined;
+      const selectLabel = (e: Event) => {
+        selectedLabel = (e.target as HTMLElement).textContent;
         dialog.close();
-      }, 'save');
+      };
+
+      const labelPicker = this.createLabelPicker_(labels, selectLabel);
+      const builtInLabelPicker = this.createLabelPicker_(
+          Object.values(Labels).filter(x => x !== Labels.Fallback),
+          selectLabel);
+
+      let createNewLabelButton = createMktimeButton(() => {
+        const queueNames = QueueNames.create();
+        selectedLabel = queueNames.promptForNewLabel();
+        if (selectedLabel) {
+          this.settings_.addLabel(selectedLabel);
+        }
+        dialog.close();
+      }, 'create new label');
+
+      builtInLabelPicker.append(createNewLabelButton);
+
+      const customLabelsTitle = create('div', 'Custom labels');
+      customLabelsTitle.style.marginTop = '12px';
 
       let cancelButton = createMktimeButton(() => {
         dialog.close();
       }, 'cancel');
-
-      let bottomRow = document.createElement('div');
-      bottomRow.style.cssText = `
-        display: flex;
-        margin-top: 16px;
+      cancelButton.style.cssText = `
+        margin-top: 12px;
+        align-self: flex-end;
       `;
-      bottomRow.append(labelPicker, cancelButton, saveButton);
-
-      let body = document.createElement('div');
-      body.append('Which label should this filter rule apply?');
 
       const dialogContents = document.createElement('div');
-      dialogContents.append(body, bottomRow);
-      const dialog = showDialog(dialogContents);
-      dialog.style.cssText = `
-        bottom: 100px;
-        top: unset;
+      dialogContents.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: auto;
       `;
-      dialog.addEventListener('close', () => resolve(label));
+      dialogContents.append(
+          create('div', 'Which label should this filter rule apply?'),
+          builtInLabelPicker, customLabelsTitle, labelPicker, cancelButton);
+
+      const dialog = showDialog(dialogContents);
+      dialog.style.margin = '4px';
+      dialog.addEventListener('close', () => {
+        resolve(selectedLabel);
+      });
     });
   }
 
-  private async saveFilterRule_(label?: string) {
-    while (!label || label === Labels.Fallback) {
-      label = await this.promptForLabel_();
-      if (!label) {
-        return;
-      }
-      if (label === Labels.Fallback) {
-        alert(`The ${
-            Labels
-                .Fallback} label is selected. Please choose a different label.`);
-      }
-    };
+  private async saveFilterRule_() {
     const thread = assert(this.focusedRow_ ?? this.renderedRow_).thread;
     const ruleJson = assert(this.filterRuleComponent_).getJson();
     if (!ruleJson) {
@@ -721,10 +732,7 @@ export class ThreadListView extends View {
       // happens when they use an invalid field.
       return;
     }
-
-    if (label) {
-      ruleJson.label = label;
-    }
+    ruleJson.label = await this.promptForLabel_();
 
     const mailProcessor = await assert(this.getMailProcessor_)();
     const ruleMatches =
@@ -844,7 +852,7 @@ export class ThreadListView extends View {
       color: var(--dim-text-color);
     `;
     helpText.append(
-        'This thread is unfiltered. Add a filter rule so future messages get the appropriate label.');
+        'This thread is unfiltered. Add a filter rule so this and future messages get the appropriate label.');
 
     let container = document.createElement('div');
     container.style.cssText = `
@@ -862,11 +870,10 @@ export class ThreadListView extends View {
       this.setActions([]);
       return;
     }
-    if (this.focusedRow_.thread.getLabel() === Labels.Fallback) {
+    if (this.focusedRow_.getGroup().name === Labels.Fallback) {
       this.addFilterToolbar_(this.focusedRow_);
       return;
     }
-
     this.setActionsToRegularToolbar_();
   }
 
@@ -1362,10 +1369,6 @@ export class ThreadListView extends View {
 
       case ADD_FILTER_ACTION:
         await this.saveFilterRule_();
-        return;
-
-      case REJECT_ACTION:
-        await this.saveFilterRule_(Labels.Archive);
         return;
 
       case SHOW_TOOLBAR_ACTION:

@@ -23,19 +23,17 @@ export class QueueNames extends EventTarget {
     return firestoreUserCollection().doc('NameIds');
   }
 
-  async getAllNames(includeBuiltIns?: boolean) {
+  async getAllNames() {
     await this.fetch();
     let nameIds = defined(QueueNames.nameIds_);
-    let names = Object.keys(nameIds);
-    if (includeBuiltIns) {
-      // If the labels haven't ever been applied to threads, they won't be in
-      // QueueNames yet (and Labels.Archive is never applied)..
-      if (!names.includes(Labels.Archive))
-        names.push(Labels.Archive);
-      if (!names.includes(Labels.Fallback))
-        names.push(Labels.Fallback);
-    } else {
-      names = names.filter(x => x !== Labels.Archive && x !== Labels.Fallback);
+    let names = Object.keys(nameIds).filter(x => x !== Labels.Fallback);
+    let builtIns = Object.values(Labels) as string[];
+    // If the labels haven't ever been applied to threads, they won't be in
+    // QueueNames yet (and Labels.Archive is never applied).
+    for (const builtIn of builtIns) {
+      if (builtIn !== Labels.Fallback && !names.includes(builtIn)) {
+        names.push(builtIn);
+      }
     }
     return names;
   }
@@ -46,6 +44,20 @@ export class QueueNames extends EventTarget {
     for (var key in data.map) {
       QueueNames.idNames_[data.map[key]] = key;
     }
+  }
+
+  promptForNewLabel() {
+    let newLabel = prompt(`Type the new label name`);
+    if (!newLabel)
+      return;
+
+    newLabel = newLabel.replace(/\s+/g, '');
+    if (!newLabel)
+      return;
+
+    // Ensure the new label is stored in the QueueNames map in firestore.
+    this.getId(newLabel);
+    return newLabel;
   }
 
   async fetch() {

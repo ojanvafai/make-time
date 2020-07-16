@@ -1,4 +1,4 @@
-import {assert, defined} from './Base.js';
+import {assert, defined, Labels} from './Base.js';
 import {IMPORTANT_NAME, RETRIAGE_LABEL_NAME} from './models/TodoModel.js';
 import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
 import {STUCK_LABEL_NAME} from './Thread.js';
@@ -32,9 +32,7 @@ export interface AllQueueDatas {
 export class QueueSettings {
   private queueDatas_?: AllQueueDatas;
   private mergeMap_?: Map<string, string>;
-  private retriageQueueData_: QueueListEntry;
-  private stuckQueueData_: QueueListEntry;
-  private importantQueueData_: QueueListEntry;
+  private builtInLabelQueueData_: Map<string, QueueListEntry>;
 
   private static BUFFER_ = 10000;
   static MONTHLY = 'Monthly';
@@ -55,20 +53,35 @@ export class QueueSettings {
     // QueueSettings.BUFFER_ * QueueSettings.BUFFER_ is the transition point
     // from daily to weekly queues.
     let maxDailyQueueIndex = QueueSettings.BUFFER_ * QueueSettings.BUFFER_ - 1;
-    this.retriageQueueData_ = {
+
+    this.builtInLabelQueueData_ = new Map();
+    this.builtInLabelQueueData_.set(RETRIAGE_LABEL_NAME, {
       label: RETRIAGE_LABEL_NAME,
       data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex)
-    };
-
-    this.stuckQueueData_ = {
+    });
+    this.builtInLabelQueueData_.set(STUCK_LABEL_NAME, {
       label: STUCK_LABEL_NAME,
       data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex - 1)
-    };
-
-    this.importantQueueData_ = {
+    });
+    this.builtInLabelQueueData_.set(IMPORTANT_NAME, {
       label: IMPORTANT_NAME,
       data: this.queueData_(QueueSettings.IMMEDIATE, 0)
-    };
+    });
+    this.builtInLabelQueueData_.set(Labels.Instant, {
+      label: Labels.Instant,
+      data: this.queueData_(QueueSettings.IMMEDIATE, 0)
+    });
+    this.builtInLabelQueueData_.set(
+        Labels.Daily,
+        {label: Labels.Daily, data: this.queueData_(QueueSettings.DAILY, 0)});
+    this.builtInLabelQueueData_.set(Labels.Weekly, {
+      label: Labels.Weekly,
+      data: this.queueData_(QueueSettings.WEEKDAYS[1], 0)
+    });
+    this.builtInLabelQueueData_.set(Labels.Monthly, {
+      label: Labels.Monthly,
+      data: this.queueData_(QueueSettings.MONTHLY, 0)
+    });
   }
 
   async fetch() {
@@ -127,7 +140,15 @@ export class QueueSettings {
   }
 
   get(label: string) {
-    return defined(this.queueDatas_)[label.toLowerCase()] || this.queueData_();
+    let data = defined(this.queueDatas_)[label.toLowerCase()];
+    if (data) {
+      return data;
+    }
+    let builtInQueueListEntry = this.builtInLabelQueueData_.get(label);
+    if (builtInQueueListEntry) {
+      return builtInQueueListEntry.data;
+    }
+    return this.queueData_();
   }
 
   queueComparator_(a: QueueListEntry, b: QueueListEntry) {
@@ -159,15 +180,6 @@ export class QueueSettings {
   }
 
   queueEntry_(label: string): QueueListEntry {
-    if (label === RETRIAGE_LABEL_NAME)
-      return this.retriageQueueData_;
-
-    if (label === STUCK_LABEL_NAME)
-      return this.stuckQueueData_;
-
-    if (label === IMPORTANT_NAME)
-      return this.importantQueueData_;
-
     let data = this.get(label);
     return {label: label, data: data};
   }
@@ -185,7 +197,13 @@ export class QueueSettings {
   }
 
   entries() {
-    return Object.entries(defined(this.queueDatas_));
+    const builtInEntries: [string, QueueData][] =
+        Array.from(this.builtInLabelQueueData_.entries())
+            .map(x => [x[0], x[1].data]);
+    return [
+      ...builtInEntries,
+      ...Object.entries(defined(this.queueDatas_)),
+    ];
   }
 
   static queueIndex_ = (queueData: QueueData) => {

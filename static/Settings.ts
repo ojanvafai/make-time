@@ -456,35 +456,32 @@ export class Settings extends EventTarget {
     return labels;
   }
 
+  async getSortedLabels() {
+    let queueNames = QueueNames.create();
+    let labels = await queueNames.getAllNames();
+    labels.sort((a, b) => {
+      if (a === Labels.Archive) {
+        return -1;
+      }
+      if (b === Labels.Archive) {
+        return 1;
+      }
+      if (a < b) {
+        return -1;
+      }
+      if (a > b) {
+        return 1;
+      }
+      return 0;
+    });
+    return labels;
+  }
+
   async getLabelSelectTemplate() {
     if (!this.labelSelectCreator_) {
       this.labelSelectCreator_ = new AsyncOnce(async () => {
+        const labels = await this.getSortedLabels();
         this.labelSelect_ = document.createElement('select');
-        let queueNames = QueueNames.create();
-        let labels = await queueNames.getAllNames(true);
-        // Put Fallback at the top of the list so that it is the default
-        // selected in new filter rule components.
-        labels.sort((a, b) => {
-          if (a === Labels.Fallback) {
-            return -1;
-          }
-          if (b === Labels.Fallback) {
-            return 1;
-          }
-          if (a === Labels.Archive) {
-            return -1;
-          }
-          if (b === Labels.Archive) {
-            return 1;
-          }
-          if (a < b) {
-            return -1;
-          }
-          if (a > b) {
-            return 1;
-          }
-          return 0;
-        });
         for (let label of labels) {
           let option = document.createElement('option');
           option.append(label);

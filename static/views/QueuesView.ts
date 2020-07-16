@@ -1,4 +1,4 @@
-import {defined, notNull} from '../Base.js';
+import {defined, Labels, notNull} from '../Base.js';
 import {QueueNames, SnapshotEvent} from '../QueueNames.js';
 import {AllQueueDatas, MergeOption, QueueListEntry, QueueSettings, ThrottleOption} from '../QueueSettings.js';
 import {FiltersChangedEvent, Settings} from '../Settings.js';
@@ -142,7 +142,8 @@ export class QueuesView extends HTMLElement {
     scrollable.append(
         this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
-    let labels = await this.queueNames_.getAllNames();
+    let labels = (await this.queueNames_.getAllNames())
+                     .filter(x => x !== Labels.Archive);
     let queueDatas = this.settings_.getQueueSettings().getSorted(labels);
     for (let queueData of queueDatas) {
       this.appendRow_(queueData);
@@ -223,7 +224,13 @@ export class QueuesView extends HTMLElement {
     `;
     label.className = 'label';
 
+    const isBuiltIn =
+        (Object.values(Labels) as string[]).includes(queueData.label);
+
     let checkbox = document.createElement('input');
+    if (isBuiltIn) {
+      checkbox.disabled = true;
+    }
     checkbox.type = 'radio';
     checkbox.name = 'row';
     checkbox.addEventListener('input', (e) => {
@@ -260,16 +267,23 @@ export class QueuesView extends HTMLElement {
     row.append(throttleSelect);
 
     let deleteLabel = document.createElement('div');
-    deleteLabel.className = 'x-button';
-    deleteLabel.style.cssText = `
-      width: 15px;
-      height: 15px;
-      margin: 4px;
-    `;
-    deleteLabel.addEventListener('click', async () => {
-      if (confirm(`Delete ${queueData.label}? This cannot be undone.`))
-        await this.queueNames_.delete(queueData.label);
-    });
+    if (isBuiltIn) {
+      deleteLabel.style.cssText = `
+        width: 25px;
+        height: 25px;
+      `;
+    } else {
+      deleteLabel.style.cssText = `
+        width: 15px;
+        height: 15px;
+      `;
+      deleteLabel.className = 'x-button';
+      deleteLabel.addEventListener('click', async () => {
+        if (confirm(`Delete ${queueData.label}? This cannot be undone.`))
+          await this.queueNames_.delete(queueData.label);
+      });
+    }
+    deleteLabel.style.margin = '4px';
     row.append(deleteLabel);
 
     let container = defined(this.getRowContainer_(queue));
