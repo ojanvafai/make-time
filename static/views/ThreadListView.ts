@@ -866,12 +866,13 @@ export class ThreadListView extends View {
   }
 
   private updateActions_() {
-    if (!this.focusedRow_) {
+    const currentRow = this.renderedRow_ ?? this.focusedRow_;
+    if (!currentRow) {
       this.setActions([]);
       return;
     }
-    if (this.focusedRow_.getGroup().name === Labels.Fallback) {
-      this.addFilterToolbar_(this.focusedRow_);
+    if (currentRow.getGroup().name === Labels.Fallback) {
+      this.addFilterToolbar_(currentRow);
       return;
     }
     this.setActionsToRegularToolbar_();
