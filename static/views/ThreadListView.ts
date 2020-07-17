@@ -685,10 +685,13 @@ export class ThreadListView extends View {
         dialog.close();
       };
 
-      const labelPicker = this.createLabelPicker_(labels, selectLabel);
-      const builtInLabelPicker = this.createLabelPicker_(
-          Object.values(Labels).filter(x => x !== Labels.Fallback),
-          selectLabel);
+      const builtInLabels =
+          Object.values(Labels).filter(x => x !== Labels.Fallback);
+      const customLabels = labels.filter(x => !builtInLabels.includes(x));
+
+      const labelPicker = this.createLabelPicker_(customLabels, selectLabel);
+      const builtInLabelPicker =
+          this.createLabelPicker_(builtInLabels, selectLabel);
 
       let createNewLabelButton = createMktimeButton(() => {
         const queueNames = QueueNames.create();
@@ -725,7 +728,7 @@ export class ThreadListView extends View {
 
       const dialog = showDialog(dialogContents);
       dialog.style.margin = '32px auto';
-      dialog.style.maxWidth = '400px';
+      dialog.style.maxWidth = '450px';
       dialog.addEventListener('close', () => {
         resolve(selectedLabel);
       });
