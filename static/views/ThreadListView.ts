@@ -9,7 +9,7 @@ import {ThreadListChangedEvent, ThreadListModel, UndoEvent} from '../models/Thre
 import {QuickReply, ReplyCloseEvent, ReplyScrollEvent} from '../QuickReply.js';
 import {SendAs} from '../SendAs.js';
 import {ServerStorage} from '../ServerStorage.js';
-import {Settings} from '../Settings.js';
+import {Settings, FilterRule, HeaderFilterRule} from '../Settings.js';
 import {Themes} from '../Themes.js';
 import {BACKLOG_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, InProgressChangedEvent, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Thread, UpdatedEvent, URGENT_PRIORITY_NAME} from '../Thread.js';
 import {ARCHIVE_ACTION, BASE_THREAD_ACTIONS, MUTE_ACTION, REPEAT_ACTION, SOFT_MUTE_ACTION} from '../ThreadActions.js';
@@ -275,6 +275,13 @@ export class ThreadListView extends View {
     ...ThreadListView.FROM_EMAIL_HEADERS_,
     'sender',
   ];
+  private static MKTIME_CUSTOM_FILTER_DIRECTIVES_:
+      ('label'|'subject'|'plaintext'|'htmlcontent')[] = [
+        'label',
+        'subject',
+        'plaintext',
+        'htmlcontent',
+      ];
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
@@ -735,6 +742,80 @@ export class ThreadListView extends View {
     });
   }
 
+  private ruleJsonsMatch_(a: FilterRule, b: FilterRule) {
+    for (let directive of ThreadListView.MKTIME_CUSTOM_FILTER_DIRECTIVES_) {
+      if (a[directive] !== b[directive]) {
+        return false;
+      }
+    }
+
+    // Both need to either have headers or both not.
+    const aCount = a.header ? a.header.length : 0;
+    const bCount = b.header ? b.header.length : 0;
+    if (aCount !== bCount) {
+      return false;
+    }
+    if (!a.header || !b.header) {
+      return true;
+    }
+
+    const sortByNBame = (a: HeaderFilterRule, b: HeaderFilterRule) => {
+      if (a.name < b.name)
+        return -1;
+      if (b.name < a.name)
+        return 1;
+      return 0;
+    };
+    let aHeaderRules = a.header.sort(sortByNBame);
+    let bHeaderRules = b.header.sort(sortByNBame);
+
+    for (let i = 0; i < aHeaderRules.length; i++) {
+      const aRule = aHeaderRules[i];
+      const bRule = bHeaderRules[i];
+      if (aRule.name !== bRule.name || aRule.value !== bRule.value) {
+        return false;
+        ;
+      }
+    }
+    return true;
+  }
+
+  private mergeFilterRule_(
+      existingFilterRules: FilterRule[], ruleJson: FilterRule) {
+    const appendedVersion = [...existingFilterRules, ruleJson];
+
+    for (let i = existingFilterRules.length - 1; i >= 0; i--) {
+      // We can merge filter rules if they only differ on one directive and that
+      // directive is one that takes comma separated lists.
+      const currentRuleJson = existingFilterRules[i];
+      if (ruleJson.label !== currentRuleJson.label ||
+          ruleJson.matchallmessages !== currentRuleJson.matchallmessages ||
+          ruleJson.nolistid !== currentRuleJson.nolistid ||
+          ruleJson.nocc !== currentRuleJson.nocc) {
+        continue;
+      }
+
+      // Can only merge from and to since those are the only CSV directives.
+      let differsOnFrom = ruleJson.from !== currentRuleJson.from;
+      let differsOnTo = ruleJson.to !== currentRuleJson.to;
+      if (differsOnFrom && differsOnTo ||
+          !this.ruleJsonsMatch_(ruleJson, currentRuleJson)) {
+        continue;
+      }
+      if (differsOnTo) {
+        currentRuleJson.to += `,${ruleJson.to}`;
+      } else if (differsOnFrom) {
+        currentRuleJson.from += `,${ruleJson.from}`;
+      } else {
+        assert(false);
+      }
+      return existingFilterRules;
+    }
+
+    // If there's no spot to merge the rule, append it to the end.
+    return appendedVersion;
+  }
+
   private async saveFilterRule_() {
     const thread = assert(this.focusedRow_ ?? this.renderedRow_).thread;
     const ruleJson = assert(this.filterRuleComponent_).getJson();
@@ -759,7 +840,8 @@ export class ThreadListView extends View {
 
     this.disableActionToolbar();
     const existingFilterRules = await this.settings_.getFilters();
-    await this.settings_.writeFilters([...existingFilterRules, ruleJson]);
+    await this.settings_.writeFilters(
+        this.mergeFilterRule_(existingFilterRules, ruleJson));
 
     const unfilteredGroup = this.untriagedContainer_.getSubGroups().find(
         x => x.name === Labels.Fallback);
