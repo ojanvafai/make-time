@@ -718,6 +718,7 @@ export class ThreadListView extends View {
 
       const dialog = showDialog(dialogContents);
       dialog.style.margin = '32px auto';
+      dialog.style.maxWidth = '400px';
       dialog.addEventListener('close', () => {
         resolve(selectedLabel);
       });
@@ -803,10 +804,14 @@ export class ThreadListView extends View {
       return 0;
     });
     for (const header of headers) {
+      if (!header.value) {
+        continue;
+      }
+
       const name = header.name ?? '';
       const lowercaseName = name.toLowerCase();
 
-      let value = header.value ?? '';
+      let value = header.value;
       if (ThreadListView.EMAIL_ADDRESS_HEADERS_.some(
               x => lowercaseName.includes(x))) {
         value = parseAddressList(value)[0].address;
