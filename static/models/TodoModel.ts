@@ -75,19 +75,12 @@ export class TodoModel extends ThreadListModel {
     this.dispatchEvent(new ThreadListChangedEvent());
   }
 
-  private shouldShowTriageThread_(thread: Thread) {
-    if (!thread.needsTriage())
-      return false;
-    let vacation = this.settings_.get(ServerStorage.KEYS.VACATION);
-    if (vacation && (vacation !== thread.getLabel()))
-      return false;
-    return true;
-  }
-
   protected shouldShowThread(thread: Thread) {
     if (thread.needsTriage()) {
-      if (!this.shouldShowTriageThread_(thread))
+      let vacation = this.settings_.get(ServerStorage.KEYS.VACATION);
+      if (vacation && vacation !== thread.getLabel()) {
         return false;
+      }
     } else {
       let priority = thread.getPriorityId();
       if (!priority)

@@ -175,9 +175,9 @@ let ADD_FILTER_ACTION = {
 };
 
 let SHOW_TOOLBAR_ACTION = {
-  name: `Triage`,
+  name: `Close`,
   description: `Shows the regular triage toolbar.`,
-  key: 't',
+  key: 'x',
   actionGroup: ActionGroup.Filter,
 };
 
@@ -885,9 +885,11 @@ export class ThreadListView extends View {
       text-align: center;
       margin: 8px 0;
       color: var(--dim-text-color);
+      white-space: pre-wrap;
     `;
     helpText.append(
-        'This thread is unfiltered. Add a filter rule so this and future messages get the appropriate label.');
+        `Add a filter rule so this and future messages get the appropriate label.
+You can always edit the filter rules from Settings.`);
 
     let container = document.createElement('div');
     container.style.cssText = `

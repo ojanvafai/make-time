@@ -651,8 +651,11 @@ export class MailProcessor {
     }
 
     let queueSettings = this.settings_.getQueueSettings().get(label);
-    // Don't queue if it already has a priority or is in the triage queue.
-    let shouldQueue = !thread.getPriorityId() && !thread.needsTriage() &&
+    // Don't queue if it already has a priority or is in the triage queue. If
+    // it's already in the Fallback label, then that means we are adding a
+    // filter rule for it, so apply the regular rules queue settings.
+    let shouldQueue = !thread.getPriorityId() &&
+        (!thread.needsTriage() || thread.getLabel() === Labels.Fallback) &&
         queueSettings.queue !== QueueSettings.IMMEDIATE;
 
     // Queue durations are longer than the throttle duration, so no need to mark
