@@ -717,7 +717,7 @@ export class ThreadListView extends View {
           builtInLabelPicker, customLabelsTitle, labelPicker, cancelButton);
 
       const dialog = showDialog(dialogContents);
-      dialog.style.margin = '4px';
+      dialog.style.margin = '32px auto';
       dialog.addEventListener('close', () => {
         resolve(selectedLabel);
       });
@@ -732,7 +732,11 @@ export class ThreadListView extends View {
       // happens when they use an invalid field.
       return;
     }
-    ruleJson.label = await this.promptForLabel_();
+    const newLabel = await this.promptForLabel_();
+    if (!newLabel) {
+      return;
+    }
+    ruleJson.label = newLabel;
 
     const mailProcessor = await assert(this.getMailProcessor_)();
     const ruleMatches =
