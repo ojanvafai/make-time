@@ -264,10 +264,17 @@ export class ThreadListView extends View {
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
   // Use - as a heuristic for rare headers the user is unlikely to want.
   private static HEADER_FILTER_MENU_EXCLUDES_ =
-      ['-', 'received', 'precedence', 'date'];
+      ['-', 'received', 'precedence', 'date', 'references'];
+  private static HEADER_FILTER_MENU_INCLUDES_ = ['list-id'];
   // Fields that contain email addresses and are handled specially by
   // MailProcessor need to inject different filter values.
-  private static EMAIL_ADDRESS_HEADERS_ = ['from', 'to', 'cc', 'bcc'];
+  private static TO_EMAIL_HEADERS_ = ['to', 'cc', 'bcc'];
+  private static FROM_EMAIL_HEADERS_ = ['from'];
+  private static EMAIL_ADDRESS_HEADERS_ = [
+    ...ThreadListView.TO_EMAIL_HEADERS_,
+    ...ThreadListView.FROM_EMAIL_HEADERS_,
+    'sender',
+  ];
 
   constructor(
       private model_: ThreadListModel, private appShell_: AppShell,
@@ -831,23 +838,42 @@ export class ThreadListView extends View {
       nameContainer.append(`${name}:`);
       nameContainer.style.marginRight = '4px';
 
+      let directiveName: string;
+      if (ThreadListView.TO_EMAIL_HEADERS_.includes(lowercaseName)) {
+        directiveName = 'to';
+      } else if (ThreadListView.FROM_EMAIL_HEADERS_.includes(lowercaseName)) {
+        directiveName = 'from';
+      } else {
+        directiveName = `$${lowercaseName}`;
+      }
+
+      // Extract out the actual list-id from the header. List-ids are of the
+      // form "List name"<list.id.com> where the quoted part is optional.
+      if (lowercaseName === 'list-id') {
+        let match = value.match(/<([^>]+)>$/);
+        if (match)
+          value = match[1];
+      }
+
       const addButton = create('span', '+');
       addButton.classList.add('row-button');
       addButton.setAttribute('title', 'Add to filter rule');
       addButton.onclick = () => {
-        filterRuleComponent.add(name.toLowerCase(), value);
+        filterRuleComponent.add(directiveName, value);
       };
 
       const minusButton = create('span', '-');
       minusButton.classList.add('row-button');
       minusButton.setAttribute('title', 'Remove from filter rule');
       minusButton.onclick = () => {
-        filterRuleComponent.delete(name.toLowerCase());
+        filterRuleComponent.delete(directiveName);
       };
 
       container.append(addButton, minusButton, nameContainer, value);
 
-      if (!ThreadListView.HEADER_FILTER_MENU_EXCLUDES_.some(
+      if (ThreadListView.HEADER_FILTER_MENU_INCLUDES_.some(
+              x => lowercaseName.includes(x)) ||
+          !ThreadListView.HEADER_FILTER_MENU_EXCLUDES_.some(
               x => lowercaseName.includes(x))) {
         headerMenu.append(container);
       }
