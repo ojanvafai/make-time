@@ -686,7 +686,7 @@ export class ThreadListView extends View {
       };
 
       const builtInLabels =
-          Object.values(Labels).filter(x => x !== Labels.Fallback);
+          Object.values(Labels).filter(x => x !== Labels.Fallback) as string[];
       const customLabels = labels.filter(x => !builtInLabels.includes(x));
 
       const labelPicker = this.createLabelPicker_(customLabels, selectLabel);
