@@ -120,6 +120,14 @@ let BLOCKED_NONE_ACTION = {
   actionGroup: ActionGroup.Date,
 };
 
+export const ARCHIVE_ACTIONS = [[
+  ARCHIVE_ACTION,
+  [
+    SOFT_MUTE_ACTION,
+    MUTE_ACTION,
+  ],
+]];
+
 export let BLOCKED_ACTIONS = [
   BLOCKED_CUSTOM_ACTION,
   [

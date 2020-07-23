@@ -25,6 +25,7 @@ import {KeyboardShortcutsDialog} from './views/KeyboardShortcutsDialog.js';
 import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {TrackingView} from './views/TrackingView.js';
+import {UnfilteredView} from './views/UnfilteredView.js';
 import {View} from './views/View.js';
 
 if (!isMobileUserAgent())
@@ -63,6 +64,7 @@ enum VIEW {
   Settings,
   Todo,
   Tracking,
+  Unfiltered,
 }
 
 async function routeToCurrentLocation() {
@@ -93,6 +95,9 @@ router.add('/track', async (_params) => {
 router.add('/', routeToDefault);
 router.add('/todo', async (params) => {
   await setView(VIEW.Todo, params);
+});
+router.add('/unfiltered', async (params) => {
+  await setView(VIEW.Unfiltered, params);
 });
 router.add('/hidden', async (_params) => {
   await setView(VIEW.Hidden);
@@ -125,6 +130,7 @@ async function createModel(viewType: VIEW, params?: any) {
       return new TrackingModel();
 
     case VIEW.Todo:
+    case VIEW.Unfiltered:
       let todoModel = await getTodoModel();
       todoModel.setOffices(params.offices);
       todoModel.setViewFilters(params.label, params.days);
@@ -156,8 +162,11 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Todo:
       return new ThreadListView(
-          <TodoModel>model, appShell_, await getSettings(), true,
-          getMailProcessor);
+          <TodoModel>model, appShell_, await getSettings(), true);
+
+    case VIEW.Unfiltered:
+      return new UnfilteredView(
+          <TodoModel>model, appShell_, await getSettings(), getMailProcessor);
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
@@ -238,7 +247,8 @@ async function setView(
   appShell_.showToolbar(!shouldHideToolbar);
   appShell_.showFilterToggle(false);
   // TODO: Make this work for VIEW.Hidden as well.
-  appShell_.showOverflowMenuButton(viewType === VIEW.Todo);
+  appShell_.showOverflowMenuButton(
+      viewType === VIEW.Todo || viewType === VIEW.Unfiltered);
   appShell_.setQueryParameters(params);
 
   if (currentView_)

@@ -2,6 +2,7 @@ import {assert, collapseArrow, expandArrow} from '../Base.js';
 import {ALL, NONE, SelectBox, SelectChangedEvent, SOME} from '../SelectBox.js';
 
 import {AfterFocusRowEvent, ThreadRow} from './ThreadRow.js';
+import {ThreadRowGroupBase} from './ThreadRowGroupBase.js';
 
 // TODO: Find a better home for this. In theory it should be in ThreadRow.ts,
 // but that creates a circular reference loading ThreadRowGroup.
@@ -12,7 +13,14 @@ export class SelectRowEvent extends Event {
   }
 }
 
-export class ThreadRowGroup extends HTMLElement {
+export enum ThreadRowGroupRenderMode {
+  Default,
+  ShowOnlyHighlightedRows,
+  CardStyle,
+  UnfilteredStyle,
+}
+
+export class ThreadRowGroup extends ThreadRowGroupBase {
   private rowContainer_: HTMLElement;
   private placeholder_: HTMLElement;
   private lastRowHeight_?: number;
@@ -28,21 +36,16 @@ export class ThreadRowGroup extends HTMLElement {
   private expander_?: HTMLElement;
   private collapsed_: boolean;
   private manuallyCollapsed_: boolean;
+  private allowCollapsing_: boolean;
 
   constructor(
-      public name: string, private allowedCount_: number,
-      private showOnlyHighlightedRows_: boolean,
-      private useCardStyle_: boolean) {
-    super();
-    this.style.cssText = `
-      display: block;
-      border-radius: 3px;
-      margin: auto;
-      max-width: var(--max-width);
-      position: relative;
-    `;
+      name: string, private allowedCount_: number,
+      private mode_: ThreadRowGroupRenderMode) {
+    super(name);
 
-    this.collapsed_ = !this.useCardStyle_;
+    this.allowCollapsing_ = mode_ !== ThreadRowGroupRenderMode.CardStyle &&
+        mode_ !== ThreadRowGroupRenderMode.UnfilteredStyle;
+    this.collapsed_ = this.allowCollapsing_;
     this.manuallyCollapsed_ = false;
     this.wasInViewport_ = true;
     this.inViewport_ = false;
@@ -54,14 +57,14 @@ export class ThreadRowGroup extends HTMLElement {
     this.addEventListener(SelectRowEvent.NAME, () => this.updateSelectBox_());
 
     this.rowContainer_ = document.createElement('div');
-    if (!this.useCardStyle_) {
+    if (this.allowCollapsing_) {
       this.appendHeader_();
     }
     this.placeholder_ = document.createElement('div');
     this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
     this.append(this.rowContainer_, this.placeholder_);
 
-    if (this.showOnlyHighlightedRows_) {
+    if (mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows) {
       this.tickmarks_ = document.createElement('datalist');
       this.slider_ = document.createElement('input');
       this.append(this.slider_, this.tickmarks_);
@@ -94,19 +97,7 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   private appendHeader_() {
-    this.groupNameContainer_ = document.createElement('div');
-    this.groupNameContainer_.style.cssText = `
-      font-weight: bold;
-      font-size: 18px;
-      flex: 1;
-      padding: 12px 4px 12px 7px;
-      display: flex;
-      align-items: center;
-      border-radius: 3px;
-      white-space: nowrap;
-      overflow: hidden;
-    `;
-    this.groupNameContainer_.className = 'hover';
+    this.groupNameContainer_ = this.createGroupNameContainer();
     this.groupNameContainer_.addEventListener(
         'click', () => this.setManuallyCollapsed_(!this.collapsed_));
     this.expander_ = document.createElement('div');
@@ -210,7 +201,7 @@ export class ThreadRowGroup extends HTMLElement {
   }
 
   setCollapsed(collapsed: boolean, force?: boolean) {
-    if (this.useCardStyle_ || !force && this.manuallyCollapsed_)
+    if (!this.allowCollapsing_ || !force && this.manuallyCollapsed_)
       return;
 
     // Performance optimization to avoid rendering when nothing has changed.
@@ -296,8 +287,11 @@ export class ThreadRowGroup extends HTMLElement {
       this.wasInViewport_ = this.inViewport_;
     }
 
-    const shouldShowOnlyHighlightedRows =
-        this.showOnlyHighlightedRows_ && this.rows_.length > 2;
+    const effectiveMode =
+        this.mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows &&
+            this.rows_.length <= 2 ?
+        ThreadRowGroupRenderMode.Default :
+        this.mode_;
     this.wasCollapsed_ = this.collapsed_;
     if (this.expander_) {
       this.expander_.textContent = '';
@@ -312,7 +306,8 @@ export class ThreadRowGroup extends HTMLElement {
     } else {
       if (this.slider_) {
         const rowCount = this.rows_.length;
-        if (shouldShowOnlyHighlightedRows) {
+        if (effectiveMode ===
+            ThreadRowGroupRenderMode.ShowOnlyHighlightedRows) {
           this.updateTickmarks_();
           this.slider_.style.display = '';
           this.slider_.setAttribute('max', String(rowCount - 1));
@@ -345,7 +340,7 @@ export class ThreadRowGroup extends HTMLElement {
           this.rowContainer_.prepend(row);
       }
       row.setInViewport(this.inViewport_);
-      row.setHideIfNotHighlighted(shouldShowOnlyHighlightedRows);
+      row.setRenderMode(effectiveMode);
       previousRow = row;
     }
     this.updateRowCount_();

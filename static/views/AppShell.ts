@@ -191,6 +191,7 @@ export class AppShell extends HTMLElement {
     this.subject_ = document.createElement('div');
     this.subject_.style.cssText = `
       flex: 1;
+      justify-content: center;
       ${toolbarChildStyle}
     `;
 
@@ -253,6 +254,8 @@ export class AppShell extends HTMLElement {
       return;
     }
 
+    const rect = this.overflowMenuButton_.getBoundingClientRect();
+
     let container = notNull(this.overflowMenuButton_.parentNode);
 
     this.clickOverlay_ = document.createElement('div');
@@ -273,8 +276,8 @@ export class AppShell extends HTMLElement {
     this.overflowMenu_ = document.createElement('div');
     this.overflowMenu_.style.cssText = `
       position: fixed;
-      right: 0;
-      top: 0;
+      right: ${window.innerWidth - rect.right}px;
+      top: ${rect.bottom}px;
       background-color: var(--overlay-background-color);
       border: 1px solid var(--border-and-hover-color);
       box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
@@ -417,6 +420,7 @@ export class AppShell extends HTMLElement {
     this.drawer_.append(
         this.createMenuItem_('Compose', {href: '/compose'}),
         this.createMenuItem_('Todo', {href: '/todo'}),
+        this.createMenuItem_('Unfiltered', {href: '/unfiltered'}),
         this.createMenuItem_('Hidden', {href: '/hidden'}),
         this.createMenuItem_('Calendar (alpha)', {href: '/calendar'}),
         this.createMenuItem_('Track (alpha)', {href: '/track'}),

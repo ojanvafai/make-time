@@ -3,7 +3,8 @@ import {assert, collapseArrow, expandArrow, notNull} from './Base.js';
 import {Message} from './Message.js';
 import {QuoteElidedMessage} from './QuoteElidedMessage.js';
 import {Thread} from './Thread.js';
-import {NEXT_ACTION, NEXT_FULL_ACTION, PREVIOUS_ACTION, PREVIOUS_FULL_ACTION} from './views/ThreadListView.js';
+import {NEXT_FULL_ACTION, PREVIOUS_FULL_ACTION} from './views/ThreadListView.js';
+import {NEXT_ACTION, PREVIOUS_ACTION} from './views/ThreadListViewBase.js';
 
 let formattingOptions: {
   year?: string;

@@ -3,7 +3,8 @@ import {RenderedThread} from '../RenderedThread.js';
 import {ALL, NONE, SelectBox, SelectChangedEvent, SOME} from '../SelectBox.js';
 import {InProgressChangedEvent, Priority, Thread, UpdatedEvent} from '../Thread.js';
 
-import {SelectRowEvent, ThreadRowGroup} from './ThreadRowGroup.js';
+import {SelectRowEvent, ThreadRowGroupRenderMode} from './ThreadRowGroup.js';
+import {ThreadRowGroupBase} from './ThreadRowGroupBase.js';
 
 let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
@@ -99,7 +100,9 @@ class RowState extends LabelState {
   count: number;
   lastMessageId: string;
 
-  constructor(thread: Thread, group: string, public shouldHide: boolean) {
+  constructor(
+      thread: Thread, group: string, public shouldHide: boolean,
+      public shouldHideCheckboxes: boolean) {
     super(thread, group);
 
     // window.innerWidth makes more logical sense for this, but chrome has
@@ -128,7 +131,8 @@ class RowState extends LabelState {
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&
         this.useCardStyle === other.useCardStyle &&
-        this.shouldHide === other.shouldHide;
+        this.shouldHide === other.shouldHide &&
+        this.shouldHideCheckboxes === other.shouldHideCheckboxes;
   }
 }
 
@@ -141,7 +145,7 @@ export class ThreadRow extends HTMLElement {
   private checkBox_: SelectBox;
   private messageDetails_: HTMLElement;
   private lastRowState_?: RowState;
-  private hideIfNotHighlighted_: boolean;
+  private mode_?: ThreadRowGroupRenderMode;
   private static lastHeightIsSmallScreen_: boolean;
   private static lastHeight_: number;
 
@@ -158,7 +162,6 @@ export class ThreadRow extends HTMLElement {
     this.inViewport_ = false;
     this.focused_ = false;
     this.focusImpliesSelected_ = true;
-    this.hideIfNotHighlighted_ = false;
 
     this.checkBox_ = new SelectBox();
     this.append(this.checkBox_);
@@ -246,7 +249,7 @@ export class ThreadRow extends HTMLElement {
 
   getGroupMaybeNull() {
     let parent = this.parentElement;
-    while (parent && !(parent instanceof ThreadRowGroup)) {
+    while (parent && !(parent instanceof ThreadRowGroupBase)) {
       parent = parent.parentElement
     }
     return parent;
@@ -265,10 +268,6 @@ export class ThreadRow extends HTMLElement {
       // Rerender messages even if the thread is only prerendred in case new
       // messages came in.
       this.rendered.render();
-      // // If the thread is the actual rendered thread, mark new messages as
-      // // read.
-      // if (this.rendered.isRendered())
-      //   this.thread.markRead();
     }
   }
 
@@ -280,15 +279,17 @@ export class ThreadRow extends HTMLElement {
     if (!this.inViewport_)
       return;
 
-    if (this.thread.actionInProgress())
-      return;
-
     let group = this.getGroupMaybeNull();
     if (!group)
       return;
 
-    let shouldHide = this.hideIfNotHighlighted_ && !this.highlighted;
-    let state = new RowState(this.thread, group.name, shouldHide);
+    let shouldHide =
+        this.mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows &&
+        !this.highlighted;
+    let shouldHideCheckboxes =
+        this.mode_ === ThreadRowGroupRenderMode.UnfilteredStyle;
+    let state =
+        new RowState(this.thread, group.name, shouldHide, shouldHideCheckboxes);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -300,6 +301,8 @@ export class ThreadRow extends HTMLElement {
     if (state.shouldHide) {
       return;
     }
+
+    this.checkBox_.setRenderAsRadio(shouldHideCheckboxes);
 
     let labels = document.createElement('div');
     ThreadRow.appendLabels(
@@ -528,8 +531,8 @@ export class ThreadRow extends HTMLElement {
     return formatter.format(date);
   }
 
-  setHideIfNotHighlighted(shouldHide: boolean) {
-    this.hideIfNotHighlighted_ = shouldHide;
+  setRenderMode(mode: ThreadRowGroupRenderMode) {
+    this.mode_ = mode;
     this.render();
   }
 
@@ -569,6 +572,11 @@ export class ThreadRow extends HTMLElement {
 
   get checked() {
     return this.checkBox_.isFullySelected();
+  }
+
+  setCheckedAndFocus(value: boolean) {
+    this.setFocus(value, true);
+    this.setChecked(value);
   }
 
   setChecked(value: boolean, rangeSelect?: boolean) {
