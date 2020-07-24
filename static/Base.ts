@@ -277,6 +277,12 @@ export function showDialog(contents: HTMLElement|string) {
   dialog.append(wrapper);
   document.body.append(dialog);
 
+  // TODO: Add support for this since Safari doesn't have showModal.
+  if (!dialog.showModal) {
+    dialog.showModal = () => {};
+    dialog.close = () => dialog.remove();
+  }
+
   dialog.showModal();
   return dialog;
 }
