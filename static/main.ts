@@ -27,6 +27,7 @@ import {ThreadListView} from './views/ThreadListView.js';
 import {TrackingView} from './views/TrackingView.js';
 import {UnfilteredView} from './views/UnfilteredView.js';
 import {View} from './views/View.js';
+import { renderChangeLog } from './views/ChangeLog.js';
 
 if (!isMobileUserAgent())
   document.documentElement.classList.add('desktop');
@@ -347,6 +348,8 @@ async function onLoad() {
     getView().openOverflowMenu(container);
   });
   document.body.append(appShell_);
+
+  renderChangeLog();
 
   // Show an indicator for the whole life of the initial update since
   // routeToCurrentLocation can take a long time in some cases.
