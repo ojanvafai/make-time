@@ -9,7 +9,6 @@ import {MailProcessor} from './MailProcessor.js';
 import {ComposeModel} from './models/ComposeModel.js';
 import {Model} from './models/Model.js';
 import {TodoModel} from './models/TodoModel.js';
-import {TrackingModel} from './models/TrackingModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {SendAs} from './SendAs.js';
@@ -24,7 +23,6 @@ import {HiddenView} from './views/HiddenView.js';
 import {KeyboardShortcutsDialog} from './views/KeyboardShortcutsDialog.js';
 import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
-import {TrackingView} from './views/TrackingView.js';
 import {UnfilteredView} from './views/UnfilteredView.js';
 import {View} from './views/View.js';
 import { renderChangeLog } from './views/ChangeLog.js';
@@ -64,7 +62,6 @@ enum VIEW {
   Hidden,
   Settings,
   Todo,
-  Tracking,
   Unfiltered,
 }
 
@@ -89,9 +86,6 @@ router.add('/compose', async (params) => {
   if (shouldHideToolbar)
     preventUpdates();
   await setView(VIEW.Compose, params, shouldHideToolbar);
-});
-router.add('/track', async (_params) => {
-  await setView(VIEW.Tracking);
 });
 router.add('/', routeToDefault);
 router.add('/todo', async (params) => {
@@ -127,9 +121,6 @@ async function createModel(viewType: VIEW, params?: any) {
     case VIEW.Compose:
       return new ComposeModel();
 
-    case VIEW.Tracking:
-      return new TrackingModel();
-
     case VIEW.Todo:
     case VIEW.Unfiltered:
       let todoModel = await getTodoModel();
@@ -157,9 +148,6 @@ async function createView(viewType: VIEW, model: Model|null, params?: any) {
 
     case VIEW.Compose:
       return new ComposeView(model as ComposeModel, params, getMailProcessor);
-
-    case VIEW.Tracking:
-      return new TrackingView(model as TrackingModel);
 
     case VIEW.Todo:
       return new ThreadListView(
