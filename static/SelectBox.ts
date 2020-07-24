@@ -80,7 +80,7 @@ export class SelectBox extends HTMLElement {
 
   private updateRadioRendering_() {
     this.svg_.textContent = '';
-    this.svg_?.append(
+    this.svg_.append(
         this.renderAsRadio_ ? createCircle(12, 12, 6) :
                               createRect(5, 5, 14, 14));
     this.svg_.style.borderRadius = `${this.renderAsRadio_ ? 10 : 3}px`;
