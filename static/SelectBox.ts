@@ -1,4 +1,4 @@
-import {createCircle, createRect, createSvgContainer} from './Base.js';
+import {createCircle, createRect, createSvgContainer, isMobileUserAgent} from './Base.js';
 
 export const ALL = 'all';
 export const SOME = 'some';
@@ -20,11 +20,13 @@ export class SelectBox extends HTMLElement {
 
   constructor() {
     super();
+    const isMobile = isMobileUserAgent();
+
     this.style.cssText = `
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 10px;
+      padding: ${isMobile ? 16 : 10}px;
       border-radius: 3px;
     `;
 
