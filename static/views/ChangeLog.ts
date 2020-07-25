@@ -48,7 +48,6 @@ export function renderChangeLog() {
   buttonContainer.append(createMktimeButton(() => dialog.close(), 'close'));
   container.append(buttonContainer);
 
-  const dialog = showDialog(container);
-  dialog.style.maxWidth = '90%';
+  showDialog(container);
   window.localStorage.lastShownChangelogEntryDate = changes[0].date;
 }

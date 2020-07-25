@@ -66,6 +66,8 @@ export class FilterDialogView extends View {
     this.addEventListener('input', () => this.handleChange_());
 
     this.dialog_ = showDialog(this);
+    this.dialog_.style.width = '';
+    this.dialog_.style.height = '';
   }
 
   static containsFilterParameter(params?: {[property: string]: string}) {

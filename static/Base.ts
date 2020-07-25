@@ -249,18 +249,18 @@ export function showDialog(contents: HTMLElement|string) {
   // that the click was on the backdrop. Put the padding on a wrapper element
   // instead.
   dialog.style.cssText = `
-    top: 0;
-    padding: 0;
-    margin: 8px auto;
-    border: 1px solid var(--border-and-hover-color);
-    box-sizing: border-box;
-    box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
-    max-height: calc(100vh - 8px);
-    position: fixed;
     display: flex;
-    overscroll-behavior: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid var(--border-and-hover-color);
+    box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
+    width: min(600px, calc(100vw - 12px));
+    height: min(300px, calc(100vh - 12px));
     background-color: var(--overlay-background-color);
     color: var(--text-color);
+    overscroll-behavior: none;
   `;
   dialog.addEventListener('close', () => dialog.remove());
   dialog.addEventListener('click', e => {
