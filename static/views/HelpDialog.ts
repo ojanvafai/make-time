@@ -1,4 +1,5 @@
-import {createMktimeButton, showDialog} from '../Base.js';
+import {createMktimeButton} from '../Base.js';
+import {Dialog} from '../Dialog.js';
 
 export class HelpDialog extends HTMLElement {
   constructor(...helpText: (HTMLElement|string)[]) {
@@ -10,8 +11,6 @@ export class HelpDialog extends HTMLElement {
       flex-direction: column;
       height: -webkit-fill-available;
     `;
-    let dialog = showDialog(container);
-
     let help = document.createElement('div');
     help.style.cssText = `
       overflow: auto;
@@ -21,13 +20,8 @@ export class HelpDialog extends HTMLElement {
     help.append(...helpText);
     container.append(help);
 
-    let buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
-      display: flex;
-      justify-content: flex-end;
-    `;
-    buttonContainer.append(createMktimeButton(() => dialog.close(), 'close'));
-    container.append(buttonContainer);
+    const closeButton = createMktimeButton(() => dialog.remove(), 'close');
+    const dialog = new Dialog(container, [closeButton]);
   }
 }
 window.customElements.define('mt-help-dialog', HelpDialog);

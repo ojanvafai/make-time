@@ -1,5 +1,6 @@
-import {create, createMktimeButton, createTh, defined, Labels, notNull, showDialog} from '../Base.js';
+import {create, createMktimeButton, createTh, defined, Labels, notNull} from '../Base.js';
 import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
+import {Dialog} from '../Dialog.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
@@ -29,7 +30,7 @@ export class CalendarFiltersView extends HTMLElement {
   // TODO: Stop using an element for maintaining cursor position. Do what
   // AddressCompose does with Ranges instead.
   private cursorSentinelElement_?: HTMLElement;
-  private dialog_?: HTMLDialogElement;
+  private dialog_?: Dialog;
   private labelSelect_?: HTMLSelectElement;
 
   constructor(private settings_: Settings) {
@@ -174,19 +175,9 @@ export class CalendarFiltersView extends HTMLElement {
     let helpButton =
         createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
     helpButton.style.cssText = `margin-right: auto`;
-
     let cancel = createMktimeButton(() => this.cancel_(), 'cancel');
     let save = createMktimeButton(() => this.save_(), 'save');
-
-    let buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
-      display: flex;
-      align-items: center;
-    `;
-    buttonContainer.append(helpButton, cancel, save);
-    this.append(buttonContainer);
-
-    this.dialog_ = showDialog(this);
+    this.dialog_ = new Dialog(this, [helpButton, cancel, save]);
   }
 
   createUnfileredRule_() {
@@ -272,12 +263,12 @@ export class CalendarFiltersView extends HTMLElement {
     }
     await this.settings_.writeCalendarFilters(rules);
 
-    defined(this.dialog_).close();
+    defined(this.dialog_).remove();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
-    defined(this.dialog_).close();
+    defined(this.dialog_).remove();
   }
 
   appendCell_(container: HTMLElement, item: HTMLElement|string) {

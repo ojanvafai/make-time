@@ -136,6 +136,7 @@ a.link{cursor:pointer}
 .strikethrough{text-decoration:line-through}
 .left-align{text-align:left}
 .center{text-align:center}
+.center-popup{top: 50%;left: 50%;transform: translate(-50%, -50%);}
 .right-align{text-align:right}
 .justify{text-align:justify}
 .nowrap{white-space:nowrap}

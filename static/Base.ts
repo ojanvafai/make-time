@@ -242,51 +242,6 @@ function getWeekNumber(date: Date) {
       7);
 }
 
-export function showDialog(contents: HTMLElement|string) {
-  let dialog = document.createElement('dialog');
-  // Subtract out the top/bottom, padding and border from the max-height.
-  // Set padding to 0 so that clicks the the dialog as the target always mean
-  // that the click was on the backdrop. Put the padding on a wrapper element
-  // instead.
-  dialog.style.cssText = `
-    display: flex;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border: 1px solid var(--border-and-hover-color);
-    box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
-    width: min(600px, calc(100vw - 12px));
-    height: min(300px, calc(100vh - 12px));
-    background-color: var(--overlay-background-color);
-    color: var(--text-color);
-    overscroll-behavior: none;
-  `;
-  dialog.addEventListener('close', () => dialog.remove());
-  dialog.addEventListener('click', e => {
-    if (e.target === dialog)
-      dialog.close();
-  });
-
-  let wrapper = document.createElement('div');
-  wrapper.style.cssText = `
-    display: flex;
-    padding: 8px;
-  `;
-  wrapper.append(contents);
-  dialog.append(wrapper);
-  document.body.append(dialog);
-
-  // TODO: Add support for this since Safari doesn't have showModal.
-  if (!dialog.showModal) {
-    dialog.showModal = () => {};
-    dialog.close = () => dialog.remove();
-  }
-
-  dialog.showModal();
-  return dialog;
-}
-
 let myEmail_: string;
 export async function getMyEmail() {
   if (!myEmail_) {

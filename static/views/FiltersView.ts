@@ -1,5 +1,6 @@
-import {create, createMktimeButton, defined, Labels, showDialog} from '../Base.js';
+import {create, createMktimeButton, defined, Labels} from '../Base.js';
 import {FilterRule, Settings} from '../Settings.js';
+import {Dialog} from '../Dialog.js';
 
 import {FilterRuleComponent, LabelCreatedEvent} from './FilterRuleComponent.js';
 import {HelpDialog} from './HelpDialog.js';
@@ -52,7 +53,7 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
 ];
 
 export class FiltersView extends HTMLElement {
-  private dialog_?: HTMLDialogElement;
+  private dialog_?: Dialog;
 
   private static ROW_CLASSNAME_ = 'filter-rule-row';
 
@@ -161,19 +162,9 @@ export class FiltersView extends HTMLElement {
     let helpButton =
         createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
     helpButton.style.cssText = `margin-right: auto`;
-
     let cancel = createMktimeButton(() => this.cancel_(), 'cancel');
     let save = createMktimeButton(() => this.save_(), 'save');
-
-    let buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
-      display: flex;
-      align-items: center;
-    `;
-    buttonContainer.append(helpButton, cancel, save);
-    this.append(buttonContainer);
-
-    this.dialog_ = showDialog(this);
+    this.dialog_ = new Dialog(this, [helpButton, cancel, save]);
   }
 
   createUnfileredRule_() {
@@ -212,12 +203,12 @@ export class FiltersView extends HTMLElement {
     }
     await this.settings_.writeFilters(rules);
 
-    defined(this.dialog_).close();
+    defined(this.dialog_).remove();
   }
 
   cancel_() {
     // TODO: prompt if there are changes.
-    defined(this.dialog_).close();
+    defined(this.dialog_).remove();
   }
 
   async createRule_(rule: any) {

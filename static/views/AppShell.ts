@@ -1,5 +1,6 @@
 import {createCircle, createLine, createPath, createSvg, createSvgButton, defined, leftArrow, notNull} from '../Base.js';
 import {getSettings, showHelp} from '../BaseMain.js';
+import {Dialog} from '../Dialog.js';
 import {COMPLETED_EVENT_NAME, ProgressTracker} from '../ProgressTracker.js';
 
 import {FilterDialogView} from './FilterDialogView.js';
@@ -46,7 +47,6 @@ export class AppShell extends HTMLElement {
   private filterToggle_: SVGElement;
   private overflowMenuButton_: SVGElement;
   private overflowMenu_?: HTMLElement;
-  private clickOverlay_?: HTMLElement;
   private subject_: HTMLElement;
   private drawerOpen_: boolean;
   private queryParameters_?: {[property: string]: string};
@@ -243,9 +243,6 @@ export class AppShell extends HTMLElement {
 
   closeOverflowMenu() {
     defined(this.overflowMenu_).remove();
-    this.overflowMenu_ = undefined;
-    defined(this.clickOverlay_).remove();
-    this.clickOverlay_ = undefined;
   }
 
   private toggleOverflowMenu_() {
@@ -255,37 +252,16 @@ export class AppShell extends HTMLElement {
     }
 
     const rect = this.overflowMenuButton_.getBoundingClientRect();
+    let buttonContainer = document.createElement('div');
+    this.dispatchEvent(new OverflowMenuOpenEvent(buttonContainer));
 
-    let container = notNull(this.overflowMenuButton_.parentNode);
-
-    this.clickOverlay_ = document.createElement('div');
-    this.clickOverlay_.style.cssText = `
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      z-index: 1000000;
-    `;
-    this.clickOverlay_.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      this.closeOverflowMenu();
-    });
-    container.append(this.clickOverlay_);
-
-    this.overflowMenu_ = document.createElement('div');
-    this.overflowMenu_.style.cssText = `
-      position: fixed;
-      right: ${window.innerWidth - rect.right}px;
-      top: ${rect.bottom}px;
-      background-color: var(--overlay-background-color);
-      border: 1px solid var(--border-and-hover-color);
-      box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
-      z-index: 1000001;
-    `;
-    container.append(this.overflowMenu_);
-
-    this.dispatchEvent(new OverflowMenuOpenEvent(this.overflowMenu_));
+    this.overflowMenu_ =
+        new Dialog(document.createElement('div'), [buttonContainer], {
+          right: `${window.innerWidth - rect.right}px`,
+          top: `${rect.bottom}px`,
+        });
+    this.overflowMenu_.addEventListener(
+        'close', () => this.overflowMenu_ = undefined);
   }
 
   static setFooter(dom?: HTMLElement) {
@@ -357,7 +333,10 @@ export class AppShell extends HTMLElement {
   }
 
   async openFilterMenu_() {
-    new FilterDialogView(await getSettings(), this.queryParameters_);
+    const rect = this.filterToggle_.getBoundingClientRect();
+    new FilterDialogView(
+        await getSettings(), {top: `${rect.bottom}px`, left: `${rect.left}px`},
+        this.queryParameters_);
   }
 
   setContent(newContent: HTMLElement) {

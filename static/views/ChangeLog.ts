@@ -1,4 +1,5 @@
-import {createMktimeButton, showDialog} from '../Base.js';
+import {createMktimeButton} from '../Base.js';
+import {Dialog} from '../Dialog.js';
 
 interface Entry {
   date: string, isMajorChange: boolean, description: string;
@@ -43,12 +44,8 @@ export function renderChangeLog() {
     container.append(change.description);
   }
 
-  const buttonContainer = document.createElement('div');
-  buttonContainer.className = 'flex justify-end';
-  buttonContainer.append(createMktimeButton(() => dialog.close(), 'close'));
-  container.append(buttonContainer);
-
-  const dialog = showDialog(container);
+  const closeButton = createMktimeButton(() => dialog.remove(), 'close');
+  const dialog = new Dialog(container, [closeButton]);
   dialog.addEventListener(
       'close',
       () => window.localStorage.lastShownChangelogEntryDate = changes[0].date);

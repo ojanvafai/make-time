@@ -1,4 +1,5 @@
-import {assert, createMktimeButton, notNull, showDialog} from '../Base.js';
+import {assert, createMktimeButton, notNull} from '../Base.js';
+import {Dialog} from '../Dialog.js';
 import {NO_OFFICES} from '../models/TodoModel.js';
 import {ServerStorage} from '../ServerStorage.js';
 import {Settings} from '../Settings.js';
@@ -29,11 +30,14 @@ export class FilterDialogView extends View {
   private container_: HTMLElement;
   private label_: HTMLElement;
   private saveButton_: HTMLButtonElement;
-  private dialog_: HTMLDialogElement;
+  private dialog_: Dialog;
 
   constructor(
       private settings_: Settings,
-      private queryParameters_?: {[property: string]: string}) {
+      positionRect:
+          {top?: string, right?: string, bottom?: string, left?: string},
+      private queryParameters_?: {[property: string]: string},
+  ) {
     super();
 
     this.container_ = document.createElement('table');
@@ -44,20 +48,7 @@ export class FilterDialogView extends View {
     this.label_ = document.createElement('tr');
     this.container_.append(this.label_);
     this.appendLabelSelect_();
-
     this.appendOffices_();
-
-    let cancel = createMktimeButton(() => this.close_(), 'cancel');
-    this.saveButton_ = createMktimeButton(() => this.save_(), 'save');
-    this.saveButton_.disabled = true;
-
-    let buttonContainer = document.createElement('div');
-    buttonContainer.style.cssText = `
-      display: flex;
-      justify-content: flex-end;
-    `;
-    buttonContainer.append(cancel, this.saveButton_);
-    this.append(buttonContainer);
 
     this.addEventListener('change', () => this.handleChange_());
     // change only fires on text inputs after the field is blurred, so also
@@ -65,9 +56,11 @@ export class FilterDialogView extends View {
     // blur the input.
     this.addEventListener('input', () => this.handleChange_());
 
-    this.dialog_ = showDialog(this);
-    this.dialog_.style.width = '';
-    this.dialog_.style.height = '';
+    let cancel = createMktimeButton(() => this.close_(), 'cancel');
+    this.saveButton_ = createMktimeButton(() => this.save_(), 'save');
+    this.saveButton_.disabled = true;
+
+    this.dialog_ = new Dialog(this, [cancel, this.saveButton_], positionRect);
   }
 
   static containsFilterParameter(params?: {[property: string]: string}) {
@@ -79,7 +72,7 @@ export class FilterDialogView extends View {
     cell.style.cssText = `
       padding-right: 4px;
       text-align: right;
-      max-width: 200px;
+      max-width: 125px;
     `;
     cell.append(contents);
     return cell;
@@ -205,7 +198,7 @@ export class FilterDialogView extends View {
 
   private close_() {
     // TODO: prompt if there are changes.
-    this.dialog_.close();
+    this.dialog_.remove();
   }
 }
 

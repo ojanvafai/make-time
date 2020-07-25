@@ -1,6 +1,7 @@
 
 import {Action, ActionGroup, registerActions} from '../Actions.js';
-import {assert, create, createMktimeButton, defined, Labels, parseAddressList, showDialog} from '../Base.js';
+import {assert, create, createMktimeButton, defined, Labels, parseAddressList} from '../Base.js';
+import {Dialog} from '../Dialog.js';
 import {MailProcessor} from '../MailProcessor.js';
 import {ThreadListModel} from '../models/ThreadListModel.js';
 import {QueueNames} from '../QueueNames.js';
@@ -138,7 +139,7 @@ export class UnfilteredView extends ThreadListViewBase {
       let selectedLabel: string|undefined;
       const selectLabel = (e: Event) => {
         selectedLabel = (e.target as HTMLElement).textContent;
-        dialog.close();
+        dialog.remove();
       };
 
       const builtInLabels =
@@ -155,7 +156,7 @@ export class UnfilteredView extends ThreadListViewBase {
         if (selectedLabel) {
           this.settings.addLabel(selectedLabel);
         }
-        dialog.close();
+        dialog.remove();
       }, 'create new label');
 
       builtInLabelPicker.append(createNewLabelButton);
@@ -163,13 +164,6 @@ export class UnfilteredView extends ThreadListViewBase {
       const customLabelsTitle = create('div', 'Custom labels');
       customLabelsTitle.style.marginTop = '12px';
 
-      let cancelButton = createMktimeButton(() => {
-        dialog.close();
-      }, 'cancel');
-      cancelButton.style.cssText = `
-        margin-top: 12px;
-        align-self: flex-end;
-      `;
 
       const dialogContents = document.createElement('div');
       dialogContents.style.cssText = `
@@ -180,9 +174,10 @@ export class UnfilteredView extends ThreadListViewBase {
       `;
       dialogContents.append(
           create('div', 'Which label should this filter rule apply?'),
-          builtInLabelPicker, customLabelsTitle, labelPicker, cancelButton);
+          builtInLabelPicker, customLabelsTitle, labelPicker);
 
-      const dialog = showDialog(dialogContents);
+      let cancelButton = createMktimeButton(() => dialog.remove(), 'cancel');
+      const dialog = new Dialog(dialogContents, [cancelButton]);
       dialog.style.margin = '32px auto';
       dialog.style.maxWidth = '450px';
       dialog.addEventListener('close', () => {

@@ -1,7 +1,8 @@
-import {createMktimeButton, defined, getCurrentWeekNumber, isMobileUserAgent, redirectToSignInPage, showDialog} from './Base.js';
+import {createMktimeButton, defined, getCurrentWeekNumber, isMobileUserAgent, redirectToSignInPage} from './Base.js';
 import {firestore, getServerStorage, getSettings} from './BaseMain.js';
 import {Calendar} from './calendar/Calendar.js';
 import {Contacts} from './Contacts.js';
+import {Dialog} from './Dialog.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {LongTasks} from './LongTasks.js';
@@ -17,6 +18,7 @@ import {Themes} from './Themes.js';
 import {Toast} from './Toast.js';
 import {AppShell, BackEvent, OverflowMenuOpenEvent, ToggleViewEvent} from './views/AppShell.js';
 import {CalendarView} from './views/CalendarView.js';
+import {renderChangeLog} from './views/ChangeLog.js';
 import {ComposeView} from './views/ComposeView.js';
 import {ViewFiltersChanged as ViewFiltersChangedEvent} from './views/FilterDialogView.js';
 import {HiddenView} from './views/HiddenView.js';
@@ -25,7 +27,6 @@ import {SettingsView} from './views/SettingsView.js';
 import {ThreadListView} from './views/ThreadListView.js';
 import {UnfilteredView} from './views/UnfilteredView.js';
 import {View} from './views/View.js';
-import { renderChangeLog } from './views/ChangeLog.js';
 
 if (!isMobileUserAgent())
   document.documentElement.classList.add('desktop');
@@ -391,23 +392,16 @@ function reloadSoon() {
   // they do significant processing work.
   preventUpdates();
 
-  let dialog: HTMLDialogElement;
+  let dialog: Dialog;
 
   let container = document.createElement('div');
   container.append(
       'A new version of maketime is available. This window will reload in 60 seconds.');
 
-  let reloadButton = createMktimeButton(() => reload(), 'reload now');
-  let close = createMktimeButton(() => dialog.close(), 'close');
-
-  let buttonContainer = document.createElement('div');
-  buttonContainer.style.cssText = `
-    display: flex;
-    justify-content: flex-end;
-  `;
-  buttonContainer.append(reloadButton, close);
-  container.append(buttonContainer);
-  dialog = showDialog(container);
+  dialog = new Dialog(container, [
+    createMktimeButton(() => reload(), 'reload now'),
+    createMktimeButton(() => dialog.remove(), 'close')
+  ]);
 
   setTimeout(() => reload(), 60000);
 }
