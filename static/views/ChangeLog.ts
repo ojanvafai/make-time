@@ -48,6 +48,8 @@ export function renderChangeLog() {
   buttonContainer.append(createMktimeButton(() => dialog.close(), 'close'));
   container.append(buttonContainer);
 
-  showDialog(container);
-  window.localStorage.lastShownChangelogEntryDate = changes[0].date;
-}
+  const dialog = showDialog(container);
+  dialog.addEventListener(
+      'close',
+      () => window.localStorage.lastShownChangelogEntryDate = changes[0].date);
+};

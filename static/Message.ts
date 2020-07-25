@@ -239,18 +239,8 @@ export class Message {
 
     // If a message has no body at all, fallback to empty string.
     this.plain_ = '';
-
     let payload = defined(this.rawMessage_.payload);
-    if (payload.parts) {
-      await this.getMessageBody_(payload.parts);
-    } else {
-      let body = defined(payload.body);
-      let messageText = await Message.base64_.urlDecode(defined(body.data));
-      if (payload.mimeType == 'text/html')
-        this.html_ = messageText;
-      else
-        this.plain_ = messageText;
-    }
+    await this.getMessageBody_(payload.parts || [payload]);
   }
 
   async getQuoteElidedMessage() {
