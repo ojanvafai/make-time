@@ -316,6 +316,10 @@ export function isSafari() {
       navigator.userAgent.includes('AppleWebKit/');
 }
 
+export function stopInProgressScroll() {
+  window.scrollTo(window.scrollX, window.scrollY);
+}
+
 export function setFaviconCount(count: number) {
   // Don't update the favicon on mobile where it's not visibile in the tab
   // strip and we want the regular favicon for add to homescreen.

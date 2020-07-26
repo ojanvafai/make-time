@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 import {Action, ActionGroup, registerActions, Shortcut} from '../Actions.js';
-import {assert, defined, Labels, notNull} from '../Base.js';
+import {assert, defined, Labels, notNull, stopInProgressScroll} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -1087,6 +1087,11 @@ export class ThreadListView extends ThreadListViewBase {
       return;
     }
 
+    // If you reply to a thread, we might be scrolling the new message into view
+    // at this point but we don't want that scroll to keep happening it's it's
+    // for the content we're removing.
+    stopInProgressScroll();
+
     this.appShell.showFilterToggle(this.isTodoView_);
     this.appShell.showBackArrow(false);
 
@@ -1176,6 +1181,11 @@ export class ThreadListView extends ThreadListViewBase {
   }
 
   renderOne_(toast?: Toast) {
+    // If you reply to a thread, we might be scrolling the new message into view
+    // at this point but we don't want that scroll to keep happening it's it's
+    // for the content we're removing.
+    stopInProgressScroll();
+
     if (this.rowGroupContainer_.style.display !== 'none')
       this.transitionToSingleThread_();
 
@@ -1227,13 +1237,13 @@ export class ThreadListView extends ThreadListViewBase {
   async showQuickReply() {
     window.addEventListener('beforeunload', this.boundBeforeUnload_);
 
+    const thread = notNull(this.renderedRow_).thread;
     // TODO: Ojan Store this in this.reply_, show a confirmation warning if
     // there is text typed in the quick reply input if returning to the
     // threadlist, going to a different view, or (via beforeunload) reloading
     // the page. Clear this.reply_ via an event fired from QuickReply's
     // disconnectedCallback.
-    this.reply_ = new QuickReply(
-        notNull(this.renderedRow_).thread, await SendAs.getDefault());
+    this.reply_ = new QuickReply(thread, await SendAs.getDefault());
 
     this.reply_.addEventListener(
         ReplyCloseEvent.NAME, () => this.updateActionsAndMainBodyMinHeight_());
@@ -1243,7 +1253,7 @@ export class ThreadListView extends ThreadListViewBase {
         return;
 
       let row = this.renderedRow_;
-      if (row.thread === assert(this.reply_).thread) {
+      if (row.thread === thread) {
         row.rendered.showSpinner(true);
         await row.thread.update();
         row.rendered.showSpinner(false);
