@@ -96,7 +96,7 @@ class RowState extends LabelState {
   snippet: string;
   from: HTMLElement;
   isUnread: boolean;
-  useCardStyle: boolean;
+  renderPinnedStyle: boolean;
   count: number;
   lastMessageId: string;
 
@@ -113,7 +113,7 @@ class RowState extends LabelState {
     this.snippet = thread.getSnippet();
     this.from = thread.getFrom();
     this.isUnread = thread.isUnread();
-    this.useCardStyle = thread.getPriorityId() === Priority.Pin;
+    this.renderPinnedStyle = thread.getPriorityId() === Priority.Pin;
 
     let messageIds = thread.getMessageIds();
     this.count = messageIds.length;
@@ -130,7 +130,7 @@ class RowState extends LabelState {
         this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&
-        this.useCardStyle === other.useCardStyle &&
+        this.renderPinnedStyle === other.renderPinnedStyle &&
         this.shouldHide === other.shouldHide &&
         this.shouldHideCheckboxes === other.shouldHideCheckboxes;
   }
@@ -305,6 +305,12 @@ export class ThreadRow extends HTMLElement {
     this.checkBox_.setRenderAsRadio(shouldHideCheckboxes);
 
     let labels = document.createElement('div');
+    if (state.renderPinnedStyle) {
+      let pinned = document.createElement('span');
+      pinned.title = 'Pinned';
+      pinned.append('📌');
+      labels.append(pinned);
+    }
     ThreadRow.appendLabels(
         labels, state, this.thread, this.labelSelectTemplate_);
 
@@ -320,8 +326,8 @@ export class ThreadRow extends HTMLElement {
       align-items: center;
     `;
 
-    const renderMultiline = state.isSmallScreen && !state.useCardStyle;
-    if (!renderMultiline && !state.useCardStyle)
+    const renderMultiline = state.isSmallScreen && !state.renderPinnedStyle;
+    if (!renderMultiline && !state.renderPinnedStyle)
       subject.style.marginRight = '25px';
 
     subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
@@ -338,7 +344,7 @@ export class ThreadRow extends HTMLElement {
     }
 
     let date = document.createElement('div');
-    if (!state.useCardStyle) {
+    if (!state.renderPinnedStyle) {
       this.appendDate_(date);
     }
     let boldState = state.isUnread ? '600' : '';
@@ -350,7 +356,7 @@ export class ThreadRow extends HTMLElement {
 
     let fromContainer = document.createElement('div');
     fromContainer.className = 'contains-pii';
-    if (!state.useCardStyle) {
+    if (!state.renderPinnedStyle) {
       this.appendFromContainer_(fromContainer, state);
     }
     if (renderMultiline) {

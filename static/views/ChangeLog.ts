@@ -9,6 +9,11 @@ const CHANGES: Entry[] = [
   {
     date: '7/25/20',
     description:
+        `Pinned threads now have a pin icon to indicate they are pinned.`,
+  },
+  {
+    date: '7/25/20',
+    description:
         `Add recently modified view to Hidden tab for seeing the last 50 threads you took an action on. Helpful for when you accidentally triage something and can't get back to it with undo.`,
   },
   {
