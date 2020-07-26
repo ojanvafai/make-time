@@ -1,3 +1,4 @@
+import {Shortcut} from './Actions.js';
 import {createMktimeButton, defined} from './Base.js';
 import {CancelEvent, EmailCompose, SubmitEvent} from './EmailCompose.js';
 import {SendAs} from './SendAs.js';
@@ -31,6 +32,8 @@ const LENGTHS = ['Tweet', 'Short story', 'Novella', 'Novel'];
 export class QuickReply extends HTMLElement {
   private isSending_?: boolean;
   private compose_: EmailCompose;
+  private controls_: HTMLElement;
+  private sendButton_: HTMLElement;
   private replyType_: HTMLSelectElement;
   private senders_?: HTMLSelectElement;
   private lengthIndex_: number;
@@ -85,22 +88,18 @@ export class QuickReply extends HTMLElement {
 
     let cancel = createMktimeButton(
         () => this.dispatchEvent(new ReplyCloseEvent()), 'cancel');
+    this.sendButton_ = createMktimeButton(() => this.handleSubmit_(), 'send');
 
     // Group these together so they wrap atomically.
-    let controls = document.createElement('div');
-    controls.style.cssText = `
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-    `;
+    this.controls_ = document.createElement('div');
+    this.controls_.className = 'flex flex-wrap items-center justify-center';
+    this.controls_.append(this.sendButton_, cancel, this.replyType_);
     if (this.senders_)
-      controls.append(this.senders_);
-    controls.append(this.replyType_, cancel);
+      this.controls_.append(this.senders_);
 
     this.updateProgress_();
 
-    this.append(this.compose_, controls);
+    this.append(this.compose_, this.controls_);
   }
 
   private createCompose_() {
@@ -108,7 +107,8 @@ export class QuickReply extends HTMLElement {
     compose.style.width = '-webkit-fill-available';
     compose.style.maxWidth = 'var(--max-width)';
     compose.style.alignSelf = 'center';
-    compose.placeholder = '<enter> to send, <esc> to cancel.';
+    compose.placeholder =
+        new Shortcut('Enter', true).toString() + ' to send, <esc> to cancel.';
     compose.addEventListener(
         CancelEvent.NAME, () => this.dispatchEvent(new ReplyCloseEvent()));
     compose.addEventListener(SubmitEvent.NAME, () => this.handleSubmit_());
@@ -149,6 +149,8 @@ export class QuickReply extends HTMLElement {
     if (this.isSending_)
       return;
     this.isSending_ = true;
+    this.classList.add('noevents-important', 'quieter');
+    this.sendButton_.textContent = 'sending...'
     let progress = AppShell.updateLoaderTitle(
         'ThreadListView.sendReply', 1, 'Sending reply...');
 
@@ -175,6 +177,8 @@ export class QuickReply extends HTMLElement {
           defined(sender));
     } finally {
       this.isSending_ = false;
+      this.classList.remove('noevents-important', 'quieter');
+      this.sendButton_.textContent = 'send'
       progress.incrementProgress();
     }
 

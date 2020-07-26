@@ -2,13 +2,22 @@ import {createMktimeButton} from '../Base.js';
 import {Dialog} from '../Dialog.js';
 
 interface Entry {
-  date: string, isMajorChange: boolean, description: string;
+  date: string, description: string;
 }
 
 const CHANGES: Entry[] = [
   {
+    date: '7/25/20',
+    description:
+        `Added a send button to quick reply and change the send keyboard shortcut from enter to cmd+enter.`,
+  },
+  {
+    date: '7/25/20',
+    description:
+        `Added "Redact messages" to Settings for doing demos without showing the whole world your inbox.`,
+  },
+  {
     date: '7/22/20',
-    isMajorChange: true,
     description:
         `Moved unfiltered threads to a dedicated view. In the main Todo view they render as a single card a the top you can click on to go to the view. It shows the names of the senders so you can see if you need to deal with filters or not. 
 
@@ -41,7 +50,9 @@ export function renderChangeLog() {
   container.append(header);
 
   for (let change of changes) {
-    container.append(change.description);
+    let item = document.createElement('li');
+    item.append(change.description);
+    container.append(item);
   }
 
   const closeButton = createMktimeButton(() => dialog.remove(), 'close');

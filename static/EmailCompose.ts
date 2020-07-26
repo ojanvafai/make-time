@@ -39,7 +39,7 @@ export class EmailCompose extends HTMLElement {
   private boundSelectionChange_: () => void;
   static EMAIL_CLASS_NAME: string;
 
-  constructor(private isSingleline_?: boolean) {
+  constructor(private enableMetaEnterToSend_?: boolean) {
     super();
 
     this.style.cssText = `
@@ -241,13 +241,13 @@ export class EmailCompose extends HTMLElement {
         return;
 
       case 'Enter':
-        if (e.altKey || e.metaKey || e.shiftKey)
+        if (e.altKey || e.shiftKey)
           return;
 
-        if (this.updateIsAutocompleting()) {
+        if (!e.metaKey && this.updateIsAutocompleting()) {
           this.submitAutocomplete_();
           e.preventDefault();
-        } else if (this.isSingleline_) {
+        } else if (this.enableMetaEnterToSend_ && e.metaKey) {
           this.dispatchEvent(new SubmitEvent());
           e.preventDefault();
         }
