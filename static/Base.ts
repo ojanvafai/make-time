@@ -311,6 +311,11 @@ export function isMobileUserAgent() {
   return navigator.userAgent.includes(' Mobile');
 }
 
+export function isSafari() {
+  return !navigator.userAgent.includes('AppleWebKit/537.36') &&
+      navigator.userAgent.includes('AppleWebKit/');
+}
+
 export function setFaviconCount(count: number) {
   // Don't update the favicon on mobile where it's not visibile in the tab
   // strip and we want the regular favicon for add to homescreen.

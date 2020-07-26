@@ -252,6 +252,7 @@ export class QuoteElidedMessage extends HTMLElement {
         width: 16px;
         padding: 1px 4px;
         user-select: none;
+        -webkit-user-select: none;
         fill: var(--thread-text-color);
       `;
     }

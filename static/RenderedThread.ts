@@ -236,6 +236,7 @@ export class RenderedThread extends HTMLElement {
       align-items: center;
       justify-content: center;
       user-select: none;
+      -webkit-user-select: none;
       border-radius: 3px;
     `;
 

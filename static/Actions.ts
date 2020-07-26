@@ -1,4 +1,4 @@
-import {createMktimeButton, defined, isMobileUserAgent, notNull} from './Base.js';
+import {createMktimeButton, defined, isMobileUserAgent, isSafari, notNull} from './Base.js';
 import {View} from './views/View.js';
 
 export enum ActionGroup {
@@ -30,7 +30,8 @@ interface ButtonWithAction extends HTMLButtonElement {
   action: Action;
 }
 
-const USES_META_FOR_CTRL = navigator.platform.includes('Mac');
+const USES_META_FOR_CTRL =
+    ['iPhone', 'iPad', 'Mac'].find(x => navigator.platform.includes(x));
 const MARGIN = 4;
 
 export class Shortcut {
@@ -135,6 +136,15 @@ export class Actions extends HTMLElement {
     }
   }
 
+  private setTextSelectionEnabledMobileSafari_(isEnabled: boolean) {
+    // -webkit-user-select: none on iOS still selects surrounding text
+    // when you long press on a button. Prevent selection on the whole
+    // page when the pointer is down on a toolbar button.
+    if (isMobileUserAgent() && isSafari()) {
+      document.documentElement.style.webkitUserSelect = isEnabled ? '' : 'none';
+    }
+  }
+
   private createButtonList_(
       action: Action|GroupedActions, container: HTMLElement) {
     let button: ButtonWithAction|null;
@@ -163,6 +173,8 @@ export class Actions extends HTMLElement {
         button.addEventListener('pointermove', updateMenuItemHover);
 
         button.addEventListener('pointerdown', (e: PointerEvent) => {
+          this.setTextSelectionEnabledMobileSafari_(false);
+
           let firstAction = actionList.slice(1);
           this.openMenu_(button!, firstAction);
           updateMenuItemHover(e);
@@ -191,6 +203,8 @@ export class Actions extends HTMLElement {
     });
 
     button.addEventListener('pointerup', (e: MouseEvent) => {
+      this.setTextSelectionEnabledMobileSafari_(true);
+
       // rAF to avoid triggering click events on elements that aren't yet in the
       // DOM to workaround crbug.com/988262.
       requestAnimationFrame(() => this.handlePointerUp_(button!, e));

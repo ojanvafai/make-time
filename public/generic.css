@@ -578,7 +578,7 @@ to{opacity:1;transform:translate(0, 0)}
 .noevents{pointer-events:none}
 .noevents-important{pointer-events:none !important}
 .noevents .events,.child-events>*,.events{pointer-events:all}
-.no-user-select{user-select:none}
+.no-user-select{user-select:none;-webkit-user-select:none}
 .no-highlight{-webkit-tap-highlight-color:rgba(0,0,0,0)}
 .aspect-scale{max-width:100%;width:100%;height:auto}
 .aspect-scale-height{max-width:auto;height:100%;width:auto}
