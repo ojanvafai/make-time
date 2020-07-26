@@ -2,14 +2,23 @@
 <html>
 <head>
 <meta charset='utf-8'>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+const isSafari = !navigator.userAgent.includes('AppleWebKit/537.36') && navigator.userAgent.includes('AppleWebKit/');
+// - maximum-scale=1.0 disables zoom in Chrome and Webkit.
+// - user-scalable=yes reenables user driven zoom in Webkit but not Chrome.
+// - The combination of those two enables user driven zoom but disables
+//   automated browser zooming of form controls.
+const metaViewport = `<meta name="viewport" content="width=device-width, initial-scale=1.0${
+    isSafari ? ', maximum-scale=1.0, user-scalable=yes' : ''}">`;
+document.write(metaViewport);
+// EventTarget constructor polyfill for Safari.
+if (isSafari) {
+  document.write('<script src="third_party/eventtarget/EventTarget.js"></scr' + 'ipt>');
+}
+</script>
 
 <script src="https://apis.google.com/js/api.js"></script>
-<script>
-// Safari doesn't support EventTarget constructor, so polyfill it.
-if (!navigator.userAgent.includes('AppleWebKit/537.36') && navigator.userAgent.includes('AppleWebKit/'))
-  document.write('<script src="third_party/eventtarget/EventTarget.js"></scr' + 'ipt>');
-</script>
+
 <script type=module>
 let shouldBundle = window.location.search.includes('bundle=1');
 if (!shouldBundle) {

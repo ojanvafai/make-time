@@ -221,7 +221,7 @@ export class Settings extends EventTarget {
   private static FILTER_RULE_FIELDS_ = ['label'].concat(
       Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
 
-  static SINGLE_GROUP = 'Group important threads';
+  static SINGLE_GROUP = 'Group important';
   static IGNORE_IMPORTANCE = 'Ignore importance';
 
   static fields = [
