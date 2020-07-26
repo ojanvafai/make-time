@@ -9,7 +9,7 @@ const CHANGES: Entry[] = [
   {
     date: '7/25/20',
     description:
-        `Added a send button to quick reply and change the send keyboard shortcut from enter to cmd+enter.`,
+        `Added a send button to quick reply and changed the send keyboard shortcut from enter to cmd+enter.`,
   },
   {
     date: '7/25/20',
