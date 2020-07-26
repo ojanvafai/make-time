@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 import {Action, ActionGroup, registerActions, Shortcut} from '../Actions.js';
-import {assert, defined, Labels, notNull, expandArrow} from '../Base.js';
+import {assert, defined, Labels, notNull} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
