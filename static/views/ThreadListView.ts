@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 import {Action, ActionGroup, registerActions, Shortcut} from '../Actions.js';
-import {assert, defined, Labels, notNull} from '../Base.js';
+import {assert, defined, Labels, notNull, expandArrow} from '../Base.js';
 import {firestoreUserCollection} from '../BaseMain.js';
 import {CalendarEvent, NO_ROOM_NEEDED} from '../calendar/CalendarEvent.js';
 import {INSERT_LINK_HIDDEN} from '../EmailCompose.js';
@@ -191,6 +191,8 @@ export class ThreadListView extends ThreadListViewBase {
   private unfilteredContainer_: ThreadRowGroupList;
   private nonLowPriorityWrapper_: HTMLElement;
   private hasHadAction_?: boolean;
+  private reply_?: QuickReply|null;
+  private boundBeforeUnload_: (e: BeforeUnloadEvent) => void;
 
   private static ACTIONS_THAT_KEEP_ROWS_: Action[] = [REPEAT_ACTION];
 
@@ -208,11 +210,19 @@ export class ThreadListView extends ThreadListViewBase {
     this.lastCheckedRow_ = null;
     this.renderedGroupName_ = null;
     this.hasNewRenderedRow_ = false;
+    this.reply_ = null;
+
+    this.boundBeforeUnload_ = (e: BeforeUnloadEvent) => {
+      if (this.reply_) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
 
     // Use a larger margin for hiding content than for creating it so that small
-    // scrolls up and down don't't repeatedly doing rendering work.
-    // Register the hidden observer first so that it runs before the visible one
-    // since we always get called back once when we first observe a target.
+    // scrolls up and down don't repeatedly do rendering. Register the hidden
+    // observer first so that it runs before the visible one since we always get
+    // called back once when we first observe a target.
     this.isHiddenObserver_ = new IntersectionObserver((entries) => {
       entries.map(x => {
         if (!x.isIntersecting)
@@ -498,6 +508,11 @@ export class ThreadListView extends ThreadListViewBase {
   }
 
   private updateActions_() {
+    if (this.reply_) {
+      this.reply_ = null;
+      window.removeEventListener('beforeunload', this.boundBeforeUnload_);
+    }
+
     const currentRow = this.renderedRow_ ?? this.focusedRow_;
     if (!currentRow) {
       this.setActions([]);
@@ -1066,6 +1081,12 @@ export class ThreadListView extends ThreadListViewBase {
   }
 
   private transitionToThreadList_(focusedRow: ThreadRow|null) {
+    if (this.reply_ &&
+        !confirm(
+            'Going back to the threadlist will discard the in progress reply. Would you like to proceed?')) {
+      return;
+    }
+
     this.appShell.showFilterToggle(this.isTodoView_);
     this.appShell.showBackArrow(false);
 
@@ -1204,17 +1225,25 @@ export class ThreadListView extends ThreadListViewBase {
   }
 
   async showQuickReply() {
-    let reply = new QuickReply(
+    window.addEventListener('beforeunload', this.boundBeforeUnload_);
+
+    // TODO: Ojan Store this in this.reply_, show a confirmation warning if
+    // there is text typed in the quick reply input if returning to the
+    // threadlist, going to a different view, or (via beforeunload) reloading
+    // the page. Clear this.reply_ via an event fired from QuickReply's
+    // disconnectedCallback.
+    this.reply_ = new QuickReply(
         notNull(this.renderedRow_).thread, await SendAs.getDefault());
-    reply.addEventListener(
+
+    this.reply_.addEventListener(
         ReplyCloseEvent.NAME, () => this.updateActionsAndMainBodyMinHeight_());
 
-    reply.addEventListener(ReplyScrollEvent.NAME, async () => {
+    this.reply_.addEventListener(ReplyScrollEvent.NAME, async () => {
       if (!this.renderedRow_)
         return;
 
       let row = this.renderedRow_;
-      if (row.thread === reply.thread) {
+      if (row.thread === assert(this.reply_).thread) {
         row.rendered.showSpinner(true);
         await row.thread.update();
         row.rendered.showSpinner(false);
@@ -1223,10 +1252,10 @@ export class ThreadListView extends ThreadListViewBase {
     });
 
     this.setActions([]);
-    AppShell.setFooter(reply);
+    AppShell.setFooter(this.reply_);
     this.addTimer_();
 
-    reply.focus();
+    this.reply_.focus();
   }
 }
 window.customElements.define('mt-thread-list-view', ThreadListView);
