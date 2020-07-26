@@ -194,6 +194,7 @@ export class RenderedThread extends HTMLElement {
     `;
 
     let from = document.createElement('div');
+    from.className = 'contains-pii';
     from.style.flex = '1';
 
     if (processedMessage.parsedFrom.length) {
@@ -272,7 +273,7 @@ export class RenderedThread extends HTMLElement {
     }
 
     var bodyContainer = document.createElement('div');
-    bodyContainer.classList.add('message-body');
+    bodyContainer.className = 'message-body contains-pii';
     // Rather than have nested scrollbars, clip overflow. This matches gmail.
     bodyContainer.style.overflowY = 'hidden';
     bodyContainer.style.overflowX = 'auto';
@@ -311,7 +312,10 @@ export class RenderedThread extends HTMLElement {
     let div = document.createElement('div');
     let b = document.createElement('b');
     b.append(`${name}: `);
-    div.append(b, value);
+    let valueContainer = document.createElement('span');
+    valueContainer.className = 'contains-pii';
+    valueContainer.append(value);
+    div.append(b, valueContainer);
     container.append(div);
   }
 

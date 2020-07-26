@@ -311,6 +311,7 @@ export class ThreadRow extends HTMLElement {
     let justSubject = document.createElement('span');
     justSubject.append(state.subject);
     let subject = document.createElement('span');
+    subject.className = 'contains-pii';
     subject.style.cssText = `
       overflow: hidden;
       text-overflow: ellipsis;
@@ -348,6 +349,7 @@ export class ThreadRow extends HTMLElement {
     this.messageDetails_.style.flexDirection = renderMultiline ? 'column' : '';
 
     let fromContainer = document.createElement('div');
+    fromContainer.className = 'contains-pii';
     if (!state.useCardStyle) {
       this.appendFromContainer_(fromContainer, state);
     }

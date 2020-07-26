@@ -300,6 +300,13 @@ export class Settings extends EventTarget {
       type: 'checkbox',
     },
     {
+      key: ServerStorage.KEYS.REDACT_MESSAGES,
+      name: 'Redact messages',
+      description: `Redact message contents for doing demos.`,
+      default: false,
+      type: 'checkbox',
+    },
+    {
       key: ServerStorage.KEYS.TRACK_LONG_TASKS,
       name: 'Visualize jank',
       description: `Flash the screen red whenever make-time is frozen.`,

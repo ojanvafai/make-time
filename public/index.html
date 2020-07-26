@@ -34,6 +34,15 @@ if (localStorage.background)
 <link rel="manifest" href="manifest.json">
 
 <style>
+@font-face {
+  font-family: "Redacted";
+  src: url("fonts/redacted-regular.eot");
+  src: url("fonts/redacted-regular.woff2") format("woff2"),
+        url("fonts/redacted-regular.woff") format("woff"),
+        url("fonts/redacted-regular.otf") format("opentype"),
+        url("fonts/redacted-regular.svg#filename") format("svg");
+}
+
 /* Just style these here to minimize movement and flicker on load before the theme has loaded. */
 :root {
   --overlay-background-color: #fff;
@@ -42,6 +51,10 @@ if (localStorage.background)
 }
 :root, a:visited {
   color: var(--text-color);
+}
+:root.redacted .contains-pii,
+:root.redacted .contains-pii * {
+  font-family: Redacted !important;
 }
 button {
   color: var(--text-color);

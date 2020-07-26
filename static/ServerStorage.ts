@@ -84,6 +84,7 @@ interface KeyTypes {
   ALLOWED_URGENT_COUNT: string;
   LOCAL_OFFICES: string;
   LOG_MATCHING_RULES: string;
+  REDACT_MESSAGES: string;
   TRACK_LONG_TASKS: string;
   QUEUES: string;
   CALENDAR_SORT: string;
@@ -103,6 +104,7 @@ let keys: KeyTypes = {
   ALLOWED_URGENT_COUNT: 'allowed_urgent_count',
   LOCAL_OFFICES: 'local_offices',
   LOG_MATCHING_RULES: 'log_matching_rules',
+  REDACT_MESSAGES: 'redact_messages',
   TRACK_LONG_TASKS: 'track_long_tasks',
   QUEUES: 'queues',
   CALENDAR_SORT: 'calendar_sort',
@@ -121,6 +123,7 @@ let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.ALLOWED_URGENT_COUNT,
   keys.LOCAL_OFFICES,
   keys.LOG_MATCHING_RULES,
+  keys.REDACT_MESSAGES,
   keys.TRACK_LONG_TASKS,
   keys.QUEUES,
   keys.CALENDAR_SORT,

@@ -203,16 +203,21 @@ export function deepEqual(a: any, b: any) {
     return false;
   }
 
-  const aEntries = Object.entries(a);
-  if (aEntries.length !== Object.entries(b).length) {
-    return false;
-  }
-  for (let aEntry of aEntries) {
-    if (!deepEqual(aEntry[1], b[aEntry[0]])) {
+  // If either one is an object then we can go down the object comparison
+  // codepath.
+  if (typeof a === 'object') {
+    const aEntries = Object.entries(a);
+    if (aEntries.length !== Object.entries(b).length) {
       return false;
     }
+    for (let aEntry of aEntries) {
+      if (!deepEqual(aEntry[1], b[aEntry[0]])) {
+        return false;
+      }
+    }
+    return true;
   }
-  return true;
+  return false;
 }
 
 export interface FetchRequestParameters {

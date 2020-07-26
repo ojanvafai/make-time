@@ -23,6 +23,7 @@ export class FallbackThreadRowGroup extends ThreadRowGroupBase {
         this.rowCountDisplay_, ` need filter rules from:`);
 
     this.rowContainer_ = document.createElement('div');
+    this.rowContainer_.className = 'contains-pii';
     this.rowContainer_.style.cssText = `
       display: flex;
       flex-wrap: wrap;

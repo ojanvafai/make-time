@@ -174,33 +174,18 @@ export class AppShell extends HTMLElement {
         createCircle(12, 19, 2),
     );
 
-    let toolbarChildStyle = `
-      display: flex;
-      align-items:center;
-    `;
 
     AppShell.title_ = document.createElement('div');
-    AppShell.title_.className = 'hide-if-empty';
+    AppShell.title_.className =
+        'hide-if-empty flex items-center text-color-dim mx-half';
     AppShell.title_.id = 'title';
-    AppShell.title_.style.cssText = `
-      margin: 0 4px;
-      color: var(--dim-text-color);
-      ${toolbarChildStyle}
-    `;
 
     this.subject_ = document.createElement('div');
-    this.subject_.style.cssText = `
-      flex: 1;
-      justify-content: center;
-      ${toolbarChildStyle}
-    `;
+    this.subject_.className =
+        'contains-pii justify-center flex-expand-1 flex items-center text-color-dim';
 
     AppShell.loader_ = document.createElement('div');
-    AppShell.loader_.className = 'hide-if-empty';
-    AppShell.loader_.style.cssText = `
-      color: var(--dim-text-color);
-      ${toolbarChildStyle}
-    `;
+    AppShell.loader_.className = 'hide-if-empty flex items-center';
 
     this.toolbar_.append(
         this.backArrow_, this.menuToggle_, this.filterToggle_, AppShell.title_,

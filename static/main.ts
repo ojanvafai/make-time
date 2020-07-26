@@ -297,10 +297,17 @@ async function getMailProcessor() {
   return mailProcessor_;
 }
 
-async function updateBackground() {
+async function updateStylingFromSettings() {
   let settings = await getSettings();
   let theme = settings.get(ServerStorage.KEYS.THEME);
   Themes.setTheme(theme);
+
+  const rootClassList = document.documentElement.classList;
+  if (settings.get(ServerStorage.KEYS.REDACT_MESSAGES)) {
+    rootClassList.add('redacted');
+  } else {
+    rootClassList.remove('redacted');
+  }
 }
 
 document.body.addEventListener(ViewFiltersChangedEvent.NAME, async (e) => {
@@ -317,7 +324,7 @@ document.body.addEventListener(ViewFiltersChangedEvent.NAME, async (e) => {
 async function onLoad() {
   let serverStorage = await getServerStorage();
   serverStorage.addEventListener(ServerStorageUpdateEventName, async () => {
-    updateBackground();
+    updateStylingFromSettings();
     // Rerender the current view on settings changes in case a setting would
     // change it's behavior, e.g. duration of the countdown timer or sort order
     // of queues.
@@ -345,7 +352,7 @@ async function onLoad() {
   let progress = AppShell.updateLoaderTitle('Main.onLoad', 1, 'Updating...');
   try {
     await routeToCurrentLocation();
-    updateBackground();
+    updateStylingFromSettings();
     await update();
     // Instantiate the TodoModel even if we're not in the Todo view so that the
     // favicon is updated with the must do count.
