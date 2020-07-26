@@ -713,10 +713,18 @@ export class ThreadListView extends ThreadListViewBase {
 
     // Only set this after the initial update so we don't show the all done
     // indication incorrectly.
-    const isHighPriorityDone =
-        this.model.hasFetchedThreads() && hasOnlyLowPriorityThreads;
-    this.highPriorityContainer_.className =
-        isHighPriorityDone ? 'all-done' : '';
+    if (this.model.hasFetchedThreads()) {
+      if (this.isTodoView_) {
+        this.highPriorityContainer_.className =
+            hasOnlyLowPriorityThreads ? 'all-done' : '';
+      } else {
+        if (threads.length) {
+          this.classList.remove('all-done', 'quiet-message');
+        } else {
+          this.classList.add('all-done', 'quiet-message');
+        }
+      }
+    }
 
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());

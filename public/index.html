@@ -269,20 +269,21 @@ mt-thread-row:hover,
 blockquote {
   min-width: 300px;
 }
+.all-done {
+  position: static;
+}
 .all-done:after {
   content: "٩( ′ㅂ`)و\A\A All done for the day! You got this!";
   text-align: center;
-  margin-top: 40px;
   font-size: 20px;
   white-space: pre-wrap;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   position: absolute;
-  top: 0;
-  bottom: 40%;
-  left: 0;
-  right: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.all-done.quiet-message:after {
+  content: "Nothing to see here.";
 }
 .pending-changes mt-thread-row {
   pointer-events: none;

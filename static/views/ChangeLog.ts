@@ -9,6 +9,11 @@ const CHANGES: Entry[] = [
   {
     date: '7/25/20',
     description:
+        `Add recently modified view to Hidden tab for seeing the last 50 threads you took an action on. Helpful for when you accidentally triage something and can't get back to it with undo.`,
+  },
+  {
+    date: '7/25/20',
+    description:
         `Added a send button to quick reply and changed the send keyboard shortcut from enter to cmd+enter.`,
   },
   {

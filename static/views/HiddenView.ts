@@ -11,6 +11,7 @@ import {ThreadListView} from './ThreadListView.js';
 import {View} from './View.js';
 
 let FIRESTORE_KEYS = [
+  ThreadMetadataKeys.retriageTimestamp,
   ThreadMetadataKeys.blocked,
   ThreadMetadataKeys.throttled,
   ThreadMetadataKeys.queued,
@@ -19,21 +20,35 @@ let FIRESTORE_KEYS = [
   ThreadMetadataKeys.archivedByFilter,
 ];
 
+let FIRESTORE_KEYS_TO_HUMAN_READABLE_NAME = Object.fromEntries([
+  [ThreadMetadataKeys.retriageTimestamp, 'Recently modified'],
+  [ThreadMetadataKeys.blocked, STUCK_LABEL_NAME],
+  [ThreadMetadataKeys.throttled, 'Throttled'],
+  [ThreadMetadataKeys.queued, 'Queued'],
+  [ThreadMetadataKeys.muted, 'Muted'],
+  [ThreadMetadataKeys.softMuted, 'Soft muted'],
+  [ThreadMetadataKeys.archivedByFilter, 'Archived by a filter'],
+]);
+
 class HiddenModel extends ThreadListModel {
   constructor(settings_: Settings, private keyIndex_: number) {
     // For muted, don't put undo items back in the inbox.
     super(settings_);
 
-    if (this.queryKey_() === ThreadMetadataKeys.blocked) {
+    let metadataCollection =
+        firestoreUserCollection().doc('threads').collection('metadata');
+
+    const queryKey = this.queryKey_();
+    let query;
+    if (queryKey === ThreadMetadataKeys.blocked) {
       // TODO: Exclude hasLabel threads
-      let metadataCollection =
-          firestoreUserCollection().doc('threads').collection('metadata');
-      this.setQueries(metadataCollection.orderBy('blocked', 'asc'));
+      query = metadataCollection.orderBy(queryKey, 'asc');
+    } else if (queryKey === ThreadMetadataKeys.retriageTimestamp) {
+      query = metadataCollection.orderBy(queryKey, 'desc').limit(50);
     } else {
-      let metadataCollection =
-          firestoreUserCollection().doc('threads').collection('metadata');
-      this.setQueries(metadataCollection.where(this.queryKey_(), '==', true));
+      query = metadataCollection.where(queryKey, '==', true);
     }
+    this.setQueries(query);
   }
 
   private queryKey_() {
@@ -46,6 +61,11 @@ class HiddenModel extends ThreadListModel {
         // Reverse sort by blocked date for the blocked view.
         return compareDates(
             notNull(b.getStuckDate()), notNull(a.getStuckDate()));
+
+      case ThreadMetadataKeys.retriageTimestamp:
+        // Reverse sort by blocked date for the blocked view.
+        return compareDates(
+            notNull(b.getLastModifiedDate()), notNull(a.getLastModifiedDate()));
 
       case ThreadMetadataKeys.throttled:
       case ThreadMetadataKeys.queued:
@@ -63,6 +83,9 @@ class HiddenModel extends ThreadListModel {
             thread.needsTriage())
           return false;
         break;
+
+      case ThreadMetadataKeys.retriageTimestamp:
+        return true;
 
       case ThreadMetadataKeys.throttled:
       case ThreadMetadataKeys.queued:
@@ -136,14 +159,10 @@ export class HiddenView extends View {
     this.append(container);
 
     this.select_ = document.createElement('select');
-    for (let key of FIRESTORE_KEYS) {
+    for (let entry of Object.entries(FIRESTORE_KEYS_TO_HUMAN_READABLE_NAME)) {
       let option = document.createElement('option');
-      if (key === ThreadMetadataKeys.blocked) {
-        option.append(STUCK_LABEL_NAME);
-        option.value = key;
-      } else {
-        option.append(key);
-      }
+      option.append(entry[1]);
+      option.value = entry[0];
       this.select_.append(option);
     }
     this.select_.addEventListener('change', () => this.handleSelectChange_());

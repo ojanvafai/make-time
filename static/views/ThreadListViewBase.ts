@@ -62,7 +62,6 @@ export abstract class ThreadListViewBase extends View {
     this.style.cssText = `
       width: 100%;
       margin: auto;
-      position: relative;
     `;
 
     this.listeners_ = [];
