@@ -196,29 +196,26 @@ export async function pickDate(destination: Action):
   });
 }
 
-export async function takeAction(
-    thread: Thread, destination: Action, moveToInbox?: boolean) {
+export async function takeAction(thread: Thread, destination: Action) {
   let date = await pickDate(destination);
   // Null means that this is a date action, but no date was selected.
   if (date === null)
     return;
-  let update = date ? await createStuckUpdate(thread, date, moveToInbox) :
-                      await createUpdate(thread, destination, moveToInbox);
+  let update = date ? await createStuckUpdate(thread, date) :
+                      await createUpdate(thread, destination);
   if (!update)
     return;
   await thread.updateMetadata(update);
 }
 
-export async function createStuckUpdate(
-    thread: Thread, date: Date, moveToInbox?: boolean) {
-  return thread.stuckUpdate(date, moveToInbox)
+export async function createStuckUpdate(thread: Thread, date: Date) {
+  return thread.stuckUpdate(date)
 }
 
-export function createUpdate(
-    thread: Thread, destination: Action, moveToInbox?: boolean) {
+export function createUpdate(thread: Thread, destination: Action) {
   let priority = destinationToPriority(destination);
   if (priority) {
-    return thread.priorityUpdate(priority, moveToInbox);
+    return thread.priorityUpdate(priority);
   } else {
     switch (destination) {
       case REPEAT_ACTION:
@@ -228,22 +225,22 @@ export function createUpdate(
         return thread.archiveUpdate();
 
       case BLOCKED_NONE_ACTION:
-        return thread.clearStuckUpdate(moveToInbox);
+        return thread.clearStuckUpdate();
 
       case BLOCKED_1D_ACTION:
-        return thread.stuckDaysUpdate(1, moveToInbox);
+        return thread.stuckDaysUpdate(1);
 
       case BLOCKED_2D_ACTION:
-        return thread.stuckDaysUpdate(2, moveToInbox);
+        return thread.stuckDaysUpdate(2);
 
       case BLOCKED_7D_ACTION:
-        return thread.stuckDaysUpdate(7, moveToInbox);
+        return thread.stuckDaysUpdate(7);
 
       case BLOCKED_14D_ACTION:
-        return thread.stuckDaysUpdate(14, moveToInbox);
+        return thread.stuckDaysUpdate(14);
 
       case BLOCKED_30D_ACTION:
-        return thread.stuckDaysUpdate(30, moveToInbox);
+        return thread.stuckDaysUpdate(30);
 
       case MUTE_ACTION:
         return thread.muteUpdate();

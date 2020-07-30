@@ -62,24 +62,17 @@ export interface ThreadMetadata {
   queued?: boolean;
   throttled?: boolean;
   blocked?: boolean|number;
-  removeDue?: number;
-  removedDueDateExpired?: boolean;
   muted?: boolean;
   softMuted?: boolean;
   newMessagesSinceSoftMuted?: boolean;
   archivedByFilter?: boolean;
-  // Threads that were added back to the inbox in maketime, so syncWithGmail
-  // should move them into the inbox instead of clearing their metadata.
-  moveToInbox?: boolean;
   // Count of number of messages read. We don't attempt to keep this in sync
   // with gmail's sense of read state.
   readCount?: number;
   // Timestamp the last of the readCount messages was marked read.
   readCountTimestamp?: number;
-  countToArchive?: number;
-  countToMarkRead?: number;
   // Queue pushing maketime labels to gmail as gmail labels.
-  pushLabelsToGmail?: boolean;
+  messageCountToPushLabelsToGmail?: number;
   important?: boolean;
 }
 
@@ -101,18 +94,13 @@ export interface ThreadMetadataUpdate {
   queued?: boolean|firebase.firestore.FieldValue;
   throttled?: boolean|firebase.firestore.FieldValue;
   blocked?: boolean|number|firebase.firestore.FieldValue;
-  removedDue?: boolean|number|firebase.firestore.FieldValue;
-  removedDueDateExpired?: boolean|firebase.firestore.FieldValue;
   muted?: boolean|firebase.firestore.FieldValue;
   softMuted?: boolean|firebase.firestore.FieldValue;
   newMessagesSinceSoftMuted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
-  moveToInbox?: boolean|firebase.firestore.FieldValue;
   readCount?: number|firebase.firestore.FieldValue;
   readCountTimestamp?: number|firebase.firestore.FieldValue;
-  countToArchive?: number|firebase.firestore.FieldValue;
-  countToMarkRead?: number|firebase.firestore.FieldValue;
-  pushLabelsToGmail?: boolean|firebase.firestore.FieldValue;
+  messageCountToPushLabelsToGmail?: number|firebase.firestore.FieldValue;
   important?: boolean|firebase.firestore.FieldValue;
 }
 
@@ -133,19 +121,21 @@ export enum ThreadMetadataKeys {
   queued = 'queued',
   throttled = 'throttled',
   blocked = 'blocked',
-  removedDue = 'due',
-  removedDueDateExpired = 'dueDateExpired',
   muted = 'muted',
   softMuted = 'softMuted',
   newMessagesSinceSoftMuted = 'newMessagesSinceSoftMuted',
   archivedByFilter = 'archivedByFilter',
-  moveToInbox = 'moveToInbox',
   readCount = 'readCount',
   readCountTimestamp = 'readCountTimestamp',
-  countToArchive = 'countToArchive',
-  countToMarkRead = 'countToMarkRead',
-  pushLabelsToGmail = 'pushLabelsToGmail',
+  messageCountToPushLabelsToGmail = 'messageCountToPushLabelsToGmail',
   important = 'important',
+  // Since these strings are used in firestore, we'd need to do a database
+  // migration to delete all uses of these keys if we wanted to reuse them.
+  removedDue = 'due',
+  removedDueDateExpired = 'dueDateExpired',
+  removedMoveToInbox = 'moveToInbox',
+  removedCountToArchive = 'countToArchive',
+  removedCountToMarkRead = 'countToMarkRead',
 }
 
 let FWD_THREAD_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -302,9 +292,26 @@ export class Thread extends EventTarget {
     return oldState;
   }
 
+  private includePushLabelsToGmail_(update: ThreadMetadataUpdate) {
+    // Only set pushLabelsToGmail if a field changed that causes the labels in
+    // gmail to change.
+    const valueChanged = (value: any, previousValue: any) => {
+      return value !== undefined && value !== previousValue;
+    };
+    if (valueChanged(update.hasLabel, this.metadata_.hasLabel) ||
+        valueChanged(update.labelId, this.metadata_.labelId) ||
+        valueChanged(update.hasPriority, this.metadata_.hasPriority) ||
+        valueChanged(update.priorityId, this.metadata_.priorityId) ||
+        valueChanged(update.readCount, this.metadata_.readCount) ||
+        valueChanged(update.muted, this.metadata_.muted)) {
+      update.messageCountToPushLabelsToGmail = this.messageCount_();
+    }
+  }
+
   // Returns the old values for all the fields being updated so that undo can
   // restore them.
   async updateMetadata(updates: ThreadMetadataUpdate) {
+    this.includePushLabelsToGmail_(updates);
     await this.getMetadataDocument_().update(updates);
     this.dispatchEvent(new UpdatedEvent());
     if (this.actionInProgress_) {
@@ -312,9 +319,8 @@ export class Thread extends EventTarget {
     }
   }
 
-  private static clearedMetadata_(removeFromInbox?: boolean):
-      ThreadMetadataUpdate {
-    let update: ThreadMetadataUpdate = {
+  private static clearedMetadata_(): ThreadMetadataUpdate {
+    return {
       needsRetriage: window.firebase.firestore.FieldValue.delete(),
       blocked: window.firebase.firestore.FieldValue.delete(),
       muted: window.firebase.firestore.FieldValue.delete(),
@@ -330,17 +336,10 @@ export class Thread extends EventTarget {
       hasPriority: window.firebase.firestore.FieldValue.delete(),
       priorityId: window.firebase.firestore.FieldValue.delete(),
     };
-
-    if (removeFromInbox) {
-      // Intentionally keep labelId so that muted threads can see if their
-      // labelId changes when new messages come in.
-      update.moveToInbox = window.firebase.firestore.FieldValue.delete();
-    }
-    return update;
   }
 
   static async clearMetadata(threadId: string) {
-    let update = this.clearedMetadata_(true);
+    let update = this.clearedMetadata_();
     await Thread.metadataCollection().doc(threadId).update(update);
   }
 
@@ -363,12 +362,11 @@ export class Thread extends EventTarget {
   }
 
   removeFromInboxMetadata_() {
-    return Thread.baseArchiveUpdate(this.messageCount_());
+    return Thread.baseArchiveUpdate();
   }
 
-  static baseArchiveUpdate(messageCount: number) {
-    let update = Thread.clearedMetadata_(true);
-    update.countToArchive = messageCount;
+  static baseArchiveUpdate() {
+    let update = Thread.clearedMetadata_();
     return update;
   }
 
@@ -393,7 +391,8 @@ export class Thread extends EventTarget {
   // For muted threads that get new messages, all we need to do is archive the
   // messages in gmail during the sync.
   async applyMute() {
-    await this.updateMetadata({countToArchive: this.messageCount_()});
+    await this.updateMetadata(
+        {messageCountToPushLabelsToGmail: this.messageCount_()});
   }
 
   muteUpdate() {
@@ -435,7 +434,8 @@ export class Thread extends EventTarget {
   keepInInboxMetadata_() {
     let update = Thread.clearedMetadata_();
     // Mark the last time this thread was triaged so we don't retriage it too
-    // soon after that.
+    // soon after that. This is also used as a last modified time in a number of
+    // places.
     update.retriageTimestamp = Date.now();
     return update;
   }
@@ -461,11 +461,8 @@ export class Thread extends EventTarget {
     if (this.metadata_.readCount === undefined ||
         this.metadata_.readCount < this.metadata_.messageIds.length) {
       let messageCount = this.messageCount_();
-      await this.updateMetadata({
-        readCount: messageCount,
-        countToMarkRead: messageCount,
-        readCountTimestamp: Date.now()
-      });
+      await this.updateMetadata(
+          {readCount: messageCount, readCountTimestamp: Date.now()});
       // Marking read needs to rerender the from so that the bolds are removed.
       this.clearCachedFrom();
     }
@@ -513,20 +510,15 @@ export class Thread extends EventTarget {
       container.append('\xa0');
   }
 
-  priorityUpdate(priority: Priority, moveToInbox?: boolean) {
+  priorityUpdate(priority: Priority) {
     let update = this.keepInInboxMetadata_();
-
-    if (moveToInbox)
-      update.moveToInbox = true;
     update.hasPriority = true;
     update.priorityId = priority;
     return update;
   }
 
-  clearStuckUpdate(moveToInbox?: boolean) {
+  clearStuckUpdate() {
     let update: ThreadMetadataUpdate = {};
-    if (moveToInbox)
-      update.moveToInbox = true;
     update[ThreadMetadataKeys.blocked] =
         window.firebase.firestore.FieldValue.delete();
     // Clearing blocked should put the thread back in the triage queue,
@@ -537,33 +529,27 @@ export class Thread extends EventTarget {
     return update;
   }
 
-  stuckUpdate(date: Date, moveToInbox?: boolean) {
-    return this.setDate(date, moveToInbox);
+  stuckUpdate(date: Date) {
+    return this.setDate(date);
   }
 
-  stuckDaysUpdate(days: number, moveToInbox?: boolean) {
-    return this.setDateDays_(days, moveToInbox);
+  stuckDaysUpdate(days: number) {
+    return this.setDateDays_(days);
   }
 
-  setDate(date: Date, moveToInbox?: boolean) {
+  setDate(date: Date) {
     let update = this.keepInInboxMetadata_();
-    if (moveToInbox)
-      update.moveToInbox = true;
     update[ThreadMetadataKeys.blocked] = date.getTime();
     return update;
   }
 
-  setDateDays_(days: number, moveToInbox?: boolean) {
+  setDateDays_(days: number) {
     let date = new Date();
     // Set the time to midnight to ensure consistency since we only care about
     // day boundaries.
     date.setHours(0, 0, 0);
     date.setDate(date.getDate() + days);
-    return this.setDate(date, moveToInbox);
-  }
-
-  async pushLabelsToGmail() {
-    await this.updateMetadata({pushLabelsToGmail: true});
+    return this.setDate(date);
   }
 
   async setOnlyLabel(label: string) {
@@ -665,10 +651,6 @@ export class Thread extends EventTarget {
 
   getMessageIds() {
     return this.metadata_.messageIds;
-  }
-
-  getCountToArchive() {
-    return this.metadata_.countToArchive;
   }
 
   getMessages() {

@@ -232,6 +232,14 @@ export class Settings extends EventTarget {
       values: THEMES.map(x => x.name),
     },
     {
+      key: ServerStorage.KEYS.PUSH_LABELS_TO_GMAIL,
+      name: 'Apply gmail labels',
+      description:
+          `Sync priority and label from mktime into gmail labels. Changes made to labels/priorities in gmail will not sync back into mktime.`,
+      default: false,
+      type: 'checkbox',
+    },
+    {
       key: ServerStorage.KEYS.PRIORITY_INBOX,
       name: 'Priority inbox',
       description: `Configure how important messages are grouped.`,

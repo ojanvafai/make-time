@@ -109,18 +109,6 @@ class HiddenModel extends ThreadListModel {
     }
   }
 
-  // Moving one of these types out of hidden into a priority or blocked means
-  // we need to mvoe it back into the inbox.
-  triageMovesToInbox_() {
-    return this.queryKey_() === ThreadMetadataKeys.muted ||
-        this.queryKey_() === ThreadMetadataKeys.softMuted ||
-        this.queryKey_() === ThreadMetadataKeys.archivedByFilter;
-  }
-
-  async markTriaged(destination: Action, threads: Thread[]) {
-    super.markTriaged(destination, threads, this.triageMovesToInbox_());
-  }
-
   // Override the undo action for muted and archive since we need to have them
   // set the appropriate state for removeing the thread from the inbox again
   // if the thread was already put back in the inbox.

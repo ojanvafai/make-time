@@ -131,11 +131,8 @@ export abstract class ThreadListModel extends Model {
     // If we have archived all the messages but the change hasn't been
     // propagated to gmail yet, don't show them. This avoids threads
     // disappearing from view in ThreadListView.markTriaged_ only to show up
-    // again a frame later. Long-term, don't remove rows from markTriaged_ at
-    // all and just rely on firebase changes, but that will depend on first
-    // moving focus state into ThreadListModel so focus updates don't read stale
-    // state of whether any rows are checked.
-    if (thread.getMessageIds().length === thread.getCountToArchive())
+    // again a frame later.
+    if (thread.actionInProgress())
       return false;
     return true;
   }
@@ -271,8 +268,7 @@ export abstract class ThreadListModel extends Model {
     this.undoableActions_ = [];
   }
 
-  async markTriaged(
-      destination: Action, threads: Thread[], moveToInbox?: boolean) {
+  async markTriaged(destination: Action, threads: Thread[]) {
     if (!threads.length)
       return;
 
@@ -294,8 +290,8 @@ export abstract class ThreadListModel extends Model {
         'Modifying threads...');
 
     for (let thread of threads) {
-      let update = date ? await createStuckUpdate(thread, date, moveToInbox) :
-                          createUpdate(thread, destination, moveToInbox);
+      let update = date ? await createStuckUpdate(thread, date) :
+                          createUpdate(thread, destination);
       if (!update)
         continue;
 
@@ -314,13 +310,11 @@ export abstract class ThreadListModel extends Model {
   }
 
   async handleUndoAction(action: TriageResult) {
-    let newState = action.state;
-    // TODO: We should also keep track of the messages we marked read so we
-    // can mark them unread again, and theoretically, we should only put the
-    // messages that we previously in the inbox back into the inbox, so we
+    // TODO: We should also keep track of the messages we marked read so we can
+    // mark them unread again, and theoretically, we should only restore
+    // labels/inbox state in gmail for messages we had previously triaged, so we
     // should keep track of the actual message IDs modified.
-    newState.moveToInbox = true;
-    await action.thread.updateMetadata(newState);
+    await action.thread.updateMetadata(action.state);
   }
 
   async undoLastAction() {

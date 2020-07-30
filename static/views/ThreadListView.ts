@@ -496,13 +496,6 @@ export class ThreadListView extends ThreadListViewBase {
     this.openThreadInGmail(row.thread);
   }
 
-  openOverflowMenu(container: HTMLElement) {
-    super.openOverflowMenu(container);
-    this.createMenuItem(
-        container, () => this.applyLabelsInGmail_(),
-        'Apply labels in gmail on next sync');
-  }
-
   async goBack() {
     this.transitionToThreadList_(this.renderedRow_);
   }
@@ -1118,13 +1111,6 @@ export class ThreadListView extends ThreadListViewBase {
     this.buttonContainer_.style.display = 'none';
 
     this.clearNoMeetingRooms_();
-  }
-
-  private async applyLabelsInGmail_() {
-    let threads = this.collectThreadsToTriage_(true);
-    for (let thread of threads) {
-      await thread.pushLabelsToGmail();
-    }
   }
 
   private async markTriaged_(destination: Action) {

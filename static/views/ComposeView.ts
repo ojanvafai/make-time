@@ -385,7 +385,7 @@ export class ComposeView extends View {
       let thread = Thread.create(this.sentThreadId_, metadata);
 
       try {
-        await takeAction(thread, action, true);
+        await takeAction(thread, action);
       } finally {
         // Enable the toolbar again whether the update fails or succeeds.
         toolbar.style.opacity = '';

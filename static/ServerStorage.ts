@@ -51,8 +51,8 @@ export class ServerStorage extends EventTarget {
     // TODO: Migrate this over to db.collection(uid).doc('user') so all the data
     // for this user can be under a single collection, which will allow us to
     // query all the data for example. It also means we don't need to add a new
-    // security rule for each new document we want to add for a user.
-    // When doing this, update firestore.rules to remove the users collection.
+    // security rule for each new document we want to add for a user. When doing
+    // this, update firestore.rules to remove the users collection.
     return db.collection('users').doc(uid);
   }
 
@@ -75,6 +75,7 @@ interface KeyTypes {
   LAST_DEQUEUE_TIME: string;
   LAST_DETHROTTLE_TIME: string;
   THEME: string;
+  PUSH_LABELS_TO_GMAIL: string;
   PRIORITY_INBOX: string;
   VACATION: string;
   TIMER_DURATION: string;
@@ -95,6 +96,7 @@ let keys: KeyTypes = {
   LAST_DEQUEUE_TIME: 'Last dequeue time',
   LAST_DETHROTTLE_TIME: 'last_dethrottle_time',
   THEME: 'theme',
+  PUSH_LABELS_TO_GMAIL: 'push_labels_to_gmail',
   PRIORITY_INBOX: 'priority_inbox',
   VACATION: 'vacation',
   TIMER_DURATION: 'timeout',
@@ -110,8 +112,8 @@ let keys: KeyTypes = {
   CALENDAR_SORT: 'calendar_sort',
 };
 
-// TODO: Setup a proper listening system for each key and make that the only way
-// to get at the key's value so callers are forced to handle updates.
+// TODO: Setup a proper listening system for each key and make that the only
+// way to get at the key's value so callers are forced to handle updates.
 let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.THEME,
   keys.PRIORITY_INBOX,

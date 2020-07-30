@@ -7,6 +7,16 @@ interface Entry {
 
 const CHANGES: Entry[] = [
   {
+    date: '7/29/20',
+    description:
+        `Added a setting to have mktime push labels and priorities to gmail as gmail labels. This lets you have a backup of the critical mktime content in gmail and also lets you cope better when mktime is down for some reason.
+
+label/priority are only sent from mktime to gmail, not the other way around. So changing a label or priority in gmail will cause it to get out of sync with what label/priority mktime thinks it has until you modify the thread in mktime again.
+
+This code is hot off the presses and mostly rewrites the existing code for sending updates from mktime to gmail, so speak up if there are bugs in the next few days.
+`,
+  },
+  {
     date: '7/25/20',
     description:
         `Pinned threads now have a pin icon to indicate they are pinned.`,
@@ -46,7 +56,6 @@ export function renderChangeLog() {
   if (lastShownChangelogEntryDate) {
     const lastShownDate = new Date(lastShownChangelogEntryDate);
     changes = CHANGES.filter(x => new Date(x.date) > lastShownDate);
-    console.log(changes);
   }
 
   if (!changes.length) {
@@ -60,7 +69,7 @@ export function renderChangeLog() {
   container.append(header);
 
   for (let change of changes) {
-    let item = document.createElement('li');
+    let item = document.createElement(changes.length > 1 ? 'li' : 'div');
     item.append(change.description);
     container.append(item);
   }
