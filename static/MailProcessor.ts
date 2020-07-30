@@ -1,7 +1,7 @@
 import * as firebase from 'firebase/app';
 
 import {assert, defined, FetchRequestParameters, Labels, ParsedAddress, USER_ID} from './Base.js';
-import {firestoreUserCollection, getServerStorage} from './BaseMain.js';
+import {firestore, firestoreUserCollection, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
@@ -775,6 +775,41 @@ export class MailProcessor {
           Priority.Backlog, BACKLOG_RETRIAGE_FREQUENCY_DAYS);
     }
   }
+
+  async schedulePushGmailLablesForAllHasLabelOrPriorityThreads() {
+    if (!this.settings_.get(ServerStorage.KEYS.PUSH_LABELS_TO_GMAIL)) {
+      return;
+    }
+
+    const hasLabelSnapshot = await this.metadataCollection_()
+                                 .where(ThreadMetadataKeys.hasLabel, '==', true)
+                                 .get();
+    const hasPrioritySnapshot =
+        await this.metadataCollection_()
+            .where(ThreadMetadataKeys.hasPriority, '==', true)
+            .get();
+    const allDocs = [...hasLabelSnapshot.docs, ...hasPrioritySnapshot.docs];
+
+    const FIRESTORE_WRITE_BATCH_LIMIT = 500;
+    const batches = [];
+
+    while (batches.length * FIRESTORE_WRITE_BATCH_LIMIT < allDocs.length) {
+      const currentIndex = batches.length * FIRESTORE_WRITE_BATCH_LIMIT;
+      const thisChunk = allDocs.slice(
+          currentIndex, currentIndex + FIRESTORE_WRITE_BATCH_LIMIT);
+      var batch = firestore().batch();
+      for (let doc of thisChunk) {
+        let data = doc.data() as ThreadMetadata;
+        let update: ThreadMetadataUpdate = {
+          messageCountToPushLabelsToGmail: data.messageIds.length
+        };
+        batch.update(doc.ref, update);
+      }
+      batches.push(batch.commit());
+    }
+    await Promise.all(batches);
+  }
+
 
   private async processSoftMute_() {
     let querySnapshot = await this.metadataCollection_()

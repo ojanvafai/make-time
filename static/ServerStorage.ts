@@ -8,6 +8,12 @@ export interface StorageUpdates {
 }
 
 export const ServerStorageUpdateEventName = 'server-storage-update';
+export class PushLabelsToGmailUpdateEventName extends Event {
+  static NAME = 'push-labels-to-gmail-update';
+  constructor() {
+    super(PushLabelsToGmailUpdateEventName.NAME);
+  }
+}
 
 export class ServerStorage extends EventTarget {
   private data_?: firebase.firestore.DocumentSnapshot;
@@ -35,6 +41,12 @@ export class ServerStorage extends EventTarget {
       this.data_ = snapshot;
       if (!oldData)
         return;
+
+      if (!deepEqual(
+              oldData.get(keys.PUSH_LABELS_TO_GMAIL),
+              this.data_.get(keys.PUSH_LABELS_TO_GMAIL))) {
+        this.dispatchEvent(new PushLabelsToGmailUpdateEventName());
+      }
 
       for (let key of KEYS_TO_DISPATCH_UPDATE_EVENT) {
         if (!deepEqual(oldData.get(key), this.data_.get(key))) {

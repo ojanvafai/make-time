@@ -13,7 +13,7 @@ import {TodoModel} from './models/TodoModel.js';
 import {CONNECTION_FAILURE_KEY} from './Net.js';
 import {Router} from './Router.js';
 import {SendAs} from './SendAs.js';
-import {ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
+import {PushLabelsToGmailUpdateEventName, ServerStorage, ServerStorageUpdateEventName} from './ServerStorage.js';
 import {Themes} from './Themes.js';
 import {Toast} from './Toast.js';
 import {AppShell, BackEvent, OverflowMenuOpenEvent, ToggleViewEvent} from './views/AppShell.js';
@@ -331,6 +331,11 @@ async function onLoad() {
     resetModels();
     await routeToCurrentLocation();
   });
+  serverStorage.addEventListener(
+      PushLabelsToGmailUpdateEventName.NAME, async () => {
+        (await getMailProcessor())
+            .schedulePushGmailLablesForAllHasLabelOrPriorityThreads();
+      });
 
   appShell_ = new AppShell();
   appShell_.addEventListener(BackEvent.NAME, async () => {
