@@ -1,4 +1,4 @@
-import {assert, create, createMktimeButton, defined, Labels} from '../Base.js';
+import {create, createMktimeButton, defined, Labels} from '../Base.js';
 import {Dialog} from '../Dialog.js';
 import {FilterRule, Settings} from '../Settings.js';
 
