@@ -101,15 +101,13 @@ export function createPath(path: string) {
   return node;
 }
 
-export function collapseArrow() {
-  let one = createLine(7.5, 14, 12, 9.5, 2);
-  let two = createLine(12, 9.5, 16.5, 14, 2);
-  let svg = createSvgContainer('0 0 24 24', one, two);
-  svg.style.height = '24px';
-  return svg;
+export function expandArrow() {
+  let arrow = collapseArrow();
+  arrow.style.transform = 'rotate(270deg)';
+  return arrow;
 }
 
-export function expandArrow() {
+export function collapseArrow() {
   let one = createLine(7.5, 9, 12, 13.5, 2);
   let two = createLine(12, 13.5, 16.5, 9, 2);
   let svg = createSvgContainer('0 0 24 24', one, two);
