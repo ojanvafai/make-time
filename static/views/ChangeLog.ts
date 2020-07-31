@@ -9,6 +9,11 @@ const CHANGES: Entry[] = [
   {
     date: '7/30/20',
     description:
+        `Make confirm prompt for deleting a rule in the filter settings inline rather than a popup.`
+  },
+  {
+    date: '7/30/20',
+    description:
         `Restrict the width of rendered messages to target <100 characters for better readability.`
   },
   {

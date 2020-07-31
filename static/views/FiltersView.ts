@@ -1,6 +1,6 @@
-import {create, createMktimeButton, defined, Labels} from '../Base.js';
-import {FilterRule, Settings} from '../Settings.js';
+import {assert, create, createMktimeButton, defined, Labels} from '../Base.js';
 import {Dialog} from '../Dialog.js';
+import {FilterRule, Settings} from '../Settings.js';
 
 import {FilterRuleComponent, LabelCreatedEvent} from './FilterRuleComponent.js';
 import {HelpDialog} from './HelpDialog.js';
@@ -229,13 +229,27 @@ export class FiltersView extends HTMLElement {
       display: flex;
       margin-bottom: 4px;
     `;
+    const deleteButton = this.createButton_('-', 'Delete this rule', () => {
+      const backdrop = document.createElement('div');
+      backdrop.className = 'z4 fixed all-0';
+      backdrop.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        backdrop.remove();
+        reallyDeleteButton.remove();
+      });
+
+      const reallyDeleteButton = createMktimeButton(() => {
+        row.remove();
+        backdrop.remove();
+      }, 'Really delete?');
+      reallyDeleteButton.classList.add('red-important', 'z5', 'no-hover');
+      // Use inline style to override the position:relative on .mktime-button.
+      reallyDeleteButton.style.position = 'absolute';
+      deleteButton.before(backdrop, reallyDeleteButton);
+    });
     topButtons.append(
         this.createButton_('+', 'Add new row above', insertRowBefore),
-        this.createButton_('-', 'Delete this rule', () => {
-          if (confirm(`Delete this rule? This can't be undone after saving.`)) {
-            row.remove();
-          }
-        }));
+        deleteButton);
     let bottomButtons = document.createElement('div');
     bottomButtons.style.cssText = `
           display: flex;
@@ -259,7 +273,9 @@ export class FiltersView extends HTMLElement {
     return row;
   }
 
-  private createButton_(text: string, title: string, onClick: () => void) {
+  private createButton_(
+      text: string, title: string,
+      onClick: (e: MouseEvent) => void|Promise<void>) {
     const button = create('span', text);
     button.classList.add('row-button');
     button.setAttribute('title', title);

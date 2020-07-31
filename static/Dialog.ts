@@ -47,7 +47,7 @@ export class Dialog extends HTMLElement {
     this.oldActiveElement_ = null;
 
     this.backdrop_ = document.createElement('div');
-    this.backdrop_.className = 'z3 fixed all-0 darken3';
+    this.backdrop_.className = 'z3 fixed all-0 darken2';
     this.backdrop_.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       this.remove();

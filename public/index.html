@@ -229,7 +229,7 @@ select:hover:not(:focus),
 .x-button:hover,
 .hover:hover,
 mt-select-box:hover,
-.mktime-button:not(:disabled):hover,
+.mktime-button:not(.no-hover):not(:disabled):hover,
 .row-button:hover,
 .expander:hover,
 .toggler:hover {
@@ -237,6 +237,11 @@ mt-select-box:hover,
   background-color: var(--border-and-hover-color) !important;
   cursor: pointer;
 }
+
+.mktime-button.no-hover:not(:disabled):hover {
+  cursor: pointer;
+}
+
 .mktime-button:disabled:hover {
   background: none;
 }
@@ -254,6 +259,7 @@ mt-select-box:hover,
   content: '⚠ contact list failed to load';
   padding: 2px;
 }
+.red-important,.red-important-focus:focus,.red-important-hover:hover{background-color:#f82b60 !important}
 .day {
   visibility: hidden;
 }
