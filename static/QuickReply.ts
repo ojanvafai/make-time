@@ -65,7 +65,8 @@ export class QuickReply extends HTMLElement {
       this.senders_ = document.createElement('select');
       // Shrink this button if we can't fit the whole toolbar on one row, but
       // don't shrink below 100px;
-      this.senders_.className = 'flex-expand-1' this.senders_.style.cssText = `
+      this.senders_.className = 'flex-expand-1';
+      this.senders_.style.cssText = `
         width: 100px;
         max-width: max-content;
       `;
