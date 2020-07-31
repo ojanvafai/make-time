@@ -40,12 +40,8 @@ export class QuickReply extends HTMLElement {
 
   constructor(public thread: Thread, private sendAs_: SendAs) {
     super();
-    this.style.cssText = `
-      display: flex;
-      flex-direction: column;
-      flex-wrap: wrap;
-      width: -webkit-fill-available;
-    `;
+    this.className =
+        'flex flex-column flex-wrap mx-auto reading-max-width fill-available-width';
 
     this.compose_ = this.createCompose_();
     this.lengthIndex_ = 0;
@@ -69,8 +65,7 @@ export class QuickReply extends HTMLElement {
       this.senders_ = document.createElement('select');
       // Shrink this button if we can't fit the whole toolbar on one row, but
       // don't shrink below 100px;
-      this.senders_.style.cssText = `
-        flex: 1;
+      this.senders_.className = 'flex-expand-1' this.senders_.style.cssText = `
         width: 100px;
         max-width: max-content;
       `;
@@ -104,9 +99,8 @@ export class QuickReply extends HTMLElement {
 
   private createCompose_() {
     let compose = new EmailCompose(true);
-    compose.style.width = '-webkit-fill-available';
-    compose.style.maxWidth = 'var(--max-width)';
-    compose.style.alignSelf = 'center';
+    compose.classList.add(
+        'fill-available-width', 'theme-max-width', 'self-center');
     compose.placeholder =
         new Shortcut('Enter', true).toString() + ' to send, <esc> to cancel.';
     compose.addEventListener(

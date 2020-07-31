@@ -51,7 +51,18 @@ if (localStorage.background)
         url("fonts/redacted-regular.otf") format("opentype"),
         url("fonts/redacted-regular.svg#filename") format("svg");
 }
-
+.thread-text-color {
+  color: var(--thread-text-color);
+}
+.reading-max-width {
+  max-width: 40rem;
+}
+.fill-available-width {
+  width: -webkit-fill-available;
+}
+.theme-max-width {
+  max-width: var(--max-width);
+}
 /* Just style these here to minimize movement and flicker on load before the theme has loaded. */
 :root {
   --overlay-background-color: #fff;

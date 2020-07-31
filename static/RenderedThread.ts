@@ -42,14 +42,8 @@ export class RenderedThread extends HTMLElement {
 
   constructor(public thread: Thread) {
     super();
-    this.style.cssText = `
-      color: var(--thread-text-color);
-      position: absolute;
-      left: 0;
-      right: 0;
-      max-width: var(--max-width);
-      margin: auto;
-    `;
+    this.className =
+        'absolute mx-auto left-0 right-0 thread-text-color reading-max-width';
     this.focused_ = null;
   }
 

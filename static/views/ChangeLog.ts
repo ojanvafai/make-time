@@ -7,6 +7,11 @@ interface Entry {
 
 const CHANGES: Entry[] = [
   {
+    date: '7/30/20',
+    description:
+        `Restrict the width of rendered messages to target <100 characters for better readability.`
+  },
+  {
     date: '7/29/20',
     description:
         `Added a setting to have mktime push labels and priorities to gmail as gmail labels. This lets you have a backup of the critical mktime content in gmail and also lets you cope better when mktime is down for some reason.
@@ -48,10 +53,20 @@ This should fix the bugs around the wrong toolbar showing up or it not showing a
   },
 ];
 
+function writeLastShownDate() {
+  window.localStorage.lastShownChangelogEntryDate = CHANGES[0].date;
+}
+
 export function renderChangeLog() {
   // TODO: Store this in firestore so it syncs across devices
   const lastShownChangelogEntryDate =
       window.localStorage.lastShownChangelogEntryDate;
+  // If this is a new user, then there won't be a last shown date and we don't
+  // want to show them a changelog anyways.
+  if (lastShownChangelogEntryDate === undefined) {
+    writeLastShownDate();
+    return;
+  }
   let changes = CHANGES;
   if (lastShownChangelogEntryDate) {
     const lastShownDate = new Date(lastShownChangelogEntryDate);
@@ -76,7 +91,5 @@ export function renderChangeLog() {
 
   const closeButton = createMktimeButton(() => dialog.remove(), 'close');
   const dialog = new Dialog(container, [closeButton]);
-  dialog.addEventListener(
-      'close',
-      () => window.localStorage.lastShownChangelogEntryDate = changes[0].date);
+  dialog.addEventListener('close', writeLastShownDate);
 };

@@ -11,32 +11,22 @@ export class FallbackThreadRowGroup extends ThreadRowGroupBase {
 
   constructor(name: string) {
     super(name);
-    this.style.margin = 'auto';
-    this.style.padding = '12px';
+    this.className = 'mx-auto p1-and-half';
 
     this.rowCountDisplay_ = new Text();
     this.hasQueuedFrame_ = false;
 
     let groupNameContainer = this.createGroupNameContainer();
-    groupNameContainer.style.justifyContent = 'center';
+    groupNameContainer.className = 'justify-center';
     groupNameContainer.append(
         this.rowCountDisplay_, ` need filter rules from:`);
 
     this.rowContainer_ = document.createElement('div');
-    this.rowContainer_.className = 'contains-pii';
-    this.rowContainer_.style.cssText = `
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    `;
+    this.rowContainer_.className =
+        'contains-pii text-size-small flex flex-wrap justify-center';
 
     let linkContainer = document.createElement('a');
-    linkContainer.style.cssText = `
-      display: block;
-      margin: auto;
-      text-decoration: none;
-    `;
-    linkContainer.className = 'hover';
+    linkContainer.className = 'hover mx-auto block text-decoration-none';
     linkContainer.href = '/unfiltered';
     linkContainer.append(groupNameContainer, this.rowContainer_);
     this.append(linkContainer);
@@ -96,10 +86,7 @@ export class FallbackThreadRowGroup extends ThreadRowGroupBase {
 
   private getAddressElement_(name: string) {
     let element = document.createElement('div');
-    element.style.cssText = `
-      display: inline-block;
-      margin: 8px;
-    `;
+    element.className = 'inline-block m1';
     element.append(name);
     return element;
   }
