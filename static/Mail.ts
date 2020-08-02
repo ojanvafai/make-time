@@ -82,3 +82,16 @@ ${text}`;
   });
   return response.result;
 }
+
+export async function insertNoteToSelf(threadId: string, metadata: string) {
+  let email = `From: "mktime note to self"<noreply>
+X-mktime-metadata: true
+Subject: test note to self 2
+Content-Type: text/html; charset="UTF-8"
+
+${metadata}
+`;
+  let resource = {threadId, raw: await base64.urlEncode(email)};
+  await gapiFetch(
+      gapi.client.gmail.users.messages.insert, {userId: USER_ID, resource});
+}

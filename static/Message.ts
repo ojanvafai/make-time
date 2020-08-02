@@ -43,6 +43,7 @@ export class Message {
   bcc: string|undefined;
   messageId: string|undefined;
   listId: string|undefined;
+  isNoteToSelf: boolean|undefined;
   isUnread!: boolean;
   isDraft!: boolean;
 
@@ -50,8 +51,8 @@ export class Message {
       message: gapi.client.gmail.Message, private previousMessage_?: Message) {
     this.id = defined(message.id);
 
-    // This is a setter that also sets isUnread and isDraft
-    this.setRawMessage(message);
+    this.rawMessage_ = message;
+    this.updateLabelDerivedState_();
 
     this.attachments_ = [];
 
@@ -102,6 +103,8 @@ export class Message {
         case 'list-id':
           this.listId = value;
           break;
+        case 'x-mktime-metadata':
+          this.isNoteToSelf = true;
       }
     }
 
@@ -135,15 +138,20 @@ export class Message {
     return this.rawMessage_;
   }
 
-  setRawMessage(message: gapi.client.gmail.Message) {
-    this.rawMessage_ = message;
-    let labels = defined(message.labelIds);
-    this.isUnread = labels.includes('UNREAD');
-    this.isDraft = labels.includes('DRAFT');
+  private updateLabelDerivedState_() {
+    if (this.rawMessage_.labelIds) {
+      let labels = this.rawMessage_.labelIds;
+      this.isUnread = labels.includes('UNREAD');
+      this.isDraft = labels.includes('DRAFT');
+    } else {
+      this.isUnread = false;
+      this.isDraft = false;
+    }
   }
 
   updateLabels(labelIds: string[]) {
     this.rawMessage_.labelIds = labelIds;
+    this.updateLabelDerivedState_();
   }
 
   getHeaders() {

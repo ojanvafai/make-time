@@ -3,12 +3,11 @@ import * as firebase from 'firebase/app';
 import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
 import {IDBKeyVal} from './idb-keyval.js';
-import {AddressHeaders, send} from './Mail.js';
+import {AddressHeaders, insertNoteToSelf, send} from './Mail.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
 import {ProcessedMessageData} from './ProcessedMessageData.js';
 import {QueueNames} from './QueueNames.js';
-import {SendAs} from './SendAs.js';
 
 // TODO: Clear out old threads so these caches don't grow indefinitely.
 let memoryCache_: Map<string, Thread> = new Map();
@@ -43,11 +42,23 @@ interface Repeat {
   type: number;
 }
 
+export interface MessagesToDeleteUpdate {
+  gmailMessageIdsToDelete: string[]|firebase.firestore.FieldValue;
+}
+
+export enum MessagesToDeleteKeys {
+  gmailMessageIdsToDelete = 'gmailMessageIdsToDelete',
+}
+
 // Keep ThreadMetadataUpdate and ThreadMetadataKeys in sync with any changes
 // here.
 export interface ThreadMetadata {
   historyId: string;
   messageIds: string[];
+  hasMessageIdsToMarkRead?: boolean;
+  messageIdsToMarkRead?: string[];
+  hasMessageIdsToPushToGmail?: boolean;
+  messageIdsToPushToGmail?: string[];
   timestamp: number;
   retriageTimestamp?: number;
   priorityId?: number;
@@ -66,14 +77,10 @@ export interface ThreadMetadata {
   softMuted?: boolean;
   newMessagesSinceSoftMuted?: boolean;
   archivedByFilter?: boolean;
-  // Count of number of messages read. We don't attempt to keep this in sync
-  // with gmail's sense of read state.
-  readCount?: number;
-  // Timestamp the last of the readCount messages was marked read.
-  readCountTimestamp?: number;
-  // Queue pushing maketime labels to gmail as gmail labels.
-  messageCountToPushLabelsToGmail?: number;
+  // Timestamp any message in this thread was last marked read.
+  lastMarkedReadTime?: number;
   important?: boolean;
+  messageCountToPushLabelsToGmail?: number;
 }
 
 // Want strong typing on all update calls, but don't want to write historyId and
@@ -83,6 +90,10 @@ export interface ThreadMetadata {
 export interface ThreadMetadataUpdate {
   historyId?: string|firebase.firestore.FieldValue;
   messageIds?: string[]|firebase.firestore.FieldValue;
+  hasMessageIdsToMarkRead?: boolean|firebase.firestore.FieldValue;
+  messageIdsToMarkRead?: string[]|firebase.firestore.FieldValue;
+  hasMessageIdsToPushToGmail?: boolean|firebase.firestore.FieldValue;
+  messageIdsToPushToGmail?: string[]|firebase.firestore.FieldValue;
   timestamp?: number|firebase.firestore.FieldValue;
   retriageTimestamp?: number|firebase.firestore.FieldValue;
   priorityId?: number|firebase.firestore.FieldValue;
@@ -98,10 +109,9 @@ export interface ThreadMetadataUpdate {
   softMuted?: boolean|firebase.firestore.FieldValue;
   newMessagesSinceSoftMuted?: boolean|firebase.firestore.FieldValue;
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
-  readCount?: number|firebase.firestore.FieldValue;
-  readCountTimestamp?: number|firebase.firestore.FieldValue;
-  messageCountToPushLabelsToGmail?: number|firebase.firestore.FieldValue;
+  lastMarkedReadTime?: number|firebase.firestore.FieldValue;
   important?: boolean|firebase.firestore.FieldValue;
+  messageCountToPushLabelsToGmail?: number|firebase.firestore.FieldValue;
 }
 
 // Firestore queries take the key as a string. Use an enum so we can avoid silly
@@ -110,6 +120,10 @@ export interface ThreadMetadataUpdate {
 export enum ThreadMetadataKeys {
   historyId = 'historyId',
   messageIds = 'messageIds',
+  hasMessageIdsToMarkRead = 'hasMessageIdsToMarkRead',
+  messageIdsToMarkRead = 'messageIdsToMarkRead',
+  hasMessageIdsToPushToGmail = 'hasMessageIdsToPushToGmail',
+  messageIdsToPushToGmail = 'messageIdsToPushToGmail',
   timestamp = 'timestamp',
   retriageTimestamp = 'retriageTimestamp',
   priorityId = 'priorityId',
@@ -125,12 +139,12 @@ export enum ThreadMetadataKeys {
   softMuted = 'softMuted',
   newMessagesSinceSoftMuted = 'newMessagesSinceSoftMuted',
   archivedByFilter = 'archivedByFilter',
-  readCount = 'readCount',
-  readCountTimestamp = 'readCountTimestamp',
-  messageCountToPushLabelsToGmail = 'messageCountToPushLabelsToGmail',
+  lastMarkedReadTime = 'readCountTimestamp',
   important = 'important',
   // Since these strings are used in firestore, we'd need to do a database
   // migration to delete all uses of these keys if we wanted to reuse them.
+  removedMessageCountToPushLabelsToGmail = 'messageCountToPushLabelsToGmail',
+  removedReadCount = 'readCount',
   removedDue = 'due',
   removedDueDateExpired = 'dueDateExpired',
   removedMoveToInbox = 'moveToInbox',
@@ -268,14 +282,6 @@ export class Thread extends EventTarget {
     return aOrder - bOrder;
   }
 
-  private messageCount_() {
-    let count = this.metadata_.messageIds.length + this.sentMessageIds_.length;
-    assert(
-        count,
-        `Can't modify thread before message details have loaded. Please wait and try again.`);
-    return count;
-  }
-
   forceTriage() {
     return this.forceTriage_;
   }
@@ -302,9 +308,11 @@ export class Thread extends EventTarget {
         valueChanged(update.labelId, this.metadata_.labelId) ||
         valueChanged(update.hasPriority, this.metadata_.hasPriority) ||
         valueChanged(update.priorityId, this.metadata_.priorityId) ||
-        valueChanged(update.readCount, this.metadata_.readCount) ||
         valueChanged(update.muted, this.metadata_.muted)) {
-      update.messageCountToPushLabelsToGmail = this.messageCount_();
+      update.hasMessageIdsToPushToGmail = true;
+      update.messageIdsToPushToGmail =
+          window.firebase.firestore.FieldValue.arrayUnion(
+              ...this.getMessageIdsIncludingRecentlySent_());
     }
   }
 
@@ -325,6 +333,7 @@ export class Thread extends EventTarget {
       blocked: window.firebase.firestore.FieldValue.delete(),
       muted: window.firebase.firestore.FieldValue.delete(),
       softMuted: window.firebase.firestore.FieldValue.delete(),
+      newMessagesSinceSoftMuted: window.firebase.firestore.FieldValue.delete(),
       archivedByFilter: window.firebase.firestore.FieldValue.delete(),
       queued: window.firebase.firestore.FieldValue.delete(),
       throttled: window.firebase.firestore.FieldValue.delete(),
@@ -343,8 +352,12 @@ export class Thread extends EventTarget {
     await Thread.metadataCollection().doc(threadId).update(update);
   }
 
+  static threadsDocRef() {
+    return firestoreUserCollection().doc('threads');
+  }
+
   static metadataCollection() {
-    return firestoreUserCollection().doc('threads').collection('metadata');
+    return this.threadsDocRef().collection('metadata');
   }
 
   setActionInProgress(inProgress: boolean) {
@@ -378,8 +391,6 @@ export class Thread extends EventTarget {
     let update = this.removeFromInboxMetadata_();
     if (archivedByFilter) {
       update.archivedByFilter = true;
-      if (this.metadata_.softMuted)
-        update.newMessagesSinceSoftMuted = true;
     }
     return update;
   }
@@ -391,8 +402,16 @@ export class Thread extends EventTarget {
   // For muted threads that get new messages, all we need to do is archive the
   // messages in gmail during the sync.
   async applyMute() {
-    await this.updateMetadata(
-        {messageCountToPushLabelsToGmail: this.messageCount_()});
+    // TODO: Only need to store message ids for messages that are in the inbox.
+    const update: ThreadMetadataUpdate = {
+      hasMessageIdsToPushToGmail: true,
+      messageIdsToPushToGmail: window.firebase.firestore.FieldValue.arrayUnion(
+          ...this.getMessageIdsIncludingRecentlySent_()),
+    };
+    if (this.metadata_.softMuted) {
+      update.newMessagesSinceSoftMuted = true;
+    }
+    await this.updateMetadata(update);
   }
 
   muteUpdate() {
@@ -440,32 +459,34 @@ export class Thread extends EventTarget {
     return update;
   }
 
-  unreadNotSentByMe(sendAs: SendAs) {
-    if (!this.isUnread())
-      return false;
-
-    let senders = defined(sendAs.senders).map(x => x.sendAsEmail);
-    let unread = this.processed_.messages.slice(this.metadata_.readCount);
-    return unread.some(
-        x => x.parsedFrom.some(y => !senders.includes(y.address)));
+  private isMessageUnread_(message: Message) {
+    return message.isUnread &&
+        (!this.metadata_.messageIdsToMarkRead ||
+         !this.metadata_.messageIdsToMarkRead.includes(message.id))
   }
 
   isUnread() {
-    // Old threads don't have a readCount since we added that field later.
-    return this.metadata_.readCount !== undefined &&
-        this.metadata_.readCount < this.metadata_.messageIds.length;
+    return this.processed_.messages.some(x => this.isMessageUnread_(x));
   }
 
   async markRead() {
-    // Old threads don't have a readCount since we added that field later.
-    if (this.metadata_.readCount === undefined ||
-        this.metadata_.readCount < this.metadata_.messageIds.length) {
-      let messageCount = this.messageCount_();
-      await this.updateMetadata(
-          {readCount: messageCount, readCountTimestamp: Date.now()});
-      // Marking read needs to rerender the from so that the bolds are removed.
-      this.clearCachedFrom();
+    const messageIdsToMarkRead =
+        this.getMessages().filter(x => x.isUnread).map(x => x.id);
+    if (!messageIdsToMarkRead.length) {
+      return;
     }
+    await this.updateMetadata({
+      hasMessageIdsToMarkRead: true,
+      messageIdsToMarkRead: window.firebase.firestore.FieldValue.arrayUnion(
+          ...messageIdsToMarkRead),
+      lastMarkedReadTime: Date.now()
+    });
+    // Marking read needs to rerender the from so that the bolds are removed.
+    this.clearCachedFrom();
+    // We will sometimes render in between the start of markRead and this point
+    // due to the await in the middle. Force another render after the cached
+    // from is cleared to ensure it rerenders with the correct unread state.
+    this.dispatchEvent(new UpdatedEvent());
   }
 
   clearCachedFrom() {
@@ -476,10 +497,10 @@ export class Thread extends EventTarget {
     let read: Set<string> = new Set();
     let unread: Set<string> = new Set();
 
-    this.getMessages().map((x, index) => {
+    this.getMessages().map((x) => {
       if (!x.from)
         return;
-      let set = index >= this.readCount() ? unread : read;
+      let set = this.isMessageUnread_(x) ? unread : read;
       let parsed = parseAddressList(x.from);
       parsed.map(y => {
         set.add(y.name || y.address.split('@')[0]);
@@ -562,6 +583,7 @@ export class Thread extends EventTarget {
       labelId: labelId,
       hasLabel: true,
       muted: false,
+      newMessagesSinceSoftMuted: false,
       softMuted: false,
     };
 
@@ -593,10 +615,6 @@ export class Thread extends EventTarget {
     return {repeat: newRepeat} as ThreadMetadataUpdate;
   }
 
-  readCount() {
-    return this.metadata_.readCount || 0;
-  }
-
   hasRepeat() {
     return !!this.metadata_.repeat;
   }
@@ -619,8 +637,8 @@ export class Thread extends EventTarget {
     // before we added retriageTimestamps to them).
     let triageTime =
         this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp);
-    if (this.metadata_.readCountTimestamp) {
-      triageTime = Math.max(this.metadata_.readCountTimestamp, triageTime);
+    if (this.metadata_.lastMarkedReadTime) {
+      triageTime = Math.max(this.metadata_.lastMarkedReadTime, triageTime);
     }
     return new Date(triageTime);
   }
@@ -651,6 +669,10 @@ export class Thread extends EventTarget {
 
   getMessageIds() {
     return this.metadata_.messageIds;
+  }
+
+  private getMessageIdsIncludingRecentlySent_() {
+    return [...this.metadata_.messageIds, ...this.sentMessageIds_];
   }
 
   getMessages() {
@@ -689,12 +711,8 @@ export class Thread extends EventTarget {
     return this.metadata_.historyId;
   }
 
-  isMuted() {
-    return this.metadata_.muted;
-  }
-
-  isSoftMuted() {
-    return this.metadata_.softMuted;
+  isMutedOrSoftMuted() {
+    return this.metadata_.muted || this.metadata_.softMuted;
   }
 
   getFrom() {
@@ -730,7 +748,6 @@ export class Thread extends EventTarget {
       historyId: '',
       messageIds: [],
       timestamp: 0,
-      readCount: 0,
     } as ThreadMetadata;
     await doc.set(data);
     return data;
@@ -903,6 +920,14 @@ export class Thread extends EventTarget {
   async saveMessageState_(
       historyId: string, messages: gapi.client.gmail.Message[]) {
     this.processed_.process(historyId, messages);
+    if (this.metadata_.messageIdsToMarkRead &&
+        this.metadata_.messageIdsToMarkRead.length) {
+      const newMessageIds = messages.map(x => x.id);
+      await this.updateMetadata({
+        messageIdsToMarkRead:
+            window.firebase.firestore.FieldValue.arrayRemove(...newMessageIds),
+      });
+    }
     await this.generateMetadataFromGmailState_(historyId, messages);
     await this.serializeMessageData_(historyId, messages);
   }
@@ -943,6 +968,32 @@ export class Thread extends EventTarget {
     } catch (e) {
       console.log('Fail storing message details in IDB.', e);
     }
+  }
+
+  getNoteToSelf() {
+    return this.processed_.notesToSelf[0];
+  }
+
+  async testNoteToSelf() {
+    this.setNoteToSelf('<b>asdf</b>');
+  }
+
+  async setNoteToSelf(note: string) {
+    const oldMetadataMessages = [...this.processed_.notesToSelf];
+    assert(oldMetadataMessages.every(message => message.isNoteToSelf));
+    const oldMessageIds = oldMetadataMessages.map(x => x.id);
+    await insertNoteToSelf(this.id, note);
+    await this.update();
+
+    if (!oldMessageIds.length) {
+      return;
+    }
+
+    const update: MessagesToDeleteUpdate = {
+      gmailMessageIdsToDelete:
+          window.firebase.firestore.FieldValue.arrayUnion(...oldMessageIds)
+    };
+    Thread.threadsDocRef().update(update);
   }
 
   async sendReply(

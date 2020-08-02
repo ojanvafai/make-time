@@ -269,39 +269,27 @@ export class ThreadListView extends ThreadListViewBase {
     spinner.className = 'spinner';
     spinnerContainer.append(spinner);
     this.pendingContainer_ = document.createElement('div');
-    this.pendingContainer_.className = 'pending-changes';
-    this.pendingContainer_.style.cssText = `
-      overflow: auto;
-    `;
+    this.pendingContainer_.className = 'pending-changes overflow-auto';
     this.pendingWithSpinner_.append(spinnerContainer, this.pendingContainer_);
     this.listen(
         this.pendingContainer_, InProgressChangedEvent.NAME,
         () => this.handleInProgressChanged_());
 
     this.rowGroupContainer_ = document.createElement('div');
-    this.rowGroupContainer_.style.cssText = `
-      display: flex;
-      flex-direction: column;
-    `;
+    this.rowGroupContainer_.className = 'flex flex-column';
     this.append(this.rowGroupContainer_);
 
     this.highPriorityContainer_ = new ThreadRowGroupList();
-    this.highPriorityContainer_.style.cssText = `
-      margin-bottom: 16px;
-    `;
+    this.highPriorityContainer_.className = 'mb2';
+
     this.lowPriorityContainer_ = new ThreadRowGroupList();
     this.unfilteredContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_ = new ThreadRowGroupList();
-    this.untriagedContainer_.style.cssText = `
-      padding-bottom: 16px;
-      background-color: var(--main-background);
-    `;
+    this.untriagedContainer_.className = 'theme-main-background pb2';
+
     this.nonLowPriorityWrapper_ = document.createElement('div');
-    this.nonLowPriorityWrapper_.style.cssText = `
-      background-color: var(--nested-background-color);
-      display: flex;
-      flex-direction: column;
-    `;
+    this.nonLowPriorityWrapper_.className =
+        'flex flex-column relative theme-nested-background-color';
     this.nonLowPriorityWrapper_.append(
         this.unfilteredContainer_, this.untriagedContainer_,
         this.highPriorityContainer_);
@@ -1193,6 +1181,12 @@ export class ThreadListView extends ThreadListViewBase {
 
     rendered.style.bottom = '';
     rendered.style.visibility = 'visible';
+
+    const noteToSelf = renderedRow.thread.getNoteToSelf();
+    if (noteToSelf) {
+      noteToSelf.getHtmlOrHtmlWrappedPlain().then(
+          noteHtml => console.log(noteHtml));
+    }
 
     // If you click on a row before it's pulled in message details, handle it
     // semi-gracefully.

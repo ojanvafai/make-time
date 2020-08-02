@@ -1,7 +1,7 @@
 import * as firebase from 'firebase/app';
 
-import {assert, defined, FetchRequestParameters, Labels, ParsedAddress, USER_ID} from './Base.js';
-import {firestore, firestoreUserCollection, getServerStorage} from './BaseMain.js';
+import {assert, deepEqual, defined, FetchRequestParameters, Labels, ParsedAddress, USER_ID} from './Base.js';
+import {firestore, getServerStorage} from './BaseMain.js';
 import {ErrorLogger} from './ErrorLogger.js';
 import {Message} from './Message.js';
 import {gapiFetch} from './Net.js';
@@ -10,10 +10,11 @@ import {QueueSettings, ThrottleOption} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {FilterRule, HeaderFilterRule, ruleRegexp, Settings, stringFilterMatches} from './Settings.js';
 import {TaskQueue} from './TaskQueue.js';
-import {BuiltInLabelIds, getLabelName, getPriorityName, Priority, Thread, ThreadMetadata, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
+import {BuiltInLabelIds, getLabelName, getPriorityName, MessagesToDeleteKeys, MessagesToDeleteUpdate, Priority, Thread, ThreadMetadata, ThreadMetadataKeys, ThreadMetadataUpdate} from './Thread.js';
 import {AppShell} from './views/AppShell.js';
 
 let MAKE_TIME_LABEL_NAME = 'mktime';
+let SOFT_MUTE_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/softmute`;
 let LABEL_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/label`;
 let PRIORITY_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/priority`;
 let MAX_RETRIAGE_COUNT = 10;
@@ -27,10 +28,6 @@ export class MailProcessor {
   private queueNames_?: QueueNames;
 
   constructor(private settings_: Settings) {}
-
-  private metadataCollection_() {
-    return firestoreUserCollection().doc('threads').collection('metadata');
-  }
 
   async init() {
     if (this.makeTimeLabelId_)
@@ -75,12 +72,71 @@ export class MailProcessor {
     await this.processQueues_();
     await this.pushMktimeUpdatesToGmail_();
     await this.pullGmailUpdatesToMktime_();
-
-    // Process throttled after syncWithGmail for the case of the first sync in
-    // the morning where we want to sync and then immediately show all the
-    // threads rather than show the throttled threads, then sync, then wait 2hrs
-    // to show the synced threads.
+    // Process throttled after pullGmailUpdatesToMktime_ for the case of the
+    // first sync in the morning where we want to sync and then immediately show
+    // all the threads rather than show the throttled threads, then sync, then
+    // wait 2hrs to show the synced threads.
     await this.processThrottled_();
+    // Do this a second time here in case pulling updates or processing
+    // throttled changes the state we push to gmail.
+    await this.pushMktimeUpdatesToGmail_();
+    await this.garbageCollectGmailMessages_();
+    await this.markMessagesAsRead_();
+  }
+
+  private populateMarkReadUpdate(
+      update: ThreadMetadataUpdate, removeLabelIds: string[]) {
+    // Intentionally don't clear messageIdsToMarkRead since we do that
+    // when we next pull in the new messages from gmail to avoid having
+    // a window where mktime thinks they are unread again.
+    update.hasMessageIdsToMarkRead =
+        window.firebase.firestore.FieldValue.delete();
+    removeLabelIds.push('UNREAD');
+  }
+
+  private async markMessagesAsRead_() {
+    const snapshot =
+        await Thread.metadataCollection()
+            .where(ThreadMetadataKeys.hasMessageIdsToMarkRead, '==', true)
+            .get();
+
+    await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
+        snapshot.docs,
+        async (doc: firebase.firestore.QueryDocumentSnapshot) => {
+          const update: ThreadMetadataUpdate = {};
+          const removeLabelIds: string[] = [];
+          this.populateMarkReadUpdate(update, removeLabelIds);
+
+          const messageIds = doc.data().messageIdsToMarkRead;
+          if (messageIds.length) {
+            this.removeGmailLabelsFromDoc_(
+                doc.id, messageIds, [], removeLabelIds);
+          }
+          await doc.ref.update(update);
+        });
+  }
+
+  private async garbageCollectGmailMessages_() {
+    const threadsDocSnapshot = await Thread.threadsDocRef().get();
+    let messageIdsToDelete =
+        threadsDocSnapshot.get(MessagesToDeleteKeys.gmailMessageIdsToDelete);
+
+    if (!messageIdsToDelete) {
+      return;
+    }
+
+    await this.doInParallel_<string>(
+        messageIdsToDelete,
+        async (messageId: string) => {
+            await gapiFetch(gapi.client.gmail.users.messages.trash, {
+              userId: USER_ID,
+              id: messageId,
+            })});
+
+    const update: MessagesToDeleteUpdate = {
+      gmailMessageIdsToDelete: window.firebase.firestore.FieldValue.delete()
+    };
+    Thread.threadsDocRef().update(update);
   }
 
   private async modifyLabelsOnWholeThread_(
@@ -93,26 +149,12 @@ export class MailProcessor {
     });
   }
 
-  private async addLabelsToWholeThread_(threadId: string, labels: string[]) {
-    await this.modifyLabelsOnWholeThread_(threadId, labels, []);
-  }
-
-  private async addMakeTimeLabelToWholeThread_(id: string) {
-    await this.addLabelsToWholeThread_(id, [defined(this.makeTimeLabelId_)]);
-  }
-
-  private async removeMakeTimeLabelFromWholeThread_(id: string) {
-    await this.modifyLabelsOnWholeThread_(
-        id, [], [defined(this.makeTimeLabelId_)]);
-  }
-
   private async removeGmailLabelsFromDoc_(
-      docId: string, data: firebase.firestore.DocumentData, count: number,
-      addLabelIds: string[], removeLabelIds: string[]) {
-    let messageIds = data.messageIds;
+      docId: string, messageIds: string[], addLabelIds: string[],
+      removeLabelIds: string[]) {
     await gapiFetch(gapi.client.gmail.users.messages.batchModify, {
       userId: USER_ID,
-      ids: messageIds.slice(0, count),
+      ids: messageIds,
       addLabelIds: addLabelIds,
       removeLabelIds: removeLabelIds,
     });
@@ -130,7 +172,7 @@ export class MailProcessor {
       newMessageData = await gapiFetch(gapi.client.gmail.users.threads.get, {
         userId: USER_ID,
         id: docId,
-        fields: 'messages(labelIds)',
+        fields: 'messages(id,labelIds)',
       });
     } catch (e) {
       // Threads and messages seem to randomly disappear from gmail, so
@@ -147,23 +189,28 @@ export class MailProcessor {
       // newMessages can be undefined in the case where all the messages on
       // this thread have no labelIds since we restrict the query to ones with
       // labelIds.
-      if (newMessages && newMessages.length === count) {
-        const allLabelsInNewMessages =
-            new Set(newMessages.flatMap(x => defined(x.labelIds)));
-        let modifyFailed =
-            addLabelIds.some(labelId => !allLabelsInNewMessages.has(labelId)) ||
-            removeLabelIds.some(labelId => allLabelsInNewMessages.has(labelId));
-        if (modifyFailed) {
-          // If new messages haven't come in, then we can safely archive the
-          // whole thread. If new messages have come in, then we can do
-          // nothing and leave the thread in the inbox.
-          await gapiFetch(gapi.client.gmail.users.threads.modify, {
-            userId: USER_ID,
-            id: docId,
-            addLabelIds: addLabelIds,
-            removeLabelIds: removeLabelIds,
-          });
-        }
+      if (!newMessages) {
+        return;
+      }
+      const modifiedMessages =
+          newMessages.filter(x => messageIds.includes(defined(x.id)));
+      const allLabelsInModifiedMessages =
+          new Set(modifiedMessages.flatMap(x => defined(x.labelIds)));
+      let modifyFailed =
+          addLabelIds.some(
+              labelId => !allLabelsInModifiedMessages.has(labelId)) ||
+          removeLabelIds.some(
+              labelId => allLabelsInModifiedMessages.has(labelId));
+      if (modifyFailed) {
+        // If new messages haven't come in, then we can safely archive the
+        // whole thread. If new messages have come in, then we can do
+        // nothing and leave the thread in the inbox.
+        await gapiFetch(gapi.client.gmail.users.threads.modify, {
+          userId: USER_ID,
+          id: docId,
+          addLabelIds: addLabelIds,
+          removeLabelIds: removeLabelIds,
+        });
       }
     }
   }
@@ -209,24 +256,40 @@ export class MailProcessor {
     await this.populateGmailLabelsToPush_(
         allMktimeGmailLabels, doc.id, data, addLabelIds, removeLabelIds);
 
+    // TODO; Remove messageCountToPushLabelsToGmail once clients have updated.
+    const messageIds = data.messageCountToPushLabelsToGmail ?
+        data.messageIds :
+        defined(data.messageIdsToPushToGmail);
+
+    let clearFirestoreMetadataUpdate: ThreadMetadataUpdate = {};
+    // If messageIdsToMarkRead is the same list of ids as
+    // messageIdsToPushToGmail, then we can save a network request by marking
+    // them read here.
+    if (data.hasMessageIdsToMarkRead &&
+        deepEqual(data.messageIdsToMarkRead, messageIds)) {
+      this.populateMarkReadUpdate(clearFirestoreMetadataUpdate, removeLabelIds);
+    }
+
     // It should normally be that there's always labesl either being added or
     // removed, but in some cases it's possible to have otherwise, e.g. if you
-    // archive and then undo before a sync happens in between. Since gmail 404s
-    // in this case, we need to specially handle it aside from just saving
-    // network bandwidth.
+    // archive and then undo before a sync happens in between. Since gmail
+    // 404s in this case, we need to specially handle it aside from just
+    // saving network bandwidth.
     if (addLabelIds.length || removeLabelIds.length) {
       await this.removeGmailLabelsFromDoc_(
-          doc.id, data, defined(data.messageCountToPushLabelsToGmail),
-          addLabelIds, removeLabelIds);
+          doc.id, messageIds, addLabelIds, removeLabelIds);
     }
+    clearFirestoreMetadataUpdate.messageCountToPushLabelsToGmail =
+        window.firebase.firestore.FieldValue.delete();
+    clearFirestoreMetadataUpdate.hasMessageIdsToPushToGmail =
+        window.firebase.firestore.FieldValue.delete();
+    clearFirestoreMetadataUpdate.messageIdsToPushToGmail =
+        window.firebase.firestore.FieldValue.arrayRemove(...messageIds),
     // TODO: Technically there's a race here from when we query to when we
     // do the update. A new message could have come in and the user already
     // archives it before this runs and that archive would get lost due to
     // this delete.
-    let clearFirestoreMetadataUpdate: ThreadMetadataUpdate = {};
-    clearFirestoreMetadataUpdate.messageCountToPushLabelsToGmail =
-        window.firebase.firestore.FieldValue.delete();
-    await doc.ref.update(clearFirestoreMetadataUpdate);
+        await doc.ref.update(clearFirestoreMetadataUpdate);
   }
 
   private async populateGmailLabelsToPush_(
@@ -242,7 +305,9 @@ export class MailProcessor {
     let preexistingLabelIds: Set<string> = new Set();
     if (resp.result.messages) {
       for (let message of resp.result.messages) {
-        defined(message.labelIds).map(x => preexistingLabelIds.add(x));
+        if (message.labelIds) {
+          message.labelIds.map(x => preexistingLabelIds.add(x));
+        }
       }
     }
 
@@ -262,40 +327,33 @@ export class MailProcessor {
     removeLabelIds.push(...mktimeLabelAndPriorityLabels.map(x => assert(x.id)));
 
     // ******************************************
-    // Anything that changes the fields we read off DocumentData needs to update
-    // Thread.includePushLabelsToGmail_.
+    // Anything that changes the fields we read off DocumentData needs to
+    // update Thread.includePushLabelsToGmail_.
     // ******************************************
 
-    const alreadyMuted = preexistingLabelIds.has('MUTE');
-    if (data.muted) {
-      if (!alreadyMuted) {
-        addLabelIds.push('MUTE');
-      }
-    } else if (alreadyMuted) {
-      removeLabelIds.push('MUTE');
-    }
-
-    const alreadyUnread = preexistingLabelIds.has('UNREAD');
-    if (data.readCount && data.readCount < data.messageIds.length) {
-      if (!alreadyUnread) {
-        addLabelIds.push('UNREAD');
-      }
-    } else if (alreadyUnread) {
-      removeLabelIds.push('UNREAD');
-    }
-
-    const hasLabelOrPriority = data.hasLabel || data.hasPriority;
     const mktimeLabelId = defined(this.makeTimeLabelId_);
+    const hasLabelOrPriority = data.hasLabel || data.hasPriority;
     const alreadyInInbox = preexistingLabelIds.has('INBOX');
-    if (hasLabelOrPriority) {
-      if (!alreadyInInbox) {
-        addLabelIds.push('INBOX');
+    if (data.muted || data.softMuted) {
+      if (alreadyInInbox) {
+        removeLabelIds.push('INBOX', mktimeLabelId);
+      }
+      if (data.softMuted) {
+        await this.pushToAddLabelsAndRemoveFromRemovelabels_(
+            allMktimeGmailLabels, preexistingMktimeLabelIds,
+            SOFT_MUTE_LABEL_NAME, addLabelIds, removeLabelIds);
+      }
+    } else {
+      if (hasLabelOrPriority) {
+        if (!alreadyInInbox) {
+          addLabelIds.push('INBOX');
+        }
         if (!preexistingMktimeLabelIds.includes(mktimeLabelId)) {
           addLabelIds.push(mktimeLabelId);
         }
+      } else if (alreadyInInbox) {
+        removeLabelIds.push('INBOX', mktimeLabelId);
       }
-    } else if (alreadyInInbox) {
-      removeLabelIds.push('INBOX', mktimeLabelId);
     }
 
     if (!this.settings_.get(ServerStorage.KEYS.PUSH_LABELS_TO_GMAIL)) {
@@ -304,8 +362,8 @@ export class MailProcessor {
 
     // hasLabel will be false in the case where something was archived/muted.
     // Check hasLabel instead of labelId since we intentionally leave labelIds
-    // on archived/muted threads. But if hasPriority is true, we still show the
-    // thread in mktime and should sync it's label.
+    // on archived/muted threads. But if hasPriority is true, we still show
+    // the thread in mktime and should sync it's label.
     if (hasLabelOrPriority) {
       let labelName = `${LABEL_LABEL_NAME}/${
           getLabelName(defined(this.queueNames_), data.labelId)}`;
@@ -324,9 +382,16 @@ export class MailProcessor {
   }
 
   private async pushMktimeUpdatesToGmail_() {
+    const deprecatedSnapshot =
+        await Thread.metadataCollection()
+            .where(
+                ThreadMetadataKeys.removedMessageCountToPushLabelsToGmail, '>',
+                0)
+            .get();
+
     const snapshot =
-        await this.metadataCollection_()
-            .where(ThreadMetadataKeys.messageCountToPushLabelsToGmail, '>', 0)
+        await Thread.metadataCollection()
+            .where(ThreadMetadataKeys.hasMessageIdsToPushToGmail, '==', true)
             .get();
 
     const allMktimeGmailLabels = await this.getAllMktimeGmailLabels_();
@@ -336,7 +401,8 @@ export class MailProcessor {
         PRIORITY_LABEL_NAME);
 
     await this.doInParallel_<firebase.firestore.DocumentSnapshot>(
-        snapshot.docs, async (doc: firebase.firestore.DocumentSnapshot) => {
+        [...snapshot.docs, ...deprecatedSnapshot.docs],
+        async (doc: firebase.firestore.DocumentSnapshot) => {
           await this.pushMktimeUpdatesToGmailForSingleThread_(
               allMktimeGmailLabels, doc);
         });
@@ -360,12 +426,13 @@ export class MailProcessor {
       // the thread back in the inbox, then clear metadata.
       if (!await this.refetchIsInInbox_(id)) {
         await Thread.clearMetadata(id);
-        await this.removeMakeTimeLabelFromWholeThread_(id);
+        await this.modifyLabelsOnWholeThread_(
+            id, [], [defined(this.makeTimeLabelId_)]);
       } else {
         // If one of the messages is in the inbox, move them all to the inbox
         // so that gmail doesn't keep returning this thread for a "-in:inbox"
         // query.
-        await this.addLabelsToWholeThread_(id, ['INBOX']);
+        await this.modifyLabelsOnWholeThread_(id, ['INBOX'], []);
       }
     }, 'Removing messages archived from gmail...', true);
   }
@@ -622,31 +689,34 @@ export class MailProcessor {
     }
 
     let hasNewLabel = thread.getLabel() !== label;
-    if (!hasNewLabel && thread.isMuted()) {
+    if (!hasNewLabel && thread.isMutedOrSoftMuted()) {
       await thread.applyMute();
       return label;
     }
 
-    if (hasNewLabel || !thread.isSoftMuted())
-      await this.applyLabel_(thread, label, hasNewLabel);
-
-    // Do this at the end to ensure that the label is set before clearing the
-    // label in gmail.
-    await this.addMakeTimeLabelToWholeThread_(thread.id);
+    await this.applyLabel_(thread, label, hasNewLabel);
     return label;
   }
 
   async applyLabel_(thread: Thread, label: string, hasNewLabel: boolean) {
     let labelId = await defined(this.queueNames_).getId(label);
 
-    // If a thread already has a priority ID or blocked date and the label isn't
-    // changing, skip putting it back in the triage queue if the new messages
-    // were sent myself or if some of the previous messages were unread.
+    // If a thread already has a priority ID or blocked date and the label
+    // isn't changing, skip putting it back in the triage queue if the new
+    // messages were sent myself or if some of the previous messages were
+    // unread.
     if (thread.getPriorityId() || thread.isStuck()) {
       let makeTimeLabelId = defined(this.makeTimeLabelId_);
+      let allOldMessagesWereRead = true;
       let newMessages = thread.getMessages().filter(x => {
         let ids = x.getLabelIds()
-        return !ids.includes(makeTimeLabelId) && !ids.includes('SENT');
+        if (!ids.includes(makeTimeLabelId) && !ids.includes('SENT')) {
+          return true;
+        }
+        if (ids.includes('UNREAD')) {
+          allOldMessagesWereRead = false;
+        }
+        return false;
       });
 
       // If all the new messages are from me, then don't mark it as needing
@@ -661,9 +731,7 @@ export class MailProcessor {
         return;
       }
 
-      let oldMessagesWereUnread = thread.readCount() <
-          (thread.getMessages().length - newMessages.length);
-      if (!hasNewLabel && oldMessagesWereUnread)
+      if (!hasNewLabel && !allOldMessagesWereRead)
         return;
     }
 
@@ -675,11 +743,11 @@ export class MailProcessor {
         (!thread.needsTriage() || thread.getLabel() === Labels.Fallback) &&
         queueSettings.queue !== QueueSettings.IMMEDIATE;
 
-    // Queue durations are longer than the throttle duration, so no need to mark
-    // it as throttled if it's going to be queued. If the throttle duration is
-    // 0, then don't throttle it just to unthrottled the next update.
-    // If no filters applied and we're applying the fallback label, don't
-    // throttle that either since it may be something new and unknown.
+    // Queue durations are longer than the throttle duration, so no need to
+    // mark it as throttled if it's going to be queued. If the throttle
+    // duration is 0, then don't throttle it just to unthrottled the next
+    // update. If no filters applied and we're applying the fallback label,
+    // don't throttle that either since it may be something new and unknown.
     let shouldThrottle = !shouldQueue && label !== Labels.Fallback &&
         queueSettings.throttle === ThrottleOption.throttle &&
         this.settings_.get(ServerStorage.KEYS.THROTTLE_DURATION) != 0;
@@ -701,7 +769,7 @@ export class MailProcessor {
   }
 
   async dequeueStuck_() {
-    let querySnapshot = await this.metadataCollection_()
+    let querySnapshot = await Thread.metadataCollection()
                             .where(ThreadMetadataKeys.blocked, '<=', Date.now())
                             .get();
 
@@ -717,7 +785,7 @@ export class MailProcessor {
 
   async dequeueRetriage_(priority: Priority, retriageDays: number) {
     let querySnapshot =
-        await this.metadataCollection_()
+        await Thread.metadataCollection()
             .where(ThreadMetadataKeys.priorityId, '==', priority)
             .get();
 
@@ -763,7 +831,7 @@ export class MailProcessor {
   private async processRetriage_() {
     // If there are still untriaged needsRetriage threads, then don't add
     // more to the pile.
-    let needsRetriage = await this.metadataCollection_()
+    let needsRetriage = await Thread.metadataCollection()
                             .where(ThreadMetadataKeys.needsRetriage, '==', true)
                             .get();
     if (!needsRetriage.docs.length) {
@@ -781,11 +849,11 @@ export class MailProcessor {
       return;
     }
 
-    const hasLabelSnapshot = await this.metadataCollection_()
+    const hasLabelSnapshot = await Thread.metadataCollection()
                                  .where(ThreadMetadataKeys.hasLabel, '==', true)
                                  .get();
     const hasPrioritySnapshot =
-        await this.metadataCollection_()
+        await Thread.metadataCollection()
             .where(ThreadMetadataKeys.hasPriority, '==', true)
             .get();
     const allDocs = [...hasLabelSnapshot.docs, ...hasPrioritySnapshot.docs];
@@ -801,7 +869,10 @@ export class MailProcessor {
       for (let doc of thisChunk) {
         let data = doc.data() as ThreadMetadata;
         let update: ThreadMetadataUpdate = {
-          messageCountToPushLabelsToGmail: data.messageIds.length
+          hasMessageIdsToPushToGmail: true,
+          messageIdsToPushToGmail:
+              window.firebase.firestore.FieldValue.arrayUnion(
+                  ...data.messageIds),
         };
         batch.update(doc.ref, update);
       }
@@ -810,20 +881,17 @@ export class MailProcessor {
     await Promise.all(batches);
   }
 
-
   private async processSoftMute_() {
-    let querySnapshot = await this.metadataCollection_()
+    let querySnapshot = await Thread.metadataCollection()
                             .where(ThreadMetadataKeys.softMuted, '==', true)
                             .get();
 
     var oneDay = 24 * 60 * 60 * 1000;
     let now = Date.now();
 
-    // For manual testing: artificially set the date in the future so these get
-    // processed.
-    // let time = new Date(now);
-    // time.setDate(time.getDate() + SOFT_MUTE_EXPIRATION_DAYS);
-    // now = time.getTime();
+    // For manual testing: artificially set the date in the future so these
+    // get processed. let time = new Date(now); time.setDate(time.getDate() +
+    // SOFT_MUTE_EXPIRATION_DAYS); now = time.getTime();
 
     let muteExpired = querySnapshot.docs.filter(x => {
       let daysSinceLastTriaged = (now - x.data().retriageTimestamp) / oneDay;
@@ -838,7 +906,13 @@ export class MailProcessor {
           if (data.newMessagesSinceSoftMuted) {
             update = {
               softMuted: window.firebase.firestore.FieldValue.delete(),
+              newMessagesSinceSoftMuted:
+                  window.firebase.firestore.FieldValue.delete(),
               hasLabel: true,
+              hasMessageIdsToPushToGmail: true,
+              messageIdsToPushToGmail:
+                  window.firebase.firestore.FieldValue.arrayUnion(
+                      ...data.messageIds),
             };
           } else {
             update = Thread.baseArchiveUpdate();
@@ -859,7 +933,7 @@ export class MailProcessor {
     for (let queueData of queueDatas) {
       if (queueData[1].queue == queue)
         await this.dequeue(
-            this.metadataCollection_()
+            Thread.metadataCollection()
                 .where(
                     ThreadMetadataKeys.labelId,
                     '==', await defined(this.queueNames_).getId(queueData[0]))
@@ -925,7 +999,7 @@ export class MailProcessor {
     if (hours < throttleDuration)
       return;
 
-    await this.dequeue(this.metadataCollection_().where(
+    await this.dequeue(Thread.metadataCollection().where(
         ThreadMetadataKeys.throttled, '==', true));
 
     let updates: StorageUpdates = {};

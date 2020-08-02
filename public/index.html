@@ -66,6 +66,12 @@ if (localStorage.background)
 .theme-dim-text-color {
   color: var(--dim-text-color);
 }
+.theme-main-background {
+  background: var(--main-background);
+}
+.theme-nested-background-color {
+  background-color: var(--nested-background-color);
+}
 /* Just style these here to minimize movement and flicker on load before the theme has loaded. */
 :root {
   --overlay-background-color: #fff;
@@ -303,7 +309,7 @@ blockquote {
   position: static;
 }
 .all-done:after {
-  content: "٩( ′ㅂ`)و\A\A All done for the day! You got this!";
+  content: "٩( ′ㅂ`)و\A\A All done for the day.";
   text-align: center;
   font-size: 20px;
   white-space: pre-wrap;

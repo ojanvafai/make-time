@@ -124,9 +124,9 @@ class RowState extends LabelState {
     return super.equals(other) && this.isSmallScreen === other.isSmallScreen &&
         this.subject === other.subject && this.snippet === other.snippet &&
         // TODO: Change this to use pointer equality.
-        // getFrom() clones a new copy, so use textContent instead of pointer
+        // getFrom() clones a new copy, so use innerHTML instead of pointer
         // equality.
-        this.from.textContent === other.from.textContent &&
+        this.from.innerHTML === other.from.innerHTML &&
         this.count === other.count &&
         this.lastMessageId === other.lastMessageId &&
         this.isUnread === other.isUnread &&

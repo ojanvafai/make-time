@@ -3,11 +3,13 @@ import {Message} from './Message.js';
 
 export class ProcessedMessageData {
   messages: Message[];
+  notesToSelf: Message[];
   snippet: string;
   historyId: string;
 
   constructor() {
     this.messages = [];
+    this.notesToSelf = [];
     this.snippet = '';
     this.historyId = '';
   }
@@ -43,8 +45,13 @@ export class ProcessedMessageData {
           oldMessage.updateLabels(message.labelIds || []);
       }
 
-      newMessages.push(newMessage);
-      previousMessage = newMessage;
+      if (newMessage.isNoteToSelf) {
+        // Don't pass previousMessage to notesToSelf Message instances.
+        this.notesToSelf.push(newMessage);
+      } else {
+        newMessages.push(newMessage);
+        previousMessage = newMessage;
+      }
     }
     this.messages = newMessages;
   }
