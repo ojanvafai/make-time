@@ -31,7 +31,6 @@ let FILTER_TOOLBAR = [
   VIEW_IN_GMAIL_ACTION,
 ];
 
-
 registerActions('Unfiltered', FILTER_TOOLBAR);
 
 export class UnfilteredView extends ThreadListViewBase {
@@ -70,10 +69,8 @@ export class UnfilteredView extends ThreadListViewBase {
     this.shouldRenderFocusedRowMessages_ = false;
 
     this.renderedThreadContainer_ = document.createElement('div');
-    this.renderedThreadContainer_.style.cssText = `
-      max-width: var(--max-width);
-      margin: auto;
-    `;
+    this.renderedThreadContainer_.className =
+        'theme-max-width margin-auto relative';
     this.rowGroup_ = new ThreadRowGroup(
         Labels.Fallback, 0, ThreadRowGroupRenderMode.UnfilteredStyle);
     this.rowGroup_.style.backgroundColor = 'var(--nested-background-color)';
@@ -94,16 +91,17 @@ export class UnfilteredView extends ThreadListViewBase {
     });
 
     this.helpText_ = document.createElement('div');
-    this.helpText_.style.cssText = `
-      font-size: 12px;
-      text-align: center;
-      margin: 8px 0;
-      color: var(--dim-text-color);
-    `;
+    this.helpText_.className =
+        'text-size-small center theme-dim-text-color mx1-and-half';
     this.helpText_.append(
         `Add a filter rule to label this and future messages. You can edit it later from Settings.`);
 
+    this.displayHelpText_();
     this.render();
+  }
+
+  private displayHelpText_() {
+    this.appShell.setSubject(this.helpText_);
   }
 
   protected getGroups() {
@@ -120,13 +118,8 @@ export class UnfilteredView extends ThreadListViewBase {
 
   private createLabelPicker_(labels: string[], callback: (e: Event) => void) {
     const labelPicker = document.createElement('div');
-    labelPicker.style.cssText = `
-      margin: 4px 0;
-      flex: 1;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    `;
+    labelPicker.className =
+        'mx-half flex-expand-1 flex flex-wrap justify-center';
     for (const label of labels) {
       labelPicker.append(createMktimeButton(callback, label));
     }
@@ -330,7 +323,7 @@ export class UnfilteredView extends ThreadListViewBase {
     const rule = {from: firstMessage.parsedFrom[0].address};
     const filterRuleComponent =
         new FilterRuleComponent(this.settings, rule, true);
-    filterRuleComponent.style.margin = '4px';
+    filterRuleComponent.classList.add('m-half');
     filterRuleComponent.addEventListener(LabelCreatedEvent.NAME, e => {
       const labelOption = (e as LabelCreatedEvent).labelOption;
       filterRuleComponent.prependLabel(
@@ -339,10 +332,8 @@ export class UnfilteredView extends ThreadListViewBase {
     this.filterRuleComponent_ = filterRuleComponent;
 
     const headerMenu = document.createElement('div');
-    headerMenu.style.cssText = `
-      max-height: 15vh;
-      overflow: auto;
-    `;
+    headerMenu.className = 'overflow-auto';
+    headerMenu.style.maxHeight = '15vh';
 
     const headers = firstMessage.getHeaders();
     headers.sort((a, b) => {
@@ -368,14 +359,7 @@ export class UnfilteredView extends ThreadListViewBase {
       }
 
       const container = document.createElement('label');
-      container.style.cssText = `
-        display: flex;
-        align-items: center;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        margin: 4px;
-        flex: 1;
-      `;
+      container.className = 'truncate flex items-center m-half flex-expand-1 ';
       const nameContainer = document.createElement('b');
       nameContainer.append(`${name}:`);
       nameContainer.style.marginRight = '4px';
@@ -422,12 +406,8 @@ export class UnfilteredView extends ThreadListViewBase {
     }
 
     let container = document.createElement('div');
-    container.style.cssText = `
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      width: -webkit-fill-available;
-    `;
+    container.className =
+        'flex flex-column justify-center fill-available-width';
     container.append(filterRuleComponent, headerMenu);
     AppShell.addToFooter(container);
   }
@@ -438,6 +418,10 @@ export class UnfilteredView extends ThreadListViewBase {
 
   private setShouldRenderFocusedRowMessages_(shouldRender: boolean) {
     this.shouldRenderFocusedRowMessages_ = shouldRender;
+
+    if (!shouldRender) {
+      this.displayHelpText_();
+    }
 
     this.appShell.showBackArrow(shouldRender);
     this.rowGroup_.style.display = shouldRender ? 'none' : 'block';
@@ -477,8 +461,8 @@ export class UnfilteredView extends ThreadListViewBase {
       rendered.render();
       this.renderedThreadContainer_.append(rendered);
     }
+    rendered.style.bottom = '';
     rendered.style.visibility = 'visible';
-    rendered.style.position = '';
 
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());
@@ -516,10 +500,6 @@ export class UnfilteredView extends ThreadListViewBase {
       }
     } else {
       this.setFocusedRow_(rows[0]);
-    }
-
-    if (!this.shouldRenderFocusedRowMessages_) {
-      this.appShell.setSubject(this.helpText_);
     }
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());

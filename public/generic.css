@@ -118,9 +118,6 @@ a.link{cursor:pointer}
 .text-lighten4.understroke,a.text-lighten4.understroke,.text-lighten4-active:active.understroke,.text-lighten4-focus:focus.understroke,.focus-container:focus .text-lighten4-focus.understroke,.baymax a.text-lighten4.understroke,.text-lighten4 a.understroke,.baymax .text-lighten4 a.understroke{border-color:hsla(0,0%,100%,0.5)}
 .text-lighten4.understroke.link:hover,a.text-lighten4.understroke.link:hover,.text-lighten4-active:active.understroke.link:hover,.text-lighten4-focus:focus.understroke.link:hover,.focus-container:focus .text-lighten4-focus.understroke.link:hover,.baymax a.text-lighten4.understroke.link:hover,.text-lighten4 a.understroke.link:hover,.baymax .text-lighten4 a.understroke.link:hover,.text-lighten4.understroke.link.active,a.text-lighten4.understroke.link.active,.text-lighten4-active:active.understroke.link.active,.text-lighten4-focus:focus.understroke.link.active,.focus-container:focus .text-lighten4-focus.understroke.link.active,.baymax a.text-lighten4.understroke.link.active,.text-lighten4 a.understroke.link.active,.baymax .text-lighten4 a.understroke.link.active{border-color:hsla(0,0%,80%,0.5)}
 .hover-container:hover .parent-hover-text-lighten4{color:hsla(0,0%,100%,0.5)}
-.normal{font-size:.8rem}
-.small{font-size:11px}
-.micro{font-size:9px}
 .text-size-default{font-size:13px}
 .text-size-xsmall{font-size:9px}
 .text-size-small{font-size:11px}
