@@ -1056,6 +1056,10 @@ export class Thread extends EventTarget {
     let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
     let message =
         await send(text, addressHeaders, subject, sender, headers, this.id);
+    this.appendSentMessage(message);
+  }
+
+  appendSentMessage(message: gapi.client.gmail.Message) {
     // If the message is in this same thread, then account for it appropriately
     // in the message counts. This can happen even if it's a forward, e.g. if
     // you forward to yourself.

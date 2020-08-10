@@ -79,7 +79,7 @@ export class ComposeView extends View {
   private inlineTo_: AddressCompose;
   private sendAs_?: SendAs;
   private sent_?: HTMLElement;
-  private sentThreadId_?: string;
+  private sentMessage_?: gapi.client.gmail.Message;
   private sentToolbar_?: Actions;
   private autoSend_: boolean;
 
@@ -300,7 +300,7 @@ export class ComposeView extends View {
     if (!sent)
       return;
 
-    this.sentThreadId_ = defined(sent.response.threadId);
+    this.sentMessage_ = defined(sent.response);
 
     if (!this.sentToolbar_) {
       this.sentToolbar_ = new Actions(this);
@@ -338,7 +338,7 @@ export class ComposeView extends View {
 
       this.sentToolbar_.remove();
       this.sentToolbar_ = undefined;
-      this.sentThreadId_ = undefined;
+      this.sentMessage_ = undefined;
     }
   }
 
@@ -372,7 +372,7 @@ export class ComposeView extends View {
 
     const sentActions = SENT_ACTIONS.flat(2);
     if (sentActions.includes(action)) {
-      if (!this.sentThreadId_)
+      if (!this.sentMessage_)
         return;
 
       // Disable the toolbar while updating the thread to give an indication
@@ -381,8 +381,12 @@ export class ComposeView extends View {
       toolbar.style.opacity = '0.5';
       toolbar.style.pointerEvents = 'none';
 
-      let metadata = await Thread.fetchMetadata(this.sentThreadId_);
-      let thread = Thread.create(this.sentThreadId_, metadata);
+      const threadId = defined(this.sentMessage_.threadId);
+      let metadata = await Thread.fetchMetadata(threadId);
+      let thread = Thread.create(threadId, metadata);
+      // Taking actions requires knowing the list of messageIds to update, so
+      // populate it in the thread we just created.
+      thread.appendSentMessage(this.sentMessage_);
 
       try {
         await takeAction(thread, action);
