@@ -7,6 +7,20 @@ interface Entry {
 
 const CHANGES: Entry[] = [
   {
+    date: '8/9/20',
+    description:
+        `Added the backend for note to self. In the process identified and fixed a number of bugs in syncing labels to gmail.`
+  },
+  {
+    date: '8/9/20',
+    description:
+        `Fixed taking a triage action after sending a message in compose view.`
+  },
+  {
+    date: '8/9/20',
+    description: `Fixed assorted rendering bugs in the unfiltered view.`
+  },
+  {
     date: '7/30/20',
     description:
         `Make confirm prompt for deleting a rule in the filter settings inline rather than a popup.`
