@@ -17,6 +17,9 @@ gulp.task('delete', (callback) => {
   callback();
 });
 
+/////////////////////////////////////////////////////////////////////////
+// Local development
+/////////////////////////////////////////////////////////////////////////
 gulp.task('npm-install', shell.task('npm install --no-fund'));
 
 gulp.task(
@@ -35,9 +38,9 @@ gulp.task('bundle', function() {
       `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts --outdir=${
           outDir} --target=esnext --sourcemap=external --minify`,
   );
-  // TODO: We should do this for HeaderFocusPainter as well so it can get sourcemapped.
-  return gulp
-      .src([outDir + mainFilename])
+  // TODO: We should do this for HeaderFocusPainter as well so it can get
+  // sourcemapped.
+  return gulp.src([outDir + mainFilename])
       .pipe(footer('//# sourceMappingURL=main.js.map'))
       .pipe(gulp.dest(outDir));
 });
@@ -52,7 +55,39 @@ gulp.task(
 
 gulp.task('serve', gulp.series(['npm-install', 'serve-no-install']));
 
-function deploy(projectName) {
+/////////////////////////////////////////////////////////////////////////
+// Deploy
+/////////////////////////////////////////////////////////////////////////
+let globals = {projectName: 'mk-time'};
+
+gulp.task('add-checksums', function() {
+  return gulp.src(['public/index.html'])
+      .pipe(replace(globals.replaces[0][0], globals.replaces[0][1]))
+      .pipe(replace(globals.replaces[1][0], globals.replaces[1][1]))
+      .pipe(gulp.dest('public'));
+});
+
+gulp.task('remove-checksums', function() {
+  return gulp.src(['public/index.html'])
+      .pipe(replace(globals.replaces[0][1], globals.replaces[0][0]))
+      .pipe(replace(globals.replaces[1][1], globals.replaces[1][0]))
+      .pipe(gulp.dest('public'));
+});
+
+gulp.task('firebase-deploy', (cb) => {
+  const deployProcess = childProcess.exec(
+      './node_modules/firebase-tools/lib/bin/firebase.js deploy --project ' +
+          globals.projectName,
+      cb);
+  deployProcess.stdout.on('data', (data) => {
+    process.stdout.write(data.toString());
+  });
+  deployProcess.stderr.on('data', (data) => {
+    process.stderr.write(data.toString());
+  });
+});
+
+gulp.task('compute-checksums', (cb) => {
   let checksumKeyword = '-checksum-';
   // Append md5 checksum to gen/main.js and it's sourcemap.
   let bundleMain = outDir + mainFilename;
@@ -67,45 +102,39 @@ function deploy(projectName) {
       .pipe(gulp.dest(outDir));
 
   // Append md5 checksum to maifest.json.
-  let manifestChecksum = md5(fs.readFileSync(bundleMain, 'utf8'));
-  gulp.src('public/manifest.json')
+  const manifestJsonPath = 'public/manifest.json';
+  let manifestChecksum = md5(fs.readFileSync(manifestJsonPath, 'utf8'));
+  gulp.src(manifestJsonPath)
       .pipe(rename(function(path) {
         path.basename += checksumKeyword + manifestChecksum;
       }))
       .pipe(gulp.dest(outDir));
-  pathsToRewrite = [
-    ['/gen/main.js', `/gen/main${checksumKeyword}${checksum}.js`],
-    [
-      './manifest.json',
-      `./gen/manifest${checksumKeyword}${manifestChecksum}.json`
-    ],
+
+  globals.replaces = [
+    ['gen/main.js', `gen/main${checksumKeyword}${checksum}.js`],
+    ['manifest.json', `gen/manifest${checksumKeyword}${manifestChecksum}.json`],
   ];
-
-  // TODO: Find a way to avoid rewriting index.html in place while still
-  // having firebase serve up index.html without needing a build step for
-  // unbundled local development.
-  gulp.src(['public/index.html'])
-      .pipe(replace(pathsToRewrite[0][0], pathsToRewrite[0][1]))
-      .pipe(replace(pathsToRewrite[1][0], pathsToRewrite[1][1]))
-      .pipe(gulp.dest('public'))
-  let firebaseDeploy =
-      './node_modules/firebase-tools/lib/bin/firebase.js deploy --project ';
-  return gulp.src(['public/index.html'])
-      .pipe(shell([firebaseDeploy + projectName]))
-      .pipe(replace(pathsToRewrite[0][1], pathsToRewrite[0][0]))
-      .pipe(replace(pathsToRewrite[1][1], pathsToRewrite[1][0]))
-      .pipe(gulp.dest('public'))
-}
-
-gulp.task('upload', () => {
-  return deploy('mk-time');
+  cb();
 });
 
-gulp.task('upload-google', () => {
-  return deploy('google.com:mktime');
+gulp.task('set-default-project', (cb) => {
+  globals.projectName = 'mk-time';
+  cb();
+});
+
+gulp.task('set-google-project', (cb) => {
+  globals.projectName = 'google.com:mktime';
+  cb();
 });
 
 gulp.task('fresh-bundle', gulp.series('delete', 'bundle'));
-gulp.task('default', gulp.series('fresh-bundle'));
-gulp.task('deploy', gulp.series('fresh-bundle', 'upload'));
-gulp.task('deploy-google', gulp.series('fresh-bundle', 'upload-google'));
+
+gulp.task(
+    'upload',
+    gulp.series(
+        'fresh-bundle', 'compute-checksums', 'add-checksums', 'firebase-deploy',
+        'remove-checksums'));
+
+gulp.task('deploy', gulp.series('set-default-project', 'upload'));
+
+gulp.task('deploy-google', gulp.series('set-google-project', 'upload'));
