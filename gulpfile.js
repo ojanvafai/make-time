@@ -32,10 +32,12 @@ gulp.task(
 
 gulp.task('bundle', function() {
   childProcess.execSync(
-      `npx esbuild --bundle static/main.ts --outdir=${
-          outDir} --target=esnext --sourcemap=external --minify`,
+      `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts --outdir=${
+          outDir} --target=esnext --sourcemap=external`,
   );
-  return gulp.src([outDir + mainFilename])
+  // TODO: We should do this for HeaderFocusPainter as well so it can get sourcemapped.
+  return gulp
+      .src([outDir + mainFilename])
       .pipe(footer('//# sourceMappingURL=main.js.map'))
       .pipe(gulp.dest(outDir));
 });
