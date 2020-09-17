@@ -89,8 +89,7 @@ export class MailProcessor {
     // Intentionally don't clear messageIdsToMarkRead since we do that
     // when we next pull in the new messages from gmail to avoid having
     // a window where mktime thinks they are unread again.
-    update.hasMessageIdsToMarkRead =
-        window.firebase.firestore.FieldValue.delete();
+    update.hasMessageIdsToMarkRead = firebase.firestore.FieldValue.delete();
     removeLabelIds.push('UNREAD');
   }
 
@@ -134,7 +133,7 @@ export class MailProcessor {
             })});
 
     const update: MessagesToDeleteUpdate = {
-      gmailMessageIdsToDelete: window.firebase.firestore.FieldValue.delete()
+      gmailMessageIdsToDelete: firebase.firestore.FieldValue.delete()
     };
     Thread.threadsDocRef().update(update);
   }
@@ -280,11 +279,11 @@ export class MailProcessor {
           doc.id, messageIds, addLabelIds, removeLabelIds);
     }
     clearFirestoreMetadataUpdate.messageCountToPushLabelsToGmail =
-        window.firebase.firestore.FieldValue.delete();
+        firebase.firestore.FieldValue.delete();
     clearFirestoreMetadataUpdate.hasMessageIdsToPushToGmail =
-        window.firebase.firestore.FieldValue.delete();
+        firebase.firestore.FieldValue.delete();
     clearFirestoreMetadataUpdate.messageIdsToPushToGmail =
-        window.firebase.firestore.FieldValue.arrayRemove(...messageIds),
+        firebase.firestore.FieldValue.arrayRemove(...messageIds),
     // TODO: Technically there's a race here from when we query to when we
     // do the update. A new message could have come in and the user already
     // archives it before this runs and that archive would get lost due to
@@ -761,9 +760,9 @@ export class MailProcessor {
         async (doc: firebase.firestore.QueryDocumentSnapshot) => {
           await doc.ref.update({
             hasLabel: true,
-            queued: window.firebase.firestore.FieldValue.delete(),
-            blocked: window.firebase.firestore.FieldValue.delete(),
-            throttled: window.firebase.firestore.FieldValue.delete(),
+            queued: firebase.firestore.FieldValue.delete(),
+            blocked: firebase.firestore.FieldValue.delete(),
+            throttled: firebase.firestore.FieldValue.delete(),
           });
         });
   }
@@ -871,8 +870,7 @@ export class MailProcessor {
         let update: ThreadMetadataUpdate = {
           hasMessageIdsToPushToGmail: true,
           messageIdsToPushToGmail:
-              window.firebase.firestore.FieldValue.arrayUnion(
-                  ...data.messageIds),
+              firebase.firestore.FieldValue.arrayUnion(...data.messageIds),
         };
         batch.update(doc.ref, update);
       }
@@ -905,14 +903,12 @@ export class MailProcessor {
           let data = doc.data() as ThreadMetadata;
           if (data.newMessagesSinceSoftMuted) {
             update = {
-              softMuted: window.firebase.firestore.FieldValue.delete(),
-              newMessagesSinceSoftMuted:
-                  window.firebase.firestore.FieldValue.delete(),
+              softMuted: firebase.firestore.FieldValue.delete(),
+              newMessagesSinceSoftMuted: firebase.firestore.FieldValue.delete(),
               hasLabel: true,
               hasMessageIdsToPushToGmail: true,
               messageIdsToPushToGmail:
-                  window.firebase.firestore.FieldValue.arrayUnion(
-                      ...data.messageIds),
+                  firebase.firestore.FieldValue.arrayUnion(...data.messageIds),
             };
           } else {
             update = Thread.baseArchiveUpdate();

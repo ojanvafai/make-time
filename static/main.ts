@@ -37,7 +37,7 @@ Themes.apply();
 let currentView_: View;
 let appShell_: AppShell;
 
-const UNIVERSAL_QUERY_PARAMETERS = ['bundle', 'label', 'days', 'offices'];
+const UNIVERSAL_QUERY_PARAMETERS = ['label', 'days', 'offices'];
 let router = new Router(UNIVERSAL_QUERY_PARAMETERS);
 
 let longTasks_: LongTasks;

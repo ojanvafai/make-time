@@ -1,131 +1,23 @@
-let fs = require('fs');
-let gulp = require('gulp');
-let {watch} = require('gulp');
-let md5 = require('md5');
-let changedInPlace = require('gulp-changed-in-place');
-let rename = require('gulp-rename');
-let replace = require('gulp-string-replace');
-let shell = require('gulp-shell')
-let sourcemaps = require('gulp-sourcemaps');
-let stripJsonComments = require('strip-json-comments');
-let typescript = require('gulp-typescript');
-let terser = require('gulp-terser');
-let rollupStream = require('@rollup/stream');
-let source = require('vinyl-source-stream');
-let buffer = require('vinyl-buffer');
-// map-stream is used to create a stream that runs an async function
-var map = require('map-stream');
+const childProcess = require('child_process');
+const fs = require('fs');
+const gulp = require('gulp');
+const {watch} = require('gulp');
+const md5 = require('md5');
+const rename = require('gulp-rename');
+const replace = require('gulp-string-replace');
+const shell = require('gulp-shell')
+const footer = require('gulp-footer');
 
-let mainFilename = '/main.js';
-let bundleDir = '/bundle';
-
-function readJsonFile(path) {
-  return JSON.parse(stripJsonComments(fs.readFileSync(path, 'utf8')))
-}
-
-function rmDir(path) {
-  let rimraf = require('rimraf');
-  rimraf.sync(path);
-}
-
-let outDir_;
-function getOutDir() {
-  if (!outDir_) {
-    let tsConfig = readJsonFile('./tsconfig.json');
-    outDir_ = tsConfig.compilerOptions.outDir;
-  }
-  return outDir_;
-}
+const mainFilename = '/main.js';
+const outDir = './public/gen';
 
 gulp.task('delete', (callback) => {
-  rmDir(getOutDir());
+  const rimraf = require('rimraf');
+  rimraf.sync(outDir);
   callback();
 });
 
-gulp.task('compile', () => {
-  let project = typescript.createProject('tsconfig.json');
-  return project
-      .src()
-      // Even though the sourcemaps for the .ts files don't work in the bundled
-      // version, still generate them so that you can debug the .ts files when
-      // unbundled.
-      .pipe(sourcemaps.init())
-      .pipe(project())
-      .js
-      // save sourcemap as separate file (in the same folder)
-      .pipe(sourcemaps.write(''))
-      .pipe(gulp.dest(getOutDir()));
-});
-
-function getFilesWithFirebaseImports() {
-  return ['Base.js', 'BaseMain.js', 'MailProcessor.js', 'Thread.js'].map(
-      x => `${getOutDir()}/${x}`);
-}
-
-// TODO: Add a watcher that checks for any other files that use firebase imports
-// or generate this list from the actual files themselves. const
-gulp.task('transform-firebase-imports', function() {
-  let didModify = false;
-  return gulp.src(getFilesWithFirebaseImports())
-      .pipe(changedInPlace({firstPass: true}))
-      .pipe(map(function(file, cb) {
-        const original = file.contents.toString();
-        // Make "firebase/app" be "../node_modules/firebase/firebase-app.js"
-        // allowing both single and double quotes.
-        const transformed = Buffer.from(original.replace(
-            /\ ["']firebase\/([^'"]+)["']/g, (match, p1, offset, string) => {
-              return ` '../node_modules/firebase/firebase-${p1}.js'`;
-            }));
-        file.contents = transformed;
-        let error = null;
-        cb(error, file);
-      }))
-      .pipe(gulp.dest(getOutDir()));
-});
-
-gulp.task(
-    'transform-firebase-imports-watch',
-    () => {watch(getFilesWithFirebaseImports(), {queue: true}, () => {
-      return gulp.task('transform-firebase-imports')();
-    })});
-
-gulp.task('bundle', function() {
-  fs.mkdirSync(getOutDir() + bundleDir, {recursive: true});
-  return rollupStream(
-             {input: getOutDir() + mainFilename, output: {sourcemap: true}})
-      .pipe(source(getOutDir() + bundleDir + mainFilename))
-      .pipe(buffer())
-      .pipe(terser())
-      .pipe(sourcemaps.init({loadMaps: true}))
-      .pipe(sourcemaps.write('.'))
-      .pipe(gulp.dest('.'));
-});
-
-gulp.task('symlink-node-modules', (done) => {
-  let process = require('process');
-
-  let package = readJsonFile('./package.json');
-  let dependencies = Object.keys(package.dependencies);
-
-  const root = './public/node_modules';
-  rmDir(root);
-  fs.mkdirSync(root);
-  process.chdir(root);
-
-  for (let dependency of dependencies) {
-    fs.symlinkSync(`../../node_modules/${dependency}`, dependency, 'dir');
-  }
-
-  // TODO: Make all the commands agnostic to which subdirectory they run in.
-  // Change dir back to the original directory so the next command runs
-  // in the right place.
-  process.chdir('../..');
-  done();
-});
-
-gulp.task(
-    'npm-install',
-    gulp.series([shell.task('npm install --no-fund'), 'symlink-node-modules']));
+gulp.task('npm-install', shell.task('npm install --no-fund'));
 
 gulp.task(
     'firebase-serve',
@@ -136,33 +28,32 @@ gulp.task(
 gulp.task(
     'tsc-watch',
     shell.task(
-        './node_modules/typescript/bin/tsc --project tsconfig.json --watch'));
+        './node_modules/typescript/bin/tsc --project tsconfig.json --watch --noEmit'));
 
-let compileWatch =
-    process.argv.includes('--bundle') ? 'bundle-watch' : 'tsc-watch';
+gulp.task('bundle', function() {
+  childProcess.execSync(
+      `npx esbuild --bundle static/main.ts --outdir=${
+          outDir} --target=esnext --sourcemap=external --minify`,
+  );
+  return gulp.src([outDir + mainFilename])
+      .pipe(footer('//# sourceMappingURL=main.js.map'))
+      .pipe(gulp.dest(outDir));
+});
 
-gulp.task('serve', gulp.series([
-  'npm-install',
-  gulp.parallel(
-      ['firebase-serve', compileWatch, 'transform-firebase-imports-watch'])
-]));
+gulp.task('bundle-watch', () => {watch('**/*.ts', {queue: true}, () => {
+                            return gulp.task('bundle')();
+                          })});
 
-// TODO: Really we should have the server generate the bundle on demand instead
-// of generating it on every file change.
 gulp.task(
-    'bundle-watch-help',
-    () => {watch(
-        'public/gen/**/*.js', {queue: true, ignored: ['public/gen/bundle']},
-        () => {
-          return gulp.task('bundle')();
-        })});
+    'serve-no-install',
+    gulp.parallel(['firebase-serve', 'bundle-watch', 'tsc-watch']));
 
-gulp.task('bundle-watch', gulp.parallel([compileWatch, 'bundle-watch-help']));
+gulp.task('serve', gulp.series(['npm-install', 'serve-no-install']));
 
 function deploy(projectName) {
   let checksumKeyword = '-checksum-';
-  // Append md5 checksum to gen/bundle/main.js and it's sourcemap.
-  let bundleMain = getOutDir() + bundleDir + mainFilename;
+  // Append md5 checksum to gen/main.js and it's sourcemap.
+  let bundleMain = outDir + mainFilename;
   let checksum = md5(fs.readFileSync(bundleMain, 'utf8'));
   gulp.src([bundleMain, bundleMain + '.map'])
       .pipe(rename(function(path) {
@@ -171,7 +62,7 @@ function deploy(projectName) {
         if (parts.length == 2)
           path.basename += '.' + parts[1];
       }))
-      .pipe(gulp.dest(getOutDir() + bundleDir));
+      .pipe(gulp.dest(outDir));
 
   // Append md5 checksum to maifest.json.
   let manifestChecksum = md5(fs.readFileSync(bundleMain, 'utf8'));
@@ -179,9 +70,9 @@ function deploy(projectName) {
       .pipe(rename(function(path) {
         path.basename += checksumKeyword + manifestChecksum;
       }))
-      .pipe(gulp.dest(getOutDir()));
+      .pipe(gulp.dest(outDir));
   pathsToRewrite = [
-    ['/gen/bundle/main.js', `/gen/bundle/main${checksumKeyword}${checksum}.js`],
+    ['/gen/main.js', `/gen/main${checksumKeyword}${checksum}.js`],
     [
       './manifest.json',
       `./gen/manifest${checksumKeyword}${manifestChecksum}.json`
@@ -212,9 +103,7 @@ gulp.task('upload-google', () => {
   return deploy('google.com:mktime');
 });
 
-gulp.task(
-    'fresh-bundle',
-    gulp.series('delete', 'compile', 'transform-firebase-imports', 'bundle'));
+gulp.task('fresh-bundle', gulp.series('delete', 'bundle'));
 gulp.task('default', gulp.series('fresh-bundle'));
 gulp.task('deploy', gulp.series('fresh-bundle', 'upload'));
 gulp.task('deploy-google', gulp.series('fresh-bundle', 'upload-google'));

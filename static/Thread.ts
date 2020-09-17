@@ -293,7 +293,7 @@ export class Thread extends EventTarget {
       if (key in fullState)
         oldState[key] = fullState[key];
       else
-        oldState[key] = window.firebase.firestore.FieldValue.delete();
+        oldState[key] = firebase.firestore.FieldValue.delete();
     }
     return oldState;
   }
@@ -310,9 +310,8 @@ export class Thread extends EventTarget {
         valueChanged(update.priorityId, this.metadata_.priorityId) ||
         valueChanged(update.muted, this.metadata_.muted)) {
       update.hasMessageIdsToPushToGmail = true;
-      update.messageIdsToPushToGmail =
-          window.firebase.firestore.FieldValue.arrayUnion(
-              ...this.getMessageIdsIncludingRecentlySent_());
+      update.messageIdsToPushToGmail = firebase.firestore.FieldValue.arrayUnion(
+          ...this.getMessageIdsIncludingRecentlySent_());
     }
   }
 
@@ -329,21 +328,21 @@ export class Thread extends EventTarget {
 
   private static clearedMetadata_(): ThreadMetadataUpdate {
     return {
-      needsRetriage: window.firebase.firestore.FieldValue.delete(),
-      blocked: window.firebase.firestore.FieldValue.delete(),
-      muted: window.firebase.firestore.FieldValue.delete(),
-      softMuted: window.firebase.firestore.FieldValue.delete(),
-      newMessagesSinceSoftMuted: window.firebase.firestore.FieldValue.delete(),
-      archivedByFilter: window.firebase.firestore.FieldValue.delete(),
-      queued: window.firebase.firestore.FieldValue.delete(),
-      throttled: window.firebase.firestore.FieldValue.delete(),
+      needsRetriage: firebase.firestore.FieldValue.delete(),
+      blocked: firebase.firestore.FieldValue.delete(),
+      muted: firebase.firestore.FieldValue.delete(),
+      softMuted: firebase.firestore.FieldValue.delete(),
+      newMessagesSinceSoftMuted: firebase.firestore.FieldValue.delete(),
+      archivedByFilter: firebase.firestore.FieldValue.delete(),
+      queued: firebase.firestore.FieldValue.delete(),
+      throttled: firebase.firestore.FieldValue.delete(),
       // Intentionally keep only the labelId and not the hasLabel so we can
       // show what label a thread came from even after it's been triaged.
       // hasLabel the latter is for deciding whether to show the thread in
       // the TriageModel.
-      hasLabel: window.firebase.firestore.FieldValue.delete(),
-      hasPriority: window.firebase.firestore.FieldValue.delete(),
-      priorityId: window.firebase.firestore.FieldValue.delete(),
+      hasLabel: firebase.firestore.FieldValue.delete(),
+      hasPriority: firebase.firestore.FieldValue.delete(),
+      priorityId: firebase.firestore.FieldValue.delete(),
     };
   }
 
@@ -405,7 +404,7 @@ export class Thread extends EventTarget {
     // TODO: Only need to store message ids for messages that are in the inbox.
     const update: ThreadMetadataUpdate = {
       hasMessageIdsToPushToGmail: true,
-      messageIdsToPushToGmail: window.firebase.firestore.FieldValue.arrayUnion(
+      messageIdsToPushToGmail: firebase.firestore.FieldValue.arrayUnion(
           ...this.getMessageIdsIncludingRecentlySent_()),
     };
     if (this.metadata_.softMuted) {
@@ -477,8 +476,8 @@ export class Thread extends EventTarget {
     }
     await this.updateMetadata({
       hasMessageIdsToMarkRead: true,
-      messageIdsToMarkRead: window.firebase.firestore.FieldValue.arrayUnion(
-          ...messageIdsToMarkRead),
+      messageIdsToMarkRead:
+          firebase.firestore.FieldValue.arrayUnion(...messageIdsToMarkRead),
       lastMarkedReadTime: Date.now()
     });
     // Marking read needs to rerender the from so that the bolds are removed.
@@ -540,8 +539,7 @@ export class Thread extends EventTarget {
 
   clearStuckUpdate() {
     let update: ThreadMetadataUpdate = {};
-    update[ThreadMetadataKeys.blocked] =
-        window.firebase.firestore.FieldValue.delete();
+    update[ThreadMetadataKeys.blocked] = firebase.firestore.FieldValue.delete();
     // Clearing blocked should put the thread back in the triage queue,
     // otherwise the thread just disappears. If the user wants a queue other
     // than triage, they can just use that action directly instead of clearing
@@ -599,7 +597,7 @@ export class Thread extends EventTarget {
     // thread is in the triage queue or not. That way we can show the stuck date
     // in the UI so the user can see that they had marked it stuck.
     if (!shouldQueue && !shouldThrottle)
-      update.blocked = window.firebase.firestore.FieldValue.delete();
+      update.blocked = firebase.firestore.FieldValue.delete();
 
     await this.updateMetadata(update);
   }
@@ -608,7 +606,7 @@ export class Thread extends EventTarget {
     let current = this.metadata_.repeat;
     let newRepeat;
     if (current) {
-      newRepeat = window.firebase.firestore.FieldValue.delete();
+      newRepeat = firebase.firestore.FieldValue.delete();
     } else {
       newRepeat = {type: RepeatType.Daily};
     }
@@ -925,7 +923,7 @@ export class Thread extends EventTarget {
       const newMessageIds = messages.map(x => x.id);
       await this.updateMetadata({
         messageIdsToMarkRead:
-            window.firebase.firestore.FieldValue.arrayRemove(...newMessageIds),
+            firebase.firestore.FieldValue.arrayRemove(...newMessageIds),
       });
     }
     await this.generateMetadataFromGmailState_(historyId, messages);
@@ -991,7 +989,7 @@ export class Thread extends EventTarget {
 
     const update: MessagesToDeleteUpdate = {
       gmailMessageIdsToDelete:
-          window.firebase.firestore.FieldValue.arrayUnion(...oldMessageIds)
+          firebase.firestore.FieldValue.arrayUnion(...oldMessageIds)
     };
     Thread.threadsDocRef().update(update);
   }

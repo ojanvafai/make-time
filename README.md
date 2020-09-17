@@ -27,9 +27,6 @@ $ ./gulp serve
 
 Start http://localhost:5000 serves make-time for consumer accounts, and http://localhost:8000 for google.com accounts.
 
-### Flags for serving
---bundle to also generate the bundled/minified JS on each file change.
-
 ## Deploying
 ```
 $ ./gulp deploy
@@ -42,14 +39,6 @@ $ ./gulp deploy-google
 
 In order to deploy, Ojan will need to make you a collaborator on the relevant
 appengine projects first.
-
-## Bundling
-By default, running locally will serve unbundled and deploying will bundle.
-You can override the default behavior (locally and on the server) with the
-query parameter bundle=0 for no bundling and bundle=1 for bundling. For
-bundle=1 to work locally, need to start the server with "./gulp serve --bundle",
-which is generally not recommended because compiles are >10x slower with
-bundling.
 
 ## Recommendations
 If you use VS Code you can get autoformatting of TS code on save with:

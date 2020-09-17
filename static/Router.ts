@@ -4,7 +4,6 @@ export class Router {
   private baseParams_: Map<string, string>;
 
   // universalQueryParameters_ is parameters that should survive navigations.
-  // This is useful for developer time parameters like whether to bundle JS.
   constructor(private universalQueryParameters_: string[]) {
     this.rules_ = [];
     this.baseParams_ = new Map();

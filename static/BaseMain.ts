@@ -3,9 +3,11 @@
 // modules. It's not trivial to detangle though. It's mostly reused functions
 // that have to know about Threads and things like that.
 
-import 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
+// This should come before the firebase imports above, but esbuild makes it not
+// necessary and clang-format refuses to allow sorting it correctly.
+import * as firebase from 'firebase/app';
 
 import {AsyncOnce} from './AsyncOnce.js';
 import {assert, create, createLink, createWithStyle, notNull, redirectToSignInPage, SCOPES} from './Base.js';
@@ -94,8 +96,7 @@ function isUserEqual(
     var providerData = firebaseUser.providerData;
     for (var i = 0; i < providerData.length; i++) {
       let data = notNull(providerData[i]);
-      if (data.providerId ===
-              window.firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
+      if (data.providerId === firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
           data.uid === googleUser.getBasicProfile().getId()) {
         // We don't need to reauth the Firebase connection.
         return true;
@@ -112,17 +113,17 @@ async function login_() {
     return;
 
   // Ensure that we're not initializing firebase more than once.
-  assert(!window.firebase.apps.length);
+  assert(!firebase.apps.length);
 
   try {
     let progress = AppShell.updateLoaderTitle('login', 1, 'Logging in...');
     let googleUser = await loginToGapi();
-    await window.firebase.initializeApp(firebaseConfig);
+    await firebase.initializeApp(firebaseConfig);
     await enablePersistence();
 
     await new Promise(resolve => {
       let unsubscribe =
-          window.firebase.auth().onAuthStateChanged(async (firebaseUser) => {
+          firebase.auth().onAuthStateChanged(async (firebaseUser) => {
             unsubscribe();
 
             if (!firebaseUser || !isUserEqual(googleUser, firebaseUser))
@@ -161,8 +162,7 @@ async function loginToGapi() {
 
 async function enablePersistence() {
   try {
-    await window.firebase.firestore().enablePersistence(
-        {synchronizeTabs: true});
+    await firebase.firestore().enablePersistence({synchronizeTabs: true});
   } catch (e) {
     // Currently offline is only enabled for one tab at a time and also
     // doesn't work on some browsers.
@@ -191,13 +191,13 @@ async function initializeStorage() {
 let firestore_: firebase.firestore.Firestore;
 export function firestore() {
   if (!firestore_) {
-    firestore_ = window.firebase.firestore();
+    firestore_ = firebase.firestore();
   }
   return firestore_;
 }
 
 export function firebaseAuth() {
-  return window.firebase.auth();
+  return firebase.auth();
 }
 
 export function firestoreUserCollection() {

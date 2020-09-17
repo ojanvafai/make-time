@@ -18,27 +18,7 @@ if (isSafari) {
 </script>
 
 <script src="https://apis.google.com/js/api.js"></script>
-
-<script type=module>
-let shouldBundle = window.location.search.includes('bundle=1');
-if (!shouldBundle) {
-  let forceUnbundle = window.location.search.includes('bundle=0');
-  if (!forceUnbundle)
-    shouldBundle = window.location.hostname != 'localhost';
-}
-
-let script = document.createElement('script');
-script.type = 'module';
-script.textContent = `
-import {update} from '/gen${shouldBundle ? '/bundle/' : '/'}main.js';
-window.update = update;`;
-document.body.append(script);
-
-// Avoid flash of white on reload.
-if (localStorage.background)
-  document.documentElement.style.setProperty('--main-background', localStorage.background);
-</script>
-
+<script type=module src="gen/main.js"></script>
 <link rel=stylesheet href="generic.css">
 <link rel="manifest" href="manifest.json">
 
