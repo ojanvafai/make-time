@@ -7,9 +7,11 @@ const rename = require('gulp-rename');
 const replace = require('gulp-string-replace');
 const shell = require('gulp-shell')
 const footer = require('gulp-footer');
-
+const argv = require('yargs').argv;
 const mainFilename = '/main.js';
 const outDir = './public/gen';
+
+const DEFAULT_PROJECT = 'mk-time';
 
 gulp.task('delete', (callback) => {
   const rimraf = require('rimraf');
@@ -25,8 +27,9 @@ gulp.task('npm-install', shell.task('npm install --no-fund'));
 gulp.task(
     'firebase-serve',
     shell.task(
-        `./node_modules/firebase-tools/lib/bin/firebase.js serve --project mk-time --port=${
-            process.argv.includes('--google') ? 8000 : 5000}`));
+        `./node_modules/firebase-tools/lib/bin/firebase.js serve --project ${
+            DEFAULT_PROJECT} --port=${
+            argv.project !== DEFAULT_PROJECT ? 8000 : 5000}`));
 
 gulp.task(
     'tsc-watch',
@@ -36,7 +39,8 @@ gulp.task(
 gulp.task('bundle', function() {
   childProcess.execSync(
       `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts --outdir=${
-          outDir} --target=esnext --sourcemap=external --minify`,
+          outDir} --target=esnext --sourcemap=external ${
+          argv.noMinify ? '' : '--minify'}`,
   );
   // TODO: We should do this for HeaderFocusPainter as well so it can get
   // sourcemapped.
@@ -58,8 +62,6 @@ gulp.task('serve', gulp.series(['npm-install', 'serve-no-install']));
 /////////////////////////////////////////////////////////////////////////
 // Deploy
 /////////////////////////////////////////////////////////////////////////
-let globals = {projectName: 'mk-time'};
-
 gulp.task('add-checksums', function() {
   return gulp.src(['public/index.html'])
       .pipe(replace(globals.replaces[0][0], globals.replaces[0][1]))
@@ -76,8 +78,8 @@ gulp.task('remove-checksums', function() {
 
 gulp.task('firebase-deploy', (cb) => {
   const deployProcess = childProcess.exec(
-      './node_modules/firebase-tools/lib/bin/firebase.js deploy --project ' +
-          globals.projectName,
+      `./node_modules/firebase-tools/lib/bin/firebase.js deploy --project ${
+          argv.project || DEFAULT_PROJECT}`,
       cb);
   deployProcess.stdout.on('data', (data) => {
     process.stdout.write(data.toString());
@@ -117,24 +119,10 @@ gulp.task('compute-checksums', (cb) => {
   cb();
 });
 
-gulp.task('set-default-project', (cb) => {
-  globals.projectName = 'mk-time';
-  cb();
-});
-
-gulp.task('set-google-project', (cb) => {
-  globals.projectName = 'google.com:mktime';
-  cb();
-});
-
 gulp.task('fresh-bundle', gulp.series('delete', 'bundle'));
 
 gulp.task(
-    'upload',
+    'deploy',
     gulp.series(
         'fresh-bundle', 'compute-checksums', 'add-checksums', 'firebase-deploy',
         'remove-checksums'));
-
-gulp.task('deploy', gulp.series('set-default-project', 'upload'));
-
-gulp.task('deploy-google', gulp.series('set-google-project', 'upload'));

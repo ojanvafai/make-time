@@ -32,9 +32,9 @@ Start http://localhost:5000 serves make-time for consumer accounts, and http://l
 $ ./gulp deploy
 ```
 
-Or for Google instance:
+Or for a Firebase project other than the default one:
 ```
-$ ./gulp deploy-google
+$ ./gulp --project FIREBASE_PROJECT_NAME
 ```
 
 In order to deploy, Ojan will need to make you a collaborator on the relevant
@@ -47,8 +47,7 @@ If you use VS Code you can get autoformatting of TS code on save with:
 2. Added the following to your VSCode settings (change linux_x64 to darwin_x64 on mac):
   "clang-format.executable": "${workspaceRoot}/node_modules/clang-format/bin/linux_x64/clang-format",
   "[typescript]": {
-    "editor.formatOnSave": true,
-    "editor.formatOnType": true
+    "editor.formatOnSave": true
   }
 
 ## Navigating the code
