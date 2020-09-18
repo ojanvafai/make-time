@@ -12,6 +12,7 @@ const mainFilename = '/main.js';
 const outDir = './public/gen';
 
 const DEFAULT_PROJECT = 'mk-time';
+const globals = {};
 
 gulp.task('delete', (callback) => {
   const rimraf = require('rimraf');
