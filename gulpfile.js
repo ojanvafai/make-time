@@ -37,12 +37,23 @@ gulp.task(
     shell.task(
         './node_modules/typescript/bin/tsc --project tsconfig.json --watch --noEmit'));
 
-gulp.task('bundle', () => {
+// TODO: We should do this for HeaderFocusPainter as well so it can get
+// sourcemapped.
+function appendSourceMappingUrlToMain() {
+  gulp.src([outDir + mainFilename])
+      .pipe(footer('//# sourceMappingURL=main.js.map'))
+      .pipe(gulp.dest(outDir));
+}
+
+gulp.task('bundle', (cb) => {
   const esbuildProcess = childProcess.exec(
       `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts --outdir=${
           outDir} --target=esnext --sourcemap=external ${
           argv.noMinify ? '' : '--minify'}`,
-  );
+      () => {
+        appendSourceMappingUrlToMain();
+        cb();
+      });
   esbuildProcess.stdout.on('data', (data) => {
     process.stdout.write(data.toString());
   });
@@ -62,11 +73,6 @@ gulp.task('bundle', () => {
     }
     process.stderr.write(message);
   });
-  // TODO: We should do this for HeaderFocusPainter as well so it can get
-  // sourcemapped.
-  return gulp.src([outDir + mainFilename])
-      .pipe(footer('//# sourceMappingURL=main.js.map'))
-      .pipe(gulp.dest(outDir));
 });
 
 gulp.task('bundle-watch', () => watch('**/*.ts', gulp.task('bundle')));
