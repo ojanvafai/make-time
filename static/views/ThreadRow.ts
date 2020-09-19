@@ -56,13 +56,6 @@ export class RenderThreadEvent extends Event {
   }
 }
 
-export class HeightChangedEvent extends Event {
-  static NAME = 'row-height-changed';
-  constructor() {
-    super(HeightChangedEvent.NAME, {bubbles: true});
-  }
-}
-
 export class LabelState {
   public label: string|null;
   public priority: string|null;
@@ -204,6 +197,10 @@ export class ThreadRow extends HTMLElement {
       // that the row was removed from the view, so we should remove it's
       // previous focused/checked state.
       this.resetState_();
+      // The threadrow isn't in the DOM when the action completes since we
+      // removed it when the thread actionInProgress was set to true. Need to
+      // think about how to notify the ThreadListView that an update has
+      // happened.
       this.dispatchEvent(new InProgressChangedEvent());
     });
 
