@@ -1,29 +1,33 @@
 {
-  // Example:
-  //
-  // "indexes": [
-  //   {
-  //     "collectionId": "widgets",
-  //     "fields": [
-  //       { "fieldPath": "foo", "mode": "ASCENDING" },
-  //       { "fieldPath": "bar", "mode": "DESCENDING" }
-  //     ]
-  //   }
-  // ]
   "indexes": [
     {
-      "collectionId": "metadata",
+      "collectionGroup": "metadata",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "timestamp", "mode": "ASCENDING" },
-        { "fieldPath": "hasGroup", "mode": "ASCENDING" }
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hasGroup",
+          "order": "ASCENDING"
+        }
       ]
     },
     {
-      "collectionId": "metadata",
+      "collectionGroup": "metadata",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "timestamp", "mode": "ASCENDING" },
-        { "fieldPath": "hasPriority", "mode": "ASCENDING" }
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "hasPriority",
+          "order": "ASCENDING"
+        }
       ]
     }
-  ]
+  ],
+  "fieldOverrides": []
 }
