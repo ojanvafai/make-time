@@ -39,12 +39,14 @@ if (CSS && CSS.paintWorklet)
 export class RenderedThread extends HTMLElement {
   private spinner_?: HTMLElement;
   private focused_: HTMLElement|null;
+  private shouldFocusFirstUnreadOnNextRenderMessages_: boolean;
 
   constructor(public thread: Thread) {
     super();
     this.className =
         'absolute mx-auto left-0 right-0 thread-text-color reading-max-width';
     this.focused_ = null;
+    this.shouldFocusFirstUnreadOnNextRenderMessages_ = false;
   }
 
   isAttached() {
@@ -94,23 +96,23 @@ export class RenderedThread extends HTMLElement {
         this.append(rendered);
       }
     }
+
+    if (this.shouldFocusFirstUnreadOnNextRenderMessages_ && messages.length) {
+      let rendered: Element|null|undefined =
+          Array.from(this.children).find(x => x.classList.contains('unread'));
+      if (!rendered) {
+        rendered = this.lastElementChild;
+      }
+      this.shouldFocusFirstUnreadOnNextRenderMessages_ = false;
+      if (rendered) {
+        this.focusMessage_(rendered, {'block': 'center'});
+      }
+    }
   }
 
-  focusFirstUnread() {
-    let messages = Array.from(this.children);
-    let message = messages.find(x => x.classList.contains('unread'));
-
-    if (!message) {
-      // lastElementChild is null if if we try to render a thread before we have
-      // ever fetched its message data.
-      // TODO: Queue up the focus so that we call focusFirstUnread once the
-      // messages have loaded.
-      if (!this.lastElementChild)
-        return;
-      message = this.lastElementChild;
-    }
-
-    this.focusMessage_(message, {'block': 'center'});
+  queueFocusFirstUnreadOnNextRenderMessages() {
+    this.shouldFocusFirstUnreadOnNextRenderMessages_ = true;
+    this.render();
   }
 
   moveFocus(action: Action, options?: ScrollIntoViewOptions) {

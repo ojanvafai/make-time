@@ -1190,6 +1190,10 @@ export class ThreadListView extends ThreadListViewBase {
           noteHtml => console.log(noteHtml));
     }
 
+    // Do this even if we don't have any messages yet so that we focus them when
+    // the messages come in.
+    rendered.queueFocusFirstUnreadOnNextRenderMessages();
+
     // If you click on a row before it's pulled in message details, handle it
     // semi-gracefully.
     // TODO: Once the message details load, call the code below to add the
@@ -1207,8 +1211,6 @@ export class ThreadListView extends ThreadListViewBase {
         defined(this.getLabelSelectTemplate()));
 
     this.setThreadSubject(renderedRow.thread, labelContainer);
-
-    rendered.focusFirstUnread();
 
     // Check if new messages have come in since we last fetched from the
     // network. Intentionally don't await this since we don't want to
