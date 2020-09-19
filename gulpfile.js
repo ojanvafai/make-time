@@ -50,7 +50,7 @@ gulp.task('bundle', () => {
     // We always get the -0 warning, so strip the 1 warning message.
     `1 warning
 `,
-      `node_modules/@firebase/firestore/dist/index.cjs.js:718:11: warning: Comparison with -0 using the === operator will also match 0
+    `node_modules/@firebase/firestore/dist/index.cjs.js:718:11: warning: Comparison with -0 using the === operator will also match 0
     return -0 === t && 1 / t == -1 / 0;
            ~~
 `
@@ -69,9 +69,7 @@ gulp.task('bundle', () => {
       .pipe(gulp.dest(outDir));
 });
 
-gulp.task('bundle-watch', () => {watch('**/*.ts', {queue: true}, () => {
-                            return gulp.task('bundle')();
-                          })});
+gulp.task('bundle-watch', () => watch('**/*.ts', gulp.task('bundle')));
 
 gulp.task(
     'serve-no-install',
