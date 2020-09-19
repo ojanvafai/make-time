@@ -296,14 +296,9 @@ export class ThreadListView extends ThreadListViewBase {
     this.rowGroupContainer_.append(
         this.nonLowPriorityWrapper_, this.lowPriorityContainer_);
 
-    // ThreadRows can be in this.rowGroupContainer_ or this.pendingContainer_,
-    // so listen to the parent for progress change events. The other events like
-    // selection and focus don't apply to this.pendingContainer_, e.g. we should
-    // never try to set a pending row as the rendered or focused row.
     this.listen(
-        this, InProgressChangedEvent.NAME,
+        this.rowGroupContainer_, InProgressChangedEvent.NAME,
         () => this.handleInProgressChanged_());
-
     this.listen(this.rowGroupContainer_, RenderThreadEvent.NAME, (e: Event) => {
       this.setRenderedRow_(e.target as ThreadRow);
     });

@@ -128,12 +128,6 @@ export abstract class ThreadListModel extends Model {
     if (this.days_ !== undefined && this.threadDays_(thread) > this.days_)
       return false;
 
-    // If we have archived all the messages but the change hasn't been
-    // propagated to gmail yet, don't show them. This avoids threads
-    // disappearing from view in ThreadListView.markTriaged_ only to show up
-    // again a frame later.
-    if (thread.actionInProgress())
-      return false;
     return true;
   }
 
