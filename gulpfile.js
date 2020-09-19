@@ -37,12 +37,31 @@ gulp.task(
     shell.task(
         './node_modules/typescript/bin/tsc --project tsconfig.json --watch --noEmit'));
 
-gulp.task('bundle', function() {
-  childProcess.execSync(
+gulp.task('bundle', () => {
+  const esbuildProcess = childProcess.exec(
       `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts --outdir=${
           outDir} --target=esnext --sourcemap=external ${
           argv.noMinify ? '' : '--minify'}`,
   );
+  esbuildProcess.stdout.on('data', (data) => {
+    process.stdout.write(data.toString());
+  });
+  const firestoreWarningSuppressions = [
+    // We always get the -0 warning, so strip the 1 warning message.
+    `1 warning
+`,
+      `node_modules/@firebase/firestore/dist/index.cjs.js:718:11: warning: Comparison with -0 using the === operator will also match 0
+    return -0 === t && 1 / t == -1 / 0;
+           ~~
+`
+  ];
+  esbuildProcess.stderr.on('data', (data) => {
+    const message = data.toString();
+    if (firestoreWarningSuppressions.includes(message)) {
+      return;
+    }
+    process.stderr.write(message);
+  });
   // TODO: We should do this for HeaderFocusPainter as well so it can get
   // sourcemapped.
   return gulp.src([outDir + mainFilename])
@@ -63,19 +82,14 @@ gulp.task('serve', gulp.series(['npm-install', 'serve-no-install']));
 /////////////////////////////////////////////////////////////////////////
 // Deploy
 /////////////////////////////////////////////////////////////////////////
-gulp.task('add-checksums', function() {
+function replaceChecksums(isAdd) {
+  const first = isAdd ? 0 : 1;
+  const second = isAdd ? 1 : 0;
   return gulp.src(['public/index.html'])
-      .pipe(replace(globals.replaces[0][0], globals.replaces[0][1]))
-      .pipe(replace(globals.replaces[1][0], globals.replaces[1][1]))
+      .pipe(replace(globals.replaces[0][first], globals.replaces[0][second]))
+      .pipe(replace(globals.replaces[1][first], globals.replaces[1][second]))
       .pipe(gulp.dest('public'));
-});
-
-gulp.task('remove-checksums', function() {
-  return gulp.src(['public/index.html'])
-      .pipe(replace(globals.replaces[0][1], globals.replaces[0][0]))
-      .pipe(replace(globals.replaces[1][1], globals.replaces[1][0]))
-      .pipe(gulp.dest('public'));
-});
+}
 
 gulp.task('firebase-deploy', (cb) => {
   const deployProcess = childProcess.exec(
@@ -96,7 +110,7 @@ gulp.task('compute-checksums', (cb) => {
   let bundleMain = outDir + mainFilename;
   let checksum = md5(fs.readFileSync(bundleMain, 'utf8'));
   gulp.src([bundleMain, bundleMain + '.map'])
-      .pipe(rename(function(path) {
+      .pipe(rename((path) => {
         let parts = path.basename.split('.');
         path.basename = parts[0] + checksumKeyword + checksum;
         if (parts.length == 2)
@@ -108,7 +122,7 @@ gulp.task('compute-checksums', (cb) => {
   const manifestJsonPath = 'public/manifest.json';
   let manifestChecksum = md5(fs.readFileSync(manifestJsonPath, 'utf8'));
   gulp.src(manifestJsonPath)
-      .pipe(rename(function(path) {
+      .pipe(rename((path) => {
         path.basename += checksumKeyword + manifestChecksum;
       }))
       .pipe(gulp.dest(outDir));
@@ -125,5 +139,5 @@ gulp.task('fresh-bundle', gulp.series('delete', 'bundle'));
 gulp.task(
     'deploy',
     gulp.series(
-        'fresh-bundle', 'compute-checksums', 'add-checksums', 'firebase-deploy',
-        'remove-checksums'));
+        'fresh-bundle', 'compute-checksums', () => replaceChecksums(true),
+        'firebase-deploy', () => replaceChecksums(false)));
