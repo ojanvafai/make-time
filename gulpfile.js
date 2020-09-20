@@ -30,7 +30,7 @@ gulp.task(
     shell.task(
         `./node_modules/firebase-tools/lib/bin/firebase.js serve --project ${
             DEFAULT_PROJECT} --port=${
-            argv.project !== DEFAULT_PROJECT ? 8000 : 5000}`));
+            argv.project && argv.project !== DEFAULT_PROJECT ? 8000 : 5000}`));
 
 gulp.task(
     'tsc-watch',
