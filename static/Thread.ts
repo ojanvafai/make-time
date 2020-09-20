@@ -1054,14 +1054,24 @@ export class Thread extends EventTarget {
     let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
     let message =
         await send(text, addressHeaders, subject, sender, headers, this.id);
-    this.appendSentMessage(message);
+    await this.appendSentMessage(message);
   }
 
-  appendSentMessage(message: gapi.client.gmail.Message) {
+  async appendSentMessage(
+      message: gapi.client.gmail.Message, isOnlyMessage?: boolean) {
     // If the message is in this same thread, then account for it appropriately
     // in the message counts. This can happen even if it's a forward, e.g. if
     // you forward to yourself.
     if (message.threadId === this.id)
       this.sentMessageIds_.push(defined(message.id));
+
+    // If this is a thread we just started, then make sure it has stored message
+    // data in localStorage. syncMessagesToFirestore assumes that the fetch from
+    // disk has returned data as this is the only case where you could have a
+    // thread that doesn't have data in firestore since the MailProcessor
+    // syncing always updates message data before taking next steps.
+    if (isOnlyMessage) {
+      await this.saveMessageState_(defined(message.historyId), [message]);
+    }
   }
 }
