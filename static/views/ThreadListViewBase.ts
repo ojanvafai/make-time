@@ -166,6 +166,10 @@ export abstract class ThreadListViewBase extends View {
 
   protected openThreadInGmail(thread: Thread) {
     let messageIds = thread.getMessageIds();
+    // TODO: Fallback to using the threadId in this case.
+    if (!messageIds) {
+      return;
+    }
     let messageId = messageIds[messageIds.length - 1];
     // In theory, linking to the threadId should work, but it doesn't for
     // some threads. Linking to the messageId seems to work reliably. The

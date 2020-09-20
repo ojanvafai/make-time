@@ -255,10 +255,7 @@ export class MailProcessor {
     await this.populateGmailLabelsToPush_(
         allMktimeGmailLabels, doc.id, data, addLabelIds, removeLabelIds);
 
-    // TODO; Remove messageCountToPushLabelsToGmail once clients have updated.
-    const messageIds = data.messageCountToPushLabelsToGmail ?
-        data.messageIds :
-        defined(data.messageIdsToPushToGmail);
+    const messageIds = defined(data.messageIdsToPushToGmail);
 
     let clearFirestoreMetadataUpdate: ThreadMetadataUpdate = {};
     // If messageIdsToMarkRead is the same list of ids as
@@ -278,8 +275,6 @@ export class MailProcessor {
       await this.removeGmailLabelsFromDoc_(
           doc.id, messageIds, addLabelIds, removeLabelIds);
     }
-    clearFirestoreMetadataUpdate.messageCountToPushLabelsToGmail =
-        firebase.firestore.FieldValue.delete();
     clearFirestoreMetadataUpdate.hasMessageIdsToPushToGmail =
         firebase.firestore.FieldValue.delete();
     clearFirestoreMetadataUpdate.messageIdsToPushToGmail =
@@ -381,27 +376,19 @@ export class MailProcessor {
   }
 
   private async pushMktimeUpdatesToGmail_() {
-    const deprecatedSnapshot =
-        await Thread.metadataCollection()
-            .where(
-                ThreadMetadataKeys.removedMessageCountToPushLabelsToGmail, '>',
-                0)
-            .get();
-
-    const snapshot =
-        await Thread.metadataCollection()
-            .where(ThreadMetadataKeys.hasMessageIdsToPushToGmail, '==', true)
-            .get();
-
     const allMktimeGmailLabels = await this.getAllMktimeGmailLabels_();
     // Ensure parent labels exist first.
     await this.ensureLabelsExist_(
         allMktimeGmailLabels, MAKE_TIME_LABEL_NAME, LABEL_LABEL_NAME,
         PRIORITY_LABEL_NAME);
 
+    const snapshot =
+        await Thread.metadataCollection()
+            .where(ThreadMetadataKeys.hasMessageIdsToPushToGmail, '==', true)
+            .get();
+
     await this.doInParallel_<firebase.firestore.DocumentSnapshot>(
-        [...snapshot.docs, ...deprecatedSnapshot.docs],
-        async (doc: firebase.firestore.DocumentSnapshot) => {
+        snapshot.docs, async (doc: firebase.firestore.DocumentSnapshot) => {
           await this.pushMktimeUpdatesToGmailForSingleThread_(
               allMktimeGmailLabels, doc);
         });
@@ -867,6 +854,9 @@ export class MailProcessor {
       var batch = firestore().batch();
       for (let doc of thisChunk) {
         let data = doc.data() as ThreadMetadata;
+        if (!data.messageIds) {
+          continue;
+        }
         let update: ThreadMetadataUpdate = {
           hasMessageIdsToPushToGmail: true,
           messageIdsToPushToGmail:
@@ -907,8 +897,8 @@ export class MailProcessor {
               newMessagesSinceSoftMuted: firebase.firestore.FieldValue.delete(),
               hasLabel: true,
               hasMessageIdsToPushToGmail: true,
-              messageIdsToPushToGmail:
-                  firebase.firestore.FieldValue.arrayUnion(...data.messageIds),
+              messageIdsToPushToGmail: firebase.firestore.FieldValue.arrayUnion(
+                  ...defined(data.messageIds)),
             };
           } else {
             update = Thread.baseArchiveUpdate();

@@ -53,13 +53,13 @@ export enum MessagesToDeleteKeys {
 // Keep ThreadMetadataUpdate and ThreadMetadataKeys in sync with any changes
 // here.
 export interface ThreadMetadata {
-  historyId: string;
-  messageIds: string[];
+  historyId?: string;
+  messageIds?: string[];
   hasMessageIdsToMarkRead?: boolean;
   messageIdsToMarkRead?: string[];
   hasMessageIdsToPushToGmail?: boolean;
   messageIdsToPushToGmail?: string[];
-  timestamp: number;
+  timestamp?: number;
   retriageTimestamp?: number;
   priorityId?: number;
   labelId?: number;
@@ -80,7 +80,6 @@ export interface ThreadMetadata {
   // Timestamp any message in this thread was last marked read.
   lastMarkedReadTime?: number;
   important?: boolean;
-  messageCountToPushLabelsToGmail?: number;
 }
 
 // Want strong typing on all update calls, but don't want to write historyId and
@@ -111,7 +110,6 @@ export interface ThreadMetadataUpdate {
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
   lastMarkedReadTime?: number|firebase.firestore.FieldValue;
   important?: boolean|firebase.firestore.FieldValue;
-  messageCountToPushLabelsToGmail?: number|firebase.firestore.FieldValue;
 }
 
 // Firestore queries take the key as a string. Use an enum so we can avoid silly
@@ -670,7 +668,7 @@ export class Thread extends EventTarget {
   }
 
   private getMessageIdsIncludingRecentlySent_() {
-    return [...this.metadata_.messageIds, ...this.sentMessageIds_];
+    return [...this.metadata_.messageIds ?? [], ...this.sentMessageIds_];
   }
 
   getMessages() {
@@ -742,11 +740,7 @@ export class Thread extends EventTarget {
       return snapshot.data() as ThreadMetadata;
     }
 
-    let data = {
-      historyId: '',
-      messageIds: [],
-      timestamp: 0,
-    } as ThreadMetadata;
+    let data: ThreadMetadata = {};
     await doc.set(data);
     return data;
   }
@@ -839,17 +833,18 @@ export class Thread extends EventTarget {
   async generateMetadataFromGmailState_(
       historyId: string, messages: gapi.client.gmail.Message[]) {
     let lastMessage = messages[messages.length - 1];
+    const newMessageIds = messages.flatMap(x => defined(x.id));
 
     let newMetadata: ThreadMetadata = {
       historyId: historyId,
-      messageIds: messages.flatMap(x => defined(x.id)),
+      messageIds: newMessageIds,
       timestamp: Thread.getTimestamp_(lastMessage),
       important:
           messages.some(x => x.labelIds && x.labelIds.includes('IMPORTANT')),
     };
 
     this.sentMessageIds_ =
-        this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
+        this.sentMessageIds_.filter(x => !newMessageIds.includes(x));
 
     await this.updateMetadata(newMetadata);
 
