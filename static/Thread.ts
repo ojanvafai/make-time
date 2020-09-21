@@ -671,7 +671,7 @@ export class Thread extends EventTarget {
   }
 
   private getMessageIdsIncludingRecentlySent_() {
-    return [...this.metadata_.messageIds ?? [], ...this.sentMessageIds_];
+    return [...(this.metadata_.messageIds || []), ...this.sentMessageIds_];
   }
 
   getMessages() {
