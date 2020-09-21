@@ -319,6 +319,9 @@ export class Thread extends EventTarget {
     this.includePushLabelsToGmail_(updates);
     await this.getMetadataDocument_().update(updates);
     this.dispatchEvent(new UpdatedEvent());
+    // TODO; This will set actionInProgess_ to false too early if we have two
+    // metadata updates in progress at once. actionInProgress_ should actually
+    // be a count that increments/decrements when it is set.
     if (this.actionInProgress_) {
       this.setActionInProgress(false);
     }
@@ -587,7 +590,7 @@ export class Thread extends EventTarget {
       update.queued = true;
 
     if (shouldThrottle)
-      update.throttled = shouldThrottle;
+      update.throttled = true;
 
     // New message putting the thread back into triage should remove it from
     // stuck.

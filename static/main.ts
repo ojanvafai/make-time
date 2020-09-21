@@ -334,7 +334,7 @@ async function onLoad() {
   serverStorage.addEventListener(
       PushLabelsToGmailUpdateEventName.NAME, async () => {
         (await getMailProcessor())
-            .schedulePushGmailLablesForAllHasLabelOrPriorityThreads();
+            .schedulePushGmailLabelsForAllHasLabelOrPriorityThreads();
       });
 
   appShell_ = new AppShell();
