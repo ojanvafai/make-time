@@ -1,62 +1,87 @@
 const childProcess = require('child_process');
 const fs = require('fs');
-const gulp = require('gulp');
-const {watch} = require('gulp');
+const {watch, task, series, parallel} = require('gulp');
 const md5 = require('md5');
-const rename = require('gulp-rename');
-const replace = require('gulp-string-replace');
-const shell = require('gulp-shell')
-const footer = require('gulp-footer');
+const rimraf = require('rimraf');
 const argv = require('yargs').argv;
-const mainFilename = '/main.js';
-const outDir = './public/gen';
 
+const OUT_DIR = './public/gen';
 const DEFAULT_PROJECT = 'mk-time';
-const globals = {};
+const FIREBASE_PATH = './node_modules/firebase-tools/lib/bin/firebase.js';
 
-gulp.task('delete', (callback) => {
-  const rimraf = require('rimraf');
-  rimraf.sync(outDir);
-  callback();
-});
-
-/////////////////////////////////////////////////////////////////////////
-// Local development
-/////////////////////////////////////////////////////////////////////////
-gulp.task('npm-install', shell.task('npm install --no-fund'));
-
-gulp.task(
-    'firebase-serve',
-    shell.task(
-        `./node_modules/firebase-tools/lib/bin/firebase.js serve --project ${
-            DEFAULT_PROJECT} --port=${
-            argv.project !== DEFAULT_PROJECT ? 8000 : 5000}`));
-
-gulp.task(
-    'tsc-watch',
-    shell.task(
-        './node_modules/typescript/bin/tsc --project tsconfig.json --watch --noEmit'));
-
-// TODO: We should do this for HeaderFocusPainter as well so it can get
-// sourcemapped.
-function appendSourceMappingUrlToMain() {
-  gulp.src([outDir + mainFilename])
-      .pipe(footer('//# sourceMappingURL=main.js.map'))
-      .pipe(gulp.dest(outDir));
+function generateIndexHtml(mainJsFilePath, cssFilePath, manifestFilePath) {
+  // - maximum-scale=1.0 disables zoom in Chrome and Webkit.
+  // - user-scalable=yes reenables user driven zoom in Webkit but not Chrome.
+  // - The combination of those two enables user driven zoom but disables
+  //   automated browser zooming of form controls.
+  return `<!DOCTYPE html><html><head><meta charset='utf-8'>
+<script>
+const ua = navigator.userAgent;
+const isSafari = !ua.includes('AppleWebKit/537.36') && ua.includes('AppleWebKit/');
+document.write(
+  \`<meta name="viewport" content="width=device-width,initial-scale=1.0\${isSafari ? ',maximum-scale=1.0,user-scalable=yes' : ''}">\`
+);
+</script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script type=module src="${mainJsFilePath}"></script>
+<link rel=stylesheet href="${cssFilePath}">
+<link rel="manifest" href="${manifestFilePath}">
+</head><body></body></html>`;
 }
 
-gulp.task('bundle', (cb) => {
-  const esbuildProcess = childProcess.exec(
-      `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts --outdir=${
-          outDir} --target=esnext --sourcemap=external ${
-          argv.noMinify ? '' : '--minify'}`,
-      () => {
-        appendSourceMappingUrlToMain();
+async function checksumFileAndReturnNewPath(fileName, extension) {
+  const path = `public/${fileName}${extension}`;
+  const checksum = md5(await fs.promises.readFile(path, 'utf8'));
+  const checksummedPath = `gen/${fileName}-${checksum}${extension}`;
+  await fs.promises.copyFile(path, `public/${checksummedPath}`);
+  return checksummedPath;
+}
+
+async function checksumMainJs() {
+  const bundleMain = OUT_DIR + '/main.js';
+  // TODO: Run esbuild from gulp instead of commandline so that we
+  // can get the bundle JS without writing it to disk just to read it out again.
+  // Reading the file out here takes 150ms. esbuild takes 300ms to produce and
+  // write out the file. So that should make it 2x faster.
+  const mainFileContents = await fs.promises.readFile(bundleMain, 'utf8');
+  const mainFileChecksum = md5(mainFileContents);
+
+  const checksummedMainPath = `gen/main-${mainFileChecksum}.js`;
+  const publicChecksummedMainPath = `public/${checksummedMainPath}`;
+  // Technically appending the sourceMappingURL would change the checksum, but
+  // we don't need to care as long as we're consistent.
+  await fs.promises.writeFile(publicChecksummedMainPath, `${mainFileContents}
+//# sourceMappingURL=/${checksummedMainPath}.map`);
+
+  await fs.promises.rename(
+      `${bundleMain}.map`, `${publicChecksummedMainPath}.map`);
+  return checksummedMainPath;
+}
+
+task('bundle-once', (cb) => {
+  // Delete the contents of the out directory instead of the whole directory.
+  // Deleting the whole directly confuses tsc watch and has it start an
+  // incremental compilation that never finishes.
+  rimraf.sync(`${OUT_DIR}/*`);
+
+  const minify = argv.noMinify ? '' : '--minify';
+  const esbuild = childProcess.exec(
+      `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts ${
+          minify} --outdir=${OUT_DIR} --target=esnext --sourcemap=external`,
+      async () => {
+        const paths = await Promise.all([
+          checksumMainJs(), checksumFileAndReturnNewPath('generic', '.css'),
+          checksumFileAndReturnNewPath('manifest', '.json')
+        ]);
+        const indexHtmlContents = generateIndexHtml(...paths);
+        await fs.promises.writeFile(`${OUT_DIR}/index.html`, indexHtmlContents);
         cb();
       });
-  esbuildProcess.stdout.on('data', (data) => {
-    process.stdout.write(data.toString());
-  });
+  esbuild.stdout.on('data', (data) => process.stdout.write(data.toString()));
+
+  // TODO: Stop suppressing after upgrading to the next version of firebase or
+  // esbuild since they both fixed it and then switch to using execAndPipe for
+  // this function.
   const firestoreWarningSuppressions = [
     // We always get the -0 warning, so strip the 1 warning message.
     `1 warning
@@ -66,7 +91,7 @@ gulp.task('bundle', (cb) => {
            ~~
 `
   ];
-  esbuildProcess.stderr.on('data', (data) => {
+  esbuild.stderr.on('data', (data) => {
     const message = data.toString();
     if (firestoreWarningSuppressions.includes(message)) {
       return;
@@ -75,73 +100,35 @@ gulp.task('bundle', (cb) => {
   });
 });
 
-gulp.task('bundle-watch', () => watch('**/*.ts', gulp.task('bundle')));
+const execAndPipe =
+    (command) => {
+      return (cb) => {
+        const x = childProcess.exec(command, cb);
+        x.stdout.on('data', (data) => process.stdout.write(data.toString()));
+        x.stderr.on('data', (data) => process.stderr.write(data.toString()));
+      };
+    }
 
-gulp.task(
-    'serve-no-install',
-    gulp.parallel(['firebase-serve', 'bundle-watch', 'tsc-watch']));
-
-gulp.task('serve', gulp.series(['npm-install', 'serve-no-install']));
-
-/////////////////////////////////////////////////////////////////////////
-// Deploy
-/////////////////////////////////////////////////////////////////////////
-function replaceChecksums(isAdd) {
-  const first = isAdd ? 0 : 1;
-  const second = isAdd ? 1 : 0;
-  return gulp.src(['public/index.html'])
-      .pipe(replace(globals.replaces[0][first], globals.replaces[0][second]))
-      .pipe(replace(globals.replaces[1][first], globals.replaces[1][second]))
-      .pipe(gulp.dest('public'));
-}
-
-gulp.task('firebase-deploy', (cb) => {
-  const deployProcess = childProcess.exec(
-      `./node_modules/firebase-tools/lib/bin/firebase.js deploy --project ${
-          argv.project || DEFAULT_PROJECT}`,
-      cb);
-  deployProcess.stdout.on('data', (data) => {
-    process.stdout.write(data.toString());
-  });
-  deployProcess.stderr.on('data', (data) => {
-    process.stderr.write(data.toString());
-  });
+task('deploy-firebase', (cb) => {
+  const project = argv.project || DEFAULT_PROJECT;
+  const output = execAndPipe(`${FIREBASE_PATH} deploy --project ${project}`);
+  output(cb);
 });
 
-gulp.task('compute-checksums', (cb) => {
-  let checksumKeyword = '-checksum-';
-  // Append md5 checksum to gen/main.js and it's sourcemap.
-  let bundleMain = outDir + mainFilename;
-  let checksum = md5(fs.readFileSync(bundleMain, 'utf8'));
-  gulp.src([bundleMain, bundleMain + '.map'])
-      .pipe(rename((path) => {
-        let parts = path.basename.split('.');
-        path.basename = parts[0] + checksumKeyword + checksum;
-        if (parts.length == 2)
-          path.basename += '.' + parts[1];
-      }))
-      .pipe(gulp.dest(outDir));
-
-  // Append md5 checksum to maifest.json.
-  const manifestJsonPath = 'public/manifest.json';
-  let manifestChecksum = md5(fs.readFileSync(manifestJsonPath, 'utf8'));
-  gulp.src(manifestJsonPath)
-      .pipe(rename((path) => {
-        path.basename += checksumKeyword + manifestChecksum;
-      }))
-      .pipe(gulp.dest(outDir));
-
-  globals.replaces = [
-    ['gen/main.js', `gen/main${checksumKeyword}${checksum}.js`],
-    ['manifest.json', `gen/manifest${checksumKeyword}${manifestChecksum}.json`],
-  ];
-  cb();
+task('serve-firebase', (cb) => {
+  const port = argv.project && argv.project !== DEFAULT_PROJECT ? 8000 : 5000;
+  const output = execAndPipe(
+      `${FIREBASE_PATH} serve --project ${DEFAULT_PROJECT} --port=${port}`);
+  output(cb);
 });
 
-gulp.task('fresh-bundle', gulp.series('delete', 'bundle'));
+task(
+    'tsc',
+    execAndPipe(
+        './node_modules/typescript/bin/tsc --project tsconfig.json --watch --noEmit'));
 
-gulp.task(
-    'deploy',
-    gulp.series(
-        'fresh-bundle', 'compute-checksums', () => replaceChecksums(true),
-        'firebase-deploy', () => replaceChecksums(false)));
+task('bundle', () => watch('**/*.ts', task('bundle-once')));
+task('serve', parallel(['serve-firebase', 'bundle', 'tsc']));
+task('install', execAndPipe('npm install --no-fund'));
+task('install-and-serve', series(['install', 'serve']));
+task('deploy', series('bundle-once', 'deploy-firebase'));

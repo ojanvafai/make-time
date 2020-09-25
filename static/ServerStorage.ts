@@ -2,6 +2,7 @@ import type * as firebase from 'firebase/app';
 
 import {notNull, deepEqual} from './Base.js';
 import {firebaseAuth, firestore} from './BaseMain.js';
+import {EventTargetPolyfill} from './EventTargetPolyfill.js';
 
 export interface StorageUpdates {
   [property: string]: any;
@@ -15,7 +16,7 @@ export class PushLabelsToGmailUpdateEventName extends Event {
   }
 }
 
-export class ServerStorage extends EventTarget {
+export class ServerStorage extends EventTargetPolyfill {
   private data_?: firebase.firestore.DocumentSnapshot;
   static KEYS: KeyTypes;
 

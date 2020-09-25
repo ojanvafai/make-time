@@ -1,3 +1,5 @@
+import {EventTargetPolyfill} from './EventTargetPolyfill';
+
 type Task = () => Promise<void>;
 
 export let TASK_COMPLETED_EVENT_NAME = 'task-queue-tasks-changed';
@@ -8,7 +10,7 @@ export class TaskCompletedEvent extends Event {
   }
 }
 
-export class TaskQueue extends EventTarget {
+export class TaskQueue extends EventTargetPolyfill {
   private maxTasks: number;
   private tasks: Task[] = [];
   private inProgressTaskCount = 0;

@@ -2,6 +2,7 @@ import * as firebase from 'firebase/app';
 
 import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
+import {EventTargetPolyfill} from './EventTargetPolyfill.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {AddressHeaders, insertNoteToSelf, send} from './Mail.js';
 import {Message} from './Message.js';
@@ -238,7 +239,7 @@ export function getLabelName(queueNames: QueueNames, id?: number) {
 }
 
 
-export class Thread extends EventTarget {
+export class Thread extends EventTargetPolyfill {
   private processed_: ProcessedMessageData;
   private queueNames_: QueueNames;
   private fetchPromise_:

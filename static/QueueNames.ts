@@ -1,5 +1,6 @@
 import {assert, defined, Labels} from './Base.js';
 import {firestore, firestoreUserCollection} from './BaseMain.js';
+import {EventTargetPolyfill} from './EventTargetPolyfill.js';
 
 export class SnapshotEvent extends Event {
   static NAME = 'snapshot';
@@ -8,7 +9,7 @@ export class SnapshotEvent extends Event {
   }
 }
 
-export class QueueNames extends EventTarget {
+export class QueueNames extends EventTargetPolyfill {
   private static nameIds_?: {[property: string]: string};
   private static idNames_?: {[property: string]: string};
   private static instance_?: QueueNames;
