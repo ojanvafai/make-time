@@ -74,7 +74,10 @@ task('bundle-once', (cb) => {
           checksumFileAndReturnNewPath('manifest', '.json')
         ]);
         const indexHtmlContents = generateIndexHtml(...paths);
-        await fs.promises.writeFile(`${OUT_DIR}/index.html`, indexHtmlContents);
+        // Blech, firebse requires index.html stored at the root of the public
+        // directory. So we write it out there and gitignore it instead of
+        // putting it in the gen directory.
+        await fs.promises.writeFile(`public/index.html`, indexHtmlContents);
         cb();
       });
   esbuild.stdout.on('data', (data) => process.stdout.write(data.toString()));
