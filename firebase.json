@@ -12,12 +12,8 @@
     ],
     "rewrites": [
       {
-        "source": "/index.html",
-        "destination": "gen/index.html"
-      },
-      {
         "source": "**",
-        "destination": "gen/index.html"
+        "destination": "/index.html"
       }
     ],
     "headers": [
