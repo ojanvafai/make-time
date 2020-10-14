@@ -195,6 +195,8 @@ const PrioritySortOrder = [
   Priority.Bookmark,
   Priority.Urgent,
   Priority.Backlog,
+  // TODO: Required defined priorities once clients have updated.
+  undefined,
 ];
 
 // Use negative values for built-in labels.
@@ -277,7 +279,8 @@ export class Thread extends EventTargetPolyfill {
     return entry;
   }
 
-  static comparePriorities(a: Priority, b: Priority) {
+  // TODO: Required defined priorities once clients have updated.
+  static comparePriorities(a: Priority|undefined, b: Priority|undefined) {
     let aOrder = PrioritySortOrder.indexOf(a);
     let bOrder = PrioritySortOrder.indexOf(b);
     return aOrder - bOrder;
