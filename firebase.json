@@ -20,16 +20,31 @@
       // Use 0 max-age for regular js|json since these are only served to developers.
       {
         "source": "**/*.@(js|json|map)",
-        "headers": [ { "key": "Cache-Control", "value": "public, max-age=0" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=0"
+          }
+        ]
       },
       // Override max-age for js|json files with MD5 checksum in their name to be 1 year.
       {
         "source": "**/*-checksum-*.@(js|json)",
-        "headers": [ { "key": "Cache-Control", "value": "public, max-age=31536000" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000"
+          }
+        ]
       },
       {
         "source": "**/favicon.ico",
-        "headers": [ { "key": "Cache-Control", "value": "public, max-age=2419200" }]
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2419200"
+          }
+        ]
       }
     ]
   }

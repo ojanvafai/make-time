@@ -2,6 +2,7 @@ import * as firebase from 'firebase/app';
 
 import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
 import {firestoreUserCollection} from './BaseMain.js';
+import {EventTargetPolyfill} from './EventTargetPolyfill.js';
 import {IDBKeyVal} from './idb-keyval.js';
 import {AddressHeaders, insertNoteToSelf, send} from './Mail.js';
 import {Message} from './Message.js';
@@ -192,6 +193,8 @@ const PrioritySortOrder = [
   Priority.Bookmark,
   Priority.Urgent,
   Priority.Backlog,
+  // TODO: Required defined priorities once clients have updated.
+  undefined,
 ];
 
 // Use negative values for built-in labels.
@@ -236,7 +239,7 @@ export function getLabelName(queueNames: QueueNames, id?: number) {
 }
 
 
-export class Thread extends EventTarget {
+export class Thread extends EventTargetPolyfill {
   private processed_: ProcessedMessageData;
   private queueNames_: QueueNames;
   private fetchPromise_:
@@ -274,7 +277,8 @@ export class Thread extends EventTarget {
     return entry;
   }
 
-  static comparePriorities(a: Priority, b: Priority) {
+  // TODO: Required defined priorities once clients have updated.
+  static comparePriorities(a: Priority|undefined, b: Priority|undefined) {
     let aOrder = PrioritySortOrder.indexOf(a);
     let bOrder = PrioritySortOrder.indexOf(b);
     return aOrder - bOrder;

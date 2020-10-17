@@ -8,6 +8,7 @@ import {QueueNames} from './QueueNames.js';
 import {QueueSettings} from './QueueSettings.js';
 import {ServerStorage, StorageUpdates} from './ServerStorage.js';
 import {THEMES} from './Themes.js';
+import {EventTargetPolyfill} from './EventTargetPolyfill.js';
 
 export interface HeaderFilterRule {
   name: string;
@@ -207,7 +208,7 @@ export class FiltersChangedEvent extends Event {
   }
 }
 
-export class Settings extends EventTarget {
+export class Settings extends EventTargetPolyfill {
   private filters_?: firebase.firestore.DocumentSnapshot;
   private queueSettings_?: QueueSettings;
   private labelSelect_?: HTMLSelectElement;

@@ -160,8 +160,10 @@ export class TodoModel extends ThreadListModel {
       // Sort within retriage by priority first.
       if (aGroup === RETRIAGE_LABEL_NAME &&
           a.getPriorityId() !== b.getPriorityId()) {
-        let aPriority = defined(a.getPriorityId());
-        let bPriority = defined(b.getPriorityId());
+        // TODO: Assert these are defined and change Thread.comparePriorities to
+        // required defined priorities once clients have updated.
+        let aPriority = a.getPriorityId();
+        let bPriority = b.getPriorityId();
         return Thread.comparePriorities(aPriority, bPriority);
       }
       return ThreadListModel.compareDates(a, b);

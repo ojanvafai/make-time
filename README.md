@@ -22,7 +22,7 @@ $ ./node_modules/firebase-tools/lib/bin/firebase.js login
 For the dev server to work, you need to both start the firebase server and
 compile typescript after every change. You can run both with the following command:
 ```
-$ ./gulp serve
+$ ./gulp install-and-serve
 ```
 
 Start http://localhost:5000 serves make-time for consumer accounts, and http://localhost:8000 for google.com accounts.
@@ -34,7 +34,7 @@ $ ./gulp deploy
 
 Or for a Firebase project other than the default one:
 ```
-$ ./gulp --project FIREBASE_PROJECT_NAME
+$ ./gulp deploy --project FIREBASE_PROJECT_NAME
 ```
 
 In order to deploy, Ojan will need to make you a collaborator on the relevant

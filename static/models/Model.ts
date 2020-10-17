@@ -1,6 +1,7 @@
+import {EventTargetPolyfill} from '../EventTargetPolyfill.js';
 import {AppShell} from '../views/AppShell.js';
 
-export abstract class Model extends EventTarget {
+export abstract class Model extends EventTargetPolyfill {
   constructor() {
     super();
   }
