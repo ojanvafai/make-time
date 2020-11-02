@@ -7,6 +7,13 @@ const argv = require('yargs').argv;
 
 const OUT_DIR = './public/gen';
 const DEFAULT_PROJECT = 'mk-time';
+
+task('delete', (callback) => {
+  const rimraf = require('rimraf');
+  rimraf.sync(outDir);
+  callback();
+});
+
 const FIREBASE_PATH = './node_modules/firebase-tools/lib/bin/firebase.js';
 
 function generateIndexHtml(mainJsFilePath, cssFilePath, manifestFilePath) {

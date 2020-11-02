@@ -90,8 +90,8 @@ class RowState extends LabelState {
   from: HTMLElement;
   isUnread: boolean;
   renderPinnedStyle: boolean;
-  count: number;
-  lastMessageId: string;
+  count?: number;
+  lastMessageId?: string;
 
   constructor(
       thread: Thread, group: string, public shouldHide: boolean,
@@ -109,8 +109,10 @@ class RowState extends LabelState {
     this.renderPinnedStyle = thread.getPriorityId() === Priority.Pin;
 
     let messageIds = thread.getMessageIds();
-    this.count = messageIds.length;
-    this.lastMessageId = messageIds[messageIds.length - 1];
+    if (messageIds) {
+      this.count = messageIds.length;
+      this.lastMessageId = messageIds[messageIds.length - 1];
+    }
   }
 
   equals(other: RowState): boolean {
@@ -404,7 +406,7 @@ export class ThreadRow extends HTMLElement {
     from.append(state.from)
     fromContainer.append(from);
 
-    if (state.count > 1) {
+    if (state.count && state.count > 1) {
       let count = document.createElement('div');
       count.style.cssText = `
         font-size: 80%;

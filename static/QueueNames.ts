@@ -20,7 +20,7 @@ export class QueueNames extends EventTargetPolyfill {
     return this.instance_;
   }
 
-  getNameIdsDocument_() {
+  private getNameIdsDocument_() {
     return firestoreUserCollection().doc('NameIds');
   }
 
@@ -39,7 +39,7 @@ export class QueueNames extends EventTargetPolyfill {
     return names;
   }
 
-  setNameIds_(data: any) {
+  private setNameIds_(data: any) {
     QueueNames.nameIds_ = data.map;
     QueueNames.idNames_ = {};
     for (var key in data.map) {

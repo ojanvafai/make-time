@@ -54,13 +54,13 @@ export enum MessagesToDeleteKeys {
 // Keep ThreadMetadataUpdate and ThreadMetadataKeys in sync with any changes
 // here.
 export interface ThreadMetadata {
-  historyId: string;
-  messageIds: string[];
+  historyId?: string;
+  messageIds?: string[];
   hasMessageIdsToMarkRead?: boolean;
   messageIdsToMarkRead?: string[];
   hasMessageIdsToPushToGmail?: boolean;
   messageIdsToPushToGmail?: string[];
-  timestamp: number;
+  timestamp?: number;
   retriageTimestamp?: number;
   priorityId?: number;
   labelId?: number;
@@ -81,7 +81,6 @@ export interface ThreadMetadata {
   // Timestamp any message in this thread was last marked read.
   lastMarkedReadTime?: number;
   important?: boolean;
-  messageCountToPushLabelsToGmail?: number;
 }
 
 // Want strong typing on all update calls, but don't want to write historyId and
@@ -112,7 +111,6 @@ export interface ThreadMetadataUpdate {
   archivedByFilter?: boolean|firebase.firestore.FieldValue;
   lastMarkedReadTime?: number|firebase.firestore.FieldValue;
   important?: boolean|firebase.firestore.FieldValue;
-  messageCountToPushLabelsToGmail?: number|firebase.firestore.FieldValue;
 }
 
 // Firestore queries take the key as a string. Use an enum so we can avoid silly
@@ -303,6 +301,9 @@ export class Thread extends EventTargetPolyfill {
   }
 
   private includePushLabelsToGmail_(update: ThreadMetadataUpdate) {
+    if (update.hasMessageIdsToPushToGmail) {
+      return;
+    }
     // Only set pushLabelsToGmail if a field changed that causes the labels in
     // gmail to change.
     const valueChanged = (value: any, previousValue: any) => {
@@ -313,10 +314,20 @@ export class Thread extends EventTargetPolyfill {
         valueChanged(update.hasPriority, this.metadata_.hasPriority) ||
         valueChanged(update.priorityId, this.metadata_.priorityId) ||
         valueChanged(update.muted, this.metadata_.muted)) {
-      update.hasMessageIdsToPushToGmail = true;
-      update.messageIdsToPushToGmail = firebase.firestore.FieldValue.arrayUnion(
-          ...this.getMessageIdsIncludingRecentlySent_());
+      this.applyPushLabelsToGmail_(update);
     }
+  }
+
+  async queuePushLabelsToGmail() {
+    const update: ThreadMetadataUpdate = {};
+    this.applyPushLabelsToGmail_(update);
+    await this.updateMetadata(update);
+  }
+
+  private applyPushLabelsToGmail_(update: ThreadMetadataUpdate) {
+    update.hasMessageIdsToPushToGmail = true;
+    update.messageIdsToPushToGmail = firebase.firestore.FieldValue.arrayUnion(
+        ...this.getMessageIdsIncludingRecentlySent_());
   }
 
   // Returns the old values for all the fields being updated so that undo can
@@ -325,6 +336,9 @@ export class Thread extends EventTargetPolyfill {
     this.includePushLabelsToGmail_(updates);
     await this.getMetadataDocument_().update(updates);
     this.dispatchEvent(new UpdatedEvent());
+    // TODO; This will set actionInProgess_ to false too early if we have two
+    // metadata updates in progress at once. actionInProgress_ should actually
+    // be a count that increments/decrements when it is set.
     if (this.actionInProgress_) {
       this.setActionInProgress(false);
     }
@@ -406,11 +420,8 @@ export class Thread extends EventTargetPolyfill {
   // messages in gmail during the sync.
   async applyMute() {
     // TODO: Only need to store message ids for messages that are in the inbox.
-    const update: ThreadMetadataUpdate = {
-      hasMessageIdsToPushToGmail: true,
-      messageIdsToPushToGmail: firebase.firestore.FieldValue.arrayUnion(
-          ...this.getMessageIdsIncludingRecentlySent_()),
-    };
+    const update: ThreadMetadataUpdate = {};
+    this.applyPushLabelsToGmail_(update);
     if (this.metadata_.softMuted) {
       update.newMessagesSinceSoftMuted = true;
     }
@@ -579,7 +590,7 @@ export class Thread extends EventTargetPolyfill {
     await this.updateMetadata({labelId: await this.queueNames_.getId(label)});
   }
 
-  async applyLabel(
+  async applyAndPushLabel(
       labelId: number, shouldQueue: boolean, shouldThrottle: boolean) {
     let update: ThreadMetadataUpdate = {
       labelId: labelId,
@@ -589,11 +600,13 @@ export class Thread extends EventTargetPolyfill {
       softMuted: false,
     };
 
+    this.applyPushLabelsToGmail_(update);
+
     if (shouldQueue)
       update.queued = true;
 
     if (shouldThrottle)
-      update.throttled = shouldThrottle;
+      update.throttled = true;
 
     // New message putting the thread back into triage should remove it from
     // stuck.
@@ -674,7 +687,7 @@ export class Thread extends EventTargetPolyfill {
   }
 
   private getMessageIdsIncludingRecentlySent_() {
-    return [...this.metadata_.messageIds, ...this.sentMessageIds_];
+    return [...(this.metadata_.messageIds || []), ...this.sentMessageIds_];
   }
 
   getMessages() {
@@ -746,11 +759,7 @@ export class Thread extends EventTargetPolyfill {
       return snapshot.data() as ThreadMetadata;
     }
 
-    let data = {
-      historyId: '',
-      messageIds: [],
-      timestamp: 0,
-    } as ThreadMetadata;
+    let data: ThreadMetadata = {};
     await doc.set(data);
     return data;
   }
@@ -843,17 +852,18 @@ export class Thread extends EventTargetPolyfill {
   async generateMetadataFromGmailState_(
       historyId: string, messages: gapi.client.gmail.Message[]) {
     let lastMessage = messages[messages.length - 1];
+    const newMessageIds = messages.flatMap(x => defined(x.id));
 
     let newMetadata: ThreadMetadata = {
       historyId: historyId,
-      messageIds: messages.flatMap(x => defined(x.id)),
+      messageIds: newMessageIds,
       timestamp: Thread.getTimestamp_(lastMessage),
       important:
           messages.some(x => x.labelIds && x.labelIds.includes('IMPORTANT')),
     };
 
     this.sentMessageIds_ =
-        this.sentMessageIds_.filter(x => !newMetadata.messageIds.includes(x));
+        this.sentMessageIds_.filter(x => !newMessageIds.includes(x));
 
     await this.updateMetadata(newMetadata);
 
@@ -1058,14 +1068,24 @@ export class Thread extends EventTargetPolyfill {
     let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
     let message =
         await send(text, addressHeaders, subject, sender, headers, this.id);
-    this.appendSentMessage(message);
+    await this.appendSentMessage(message);
   }
 
-  appendSentMessage(message: gapi.client.gmail.Message) {
+  async appendSentMessage(
+      message: gapi.client.gmail.Message, isOnlyMessage?: boolean) {
     // If the message is in this same thread, then account for it appropriately
     // in the message counts. This can happen even if it's a forward, e.g. if
     // you forward to yourself.
     if (message.threadId === this.id)
       this.sentMessageIds_.push(defined(message.id));
+
+    // If this is a thread we just started, then make sure it has stored message
+    // data in localStorage. syncMessagesToFirestore assumes that the fetch from
+    // disk has returned data as this is the only case where you could have a
+    // thread that doesn't have data in firestore since the MailProcessor
+    // syncing always updates message data before taking next steps.
+    if (isOnlyMessage) {
+      await this.saveMessageState_(defined(message.historyId), [message]);
+    }
   }
 }
