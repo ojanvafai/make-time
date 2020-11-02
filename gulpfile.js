@@ -76,15 +76,25 @@ task('bundle-once', (cb) => {
       `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts ${
           minify} --outdir=${OUT_DIR} --target=esnext --sourcemap=external`,
       async () => {
-        const paths = await Promise.all([
-          checksumMainJs(), checksumFileAndReturnNewPath('generic', '.css'),
-          checksumFileAndReturnNewPath('manifest', '.json')
-        ]);
-        const indexHtmlContents = generateIndexHtml(...paths);
-        // Blech, firebse requires index.html stored at the root of the public
-        // directory. So we write it out there and gitignore it instead of
-        // putting it in the gen directory.
-        await fs.promises.writeFile(`public/index.html`, indexHtmlContents);
+        try {
+          const paths = await Promise.all([
+            checksumMainJs(), checksumFileAndReturnNewPath('generic', '.css'),
+            checksumFileAndReturnNewPath('manifest', '.json')
+          ]);
+          const indexHtmlContents = generateIndexHtml(...paths);
+          // Blech, firebse requires index.html stored at the root of the public
+          // directory. So we write it out there and gitignore it instead of
+          // putting it in the gen directory.
+          await fs.promises.writeFile(`public/index.html`, indexHtmlContents);
+        } catch(err) {
+          // If the compile is broken, no main.js file will be written out, but
+          // we still want to exit cleanly so bundle's watch can continue.
+          if (err.code === 'ENOENT') {
+            console.log(`File not found: ${err}`);
+          } else {
+            throw err;
+          }
+        }
         cb();
       });
   esbuild.stdout.on('data', (data) => process.stdout.write(data.toString()));
