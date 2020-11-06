@@ -1,3 +1,4 @@
+import {primaryModifierKey} from '../Actions.js';
 import {assert, defined, notNull} from '../Base.js';
 import {QueueNames} from '../QueueNames.js';
 import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
@@ -384,8 +385,7 @@ export class FilterRuleComponent extends HTMLElement {
     };
 
     editor.onkeydown = (e) => {
-      // TODO: Only do metaKey on mac and ctrlKey on non-mac.
-      if (e.key == 'z' && (e.metaKey || e.ctrlKey)) {
+      if (e.key == 'z' && primaryModifierKey(e)) {
         e.preventDefault();
 
         let popStack = e.shiftKey ? redoStack_ : undoStack;

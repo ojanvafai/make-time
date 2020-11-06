@@ -1,3 +1,4 @@
+import {primaryModifierKey} from '../Actions.js';
 import {create, createMktimeButton, defined, Labels} from '../Base.js';
 import {Dialog} from '../Dialog.js';
 import {FilterRule, Settings} from '../Settings.js';
@@ -81,9 +82,7 @@ export class FiltersView extends HTMLElement {
   }
 
   handleKeyDown_(e: KeyboardEvent) {
-    // TODO: Use metaKey on mac and ctrlKey elsewhere.
-    let hasModifier = e.ctrlKey || e.metaKey;
-    if (!hasModifier)
+    if (!primaryModifierKey(e))
       return;
 
     switch (e.key) {

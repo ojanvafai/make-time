@@ -1,3 +1,4 @@
+import {primaryModifierKey} from '../Actions.js';
 import {defined, Labels, notNull} from '../Base.js';
 import {QueueNames, SnapshotEvent} from '../QueueNames.js';
 import {AllQueueDatas, MergeOption, QueueListEntry, QueueSettings, ThrottleOption} from '../QueueSettings.js';
@@ -31,9 +32,7 @@ export class QueuesView extends HTMLElement {
   }
 
   handleKeyDown_(e: KeyboardEvent) {
-    // TODO: Use metaKey on mac and ctrlKey elsewhere.
-    let hasModifier = e.ctrlKey || e.metaKey;
-    if (!hasModifier)
+    if (!primaryModifierKey(e))
       return;
 
     switch (e.key) {

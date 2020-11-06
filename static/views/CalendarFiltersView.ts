@@ -1,6 +1,7 @@
+import {primaryModifierKey} from '../Actions.js';
 import {create, createMktimeButton, createTh, defined, Labels, notNull} from '../Base.js';
-import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 import {Dialog} from '../Dialog.js';
+import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
 
 import {HelpDialog} from './HelpDialog.js';
 
@@ -47,9 +48,7 @@ export class CalendarFiltersView extends HTMLElement {
   }
 
   handleKeyDown_(e: KeyboardEvent) {
-    // TODO: Use metaKey on mac and ctrlKey elsewhere.
-    let hasModifier = e.ctrlKey || e.metaKey;
-    if (!hasModifier)
+    if (!primaryModifierKey(e))
       return;
 
     switch (e.key) {
@@ -568,7 +567,7 @@ export class CalendarFiltersView extends HTMLElement {
 
     editor.onkeydown = (e) => {
       // TODO: Only do metaKey on mac and ctrlKey on non-mac.
-      if (e.key == 'z' && (e.metaKey || e.ctrlKey)) {
+      if (e.key == 'z' && primaryModifierKey(e)) {
         e.preventDefault();
 
         let popStack = e.shiftKey ? redoStack_ : undoStack;

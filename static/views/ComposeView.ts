@@ -25,9 +25,9 @@ let HELP: Action = {
 };
 
 let CLOSE: Action = {
-  name: 'X',
-  key: 'x',
-  description: 'Close this window.',
+  name: 'Close',
+  key: 'Escape',
+  description: 'Close toolbar.',
 };
 
 let SENT_ACTIONS: ActionList = [

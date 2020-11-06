@@ -1,3 +1,4 @@
+import {primaryModifierKey} from '../Actions.js';
 import {createMktimeButton, notNull} from '../Base.js';
 import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, UNBOOKED_TYPES} from '../calendar/Constants.js';
 import {FiltersChangedEvent, Settings} from '../Settings.js';
@@ -22,9 +23,7 @@ export class CalendarSortView extends HTMLElement {
   }
 
   handleKeyDown_(e: KeyboardEvent) {
-    // TODO: Use metaKey on mac and ctrlKey elsewhere.
-    let hasModifier = e.ctrlKey || e.metaKey;
-    if (!hasModifier)
+    if (!primaryModifierKey(e))
       return;
 
     switch (e.key) {

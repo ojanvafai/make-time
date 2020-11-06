@@ -34,6 +34,10 @@ const USES_META_FOR_CTRL =
     ['iPhone', 'iPad', 'Mac'].find(x => navigator.platform.includes(x));
 const MARGIN = 4;
 
+export function primaryModifierKey(e: KeyboardEvent) {
+  return USES_META_FOR_CTRL ? e.metaKey : e.ctrlKey;
+}
+
 export class Shortcut {
   constructor(
       public key: string, public ctrlMeta?: boolean, public shift?: boolean,
@@ -51,8 +55,7 @@ export class Shortcut {
   matches(e: KeyboardEvent) {
     return (this.code ? this.code === e.code : this.key === e.key) &&
         !!this.shift === e.shiftKey &&
-        (USES_META_FOR_CTRL ? !!this.ctrlMeta === e.metaKey :
-                              !!this.ctrlMeta === e.ctrlKey)
+        !!this.ctrlMeta === primaryModifierKey(e)
   }
 }
 

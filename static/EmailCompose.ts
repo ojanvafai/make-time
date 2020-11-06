@@ -1,4 +1,4 @@
-import {Action, Actions, Shortcut} from './Actions.js';
+import {Action, Actions, primaryModifierKey, Shortcut} from './Actions.js';
 import {AutoComplete, AutoCompleteEntry, EntrySelectedEvent} from './AutoComplete.js';
 import {notNull, ParsedAddress, sandboxedDom} from './Base.js';
 
@@ -244,10 +244,11 @@ export class EmailCompose extends HTMLElement {
         if (e.altKey || e.shiftKey)
           return;
 
-        if (!e.metaKey && this.updateIsAutocompleting()) {
+        const key = primaryModifierKey(e);
+        if (!key && this.updateIsAutocompleting()) {
           this.submitAutocomplete_();
           e.preventDefault();
-        } else if (this.enableMetaEnterToSend_ && e.metaKey) {
+        } else if (this.enableMetaEnterToSend_ && key) {
           this.dispatchEvent(new SubmitEvent());
           e.preventDefault();
         }
