@@ -98,26 +98,7 @@ task('bundle-once', (cb) => {
         cb();
       });
   esbuild.stdout.on('data', (data) => process.stdout.write(data.toString()));
-
-  // TODO: Stop suppressing after upgrading to the next version of firebase or
-  // esbuild since they both fixed it and then switch to using execAndPipe for
-  // this function.
-  const firestoreWarningSuppressions = [
-    // We always get the -0 warning, so strip the 1 warning message.
-    `1 warning
-`,
-    `node_modules/@firebase/firestore/dist/index.cjs.js:718:11: warning: Comparison with -0 using the === operator will also match 0
-    return -0 === t && 1 / t == -1 / 0;
-           ~~
-`
-  ];
-  esbuild.stderr.on('data', (data) => {
-    const message = data.toString();
-    if (firestoreWarningSuppressions.includes(message)) {
-      return;
-    }
-    process.stderr.write(message);
-  });
+  esbuild.stderr.on('data', (data) => process.stderr.write(data.toString()));
 });
 
 const execAndPipe =
