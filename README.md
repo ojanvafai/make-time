@@ -5,6 +5,7 @@ Contributions in the form of filing bugs or pull requests for anything ranging f
 typo fixes to substantial changes are very welcome.
 
 ## Install dependencies
+0. Install NPM. Recommend doing so via https://github.com/nvm-sh/nvm.
 1. Checkout https://github.com/ojanvafai/make-time
 2. installs type script, firebase, gulp, etc:
 ```
