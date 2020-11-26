@@ -643,7 +643,11 @@ export class Thread extends EventTargetPolyfill {
   }
 
   getDate() {
-    return new Date(defined(this.metadata_.timestamp));
+    // In theory timestamp should always be defined, but there are bugs where it
+    // isn't sometimes. Since those bugs are hard to ensure we've addressed all
+    // of them, fail more gracefully here than causing mktime to not load at all
+    // since this is used on the loading codepath for sorting threads.
+    return new Date(this.metadata_.timestamp || 0);
   }
 
   getLastModifiedDate() {
