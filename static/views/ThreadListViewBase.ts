@@ -1,6 +1,6 @@
 
 import {shortcutString} from '../Actions.js';
-import {collapseArrow, defined, expandArrow, notNull} from '../Base.js';
+import {collapseArrow, defined, expandArrow, linkify, notNull} from '../Base.js';
 import {login} from '../BaseMain.js';
 import {ThreadListChangedEvent, ThreadListModel} from '../models/ThreadListModel.js';
 import {Settings} from '../Settings.js';
@@ -91,13 +91,8 @@ export abstract class ThreadListViewBase extends View {
     `;
 
     let subject = document.createElement('div');
-    subject.style.cssText = `
-      flex: 1;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 1;
-      margin-right: 4px;
-    `;
     subject.append(thread.getSubject());
+    linkify(subject);
 
     let toggleClamp = () => {
       // Don't toggle if the user has selected part of the subject text.

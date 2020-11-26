@@ -175,7 +175,7 @@ export class RenderedThread extends HTMLElement {
     messageDiv.style.cssText = `
       padding: 8px;
       word-break: break-word;
-      margin: 16px 0 24px;
+      margin-bottom: 40px;
       box-shadow: 0px 0px 8px var(--border-and-hover-color);
       background-color: var(--thread-background-color);
     `;

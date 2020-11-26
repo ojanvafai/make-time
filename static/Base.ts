@@ -135,6 +135,64 @@ export function leftArrow(id: string, onClick?: (e: Event) => void) {
   return button;
 }
 
+// Forked from https://github.com/sindresorhus/linkify-urls (MIT License).
+// Capture the whole URL in group 1 to keep `String#split()` support
+let urlRegex: RegExp;
+try {
+  // Use RegExp constructor instead of parser to create the regexp so that we
+  // can catch the error in Safari. Unfortunately, that means all the
+  // backslashes need to be escaped.
+  urlRegex = new RegExp(
+      '((?<!\\+)(?:https?(?::\\/\\/))(?:www\\.)?(?:[a-zA-Z\\d-_.]+(?:(?:\\.|@)[a-zA-Z\\d]{2,})|localhost)(?:(?:[-a-zA-Z\\d:%_+.~#!?&//=@]*)(?:[,](?![\\s]))*)*)',
+      'g');
+} catch {
+  // Fallback for browser that don't support negative lookbehind.
+  urlRegex = new RegExp(
+      '((?:https?(?::\\/\\/))(?:www\\.)?(?:[a-zA-Z\\d-_.]+(?:(?:\\.|@)[a-zA-Z\\d]{2,})|localhost)(?:(?:[-a-zA-Z\\d:%_+.~#!?&//=@]*)(?:[,](?![\\s]))*)*)',
+      'g');
+}
+
+export function linkify(element: Element) {
+  element.classList.add('linkified-text');
+
+  var treeWalker = document.createTreeWalker(
+      element, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+        acceptNode: function(node) {
+          if (node.nodeType === Node.TEXT_NODE)
+            return NodeFilter.FILTER_ACCEPT;
+
+          let element = node as Element;
+          if (element.nodeName === 'A' && !element.hasAttribute('href'))
+            return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_SKIP;
+        }
+      },
+      false);
+
+  let list = [];
+  while (treeWalker.nextNode()) {
+    list.push(treeWalker.currentNode);
+  }
+
+  for (let item of list) {
+    let text = notNull(item.textContent);
+    if (!text.match(urlRegex))
+      continue;
+
+    // Forked from https://github.com/sindresorhus/linkify-urls (MIT License).
+    let linked = text.split(urlRegex).reduce((fragment, text, index) => {
+      if (index % 2)  // URLs are always in odd positions
+        fragment.append(createLink(text, text));
+      else if (text.length > 0)
+        fragment.append(text);
+      return fragment;
+    }, document.createDocumentFragment());
+
+    item.before(linked);
+    notNull(item.parentNode).removeChild(item);
+  }
+}
+
 let DOM_SANDBOX = document.createElement('iframe');
 DOM_SANDBOX.style.display = 'none';
 DOM_SANDBOX.setAttribute('sandbox', 'allow-same-origin');

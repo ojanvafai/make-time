@@ -1,4 +1,4 @@
-import {assert, isMobileUserAgent, notNull, sandboxedDom} from '../Base.js';
+import {assert, isMobileUserAgent, linkify, notNull, sandboxedDom} from '../Base.js';
 import {RenderedThread} from '../RenderedThread.js';
 import {ALL, NONE, SelectBox, SelectChangedEvent, SOME} from '../SelectBox.js';
 import {InProgressChangedEvent, Priority, Thread, UpdatedEvent} from '../Thread.js';
@@ -315,6 +315,8 @@ export class ThreadRow extends HTMLElement {
 
     let justSubject = document.createElement('span');
     justSubject.append(state.subject);
+    linkify(justSubject);
+
     let subject = document.createElement('span');
     subject.className = 'contains-pii';
     subject.style.cssText = `

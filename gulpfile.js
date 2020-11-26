@@ -130,7 +130,11 @@ task(
 
 // Always run bundle-once the first time to ensure index.html gets generated if
 // this is a new checkout or it got deleted.
-task('bundle', () => watch('**/*.ts', {ignoreInitial: false}, task('bundle-once')));
+task('bundle', () => { return watch(
+  ['**/*.ts', '**/*.css', '!public/gen/**/*'],
+  {ignoreInitial: false},
+  task('bundle-once'))
+});
 task('serve', parallel(['serve-firebase', 'bundle', 'tsc']));
 task('install', execAndPipe('npm install --no-fund'));
 task('install-and-serve', series(['install', 'serve']));

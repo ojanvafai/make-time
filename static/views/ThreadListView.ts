@@ -468,7 +468,7 @@ export class ThreadListView extends ThreadListViewBase {
 
   tearDown() {
     super.tearDown();
-    this.appShell.setSubject('');
+    this.appShell.setSubject();
     this.appShell.showBackArrow(false);
   }
 
@@ -1080,7 +1080,7 @@ export class ThreadListView extends ThreadListViewBase {
 
     this.setFocusAndScrollIntoView_(focusedRow);
     this.setRenderedRow_(null);
-    this.appShell.setSubject('');
+    this.appShell.setSubject();
     this.updateActionsAndMainBodyMinHeight_();
 
     this.render();
@@ -1195,7 +1195,7 @@ export class ThreadListView extends ThreadListViewBase {
     // subject, etc.
     let messages = renderedRow.thread.getMessages();
     if (!messages.length) {
-      this.appShell.setSubject('');
+      this.appShell.setSubject();
       return;
     }
 

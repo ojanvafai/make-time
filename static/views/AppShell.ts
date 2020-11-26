@@ -47,7 +47,8 @@ export class AppShell extends HTMLElement {
   private filterToggle_: SVGElement;
   private overflowMenuButton_: SVGElement;
   private overflowMenu_?: HTMLElement;
-  private subject_: HTMLElement;
+  private toolbarSubject_: HTMLElement;
+  private bodySubject_: HTMLElement;
   private drawerOpen_: boolean;
   private queryParameters_?: {[property: string]: string};
 
@@ -99,17 +100,15 @@ export class AppShell extends HTMLElement {
     `;
 
     let contentContainer = document.createElement('div');
-    contentContainer.style.cssText = `
-      overflow: auto;
-      flex: 1;
-    `;
+    contentContainer.className = 'flex-expand-1 overflow-auto';
+
+    this.bodySubject_ = document.createElement('div');
+    this.bodySubject_.className =
+        'mx-auto py2 px1 reading-max-width border-box strongest text-size-large quiet';
 
     this.content_ = document.createElement('div');
-    this.content_.style.cssText = `
-      flex: 1;
-      height: 100%;
-    `;
-    contentContainer.append(this.content_);
+    this.content_.className = 'flex-expand-1 height-100';
+    contentContainer.append(this.bodySubject_, this.content_);
 
     AppShell.footer_ = document.createElement('div');
     AppShell.footer_.className = 'toolbar';
@@ -180,8 +179,8 @@ export class AppShell extends HTMLElement {
         'hide-if-empty flex items-center text-color-dim mx-half';
     AppShell.title_.id = 'title';
 
-    this.subject_ = document.createElement('div');
-    this.subject_.className =
+    this.toolbarSubject_ = document.createElement('div');
+    this.toolbarSubject_.className =
         'contains-pii justify-center flex-expand-1 flex items-center text-color-dim';
 
     AppShell.loader_ = document.createElement('div');
@@ -189,7 +188,7 @@ export class AppShell extends HTMLElement {
 
     this.toolbar_.append(
         this.backArrow_, this.menuToggle_, this.filterToggle_, AppShell.title_,
-        this.subject_, AppShell.loader_, this.overflowMenuButton_);
+        this.toolbarSubject_, AppShell.loader_, this.overflowMenuButton_);
     this.appendMenu_();
 
     this.mainContent_.addEventListener('click', (e) => {
@@ -333,9 +332,22 @@ export class AppShell extends HTMLElement {
     return this.content_.parentElement;
   }
 
-  setSubject(...items: (string|Node)[]) {
-    this.subject_.textContent = '';
-    this.subject_.append(...items);
+  setSubject(
+      subject?: HTMLElement, ...extraToolbarItems: (string|HTMLElement)[]) {
+    this.toolbarSubject_.textContent = '';
+    this.bodySubject_.textContent = '';
+
+    if (subject === undefined) {
+      this.bodySubject_.classList.add('hidden');
+      return;
+    }
+
+    this.bodySubject_.classList.remove('hidden');
+    this.bodySubject_.append(
+        subject instanceof Node ? subject.cloneNode(true) : subject);
+
+    subject.classList.add('truncate-block-1-line', 'flex-expand-1', 'mr1');
+    this.toolbarSubject_.append(subject, ...extraToolbarItems);
   }
 
   get contentScrollTop() {
