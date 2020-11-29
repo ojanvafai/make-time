@@ -778,6 +778,9 @@ touch-action: none;
 position: relative;
 overflow: hidden;
 }
+.mktime-button * {
+pointer-events: none;
+}
 .mktime-button:disabled {
 color: var(--dim-text-color);
 }
