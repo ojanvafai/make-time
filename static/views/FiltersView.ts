@@ -227,6 +227,7 @@ export class FiltersView extends HTMLElement {
     topButtons.style.cssText = `
       display: flex;
       margin-bottom: 4px;
+      position: relative;
     `;
     const deleteButton = this.createButton_('-', 'Delete this rule', () => {
       const backdrop = document.createElement('div');
