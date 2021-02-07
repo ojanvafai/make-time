@@ -1,6 +1,5 @@
 .firebase/
 .firebaserc
-.vscode
 firebase-debug.log
 node_modules/
 public/node_modules/
