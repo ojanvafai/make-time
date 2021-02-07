@@ -33,7 +33,7 @@
     "clang-format": "^1.4.0",
     "css-paint-polyfill": "^2.0.0",
     "document-register-element": "^1.14.3",
-    "esbuild": "^0.8.15",
+    "esbuild": "^0.8.42",
     "firebase-tools": "^8.5.0",
     "gulp": "^4.0.2",
     "jest": "^26.1.0",
