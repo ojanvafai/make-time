@@ -1,14 +1,22 @@
 import * as firebase from 'firebase/app';
 
-import {assert, defined, getCurrentWeekNumber, getPreviousWeekNumber, parseAddressList, ParsedAddress, USER_ID} from './Base.js';
-import {firestoreUserCollection} from './BaseMain.js';
-import {EventTargetPolyfill} from './EventTargetPolyfill.js';
-import {IDBKeyVal} from './idb-keyval.js';
-import {AddressHeaders, insertNoteToSelf, send} from './Mail.js';
-import {Message} from './Message.js';
-import {gapiFetch} from './Net.js';
-import {ProcessedMessageData} from './ProcessedMessageData.js';
-import {QueueNames} from './QueueNames.js';
+import {
+  assert,
+  defined,
+  getCurrentWeekNumber,
+  getPreviousWeekNumber,
+  parseAddressList,
+  ParsedAddress,
+  USER_ID,
+} from './Base.js';
+import { firestoreUserCollection } from './BaseMain.js';
+import { EventTargetPolyfill } from './EventTargetPolyfill.js';
+import { IDBKeyVal } from './idb-keyval.js';
+import { AddressHeaders, insertNoteToSelf, send } from './Mail.js';
+import { Message } from './Message.js';
+import { gapiFetch } from './Net.js';
+import { ProcessedMessageData } from './ProcessedMessageData.js';
+import { QueueNames } from './QueueNames.js';
 
 // TODO: Clear out old threads so these caches don't grow indefinitely.
 let memoryCache_: Map<string, Thread> = new Map();
@@ -29,7 +37,7 @@ export class UpdatedEvent extends Event {
 export class InProgressChangedEvent extends Event {
   static NAME = 'in-progress-changed';
   constructor() {
-    super(InProgressChangedEvent.NAME, {bubbles: true});
+    super(InProgressChangedEvent.NAME, { bubbles: true });
   }
 }
 
@@ -44,7 +52,7 @@ interface Repeat {
 }
 
 export interface MessagesToDeleteUpdate {
-  gmailMessageIdsToDelete: string[]|firebase.firestore.FieldValue;
+  gmailMessageIdsToDelete: string[] | firebase.firestore.FieldValue;
 }
 
 export enum MessagesToDeleteKeys {
@@ -73,7 +81,7 @@ export interface ThreadMetadata {
   hasPriority?: boolean;
   queued?: boolean;
   throttled?: boolean;
-  blocked?: boolean|number;
+  blocked?: boolean | number;
   muted?: boolean;
   softMuted?: boolean;
   newMessagesSinceSoftMuted?: boolean;
@@ -88,29 +96,29 @@ export interface ThreadMetadata {
 // the getters to have to manage them.
 // TODO: Find a more don't-repeat-yourself way of doing this?
 export interface ThreadMetadataUpdate {
-  historyId?: string|firebase.firestore.FieldValue;
-  messageIds?: string[]|firebase.firestore.FieldValue;
-  hasMessageIdsToMarkRead?: boolean|firebase.firestore.FieldValue;
-  messageIdsToMarkRead?: string[]|firebase.firestore.FieldValue;
-  hasMessageIdsToPushToGmail?: boolean|firebase.firestore.FieldValue;
-  messageIdsToPushToGmail?: string[]|firebase.firestore.FieldValue;
-  timestamp?: number|firebase.firestore.FieldValue;
-  retriageTimestamp?: number|firebase.firestore.FieldValue;
-  priorityId?: number|firebase.firestore.FieldValue;
-  labelId?: number|firebase.firestore.FieldValue;
-  repeat?: Repeat|firebase.firestore.FieldValue;
-  needsRetriage?: boolean|firebase.firestore.FieldValue;
-  hasLabel?: boolean|firebase.firestore.FieldValue;
-  hasPriority?: boolean|firebase.firestore.FieldValue;
-  queued?: boolean|firebase.firestore.FieldValue;
-  throttled?: boolean|firebase.firestore.FieldValue;
-  blocked?: boolean|number|firebase.firestore.FieldValue;
-  muted?: boolean|firebase.firestore.FieldValue;
-  softMuted?: boolean|firebase.firestore.FieldValue;
-  newMessagesSinceSoftMuted?: boolean|firebase.firestore.FieldValue;
-  archivedByFilter?: boolean|firebase.firestore.FieldValue;
-  lastMarkedReadTime?: number|firebase.firestore.FieldValue;
-  important?: boolean|firebase.firestore.FieldValue;
+  historyId?: string | firebase.firestore.FieldValue;
+  messageIds?: string[] | firebase.firestore.FieldValue;
+  hasMessageIdsToMarkRead?: boolean | firebase.firestore.FieldValue;
+  messageIdsToMarkRead?: string[] | firebase.firestore.FieldValue;
+  hasMessageIdsToPushToGmail?: boolean | firebase.firestore.FieldValue;
+  messageIdsToPushToGmail?: string[] | firebase.firestore.FieldValue;
+  timestamp?: number | firebase.firestore.FieldValue;
+  retriageTimestamp?: number | firebase.firestore.FieldValue;
+  priorityId?: number | firebase.firestore.FieldValue;
+  labelId?: number | firebase.firestore.FieldValue;
+  repeat?: Repeat | firebase.firestore.FieldValue;
+  needsRetriage?: boolean | firebase.firestore.FieldValue;
+  hasLabel?: boolean | firebase.firestore.FieldValue;
+  hasPriority?: boolean | firebase.firestore.FieldValue;
+  queued?: boolean | firebase.firestore.FieldValue;
+  throttled?: boolean | firebase.firestore.FieldValue;
+  blocked?: boolean | number | firebase.firestore.FieldValue;
+  muted?: boolean | firebase.firestore.FieldValue;
+  softMuted?: boolean | firebase.firestore.FieldValue;
+  newMessagesSinceSoftMuted?: boolean | firebase.firestore.FieldValue;
+  archivedByFilter?: boolean | firebase.firestore.FieldValue;
+  lastMarkedReadTime?: number | firebase.firestore.FieldValue;
+  important?: boolean | firebase.firestore.FieldValue;
 }
 
 // Firestore queries take the key as a string. Use an enum so we can avoid silly
@@ -224,8 +232,7 @@ export function getPriorityName(id: Priority) {
 }
 
 export function getLabelName(queueNames: QueueNames, id?: number) {
-  if (!id)
-    return FALLBACK_LABEL_NAME;
+  if (!id) return FALLBACK_LABEL_NAME;
 
   switch (id) {
     case BuiltInLabelIds.Stuck:
@@ -238,23 +245,19 @@ export function getLabelName(queueNames: QueueNames, id?: number) {
   }
 }
 
-
 export class Thread extends EventTargetPolyfill {
   private processed_: ProcessedMessageData;
   private queueNames_: QueueNames;
-  private fetchPromise_:
-      Promise<gapi.client.Response<gapi.client.gmail.Thread>>|null = null;
+  private fetchPromise_: Promise<gapi.client.Response<gapi.client.gmail.Thread>> | null = null;
   // Keep track of messages sent until an update pulls them in properly so that
   // we can queue up archives/mark-reads with the right count of messages to
   // archive/mark-read.
   private sentMessageIds_: string[];
   private actionInProgress_?: boolean;
   private actionInProgressTimestamp_?: number;
-  private from_: HTMLElement|null;
+  private from_: HTMLElement | null;
 
-  constructor(
-      public id: string, private metadata_: ThreadMetadata,
-      private forceTriage_: boolean) {
+  constructor(public id: string, private metadata_: ThreadMetadata, private forceTriage_: boolean) {
     super();
 
     this.processed_ = new ProcessedMessageData();
@@ -278,7 +281,7 @@ export class Thread extends EventTargetPolyfill {
   }
 
   // TODO: Required defined priorities once clients have updated.
-  static comparePriorities(a: Priority|undefined, b: Priority|undefined) {
+  static comparePriorities(a: Priority | undefined, b: Priority | undefined) {
     let aOrder = PrioritySortOrder.indexOf(a);
     let bOrder = PrioritySortOrder.indexOf(b);
     return aOrder - bOrder;
@@ -292,10 +295,8 @@ export class Thread extends EventTargetPolyfill {
     let oldState: any = {};
     let fullState = this.metadata_ as any;
     for (let key in updates) {
-      if (key in fullState)
-        oldState[key] = fullState[key];
-      else
-        oldState[key] = firebase.firestore.FieldValue.delete();
+      if (key in fullState) oldState[key] = fullState[key];
+      else oldState[key] = firebase.firestore.FieldValue.delete();
     }
     return oldState;
   }
@@ -309,11 +310,13 @@ export class Thread extends EventTargetPolyfill {
     const valueChanged = (value: any, previousValue: any) => {
       return value !== undefined && value !== previousValue;
     };
-    if (valueChanged(update.hasLabel, this.metadata_.hasLabel) ||
-        valueChanged(update.labelId, this.metadata_.labelId) ||
-        valueChanged(update.hasPriority, this.metadata_.hasPriority) ||
-        valueChanged(update.priorityId, this.metadata_.priorityId) ||
-        valueChanged(update.muted, this.metadata_.muted)) {
+    if (
+      valueChanged(update.hasLabel, this.metadata_.hasLabel) ||
+      valueChanged(update.labelId, this.metadata_.labelId) ||
+      valueChanged(update.hasPriority, this.metadata_.hasPriority) ||
+      valueChanged(update.priorityId, this.metadata_.priorityId) ||
+      valueChanged(update.muted, this.metadata_.muted)
+    ) {
       this.applyPushLabelsToGmail_(update);
     }
   }
@@ -327,7 +330,8 @@ export class Thread extends EventTargetPolyfill {
   private applyPushLabelsToGmail_(update: ThreadMetadataUpdate) {
     update.hasMessageIdsToPushToGmail = true;
     update.messageIdsToPushToGmail = firebase.firestore.FieldValue.arrayUnion(
-        ...this.getMessageIdsIncludingRecentlySent_());
+      ...this.getMessageIdsIncludingRecentlySent_(),
+    );
   }
 
   // Returns the old values for all the fields being updated so that undo can
@@ -402,8 +406,7 @@ export class Thread extends EventTargetPolyfill {
 
   archiveUpdate(archivedByFilter?: boolean) {
     // TODO: Take into account the repeat pattern. This assumes daily.
-    if (this.hasRepeat())
-      return this.stuckDaysUpdate(1);
+    if (this.hasRepeat()) return this.stuckDaysUpdate(1);
 
     let update = this.removeFromInboxMetadata_();
     if (archivedByFilter) {
@@ -452,15 +455,13 @@ export class Thread extends EventTargetPolyfill {
 
   async softMute() {
     let update = this.softMuteUpdate();
-    if (!update)
-      return;
+    if (!update) return;
     await this.updateMetadata(update);
   }
 
   async mute() {
     let update = this.muteUpdate();
-    if (!update)
-      return;
+    if (!update) return;
     await this.updateMetadata(update);
   }
 
@@ -474,26 +475,28 @@ export class Thread extends EventTargetPolyfill {
   }
 
   private isMessageUnread_(message: Message) {
-    return message.isUnread &&
-        (!this.metadata_.messageIdsToMarkRead ||
-         !this.metadata_.messageIdsToMarkRead.includes(message.id))
+    return (
+      message.isUnread &&
+      (!this.metadata_.messageIdsToMarkRead ||
+        !this.metadata_.messageIdsToMarkRead.includes(message.id))
+    );
   }
 
   isUnread() {
-    return this.processed_.messages.some(x => this.isMessageUnread_(x));
+    return this.processed_.messages.some((x) => this.isMessageUnread_(x));
   }
 
   async markRead() {
-    const messageIdsToMarkRead =
-        this.getMessages().filter(x => x.isUnread).map(x => x.id);
+    const messageIdsToMarkRead = this.getMessages()
+      .filter((x) => x.isUnread)
+      .map((x) => x.id);
     if (!messageIdsToMarkRead.length) {
       return;
     }
     await this.updateMetadata({
       hasMessageIdsToMarkRead: true,
-      messageIdsToMarkRead:
-          firebase.firestore.FieldValue.arrayUnion(...messageIdsToMarkRead),
-      lastMarkedReadTime: Date.now()
+      messageIdsToMarkRead: firebase.firestore.FieldValue.arrayUnion(...messageIdsToMarkRead),
+      lastMarkedReadTime: Date.now(),
     });
     // Marking read needs to rerender the from so that the bolds are removed.
     this.clearCachedFrom();
@@ -512,37 +515,32 @@ export class Thread extends EventTargetPolyfill {
     let unread: Set<string> = new Set();
 
     this.getMessages().map((x) => {
-      if (!x.from)
-        return;
+      if (!x.from) return;
       let set = this.isMessageUnread_(x) ? unread : read;
       let parsed = parseAddressList(x.from);
-      parsed.map(y => {
+      parsed.map((y) => {
         set.add(y.name || y.address.split('@')[0]);
       });
     });
 
-    let minify = (unread.size + read.size) > 1;
+    let minify = unread.size + read.size > 1;
 
     if (unread.size) {
       let unreadContainer = document.createElement('b');
-      unreadContainer.textContent =
-          Message.minifyAddressNames(Array.from(unread), minify);
+      unreadContainer.textContent = Message.minifyAddressNames(Array.from(unread), minify);
       container.append(unreadContainer);
     }
 
-    let onlyReadAddresses = Array.from(read).filter(x => !unread.has(x));
+    let onlyReadAddresses = Array.from(read).filter((x) => !unread.has(x));
     if (onlyReadAddresses.length) {
-      if (container.firstChild)
-        container.append(', ');
+      if (container.firstChild) container.append(', ');
 
       let readContainer = document.createElement('span');
-      readContainer.textContent =
-          Message.minifyAddressNames(onlyReadAddresses, minify);
+      readContainer.textContent = Message.minifyAddressNames(onlyReadAddresses, minify);
       container.append(readContainer);
     }
 
-    if (!container.firstChild)
-      container.append('\xa0');
+    if (!container.firstChild) container.append('\xa0');
   }
 
   priorityUpdate(priority: Priority) {
@@ -587,11 +585,10 @@ export class Thread extends EventTargetPolyfill {
   }
 
   async setOnlyLabel(label: string) {
-    await this.updateMetadata({labelId: await this.queueNames_.getId(label)});
+    await this.updateMetadata({ labelId: await this.queueNames_.getId(label) });
   }
 
-  async applyAndPushLabel(
-      labelId: number, shouldQueue: boolean, shouldThrottle: boolean) {
+  async applyAndPushLabel(labelId: number, shouldQueue: boolean, shouldThrottle: boolean) {
     let update: ThreadMetadataUpdate = {
       labelId: labelId,
       hasLabel: true,
@@ -602,19 +599,16 @@ export class Thread extends EventTargetPolyfill {
 
     this.applyPushLabelsToGmail_(update);
 
-    if (shouldQueue)
-      update.queued = true;
+    if (shouldQueue) update.queued = true;
 
-    if (shouldThrottle)
-      update.throttled = true;
+    if (shouldThrottle) update.throttled = true;
 
     // New message putting the thread back into triage should remove it from
     // stuck.
     // TODO: Keep the stuck date and use a boolean to track whether a stuck
     // thread is in the triage queue or not. That way we can show the stuck date
     // in the UI so the user can see that they had marked it stuck.
-    if (!shouldQueue && !shouldThrottle)
-      update.blocked = firebase.firestore.FieldValue.delete();
+    if (!shouldQueue && !shouldThrottle) update.blocked = firebase.firestore.FieldValue.delete();
 
     await this.updateMetadata(update);
   }
@@ -625,9 +619,9 @@ export class Thread extends EventTargetPolyfill {
     if (current) {
       newRepeat = firebase.firestore.FieldValue.delete();
     } else {
-      newRepeat = {type: RepeatType.Daily};
+      newRepeat = { type: RepeatType.Daily };
     }
-    return {repeat: newRepeat} as ThreadMetadataUpdate;
+    return { repeat: newRepeat } as ThreadMetadataUpdate;
   }
 
   hasRepeat() {
@@ -654,8 +648,7 @@ export class Thread extends EventTargetPolyfill {
     // Fallback to the timestamp of the last message in the thread if for some
     // reason we don't have a retriageTimestamp (e.g. threads that are triaged
     // before we added retriageTimestamps to them).
-    let triageTime =
-        this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp);
+    let triageTime = this.metadata_.retriageTimestamp || defined(this.metadata_.timestamp);
     if (this.metadata_.lastMarkedReadTime) {
       triageTime = Math.max(this.metadata_.lastMarkedReadTime, triageTime);
     }
@@ -663,8 +656,7 @@ export class Thread extends EventTargetPolyfill {
   }
 
   getStuckDate() {
-    if (!this.isStuck())
-      return null;
+    if (!this.isStuck()) return null;
 
     let blocked = defined(this.metadata_.blocked);
     // TODO: Remove this once blocked can no longer be a boolean.
@@ -673,8 +665,7 @@ export class Thread extends EventTargetPolyfill {
       today.setDate(today.getDate() + 1);
       return today;
     }
-    if (blocked === false)
-      assert(false);
+    if (blocked === false) assert(false);
     return new Date(blocked as number);
   }
 
@@ -721,8 +712,7 @@ export class Thread extends EventTargetPolyfill {
 
   getPriority() {
     let id = this.getPriorityId();
-    if (id)
-      return getPriorityName(id);
+    if (id) return getPriorityName(id);
     return null;
   }
 
@@ -737,8 +727,7 @@ export class Thread extends EventTargetPolyfill {
   getFrom() {
     if (!this.from_) {
       let from = document.createElement('span');
-      if (!this.getMessages().length)
-        return from;
+      if (!this.getMessages().length) return from;
 
       this.from_ = from;
       this.updateFrom_(from);
@@ -779,8 +768,7 @@ export class Thread extends EventTargetPolyfill {
       let data = await this.fetchFromNetwork_();
       // This happens when a thread disappears from gmail but mktime still knows
       // about it.
-      if (!data)
-        return;
+      if (!data) return;
       let historyId = defined(data.historyId);
       let messages = defined(data.messages);
       await this.saveMessageState_(historyId, messages);
@@ -804,8 +792,7 @@ export class Thread extends EventTargetPolyfill {
     // should match what's on disk if what's on disk matches gmail, but due to
     // races with different clients, it's possible for an older client's write
     // to override a newer client's write.
-    if (defined(this.processed_).historyId === historyId &&
-        this.getHistoryId() === historyId)
+    if (defined(this.processed_).historyId === historyId && this.getHistoryId() === historyId)
       return;
 
     let allRawMessages = [];
@@ -853,21 +840,18 @@ export class Thread extends EventTargetPolyfill {
     return new Date(date).getTime();
   }
 
-  async generateMetadataFromGmailState_(
-      historyId: string, messages: gapi.client.gmail.Message[]) {
+  async generateMetadataFromGmailState_(historyId: string, messages: gapi.client.gmail.Message[]) {
     let lastMessage = messages[messages.length - 1];
-    const newMessageIds = messages.flatMap(x => defined(x.id));
+    const newMessageIds = messages.flatMap((x) => defined(x.id));
 
     let newMetadata: ThreadMetadata = {
       historyId: historyId,
       messageIds: newMessageIds,
       timestamp: Thread.getTimestamp_(lastMessage),
-      important:
-          messages.some(x => x.labelIds && x.labelIds.includes('IMPORTANT')),
+      important: messages.some((x) => x.labelIds && x.labelIds.includes('IMPORTANT')),
     };
 
-    this.sentMessageIds_ =
-        this.sentMessageIds_.filter(x => !newMessageIds.includes(x));
+    this.sentMessageIds_ = this.sentMessageIds_.filter((x) => !newMessageIds.includes(x));
 
     await this.updateMetadata(newMetadata);
 
@@ -885,12 +869,10 @@ export class Thread extends EventTargetPolyfill {
   }
 
   async fetchFromDisk() {
-    if (this.processed_.messages.length)
-      return;
+    if (this.processed_.messages.length) return;
 
     let data = await this.deserializeMessageData_();
-    if (!data)
-      return;
+    if (!data) return;
     let messages = defined(data.messages);
     this.processed_.process(data.historyId, messages);
     this.dispatchEvent(new UpdatedEvent());
@@ -899,8 +881,7 @@ export class Thread extends EventTargetPolyfill {
   // If the metadata in firestore doesn't match the one in local
   // storage, pull in the new messages and labels so we're up to date.
   async syncMessagesInFirestore() {
-    if (this.getHistoryId() != this.processed_.historyId)
-      await this.update();
+    if (this.getHistoryId() != this.processed_.historyId) await this.update();
   }
 
   private async fetchFromNetwork_() {
@@ -908,7 +889,7 @@ export class Thread extends EventTargetPolyfill {
       this.fetchPromise_ = gapiFetch(gapi.client.gmail.users.threads.get, {
         userId: USER_ID,
         id: this.id,
-      })
+      });
     }
 
     let resp;
@@ -933,15 +914,12 @@ export class Thread extends EventTargetPolyfill {
     }
   }
 
-  async saveMessageState_(
-      historyId: string, messages: gapi.client.gmail.Message[]) {
+  async saveMessageState_(historyId: string, messages: gapi.client.gmail.Message[]) {
     this.processed_.process(historyId, messages);
-    if (this.metadata_.messageIdsToMarkRead &&
-        this.metadata_.messageIdsToMarkRead.length) {
-      const newMessageIds = messages.map(x => x.id);
+    if (this.metadata_.messageIdsToMarkRead && this.metadata_.messageIdsToMarkRead.length) {
+      const newMessageIds = messages.map((x) => x.id);
       await this.updateMetadata({
-        messageIdsToMarkRead:
-            firebase.firestore.FieldValue.arrayRemove(...newMessageIds),
+        messageIdsToMarkRead: firebase.firestore.FieldValue.arrayRemove(...newMessageIds),
       });
     }
     await this.generateMetadataFromGmailState_(historyId, messages);
@@ -952,7 +930,7 @@ export class Thread extends EventTargetPolyfill {
     return `thread-${weekNumber}-${threadId}`;
   }
 
-  private async deserializeMessageData_(): Promise<SerializedMessages|null> {
+  private async deserializeMessageData_(): Promise<SerializedMessages | null> {
     let currentWeekKey = this.getKey_(getCurrentWeekNumber(), this.id);
     let localData = await IDBKeyVal.getDefault().get(currentWeekKey);
 
@@ -962,8 +940,7 @@ export class Thread extends EventTargetPolyfill {
       localData = await IDBKeyVal.getDefault().get(oldKey);
     }
 
-    if (!localData)
-      return null;
+    if (!localData) return null;
 
     if (oldKey) {
       await IDBKeyVal.getDefault().del(oldKey);
@@ -973,14 +950,16 @@ export class Thread extends EventTargetPolyfill {
     return JSON.parse(localData);
   }
 
-  private async serializeMessageData_(
-      historyId: string, messages: gapi.client.gmail.Message[]) {
+  private async serializeMessageData_(historyId: string, messages: gapi.client.gmail.Message[]) {
     let key = this.getKey_(getCurrentWeekNumber(), this.id);
     try {
-      await IDBKeyVal.getDefault().set(key, JSON.stringify({
-        messages: messages,
-        historyId: historyId,
-      }));
+      await IDBKeyVal.getDefault().set(
+        key,
+        JSON.stringify({
+          messages: messages,
+          historyId: historyId,
+        }),
+      );
     } catch (e) {
       console.log('Fail storing message details in IDB.', e);
     }
@@ -996,8 +975,8 @@ export class Thread extends EventTargetPolyfill {
 
   async setNoteToSelf(note: string) {
     const oldMetadataMessages = [...this.processed_.notesToSelf];
-    assert(oldMetadataMessages.every(message => message.isNoteToSelf));
-    const oldMessageIds = oldMetadataMessages.map(x => x.id);
+    assert(oldMetadataMessages.every((message) => message.isNoteToSelf));
+    const oldMessageIds = oldMetadataMessages.map((x) => x.id);
     await insertNoteToSelf(this.id, note);
     await this.update();
 
@@ -1006,15 +985,17 @@ export class Thread extends EventTargetPolyfill {
     }
 
     const update: MessagesToDeleteUpdate = {
-      gmailMessageIdsToDelete:
-          firebase.firestore.FieldValue.arrayUnion(...oldMessageIds)
+      gmailMessageIdsToDelete: firebase.firestore.FieldValue.arrayUnion(...oldMessageIds),
     };
     Thread.threadsDocRef().update(update);
   }
 
   async sendReply(
-      replyText: string, extraEmails: ParsedAddress[], replyType: ReplyType,
-      sender: gapi.client.gmail.SendAs) {
+    replyText: string,
+    extraEmails: ParsedAddress[],
+    replyType: ReplyType,
+    sender: gapi.client.gmail.SendAs,
+  ) {
     let messages = this.getMessages();
     let lastMessage = messages[messages.length - 1];
 
@@ -1022,25 +1003,20 @@ export class Thread extends EventTargetPolyfill {
     addressHeaders.set(AddressHeaders.To, []);
 
     if (replyType === ReplyType.Forward) {
-      assert(
-          extraEmails.length,
-          'Add recipients by typing +email in the reply box.')
+      assert(extraEmails.length, 'Add recipients by typing +email in the reply box.');
     } else {
       // Gmail will remove dupes for us if the to and from fields have
       // overlap.
       let from = lastMessage.replyTo || lastMessage.from;
-      if (from)
-        addressHeaders.get(AddressHeaders.To).push(...parseAddressList(from));
+      if (from) addressHeaders.get(AddressHeaders.To).push(...parseAddressList(from));
 
       if (replyType === ReplyType.ReplyAll && lastMessage.to) {
-        let excludeMe =
-            lastMessage.parsedTo.filter(x => x.address !== sender.sendAsEmail);
+        let excludeMe = lastMessage.parsedTo.filter((x) => x.address !== sender.sendAsEmail);
         addressHeaders.get(AddressHeaders.To).push(...excludeMe);
       }
     }
 
-    if (extraEmails.length)
-      addressHeaders.get(AddressHeaders.To).push(...extraEmails);
+    if (extraEmails.length) addressHeaders.get(AddressHeaders.To).push(...extraEmails);
 
     if (replyType === ReplyType.ReplyAll && lastMessage.cc) {
       addressHeaders.set(AddressHeaders.Cc, lastMessage.parsedCc);
@@ -1048,20 +1024,17 @@ export class Thread extends EventTargetPolyfill {
 
     let subject = lastMessage.subject || '';
     let replyPrefix = replyType === ReplyType.Forward ? 'Fwd: ' : 'Re: ';
-    if (subject && !subject.startsWith(replyPrefix))
-      subject = replyPrefix + subject;
+    if (subject && !subject.startsWith(replyPrefix)) subject = replyPrefix + subject;
 
     let text;
     if (replyType === ReplyType.Forward) {
       let from = lastMessage.from ? `From: ${lastMessage.from}<br>` : '';
-      let date = lastMessage.from ?
-          `Date: ${FWD_THREAD_DATE_FORMATTER.format(lastMessage.date)}<br>` :
-          '';
-      let subject =
-          lastMessage.from ? `Subject: ${lastMessage.subject}<br>` : '';
+      let date = lastMessage.from
+        ? `Date: ${FWD_THREAD_DATE_FORMATTER.format(lastMessage.date)}<br>`
+        : '';
+      let subject = lastMessage.from ? `Subject: ${lastMessage.subject}<br>` : '';
       let to = lastMessage.from ? `To: ${lastMessage.to}<br>` : '';
-      text = `${replyText}<br><br>---------- Forwarded message ---------<br>${
-          from}${date}${subject}${to}<br>${await lastMessage.getHtmlOrPlain()}`;
+      text = `${replyText}<br><br>---------- Forwarded message ---------<br>${from}${date}${subject}${to}<br>${await lastMessage.getHtmlOrPlain()}`;
     } else {
       text = `${replyText}<br><br>${lastMessage.from} wrote:<br>
   <blockquote class="gmail_quote" style="margin:0 0 0 .8ex;border-left:1px solid var(--border-and-hover-color);padding-left:1ex">
@@ -1070,18 +1043,15 @@ export class Thread extends EventTargetPolyfill {
     }
 
     let headers = `In-Reply-To: ${lastMessage.messageId}\n`;
-    let message =
-        await send(text, addressHeaders, subject, sender, headers, this.id);
+    let message = await send(text, addressHeaders, subject, sender, headers, this.id);
     await this.appendSentMessage(message);
   }
 
-  async appendSentMessage(
-      message: gapi.client.gmail.Message, isOnlyMessage?: boolean) {
+  async appendSentMessage(message: gapi.client.gmail.Message, isOnlyMessage?: boolean) {
     // If the message is in this same thread, then account for it appropriately
     // in the message counts. This can happen even if it's a forward, e.g. if
     // you forward to yourself.
-    if (message.threadId === this.id)
-      this.sentMessageIds_.push(defined(message.id));
+    if (message.threadId === this.id) this.sentMessageIds_.push(defined(message.id));
 
     // If this is a thread we just started, then make sure it has stored message
     // data in localStorage. syncMessagesToFirestore assumes that the fetch from

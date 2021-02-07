@@ -16,24 +16,21 @@ export class IDBKeyVal {
     });
   }
   _withIDBStore(type: any, callback: any) {
-    return this._dbp.then(db => new Promise((resolve, reject) => {
-                            const transaction =
-                                db.transaction(this.storeName_, type);
-                            transaction.oncomplete = () => resolve();
-                            transaction.onabort = transaction.onerror = () =>
-                                reject(transaction.error);
-                            callback(transaction.objectStore(this.storeName_));
-                          }));
+    return this._dbp.then(
+      (db) =>
+        new Promise((resolve, reject) => {
+          const transaction = db.transaction(this.storeName_, type);
+          transaction.oncomplete = () => resolve();
+          transaction.onabort = transaction.onerror = () => reject(transaction.error);
+          callback(transaction.objectStore(this.storeName_));
+        }),
+    );
   }
   get(key: string) {
     let req: any;
-    return this
-        ._withIDBStore(
-            'readonly',
-            (store: any) => {
-              req = store.get(key);
-            })
-        .then(() => req.result);
+    return this._withIDBStore('readonly', (store: any) => {
+      req = store.get(key);
+    }).then(() => req.result);
   }
   set(key: string, value: any) {
     return this._withIDBStore('readwrite', (store: any) => {
@@ -52,18 +49,13 @@ export class IDBKeyVal {
   }
   keys() {
     let req: any;
-    return this
-        ._withIDBStore(
-            'readonly',
-            (store: any) => {
-              req = store.getAllKeys();
-            })
-        .then(() => req.result);
+    return this._withIDBStore('readonly', (store: any) => {
+      req = store.getAllKeys();
+    }).then(() => req.result);
   }
 }
 
 IDBKeyVal.getDefault = () => {
-  if (!IDBKeyVal.store_)
-    IDBKeyVal.store_ = new IDBKeyVal();
+  if (!IDBKeyVal.store_) IDBKeyVal.store_ = new IDBKeyVal();
   return IDBKeyVal.store_;
-}
+};

@@ -1,8 +1,8 @@
-import {defined, parseAddressList} from '../Base.js';
-import {IDBKeyVal} from '../idb-keyval.js';
-import {AddressHeaders, send} from '../Mail.js';
+import { defined, parseAddressList } from '../Base.js';
+import { IDBKeyVal } from '../idb-keyval.js';
+import { AddressHeaders, send } from '../Mail.js';
 
-import {Model} from './Model.js';
+import { Model } from './Model.js';
 
 const AUTO_SAVE_KEY = 'ComposeView-auto-save-key';
 
@@ -77,13 +77,10 @@ export class ComposeModel extends Model {
   hasInvalidAddresses_(value: string) {
     let addresses = parseAddressList(value);
     for (let address of addresses) {
-      if (!address.address)
-        return true;
+      if (!address.address) return true;
       let parts = address.address.split('@');
-      if (parts.length !== 2)
-        return true;
-      if (!parts[1].includes('.'))
-        return true;
+      if (parts.length !== 2) return true;
+      if (!parts[1].includes('.')) return true;
     }
     return false;
   }
@@ -102,13 +99,11 @@ export class ComposeModel extends Model {
     let to = this.to_ || '';
 
     if (this.inlineTo_) {
-      if (to)
-        to += ', ';
+      if (to) to += ', ';
       to += this.inlineTo_;
     }
 
-    if (this.sending_)
-      return;
+    if (this.sending_) return;
     this.sending_ = true;
 
     let addressHeaders = new Map();
@@ -116,15 +111,17 @@ export class ComposeModel extends Model {
 
     let sent;
     try {
-      sent = await send(
-          this.body_, addressHeaders, this.subject_, defined(this.sender_));
+      sent = await send(this.body_, addressHeaders, this.subject_, defined(this.sender_));
       await IDBKeyVal.getDefault().del(AUTO_SAVE_KEY);
     } finally {
       this.sending_ = false;
     }
 
     return {
-      to: to, subject: this.subject_, body: sanitizedBodyText, response: sent
-    }
+      to: to,
+      subject: this.subject_,
+      body: sanitizedBodyText,
+      response: sent,
+    };
   }
 }

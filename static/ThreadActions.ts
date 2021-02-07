@@ -1,7 +1,15 @@
-import {Action, ActionGroup} from './Actions.js';
-import {assert} from './Base.js';
-import {TinyDatePicker} from './third_party/tiny-date-picker/DatePicker.js';
-import {BACKLOG_PRIORITY_NAME, BOOKMARK_PRIORITY_NAME, MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, Thread, URGENT_PRIORITY_NAME} from './Thread.js';
+import { Action, ActionGroup } from './Actions.js';
+import { assert } from './Base.js';
+import { TinyDatePicker } from './third_party/tiny-date-picker/DatePicker.js';
+import {
+  BACKLOG_PRIORITY_NAME,
+  BOOKMARK_PRIORITY_NAME,
+  MUST_DO_PRIORITY_NAME,
+  PINNED_PRIORITY_NAME,
+  Priority,
+  Thread,
+  URGENT_PRIORITY_NAME,
+} from './Thread.js';
 
 export let ARCHIVE_ACTION = {
   name: `Archive`,
@@ -68,40 +76,35 @@ export let REPEAT_ACTION = {
 
 let BLOCKED_1D_ACTION = {
   name: '1 day',
-  description:
-      `Block on action from someone else. Shows up tomorrow to retriage.`,
+  description: `Block on action from someone else. Shows up tomorrow to retriage.`,
   key: '5',
   actionGroup: ActionGroup.Date,
 };
 
 let BLOCKED_2D_ACTION = {
   name: '2 days',
-  description:
-      `Block on action from someone else. Shows up in 2 days to retriage.`,
+  description: `Block on action from someone else. Shows up in 2 days to retriage.`,
   key: '6',
   actionGroup: ActionGroup.Date,
 };
 
 let BLOCKED_7D_ACTION = {
   name: '7 days',
-  description:
-      `Block on action from someone else. Shows up in 7 days to retriage.`,
+  description: `Block on action from someone else. Shows up in 7 days to retriage.`,
   key: '7',
   actionGroup: ActionGroup.Date,
 };
 
 let BLOCKED_14D_ACTION = {
   name: '14 days',
-  description:
-      `Block on action from someone else. Shows up in 14 days to retriage.`,
+  description: `Block on action from someone else. Shows up in 14 days to retriage.`,
   key: '8',
   actionGroup: ActionGroup.Date,
 };
 
 let BLOCKED_30D_ACTION = {
   name: '30 days',
-  description:
-      `Block on action from someone else. Shows up in 30 days to retriage.`,
+  description: `Block on action from someone else. Shows up in 30 days to retriage.`,
   key: '9',
   actionGroup: ActionGroup.Date,
 };
@@ -111,7 +114,7 @@ let BLOCKED_CUSTOM_ACTION = {
   description: `Block on action from someone else. Pick a date to retriage.`,
   key: '0',
   actionGroup: ActionGroup.Date,
-}
+};
 
 let BLOCKED_NONE_ACTION = {
   name: 'Clear',
@@ -120,41 +123,17 @@ let BLOCKED_NONE_ACTION = {
   actionGroup: ActionGroup.Date,
 };
 
-export const ARCHIVE_ACTIONS = [[
-  ARCHIVE_ACTION,
-  [
-    SOFT_MUTE_ACTION,
-    MUTE_ACTION,
-  ],
-]];
+export const ARCHIVE_ACTIONS = [[ARCHIVE_ACTION, [SOFT_MUTE_ACTION, MUTE_ACTION]]];
 
 export let BLOCKED_ACTIONS = [
   BLOCKED_CUSTOM_ACTION,
-  [
-    BLOCKED_1D_ACTION,
-    BLOCKED_2D_ACTION,
-    BLOCKED_7D_ACTION,
-  ],
-  [
-    BLOCKED_14D_ACTION,
-    BLOCKED_30D_ACTION,
-  ],
-  [
-    BLOCKED_NONE_ACTION,
-    REPEAT_ACTION,
-  ],
+  [BLOCKED_1D_ACTION, BLOCKED_2D_ACTION, BLOCKED_7D_ACTION],
+  [BLOCKED_14D_ACTION, BLOCKED_30D_ACTION],
+  [BLOCKED_NONE_ACTION, REPEAT_ACTION],
 ];
 
 export let BASE_THREAD_ACTIONS = [
-  [
-    MUST_DO_ACTION,
-    [
-      URGENT_ACTION,
-      BACKLOG_ACTION,
-      PIN_ACTION,
-      BOOKMARK_ACTION,
-    ],
-  ],
+  [MUST_DO_ACTION, [URGENT_ACTION, BACKLOG_ACTION, PIN_ACTION, BOOKMARK_ACTION]],
   BLOCKED_ACTIONS,
 ];
 
@@ -180,12 +159,10 @@ function destinationToPriority(destination: Action) {
   }
 }
 
-export async function pickDate(destination: Action):
-    Promise<Date|undefined|null> {
-  if (destination !== BLOCKED_CUSTOM_ACTION)
-    return;
+export async function pickDate(destination: Action): Promise<Date | undefined | null> {
+  if (destination !== BLOCKED_CUSTOM_ACTION) return;
 
-  let datePicker = new TinyDatePicker({mode: 'dp-modal'});
+  let datePicker = new TinyDatePicker({ mode: 'dp-modal' });
   return new Promise((resolve) => {
     datePicker.addEventListener('select', async () => {
       resolve(datePicker.state.selectedDate);
@@ -199,17 +176,16 @@ export async function pickDate(destination: Action):
 export async function takeAction(thread: Thread, destination: Action) {
   let date = await pickDate(destination);
   // Null means that this is a date action, but no date was selected.
-  if (date === null)
-    return;
-  let update = date ? await createStuckUpdate(thread, date) :
-                      await createUpdate(thread, destination);
-  if (!update)
-    return;
+  if (date === null) return;
+  let update = date
+    ? await createStuckUpdate(thread, date)
+    : await createUpdate(thread, destination);
+  if (!update) return;
   await thread.updateMetadata(update);
 }
 
 export async function createStuckUpdate(thread: Thread, date: Date) {
-  return thread.stuckUpdate(date)
+  return thread.stuckUpdate(date);
 }
 
 export function createUpdate(thread: Thread, destination: Action) {

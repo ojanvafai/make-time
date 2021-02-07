@@ -1,6 +1,6 @@
-import {Action, getActions, shortcutString} from '../Actions.js';
+import { Action, getActions, shortcutString } from '../Actions.js';
 
-import {HelpDialog} from './HelpDialog.js';
+import { HelpDialog } from './HelpDialog.js';
 
 export class KeyboardShortcutsDialog {
   constructor() {
@@ -63,8 +63,7 @@ export class KeyboardShortcutsDialog {
     `;
     shortcut.append(key);
 
-    if (action.secondaryKey)
-      shortcut.append(`\nOR\n${shortcutString(action.secondaryKey)}`);
+    if (action.secondaryKey) shortcut.append(`\nOR\n${shortcutString(action.secondaryKey)}`);
 
     row.append(shortcut);
 

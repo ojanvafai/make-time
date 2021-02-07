@@ -1,5 +1,12 @@
-import {createCircle, createSvgContainer, defined, linkify, notNull, sandboxedDom} from './Base.js';
-import {Message} from './Message.js';
+import {
+  createCircle,
+  createSvgContainer,
+  defined,
+  linkify,
+  notNull,
+  sandboxedDom,
+} from './Base.js';
+import { Message } from './Message.js';
 
 // Rolling hash taken from https://gist.github.com/i-e-b/b892d95ac7c0cf4b70e4.
 let MINIMUM_HASH_LENGTH = 10;
@@ -12,7 +19,7 @@ export class QuoteElidedMessage extends HTMLElement {
   // constructor.
   private hashes_!: Map<string, Element[]>;
 
-  constructor(currentMessage: string, previousMessage: Message|undefined) {
+  constructor(currentMessage: string, previousMessage: Message | undefined) {
     super();
 
     // Someone got a message with the following image in the message body that
@@ -22,8 +29,7 @@ export class QuoteElidedMessage extends HTMLElement {
     // Gmail turns this into a googleusercontent.com url that still 404s, so
     // until we see a reason to do otherwise, just mangle the URL to make it
     // 404. It needs both the ik and view parameters to force the logout.
-    currentMessage =
-        currentMessage.replace(/src="https:\/\/mail\.google\.com\//g, 'src="');
+    currentMessage = currentMessage.replace(/src="https:\/\/mail\.google\.com\//g, 'src="');
 
     // Body elements get stripped by sandboxedDom. This matters for cases where
     // there is inline styling on the body element (e.g. a background color).
@@ -39,8 +45,7 @@ export class QuoteElidedMessage extends HTMLElement {
 
     this.computeHashes_();
 
-    if (previousMessage)
-      this.processQuoteElides_(previousMessage);
+    if (previousMessage) this.processQuoteElides_(previousMessage);
   }
 
   async processQuoteElides_(previousMessage: Message) {
@@ -52,8 +57,7 @@ export class QuoteElidedMessage extends HTMLElement {
   }
 
   async elideAllMatches_(previousMessage: Message) {
-    let previousHashes =
-        (await previousMessage.getQuoteElidedMessage()).getHashes();
+    let previousHashes = (await previousMessage.getQuoteElidedMessage()).getHashes();
     for (let entry of this.hashes_) {
       if (previousHashes.has(entry[0])) {
         for (let match of entry[1]) {
@@ -63,7 +67,7 @@ export class QuoteElidedMessage extends HTMLElement {
     }
   }
 
-  hasEmptyTextContent_(node: ChildNode|null) {
+  hasEmptyTextContent_(node: ChildNode | null) {
     return node && !this.quoteStrippedText_(node);
   }
 
@@ -74,15 +78,16 @@ export class QuoteElidedMessage extends HTMLElement {
       // TODO: Hash the outerHTML of the element to make sure it has at least
       // a corresponding thing in the previous message. Or maybe just exclude
       // images?
-      while (previous.previousSibling &&
-             this.hasEmptyTextContent_(<ChildNode>previous.previousSibling)) {
+      while (
+        previous.previousSibling &&
+        this.hasEmptyTextContent_(<ChildNode>previous.previousSibling)
+      ) {
         setElidedState(<ChildNode>previous.previousSibling, 'hidden');
         previous = <ChildNode>previous.previousSibling;
       }
 
       let next = <ChildNode>match;
-      while (next.nextSibling &&
-             this.hasEmptyTextContent_(<ChildNode>next.nextSibling)) {
+      while (next.nextSibling && this.hasEmptyTextContent_(<ChildNode>next.nextSibling)) {
         setElidedState(<ChildNode>next.nextSibling, 'hidden');
         next = <ChildNode>next.nextSibling;
       }
@@ -102,11 +107,10 @@ export class QuoteElidedMessage extends HTMLElement {
     }
   }
 
-  elidesHaveMinimumLength_(element: Element|null) {
+  elidesHaveMinimumLength_(element: Element | null) {
     let length = 0;
     while (length < MINIMUM_ELIDE_LENGTH && element) {
-      if (!element.hasAttribute('mk-elide'))
-        return false;
+      if (!element.hasAttribute('mk-elide')) return false;
       length += element.textContent.length;
       // TODO: Is skipping text nodes correct?
       element = element.nextElementSibling;
@@ -114,10 +118,9 @@ export class QuoteElidedMessage extends HTMLElement {
     return length >= MINIMUM_ELIDE_LENGTH;
   }
 
-  removeAdjacentElides_(element: Element|null) {
+  removeAdjacentElides_(element: Element | null) {
     // TODO: move the attribute name into a constant.
-    while (element && element.nodeType == Node.ELEMENT_NODE &&
-           element.hasAttribute('mk-elide')) {
+    while (element && element.nodeType == Node.ELEMENT_NODE && element.hasAttribute('mk-elide')) {
       element.removeAttribute('mk-elide');
       // TODO: Is skipping text nodes correct?
       element = element.nextElementSibling;
@@ -178,10 +181,10 @@ export class QuoteElidedMessage extends HTMLElement {
   getToggler_() {
     if (!TOGGLER) {
       TOGGLER = createSvgContainer(
-          '0 0 24 24',
-          createCircle(5, 12, 2),
-          createCircle(12, 12, 2),
-          createCircle(19, 12, 2),
+        '0 0 24 24',
+        createCircle(5, 12, 2),
+        createCircle(12, 12, 2),
+        createCircle(19, 12, 2),
       );
       TOGGLER.classList.add('toggler');
       TOGGLER.style.cssText = `
@@ -210,7 +213,7 @@ export class QuoteElidedMessage extends HTMLElement {
     for (let element of elements) {
       let text = this.quoteStrippedText_(element);
       if (text.length > MINIMUM_HASH_LENGTH) {
-        let list: Element[]|undefined = this.hashes_.get(text);
+        let list: Element[] | undefined = this.hashes_.get(text);
         if (!list) {
           list = [];
           this.hashes_.set(text, list);
@@ -234,13 +237,12 @@ export class QuoteElidedMessage extends HTMLElement {
     }
   }
 
-  quoteStrippedText_(node: ChildNode|CharacterData) {
+  quoteStrippedText_(node: ChildNode | CharacterData) {
     let result = strippedTextMap.get(node);
     if (!result) {
       let nonQuoteIndex = 0;
       let text = node.textContent || '';
-      while (nonQuoteIndex < text.length &&
-             this.isQuoteCharacter_(text.charAt(nonQuoteIndex))) {
+      while (nonQuoteIndex < text.length && this.isQuoteCharacter_(text.charAt(nonQuoteIndex))) {
         nonQuoteIndex++;
       }
       result = text.substring(nonQuoteIndex);
@@ -249,7 +251,7 @@ export class QuoteElidedMessage extends HTMLElement {
     return result;
   }
 
-  isElided_(element: Element|null) {
+  isElided_(element: Element | null) {
     return element && element.hasAttribute && element.hasAttribute('mk-elide');
   }
 }
@@ -260,8 +262,7 @@ function updateStyling(element: HTMLElement) {
   // doesn't jump around when the contents of the elided region are shown, but
   // for threads with a lot of eliding, display none is considerably faster at
   // recalc and layout since we skip whole subtrees.
-  element.style.display =
-      element.getAttribute('mk-elide') == 'hidden' ? 'none' : '';
+  element.style.display = element.getAttribute('mk-elide') == 'hidden' ? 'none' : '';
 }
 
 function setElidedState(node: ChildNode, state: string) {
@@ -281,16 +282,13 @@ function toggleElided(e: Event) {
   e.preventDefault();
 
   let element = e.target as Element;
-  while (!element.nextElementSibling ||
-         !element.nextElementSibling.hasAttribute('mk-elide')) {
+  while (!element.nextElementSibling || !element.nextElementSibling.hasAttribute('mk-elide')) {
     element = notNull(element.parentElement);
   }
 
-  while (element.nextElementSibling &&
-         element.nextElementSibling.hasAttribute('mk-elide')) {
+  while (element.nextElementSibling && element.nextElementSibling.hasAttribute('mk-elide')) {
     element = element.nextElementSibling;
-    let newState =
-        element.getAttribute('mk-elide') == 'visible' ? 'hidden' : 'visible';
+    let newState = element.getAttribute('mk-elide') == 'visible' ? 'hidden' : 'visible';
     setElidedState(element, newState);
     updateStyling(<HTMLElement>element);
   }

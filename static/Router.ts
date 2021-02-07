@@ -27,8 +27,7 @@ export class Router {
     var missingParams: any = {};
 
     // Don't match if fixed rule is longer than path
-    if (rule.parts.length < pathParts.length)
-      return false;
+    if (rule.parts.length < pathParts.length) return false;
 
     for (let i = 0; i < pathParts.length; i++) {
       var rulePart = rule.parts[i];
@@ -72,20 +71,18 @@ export class Router {
     // Let the page override universal query parameter values after initial page
     // load.
     for (let param of this.universalQueryParameters_) {
-      if (param in params)
-        this.baseParams_.set(param, params[param]);
+      if (param in params) this.baseParams_.set(param, params[param]);
     }
 
     return params;
   }
 
   add(route: any, handler: (params: any) => void) {
-    this.rules_.push({parts: this.parsePath_(route), handler: handler});
+    this.rules_.push({ parts: this.parsePath_(route), handler: handler });
   }
 
   private parsePath_(path: string) {
-    if (path.charAt(0) != '/')
-      throw ` Path must start with a /. Path: ${path}`;
+    if (path.charAt(0) != '/') throw ` Path must start with a /. Path: ${path}`;
     // Strip the leading '/'.
     return path.substring(1).split('/');
   }
@@ -93,33 +90,30 @@ export class Router {
   private parseQueryString_(path: string) {
     // TODO: Handle if there are multiple question marks.
     let parts = path.split('?');
-    if (parts.length === 1)
-      return [];
+    if (parts.length === 1) return [];
     return parts[1].split('&');
   }
 
   // Ewww...this can't be async because want to return a promise only in the
   // case where the router handles this location so that the click handler for
   // links can preventDefault synchronously.
-  run(location: Location|HTMLAnchorElement|string,
-      excludeFromHistory?: boolean) {
+  run(location: Location | HTMLAnchorElement | string, excludeFromHistory?: boolean) {
     // TODO: Don't allow strings as an argument. Allow Node or Location only.
     let isString = typeof location == 'string';
-    let path = isString ? (location as string).split('?')[0] :
-                          (<Location|HTMLAnchorElement>location).pathname;
-    if (!path)
-      return null;
+    let path = isString
+      ? (location as string).split('?')[0]
+      : (<Location | HTMLAnchorElement>location).pathname;
+    if (!path) return null;
 
     // Don't route cross origin links.
-    if (!isString &&
-        window.location.origin != (<Location|HTMLAnchorElement>location).origin)
+    if (!isString && window.location.origin != (<Location | HTMLAnchorElement>location).origin)
       return null;
 
     let pathParts = this.parsePath_(path);
     // Strip the leading '?'.
-    let queryParts = isString ?
-        this.parseQueryString_(location as string) :
-        (<Location|HTMLAnchorElement>location).search.substring(1).split('&');
+    let queryParts = isString
+      ? this.parseQueryString_(location as string)
+      : (<Location | HTMLAnchorElement>location).search.substring(1).split('&');
 
     for (let rule of this.rules_) {
       var params = this.getParams_(rule, pathParts, queryParts);
@@ -128,11 +122,9 @@ export class Router {
         for (let [key, value] of Object.entries(params)) {
           paramEntries.push(`${key}=${value}`);
         }
-        let newPath =
-            path + (paramEntries.length ? `?${paramEntries.join('&')}` : '');
+        let newPath = path + (paramEntries.length ? `?${paramEntries.join('&')}` : '');
 
-        if (!excludeFromHistory)
-          history.pushState({}, '', newPath);
+        if (!excludeFromHistory) history.pushState({}, '', newPath);
         return rule.handler(params);
       }
     }

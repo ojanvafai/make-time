@@ -1,7 +1,14 @@
-import {primaryModifierKey} from '../Actions.js';
-import {assert, defined, notNull} from '../Base.js';
-import {QueueNames} from '../QueueNames.js';
-import {FilterRule, HEADER_FILTER_PREFIX, HeaderFilterRule, isHeaderFilterField, setFilterStringField, Settings} from '../Settings.js';
+import { primaryModifierKey } from '../Actions.js';
+import { assert, defined, notNull } from '../Base.js';
+import { QueueNames } from '../QueueNames.js';
+import {
+  FilterRule,
+  HEADER_FILTER_PREFIX,
+  HeaderFilterRule,
+  isHeaderFilterField,
+  setFilterStringField,
+  Settings,
+} from '../Settings.js';
 
 const CSV_FIELDS = ['from', 'to'];
 const CURSOR_SENTINEL = '!!!!!!!!';
@@ -11,7 +18,7 @@ const QUERY_SEPARATOR_ = '&&';
 export class LabelCreatedEvent extends Event {
   static NAME = 'label-created';
   constructor(public labelOption: HTMLOptionElement) {
-    super(LabelCreatedEvent.NAME, {bubbles: true});
+    super(LabelCreatedEvent.NAME, { bubbles: true });
   }
 }
 
@@ -25,9 +32,7 @@ export class FilterRuleComponent extends HTMLElement {
   private noCc_: HTMLInputElement;
   private editor_: HTMLElement;
 
-  constructor(
-      private settings_: Settings, private rule_: any,
-      excludeLabelPicker?: boolean) {
+  constructor(private settings_: Settings, private rule_: any, excludeLabelPicker?: boolean) {
     super();
     this.style.cssText = `
       flex: 1;
@@ -45,9 +50,10 @@ export class FilterRuleComponent extends HTMLElement {
       align-items: center;
     `;
     topRow.append(
-        this.attachLabel_('Match All Messages', this.matchAll_),
-        this.attachLabel_('No List-ID', this.noListId_),
-        this.attachLabel_('No CCs', this.noCc_));
+      this.attachLabel_('Match All Messages', this.matchAll_),
+      this.attachLabel_('No List-ID', this.noListId_),
+      this.attachLabel_('No CCs', this.noCc_),
+    );
     this.append(topRow, this.editor_);
     if (!excludeLabelPicker) {
       this.prependLabelPicker_(topRow);
@@ -96,15 +102,13 @@ export class FilterRuleComponent extends HTMLElement {
     let headerRules: HeaderFilterRule[] = [];
     for (let key in obj) {
       if (isHeaderFilterField(key)) {
-        headerRules.push({name: key.substring(1), value: String(obj[key])});
+        headerRules.push({ name: key.substring(1), value: String(obj[key]) });
       } else {
         let validField = setFilterStringField(rule, key, obj[key]);
-        if (!validField)
-          return null;
+        if (!validField) return null;
       }
     }
-    if (headerRules.length)
-      rule.header = headerRules;
+    if (headerRules.length) rule.header = headerRules;
     return rule;
   }
 
@@ -130,8 +134,7 @@ export class FilterRuleComponent extends HTMLElement {
     }
     label.addEventListener('change', () => {
       // The last item is the "Create new" label option.
-      if (label.selectedIndex !== label.options.length - 1)
-        return;
+      if (label.selectedIndex !== label.options.length - 1) return;
       const queueNames = QueueNames.create();
       const newLabel = queueNames.promptForNewLabel();
       if (!newLabel) {
@@ -168,7 +171,7 @@ export class FilterRuleComponent extends HTMLElement {
   }
 
   add(name: string, value: string) {
-    this.modify_((parsed: any) => parsed[name] = value);
+    this.modify_((parsed: any) => (parsed[name] = value));
   }
 
   delete(name: string) {
@@ -218,8 +221,7 @@ export class FilterRuleComponent extends HTMLElement {
     for (let field in queryParts) {
       let fieldText = field;
       if (!isFirst) {
-        if (!previousEndedInWhiteSpace)
-          container.append(space);
+        if (!previousEndedInWhiteSpace) container.append(space);
         container.append(QUERY_SEPARATOR_);
         if (fieldText.charAt(0) == space) {
           container.append(space);
@@ -242,18 +244,18 @@ export class FilterRuleComponent extends HTMLElement {
         font-weight: bold;
       `;
 
-      let fieldTextWithoutSentinel =
-          fieldText.replace(CURSOR_SENTINEL, '').trim();
-      if (!isHeaderFilterField(fieldTextWithoutSentinel) &&
-          !Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
+      let fieldTextWithoutSentinel = fieldText.replace(CURSOR_SENTINEL, '').trim();
+      if (
+        !isHeaderFilterField(fieldTextWithoutSentinel) &&
+        !Settings.FILTERS_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel)
+      )
         fieldElement.classList.add('invalid-directive');
 
       this.appendWithSentinel_(fieldElement, fieldText);
       container.append(fieldElement);
 
       let value = queryParts[field];
-      previousEndedInWhiteSpace =
-          value && value.charAt(value.length - 1) == space;
+      previousEndedInWhiteSpace = value && value.charAt(value.length - 1) == space;
       if (value) {
         fieldElement.append(DIRECTIVE_SEPARATOR_);
 
@@ -290,8 +292,7 @@ export class FilterRuleComponent extends HTMLElement {
     query = query.replace(/[\n\r]/g, '');
     let directives = query.split(QUERY_SEPARATOR_);
     for (let directive of directives) {
-      if (!directive)
-        continue;
+      if (!directive) continue;
 
       let colonIndex = directive.indexOf(DIRECTIVE_SEPARATOR_);
       let hasColon = colonIndex != -1;
@@ -302,18 +303,19 @@ export class FilterRuleComponent extends HTMLElement {
         field = field.trim();
         value = value.trim();
         if (CSV_FIELDS.includes(field))
-          value = value.split(',').map(x => x.trim()).join(',');
+          value = value
+            .split(',')
+            .map((x) => x.trim())
+            .join(',');
       }
 
-      if (hasColon && !value)
-        field = field + DIRECTIVE_SEPARATOR_;
+      if (hasColon && !value) field = field + DIRECTIVE_SEPARATOR_;
       queryParts[field] = value;
     }
     return queryParts;
   }
 
-  private setEditorText_(
-      editor: HTMLElement, text: string, trimWhitespace: boolean) {
+  private setEditorText_(editor: HTMLElement, text: string, trimWhitespace: boolean) {
     editor.textContent = '';
     let newParts = this.parseQuery_(text, trimWhitespace);
     this.appendQueryParts_(editor, newParts);
@@ -321,8 +323,7 @@ export class FilterRuleComponent extends HTMLElement {
 
   private setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
-    notNull(window.getSelection())
-        .selectAllChildren(defined(this.cursorSentinelElement_));
+    notNull(window.getSelection()).selectAllChildren(defined(this.cursorSentinelElement_));
   }
 
   private insertSentinelText_() {
@@ -342,8 +343,7 @@ export class FilterRuleComponent extends HTMLElement {
   private createQueryEditor_() {
     let queryParts: any = {};
     for (let field in this.rule_) {
-      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(field))
-        continue;
+      if (!Settings.FILTERS_RULE_DIRECTIVES.includes(field)) continue;
       if (field == 'header') {
         let headers = this.rule_[field] as HeaderFilterRule[];
         for (let header of headers) {
@@ -369,16 +369,14 @@ export class FilterRuleComponent extends HTMLElement {
     let redoStack_: string[] = [];
 
     editor.addEventListener('beforeinput', (e) => {
-      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo')
-        return;
+      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo') return;
 
       redoStack_ = [];
       undoStack.push(this.getEditorTextContentWithSentinel_(editor));
     });
 
     editor.oninput = (e) => {
-      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo')
-        return;
+      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo') return;
 
       let content = this.getEditorTextContentWithSentinel_(editor);
       this.setEditorTextAndSelectSentinel_(editor, content);
@@ -400,7 +398,7 @@ export class FilterRuleComponent extends HTMLElement {
     };
 
     editor.onblur = () => {
-      this.setEditorText_(editor, editor.textContent, true)
+      this.setEditorText_(editor, editor.textContent, true);
     };
 
     return editor;

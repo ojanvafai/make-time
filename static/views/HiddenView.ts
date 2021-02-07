@@ -1,14 +1,14 @@
-import {Action} from '../Actions.js';
-import {compareDates, defined, notNull} from '../Base.js';
-import {firestoreUserCollection, login} from '../BaseMain.js';
-import {ThreadListModel, TriageResult} from '../models/ThreadListModel.js';
-import {TodoModel} from '../models/TodoModel.js';
-import {Settings} from '../Settings.js';
-import {STUCK_LABEL_NAME, Thread, ThreadMetadataKeys} from '../Thread.js';
+import { Action } from '../Actions.js';
+import { compareDates, defined, notNull } from '../Base.js';
+import { firestoreUserCollection, login } from '../BaseMain.js';
+import { ThreadListModel, TriageResult } from '../models/ThreadListModel.js';
+import { TodoModel } from '../models/TodoModel.js';
+import { Settings } from '../Settings.js';
+import { STUCK_LABEL_NAME, Thread, ThreadMetadataKeys } from '../Thread.js';
 
-import {AppShell} from './AppShell.js';
-import {ThreadListView} from './ThreadListView.js';
-import {View} from './View.js';
+import { AppShell } from './AppShell.js';
+import { ThreadListView } from './ThreadListView.js';
+import { View } from './View.js';
 
 let FIRESTORE_KEYS = [
   ThreadMetadataKeys.retriageTimestamp,
@@ -35,8 +35,7 @@ class HiddenModel extends ThreadListModel {
     // For muted, don't put undo items back in the inbox.
     super(settings_);
 
-    let metadataCollection =
-        firestoreUserCollection().doc('threads').collection('metadata');
+    let metadataCollection = firestoreUserCollection().doc('threads').collection('metadata');
 
     const queryKey = this.queryKey_();
     let query;
@@ -59,13 +58,11 @@ class HiddenModel extends ThreadListModel {
     switch (this.queryKey_()) {
       case ThreadMetadataKeys.blocked:
         // Reverse sort by blocked date for the blocked view.
-        return compareDates(
-            notNull(b.getStuckDate()), notNull(a.getStuckDate()));
+        return compareDates(notNull(b.getStuckDate()), notNull(a.getStuckDate()));
 
       case ThreadMetadataKeys.retriageTimestamp:
         // Reverse sort by blocked date for the blocked view.
-        return compareDates(
-            notNull(b.getLastModifiedDate()), notNull(a.getLastModifiedDate()));
+        return compareDates(notNull(b.getLastModifiedDate()), notNull(a.getLastModifiedDate()));
 
       case ThreadMetadataKeys.throttled:
       case ThreadMetadataKeys.queued:
@@ -79,9 +76,7 @@ class HiddenModel extends ThreadListModel {
   protected shouldShowThread(thread: Thread) {
     switch (this.queryKey_()) {
       case ThreadMetadataKeys.blocked:
-        if (this.queryKey_() === ThreadMetadataKeys.blocked &&
-            thread.needsTriage())
-          return false;
+        if (this.queryKey_() === ThreadMetadataKeys.blocked && thread.needsTriage()) return false;
         break;
 
       case ThreadMetadataKeys.retriageTimestamp:
@@ -170,12 +165,10 @@ export class HiddenView extends View {
 
     let model = new HiddenModel(this.settings_, this.select_.selectedIndex);
 
-    if (this.threadListView_)
-      this.threadListView_.remove();
+    if (this.threadListView_) this.threadListView_.remove();
     // TODO: Make ThreadListView take a property back for all it's optional
     // arguments.
-    this.threadListView_ =
-        new ThreadListView(model, this.appShell_, this.settings_, false);
+    this.threadListView_ = new ThreadListView(model, this.appShell_, this.settings_, false);
     this.append(this.threadListView_);
   }
 
@@ -189,7 +182,7 @@ export class HiddenView extends View {
 
   async dispatchShortcut(e: KeyboardEvent) {
     await defined(this.threadListView_).dispatchShortcut(e);
-  };
+  }
 
   async takeAction(action: Action) {
     await defined(this.threadListView_).takeAction(action);

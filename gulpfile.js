@@ -1,6 +1,6 @@
 const childProcess = require('child_process');
 const fs = require('fs');
-const {watch, task, series, parallel} = require('gulp');
+const { watch, task, series, parallel } = require('gulp');
 const md5 = require('md5');
 const rimraf = require('rimraf');
 const argv = require('yargs').argv;
@@ -57,11 +57,13 @@ async function checksumMainJs() {
   const publicChecksummedMainPath = `public/${checksummedMainPath}`;
   // Technically appending the sourceMappingURL would change the checksum, but
   // we don't need to care as long as we're consistent.
-  await fs.promises.writeFile(publicChecksummedMainPath, `${mainFileContents}
-//# sourceMappingURL=/${checksummedMainPath}.map`);
+  await fs.promises.writeFile(
+    publicChecksummedMainPath,
+    `${mainFileContents}
+//# sourceMappingURL=/${checksummedMainPath}.map`,
+  );
 
-  await fs.promises.rename(
-      `${bundleMain}.map`, `${publicChecksummedMainPath}.map`);
+  await fs.promises.rename(`${bundleMain}.map`, `${publicChecksummedMainPath}.map`);
   return checksummedMainPath;
 }
 
@@ -73,42 +75,42 @@ task('bundle-once', (cb) => {
 
   const minify = argv.noMinify ? '' : '--minify';
   const esbuild = childProcess.exec(
-      `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts ${
-          minify} --outdir=${OUT_DIR} --target=esnext --sourcemap=external`,
-      async () => {
-        try {
-          const paths = await Promise.all([
-            checksumMainJs(), checksumFileAndReturnNewPath('generic', '.css'),
-            checksumFileAndReturnNewPath('manifest', '.json')
-          ]);
-          const indexHtmlContents = generateIndexHtml(...paths);
-          // Blech, firebse requires index.html stored at the root of the public
-          // directory. So we write it out there and gitignore it instead of
-          // putting it in the gen directory.
-          await fs.promises.writeFile(`public/index.html`, indexHtmlContents);
-        } catch(err) {
-          // If the compile is broken, no main.js file will be written out, but
-          // we still want to exit cleanly so bundle's watch can continue.
-          if (err.code === 'ENOENT') {
-            console.log(`File not found: ${err}`);
-          } else {
-            throw err;
-          }
+    `npx esbuild --bundle static/main.ts --bundle static/HeaderFocusPainter.ts ${minify} --outdir=${OUT_DIR} --target=esnext --sourcemap=external`,
+    async () => {
+      try {
+        const paths = await Promise.all([
+          checksumMainJs(),
+          checksumFileAndReturnNewPath('generic', '.css'),
+          checksumFileAndReturnNewPath('manifest', '.json'),
+        ]);
+        const indexHtmlContents = generateIndexHtml(...paths);
+        // Blech, firebse requires index.html stored at the root of the public
+        // directory. So we write it out there and gitignore it instead of
+        // putting it in the gen directory.
+        await fs.promises.writeFile(`public/index.html`, indexHtmlContents);
+      } catch (err) {
+        // If the compile is broken, no main.js file will be written out, but
+        // we still want to exit cleanly so bundle's watch can continue.
+        if (err.code === 'ENOENT') {
+          console.log(`File not found: ${err}`);
+        } else {
+          throw err;
         }
-        cb();
-      });
+      }
+      cb();
+    },
+  );
   esbuild.stdout.on('data', (data) => process.stdout.write(data.toString()));
   esbuild.stderr.on('data', (data) => process.stderr.write(data.toString()));
 });
 
-const execAndPipe =
-    (command) => {
-      return (cb) => {
-        const x = childProcess.exec(command, cb);
-        x.stdout.on('data', (data) => process.stdout.write(data.toString()));
-        x.stderr.on('data', (data) => process.stderr.write(data.toString()));
-      };
-    }
+const execAndPipe = (command) => {
+  return (cb) => {
+    const x = childProcess.exec(command, cb);
+    x.stdout.on('data', (data) => process.stdout.write(data.toString()));
+    x.stderr.on('data', (data) => process.stderr.write(data.toString()));
+  };
+};
 
 task('deploy-firebase', (cb) => {
   const project = argv.project || DEFAULT_PROJECT;
@@ -118,22 +120,23 @@ task('deploy-firebase', (cb) => {
 
 task('serve-firebase', (cb) => {
   const port = argv.project && argv.project !== DEFAULT_PROJECT ? 8000 : 5000;
-  const output = execAndPipe(
-      `${FIREBASE_PATH} serve --project ${DEFAULT_PROJECT} --port=${port}`);
+  const output = execAndPipe(`${FIREBASE_PATH} serve --project ${DEFAULT_PROJECT} --port=${port}`);
   output(cb);
 });
 
 task(
-    'tsc',
-    execAndPipe(
-        './node_modules/typescript/bin/tsc --project tsconfig.json --watch --noEmit'));
+  'tsc',
+  execAndPipe('./node_modules/typescript/bin/tsc --project tsconfig.json --watch --noEmit'),
+);
 
 // Always run bundle-once the first time to ensure index.html gets generated if
 // this is a new checkout or it got deleted.
-task('bundle', () => { return watch(
-  ['static/**/*.ts', 'static/**/*.css'],
-  {ignoreInitial: false},
-  task('bundle-once'))
+task('bundle', () => {
+  return watch(
+    ['static/**/*.ts', 'static/**/*.css'],
+    { ignoreInitial: false },
+    task('bundle-once'),
+  );
 });
 task('serve', parallel(['serve-firebase', 'bundle', 'tsc']));
 task('install', execAndPipe('npm install --no-fund'));

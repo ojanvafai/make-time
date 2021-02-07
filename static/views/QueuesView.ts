@@ -1,14 +1,20 @@
-import {primaryModifierKey} from '../Actions.js';
-import {defined, Labels, notNull} from '../Base.js';
-import {QueueNames, SnapshotEvent} from '../QueueNames.js';
-import {AllQueueDatas, MergeOption, QueueListEntry, QueueSettings, ThrottleOption} from '../QueueSettings.js';
-import {FiltersChangedEvent, Settings} from '../Settings.js';
+import { primaryModifierKey } from '../Actions.js';
+import { defined, Labels, notNull } from '../Base.js';
+import { QueueNames, SnapshotEvent } from '../QueueNames.js';
+import {
+  AllQueueDatas,
+  MergeOption,
+  QueueListEntry,
+  QueueSettings,
+  ThrottleOption,
+} from '../QueueSettings.js';
+import { FiltersChangedEvent, Settings } from '../Settings.js';
 
 export class QueuesView extends HTMLElement {
-  private immediate_: HTMLElement|undefined;
-  private daily_: HTMLElement|undefined;
-  private weekly_: HTMLElement|undefined;
-  private monthly_: HTMLElement|undefined;
+  private immediate_: HTMLElement | undefined;
+  private daily_: HTMLElement | undefined;
+  private weekly_: HTMLElement | undefined;
+  private monthly_: HTMLElement | undefined;
   private queueNames_: QueueNames;
 
   static rowClassName_ = 'queue-row';
@@ -26,14 +32,12 @@ export class QueuesView extends HTMLElement {
     this.queueNames_.addEventListener(SnapshotEvent.NAME, () => this.render_());
 
     this.onkeydown = (e) => this.handleKeyDown_(e);
-    this.settings_.addEventListener(
-        FiltersChangedEvent.NAME, () => this.render_());
+    this.settings_.addEventListener(FiltersChangedEvent.NAME, () => this.render_());
     this.render_();
   }
 
   handleKeyDown_(e: KeyboardEvent) {
-    if (!primaryModifierKey(e))
-      return;
+    if (!primaryModifierKey(e)) return;
 
     switch (e.key) {
       case 'ArrowUp':
@@ -55,24 +59,21 @@ export class QueuesView extends HTMLElement {
   moveRow_(direction: string, move10: boolean) {
     this.dispatchChange_();
 
-    let rows =
-        [].slice.call(this.querySelectorAll(`.${QueuesView.rowClassName_}`));
-    let row: HTMLElement|undefined;
+    let rows = [].slice.call(this.querySelectorAll(`.${QueuesView.rowClassName_}`));
+    let row: HTMLElement | undefined;
     for (let currentRow of rows) {
       if (this.isChecked_(currentRow)) {
         row = currentRow;
         break;
       }
     }
-    if (!row)
-      return;
+    if (!row) return;
 
     let parent = row.parentNode;
     while (parent && parent != this) {
       parent = parent.parentNode;
     }
-    if (!parent)
-      return;
+    if (!parent) return;
 
     let count = move10 ? 10 : 1;
 
@@ -80,13 +81,10 @@ export class QueuesView extends HTMLElement {
       while (count--) {
         // Switch to the next queue group. Skip over the title for the queue
         // group.
-        if (!row.previousSibling ||
-            row.previousSibling.nodeType == Node.TEXT_NODE) {
+        if (!row.previousSibling || row.previousSibling.nodeType == Node.TEXT_NODE) {
           let parent = notNull(row.parentNode);
-          if (parent.previousSibling)
-            (<HTMLElement>parent.previousSibling).append(row);
-          else
-            break;
+          if (parent.previousSibling) (<HTMLElement>parent.previousSibling).append(row);
+          else break;
         } else {
           row.previousSibling.before(row);
         }
@@ -95,10 +93,8 @@ export class QueuesView extends HTMLElement {
       while (count--) {
         if (!row.nextSibling) {
           let parent = notNull(row.parentNode);
-          if (parent.nextSibling)
-            parent.nextSibling.firstChild!.after(row);
-          else
-            break;
+          if (parent.nextSibling) parent.nextSibling.firstChild!.after(row);
+          else break;
         } else {
           row.nextSibling.after(row);
         }
@@ -138,11 +134,9 @@ export class QueuesView extends HTMLElement {
     this.weekly_ = this.createRowGroup_(QueueSettings.WEEKLY);
     this.monthly_ = this.createRowGroup_(QueueSettings.MONTHLY);
 
-    scrollable.append(
-        this.immediate_, this.daily_, this.weekly_, this.monthly_);
+    scrollable.append(this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
-    let labels = (await this.queueNames_.getAllNames())
-                     .filter(x => x !== Labels.Archive);
+    let labels = (await this.queueNames_.getAllNames()).filter((x) => x !== Labels.Archive);
     let queueDatas = this.settings_.getQueueSettings().getSorted(labels);
     for (let queueData of queueDatas) {
       this.appendRow_(queueData);
@@ -155,24 +149,19 @@ export class QueuesView extends HTMLElement {
       let selector = selectors[i];
       let label = selector.querySelector('.label')!.textContent;
       if (queue == QueueSettings.WEEKLY) {
-        queue = (<HTMLSelectElement>selector.querySelector('.day')!)
-                    .selectedOptions[0]
-                    .value;
+        queue = (<HTMLSelectElement>selector.querySelector('.day')!).selectedOptions[0].value;
       }
-      let merge = (<HTMLSelectElement>selector.querySelector('.merge')!)
-                      .selectedOptions[0]
-                      .value as MergeOption;
-      let throttle = (<HTMLSelectElement>selector.querySelector('.throttle')!)
-                         .selectedOptions[0]
-                         .value as ThrottleOption;
-      output[label] = {queue, index: i + 1, merge, throttle};
+      let merge = (<HTMLSelectElement>selector.querySelector('.merge')!).selectedOptions[0]
+        .value as MergeOption;
+      let throttle = (<HTMLSelectElement>selector.querySelector('.throttle')!).selectedOptions[0]
+        .value as ThrottleOption;
+      output[label] = { queue, index: i + 1, merge, throttle };
     }
   }
 
   getAllQueueDatas() {
     let newQueueData: AllQueueDatas = {};
-    this.extractQueueData_(
-        newQueueData, this.immediate_!, QueueSettings.IMMEDIATE);
+    this.extractQueueData_(newQueueData, this.immediate_!, QueueSettings.IMMEDIATE);
     this.extractQueueData_(newQueueData, this.daily_!, QueueSettings.DAILY);
     this.extractQueueData_(newQueueData, this.weekly_!, QueueSettings.WEEKLY);
     this.extractQueueData_(newQueueData, this.monthly_!, QueueSettings.MONTHLY);
@@ -199,11 +188,9 @@ export class QueuesView extends HTMLElement {
   }
 
   updateHighlights_() {
-    let rows = <NodeListOf<HTMLElement>>this.querySelectorAll(
-        `.${QueuesView.rowClassName_}`);
+    let rows = <NodeListOf<HTMLElement>>this.querySelectorAll(`.${QueuesView.rowClassName_}`);
     for (let row of rows) {
-      row.style.backgroundColor =
-          this.isChecked_(row) ? 'var(--selected-background-color)' : '';
+      row.style.backgroundColor = this.isChecked_(row) ? 'var(--selected-background-color)' : '';
     }
   }
 
@@ -215,7 +202,7 @@ export class QueuesView extends HTMLElement {
     `;
     row.className = QueuesView.rowClassName_;
 
-    let label = document.createElement('label')
+    let label = document.createElement('label');
     label.style.cssText = `
       flex: 1;
       display: flex;
@@ -223,8 +210,7 @@ export class QueuesView extends HTMLElement {
     `;
     label.className = 'label';
 
-    const isBuiltIn =
-        (Object.values(Labels) as string[]).includes(queueData.label);
+    const isBuiltIn = (Object.values(Labels) as string[]).includes(queueData.label);
 
     let checkbox = document.createElement('input');
     if (isBuiltIn) {
@@ -259,8 +245,7 @@ export class QueuesView extends HTMLElement {
     row.append(mergeSelect);
 
     let throttle = queueData.data.throttle;
-    let throttleSelect =
-        this.createSelect_(Object.values(ThrottleOption), throttle);
+    let throttleSelect = this.createSelect_(Object.values(ThrottleOption), throttle);
     throttleSelect.className = 'throttle';
     throttleSelect.style.cssText = 'margin-left: 4px;';
     row.append(throttleSelect);
@@ -290,12 +275,9 @@ export class QueuesView extends HTMLElement {
   }
 
   getRowContainer_(queue: string) {
-    if (queue == QueueSettings.DAILY)
-      return this.daily_;
-    if (queue == QueueSettings.MONTHLY)
-      return this.monthly_;
-    if (QueueSettings.WEEKDAYS.includes(queue))
-      return this.weekly_;
+    if (queue == QueueSettings.DAILY) return this.daily_;
+    if (queue == QueueSettings.MONTHLY) return this.monthly_;
+    if (QueueSettings.WEEKDAYS.includes(queue)) return this.weekly_;
     return this.immediate_;
   }
 

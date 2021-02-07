@@ -1,10 +1,10 @@
-import {assert, isMobileUserAgent, linkify, notNull, sandboxedDom} from '../Base.js';
-import {RenderedThread} from '../RenderedThread.js';
-import {ALL, NONE, SelectBox, SelectChangedEvent, SOME} from '../SelectBox.js';
-import {InProgressChangedEvent, Priority, Thread, UpdatedEvent} from '../Thread.js';
+import { assert, isMobileUserAgent, linkify, notNull, sandboxedDom } from '../Base.js';
+import { RenderedThread } from '../RenderedThread.js';
+import { ALL, NONE, SelectBox, SelectChangedEvent, SOME } from '../SelectBox.js';
+import { InProgressChangedEvent, Priority, Thread, UpdatedEvent } from '../Thread.js';
 
-import {SelectRowEvent, ThreadRowGroupRenderMode} from './ThreadRowGroup.js';
-import {ThreadRowGroupBase} from './ThreadRowGroupBase.js';
+import { SelectRowEvent, ThreadRowGroupRenderMode } from './ThreadRowGroup.js';
+import { ThreadRowGroupBase } from './ThreadRowGroupBase.js';
 
 let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
@@ -31,35 +31,35 @@ let formattingOptions: {
 } = {
   month: 'short',
   day: 'numeric',
-}
+};
 
 let DAY_MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
 
 export class FocusRowEvent extends Event {
   static NAME = 'focus-row';
   constructor() {
-    super(FocusRowEvent.NAME, {bubbles: true});
+    super(FocusRowEvent.NAME, { bubbles: true });
   }
 }
 
 export class AfterFocusRowEvent extends Event {
   static NAME = 'after-focus-row';
   constructor() {
-    super(AfterFocusRowEvent.NAME, {bubbles: true});
+    super(AfterFocusRowEvent.NAME, { bubbles: true });
   }
 }
 
 export class RenderThreadEvent extends Event {
   static NAME = 'render-thread';
   constructor(public shiftKey: boolean) {
-    super(RenderThreadEvent.NAME, {bubbles: true});
+    super(RenderThreadEvent.NAME, { bubbles: true });
   }
 }
 
 export class LabelState {
-  public label: string|null;
-  public priority: string|null;
-  public blocked: Date|null;
+  public label: string | null;
+  public priority: string | null;
+  public blocked: Date | null;
   public hasRepeat: boolean;
 
   constructor(thread: Thread, public group: string) {
@@ -70,15 +70,17 @@ export class LabelState {
   }
 
   equals(other: LabelState) {
-    return this.group === other.group && this.label === other.label &&
-        this.priority === other.priority &&
-        this.datesEqual_(this.blocked, other.blocked) &&
-        this.hasRepeat === other.hasRepeat;
+    return (
+      this.group === other.group &&
+      this.label === other.label &&
+      this.priority === other.priority &&
+      this.datesEqual_(this.blocked, other.blocked) &&
+      this.hasRepeat === other.hasRepeat
+    );
   }
 
-  private datesEqual_(a: Date|null, b: Date|null) {
-    if (a && b)
-      return a.getTime() === b.getTime();
+  private datesEqual_(a: Date | null, b: Date | null) {
+    if (a && b) return a.getTime() === b.getTime();
     return a === b;
   }
 }
@@ -94,8 +96,11 @@ class RowState extends LabelState {
   lastMessageId?: string;
 
   constructor(
-      thread: Thread, group: string, public shouldHide: boolean,
-      public shouldHideCheckboxes: boolean) {
+    thread: Thread,
+    group: string,
+    public shouldHide: boolean,
+    public shouldHideCheckboxes: boolean,
+  ) {
     super(thread, group);
 
     // window.innerWidth makes more logical sense for this, but chrome has
@@ -116,24 +121,28 @@ class RowState extends LabelState {
   }
 
   equals(other: RowState): boolean {
-    return super.equals(other) && this.isSmallScreen === other.isSmallScreen &&
-        this.subject === other.subject && this.snippet === other.snippet &&
-        // TODO: Change this to use pointer equality.
-        // getFrom() clones a new copy, so use innerHTML instead of pointer
-        // equality.
-        this.from.innerHTML === other.from.innerHTML &&
-        this.count === other.count &&
-        this.lastMessageId === other.lastMessageId &&
-        this.isUnread === other.isUnread &&
-        this.renderPinnedStyle === other.renderPinnedStyle &&
-        this.shouldHide === other.shouldHide &&
-        this.shouldHideCheckboxes === other.shouldHideCheckboxes;
+    return (
+      super.equals(other) &&
+      this.isSmallScreen === other.isSmallScreen &&
+      this.subject === other.subject &&
+      this.snippet === other.snippet &&
+      // TODO: Change this to use pointer equality.
+      // getFrom() clones a new copy, so use innerHTML instead of pointer
+      // equality.
+      this.from.innerHTML === other.from.innerHTML &&
+      this.count === other.count &&
+      this.lastMessageId === other.lastMessageId &&
+      this.isUnread === other.isUnread &&
+      this.renderPinnedStyle === other.renderPinnedStyle &&
+      this.shouldHide === other.shouldHide &&
+      this.shouldHideCheckboxes === other.shouldHideCheckboxes
+    );
   }
 }
 
 export class ThreadRow extends HTMLElement {
   rendered: RenderedThread;
-  mark: boolean|undefined;
+  mark: boolean | undefined;
   private inViewport_: boolean;
   private focused_: boolean;
   private focusImpliesSelected_: boolean;
@@ -144,8 +153,7 @@ export class ThreadRow extends HTMLElement {
   private static lastHeightIsSmallScreen_: boolean;
   private static lastHeight_: number;
 
-  constructor(
-      public thread: Thread, private labelSelectTemplate_: HTMLSelectElement) {
+  constructor(public thread: Thread, private labelSelectTemplate_: HTMLSelectElement) {
     super();
 
     this.style.cssText = `
@@ -161,7 +169,7 @@ export class ThreadRow extends HTMLElement {
     this.checkBox_ = new SelectBox();
     this.append(this.checkBox_);
 
-    this.checkBox_.addEventListener(SelectChangedEvent.NAME, e => {
+    this.checkBox_.addEventListener(SelectChangedEvent.NAME, (e) => {
       let rangeSelect = (e as SelectChangedEvent).rangeSelect;
       this.handleCheckedChanged_(rangeSelect);
       this.setFocus(true, false);
@@ -190,8 +198,7 @@ export class ThreadRow extends HTMLElement {
     });
 
     this.rendered = new RenderedThread(thread);
-    thread.addEventListener(
-        UpdatedEvent.NAME, () => this.handleThreadUpdated_());
+    thread.addEventListener(UpdatedEvent.NAME, () => this.handleThreadUpdated_());
 
     // Redispatch this so the ThreadListView picks it up.
     thread.addEventListener(InProgressChangedEvent.NAME, () => {
@@ -215,26 +222,23 @@ export class ThreadRow extends HTMLElement {
 
   setInViewport(inViewport: boolean) {
     // Don't rerender if inViewport state isn't changing.
-    if (this.inViewport_ === inViewport)
-      return;
+    if (this.inViewport_ === inViewport) return;
     this.inViewport_ = inViewport;
     this.render();
   }
 
   private threadRowContainsSelection_() {
     let sel = notNull(window.getSelection());
-    return !sel.isCollapsed &&
-        (this.containsNode_(sel.anchorNode) ||
-         this.containsNode_(sel.focusNode));
+    return (
+      !sel.isCollapsed && (this.containsNode_(sel.anchorNode) || this.containsNode_(sel.focusNode))
+    );
   }
 
-  private containsNode_(node: Node|null) {
-    if (!node)
-      return false;
+  private containsNode_(node: Node | null) {
+    if (!node) return false;
 
     while (node.parentNode) {
-      if (node.parentNode == this)
-        return true;
+      if (node.parentNode == this) return true;
       node = node.parentNode;
     }
     return false;
@@ -249,16 +253,14 @@ export class ThreadRow extends HTMLElement {
   getGroupMaybeNull() {
     let parent = this.parentElement;
     while (parent && !(parent instanceof ThreadRowGroupBase)) {
-      parent = parent.parentElement
+      parent = parent.parentElement;
     }
     return parent;
   }
 
   getGroup() {
     let parent = this.getGroupMaybeNull();
-    return assert(
-        parent,
-        'Attempted to get the parent group of a ThreadRow not in a group.');
+    return assert(parent, 'Attempted to get the parent group of a ThreadRow not in a group.');
   }
 
   private handleThreadUpdated_() {
@@ -275,25 +277,19 @@ export class ThreadRow extends HTMLElement {
   }
 
   render() {
-    if (!this.inViewport_)
-      return;
+    if (!this.inViewport_) return;
 
     let group = this.getGroupMaybeNull();
-    if (!group)
-      return;
+    if (!group) return;
 
     let shouldHide =
-        this.mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows &&
-        !this.highlighted;
-    let shouldHideCheckboxes =
-        this.mode_ === ThreadRowGroupRenderMode.UnfilteredStyle;
-    let state =
-        new RowState(this.thread, group.name, shouldHide, shouldHideCheckboxes);
+      this.mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows && !this.highlighted;
+    let shouldHideCheckboxes = this.mode_ === ThreadRowGroupRenderMode.UnfilteredStyle;
+    let state = new RowState(this.thread, group.name, shouldHide, shouldHideCheckboxes);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
-    if (this.lastRowState_ && this.lastRowState_.equals(state))
-      return;
+    if (this.lastRowState_ && this.lastRowState_.equals(state)) return;
 
     this.lastRowState_ = state;
     this.style.display = state.shouldHide ? 'none' : 'flex';
@@ -310,8 +306,7 @@ export class ThreadRow extends HTMLElement {
       pinned.append('📌');
       labels.append(pinned);
     }
-    ThreadRow.appendLabels(
-        labels, state, this.thread, this.labelSelectTemplate_);
+    ThreadRow.appendLabels(labels, state, this.thread, this.labelSelectTemplate_);
 
     let justSubject = document.createElement('span');
     justSubject.append(state.subject);
@@ -328,8 +323,7 @@ export class ThreadRow extends HTMLElement {
     `;
 
     const renderMultiline = state.isSmallScreen && !state.renderPinnedStyle;
-    if (!renderMultiline && !state.renderPinnedStyle)
-      subject.style.marginRight = '25px';
+    if (!renderMultiline && !state.renderPinnedStyle) subject.style.marginRight = '25px';
 
     subject.style.fontSize = isMobileUserAgent() ? '16px' : '14px';
 
@@ -405,7 +399,7 @@ export class ThreadRow extends HTMLElement {
       font-size: 12px;
       color: var(--dim-text-color);
     `;
-    from.append(state.from)
+    from.append(state.from);
     fromContainer.append(from);
 
     if (state.count && state.count > 1) {
@@ -433,8 +427,11 @@ export class ThreadRow extends HTMLElement {
   }
 
   static appendLabels(
-      container: HTMLElement, state: LabelState, thread: Thread,
-      labelSelect: HTMLSelectElement) {
+    container: HTMLElement,
+    state: LabelState,
+    thread: Thread,
+    labelSelect: HTMLSelectElement,
+  ) {
     // TODO: Make this a date picker for changing the blocked date.
     if (state.blocked) {
       let blockedString = `Stuck: ${DAY_MONTH_FORMATTER.format(state.blocked)}`;
@@ -457,8 +454,7 @@ export class ThreadRow extends HTMLElement {
       });
 
       label.addEventListener('pointerdown', () => {
-        if (label.children.length > 1)
-          return;
+        if (label.children.length > 1) return;
 
         let cloned = labelSelect.cloneNode(true) as HTMLSelectElement;
         label.append(...cloned.children);
@@ -471,8 +467,7 @@ export class ThreadRow extends HTMLElement {
       let removeUnselected = () => {
         let toRemove = Array.from(label.children) as HTMLOptionElement[];
         for (let element of toRemove) {
-          if (!element.selected)
-            element.remove();
+          if (!element.selected) element.remove();
         }
       };
 
@@ -488,7 +483,7 @@ export class ThreadRow extends HTMLElement {
     }
 
     if (state.hasRepeat) {
-      let repeat = document.createElement('span')
+      let repeat = document.createElement('span');
       repeat.textContent = '\u{1F501}';
       repeat.style.marginRight = '4px';
       container.append(repeat);
@@ -530,9 +525,7 @@ export class ThreadRow extends HTMLElement {
     let today = new Date();
     if (today.getFullYear() != date.getFullYear()) {
       formatter = DIFFERENT_YEAR_FORMATTER;
-    } else if (
-        today.getMonth() != date.getMonth() ||
-        today.getDate() != date.getDate()) {
+    } else if (today.getMonth() != date.getMonth() || today.getDate() != date.getDate()) {
       formatter = DIFFERENT_DAY_FORMATTER;
     } else {
       formatter = SAME_DAY_FORMATTER;
@@ -548,8 +541,7 @@ export class ThreadRow extends HTMLElement {
   setFocus(value: boolean, focusImpliesSelected: boolean) {
     this.focusImpliesSelected_ = focusImpliesSelected;
     this.focused_ = value;
-    this.checkBox_.style.backgroundColor =
-        this.focused_ ? 'var(--border-and-hover-color)' : '';
+    this.checkBox_.style.backgroundColor = this.focused_ ? 'var(--border-and-hover-color)' : '';
     this.updateCheckbox_();
     // TODO: Technically we probably want a blur event as well for !value.
     if (value) {
@@ -605,12 +597,9 @@ export class ThreadRow extends HTMLElement {
 
   private updateCheckbox_() {
     let newState;
-    if (this.checked)
-      newState = ALL;
-    else if (this.focused_ && this.focusImpliesSelected_)
-      newState = SOME;
-    else
-      newState = NONE;
+    if (this.checked) newState = ALL;
+    else if (this.focused_ && this.focusImpliesSelected_) newState = SOME;
+    else newState = NONE;
 
     this.checkBox_.select(newState);
   }

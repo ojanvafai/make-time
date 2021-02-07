@@ -1,7 +1,7 @@
-import {assert, defined, Labels} from './Base.js';
-import {IMPORTANT_NAME, RETRIAGE_LABEL_NAME} from './models/TodoModel.js';
-import {ServerStorage, ServerStorageUpdateEventName, StorageUpdates} from './ServerStorage.js';
-import {STUCK_LABEL_NAME} from './Thread.js';
+import { assert, defined, Labels } from './Base.js';
+import { IMPORTANT_NAME, RETRIAGE_LABEL_NAME } from './models/TodoModel.js';
+import { ServerStorage, ServerStorageUpdateEventName, StorageUpdates } from './ServerStorage.js';
+import { STUCK_LABEL_NAME } from './Thread.js';
 
 export enum MergeOption {
   separate = 'Separate',
@@ -39,13 +39,10 @@ export class QueueSettings {
   static WEEKLY = 'Weekly';
   static DAILY = 'Daily';
   static IMMEDIATE = 'Immediate';
-  static WEEKDAYS = [
-    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-  ];
+  static WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   constructor(private storage_: ServerStorage) {
-    this.storage_.addEventListener(
-        ServerStorageUpdateEventName, () => this.resetQueueData_());
+    this.storage_.addEventListener(ServerStorageUpdateEventName, () => this.resetQueueData_());
 
     // Gnarly hack to put retriage threads in between immediate/daily and
     // weekly/monthly queues. This relies on QueueSettings.queueIndex
@@ -57,30 +54,31 @@ export class QueueSettings {
     this.builtInLabelQueueData_ = new Map();
     this.builtInLabelQueueData_.set(RETRIAGE_LABEL_NAME, {
       label: RETRIAGE_LABEL_NAME,
-      data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex)
+      data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex),
     });
     this.builtInLabelQueueData_.set(STUCK_LABEL_NAME, {
       label: STUCK_LABEL_NAME,
-      data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex - 1)
+      data: this.queueData_(QueueSettings.IMMEDIATE, maxDailyQueueIndex - 1),
     });
     this.builtInLabelQueueData_.set(IMPORTANT_NAME, {
       label: IMPORTANT_NAME,
-      data: this.queueData_(QueueSettings.IMMEDIATE, 0)
+      data: this.queueData_(QueueSettings.IMMEDIATE, 0),
     });
     this.builtInLabelQueueData_.set(Labels.Instant, {
       label: Labels.Instant,
-      data: this.queueData_(QueueSettings.IMMEDIATE, 0)
+      data: this.queueData_(QueueSettings.IMMEDIATE, 0),
     });
-    this.builtInLabelQueueData_.set(
-        Labels.Daily,
-        {label: Labels.Daily, data: this.queueData_(QueueSettings.DAILY, 0)});
+    this.builtInLabelQueueData_.set(Labels.Daily, {
+      label: Labels.Daily,
+      data: this.queueData_(QueueSettings.DAILY, 0),
+    });
     this.builtInLabelQueueData_.set(Labels.Weekly, {
       label: Labels.Weekly,
-      data: this.queueData_(QueueSettings.WEEKDAYS[1], 0)
+      data: this.queueData_(QueueSettings.WEEKDAYS[1], 0),
     });
     this.builtInLabelQueueData_.set(Labels.Monthly, {
       label: Labels.Monthly,
-      data: this.queueData_(QueueSettings.MONTHLY, 0)
+      data: this.queueData_(QueueSettings.MONTHLY, 0),
     });
   }
 
@@ -97,18 +95,16 @@ export class QueueSettings {
 
   async resetQueueData_() {
     this.queueDatas_ = this.storage_.get(ServerStorage.KEYS.QUEUES);
-    if (!this.queueDatas_)
-      return;
+    if (!this.queueDatas_) return;
 
     // Legacy queue datas don't have the throttle field set.
     for (let queueData of Object.values(this.queueDatas_)) {
       queueData.throttle = queueData.throttle || ThrottleOption.immediate;
     }
 
-    let datas = Object.entries(this.queueDatas_)
-                    .sort(
-                        (a, b) => QueueSettings.queueIndex_(a[1]) -
-                            QueueSettings.queueIndex_(b[1]));
+    let datas = Object.entries(this.queueDatas_).sort(
+      (a, b) => QueueSettings.queueIndex_(a[1]) - QueueSettings.queueIndex_(b[1]),
+    );
 
     this.mergeMap_ = new Map();
     let group = [];
@@ -123,8 +119,7 @@ export class QueueSettings {
       group.push(data[0]);
     }
 
-    if (group.length)
-      this.setMappedGroup_(group);
+    if (group.length) this.setMappedGroup_(group);
   }
 
   setMappedGroup_(names: string[]) {
@@ -157,19 +152,20 @@ export class QueueSettings {
 
     // If they have the same index, sort lexicographically.
     if (aIndex == bIndex) {
-      if (a.label < b.label)
-        return -1;
-      else if (a.label > b.label)
-        return 1;
-      return 0
+      if (a.label < b.label) return -1;
+      else if (a.label > b.label) return 1;
+      return 0;
     }
 
     return aIndex - bIndex;
   }
 
   queueData_(
-      opt_queue?: string, opt_index?: number, mergeOption?: MergeOption,
-      throttleOption?: ThrottleOption): QueueData {
+    opt_queue?: string,
+    opt_index?: number,
+    mergeOption?: MergeOption,
+    throttleOption?: ThrottleOption,
+  ): QueueData {
     return {
       queue: opt_queue || QueueSettings.IMMEDIATE,
       // For unknown queues, put them first.
@@ -181,7 +177,7 @@ export class QueueSettings {
 
   queueEntry_(label: string): QueueListEntry {
     let data = this.get(label);
-    return {label: label, data: data};
+    return { label: label, data: data };
   }
 
   queueNameComparator(a: string, b: string) {
@@ -197,27 +193,22 @@ export class QueueSettings {
   }
 
   entries() {
-    const builtInEntries: [string, QueueData][] =
-        Array.from(this.builtInLabelQueueData_.entries())
-            .map(x => [x[0], x[1].data]);
-    return [
-      ...builtInEntries,
-      ...Object.entries(defined(this.queueDatas_)),
-    ];
+    const builtInEntries: [string, QueueData][] = Array.from(
+      this.builtInLabelQueueData_.entries(),
+    ).map((x) => [x[0], x[1].data]);
+    return [...builtInEntries, ...Object.entries(defined(this.queueDatas_))];
   }
 
   static queueIndex_ = (queueData: QueueData) => {
     let multiplier = 1;
 
     let queue = queueData.queue;
-    if (queue == QueueSettings.DAILY)
-      multiplier *= QueueSettings.BUFFER_;
+    if (queue == QueueSettings.DAILY) multiplier *= QueueSettings.BUFFER_;
     else if (QueueSettings.WEEKDAYS.includes(queue))
       multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
     else if (queue == QueueSettings.MONTHLY)
-      multiplier *=
-          QueueSettings.BUFFER_ * QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
+      multiplier *= QueueSettings.BUFFER_ * QueueSettings.BUFFER_ * QueueSettings.BUFFER_;
 
     return queueData.index * multiplier;
-  }
+  };
 }

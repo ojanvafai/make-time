@@ -1,14 +1,21 @@
 import type * as firebase from 'firebase/app';
 
-import {AsyncOnce} from './AsyncOnce.js';
-import {assert, defined, Labels} from './Base.js';
-import {firestoreUserCollection} from './BaseMain.js';
-import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, DEFAULT_CALENDAR_DATA, EventType, UNBOOKED_TYPES} from './calendar/Constants.js';
-import {QueueNames} from './QueueNames.js';
-import {QueueSettings} from './QueueSettings.js';
-import {ServerStorage, StorageUpdates} from './ServerStorage.js';
-import {THEMES} from './Themes.js';
-import {EventTargetPolyfill} from './EventTargetPolyfill.js';
+import { AsyncOnce } from './AsyncOnce.js';
+import { assert, defined, Labels } from './Base.js';
+import { firestoreUserCollection } from './BaseMain.js';
+import {
+  AllCalendarSortDatas,
+  CALENDAR_ALLOWED_COLORS,
+  CalendarSortListEntry,
+  DEFAULT_CALENDAR_DATA,
+  EventType,
+  UNBOOKED_TYPES,
+} from './calendar/Constants.js';
+import { QueueNames } from './QueueNames.js';
+import { QueueSettings } from './QueueSettings.js';
+import { ServerStorage, StorageUpdates } from './ServerStorage.js';
+import { THEMES } from './Themes.js';
+import { EventTargetPolyfill } from './EventTargetPolyfill.js';
 
 export interface HeaderFilterRule {
   name: string;
@@ -49,13 +56,14 @@ export interface CalendarRule {
 }
 
 export interface Filters {
-  filters?: FilterRule[], calendar?: CalendarRule[],
+  filters?: FilterRule[];
+  calendar?: CalendarRule[];
 }
 
 export interface Setting {
   key: string;
   name: string;
-  description: string|HTMLElement;
+  description: string | HTMLElement;
   values?: string[];
   type?: string;
   min?: number;
@@ -151,8 +159,7 @@ export function ruleRegexp(ruleText: string) {
 
 // TODO: Is there a less verbose way to do this while still having strict
 // typing?
-export function setFilterStringField(
-    rule: FilterRule, name: string, value: string) {
+export function setFilterStringField(rule: FilterRule, name: string, value: string) {
   switch (name) {
     case 'label':
       rule.label = value;
@@ -184,8 +191,7 @@ export function setFilterStringField(
   return true;
 }
 
-export function setCalendarFilterStringField(
-    rule: CalendarRule, name: string, value: string) {
+export function setCalendarFilterStringField(rule: CalendarRule, name: string, value: string) {
   switch (name) {
     case 'label':
       rule.label = value;
@@ -216,11 +222,17 @@ export class Settings extends EventTargetPolyfill {
 
   static CALENDAR_RULE_DIRECTIVES = ['title'];
   private static CALENDAR_RULE_FIELDS_ = ['label'].concat(
-      Settings.CALENDAR_RULE_DIRECTIVES, 'frequency', 'attendees');
-  static FILTERS_RULE_DIRECTIVES =
-      ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
+    Settings.CALENDAR_RULE_DIRECTIVES,
+    'frequency',
+    'attendees',
+  );
+  static FILTERS_RULE_DIRECTIVES = ['to', 'from', 'subject', 'plaintext', 'htmlcontent', 'header'];
   private static FILTER_RULE_FIELDS_ = ['label'].concat(
-      Settings.FILTERS_RULE_DIRECTIVES, 'matchallmessages', 'nolistid', 'nocc');
+    Settings.FILTERS_RULE_DIRECTIVES,
+    'matchallmessages',
+    'nolistid',
+    'nocc',
+  );
 
   static SINGLE_GROUP = 'Group important';
   static IGNORE_IMPORTANCE = 'Ignore importance';
@@ -230,13 +242,12 @@ export class Settings extends EventTargetPolyfill {
       key: ServerStorage.KEYS.THEME,
       name: 'Theme',
       description: `Set a theme.`,
-      values: THEMES.map(x => x.name),
+      values: THEMES.map((x) => x.name),
     },
     {
       key: ServerStorage.KEYS.PUSH_LABELS_TO_GMAIL,
       name: 'Apply gmail labels',
-      description:
-          `Sync priority and label from mktime into gmail labels. Changes made to labels/priorities in gmail will not sync back into mktime.`,
+      description: `Sync priority and label from mktime into gmail labels. Changes made to labels/priorities in gmail will not sync back into mktime.`,
       default: false,
       type: 'checkbox',
     },
@@ -250,61 +261,53 @@ export class Settings extends EventTargetPolyfill {
     {
       key: ServerStorage.KEYS.VACATION,
       name: 'Vacation',
-      description:
-          `Label to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
+      description: `Label to show when on vacation so you can have peace of mind by seeing only urgent mail.`,
     },
     {
       key: ServerStorage.KEYS.THROTTLE_DURATION,
       name: 'Untriaged frequency',
-      description:
-          `How frequently, in hours, to show untriaged threads in throttled queues.`,
+      description: `How frequently, in hours, to show untriaged threads in throttled queues.`,
       default: 2,
       type: 'number',
     },
     {
       key: ServerStorage.KEYS.TIMER_DURATION,
       name: 'Triage countdown timer',
-      description:
-          `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
+      description: `Number of seconds to triage a single thread. When the timeout is hit, you are forced to take a triage action.`,
       default: 120,
       type: 'number',
     },
     {
       key: ServerStorage.KEYS.ALLOWED_PIN_COUNT,
       name: 'Allowed pins',
-      description:
-          `Number of threads that can be marked pinned. Use 0 for no limit.`,
+      description: `Number of threads that can be marked pinned. Use 0 for no limit.`,
       default: 3,
       type: 'number',
     },
     {
       key: ServerStorage.KEYS.ALLOWED_MUST_DO_COUNT,
       name: 'Allowed must dos',
-      description:
-          `Number of threads that can be marked must do. Use 0 for no limit.`,
+      description: `Number of threads that can be marked must do. Use 0 for no limit.`,
       default: 9,
       type: 'number',
     },
     {
       key: ServerStorage.KEYS.ALLOWED_URGENT_COUNT,
       name: 'Allowed urgents',
-      description:
-          `Number of threads that can be marked urgent. Use 0 for no limit.`,
+      description: `Number of threads that can be marked urgent. Use 0 for no limit.`,
       default: 27,
       type: 'number',
     },
     {
       key: ServerStorage.KEYS.LOCAL_OFFICES,
       name: 'Local offices',
-      description:
-          `Comma separated list of offices to user when finding rooms that are missing a local conference room (substring matched).`,
+      description: `Comma separated list of offices to user when finding rooms that are missing a local conference room (substring matched).`,
       type: 'string',
     },
     {
       key: ServerStorage.KEYS.LOG_MATCHING_RULES,
       name: 'Log matching rules',
-      description:
-          `Log the matching filter rule to the chrome developer console.`,
+      description: `Log the matching filter rule to the chrome developer console.`,
       default: false,
       type: 'checkbox',
     },
@@ -335,13 +338,11 @@ export class Settings extends EventTargetPolyfill {
 
   getNonDefault(setting: string) {
     return this.storage_.get(setting);
-    ;
   }
 
   get(setting: string) {
     let value = this.storage_.get(setting);
-    if (value === null || value === undefined)
-      return this.defaultValue_(setting);
+    if (value === null || value === undefined) return this.defaultValue_(setting);
     return value;
   }
 
@@ -351,8 +352,7 @@ export class Settings extends EventTargetPolyfill {
 
   defaultValue_(setting: string) {
     for (let field of Settings.fields) {
-      if (field.key == setting)
-        return field.default;
+      if (field.key == setting) return field.default;
     }
     throw `No such setting: ${setting}`;
   }
@@ -370,34 +370,29 @@ export class Settings extends EventTargetPolyfill {
   async getCalendarSortData(useDefaults?: boolean) {
     let labels = Array.from(await this.getCalendarLabels()).sort();
 
-    let allData: AllCalendarSortDatas =
-        this.storage_.get(ServerStorage.KEYS.CALENDAR_SORT);
+    let allData: AllCalendarSortDatas = this.storage_.get(ServerStorage.KEYS.CALENDAR_SORT);
 
-    let calendarSortListEntries: CalendarSortListEntry[] = labels.map(x => {
-      let data =
-          useDefaults || !allData ? DEFAULT_CALENDAR_DATA[x] : allData[x];
+    let calendarSortListEntries: CalendarSortListEntry[] = labels.map((x) => {
+      let data = useDefaults || !allData ? DEFAULT_CALENDAR_DATA[x] : allData[x];
       let color = data ? data.color : CALENDAR_ALLOWED_COLORS.Red;
       let index = data ? data.index : 0;
       let eventType = x as EventType;
-      return {label: eventType, data: {color: color, index: index}};
+      return { label: eventType, data: { color: color, index: index } };
     });
 
-    calendarSortListEntries.sort(
-        (a: CalendarSortListEntry, b: CalendarSortListEntry) => {
-          let aIndex = a.data.index;
-          let bIndex = b.data.index;
+    calendarSortListEntries.sort((a: CalendarSortListEntry, b: CalendarSortListEntry) => {
+      let aIndex = a.data.index;
+      let bIndex = b.data.index;
 
-          // If they have the same index, sort lexicographically.
-          if (aIndex == bIndex) {
-            if (a.label < b.label)
-              return -1;
-            else if (a.label > b.label)
-              return 1;
-            return 0
-          }
+      // If they have the same index, sort lexicographically.
+      if (aIndex == bIndex) {
+        if (a.label < b.label) return -1;
+        else if (a.label > b.label) return 1;
+        return 0;
+      }
 
-          return aIndex - bIndex;
-        });
+      return aIndex - bIndex;
+    });
 
     return calendarSortListEntries;
   }
@@ -408,10 +403,8 @@ export class Settings extends EventTargetPolyfill {
 
   filtersObject_(rules?: FilterRule[], calendarRules?: CalendarRule[]) {
     let obj: Filters = {};
-    if (rules)
-      obj[FILTERS_KEY] = rules;
-    if (calendarRules)
-      obj[CALENDAR_FILTERS_KEY] = calendarRules;
+    if (rules) obj[FILTERS_KEY] = rules;
+    if (calendarRules) obj[CALENDAR_FILTERS_KEY] = calendarRules;
     return obj;
   }
 
@@ -445,18 +438,15 @@ export class Settings extends EventTargetPolyfill {
 
   async writeCalendarFilters(rules: CalendarRule[]) {
     for (let rule of rules) {
-      let invalidField = Object.keys(rule).find(
-          x => !Settings.CALENDAR_RULE_FIELDS_.includes(x));
+      let invalidField = Object.keys(rule).find((x) => !Settings.CALENDAR_RULE_FIELDS_.includes(x));
       assert(!invalidField && rule.label !== '');
     }
-    await this.getFiltersDocument_().update(
-        this.filtersObject_(undefined, rules));
+    await this.getFiltersDocument_().update(this.filtersObject_(undefined, rules));
   }
 
   async writeFilters(rules: FilterRule[]) {
     for (let rule of rules) {
-      let invalidField = Object.keys(rule).find(
-          x => !Settings.FILTER_RULE_FIELDS_.includes(x));
+      let invalidField = Object.keys(rule).find((x) => !Settings.FILTER_RULE_FIELDS_.includes(x));
       assert(!invalidField && rule.label !== '');
     }
     await this.getFiltersDocument_().update(this.filtersObject_(rules));
@@ -464,8 +454,7 @@ export class Settings extends EventTargetPolyfill {
 
   async getCalendarLabels() {
     let filters = await this.getCalendarFilters();
-    let labels: Set<string> =
-        new Set([...BuiltInRules.map(x => x.label), ...UNBOOKED_TYPES]);
+    let labels: Set<string> = new Set([...BuiltInRules.map((x) => x.label), ...UNBOOKED_TYPES]);
     for (let rule of filters) {
       labels.add(defined(rule.label));
     }
@@ -510,8 +499,7 @@ export class Settings extends EventTargetPolyfill {
   }
 
   async getLabelSelect() {
-    return (await this.getLabelSelectTemplate()).cloneNode(true) as
-        HTMLSelectElement;
+    return (await this.getLabelSelectTemplate()).cloneNode(true) as HTMLSelectElement;
   }
 
   addLabel(label: string) {

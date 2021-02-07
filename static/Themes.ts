@@ -1,23 +1,23 @@
 interface Theme {
   name: string;
   styles: {
-    '--border-and-hover-color': string,
-    '--row-hover-color': string,
-    '--nested-background-color': string,
-    '--overlay-background-color': string,
-    '--inverted-overlay-background-color': string,
-    '--selected-background-color': string,
-    '--text-color': string,
-    '--dim-text-color': string,
-    '--inverted-text-color': string,
-    '--midpoint-color': string,
-    '--main-background': string,
-    '--button-group-1-bgcolor': string,
-    '--button-group-2-bgcolor': string,
-    '--button-group-3-bgcolor': string,
-    '--button-group-4-bgcolor': string,
-    '--button-group-5-bgcolor': string,
-  }
+    '--border-and-hover-color': string;
+    '--row-hover-color': string;
+    '--nested-background-color': string;
+    '--overlay-background-color': string;
+    '--inverted-overlay-background-color': string;
+    '--selected-background-color': string;
+    '--text-color': string;
+    '--dim-text-color': string;
+    '--inverted-text-color': string;
+    '--midpoint-color': string;
+    '--main-background': string;
+    '--button-group-1-bgcolor': string;
+    '--button-group-2-bgcolor': string;
+    '--button-group-3-bgcolor': string;
+    '--button-group-4-bgcolor': string;
+    '--button-group-5-bgcolor': string;
+  };
 }
 
 export const DEFAULT: Theme = {
@@ -39,7 +39,7 @@ export const DEFAULT: Theme = {
     '--button-group-3-bgcolor': '#b3e6bb',
     '--button-group-4-bgcolor': '#e1ebad',
     '--button-group-5-bgcolor': '#e6d5b3',
-  }
+  },
 };
 
 export const DARK: Theme = {
@@ -61,7 +61,7 @@ export const DARK: Theme = {
     '--button-group-3-bgcolor': '#267332',
     '--button-group-4-bgcolor': '#6b7c1d',
     '--button-group-5-bgcolor': '#736726',
-  }
+  },
 };
 
 function randomColorNumber() {
@@ -69,8 +69,7 @@ function randomColorNumber() {
 }
 
 function randomColor() {
-  return `rgb(${randomColorNumber()},${randomColorNumber()},${
-      randomColorNumber()}`;
+  return `rgb(${randomColorNumber()},${randomColorNumber()},${randomColorNumber()}`;
 }
 
 export const RANDOM: Theme = {
@@ -92,7 +91,7 @@ export const RANDOM: Theme = {
     '--button-group-3-bgcolor': randomColor(),
     '--button-group-4-bgcolor': randomColor(),
     '--button-group-5-bgcolor': randomColor(),
-  }
+  },
 };
 
 export const THEMES = [DEFAULT, DARK, RANDOM];
@@ -112,7 +111,7 @@ export class Themes {
   }
 
   static setTheme(themeName: string) {
-    let theme = THEMES.find(x => x.name === themeName) || DEFAULT;
+    let theme = THEMES.find((x) => x.name === themeName) || DEFAULT;
     // Cache the full theme in localStorage so it's available immediately before
     // the settings have loaded off the netowrk.
     localStorage.theme = JSON.stringify(theme);
@@ -131,10 +130,8 @@ export class Themes {
     } else {
       document.documentElement.classList.remove(DARK_MODE_CLASSNAME);
 
-      if (localStorage.theme)
-        theme = JSON.parse(localStorage.theme) as Theme;
-      else
-        theme = DEFAULT;
+      if (localStorage.theme) theme = JSON.parse(localStorage.theme) as Theme;
+      else theme = DEFAULT;
     }
 
     // Cache in localstorage so we can set this in index.html without flash of
@@ -145,8 +142,7 @@ export class Themes {
 
     root.style.setProperty('--max-width', '1000px');
     root.style.setProperty('--thread-text-color', isDarkMode ? '#fff' : '#000');
-    root.style.setProperty(
-        '--thread-background-color', isDarkMode ? '#000' : '#fff');
+    root.style.setProperty('--thread-background-color', isDarkMode ? '#000' : '#fff');
 
     for (let style of Object.entries(theme.styles)) {
       root.style.setProperty(style[0], style[1]);

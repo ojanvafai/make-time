@@ -1,15 +1,15 @@
 import type * as firebase from 'firebase/app';
-import {Action} from '../Actions.js';
-import {assert, compareDates} from '../Base.js';
-import {Calendar} from '../calendar/Calendar.js';
-import {ServerStorage} from '../ServerStorage.js';
-import {Settings} from '../Settings.js';
-import {TaskQueue} from '../TaskQueue.js';
-import {ThreadMetadataUpdate} from '../Thread.js';
-import {Thread, ThreadMetadata} from '../Thread.js';
-import {createStuckUpdate, createUpdate, pickDate} from '../ThreadActions.js';
+import { Action } from '../Actions.js';
+import { assert, compareDates } from '../Base.js';
+import { Calendar } from '../calendar/Calendar.js';
+import { ServerStorage } from '../ServerStorage.js';
+import { Settings } from '../Settings.js';
+import { TaskQueue } from '../TaskQueue.js';
+import { ThreadMetadataUpdate } from '../Thread.js';
+import { Thread, ThreadMetadata } from '../Thread.js';
+import { createStuckUpdate, createUpdate, pickDate } from '../ThreadActions.js';
 
-import {Model} from './Model.js';
+import { Model } from './Model.js';
 
 export interface TriageResult {
   thread: Thread;
@@ -44,8 +44,7 @@ export abstract class ThreadListModel extends Model {
   private haveLoadedFirstQuery_: boolean;
   private isProcessingSnapshots_: boolean;
 
-  constructor(
-      protected settings_: Settings, private forceTriageIndex_?: number) {
+  constructor(protected settings_: Settings, private forceTriageIndex_?: number) {
     super();
 
     this.timerCountsDown = false;
@@ -65,17 +64,15 @@ export abstract class ThreadListModel extends Model {
   abstract getGroupName(thread: Thread): string;
 
   hasFetchedThreads() {
-    return this.haveEverLoadedSnapshot_.every(x => x);
+    return this.haveEverLoadedSnapshot_.every((x) => x);
   }
 
   postProcessThreads(_threads: Thread[]) {}
 
   async getNoMeetingRoomEvents() {
-    let offices =
-        this.offices_ || this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
+    let offices = this.offices_ || this.settings_.get(ServerStorage.KEYS.LOCAL_OFFICES);
 
-    if (!offices)
-      return [];
+    if (!offices) return [];
 
     let end = new Date();
     end.setDate(end.getDate() + 28);
@@ -114,19 +111,16 @@ export abstract class ThreadListModel extends Model {
   private threadDays_(thread: Thread) {
     // TODO: Make this respect day boundaries instead of just doing 24 hours.
     let oneDay = 24 * 60 * 60 * 1000;
-    return (Date.now() - thread.getDate().getTime()) / (oneDay);
+    return (Date.now() - thread.getDate().getTime()) / oneDay;
   }
 
   protected shouldShowThread(thread: Thread, showQueued?: boolean) {
-    if (!showQueued && (thread.isQueued() || thread.isThrottled()))
-      return false;
+    if (!showQueued && (thread.isQueued() || thread.isThrottled())) return false;
 
     let label = thread.getLabel();
-    if (this.filter_ && (!label || this.filter_ !== label.toLowerCase()))
-      return false;
+    if (this.filter_ && (!label || this.filter_ !== label.toLowerCase())) return false;
 
-    if (this.days_ !== undefined && this.threadDays_(thread) > this.days_)
-      return false;
+    if (this.days_ !== undefined && this.threadDays_(thread) > this.days_) return false;
 
     return true;
   }
@@ -141,8 +135,10 @@ export abstract class ThreadListModel extends Model {
   // returns if we are already processing snapshots?
   private async queueProcessSnapshot_() {
     window.clearTimeout(this.processSnapshotTimeout_);
-    this.processSnapshotTimeout_ =
-        window.setTimeout(async () => this.processAllSnapshots_(true), 100);
+    this.processSnapshotTimeout_ = window.setTimeout(
+      async () => this.processAllSnapshots_(true),
+      100,
+    );
   }
 
   private processAllSnapshots_(fireChange?: boolean) {
@@ -150,14 +146,12 @@ export abstract class ThreadListModel extends Model {
     // in turn modifies the snapshot, and causes us to loop back through this
     // code. Early return and process snapshots again when we're one rather than
     // trying to make snapshot processing interruptible.
-    if (this.isProcessingSnapshots_)
-      return;
+    if (this.isProcessingSnapshots_) return;
 
     // Wait until all the snapshots have loaded once to start processiing them.
     // This helps avoid clogging the main thread with work for a secondary
     // snapshot before we've gotten the first.
-    if (!this.haveLoadedFirstQuery_ &&
-        this.snapshotsToProcess_[0] === undefined) {
+    if (!this.haveLoadedFirstQuery_ && this.snapshotsToProcess_[0] === undefined) {
       return;
     }
 
@@ -174,8 +168,7 @@ export abstract class ThreadListModel extends Model {
 
     // If new snapshots have been added since we started processing these ones,
     // then keep processing.
-    if (this.snapshotsToProcess_.length)
-      this.processAllSnapshots_(fireChange);
+    if (this.snapshotsToProcess_.length) this.processAllSnapshots_(fireChange);
   }
 
   private processAllSnapshotsHelper_(fireChange?: boolean) {
@@ -187,18 +180,15 @@ export abstract class ThreadListModel extends Model {
       let snapshot = snapshotsToProcess[i];
 
       // This can happen since we use a sparse array.
-      if (!snapshot)
-        continue;
+      if (!snapshot) continue;
 
       this.haveEverLoadedSnapshot_[i] = true;
       this.perSnapshotThreads_[i] = [];
-      this.processSnapshot_(
-          snapshot, this.perSnapshotThreads_[i], i === this.forceTriageIndex_);
+      this.processSnapshot_(snapshot, this.perSnapshotThreads_[i], i === this.forceTriageIndex_);
       didProcess = true;
     }
 
-    if (!didProcess)
-      return;
+    if (!didProcess) return;
 
     this.threadFetcher_.cancel();
 
@@ -210,18 +200,19 @@ export abstract class ThreadListModel extends Model {
     this.sort();
     this.fetchThreads_();
 
-    if (fireChange)
-      this.threadListChanged_();
+    if (fireChange) this.threadListChanged_();
   }
 
   private processSnapshot_(
-      snapshot: firebase.firestore.QuerySnapshot, output: Thread[],
-      forceTriage: boolean) {
+    snapshot: firebase.firestore.QuerySnapshot,
+    output: Thread[],
+    forceTriage: boolean,
+  ) {
     for (let doc of snapshot.docs) {
       let data = doc.data() as ThreadMetadata;
       let thread = Thread.create(doc.id, data as ThreadMetadata, forceTriage);
       output.push(thread);
-    };
+    }
   }
 
   protected sort() {
@@ -250,8 +241,7 @@ export abstract class ThreadListModel extends Model {
   getThreads(skipFireChangeEvent?: boolean) {
     // Make sure any in progress snapshot updates get flushed.
     this.processAllSnapshots_(!skipFireChangeEvent);
-    return this.threads_.filter(
-        (thread: Thread) => this.shouldShowThread(thread));
+    return this.threads_.filter((thread: Thread) => this.shouldShowThread(thread));
   }
 
   private async threadListChanged_() {
@@ -263,8 +253,7 @@ export abstract class ThreadListModel extends Model {
   }
 
   async markTriaged(destination: Action, threads: Thread[]) {
-    if (!threads.length)
-      return;
+    if (!threads.length) return;
 
     this.resetUndoableActions_();
 
@@ -274,27 +263,26 @@ export abstract class ThreadListModel extends Model {
     // Null means that this is a date action, but no date was selected.
     // TODO: Move this up so we avoid setting actionInProgress in the early
     // return case. Or return a bool that unsets actionInProgress?
-    if (date === null)
-      return;
+    if (date === null) return;
 
     let pending = [];
 
     let progress = this.updateTitle(
-        'ThreadListModel.markThreadsTriaged', threads.length,
-        'Modifying threads...');
+      'ThreadListModel.markThreadsTriaged',
+      threads.length,
+      'Modifying threads...',
+    );
 
     for (let thread of threads) {
-      let update = date ? await createStuckUpdate(thread, date) :
-                          createUpdate(thread, destination);
-      if (!update)
-        continue;
+      let update = date ? await createStuckUpdate(thread, date) : createUpdate(thread, destination);
+      if (!update) continue;
 
-      pending.push({update: update, thread: thread});
+      pending.push({ update: update, thread: thread });
       this.undoableActions_.push({
         thread: thread,
         state: thread.oldMetadataState(update),
-      })
-    };
+      });
+    }
 
     for (let x of pending) {
       // TODO: Use TaskQueue to do these in parallel.
@@ -321,7 +309,10 @@ export abstract class ThreadListModel extends Model {
     this.resetUndoableActions_();
 
     let progress = this.updateTitle(
-        'ThreadListModel.undoLastAction_', actions.length, 'Undoing...');
+      'ThreadListModel.undoLastAction_',
+      actions.length,
+      'Undoing...',
+    );
 
     for (let i = 0; i < actions.length; i++) {
       this.handleUndoAction(actions[i]);

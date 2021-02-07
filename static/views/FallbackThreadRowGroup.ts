@@ -1,7 +1,7 @@
-import {UpdatedEvent} from '../Thread.js';
+import { UpdatedEvent } from '../Thread.js';
 
-import {ThreadRow} from './ThreadRow.js';
-import {ThreadRowGroupBase} from './ThreadRowGroupBase.js';
+import { ThreadRow } from './ThreadRow.js';
+import { ThreadRowGroupBase } from './ThreadRowGroupBase.js';
 
 export class FallbackThreadRowGroup extends ThreadRowGroupBase {
   private rows_?: ThreadRow[];
@@ -18,12 +18,10 @@ export class FallbackThreadRowGroup extends ThreadRowGroupBase {
 
     let groupNameContainer = this.createGroupNameContainer();
     groupNameContainer.className = 'justify-center';
-    groupNameContainer.append(
-        this.rowCountDisplay_, ` need filter rules from:`);
+    groupNameContainer.append(this.rowCountDisplay_, ` need filter rules from:`);
 
     this.rowContainer_ = document.createElement('div');
-    this.rowContainer_.className =
-        'contains-pii text-size-small flex flex-wrap justify-center';
+    this.rowContainer_.className = 'contains-pii text-size-small flex flex-wrap justify-center';
 
     let linkContainer = document.createElement('a');
     linkContainer.className = 'hover mx-auto block text-decoration-none';
@@ -52,15 +50,13 @@ export class FallbackThreadRowGroup extends ThreadRowGroupBase {
       if (messages.length) {
         continue;
       }
-      row.thread.addEventListener(
-          UpdatedEvent.NAME, () => this.queueRender_(), {once: true});
+      row.thread.addEventListener(UpdatedEvent.NAME, () => this.queueRender_(), { once: true });
     }
     return this.render();
   }
 
   private queueRender_() {
-    if (this.hasQueuedFrame_)
-      return;
+    if (this.hasQueuedFrame_) return;
     this.hasQueuedFrame_ = true;
     requestAnimationFrame(() => {
       this.hasQueuedFrame_ = false;
@@ -73,13 +69,12 @@ export class FallbackThreadRowGroup extends ThreadRowGroupBase {
       return [];
     }
 
-    const allMessages = this.rows_.map(x => x.thread.getMessages()).flat();
-    const allFrom = allMessages.map(x => x.parsedFrom).flat();
-    const allNames =
-        Array.from(new Set(allFrom.map(x => x.name || x.address).flat()));
+    const allMessages = this.rows_.map((x) => x.thread.getMessages()).flat();
+    const allFrom = allMessages.map((x) => x.parsedFrom).flat();
+    const allNames = Array.from(new Set(allFrom.map((x) => x.name || x.address).flat()));
 
     this.rowContainer_.textContent = '';
-    const elements = allNames.map(x => this.getAddressElement_(x));
+    const elements = allNames.map((x) => this.getAddressElement_(x));
     this.rowContainer_.append(...elements);
     return [];
   }
@@ -97,5 +92,4 @@ export class FallbackThreadRowGroup extends ThreadRowGroupBase {
 
   selectRows(_select: boolean) {}
 }
-window.customElements.define(
-    'mt-fallback-thread-row-group', FallbackThreadRowGroup);
+window.customElements.define('mt-fallback-thread-row-group', FallbackThreadRowGroup);

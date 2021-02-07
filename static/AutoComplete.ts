@@ -1,5 +1,5 @@
-import {defined, isMobileUserAgent} from './Base.js';
-import {Contacts} from './Contacts.js';
+import { defined, isMobileUserAgent } from './Base.js';
+import { Contacts } from './Contacts.js';
 
 export class EntrySelectedEvent extends Event {
   static NAME = 'auto-complete-submit';
@@ -55,22 +55,20 @@ export class AutoComplete extends HTMLElement {
   }
 
   getCandidates(search: string) {
-    let results: {name: string, address: string}[] = [];
+    let results: { name: string; address: string }[] = [];
 
-    if (!search)
-      return results;
+    if (!search) return results;
 
     search = search.toLowerCase();
 
     for (let contact of this.contacts_.getAll()) {
       if (contact.name && contact.name.toLowerCase().includes(search)) {
         for (let address of contact.emails) {
-          results.push({name: contact.name, address: address});
+          results.push({ name: contact.name, address: address });
         }
       } else {
         for (let address of contact.emails) {
-          if (address.includes(search))
-            results.push({name: contact.name, address: address});
+          if (address.includes(search)) results.push({ name: contact.name, address: address });
         }
       }
     }
@@ -92,17 +90,15 @@ export class AutoComplete extends HTMLElement {
     if (results.length < 4) {
       // Include whatever the user is typing in case it's not in their contacts
       // or if the contacts API is down.
-      results.push({name: '', address: search});
+      results.push({ name: '', address: search });
     }
 
     return results;
   }
 
   render(search: string) {
-    if (Contacts.getDefault().getAll().length)
-      this.classList.remove('no-contacts');
-    else
-      this.classList.add('no-contacts');
+    if (Contacts.getDefault().getAll().length) this.classList.remove('no-contacts');
+    else this.classList.add('no-contacts');
 
     let candidates = this.getCandidates(search);
 
@@ -122,8 +118,7 @@ export class AutoComplete extends HTMLElement {
         white-space: nowrap;
       `;
 
-      if (isMobileUserAgent())
-        entry.style.fontSize = '150%';
+      if (isMobileUserAgent()) entry.style.fontSize = '150%';
 
       let text = '';
       if (candidate.name) {
@@ -131,7 +126,7 @@ export class AutoComplete extends HTMLElement {
         entry.name = candidate.name;
       }
       text += candidate.address;
-      entry.textContent = text
+      entry.textContent = text;
       entry.address = candidate.address;
       this.append(entry);
     }
@@ -150,8 +145,7 @@ export class AutoComplete extends HTMLElement {
   }
 
   adjustIndex(adjustment: number) {
-    let newIndex = Math.max(
-        0, Math.min(this.index_ + adjustment, this.children.length - 1));
+    let newIndex = Math.max(0, Math.min(this.index_ + adjustment, this.children.length - 1));
     this.selectAutocompleteItem_(newIndex);
   }
 
@@ -159,9 +153,8 @@ export class AutoComplete extends HTMLElement {
     this.index_ = index;
     for (let i = 0; i < this.children.length; i++) {
       let child = <AutoCompleteEntry>this.children[i];
-      child.style.backgroundColor = (i == index) ?
-          'var(--selected-background-color)' :
-          'var(--overlay-background-color)';
+      child.style.backgroundColor =
+        i == index ? 'var(--selected-background-color)' : 'var(--overlay-background-color)';
     }
   }
 }

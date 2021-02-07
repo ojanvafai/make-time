@@ -1,19 +1,20 @@
+import { shortcutString } from '../Actions.js';
+import { collapseArrow, defined, expandArrow, linkify, notNull } from '../Base.js';
+import { login } from '../BaseMain.js';
+import { ThreadListChangedEvent, ThreadListModel } from '../models/ThreadListModel.js';
+import { Settings } from '../Settings.js';
+import { Themes } from '../Themes.js';
+import { Thread } from '../Thread.js';
 
-import {shortcutString} from '../Actions.js';
-import {collapseArrow, defined, expandArrow, linkify, notNull} from '../Base.js';
-import {login} from '../BaseMain.js';
-import {ThreadListChangedEvent, ThreadListModel} from '../models/ThreadListModel.js';
-import {Settings} from '../Settings.js';
-import {Themes} from '../Themes.js';
-import {Thread} from '../Thread.js';
-
-import {AppShell} from './AppShell.js';
-import {ThreadRow} from './ThreadRow.js';
-import {ThreadRowGroupBase} from './ThreadRowGroupBase.js';
-import {View} from './View.js';
+import { AppShell } from './AppShell.js';
+import { ThreadRow } from './ThreadRow.js';
+import { ThreadRowGroupBase } from './ThreadRowGroupBase.js';
+import { View } from './View.js';
 
 interface ListenerData {
-  target: EventTarget, name: string, handler: (e: Event) => void,
+  target: EventTarget;
+  name: string;
+  handler: (e: Event) => void;
 }
 
 export const VIEW_THREADLIST_ACTION = {
@@ -55,8 +56,10 @@ export abstract class ThreadListViewBase extends View {
   private labelSelectTemplate_?: HTMLSelectElement;
 
   constructor(
-      protected model: ThreadListModel, protected appShell: AppShell,
-      protected settings: Settings) {
+    protected model: ThreadListModel,
+    protected appShell: AppShell,
+    protected settings: Settings,
+  ) {
     super();
 
     this.style.cssText = `
@@ -78,7 +81,7 @@ export abstract class ThreadListViewBase extends View {
       this.threadToRow_.set(thread, row);
     }
     return row;
-  };
+  }
 
   protected setThreadSubject(thread: Thread, ...extraSubject: HTMLElement[]) {
     let arrow = document.createElement('span');
@@ -96,7 +99,7 @@ export abstract class ThreadListViewBase extends View {
 
     let toggleClamp = () => {
       // Don't toggle if the user has selected part of the subject text.
-      if (!(notNull(window.getSelection()).isCollapsed)) {
+      if (!notNull(window.getSelection()).isCollapsed) {
         return;
       }
       let shouldClamp = subject.style.overflow === '';
@@ -120,12 +123,10 @@ export abstract class ThreadListViewBase extends View {
     // Only show the arrow if there's actual overflow.
     // TODO: Technically we should recompute this when the window changes
     // width.
-    if (subject.offsetHeight < subject.scrollHeight)
-      subject.before(arrow);
+    if (subject.offsetHeight < subject.scrollHeight) subject.before(arrow);
   }
 
-  protected listen(
-      target: EventTarget, eventName: string, handler: (e: Event) => void) {
+  protected listen(target: EventTarget, eventName: string, handler: (e: Event) => void) {
     this.listeners_.push({
       target: target,
       name: eventName,
@@ -147,8 +148,10 @@ export abstract class ThreadListViewBase extends View {
   }
 
   protected createMenuItem(
-      container: HTMLElement, clickHandler: () => void,
-      ...contents: (string|Element)[]) {
+    container: HTMLElement,
+    clickHandler: () => void,
+    ...contents: (string | Element)[]
+  ) {
     let item = document.createElement('div');
     item.className = 'menu-item';
     item.append(...contents);
@@ -174,8 +177,7 @@ export abstract class ThreadListViewBase extends View {
   }
 
   openOverflowMenu(container: HTMLElement) {
-    this.createMenuItem(
-        container, () => Themes.toggleDarkMode(), 'Force dark mode');
+    this.createMenuItem(container, () => Themes.toggleDarkMode(), 'Force dark mode');
 
     let name = document.createElement('div');
     name.style.cssText = `
@@ -188,8 +190,7 @@ export abstract class ThreadListViewBase extends View {
     `;
     shortcut.append(`${shortcutString(VIEW_IN_GMAIL_ACTION.key)}`);
 
-    this.createMenuItem(
-        container, () => this.takeAction(VIEW_IN_GMAIL_ACTION), name, shortcut);
+    this.createMenuItem(container, () => this.takeAction(VIEW_IN_GMAIL_ACTION), name, shortcut);
   }
 
   protected abstract getGroups(): ThreadRowGroupBase[];
@@ -209,8 +210,7 @@ export abstract class ThreadListViewBase extends View {
   }
 
   protected async render() {
-    if (this.hasQueuedFrame_)
-      return;
+    if (this.hasQueuedFrame_) return;
     this.hasQueuedFrame_ = true;
     if (!this.labelSelectTemplate_)
       this.labelSelectTemplate_ = await this.settings.getLabelSelectTemplate();
@@ -222,8 +222,8 @@ export abstract class ThreadListViewBase extends View {
 
   protected mergedGroupName(thread: Thread) {
     let originalGroupName = this.model.getGroupName(thread);
-    return this.settings.getQueueSettings().getMappedGroupName(
-               originalGroupName) ||
-        originalGroupName;
+    return (
+      this.settings.getQueueSettings().getMappedGroupName(originalGroupName) || originalGroupName
+    );
   }
 }

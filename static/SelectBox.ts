@@ -1,4 +1,4 @@
-import {createCircle, createRect, createSvgContainer, isMobileUserAgent} from './Base.js';
+import { createCircle, createRect, createSvgContainer, isMobileUserAgent } from './Base.js';
 
 export const ALL = 'all';
 export const SOME = 'some';
@@ -8,7 +8,7 @@ export const DISABLED = 'disabled';
 export class SelectChangedEvent extends Event {
   static NAME = 'select-changed';
   constructor(public rangeSelect: boolean) {
-    super(SelectChangedEvent.NAME, {bubbles: true});
+    super(SelectChangedEvent.NAME, { bubbles: true });
   }
 }
 
@@ -47,14 +47,12 @@ export class SelectBox extends HTMLElement {
     // used for range selections. Need to do it on mousedown unfortunately
     // since that's when the selection is modified on some platforms (e.g.
     // mac).
-    this.addEventListener('mousedown', e => {
-      if (e.shiftKey)
-        e.preventDefault();
+    this.addEventListener('mousedown', (e) => {
+      if (e.shiftKey) e.preventDefault();
     });
 
-    this.addEventListener('click', e => {
-      if (this.selected_ === DISABLED)
-        return;
+    this.addEventListener('click', (e) => {
+      if (this.selected_ === DISABLED) return;
 
       this.select(this.selected_ === NONE ? ALL : NONE);
       this.dispatchEvent(new SelectChangedEvent(e.shiftKey));
@@ -80,9 +78,7 @@ export class SelectBox extends HTMLElement {
 
   private updateRadioRendering_() {
     this.svg_.textContent = '';
-    this.svg_.append(
-        this.renderAsRadio_ ? createCircle(12, 12, 6) :
-                              createRect(5, 5, 14, 14));
+    this.svg_.append(this.renderAsRadio_ ? createCircle(12, 12, 6) : createRect(5, 5, 14, 14));
     this.svg_.style.borderRadius = `${this.renderAsRadio_ ? 10 : 3}px`;
   }
 

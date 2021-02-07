@@ -1,8 +1,8 @@
-import {createMktimeButton} from '../Base.js';
-import {Dialog} from '../Dialog.js';
+import { createMktimeButton } from '../Base.js';
+import { Dialog } from '../Dialog.js';
 
 export class HelpDialog extends HTMLElement {
-  constructor(...helpText: (HTMLElement|string)[]) {
+  constructor(...helpText: (HTMLElement | string)[]) {
     super();
 
     let container = document.createElement('div');

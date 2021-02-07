@@ -14,7 +14,7 @@ export class LongTasks extends HTMLElement {
     });
 
     try {
-      observer.observe({entryTypes: ['longtask']});
+      observer.observe({ entryTypes: ['longtask'] });
     } catch (e) {
       // This happens when a browser doesn't support longtask entryTypes.
     }
@@ -35,10 +35,7 @@ export class LongTasks extends HTMLElement {
   }
 
   flash_() {
-    let animation = [
-      {opacity: '0.6'},
-      {opacity: '0'},
-    ];
+    let animation = [{ opacity: '0.6' }, { opacity: '0' }];
 
     let timing = {
       duration: 1000,

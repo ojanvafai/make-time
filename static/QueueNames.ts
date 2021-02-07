@@ -1,6 +1,6 @@
-import {assert, defined, Labels} from './Base.js';
-import {firestore, firestoreUserCollection} from './BaseMain.js';
-import {EventTargetPolyfill} from './EventTargetPolyfill.js';
+import { assert, defined, Labels } from './Base.js';
+import { firestore, firestoreUserCollection } from './BaseMain.js';
+import { EventTargetPolyfill } from './EventTargetPolyfill.js';
 
 export class SnapshotEvent extends Event {
   static NAME = 'snapshot';
@@ -10,13 +10,12 @@ export class SnapshotEvent extends Event {
 }
 
 export class QueueNames extends EventTargetPolyfill {
-  private static nameIds_?: {[property: string]: string};
-  private static idNames_?: {[property: string]: string};
+  private static nameIds_?: { [property: string]: string };
+  private static idNames_?: { [property: string]: string };
   private static instance_?: QueueNames;
 
   static create() {
-    if (!this.instance_)
-      this.instance_ = new QueueNames();
+    if (!this.instance_) this.instance_ = new QueueNames();
     return this.instance_;
   }
 
@@ -27,7 +26,7 @@ export class QueueNames extends EventTargetPolyfill {
   async getAllNames() {
     await this.fetch();
     let nameIds = defined(QueueNames.nameIds_);
-    let names = Object.keys(nameIds).filter(x => x !== Labels.Fallback);
+    let names = Object.keys(nameIds).filter((x) => x !== Labels.Fallback);
     let builtIns = Object.values(Labels) as string[];
     // If the labels haven't ever been applied to threads, they won't be in
     // QueueNames yet (and Labels.Archive is never applied).
@@ -49,12 +48,10 @@ export class QueueNames extends EventTargetPolyfill {
 
   promptForNewLabel() {
     let newLabel = prompt(`Type the new label name`);
-    if (!newLabel)
-      return;
+    if (!newLabel) return;
 
     newLabel = newLabel.replace(/\s+/g, '');
-    if (!newLabel)
-      return;
+    if (!newLabel) return;
 
     // Ensure the new label is stored in the QueueNames map in firestore.
     this.getId(newLabel);
@@ -62,8 +59,7 @@ export class QueueNames extends EventTargetPolyfill {
   }
 
   async fetch() {
-    if (QueueNames.nameIds_)
-      return;
+    if (QueueNames.nameIds_) return;
 
     let doc = this.getNameIdsDocument_();
     let snapshot = await doc.get();
@@ -101,14 +97,13 @@ export class QueueNames extends EventTargetPolyfill {
         delete data.map[name];
         transaction.update(docRef, data);
       });
-    })
+    });
   }
 
   async getId(name: string) {
     await this.fetch();
     let id = defined(QueueNames.nameIds_)[name];
-    if (id)
-      return id;
+    if (id) return id;
 
     let docRef = this.getNameIdsDocument_();
     return await firestore().runTransaction((transaction) => {
@@ -119,8 +114,7 @@ export class QueueNames extends EventTargetPolyfill {
 
         let data = defined(doc.data());
         // Another client must have created an ID for this name.
-        if (data.map[name])
-          return data.map[name];
+        if (data.map[name]) return data.map[name];
 
         // Intentionally always increment before setting the id so that 0 is not
         // a valid ID and we can null check IDs throughout the codebase to test
@@ -135,6 +129,6 @@ export class QueueNames extends EventTargetPolyfill {
         transaction.update(docRef, data);
         return newId;
       });
-    })
+    });
   }
 }

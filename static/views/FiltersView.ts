@@ -1,22 +1,18 @@
-import {primaryModifierKey} from '../Actions.js';
-import {create, createMktimeButton, defined, Labels} from '../Base.js';
-import {Dialog} from '../Dialog.js';
-import {FilterRule, Settings} from '../Settings.js';
+import { primaryModifierKey } from '../Actions.js';
+import { create, createMktimeButton, defined, Labels } from '../Base.js';
+import { Dialog } from '../Dialog.js';
+import { FilterRule, Settings } from '../Settings.js';
 
-import {FilterRuleComponent, LabelCreatedEvent} from './FilterRuleComponent.js';
-import {HelpDialog} from './HelpDialog.js';
+import { FilterRuleComponent, LabelCreatedEvent } from './FilterRuleComponent.js';
+import { HelpDialog } from './HelpDialog.js';
 
 export const HELP_TEXT = [
   create('b', 'Help'),
   `
-Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "${
-      Labels
-          .Archive}" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
+Every thread has exactly one filter that applies to it (i.e. gets exactly one label). The filter can apply a label, or archive it (put "${Labels.Archive}" as the label). This is achieved by having filters be first one wins instead of gmail's filtering where all filters apply. A nice side effect of this is that you can do richer filtering by taking advantage of ordering, e.g. I can have emails to me from my team show up in my inbox immediately, but emails to me from others only show up once a day.
 
  - Directives separated by "&&" must all apply in order for the rule to match. There is currently no "OR" value and no "NOT" value (patches welcome!).
- - "${
-      Labels
-          .Archive}" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
+ - "${Labels.Archive}" is a special label that removes the unprocessed label from a message, but does not put it in the inbox.
  - Use ctrl+up/down or cmd+up/down to reorder the focused row. Hold shift to move 10 rows at a time.
  - The first rule that matches is the one that applies, so order matters.
  - Label is the label that will apply qhen the rule matches.
@@ -25,12 +21,11 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
  - No List-ID matches messages that are not sent to an email list.
  - No CCs matches messages that have exactly one email address in the union of the to/cc/bcc fields.
  - Make-time matches all messages in the thread each time the thread is processed, unlike gmail filters which only match the new message.
- - If none of your filters apply to a thread, then make-time will apply a "${
-      Labels
-          .Fallback}" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
+ - If none of your filters apply to a thread, then make-time will apply a "${Labels.Fallback}" label. This lets you ensure all mail gets appropriate filters, e.g. when you sign up for a new mailing list, they'll go here until you add a filter rule for the list.
 
 `,
-  create('b', 'Rule directives'), `
+  create('b', 'Rule directives'),
+  `
  - `,
   create('b', '$anything:'),
   ` Matches the raw email header "anything". So, $from matches the From header as plain text instead of the structure match that "from:" below does. You can view raw email headers in gmail by going to a message and opening "Show Original" from the "..." menu.
@@ -50,7 +45,7 @@ Every thread has exactly one filter that applies to it (i.e. gets exactly one la
   create('b', 'htmlcontent:'),
   ` Matches if the HTML of the email includes this text.
  - All rules are case insensitive and can be done as regular expressions by prefixing the value with regexp:, so from:regexp:foo will do a regexp on the from field with the value "foo".
-`
+`,
 ];
 
 export class FiltersView extends HTMLElement {
@@ -67,10 +62,10 @@ export class FiltersView extends HTMLElement {
       max-width: 95vw;
     `;
 
-    this.addEventListener('keydown', e => this.handleKeyDown_(e));
-    this.addEventListener(
-        LabelCreatedEvent.NAME,
-        e => {this.handleLabelCreated_((e as LabelCreatedEvent).labelOption)});
+    this.addEventListener('keydown', (e) => this.handleKeyDown_(e));
+    this.addEventListener(LabelCreatedEvent.NAME, (e) => {
+      this.handleLabelCreated_((e as LabelCreatedEvent).labelOption);
+    });
     this.render_();
   }
 
@@ -82,8 +77,7 @@ export class FiltersView extends HTMLElement {
   }
 
   handleKeyDown_(e: KeyboardEvent) {
-    if (!primaryModifierKey(e))
-      return;
+    if (!primaryModifierKey(e)) return;
 
     switch (e.key) {
       case 'ArrowUp':
@@ -104,8 +98,7 @@ export class FiltersView extends HTMLElement {
     while (row && !row.classList.contains(FiltersView.ROW_CLASSNAME_)) {
       row = row.parentElement;
     }
-    if (!row)
-      return;
+    if (!row) return;
 
     let parent = row.parentElement;
     while (parent && parent != this) {
@@ -147,8 +140,7 @@ export class FiltersView extends HTMLElement {
 
     // Ensure there's at least one row since there's no other way to add the
     // first row.
-    if (!rules.length)
-      container.append(await this.createRule_({}));
+    if (!rules.length) container.append(await this.createRule_({}));
 
     let scrollable = document.createElement('div');
     scrollable.style.cssText = `
@@ -158,8 +150,7 @@ export class FiltersView extends HTMLElement {
     scrollable.append(container, this.createUnfileredRule_());
     this.append(scrollable);
 
-    let helpButton =
-        createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
+    let helpButton = createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
     helpButton.style.cssText = `margin-right: auto`;
     let cancel = createMktimeButton(() => this.cancel_(), 'cancel');
     let save = createMktimeButton(() => this.save_(), 'save');
@@ -177,15 +168,12 @@ export class FiltersView extends HTMLElement {
       row.before(emptyRule);
     });
     addButton.style.marginRight = '16px';
-    row.append(
-        addButton,
-        `The "${Labels.Fallback}" label is applied when no filters match.`);
+    row.append(addButton, `The "${Labels.Fallback}" label is applied when no filters match.`);
     return row;
   }
 
   private getFilterRuleComponents_() {
-    return this.querySelectorAll('mt-filter-rule') as
-        NodeListOf<FilterRuleComponent>;
+    return this.querySelectorAll('mt-filter-rule') as NodeListOf<FilterRuleComponent>;
   }
 
   async save_() {
@@ -219,8 +207,7 @@ export class FiltersView extends HTMLElement {
     `;
 
     const insertRowBefore = async () => {
-      let emptyRule = await this.createRule_(
-          {label: filterRuleComponent.getSelectedLabel()});
+      let emptyRule = await this.createRule_({ label: filterRuleComponent.getSelectedLabel() });
       row.before(emptyRule);
     };
     let topButtons = document.createElement('div');
@@ -247,19 +234,15 @@ export class FiltersView extends HTMLElement {
       reallyDeleteButton.style.position = 'absolute';
       deleteButton.before(backdrop, reallyDeleteButton);
     });
-    topButtons.append(
-        this.createButton_('+', 'Add new row above', insertRowBefore),
-        deleteButton);
+    topButtons.append(this.createButton_('+', 'Add new row above', insertRowBefore), deleteButton);
     let bottomButtons = document.createElement('div');
     bottomButtons.style.cssText = `
           display: flex;
         `;
     bottomButtons.append(
-        this.createButton_(
-            '⇧', 'Move rule up', () => this.moveRow_(row, 'ArrowUp', false)),
-        this.createButton_(
-            '⇩', 'Move rule down',
-            () => this.moveRow_(row, 'ArrowDown', false)));
+      this.createButton_('⇧', 'Move rule up', () => this.moveRow_(row, 'ArrowUp', false)),
+      this.createButton_('⇩', 'Move rule down', () => this.moveRow_(row, 'ArrowDown', false)),
+    );
 
     let buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
@@ -274,8 +257,10 @@ export class FiltersView extends HTMLElement {
   }
 
   private createButton_(
-      text: string, title: string,
-      onClick: (e: MouseEvent) => void|Promise<void>) {
+    text: string,
+    title: string,
+    onClick: (e: MouseEvent) => void | Promise<void>,
+  ) {
     const button = create('span', text);
     button.classList.add('row-button');
     button.setAttribute('title', title);

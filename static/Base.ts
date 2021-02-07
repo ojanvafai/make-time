@@ -2,7 +2,7 @@ import * as firebase from 'firebase/app';
 
 import emailJsParseAddressList from '../third_party/emailjs-addressparser/addressparser.js';
 
-import {gapiFetch} from './Net.js';
+import { gapiFetch } from './Net.js';
 
 export const USER_ID = 'me';
 
@@ -10,32 +10,32 @@ const MKTIME_BUTTON_CLASS = 'mktime-button';
 
 function setupMktimeButton(button: Element, onClick?: (e: Event) => void) {
   button.classList.add(MKTIME_BUTTON_CLASS);
-  if (onClick)
-    button.addEventListener('click', onClick);
+  if (onClick) button.addEventListener('click', onClick);
 }
 
 export function createMktimeButton(
-    onClick?: (e: Event) => void, ...contents: (string|Element)[]) {
+  onClick?: (e: Event) => void,
+  ...contents: (string | Element)[]
+) {
   let button = create('button', ...contents) as HTMLButtonElement;
   setupMktimeButton(button, onClick);
   return button;
 }
 
-export function create(tagName: string, ...contents: (string|Node)[]) {
+export function create(tagName: string, ...contents: (string | Node)[]) {
   let node = document.createElement(tagName);
   node.append(...contents);
   return node;
 }
 
-export function createWithStyle(
-    tagName: string, style: string, ...contents: (string|Node)[]) {
+export function createWithStyle(tagName: string, style: string, ...contents: (string | Node)[]) {
   let node = document.createElement(tagName);
   node.append(...contents);
   node.style.cssText = style;
   return node;
 }
 
-export function createLink(href: string, ...contents: (string|Node)[]) {
+export function createLink(href: string, ...contents: (string | Node)[]) {
   let node = create('a', ...contents) as HTMLAnchorElement;
   node.href = href;
   return node;
@@ -58,14 +58,16 @@ export function createSvgContainer(viewBox: string, ...children: SVGElement[]) {
 }
 
 export function createSvgButton(
-    viewBox: string, onClick?: (e: Event) => void, ...children: SVGElement[]) {
+  viewBox: string,
+  onClick?: (e: Event) => void,
+  ...children: SVGElement[]
+) {
   let button = createSvgContainer(viewBox, ...children);
   setupMktimeButton(button, onClick);
   return button;
 }
 
-export function createRect(
-    x: number, y: number, width: number, height: number) {
+export function createRect(x: number, y: number, width: number, height: number) {
   let node = createSvg('rect');
   node.setAttribute('x', String(x));
   node.setAttribute('y', String(y));
@@ -82,8 +84,7 @@ export function createCircle(cx: number, cy: number, r: number) {
   return node;
 }
 
-export function createLine(
-    x1: number, y1: number, x2: number, y2: number, strokeWidth: number) {
+export function createLine(x1: number, y1: number, x2: number, y2: number, strokeWidth: number) {
   let node = createSvg('line');
   node.style.cssText = `
     stroke: var(--text-color);
@@ -128,10 +129,8 @@ export function leftArrow(id: string, onClick?: (e: Event) => void) {
   let arrow = createLine(10, 12, 20, 12, 2.5);
   arrow.setAttribute('marker-start', `url(#${id})`);
 
-  let button =
-      createSvgContainer('0 0 24 24', createSvg('defs', marker), arrow);
-  if (onClick)
-    setupMktimeButton(button, onClick);
+  let button = createSvgContainer('0 0 24 24', createSvg('defs', marker), arrow);
+  if (onClick) setupMktimeButton(button, onClick);
   return button;
 }
 
@@ -143,31 +142,35 @@ try {
   // can catch the error in Safari. Unfortunately, that means all the
   // backslashes need to be escaped.
   urlRegex = new RegExp(
-      '((?<!\\+)(?:https?(?::\\/\\/))(?:www\\.)?(?:[a-zA-Z\\d-_.]+(?:(?:\\.|@)[a-zA-Z\\d]{2,})|localhost)(?:(?:[-a-zA-Z\\d:%_+.~#!?&//=@]*)(?:[,](?![\\s]))*)*)',
-      'g');
+    '((?<!\\+)(?:https?(?::\\/\\/))(?:www\\.)?(?:[a-zA-Z\\d-_.]+(?:(?:\\.|@)[a-zA-Z\\d]{2,})|localhost)(?:(?:[-a-zA-Z\\d:%_+.~#!?&//=@]*)(?:[,](?![\\s]))*)*)',
+    'g',
+  );
 } catch {
   // Fallback for browser that don't support negative lookbehind.
   urlRegex = new RegExp(
-      '((?:https?(?::\\/\\/))(?:www\\.)?(?:[a-zA-Z\\d-_.]+(?:(?:\\.|@)[a-zA-Z\\d]{2,})|localhost)(?:(?:[-a-zA-Z\\d:%_+.~#!?&//=@]*)(?:[,](?![\\s]))*)*)',
-      'g');
+    '((?:https?(?::\\/\\/))(?:www\\.)?(?:[a-zA-Z\\d-_.]+(?:(?:\\.|@)[a-zA-Z\\d]{2,})|localhost)(?:(?:[-a-zA-Z\\d:%_+.~#!?&//=@]*)(?:[,](?![\\s]))*)*)',
+    'g',
+  );
 }
 
 export function linkify(element: Element) {
   element.classList.add('linkified-text');
 
   var treeWalker = document.createTreeWalker(
-      element, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
-        acceptNode: function(node) {
-          if (node.nodeType === Node.TEXT_NODE)
-            return NodeFilter.FILTER_ACCEPT;
+    element,
+    NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+    {
+      acceptNode: function (node) {
+        if (node.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
 
-          let element = node as Element;
-          if (element.nodeName === 'A' && !element.hasAttribute('href'))
-            return NodeFilter.FILTER_REJECT;
-          return NodeFilter.FILTER_SKIP;
-        }
+        let element = node as Element;
+        if (element.nodeName === 'A' && !element.hasAttribute('href'))
+          return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_SKIP;
       },
-      false);
+    },
+    false,
+  );
 
   let list = [];
   while (treeWalker.nextNode()) {
@@ -176,15 +179,14 @@ export function linkify(element: Element) {
 
   for (let item of list) {
     let text = notNull(item.textContent);
-    if (!text.match(urlRegex))
-      continue;
+    if (!text.match(urlRegex)) continue;
 
     // Forked from https://github.com/sindresorhus/linkify-urls (MIT License).
     let linked = text.split(urlRegex).reduce((fragment, text, index) => {
-      if (index % 2)  // URLs are always in odd positions
+      if (index % 2)
+        // URLs are always in odd positions
         fragment.append(createLink(text, text));
-      else if (text.length > 0)
-        fragment.append(text);
+      else if (text.length > 0) fragment.append(text);
       return fragment;
     }, document.createDocumentFragment());
 
@@ -217,7 +219,7 @@ export let SCOPES = [
 
 export function redirectToSignInPage() {
   var provider = new firebase.auth.GoogleAuthProvider();
-  SCOPES.forEach(x => provider.addScope(x));
+  SCOPES.forEach((x) => provider.addScope(x));
   firebase.auth().signInWithRedirect(provider);
 }
 
@@ -228,27 +230,23 @@ if (!window.requestIdleCallback) {
 
 let ASSERT_STRING = 'This should never happen.';
 
-export function notNull<T>(x: T|null, message?: string): T {
-  if (x === null)
-    throw new Error(message || ASSERT_STRING);
+export function notNull<T>(x: T | null, message?: string): T {
+  if (x === null) throw new Error(message || ASSERT_STRING);
   return x;
 }
 
-export function defined<T>(x: T|undefined, message?: string): T {
-  if (x === undefined)
-    throw new Error(message || ASSERT_STRING);
+export function defined<T>(x: T | undefined, message?: string): T {
+  if (x === undefined) throw new Error(message || ASSERT_STRING);
   return x;
 }
 
-export function definedAndNotNull<T>(x: T|null|undefined, message?: string): T {
-  if (x === null || x === undefined)
-    throw new Error(message || ASSERT_STRING);
+export function definedAndNotNull<T>(x: T | null | undefined, message?: string): T {
+  if (x === null || x === undefined) throw new Error(message || ASSERT_STRING);
   return x;
 }
 
-export function assert<T>(x: T|null|undefined, message?: string): T {
-  if (!x)
-    throw new Error(message || ASSERT_STRING);
+export function assert<T>(x: T | null | undefined, message?: string): T {
+  if (!x) throw new Error(message || ASSERT_STRING);
   return x;
 }
 
@@ -300,21 +298,20 @@ function getWeekNumber(date: Date) {
   var januaryFirst = new Date(date.getFullYear(), 0, 1);
   var msInDay = 86400000;
   return Math.ceil(
-      (((date.getTime() - januaryFirst.getTime()) / msInDay) +
-       januaryFirst.getDay()) /
-      7);
+    ((date.getTime() - januaryFirst.getTime()) / msInDay + januaryFirst.getDay()) / 7,
+  );
 }
 
 let myEmail_: string;
 export async function getMyEmail() {
   if (!myEmail_) {
     let response = await gapiFetch(gapi.client.gmail.users.getProfile, {
-      'userId': USER_ID,
+      userId: USER_ID,
     });
     myEmail_ = assert(
-        response.result.emailAddress,
-        `This google account doesn't have an associated email address.`);
-    ;
+      response.result.emailAddress,
+      `This google account doesn't have an associated email address.`,
+    );
   }
   return myEmail_;
 }
@@ -329,25 +326,25 @@ export async function getPrimaryAccountDisplayName() {
     });
     // @ts-ignore TODO: Use a proper type.
     let names: any[] = resp.result.names;
-    displayName_ = names.find(x => x.metadata.primary).displayName;
+    displayName_ = names.find((x) => x.metadata.primary).displayName;
   }
   return displayName_;
 }
 
 export interface ParsedAddress {
-  name: string, address: string,
+  name: string;
+  address: string;
 }
 
 // TODO: Make all the callers handle groups properly. For now just flatten
 // groups and pretend they don't exist.
 export function parseAddressList(addresses: string) {
   let parsed = emailJsParseAddressList(addresses);
-  return parsed.flatMap(x => x.group || x);
+  return parsed.flatMap((x) => x.group || x);
 }
 
 export function serializeAddress(address: ParsedAddress) {
-  if (address.address === '' || address.name === '')
-    return address.address || address.name;
+  if (address.address === '' || address.name === '') return address.address || address.name;
   let name = address.name.includes(',') ? `"${address.name}"` : address.name;
   return `${name} <${address.address}>`;
 }
@@ -370,8 +367,10 @@ export function isMobileUserAgent() {
 }
 
 export function isSafari() {
-  return !navigator.userAgent.includes('AppleWebKit/537.36') &&
-      navigator.userAgent.includes('AppleWebKit/');
+  return (
+    !navigator.userAgent.includes('AppleWebKit/537.36') &&
+    navigator.userAgent.includes('AppleWebKit/')
+  );
 }
 
 export function stopInProgressScroll() {
@@ -381,8 +380,7 @@ export function stopInProgressScroll() {
 export function setFaviconCount(count: number) {
   // Don't update the favicon on mobile where it's not visibile in the tab
   // strip and we want the regular favicon for add to homescreen.
-  if (isMobileUserAgent())
-    return;
+  if (isMobileUserAgent()) return;
 
   let faviconUrl;
   if (count) {
@@ -414,7 +412,6 @@ export function setFaviconCount(count: number) {
   link.id = 'dynamic-favicon';
   link.rel = 'shortcut icon';
   link.href = faviconUrl;
-  if (oldLink)
-    document.head.removeChild(oldLink);
+  if (oldLink) document.head.removeChild(oldLink);
   document.head.appendChild(link);
 }

@@ -1,4 +1,4 @@
-import {assert} from './Base.js';
+import { assert } from './Base.js';
 
 export let COMPLETED_EVENT_NAME = 'progress-completed';
 export class CompletedEvent extends Event {
@@ -35,10 +35,8 @@ export class ProgressTracker extends HTMLElement {
     assert(this.total_ !== 0);
 
     this.completedCount_++;
-    if (this.completedCount_ === this.total_)
-      this.complete_();
-    else
-      this.render_();
+    if (this.completedCount_ === this.total_) this.complete_();
+    else this.render_();
   }
 
   private complete_() {
@@ -50,8 +48,7 @@ export class ProgressTracker extends HTMLElement {
 
   private render_() {
     assert(this.completedCount_ <= this.total_);
-    this.textContent =
-        `${Math.floor(100 * this.completedCount_ / this.total_)}%`;
+    this.textContent = `${Math.floor((100 * this.completedCount_) / this.total_)}%`;
   }
 }
 window.customElements.define('mt-progress-tracker', ProgressTracker);

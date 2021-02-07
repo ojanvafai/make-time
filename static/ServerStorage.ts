@@ -1,8 +1,8 @@
 import type * as firebase from 'firebase/app';
 
-import {notNull, deepEqual} from './Base.js';
-import {firebaseAuth, firestore} from './BaseMain.js';
-import {EventTargetPolyfill} from './EventTargetPolyfill.js';
+import { notNull, deepEqual } from './Base.js';
+import { firebaseAuth, firestore } from './BaseMain.js';
+import { EventTargetPolyfill } from './EventTargetPolyfill.js';
 
 export interface StorageUpdates {
   [property: string]: any;
@@ -26,8 +26,7 @@ export class ServerStorage extends EventTargetPolyfill {
 
   // TODO: Rename to init.
   async fetch() {
-    if (this.data_)
-      return;
+    if (this.data_) return;
 
     let doc = this.getDocument_();
     this.data_ = await doc.get();
@@ -40,12 +39,14 @@ export class ServerStorage extends EventTargetPolyfill {
     doc.onSnapshot((snapshot) => {
       let oldData = this.data_;
       this.data_ = snapshot;
-      if (!oldData)
-        return;
+      if (!oldData) return;
 
-      if (!deepEqual(
-              oldData.get(keys.PUSH_LABELS_TO_GMAIL),
-              this.data_.get(keys.PUSH_LABELS_TO_GMAIL))) {
+      if (
+        !deepEqual(
+          oldData.get(keys.PUSH_LABELS_TO_GMAIL),
+          this.data_.get(keys.PUSH_LABELS_TO_GMAIL),
+        )
+      ) {
         this.dispatchEvent(new PushLabelsToGmailUpdateEventName());
       }
 
@@ -71,8 +72,7 @@ export class ServerStorage extends EventTargetPolyfill {
 
   get(key: string) {
     if (!this.data_) {
-      throw `Attempted to read out of storage before fetching from the network: ${
-          key}.`;
+      throw `Attempted to read out of storage before fetching from the network: ${key}.`;
     }
     return this.data_.get(key);
   }

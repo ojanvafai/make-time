@@ -1,7 +1,12 @@
-import {primaryModifierKey} from '../Actions.js';
-import {createMktimeButton, notNull} from '../Base.js';
-import {AllCalendarSortDatas, CALENDAR_ALLOWED_COLORS, CalendarSortListEntry, UNBOOKED_TYPES} from '../calendar/Constants.js';
-import {FiltersChangedEvent, Settings} from '../Settings.js';
+import { primaryModifierKey } from '../Actions.js';
+import { createMktimeButton, notNull } from '../Base.js';
+import {
+  AllCalendarSortDatas,
+  CALENDAR_ALLOWED_COLORS,
+  CalendarSortListEntry,
+  UNBOOKED_TYPES,
+} from '../calendar/Constants.js';
+import { FiltersChangedEvent, Settings } from '../Settings.js';
 
 const ROW_CLASS_NAME = 'row';
 
@@ -16,15 +21,13 @@ export class CalendarSortView extends HTMLElement {
     `;
 
     this.onkeydown = (e) => this.handleKeyDown_(e);
-    this.settings_.addEventListener(
-        FiltersChangedEvent.NAME, () => this.render_());
+    this.settings_.addEventListener(FiltersChangedEvent.NAME, () => this.render_());
 
     this.render_();
   }
 
   handleKeyDown_(e: KeyboardEvent) {
-    if (!primaryModifierKey(e))
-      return;
+    if (!primaryModifierKey(e)) return;
 
     switch (e.key) {
       case 'ArrowUp':
@@ -47,34 +50,30 @@ export class CalendarSortView extends HTMLElement {
     this.dispatchChange_();
 
     let rows = [].slice.call(this.querySelectorAll(`.${ROW_CLASS_NAME}`));
-    let row: HTMLElement|undefined;
+    let row: HTMLElement | undefined;
     for (let currentRow of rows) {
       if (this.isChecked_(currentRow)) {
         row = currentRow;
         break;
       }
     }
-    if (!row)
-      return;
+    if (!row) return;
 
     let parent = row.parentNode;
     while (parent && parent != this) {
       parent = parent.parentNode;
     }
-    if (!parent)
-      return;
+    if (!parent) return;
 
     let count = move10 ? 10 : 1;
 
     if (direction == 'ArrowUp') {
       while (count--) {
-        if (row.previousSibling)
-          row.previousSibling.before(row);
+        if (row.previousSibling) row.previousSibling.before(row);
       }
     } else if (direction == 'ArrowDown') {
       while (count--) {
-        if (row.nextSibling)
-          row.nextSibling.after(row);
+        if (row.nextSibling) row.nextSibling.after(row);
       }
     } else {
       throw `Tried to move row in invalid direction: ${direction}`;
@@ -86,14 +85,12 @@ export class CalendarSortView extends HTMLElement {
 
   private async render_(useDefaults?: boolean) {
     this.textContent = '';
-    let calendarSortListEntries =
-        await this.settings_.getCalendarSortData(useDefaults);
+    let calendarSortListEntries = await this.settings_.getCalendarSortData(useDefaults);
     for (let data of calendarSortListEntries) {
       this.appendRow_(data);
     }
 
-    let button =
-        createMktimeButton(() => this.resetToDefaults_(), 'Reset to defaults');
+    let button = createMktimeButton(() => this.resetToDefaults_(), 'Reset to defaults');
     button.style.alignSelf = 'center';
     this.append(button);
   }
@@ -105,14 +102,11 @@ export class CalendarSortView extends HTMLElement {
     for (let i = 0; i < rows.length; i++) {
       let row = rows[i];
       let label = row.querySelector('.label')!.textContent;
-      let hardcodedColor =
-          row.querySelector('.hardcoded-color') as HTMLElement | null;
-      let color = hardcodedColor ?
-          notNull(hardcodedColor.style.backgroundColor) :
-          (<HTMLSelectElement>row.querySelector('.color')!)
-              .selectedOptions[0]
-              .value;
-      newQueueData[label] = {color, index: i + 1};
+      let hardcodedColor = row.querySelector('.hardcoded-color') as HTMLElement | null;
+      let color = hardcodedColor
+        ? notNull(hardcodedColor.style.backgroundColor)
+        : (<HTMLSelectElement>row.querySelector('.color')!).selectedOptions[0].value;
+      newQueueData[label] = { color, index: i + 1 };
     }
 
     return newQueueData;
@@ -127,12 +121,11 @@ export class CalendarSortView extends HTMLElement {
     this.dispatchEvent(new Event('change'));
   }
 
-  createSelect_(list: {[property: string]: string}, opt_selectedItem?: string) {
+  createSelect_(list: { [property: string]: string }, opt_selectedItem?: string) {
     let select = document.createElement('select');
     select.classList.add('color');
     select.addEventListener('change', (e: Event) => {
-      let row =
-          notNull((e.target as HTMLElement).closest(`.${ROW_CLASS_NAME}`));
+      let row = notNull((e.target as HTMLElement).closest(`.${ROW_CLASS_NAME}`));
       let color = row.querySelector('.color-viewer') as HTMLElement;
       color.style.backgroundColor = select.selectedOptions[0].value;
       this.dispatchChange_();
@@ -146,11 +139,9 @@ export class CalendarSortView extends HTMLElement {
   }
 
   updateHighlights_() {
-    let rows =
-        <NodeListOf<HTMLElement>>this.querySelectorAll(`.${ROW_CLASS_NAME}`);
+    let rows = <NodeListOf<HTMLElement>>this.querySelectorAll(`.${ROW_CLASS_NAME}`);
     for (let row of rows) {
-      row.style.backgroundColor =
-          this.isChecked_(row) ? 'var(--selected-background-color)' : '';
+      row.style.backgroundColor = this.isChecked_(row) ? 'var(--selected-background-color)' : '';
     }
   }
 
@@ -162,7 +153,7 @@ export class CalendarSortView extends HTMLElement {
     `;
     row.className = ROW_CLASS_NAME;
 
-    let label = document.createElement('label')
+    let label = document.createElement('label');
     label.style.cssText = `
       flex: 1;
       display: flex;

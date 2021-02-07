@@ -1,9 +1,16 @@
-import {primaryModifierKey} from '../Actions.js';
-import {create, createMktimeButton, createTh, defined, Labels, notNull} from '../Base.js';
-import {Dialog} from '../Dialog.js';
-import {AttendeeCount, BuiltInRules, CalendarRule, Frequency, setCalendarFilterStringField, Settings} from '../Settings.js';
+import { primaryModifierKey } from '../Actions.js';
+import { create, createMktimeButton, createTh, defined, Labels, notNull } from '../Base.js';
+import { Dialog } from '../Dialog.js';
+import {
+  AttendeeCount,
+  BuiltInRules,
+  CalendarRule,
+  Frequency,
+  setCalendarFilterStringField,
+  Settings,
+} from '../Settings.js';
 
-import {HelpDialog} from './HelpDialog.js';
+import { HelpDialog } from './HelpDialog.js';
 
 const CURSOR_SENTINEL = '!!!!!!!!';
 const DIRECTIVE_SEPARATOR_ = ':';
@@ -48,8 +55,7 @@ export class CalendarFiltersView extends HTMLElement {
   }
 
   handleKeyDown_(e: KeyboardEvent) {
-    if (!primaryModifierKey(e))
-      return;
+    if (!primaryModifierKey(e)) return;
 
     switch (e.key) {
       case 'ArrowUp':
@@ -72,15 +78,13 @@ export class CalendarFiltersView extends HTMLElement {
     while (row && row.tagName != 'TR') {
       row = row.parentElement;
     }
-    if (!row)
-      return;
+    if (!row) return;
 
     let parent = row.parentElement;
     while (parent && parent != this) {
       parent = parent.parentElement;
     }
-    if (!parent)
-      return;
+    if (!parent) return;
 
     let count = move10 ? 10 : 1;
 
@@ -89,8 +93,7 @@ export class CalendarFiltersView extends HTMLElement {
         row.previousSibling.before(row);
       }
     } else if (direction == 'ArrowDown') {
-      while (count-- && row.nextSibling &&
-             !row.nextSibling.hasAttribute('fallback')) {
+      while (count-- && row.nextSibling && !row.nextSibling.hasAttribute('fallback')) {
         row.nextSibling.after(row);
       }
     } else {
@@ -126,11 +129,11 @@ export class CalendarFiltersView extends HTMLElement {
 
     let header = document.createElement('thead');
     header.append(
-        createTh(''),
-        createTh('Label'),
-        ruleHeader,
-        createTh('Frequency'),
-        createTh('Attendees'),
+      createTh(''),
+      createTh('Label'),
+      ruleHeader,
+      createTh('Frequency'),
+      createTh('Attendees'),
     );
     container.append(header);
 
@@ -141,8 +144,7 @@ export class CalendarFiltersView extends HTMLElement {
 
     // Ensure there's at least one row since there's no other way to add the
     // first row.
-    if (!rules.length)
-      body.append(await this.createRule_());
+    if (!rules.length) body.append(await this.createRule_());
 
     let builtInHeaderCell = document.createElement('td');
     builtInHeaderCell.setAttribute('colspan', '5');
@@ -171,8 +173,7 @@ export class CalendarFiltersView extends HTMLElement {
     scrollable.append(container);
     this.append(scrollable);
 
-    let helpButton =
-        createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
+    let helpButton = createMktimeButton(() => new HelpDialog(...HELP_TEXT), 'Help');
     helpButton.style.cssText = `margin-right: auto`;
     let cancel = createMktimeButton(() => this.cancel_(), 'cancel');
     let save = createMktimeButton(() => this.save_(), 'save');
@@ -219,8 +220,7 @@ export class CalendarFiltersView extends HTMLElement {
     };
     for (let key in obj) {
       let validField = setCalendarFilterStringField(rule, key, obj[key]);
-      if (!validField)
-        return null;
+      if (!validField) return null;
     }
     return rule;
   }
@@ -230,8 +230,7 @@ export class CalendarFiltersView extends HTMLElement {
     let rules: CalendarRule[] = [];
 
     for (let row of rows) {
-      if (row.hasAttribute('fallback'))
-        continue;
+      if (row.hasAttribute('fallback')) continue;
       let query = (<HTMLElement>row.querySelector('.query')).textContent;
       if (!query) {
         alert('Rule field is empty. Not saving filters.');
@@ -270,7 +269,7 @@ export class CalendarFiltersView extends HTMLElement {
     defined(this.dialog_).remove();
   }
 
-  appendCell_(container: HTMLElement, item: HTMLElement|string) {
+  appendCell_(container: HTMLElement, item: HTMLElement | string) {
     let td = document.createElement('td');
     td.append(item);
     container.append(td);
@@ -314,8 +313,7 @@ export class CalendarFiltersView extends HTMLElement {
     // Add a "new label" option that prompts and then adds that option to all
     // the filter rows.
     let label = await this.getLabelSelect_();
-    if (isBuiltIn)
-      label.disabled = true;
+    if (isBuiltIn) label.disabled = true;
     for (let option of label.options) {
       if (rule && option.value === rule.label) {
         option.selected = true;
@@ -325,8 +323,7 @@ export class CalendarFiltersView extends HTMLElement {
 
     label.addEventListener('change', () => {
       // The last item is the "Create new" label option.
-      if (label.selectedIndex !== label.options.length - 1)
-        return;
+      if (label.selectedIndex !== label.options.length - 1) return;
 
       this.createLabel_();
       // createLabel_ prepends the new label as the first item.
@@ -336,8 +333,7 @@ export class CalendarFiltersView extends HTMLElement {
 
     let queryParts: any = {};
     for (let field in rule) {
-      if (!Settings.CALENDAR_RULE_DIRECTIVES.includes(field))
-        continue;
+      if (!Settings.CALENDAR_RULE_DIRECTIVES.includes(field)) continue;
       // @ts-ignore Not quite sure how to handle rule[field] in a typesafe way.
       queryParts[field] = rule[field];
     }
@@ -346,32 +342,30 @@ export class CalendarFiltersView extends HTMLElement {
     editor.classList.add('query');
     this.appendCell_(container, editor);
 
-    this.appendSelect_(
-        container, 'frequency', Frequency, rule && rule.frequency, isBuiltIn);
-    this.appendSelect_(
-        container, 'attendees', AttendeeCount, rule && rule.attendees,
-        isBuiltIn);
+    this.appendSelect_(container, 'frequency', Frequency, rule && rule.frequency, isBuiltIn);
+    this.appendSelect_(container, 'attendees', AttendeeCount, rule && rule.attendees, isBuiltIn);
 
     return container;
   }
 
   // TODO: Fix the types. Getting the types right proved to be really hard.
   appendSelect_(
-      container: HTMLElement, className: string, types: any, value: any,
-      isDisabled?: boolean) {
+    container: HTMLElement,
+    className: string,
+    types: any,
+    value: any,
+    isDisabled?: boolean,
+  ) {
     let attendees = document.createElement('select');
-    if (isDisabled)
-      attendees.disabled = true;
+    if (isDisabled) attendees.disabled = true;
     attendees.classList.add(className);
     for (let item of Object.values(types)) {
-      if (isNaN(Number(item)))
-        continue;
+      if (isNaN(Number(item))) continue;
 
       let option = document.createElement('option');
       option.value = item as any;
       option.append(types[item as any]);
-      if (value === item)
-        option.selected = true;
+      if (value === item) option.selected = true;
 
       attendees.append(option);
     }
@@ -380,12 +374,10 @@ export class CalendarFiltersView extends HTMLElement {
 
   createLabel_() {
     let newLabel = prompt(`Type the new label name`);
-    if (!newLabel)
-      return;
+    if (!newLabel) return;
 
     newLabel = newLabel.replace(/\s+/g, '');
-    if (!newLabel)
-      return;
+    if (!newLabel) return;
 
     let option = document.createElement('option');
     option.append(newLabel);
@@ -424,8 +416,7 @@ export class CalendarFiltersView extends HTMLElement {
     for (let field in queryParts) {
       let fieldText = field;
       if (!isFirst) {
-        if (!previousEndedInWhiteSpace)
-          container.append(space);
+        if (!previousEndedInWhiteSpace) container.append(space);
         container.append(QUERY_SEPARATOR_);
         if (fieldText.charAt(0) == space) {
           container.append(space);
@@ -448,8 +439,7 @@ export class CalendarFiltersView extends HTMLElement {
         font-weight: bold;
       `;
 
-      let fieldTextWithoutSentinel =
-          fieldText.replace(CURSOR_SENTINEL, '').trim();
+      let fieldTextWithoutSentinel = fieldText.replace(CURSOR_SENTINEL, '').trim();
       if (!Settings.CALENDAR_RULE_DIRECTIVES.includes(fieldTextWithoutSentinel))
         fieldElement.classList.add('invalid-directive');
 
@@ -457,8 +447,7 @@ export class CalendarFiltersView extends HTMLElement {
       container.append(fieldElement);
 
       let value = queryParts[field];
-      previousEndedInWhiteSpace =
-          value && value.charAt(value.length - 1) == space;
+      previousEndedInWhiteSpace = value && value.charAt(value.length - 1) == space;
       if (value) {
         fieldElement.append(DIRECTIVE_SEPARATOR_);
         this.appendValue_(container, value);
@@ -481,8 +470,7 @@ export class CalendarFiltersView extends HTMLElement {
     query = query.replace(/[\n\r]/g, '');
     let directives = query.split(QUERY_SEPARATOR_);
     for (let directive of directives) {
-      if (!directive)
-        continue;
+      if (!directive) continue;
 
       let colonIndex = directive.indexOf(DIRECTIVE_SEPARATOR_);
       let hasColon = colonIndex != -1;
@@ -494,8 +482,7 @@ export class CalendarFiltersView extends HTMLElement {
         value = value.trim();
       }
 
-      if (hasColon && !value)
-        field = field + DIRECTIVE_SEPARATOR_;
+      if (hasColon && !value) field = field + DIRECTIVE_SEPARATOR_;
       queryParts[field] = value;
     }
     return queryParts;
@@ -509,8 +496,7 @@ export class CalendarFiltersView extends HTMLElement {
 
   setEditorTextAndSelectSentinel_(editor: HTMLElement, text: string) {
     this.setEditorText_(editor, text, false);
-    notNull(window.getSelection())
-        .selectAllChildren(defined(this.cursorSentinelElement_));
+    notNull(window.getSelection()).selectAllChildren(defined(this.cursorSentinelElement_));
   }
 
   insertSentinelText_() {
@@ -539,8 +525,7 @@ export class CalendarFiltersView extends HTMLElement {
     this.appendQueryParts_(editor, queryParts);
 
     if (isDisabled) {
-      if (!editor.textContent)
-        editor.textContent = '\xA0';
+      if (!editor.textContent) editor.textContent = '\xA0';
       return editor;
     }
 
@@ -550,16 +535,14 @@ export class CalendarFiltersView extends HTMLElement {
     let redoStack_: string[] = [];
 
     editor.addEventListener('beforeinput', (e) => {
-      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo')
-        return;
+      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo') return;
 
       redoStack_ = [];
       undoStack.push(this.getEditorTextContentWithSentinel_(editor));
     });
 
     editor.oninput = (e) => {
-      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo')
-        return;
+      if (e.inputType == 'historyUndo' || e.inputType == 'historyRedo') return;
 
       let content = this.getEditorTextContentWithSentinel_(editor);
       this.setEditorTextAndSelectSentinel_(editor, content);
@@ -582,7 +565,7 @@ export class CalendarFiltersView extends HTMLElement {
     };
 
     editor.onblur = () => {
-      this.setEditorText_(editor, editor.textContent, true)
+      this.setEditorText_(editor, editor.textContent, true);
     };
 
     return editor;

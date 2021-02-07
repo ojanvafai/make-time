@@ -3,17 +3,17 @@ type RequestIdleCallbackOptions = {
   timeout: number;
 };
 type RequestIdleCallbackDeadline = {
-  readonly didTimeout: boolean; timeRemaining: (() => number);
+  readonly didTimeout: boolean;
+  timeRemaining: () => number;
 };
 
 declare global {
   interface Window {
-    requestIdleCallback:
-        ((
-             callback: ((deadline: RequestIdleCallbackDeadline) => void),
-             opts?: RequestIdleCallbackOptions,
-             ) => RequestIdleCallbackHandle);
-    cancelIdleCallback: ((handle: RequestIdleCallbackHandle) => void);
+    requestIdleCallback: (
+      callback: (deadline: RequestIdleCallbackDeadline) => void,
+      opts?: RequestIdleCallbackOptions,
+    ) => RequestIdleCallbackHandle;
+    cancelIdleCallback: (handle: RequestIdleCallbackHandle) => void;
   }
 
   interface Navigator {
@@ -21,8 +21,8 @@ declare global {
   }
 
   interface Node {
-    after: ((...nodes: Node[]|string[]) => void);
-    before: ((...nodes: Node[]|string[]) => void);
+    after: (...nodes: Node[] | string[]) => void;
+    before: (...nodes: Node[] | string[]) => void;
   }
 
   interface CharacterData {
@@ -53,7 +53,7 @@ declare global {
   }
 
   interface InputEvent extends UIEvent {
-    readonly data: string|null;
+    readonly data: string | null;
     readonly inputType: string;
     readonly isComposing: boolean;
 
@@ -64,7 +64,7 @@ declare global {
 
   interface CSSStyleDeclaration {
     webkitLineClamp: string;
-    webkitUserModify: string|null;
+    webkitUserModify: string | null;
   }
 }
 

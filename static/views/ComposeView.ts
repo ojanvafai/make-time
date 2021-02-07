@@ -1,16 +1,23 @@
-import {Action, ActionList, Actions, registerActions} from '../Actions.js';
-import {AddressCompose} from '../AddressCompose.js';
-import {createLink, defined, getMyEmail, isMobileUserAgent, notNull, serializeAddress} from '../Base.js';
-import {login} from '../BaseMain.js';
-import {EmailCompose, INSERT_LINK} from '../EmailCompose.js';
-import {MailProcessor} from '../MailProcessor.js';
-import {ComposeModel} from '../models/ComposeModel.js';
-import {SendAs} from '../SendAs.js';
-import {Thread} from '../Thread.js';
-import {BASE_THREAD_ACTIONS, takeAction} from '../ThreadActions.js';
+import { Action, ActionList, Actions, registerActions } from '../Actions.js';
+import { AddressCompose } from '../AddressCompose.js';
+import {
+  createLink,
+  defined,
+  getMyEmail,
+  isMobileUserAgent,
+  notNull,
+  serializeAddress,
+} from '../Base.js';
+import { login } from '../BaseMain.js';
+import { EmailCompose, INSERT_LINK } from '../EmailCompose.js';
+import { MailProcessor } from '../MailProcessor.js';
+import { ComposeModel } from '../models/ComposeModel.js';
+import { SendAs } from '../SendAs.js';
+import { Thread } from '../Thread.js';
+import { BASE_THREAD_ACTIONS, takeAction } from '../ThreadActions.js';
 
-import {HelpDialog} from './HelpDialog.js';
-import {View} from './View.js';
+import { HelpDialog } from './HelpDialog.js';
+import { View } from './View.js';
 
 let SEND: Action = {
   name: 'Send',
@@ -30,23 +37,17 @@ let CLOSE: Action = {
   description: 'Close toolbar.',
 };
 
-let SENT_ACTIONS: ActionList = [
-  ...BASE_THREAD_ACTIONS,
-  CLOSE,
-];
+let SENT_ACTIONS: ActionList = [...BASE_THREAD_ACTIONS, CLOSE];
 
 const ACTIONS = [SEND, INSERT_LINK, HELP];
 
 // TODO: Make insert link a proper action on both ComposeView and
 // ThreadListView's quick reply.
-registerActions('Compose', [
-  ...ACTIONS,
-  ...SENT_ACTIONS,
-]);
+registerActions('Compose', [...ACTIONS, ...SENT_ACTIONS]);
 
 async function getHelpText() {
   const PRE_FILL_URL =
-      '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
+    '/compose?to=email@address.com&subject=This is my subject&body=This is the email itself';
   return [
     `For quick notes to yourself, you can create links and homescreen shortcuts, e.g. click this link: `,
     createLink(PRE_FILL_URL, PRE_FILL_URL),
@@ -56,11 +57,10 @@ Even better, you can make a custom search engine on desktop Chrome that will aut
  - Search engine: Put whatever name you want here
  - Keyword: mk
  - URL with %s in place of query:
-     ${window.location.origin}/compose?autosend=1&to=${
-        await getMyEmail()}&subject=%s
+     ${window.location.origin}/compose?autosend=1&to=${await getMyEmail()}&subject=%s
 
 Now in chrome you can type "mt", tab, then a message it it will send you an email address that you can triage later. This is great for quick jotting down of thoughts.
-`
+`,
   ];
 }
 
@@ -84,8 +84,10 @@ export class ComposeView extends View {
   private autoSend_: boolean;
 
   constructor(
-      private model_: ComposeModel, private params_: QueryParameters = {},
-      private getMailProcessor_: () => Promise<MailProcessor>) {
+    private model_: ComposeModel,
+    private params_: QueryParameters = {},
+    private getMailProcessor_: () => Promise<MailProcessor>,
+  ) {
     super();
 
     this.style.cssText = `
@@ -99,8 +101,7 @@ export class ComposeView extends View {
     this.autoSend_ = this.params_ && this.params_.autosend === '1';
 
     this.from_ = document.createElement('select');
-    this.from_.addEventListener(
-        'change', this.debounceHandleUpdates_.bind(this));
+    this.from_.addEventListener('change', this.debounceHandleUpdates_.bind(this));
     this.appendLine_('From:\xa0', this.from_);
 
     this.to_ = new AddressCompose();
@@ -111,8 +112,7 @@ export class ComposeView extends View {
 
     this.subject_ = document.createElement('input');
     this.subject_.placeholder = 'Subject';
-    this.subject_.addEventListener(
-        'input', this.debounceHandleUpdates_.bind(this));
+    this.subject_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
     this.subject_.style.cssText = `
       flex: 1;
       outline: none;
@@ -127,8 +127,7 @@ export class ComposeView extends View {
     this.body_.style.minHeight = '50px';
 
     this.body_.addEventListener('email-added', () => this.handleUpdates_());
-    this.body_.addEventListener(
-        'input', this.debounceHandleUpdates_.bind(this));
+    this.body_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
     this.append(this.body_);
 
     this.inlineTo_ = new AddressCompose(true);
@@ -140,14 +139,14 @@ export class ComposeView extends View {
   async setFrom_(selected?: gapi.client.gmail.SendAs) {
     this.sendAs_ = await SendAs.getDefault();
     let senders = defined(
-        this.sendAs_.senders,
-        `Gmail didn't give make-time a list of from addresses. This should never happen. Please file a make-time bug. `)
+      this.sendAs_.senders,
+      `Gmail didn't give make-time a list of from addresses. This should never happen. Please file a make-time bug. `,
+    );
 
     for (let sender of senders) {
       let option = document.createElement('option');
       option.append(defined(sender.sendAsEmail));
-      if (selected ? sender.sendAsEmail === selected.sendAsEmail :
-                     sender.isDefault)
+      if (selected ? sender.sendAsEmail === selected.sendAsEmail : sender.isDefault)
         option.setAttribute('selected', 'true');
       this.from_.append(option);
     }
@@ -155,20 +154,15 @@ export class ComposeView extends View {
 
   async init() {
     let localData = await this.model_.loadFromDisk();
-    if (!localData)
-      localData = this.params_;
+    if (!localData) localData = this.params_;
 
     // TODO: Make it possible to set the sender via query parameter.
     await this.setFrom_(localData.sender);
 
-    if (localData.to)
-      this.to_.value = localData.to;
-    if (localData.inlineTo)
-      this.getInlineTo_().value = localData.inlineTo;
-    if (localData.subject)
-      this.subject_.value = localData.subject;
-    if (localData.body)
-      this.body_.value = localData.body;
+    if (localData.to) this.to_.value = localData.to;
+    if (localData.inlineTo) this.getInlineTo_().value = localData.inlineTo;
+    if (localData.subject) this.subject_.value = localData.subject;
+    if (localData.body) this.body_.value = localData.body;
 
     if (!this.autoSend_) {
       this.handleUpdates_(true);
@@ -183,12 +177,12 @@ export class ComposeView extends View {
     }
   }
 
-  appendLine_(...children: (string|Node)[]) {
+  appendLine_(...children: (string | Node)[]) {
     let line = this.createLine_(...children);
     this.append(line);
   }
 
-  createLine_(...children: (string|Node)[]) {
+  createLine_(...children: (string | Node)[]) {
     let line = document.createElement('div');
     line.style.cssText = `
       display: flex;
@@ -200,8 +194,7 @@ export class ComposeView extends View {
   }
 
   inlineToText_() {
-    if (!this.inlineTo_)
-      return '';
+    if (!this.inlineTo_) return '';
     return this.inlineTo_.value;
   }
 
@@ -219,27 +212,22 @@ export class ComposeView extends View {
   }
 
   clearInlineTo_() {
-    if (this.inlineTo_)
-      this.inlineTo_.value = '';
+    if (this.inlineTo_) this.inlineTo_.value = '';
   }
 
-  async handleUpdates_(
-      skipFlushToDisk?: boolean, skipHideSentToolbar?: boolean) {
-    if (!skipHideSentToolbar)
-      this.showSent_(false, true);
+  async handleUpdates_(skipFlushToDisk?: boolean, skipHideSentToolbar?: boolean) {
+    if (!skipHideSentToolbar) this.showSent_(false, true);
 
     let emails = this.body_.getEmails();
     if (emails.length) {
-      this.getInlineTo_().value =
-          emails.map(x => serializeAddress(x)).join(',');
+      this.getInlineTo_().value = emails.map((x) => serializeAddress(x)).join(',');
     } else {
       this.clearInlineTo_();
     }
 
     if (this.from_.selectedOptions.length) {
       let sendAsEmail = this.from_.selectedOptions[0].value;
-      let sender = defined(defined(this.sendAs_).senders)
-                       .find(x => x.sendAsEmail == sendAsEmail);
+      let sender = defined(defined(this.sendAs_).senders).find((x) => x.sendAsEmail == sendAsEmail);
       this.model_.setSender(sender);
     }
 
@@ -247,8 +235,7 @@ export class ComposeView extends View {
     this.model_.setInlineTo(this.inlineToText_());
     this.model_.setSubject(this.subject_.value);
     this.model_.setBody(this.body_.rawValue, this.body_.plainText);
-    if (!skipFlushToDisk)
-      await this.model_.flush();
+    if (!skipFlushToDisk) await this.model_.flush();
   }
 
   focusFirstEmpty_() {
@@ -289,16 +276,15 @@ export class ComposeView extends View {
 
     let sent;
     try {
-      this.sent_.textContent = `Sending "${this.subject_.value}"`
+      this.sent_.textContent = `Sending "${this.subject_.value}"`;
       sent = await this.model_.send(this.body_.value);
     } finally {
-      this.sent_.textContent = sent ?
-          `Sent "${sent.subject}". Would you like to triage it for later?` :
-          `Failed to send "${this.subject_.value}"`;
+      this.sent_.textContent = sent
+        ? `Sent "${sent.subject}". Would you like to triage it for later?`
+        : `Failed to send "${this.subject_.value}"`;
     }
 
-    if (!sent)
-      return;
+    if (!sent) return;
 
     this.sentMessage_ = defined(sent.response);
 
@@ -310,10 +296,8 @@ export class ComposeView extends View {
 
     this.to_.value = this.params_.to && !this.autoSend_ ? this.params_.to : '';
     this.clearInlineTo_();
-    this.subject_.value =
-        this.params_.subject && !this.autoSend_ ? this.params_.subject : '';
-    this.body_.value =
-        this.params_.body && !this.autoSend_ ? this.params_.body : '';
+    this.subject_.value = this.params_.subject && !this.autoSend_ ? this.params_.subject : '';
+    this.body_.value = this.params_.body && !this.autoSend_ ? this.params_.body : '';
 
     this.autoSend_ = false;
 
@@ -323,8 +307,7 @@ export class ComposeView extends View {
   }
 
   private showSent_(show: boolean, preventCloseWindow?: boolean) {
-    if (!this.sent_)
-      return;
+    if (!this.sent_) return;
 
     notNull(this.sent_.parentElement).style.display = show ? '' : 'none';
 
@@ -333,8 +316,7 @@ export class ComposeView extends View {
       // visible. window.close only works when there's nothing in the back
       // history unfortunately.
       // Can't do this on mobile due to crbug.com/988330.
-      if (!preventCloseWindow && !isMobileUserAgent())
-        window.close();
+      if (!preventCloseWindow && !isMobileUserAgent()) window.close();
 
       this.sentToolbar_.remove();
       this.sentToolbar_ = undefined;
@@ -372,8 +354,7 @@ export class ComposeView extends View {
 
     const sentActions = SENT_ACTIONS.flat(2);
     if (sentActions.includes(action)) {
-      if (!this.sentMessage_)
-        return;
+      if (!this.sentMessage_) return;
 
       // Disable the toolbar while updating the thread to give an indication
       // that the update is in progress.

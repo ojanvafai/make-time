@@ -1,6 +1,6 @@
 class WorkerMock {
-  url: string|URL;
-  constructor(stringUrl: string|URL, _options?: WorkerOptions) {
+  url: string | URL;
+  constructor(stringUrl: string | URL, _options?: WorkerOptions) {
     this.url = stringUrl;
   }
   onmessage(_ev: MessageEvent): any {}

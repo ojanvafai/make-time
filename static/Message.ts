@@ -1,9 +1,9 @@
-import {Address} from '../third_party/emailjs-addressparser/addressparser.js';
+import { Address } from '../third_party/emailjs-addressparser/addressparser.js';
 
-import {AsyncOnce} from './AsyncOnce.js';
-import {defined, parseAddressList, sandboxedDom, USER_ID} from './Base.js';
-import {Base64} from './base64.js';
-import {QuoteElidedMessage} from './QuoteElidedMessage.js';
+import { AsyncOnce } from './AsyncOnce.js';
+import { defined, parseAddressList, sandboxedDom, USER_ID } from './Base.js';
+import { Base64 } from './base64.js';
+import { QuoteElidedMessage } from './QuoteElidedMessage.js';
 
 interface AttachmentResult {
   id: string;
@@ -24,31 +24,30 @@ export class Message {
   private parsedCc_?: Address[];
   private parsedBcc_?: Address[];
 
-  private plain_: string|undefined;
-  private plainedHtml_: string|undefined;
-  private html_: string|undefined;
-  private quoteElidedMessage_: QuoteElidedMessage|undefined;
+  private plain_: string | undefined;
+  private plainedHtml_: string | undefined;
+  private html_: string | undefined;
+  private quoteElidedMessage_: QuoteElidedMessage | undefined;
   private quoteElidedMessageCreator_?: AsyncOnce<QuoteElidedMessage>;
   private rawMessage_!: gapi.client.gmail.Message;
 
   id: string;
   attachments_: AttachmentResult[];
-  subject: string|undefined;
+  subject: string | undefined;
   date!: Date;
-  from: string|undefined;
-  replyTo: string|undefined;
-  deliveredTo: string|undefined;
-  to: string|undefined;
-  cc: string|undefined;
-  bcc: string|undefined;
-  messageId: string|undefined;
-  listId: string|undefined;
-  isNoteToSelf: boolean|undefined;
+  from: string | undefined;
+  replyTo: string | undefined;
+  deliveredTo: string | undefined;
+  to: string | undefined;
+  cc: string | undefined;
+  bcc: string | undefined;
+  messageId: string | undefined;
+  listId: string | undefined;
+  isNoteToSelf: boolean | undefined;
   isUnread!: boolean;
   isDraft!: boolean;
 
-  constructor(
-      message: gapi.client.gmail.Message, private previousMessage_?: Message) {
+  constructor(message: gapi.client.gmail.Message, private previousMessage_?: Message) {
     this.id = defined(message.id);
 
     this.rawMessage_ = message;
@@ -110,17 +109,15 @@ export class Message {
 
     // Things like chats don't have a date header. Use internalDate as per
     // https://developers.google.com/gmail/api/release-notes#2015-06-18.
-    if (!hasDate)
-      this.date = new Date(Number(message.internalDate));
+    if (!hasDate) this.date = new Date(Number(message.internalDate));
   }
 
   static minifyAddressNames(addresses: string[], shouldMinify: boolean) {
     if (shouldMinify) {
-      addresses = addresses.map(x => {
+      addresses = addresses.map((x) => {
         let parts = x.split(' ');
         // Exclude things like Dr., Mr., etc.
-        return (parts[0].endsWith('.') && parts.length > 1) ? parts[1] :
-                                                              parts[0];
+        return parts[0].endsWith('.') && parts.length > 1 ? parts[1] : parts[0];
       });
     }
     return addresses.join(', ');
@@ -128,7 +125,7 @@ export class Message {
 
   static minifyAddressList(addresses: Address[]) {
     let set: Set<string> = new Set();
-    addresses.map(x => {
+    addresses.map((x) => {
       set.add(x.name || x.address.split('@')[0]);
     });
     return this.minifyAddressNames(Array.from(set), true);
@@ -162,8 +159,7 @@ export class Message {
     name = name.toLowerCase();
     const headers = this.getHeaders();
     for (const header of headers) {
-      if (defined(header.name).toLowerCase().includes(name))
-        return header.value;
+      if (defined(header.name).toLowerCase().includes(name)) return header.value;
     }
     return null;
   }
@@ -173,38 +169,32 @@ export class Message {
   }
 
   get parsedFrom() {
-    if (!this.parsedFrom_)
-      this.parsedFrom_ = this.from ? parseAddressList(this.from) : [];
+    if (!this.parsedFrom_) this.parsedFrom_ = this.from ? parseAddressList(this.from) : [];
     return this.parsedFrom_;
   }
 
   get parsedTo() {
-    if (!this.parsedTo_)
-      this.parsedTo_ = this.to ? parseAddressList(this.to) : [];
+    if (!this.parsedTo_) this.parsedTo_ = this.to ? parseAddressList(this.to) : [];
     return this.parsedTo_;
   }
 
   get parsedCc() {
-    if (!this.parsedCc_)
-      this.parsedCc_ = this.cc ? parseAddressList(this.cc) : [];
+    if (!this.parsedCc_) this.parsedCc_ = this.cc ? parseAddressList(this.cc) : [];
     return this.parsedCc_;
   }
 
   get parsedBcc() {
-    if (!this.parsedBcc_)
-      this.parsedBcc_ = this.bcc ? parseAddressList(this.bcc) : [];
+    if (!this.parsedBcc_) this.parsedBcc_ = this.bcc ? parseAddressList(this.bcc) : [];
     return this.parsedBcc_;
   }
 
   async getPlain() {
     await this.parseMessageBody_();
-    if (this.plain_)
-      return this.plain_;
+    if (this.plain_) return this.plain_;
 
     if (!this.plainedHtml_) {
       // If there's no email body at all, return empty string.
-      if (!this.html_)
-        return '';
+      if (!this.html_) return '';
 
       // Extract the text out of the HTML content.
       this.plainedHtml_ = sandboxedDom(this.html_).textContent;
@@ -220,8 +210,7 @@ export class Message {
 
   async getHtmlOrHtmlWrappedPlain() {
     await this.parseMessageBody_();
-    if (this.html_)
-      return this.html_;
+    if (this.html_) return this.html_;
 
     // Convert plain text to be wrapped in divs instead of using newlines.
     // That way the eliding logic that operates on elements doesn't need any
@@ -232,18 +221,17 @@ export class Message {
     let escaped = this.htmlEscape_(defined(this.plain_));
 
     // Normalize newlines to simplify the logic.
-    let paragraphs =
-        escaped.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-    let html = `<div style="white-space:pre-wrap"><div>${
-        paragraphs.join('</div><div>')}</div></div>`;
+    let paragraphs = escaped.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    let html = `<div style="white-space:pre-wrap"><div>${paragraphs.join(
+      '</div><div>',
+    )}</div></div>`;
 
     // For multiple newlines in a row, put <br>s since empty divs don't render.
     return html.replace(/<div><\/div>/g, '<br>');
   }
 
   async parseMessageBody_() {
-    if (this.plain_ || this.html_)
-      return;
+    if (this.plain_ || this.html_) return;
 
     // If a message has no body at all, fallback to empty string.
     this.plain_ = '';
@@ -258,8 +246,7 @@ export class Message {
       // getQuoteElidedMessage call in progress.
       this.quoteElidedMessageCreator_ = new AsyncOnce(async () => {
         let html = await this.getHtmlOrHtmlWrappedPlain();
-        this.quoteElidedMessage_ =
-            new QuoteElidedMessage(html, this.previousMessage_);
+        this.quoteElidedMessage_ = new QuoteElidedMessage(html, this.previousMessage_);
         let attachments = this.rewriteInlineImages_(this.quoteElidedMessage_);
         // Intentionally don't await this so we show the thread without waiting
         // for attachement image fetches.
@@ -273,15 +260,13 @@ export class Message {
 
   findAttachment_(contentId: string) {
     for (let attachment of this.attachments_) {
-      if (attachment.contentId == contentId)
-        return attachment;
+      if (attachment.contentId == contentId) return attachment;
     }
     return null;
   }
 
   appendAttachments_(dom: HTMLElement) {
-    if (!this.attachments_.length)
-      return;
+    if (!this.attachments_.length) return;
 
     let title = document.createElement('b');
     title.textContent = 'Attachments (view in gmail to download)';
@@ -297,8 +282,7 @@ export class Message {
 
   rewriteInlineImages_(dom: HTMLElement) {
     let imageData: ImageAttachmentData[] = [];
-    let inlineImages =
-        <NodeListOf<HTMLImageElement>>dom.querySelectorAll('img[src^=cid]');
+    let inlineImages = <NodeListOf<HTMLImageElement>>dom.querySelectorAll('img[src^=cid]');
     for (let image of inlineImages) {
       let match = <any>image.src.match(/^cid:([^>]*)$/);
       let contentId = `<${match[1]}>`;
@@ -326,13 +310,12 @@ export class Message {
   async fetchInlineImages_(attachments: ImageAttachmentData[]) {
     for (let attachmentData of attachments) {
       let fetched = await gapi.client.gmail.users.messages.attachments.get({
-        'id': attachmentData.attachment.id,
-        'messageId': this.id,
-        'userId': USER_ID,
+        id: attachmentData.attachment.id,
+        messageId: this.id,
+        userId: USER_ID,
       });
       let data = await Message.base64_.decode(fetched.result.data || '');
-      attachmentData.image.src =
-          `data:${attachmentData.attachment.contentType},${data}`;
+      attachmentData.image.src = `data:${attachmentData.attachment.contentType},${data}`;
     }
   }
 
@@ -360,8 +343,7 @@ export class Message {
   async getMessageBody_(mimeParts: gapi.client.gmail.MessagePart[]) {
     for (var part of mimeParts) {
       // For the various 'multipart/*" mime types.
-      if (part.parts)
-        await this.getMessageBody_(part.parts);
+      if (part.parts) await this.getMessageBody_(part.parts);
 
       let body = defined(part.body);
       let attachmentId = body.attachmentId;
@@ -374,21 +356,19 @@ export class Message {
         case 'text/plain':
           // Sometimes there are multiple text/plain blocks. Gmail seems to use
           // the first one and some messages clearly require that.
-          if (!this.plain_)
-            this.plain_ = await Message.base64_.urlDecode(defined(body.data));
+          if (!this.plain_) this.plain_ = await Message.base64_.urlDecode(defined(body.data));
           break;
         case 'text/html':
           // Sometimes there are multiple text/html blocks. Gmail seems to use
           // the first one and some messages clearly require that.
-          if (!this.html_)
-            this.html_ = await Message.base64_.urlDecode(defined(body.data));
+          if (!this.html_) this.html_ = await Message.base64_.urlDecode(defined(body.data));
           break;
       }
     }
   }
 
   htmlEscape_(html: string) {
-    return html.replace(/[&<>"']/g, function(m) {
+    return html.replace(/[&<>"']/g, function (m) {
       switch (m) {
         case '&':
           return '&amp;';
@@ -405,5 +385,5 @@ export class Message {
           return m;
       }
     });
-  };
+  }
 }

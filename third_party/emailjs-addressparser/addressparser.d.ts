@@ -1,9 +1,10 @@
 export interface Address {
-  name: string, address: string,
+  name: string;
+  address: string;
 }
 
 export interface AddressWithGroup extends Address {
-  group?: Address[],
+  group?: Address[];
 }
 
 declare function parse(str: string): AddressWithGroup[];

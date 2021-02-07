@@ -1,5 +1,5 @@
-import {defined} from './Base.js';
-import {Message} from './Message.js';
+import { defined } from './Base.js';
+import { Message } from './Message.js';
 
 export class ProcessedMessageData {
   messages: Message[];
@@ -15,8 +15,7 @@ export class ProcessedMessageData {
   }
 
   getSubject() {
-    if (!this.messages.length)
-      return '';
+    if (!this.messages.length) return '';
     return this.messages[0].subject || '(no subject)';
   }
 

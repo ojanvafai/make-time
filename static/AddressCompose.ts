@@ -1,6 +1,12 @@
-
-import {AutoComplete, EntrySelectedEvent} from './AutoComplete.js';
-import {assert, defined, notNull, parseAddressList, ParsedAddress, serializeAddress} from './Base.js';
+import { AutoComplete, EntrySelectedEvent } from './AutoComplete.js';
+import {
+  assert,
+  defined,
+  notNull,
+  parseAddressList,
+  ParsedAddress,
+  serializeAddress,
+} from './Base.js';
 
 export class AddressCompose extends HTMLElement {
   private preventAutoComplete_: boolean;
@@ -50,9 +56,9 @@ export class AddressCompose extends HTMLElement {
     this.addEventListener('paste', (e) => this.handlePaste_(e));
 
     this.cancelAutoComplete_();
-    this.autoComplete_.addEventListener(
-        EntrySelectedEvent.NAME,
-        (e) => this.submitAutoComplete_(false, (<EntrySelectedEvent>e).entry));
+    this.autoComplete_.addEventListener(EntrySelectedEvent.NAME, (e) =>
+      this.submitAutoComplete_(false, (<EntrySelectedEvent>e).entry),
+    );
     this.append(this.autoComplete_);
 
     // Make box-sizing:content-box so we can set the width to the chip
@@ -65,33 +71,27 @@ export class AddressCompose extends HTMLElement {
       background: transparent;
     `;
     this.input_.setAttribute('inputmode', 'email');
-    this.input_.addEventListener(
-        'input', (e) => this.handleInput_(<InputEvent>e));
-    this.input_.addEventListener(
-        'blur', (e: Event) => this.handleBlurInput_(e));
+    this.input_.addEventListener('input', (e) => this.handleInput_(<InputEvent>e));
+    this.input_.addEventListener('blur', (e: Event) => this.handleBlurInput_(e));
   }
 
   containsNode_(node: Node) {
-    let container: Element|null = (node.nodeType === Node.ELEMENT_NODE) ?
-        node as Element :
-        node.parentElement;
+    let container: Element | null =
+      node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
 
     while (container) {
-      if (container === this)
-        return true;
+      if (container === this) return true;
       container = container.parentElement;
     }
     return false;
   }
 
   getContainingChip_(node: Node) {
-    let container: Element|null = (node.nodeType === Node.ELEMENT_NODE) ?
-        node as Element :
-        node.parentElement;
+    let container: Element | null =
+      node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
 
     while (container) {
-      if (container.classList.contains('chip'))
-        return container;
+      if (container.classList.contains('chip')) return container;
       container = container.parentElement;
     }
     return null;
@@ -115,13 +115,11 @@ export class AddressCompose extends HTMLElement {
   getText_(chips: Iterable<Node>) {
     let values = [];
     for (let child of chips) {
-      if (child === this.input_)
-        values.push(this.input_.value);
-      else
-        values.push(child.textContent);
+      if (child === this.input_) values.push(this.input_.value);
+      else values.push(child.textContent);
     }
     // Filter out empty string values.
-    return values.filter(x => x).join(', ');
+    return values.filter((x) => x).join(', ');
   }
 
   getSelectedAddress_() {
@@ -140,8 +138,7 @@ export class AddressCompose extends HTMLElement {
     selectedItem = selectedItem || this.getSelectedAddress_();
     // This happens when you arrow to edit a chip and there's no text in
     // this.input_.
-    if (!selectedItem)
-      return;
+    if (!selectedItem) return;
 
     let chip = this.createChip_(selectedItem);
     this.input_.before(chip);
@@ -151,8 +148,7 @@ export class AddressCompose extends HTMLElement {
     this.addressContainer_.append(this.input_);
     this.input_.style.width = 'auto';
     this.input_.style.flex = '1';
-    if (!skipSetFocus)
-      this.focusInput_();
+    if (!skipSetFocus) this.focusInput_();
 
     this.dispatchEvent(new Event('input'));
 
@@ -173,11 +169,13 @@ export class AddressCompose extends HTMLElement {
       margin: 2px;
     `;
     outer.addEventListener(
-        'pointerover',
-        () => outer.style.backgroundColor = 'var(--border-and-hover-color)');
+      'pointerover',
+      () => (outer.style.backgroundColor = 'var(--border-and-hover-color)'),
+    );
     outer.addEventListener(
-        'pointerout',
-        () => outer.style.backgroundColor = 'var(--nested-background-color)');
+      'pointerout',
+      () => (outer.style.backgroundColor = 'var(--nested-background-color)'),
+    );
 
     let inner = document.createElement('span');
     inner.style.cssText = `
@@ -215,8 +213,7 @@ export class AddressCompose extends HTMLElement {
   }
 
   updateAutoComplete_() {
-    if (this.preventAutoComplete_)
-      return;
+    if (this.preventAutoComplete_) return;
 
     let addresses = parseAddressList(this.input_.value);
     if (!addresses.length) {
@@ -249,8 +246,7 @@ export class AddressCompose extends HTMLElement {
     let lastAddress = defined(addresses.pop());
     if (addresses.length) {
       let serialized = serializeAddress(lastAddress).trim();
-      if (e.inputType === 'insertFromPaste' &&
-          serialized.charAt(serialized.length - 1) == '>') {
+      if (e.inputType === 'insertFromPaste' && serialized.charAt(serialized.length - 1) == '>') {
         addresses.push(lastAddress);
         this.setInputValue_('');
       } else {
@@ -267,23 +263,24 @@ export class AddressCompose extends HTMLElement {
 
   handleBlurInput_(e: Event) {
     let relatedTarget = (e as FocusEvent).relatedTarget;
-    if (!relatedTarget || !this.containsNode_(relatedTarget as Node) ||
-        this.getContainingChip_(relatedTarget as Node)) {
+    if (
+      !relatedTarget ||
+      !this.containsNode_(relatedTarget as Node) ||
+      this.getContainingChip_(relatedTarget as Node)
+    ) {
       this.submitAutoComplete_(true);
       this.input_.style.width = '1px';
     }
   }
 
   focusInput_() {
-    if (this.input_.style.width === '1px')
-      this.input_.style.width = 'auto';
+    if (this.input_.style.width === '1px') this.input_.style.width = 'auto';
     this.input_.focus();
   }
 
   isCursorAtEnd_() {
     let end = this.input_.value.length;
-    return this.input_.selectionStart === end &&
-        this.input_.selectionEnd === end;
+    return this.input_.selectionStart === end && this.input_.selectionEnd === end;
   }
 
   isCursorAtStart_() {
@@ -292,18 +289,15 @@ export class AddressCompose extends HTMLElement {
 
   removeChips_(...chips: Element[]) {
     for (let chip of chips) {
-      if (chip === this.input_)
-        this.setInputValue_('');
-      else
-        chip.remove();
+      if (chip === this.input_) this.setInputValue_('');
+      else chip.remove();
     }
     this.focusInput_();
     this.dispatchEvent(new Event('input'));
   }
 
   makeChipEditable_(chip: HTMLElement) {
-    if (this.disabled_)
-      return;
+    if (this.disabled_) return;
 
     this.submitAutoComplete_();
     chip.before(this.input_);
@@ -321,14 +315,12 @@ export class AddressCompose extends HTMLElement {
 
   getSelectedChips_() {
     let sel = notNull(window.getSelection());
-    if (sel.isCollapsed)
-      return null;
+    if (sel.isCollapsed) return null;
 
     let range = sel.getRangeAt(0);
     let start = range.startContainer;
     let end = range.endContainer;
-    if (!this.containsNode_(start) || !this.containsNode_(end))
-      return null;
+    if (!this.containsNode_(start) || !this.containsNode_(end)) return null;
 
     let startChip = this.getContainingChip_(start);
     let endChip = this.getContainingChip_(end);
@@ -336,8 +328,7 @@ export class AddressCompose extends HTMLElement {
     let selected = [];
     while (element) {
       selected.push(element);
-      if (element === endChip)
-        break;
+      if (element === endChip) break;
       element = element.nextElementSibling;
     }
 
@@ -352,8 +343,7 @@ export class AddressCompose extends HTMLElement {
   }
 
   handleClick_(e: Event) {
-    if (notNull(window.getSelection()).isCollapsed &&
-        !this.getContainingChip_(e.target as Node))
+    if (notNull(window.getSelection()).isCollapsed && !this.getContainingChip_(e.target as Node))
       this.focusInput_();
   }
 
@@ -369,8 +359,7 @@ export class AddressCompose extends HTMLElement {
 
         if (this.isCursorAtEnd_()) {
           let chip = this.input_.nextSibling as Element;
-          if (chip)
-            this.removeChips_(chip);
+          if (chip) this.removeChips_(chip);
         }
         return;
 
@@ -382,8 +371,7 @@ export class AddressCompose extends HTMLElement {
 
         if (this.isCursorAtStart_()) {
           let chip = this.input_.previousSibling as Element;
-          if (chip)
-            this.removeChips_(chip);
+          if (chip) this.removeChips_(chip);
         }
         return;
 
@@ -432,15 +420,13 @@ export class AddressCompose extends HTMLElement {
 
   handlePaste_(_e: ClipboardEvent) {
     let selected = this.getSelectedChips_();
-    if (selected)
-      this.removeChips_(...selected);
+    if (selected) this.removeChips_(...selected);
     this.focusInput_();
   }
 
   handleCopy_(e: ClipboardEvent) {
     let selected = this.getSelectedChips_();
-    if (!selected)
-      return;
+    if (!selected) return;
     let text = this.getText_(selected);
     notNull(e.clipboardData).setData('text/plain', text);
     e.preventDefault();

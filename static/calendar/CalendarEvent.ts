@@ -1,14 +1,20 @@
-import {assert, defined} from '../Base.js';
-import {ANY_TITLE, AttendeeCount, CalendarRule, Frequency, stringFilterMatches} from '../Settings.js';
+import { assert, defined } from '../Base.js';
+import {
+  ANY_TITLE,
+  AttendeeCount,
+  CalendarRule,
+  Frequency,
+  stringFilterMatches,
+} from '../Settings.js';
 
-import {EventType,} from './Constants.js';
+import { EventType } from './Constants.js';
 
 export let NO_ROOM_NEEDED = 'no room needed';
 
 export class CalendarEvent {
   eventId: string;
   colorId?: number;
-  type: EventType|null;
+  type: EventType | null;
   summary: string;
   start: Date;
   end: Date;
@@ -16,12 +22,12 @@ export class CalendarEvent {
   attendeeCount: number;
   // TODO: Figure out why typescript doesn't know about
   // gapi.client.calendar.Event
-  attendees?: any[];  // gapi.client.calendar.Event.attendees[];
+  attendees?: any[]; // gapi.client.calendar.Event.attendees[];
   location?: string;
   editUrl: string;
   recurringEventId?: string;
   shouldIgnore: boolean;
-  status?: 'confirmed'|'tentative'|'cancelled';
+  status?: 'confirmed' | 'tentative' | 'cancelled';
 
   static parseDate(dateString: string): Date {
     let parts = dateString.split('T');
@@ -29,18 +35,18 @@ export class CalendarEvent {
     return new Date(parts.join(' '));
   }
 
-  constructor(
-      public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
+  constructor(public gcalEvent: gapi.client.calendar.Event, rules: CalendarRule[]) {
     this.eventId = gcalEvent.id;
     this.status = gcalEvent.status;
-    if (gcalEvent.colorId)
-      this.colorId = Number(gcalEvent.colorId);
+    if (gcalEvent.colorId) this.colorId = Number(gcalEvent.colorId);
     this.summary = gcalEvent.summary;
     this.attendees = gcalEvent.attendees;
     this.location = gcalEvent.location;
     this.recurringEventId = gcalEvent.recurringEventId;
-    this.shouldIgnore = gcalEvent.transparency === 'transparent' ||
-        gcalEvent.guestsCanSeeOtherGuests === false || !gcalEvent.summary;
+    this.shouldIgnore =
+      gcalEvent.transparency === 'transparent' ||
+      gcalEvent.guestsCanSeeOtherGuests === false ||
+      !gcalEvent.summary;
 
     // TODO: Uncomment the replace below once the calendar bug is fixed where
     // going directly to the event page doesn't show the rooms.
@@ -49,27 +55,23 @@ export class CalendarEvent {
 
     // Ignore events I've declined.
     if (!this.shouldIgnore && gcalEvent.attendees) {
-      let iAmAttending = gcalEvent.attendees.some(
-          x => x.self && x.responseStatus !== 'declined');
+      let iAmAttending = gcalEvent.attendees.some((x) => x.self && x.responseStatus !== 'declined');
       this.shouldIgnore = !iAmAttending;
     }
 
-    this.attendeeCount = gcalEvent.attendees ?
-        gcalEvent.attendees.filter(x => !x.resource && !x.self).length :
-        0;
+    this.attendeeCount = gcalEvent.attendees
+      ? gcalEvent.attendees.filter((x) => !x.resource && !x.self).length
+      : 0;
 
-    if (gcalEvent.attendeesOmitted)
-      this.attendeeCount = Infinity;
+    if (gcalEvent.attendeesOmitted) this.attendeeCount = Infinity;
 
     let start = gcalEvent.start.dateTime;
-    if (!start)
-      start = gcalEvent.start.date;
+    if (!start) start = gcalEvent.start.date;
     start = assert(start, 'Got a calendar entry with no start date.');
     this.start = CalendarEvent.parseDate(start);
 
     let end = gcalEvent.end.dateTime;
-    if (!end)
-      end = gcalEvent.end.date;
+    if (!end) end = gcalEvent.end.date;
     end = assert(end, 'Got a calendar entry with no end date.');
     this.end = CalendarEvent.parseDate(end);
 
@@ -77,8 +79,7 @@ export class CalendarEvent {
 
     this.type = null;
 
-    if (this.shouldIgnore)
-      return;
+    if (this.shouldIgnore) return;
 
     for (let rule of rules) {
       if (this.ruleMatches_(rule)) {
@@ -93,25 +94,26 @@ export class CalendarEvent {
   }
 
   needsLocalRoom(offices: string[]) {
-    if (this.shouldIgnore || !this.attendeeCount || !offices.length)
-      return false;
+    if (this.shouldIgnore || !this.attendeeCount || !offices.length) return false;
 
-    if (this.location && this.location.toLowerCase().includes(NO_ROOM_NEEDED))
-      return false;
+    if (this.location && this.location.toLowerCase().includes(NO_ROOM_NEEDED)) return false;
 
     let attendees = assert(this.attendees);
     // Intentionally check for !declined instead of accepted so that newly
     // booked rooms will count as accepted until they have either been declined
     // or accepted.
     let hasLocalRoom = attendees.some(
-        x => x.resource && x.responseStatus !== 'declined' &&
-            offices.some(y => defined(x.displayName).includes(y)));
+      (x) =>
+        x.resource &&
+        x.responseStatus !== 'declined' &&
+        offices.some((y) => defined(x.displayName).includes(y)),
+    );
 
     // For BIG meetings where rooms aren't visible as guests. Only do this
     // if there are no meeting rooms at all since the location field is
     // often out of date.
-    if (!hasLocalRoom && this.location && !attendees.some(x => x.resource))
-      hasLocalRoom = offices.some(y => defined(this.location).includes(y));
+    if (!hasLocalRoom && this.location && !attendees.some((x) => x.resource))
+      hasLocalRoom = offices.some((y) => defined(this.location).includes(y));
 
     return !hasLocalRoom;
   }
@@ -119,8 +121,7 @@ export class CalendarEvent {
   ruleMatches_(rule: CalendarRule) {
     let matches = false;
     if (rule.title !== ANY_TITLE) {
-      if (!stringFilterMatches(rule.title, this.summary))
-        return false;
+      if (!stringFilterMatches(rule.title, this.summary)) return false;
       matches = true;
     }
 
@@ -130,20 +131,17 @@ export class CalendarEvent {
         break;
 
       case AttendeeCount.Many:
-        if (this.attendeeCount <= 1)
-          return false;
+        if (this.attendeeCount <= 1) return false;
         matches = true;
         break;
 
       case AttendeeCount.None:
-        if (this.attendeeCount !== 0)
-          return false;
+        if (this.attendeeCount !== 0) return false;
         matches = true;
         break;
 
       case AttendeeCount.One:
-        if (this.attendeeCount !== 1)
-          return false;
+        if (this.attendeeCount !== 1) return false;
         matches = true;
         break;
 
@@ -160,14 +158,12 @@ export class CalendarEvent {
         break;
 
       case Frequency.Recurring:
-        if (this.recurringEventId === undefined)
-          return false;
+        if (this.recurringEventId === undefined) return false;
         matches = true;
         break;
 
       case Frequency.NotRecurring:
-        if (this.recurringEventId !== undefined)
-          return false;
+        if (this.recurringEventId !== undefined) return false;
         matches = true;
         break;
 

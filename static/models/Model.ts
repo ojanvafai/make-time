@@ -1,5 +1,5 @@
-import {EventTargetPolyfill} from '../EventTargetPolyfill.js';
-import {AppShell} from '../views/AppShell.js';
+import { EventTargetPolyfill } from '../EventTargetPolyfill.js';
+import { AppShell } from '../views/AppShell.js';
 
 export abstract class Model extends EventTargetPolyfill {
   constructor() {
@@ -9,8 +9,7 @@ export abstract class Model extends EventTargetPolyfill {
   async loadFromDisk() {}
   async update() {}
 
-  protected updateTitle(
-      key: string, count: number, ...title: (HTMLElement|string)[]) {
+  protected updateTitle(key: string, count: number, ...title: (HTMLElement | string)[]) {
     return AppShell.updateLoaderTitle(key, count, ...title);
   }
 }

@@ -1,10 +1,10 @@
-import {Shortcut} from './Actions.js';
-import {createMktimeButton, defined} from './Base.js';
-import {CancelEvent, EmailCompose, SubmitEvent} from './EmailCompose.js';
-import {SendAs} from './SendAs.js';
-import {ReplyType, Thread} from './Thread.js';
-import {Toast} from './Toast.js';
-import {AppShell} from './views/AppShell.js';
+import { Shortcut } from './Actions.js';
+import { createMktimeButton, defined } from './Base.js';
+import { CancelEvent, EmailCompose, SubmitEvent } from './EmailCompose.js';
+import { SendAs } from './SendAs.js';
+import { ReplyType, Thread } from './Thread.js';
+import { Toast } from './Toast.js';
+import { AppShell } from './views/AppShell.js';
 
 export class ReplyCloseEvent extends Event {
   static NAME = 'close';
@@ -40,8 +40,7 @@ export class QuickReply extends HTMLElement {
 
   constructor(public thread: Thread, private sendAs_: SendAs) {
     super();
-    this.className =
-        'flex flex-column flex-wrap mx-auto reading-max-width fill-available-width';
+    this.className = 'flex flex-column flex-wrap mx-auto reading-max-width fill-available-width';
 
     this.compose_ = this.createCompose_();
     this.lengthIndex_ = 0;
@@ -49,7 +48,7 @@ export class QuickReply extends HTMLElement {
     this.replyType_ = document.createElement('select');
     this.replyType_.classList.add('button');
 
-    let replyTypes = Object.values(ReplyType).map(x => {
+    let replyTypes = Object.values(ReplyType).map((x) => {
       let option = document.createElement('option');
       option.append(x);
       return option;
@@ -82,16 +81,14 @@ export class QuickReply extends HTMLElement {
       }
     }
 
-    let cancel = createMktimeButton(
-        () => this.dispatchEvent(new ReplyCloseEvent()), 'cancel');
+    let cancel = createMktimeButton(() => this.dispatchEvent(new ReplyCloseEvent()), 'cancel');
     this.sendButton_ = createMktimeButton(() => this.handleSubmit_(), 'send');
 
     // Group these together so they wrap atomically.
     this.controls_ = document.createElement('div');
     this.controls_.className = 'flex flex-wrap items-center justify-center';
     this.controls_.append(this.sendButton_, cancel, this.replyType_);
-    if (this.senders_)
-      this.controls_.append(this.senders_);
+    if (this.senders_) this.controls_.append(this.senders_);
 
     this.updateProgress_();
 
@@ -100,12 +97,9 @@ export class QuickReply extends HTMLElement {
 
   private createCompose_() {
     let compose = new EmailCompose(true);
-    compose.classList.add(
-        'fill-available-width', 'theme-max-width', 'self-center');
-    compose.placeholder =
-        new Shortcut('Enter', true).toString() + ' to send, <esc> to cancel.';
-    compose.addEventListener(
-        CancelEvent.NAME, () => this.dispatchEvent(new ReplyCloseEvent()));
+    compose.classList.add('fill-available-width', 'theme-max-width', 'self-center');
+    compose.placeholder = new Shortcut('Enter', true).toString() + ' to send, <esc> to cancel.';
+    compose.addEventListener(CancelEvent.NAME, () => this.dispatchEvent(new ReplyCloseEvent()));
     compose.addEventListener(SubmitEvent.NAME, () => this.handleSubmit_());
     compose.addEventListener('input', () => this.updateProgress_());
     return compose;
@@ -113,43 +107,35 @@ export class QuickReply extends HTMLElement {
 
   private exceedsLengthIndex_() {
     let count = this.compose_.plainText.length;
-    if (count < 280)
-      return 0;
-    if (count < 750)
-      return 1;
-    if (count < 2500)
-      return 2;
+    if (count < 280) return 0;
+    if (count < 750) return 1;
+    if (count < 2500) return 2;
     return 3;
   }
 
   private updateProgress_() {
     let index = this.exceedsLengthIndex_();
-    if (this.lengthIndex_ === index)
-      return;
+    if (this.lengthIndex_ === index) return;
 
     // Don't show the toast when we first open QuickReply and show it whenever
     // the length grows.
-    if (index > 0 && this.lengthIndex_ < index)
-      this.append(new Toast(`Length: ${LENGTHS[index]}`));
+    if (index > 0 && this.lengthIndex_ < index) this.append(new Toast(`Length: ${LENGTHS[index]}`));
 
     this.lengthIndex_ = index;
   }
 
   private async handleSubmit_() {
     let textLength = this.compose_.plainText.length;
-    if (!textLength)
-      return;
+    if (!textLength) return;
 
-    if (this.isSending_)
-      return;
+    if (this.isSending_) return;
     this.isSending_ = true;
     this.classList.add('noevents-important', 'quieter');
-    this.sendButton_.textContent = 'sending...'
-    let progress = AppShell.updateLoaderTitle(
-        'ThreadListView.sendReply', 1, 'Sending reply...');
+    this.sendButton_.textContent = 'sending...';
+    let progress = AppShell.updateLoaderTitle('ThreadListView.sendReply', 1, 'Sending reply...');
 
     let sendAs = defined(this.sendAs_);
-    let sender: gapi.client.gmail.SendAs|undefined;
+    let sender: gapi.client.gmail.SendAs | undefined;
     if (sendAs.senders && sendAs.senders.length) {
       // Even if there's only one sendAs sender, we should use it
       // since it could have a custom reply-to.
@@ -157,8 +143,7 @@ export class QuickReply extends HTMLElement {
         sender = sendAs.senders[0];
       } else {
         let sendAsEmail = defined(this.senders_).selectedOptions[0].value;
-        sender =
-            defined(sendAs.senders.find(x => x.sendAsEmail == sendAsEmail));
+        sender = defined(sendAs.senders.find((x) => x.sendAsEmail == sendAsEmail));
       }
     }
 
@@ -167,18 +152,20 @@ export class QuickReply extends HTMLElement {
       // TODO: Handle if sending fails in such a way that the user can
       // at least save their message text.
       await this.thread.sendReply(
-          this.compose_.value, this.compose_.getEmails(), type,
-          defined(sender));
+        this.compose_.value,
+        this.compose_.getEmails(),
+        type,
+        defined(sender),
+      );
     } finally {
       this.isSending_ = false;
       this.classList.remove('noevents-important', 'quieter');
-      this.sendButton_.textContent = 'send'
+      this.sendButton_.textContent = 'send';
       progress.incrementProgress();
     }
 
     this.dispatchEvent(new ReplyCloseEvent());
-    if (type !== ReplyType.Forward)
-      this.dispatchEvent(new ReplyScrollEvent());
+    if (type !== ReplyType.Forward) this.dispatchEvent(new ReplyScrollEvent());
   }
 
   focus() {

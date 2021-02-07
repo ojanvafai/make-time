@@ -116,7 +116,7 @@ self.onmessage = (msg) => {
 `;
 
 let sent = new Map();
-let blob = new Blob([workerScript], {type: 'application/javascript'});
+let blob = new Blob([workerScript], { type: 'application/javascript' });
 let worker = new Worker(URL.createObjectURL(blob));
 worker.addEventListener('message', (msg: MessageEvent) => {
   let id = msg.data.id;
@@ -127,8 +127,7 @@ worker.addEventListener('message', (msg: MessageEvent) => {
 export class Base64 {
   private guid_ = 1;
 
-  private async doInWorker_(command: WorkerCommand, data: string):
-      Promise<string> {
+  private async doInWorker_(command: WorkerCommand, data: string): Promise<string> {
     let promise: Promise<string> = new Promise((resolve, _reject) => {
       let id = this.guid_++;
       sent.set(id, resolve);

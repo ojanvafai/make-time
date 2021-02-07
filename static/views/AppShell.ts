@@ -1,9 +1,18 @@
-import {createCircle, createLine, createPath, createSvg, createSvgButton, defined, leftArrow, notNull} from '../Base.js';
-import {getSettings, showHelp} from '../BaseMain.js';
-import {Dialog} from '../Dialog.js';
-import {COMPLETED_EVENT_NAME, ProgressTracker} from '../ProgressTracker.js';
+import {
+  createCircle,
+  createLine,
+  createPath,
+  createSvg,
+  createSvgButton,
+  defined,
+  leftArrow,
+  notNull,
+} from '../Base.js';
+import { getSettings, showHelp } from '../BaseMain.js';
+import { Dialog } from '../Dialog.js';
+import { COMPLETED_EVENT_NAME, ProgressTracker } from '../ProgressTracker.js';
 
-import {FilterDialogView} from './FilterDialogView.js';
+import { FilterDialogView } from './FilterDialogView.js';
 
 let progressElements: Map<string, ProgressTracker> = new Map();
 let titleStack_: TitleEntry[] = [];
@@ -11,7 +20,7 @@ let loaderTitleStack_: TitleEntry[] = [];
 
 interface TitleEntry {
   key: string;
-  title: (HTMLElement|string)[];
+  title: (HTMLElement | string)[];
 }
 
 let CURRENT_PAGE_CLASS = 'current-page';
@@ -50,7 +59,7 @@ export class AppShell extends HTMLElement {
   private toolbarSubject_: HTMLElement;
   private bodySubject_: HTMLElement;
   private drawerOpen_: boolean;
-  private queryParameters_?: {[property: string]: string};
+  private queryParameters_?: { [property: string]: string };
 
   // TODO: Make these not static.
   private static title_: HTMLElement;
@@ -104,7 +113,7 @@ export class AppShell extends HTMLElement {
 
     this.bodySubject_ = document.createElement('div');
     this.bodySubject_.className =
-        'mx-auto py2 px1 reading-max-width border-box strongest text-size-large quiet';
+      'mx-auto py2 px1 reading-max-width border-box strongest text-size-large quiet';
 
     this.content_ = document.createElement('div');
     this.content_.className = 'flex-expand-1 height-100';
@@ -136,59 +145,61 @@ export class AppShell extends HTMLElement {
     `;
     toolbarWrapper.append(this.toolbar_);
 
-    this.mainContent_.append(
-        toolbarWrapper, contentContainer, AppShell.footer_);
+    this.mainContent_.append(toolbarWrapper, contentContainer, AppShell.footer_);
 
-    this.backArrow_ =
-        leftArrow('back-arrow', () => this.dispatchEvent(new BackEvent()));
+    this.backArrow_ = leftArrow('back-arrow', () => this.dispatchEvent(new BackEvent()));
     this.backArrow_.style.cssText = `
       display: none;
     `;
 
     this.menuToggle_ = createSvgButton(
-        '0 0 24 24',
-        (e) => {
-          e.stopPropagation();
-          this.toggleMenu();
-        },
-        createLine(2, 5, 22, 5, 3),
-        createLine(2, 12, 22, 12, 3),
-        createLine(2, 19, 22, 19, 3),
+      '0 0 24 24',
+      (e) => {
+        e.stopPropagation();
+        this.toggleMenu();
+      },
+      createLine(2, 5, 22, 5, 3),
+      createLine(2, 12, 22, 12, 3),
+      createLine(2, 19, 22, 19, 3),
     );
 
     this.filterToggle_ = createSvgButton(
-        '0 0 24 24',
-        () => this.openFilterMenu_(),
-        createLine(2, 5, 22, 5, 3),
-        createLine(6, 12, 18, 12, 3),
-        createLine(10, 19, 14, 19, 3),
+      '0 0 24 24',
+      () => this.openFilterMenu_(),
+      createLine(2, 5, 22, 5, 3),
+      createLine(6, 12, 18, 12, 3),
+      createLine(10, 19, 14, 19, 3),
     );
     this.filterToggle_.style.margin = '0 6px';
 
     this.overflowMenuButton_ = createSvgButton(
-        '0 0 24 24',
-        () => this.toggleOverflowMenu_(),
-        createCircle(12, 5, 2),
-        createCircle(12, 12, 2),
-        createCircle(12, 19, 2),
+      '0 0 24 24',
+      () => this.toggleOverflowMenu_(),
+      createCircle(12, 5, 2),
+      createCircle(12, 12, 2),
+      createCircle(12, 19, 2),
     );
 
-
     AppShell.title_ = document.createElement('div');
-    AppShell.title_.className =
-        'hide-if-empty flex items-center text-color-dim mx-half';
+    AppShell.title_.className = 'hide-if-empty flex items-center text-color-dim mx-half';
     AppShell.title_.id = 'title';
 
     this.toolbarSubject_ = document.createElement('div');
     this.toolbarSubject_.className =
-        'contains-pii justify-center flex-expand-1 flex items-center text-color-dim';
+      'contains-pii justify-center flex-expand-1 flex items-center text-color-dim';
 
     AppShell.loader_ = document.createElement('div');
     AppShell.loader_.className = 'hide-if-empty flex items-center';
 
     this.toolbar_.append(
-        this.backArrow_, this.menuToggle_, this.filterToggle_, AppShell.title_,
-        this.toolbarSubject_, AppShell.loader_, this.overflowMenuButton_);
+      this.backArrow_,
+      this.menuToggle_,
+      this.filterToggle_,
+      AppShell.title_,
+      this.toolbarSubject_,
+      AppShell.loader_,
+      this.overflowMenuButton_,
+    );
     this.appendMenu_();
 
     this.mainContent_.addEventListener('click', (e) => {
@@ -213,8 +224,12 @@ export class AppShell extends HTMLElement {
     leftArrow.setAttribute('marker-start', 'url(#head)');
 
     return createSvgButton(
-        '0 0 24 24', () => this.dispatchEvent(new ToggleViewEvent()),
-        createSvg('defs', marker), rightArrow, leftArrow);
+      '0 0 24 24',
+      () => this.dispatchEvent(new ToggleViewEvent()),
+      createSvg('defs', marker),
+      rightArrow,
+      leftArrow,
+    );
   }
 
   showFilterToggle(show: boolean) {
@@ -239,22 +254,19 @@ export class AppShell extends HTMLElement {
     let buttonContainer = document.createElement('div');
     this.dispatchEvent(new OverflowMenuOpenEvent(buttonContainer));
 
-    this.overflowMenu_ =
-        new Dialog(document.createElement('div'), [buttonContainer], {
-          right: `${window.innerWidth - rect.right}px`,
-          top: `${rect.bottom}px`,
-        });
-    this.overflowMenu_.addEventListener(
-        'close', () => this.overflowMenu_ = undefined);
+    this.overflowMenu_ = new Dialog(document.createElement('div'), [buttonContainer], {
+      right: `${window.innerWidth - rect.right}px`,
+      top: `${rect.bottom}px`,
+    });
+    this.overflowMenu_.addEventListener('close', () => (this.overflowMenu_ = undefined));
   }
 
   static setFooter(dom?: HTMLElement) {
     AppShell.footer_.textContent = '';
-    if (dom)
-      AppShell.addToFooter(dom);
+    if (dom) AppShell.addToFooter(dom);
   }
 
-  static addToFooter(...nodes: (string|HTMLElement)[]) {
+  static addToFooter(...nodes: (string | HTMLElement)[]) {
     // Set pointerEvents if it's not already set so that the pointer-events:none
     // on the footer itself doesn't prevent clicks.
     // TODO: This is brittle (e.g. doens't work with stylesheets). Find a better
@@ -272,8 +284,7 @@ export class AppShell extends HTMLElement {
     AppShell.updateTitleBase(titleStack_, AppShell.title_, key, ...opt_title);
   }
 
-  static updateLoaderTitle(
-      key: string, count: number, ...opt_title: (HTMLElement|string)[]) {
+  static updateLoaderTitle(key: string, count: number, ...opt_title: (HTMLElement | string)[]) {
     let progress = progressElements.get(key);
     if (!progress) {
       progress = new ProgressTracker();
@@ -285,8 +296,7 @@ export class AppShell extends HTMLElement {
 
     progress.addToTotal(count);
 
-    AppShell.updateTitleBase(
-        loaderTitleStack_, AppShell.loader_, key, ...opt_title, progress);
+    AppShell.updateTitleBase(loaderTitleStack_, AppShell.loader_, key, ...opt_title, progress);
     return progress;
   }
 
@@ -295,12 +305,14 @@ export class AppShell extends HTMLElement {
   }
 
   static updateTitleBase(
-      stack: TitleEntry[], node: HTMLElement, key: string,
-      ...opt_title: (HTMLElement|string)[]) {
+    stack: TitleEntry[],
+    node: HTMLElement,
+    key: string,
+    ...opt_title: (HTMLElement | string)[]
+  ) {
     let index = stack.findIndex((item) => item.key == key);
     if (!opt_title[0]) {
-      if (index != -1)
-        stack.splice(index, 1);
+      if (index != -1) stack.splice(index, 1);
     } else if (index == -1) {
       stack.push({
         key: key,
@@ -312,15 +324,16 @@ export class AppShell extends HTMLElement {
     }
 
     node.textContent = '';
-    if (stack.length)
-      node.append(...stack[stack.length - 1].title);
+    if (stack.length) node.append(...stack[stack.length - 1].title);
   }
 
   async openFilterMenu_() {
     const rect = this.filterToggle_.getBoundingClientRect();
     new FilterDialogView(
-        await getSettings(), {top: `${rect.bottom}px`, left: `${rect.left}px`},
-        this.queryParameters_);
+      await getSettings(),
+      { top: `${rect.bottom}px`, left: `${rect.left}px` },
+      this.queryParameters_,
+    );
   }
 
   setContent(newContent: HTMLElement) {
@@ -332,8 +345,7 @@ export class AppShell extends HTMLElement {
     return this.content_.parentElement;
   }
 
-  setSubject(
-      subject?: HTMLElement, ...extraToolbarItems: (string|HTMLElement)[]) {
+  setSubject(subject?: HTMLElement, ...extraToolbarItems: (string | HTMLElement)[]) {
     this.toolbarSubject_.textContent = '';
     this.bodySubject_.textContent = '';
 
@@ -343,8 +355,7 @@ export class AppShell extends HTMLElement {
     }
 
     this.bodySubject_.classList.remove('hidden');
-    this.bodySubject_.append(
-        subject instanceof Node ? subject.cloneNode(true) : subject);
+    this.bodySubject_.append(subject instanceof Node ? subject.cloneNode(true) : subject);
 
     subject.classList.add('truncate-block-1-line', 'flex-expand-1', 'mr1');
     this.toolbarSubject_.append(subject, ...extraToolbarItems);
@@ -358,7 +369,7 @@ export class AppShell extends HTMLElement {
     notNull(this.content_.parentElement).scrollTop = value;
   }
 
-  setQueryParameters(params: {[property: string]: string}) {
+  setQueryParameters(params: { [property: string]: string }) {
     this.queryParameters_ = params;
     let hasFilterParams = FilterDialogView.containsFilterParameter(params);
     this.filterToggle_.style.fill = hasFilterParams ? 'red' : '';
@@ -382,11 +393,9 @@ export class AppShell extends HTMLElement {
     a.append(name);
     a.className = 'item';
 
-    if (options.href)
-      a.href = options.href;
+    if (options.href) a.href = options.href;
 
-    if (options.onclick)
-      a.onclick = options.onclick;
+    if (options.onclick) a.onclick = options.onclick;
 
     a.addEventListener('click', () => this.closeMenu());
     return a;
@@ -394,17 +403,17 @@ export class AppShell extends HTMLElement {
 
   private appendMenu_() {
     this.drawer_.append(
-        this.createMenuItem_('Compose', {href: '/compose'}),
-        this.createMenuItem_('Todo', {href: '/todo'}),
-        this.createMenuItem_('Hidden', {href: '/hidden'}),
-        this.createMenuItem_('Calendar (alpha)', {href: '/calendar'}),
-        this.createMenuItem_('Settings', {href: '/settings'}),
-        this.createMenuItem_('Help', {onclick: () => showHelp()}));
+      this.createMenuItem_('Compose', { href: '/compose' }),
+      this.createMenuItem_('Todo', { href: '/todo' }),
+      this.createMenuItem_('Hidden', { href: '/hidden' }),
+      this.createMenuItem_('Calendar (alpha)', { href: '/calendar' }),
+      this.createMenuItem_('Settings', { href: '/settings' }),
+      this.createMenuItem_('Help', { onclick: () => showHelp() }),
+    );
   }
 
   private openMenu() {
-    let menuItems =
-        <NodeListOf<HTMLAnchorElement>>this.drawer_.querySelectorAll('a.item');
+    let menuItems = <NodeListOf<HTMLAnchorElement>>this.drawer_.querySelectorAll('a.item');
     for (let item of menuItems) {
       if (item.pathname == location.pathname) {
         item.classList.add(CURRENT_PAGE_CLASS);
@@ -423,10 +432,8 @@ export class AppShell extends HTMLElement {
   }
 
   private toggleMenu() {
-    if (this.drawerOpen_)
-      this.closeMenu();
-    else
-      this.openMenu();
+    if (this.drawerOpen_) this.closeMenu();
+    else this.openMenu();
   }
 }
 window.customElements.define('mt-appshell', AppShell);

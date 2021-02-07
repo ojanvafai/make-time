@@ -1,39 +1,35 @@
-import {createMktimeButton} from '../Base.js';
-import {Dialog} from '../Dialog.js';
+import { createMktimeButton } from '../Base.js';
+import { Dialog } from '../Dialog.js';
 
 interface Entry {
-  date: string, description: string;
+  date: string;
+  description: string;
 }
 
 const CHANGES: Entry[] = [
   {
     date: '8/9/20',
-    description:
-        `Added the backend for note to self. In the process identified and fixed a number of bugs in syncing labels to gmail.`
+    description: `Added the backend for note to self. In the process identified and fixed a number of bugs in syncing labels to gmail.`,
   },
   {
     date: '8/9/20',
-    description:
-        `Fixed taking a triage action after sending a message in compose view.`
+    description: `Fixed taking a triage action after sending a message in compose view.`,
   },
   {
     date: '8/9/20',
-    description: `Fixed assorted rendering bugs in the unfiltered view.`
+    description: `Fixed assorted rendering bugs in the unfiltered view.`,
   },
   {
     date: '7/30/20',
-    description:
-        `Make confirm prompt for deleting a rule in the filter settings inline rather than a popup.`
+    description: `Make confirm prompt for deleting a rule in the filter settings inline rather than a popup.`,
   },
   {
     date: '7/30/20',
-    description:
-        `Restrict the width of rendered messages to target <100 characters for better readability.`
+    description: `Restrict the width of rendered messages to target <100 characters for better readability.`,
   },
   {
     date: '7/29/20',
-    description:
-        `Added a setting to have mktime push labels and priorities to gmail as gmail labels. This lets you have a backup of the critical mktime content in gmail and also lets you cope better when mktime is down for some reason.
+    description: `Added a setting to have mktime push labels and priorities to gmail as gmail labels. This lets you have a backup of the critical mktime content in gmail and also lets you cope better when mktime is down for some reason.
 
 label/priority are only sent from mktime to gmail, not the other way around. So changing a label or priority in gmail will cause it to get out of sync with what label/priority mktime thinks it has until you modify the thread in mktime again.
 
@@ -42,28 +38,23 @@ This code is hot off the presses and mostly rewrites the existing code for sendi
   },
   {
     date: '7/25/20',
-    description:
-        `Pinned threads now have a pin icon to indicate they are pinned.`,
+    description: `Pinned threads now have a pin icon to indicate they are pinned.`,
   },
   {
     date: '7/25/20',
-    description:
-        `Add recently modified view to Hidden tab for seeing the last 50 threads you took an action on. Helpful for when you accidentally triage something and can't get back to it with undo.`,
+    description: `Add recently modified view to Hidden tab for seeing the last 50 threads you took an action on. Helpful for when you accidentally triage something and can't get back to it with undo.`,
   },
   {
     date: '7/25/20',
-    description:
-        `Added a send button to quick reply and changed the send keyboard shortcut from enter to cmd+enter.`,
+    description: `Added a send button to quick reply and changed the send keyboard shortcut from enter to cmd+enter.`,
   },
   {
     date: '7/25/20',
-    description:
-        `Added "Redact messages" to Settings for doing demos without showing the whole world your inbox.`,
+    description: `Added "Redact messages" to Settings for doing demos without showing the whole world your inbox.`,
   },
   {
     date: '7/22/20',
-    description:
-        `Moved unfiltered threads to a dedicated view. In the main Todo view they render as a single card a the top you can click on to go to the view. It shows the names of the senders so you can see if you need to deal with filters or not. 
+    description: `Moved unfiltered threads to a dedicated view. In the main Todo view they render as a single card a the top you can click on to go to the view. It shows the names of the senders so you can see if you need to deal with filters or not. 
 
 Hopefully this also makes it so you can ignore unfiltered if you need to get into your inbox to quickly do a thing.
 
@@ -78,8 +69,7 @@ function writeLastShownDate() {
 
 export function renderChangeLog() {
   // TODO: Store this in firestore so it syncs across devices
-  const lastShownChangelogEntryDate =
-      window.localStorage.lastShownChangelogEntryDate;
+  const lastShownChangelogEntryDate = window.localStorage.lastShownChangelogEntryDate;
   // If this is a new user, then there won't be a last shown date and we don't
   // want to show them a changelog anyways.
   if (lastShownChangelogEntryDate === undefined) {
@@ -89,7 +79,7 @@ export function renderChangeLog() {
   let changes = CHANGES;
   if (lastShownChangelogEntryDate) {
     const lastShownDate = new Date(lastShownChangelogEntryDate);
-    changes = CHANGES.filter(x => new Date(x.date) > lastShownDate);
+    changes = CHANGES.filter((x) => new Date(x.date) > lastShownDate);
   }
 
   if (!changes.length) {
@@ -111,4 +101,4 @@ export function renderChangeLog() {
   const closeButton = createMktimeButton(() => dialog.remove(), 'close');
   const dialog = new Dialog(container, [closeButton]);
   dialog.addEventListener('close', writeLastShownDate);
-};
+}

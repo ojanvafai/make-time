@@ -1,4 +1,4 @@
-import {EventType, ME_TIME_TYPES} from './Constants.js';
+import { EventType, ME_TIME_TYPES } from './Constants.js';
 
 export class Aggregate {
   start: Date;
@@ -11,15 +11,12 @@ export class Aggregate {
     let total = 0;
     let notMeTime = 0;
     for (let [type, value] of this.minutesPerType) {
-      if (type === EventType.OutOfOffice)
-        continue;
+      if (type === EventType.OutOfOffice) continue;
 
       total += value;
-      if (!ME_TIME_TYPES.includes(type))
-        notMeTime += value;
+      if (!ME_TIME_TYPES.includes(type)) notMeTime += value;
     }
-    if (total > 0)
-      return Math.ceil(100 * notMeTime / total) + '%';
+    if (total > 0) return Math.ceil((100 * notMeTime) / total) + '%';
     return '';
   }
 }

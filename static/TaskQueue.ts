@@ -1,4 +1,4 @@
-import {EventTargetPolyfill} from './EventTargetPolyfill';
+import { EventTargetPolyfill } from './EventTargetPolyfill';
 
 type Task = () => Promise<void>;
 
@@ -22,12 +22,10 @@ export class TaskQueue extends EventTargetPolyfill {
   }
 
   public doTasks() {
-    if (this.inProgressTaskCount >= this.maxTasks)
-      return;
+    if (this.inProgressTaskCount >= this.maxTasks) return;
     let task = this.tasks.shift();
     if (task === undefined) {
-      for (let resolve of this.resolves)
-        resolve();
+      for (let resolve of this.resolves) resolve();
       return;
     }
     this.inProgressTaskCount++;
@@ -43,8 +41,7 @@ export class TaskQueue extends EventTargetPolyfill {
   public queueTask(task: Task) {
     const shouldStart = this.tasks.length == 0;
     this.tasks.push(task);
-    if (shouldStart)
-      this.doTasks();
+    if (shouldStart) this.doTasks();
   }
 
   dispatchTaskCompletedEvent() {
@@ -52,9 +49,8 @@ export class TaskQueue extends EventTargetPolyfill {
   }
 
   flush() {
-    return new Promise(resolve => {
-      if (!this.tasks.length && this.inProgressTaskCount == 0)
-        resolve();
+    return new Promise((resolve) => {
+      if (!this.tasks.length && this.inProgressTaskCount == 0) resolve();
       this.resolves.push(resolve);
     });
   }

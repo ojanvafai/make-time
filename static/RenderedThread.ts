@@ -1,10 +1,10 @@
-import {Action} from './Actions.js';
-import {assert, collapseArrow, expandArrow, notNull} from './Base.js';
-import {Message} from './Message.js';
-import {QuoteElidedMessage} from './QuoteElidedMessage.js';
-import {Thread} from './Thread.js';
-import {NEXT_FULL_ACTION, PREVIOUS_FULL_ACTION} from './views/ThreadListView.js';
-import {NEXT_ACTION, PREVIOUS_ACTION} from './views/ThreadListViewBase.js';
+import { Action } from './Actions.js';
+import { assert, collapseArrow, expandArrow, notNull } from './Base.js';
+import { Message } from './Message.js';
+import { QuoteElidedMessage } from './QuoteElidedMessage.js';
+import { Thread } from './Thread.js';
+import { NEXT_FULL_ACTION, PREVIOUS_FULL_ACTION } from './views/ThreadListView.js';
+import { NEXT_ACTION, PREVIOUS_ACTION } from './views/ThreadListViewBase.js';
 
 let formattingOptions: {
   year?: string;
@@ -15,19 +15,17 @@ let formattingOptions: {
 } = {
   hour: 'numeric',
   minute: 'numeric',
-}
+};
 
 let SAME_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
 
 formattingOptions.month = 'short';
 formattingOptions.day = 'numeric';
 
-let DIFFERENT_DAY_FORMATTER =
-    new Intl.DateTimeFormat(undefined, formattingOptions);
+let DIFFERENT_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
 
 formattingOptions.year = 'numeric';
-let DIFFERENT_YEAR_FORMATTER =
-    new Intl.DateTimeFormat(undefined, formattingOptions);
+let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, formattingOptions);
 
 // Kinda gross that we need to expose the typescript output directory in the
 // code. :(
@@ -38,13 +36,12 @@ if (CSS && CSS.paintWorklet)
 
 export class RenderedThread extends HTMLElement {
   private spinner_?: HTMLElement;
-  private focused_: HTMLElement|null;
+  private focused_: HTMLElement | null;
   private shouldFocusFirstUnreadOnNextRenderMessages_: boolean;
 
   constructor(public thread: Thread) {
     super();
-    this.className =
-        'absolute mx-auto left-0 right-0 thread-text-color reading-max-width';
+    this.className = 'absolute mx-auto left-0 right-0 thread-text-color reading-max-width';
     this.focused_ = null;
     this.shouldFocusFirstUnreadOnNextRenderMessages_ = false;
   }
@@ -67,7 +64,7 @@ export class RenderedThread extends HTMLElement {
         background-color: var(--border-and-hover-color);
       `;
       this.append(this.spinner_);
-      this.spinner_.scrollIntoView({'block': 'center', 'behavior': 'smooth'});
+      this.spinner_.scrollIntoView({ block: 'center', behavior: 'smooth' });
     } else if (this.spinner_) {
       this.spinner_.remove();
     }
@@ -75,16 +72,13 @@ export class RenderedThread extends HTMLElement {
 
   async render() {
     let messages = this.thread.getMessages();
-    let alreadyRenderedMessages =
-        [...this.children].filter(x => x.classList.contains('message'));
+    let alreadyRenderedMessages = [...this.children].filter((x) => x.classList.contains('message'));
     for (let i = 0; i < messages.length; i++) {
       let quoteElidedMessage = await messages[i].getQuoteElidedMessage();
-      if (this.contains(quoteElidedMessage))
-        continue;
+      if (this.contains(quoteElidedMessage)) continue;
 
       let rendered = this.renderMessage_(messages[i], quoteElidedMessage);
-      if (this.childElementCount == 0)
-        rendered.style.border = '0';
+      if (this.childElementCount == 0) rendered.style.border = '0';
 
       // In theory this should never happen, but it seems to in some cases.
       // Since we can't figure out what's causing it, do a workaround so the
@@ -98,14 +92,15 @@ export class RenderedThread extends HTMLElement {
     }
 
     if (this.shouldFocusFirstUnreadOnNextRenderMessages_ && messages.length) {
-      let rendered: Element|null|undefined =
-          Array.from(this.children).find(x => x.classList.contains('unread'));
+      let rendered: Element | null | undefined = Array.from(this.children).find((x) =>
+        x.classList.contains('unread'),
+      );
       if (!rendered) {
         rendered = this.lastElementChild;
       }
       this.shouldFocusFirstUnreadOnNextRenderMessages_ = false;
       if (rendered) {
-        this.focusMessage_(rendered, {'block': 'center'});
+        this.focusMessage_(rendered, { block: 'center' });
       }
     }
   }
@@ -116,12 +111,11 @@ export class RenderedThread extends HTMLElement {
   }
 
   moveFocus(action: Action, options?: ScrollIntoViewOptions) {
-    let message: Element|null;
+    let message: Element | null;
     switch (action) {
       case NEXT_ACTION:
         message = notNull(this.focused_).nextElementSibling;
-        if (!message)
-          return;
+        if (!message) return;
         break;
 
       case NEXT_FULL_ACTION:
@@ -130,8 +124,7 @@ export class RenderedThread extends HTMLElement {
 
       case PREVIOUS_ACTION:
         message = notNull(this.focused_).previousElementSibling;
-        if (!message)
-          return;
+        if (!message) return;
         break;
 
       case PREVIOUS_FULL_ACTION:
@@ -142,8 +135,7 @@ export class RenderedThread extends HTMLElement {
         throw new Error('This should never happen.');
     }
 
-    if (message)
-      this.focusMessage_(message, options);
+    if (message) this.focusMessage_(message, options);
   }
 
   focusMessage_(message: Element, options?: ScrollIntoViewOptions) {
@@ -154,8 +146,7 @@ export class RenderedThread extends HTMLElement {
   }
 
   private clearFocus_() {
-    if (!this.focused_)
-      return;
+    if (!this.focused_) return;
     this.focused_.style.backgroundImage = '';
   }
 
@@ -169,8 +160,7 @@ export class RenderedThread extends HTMLElement {
     return header;
   }
 
-  renderMessage_(
-      processedMessage: Message, quoteElidedMessage: QuoteElidedMessage) {
+  renderMessage_(processedMessage: Message, quoteElidedMessage: QuoteElidedMessage) {
     var messageDiv = document.createElement('div');
     messageDiv.style.cssText = `
       padding: 8px;
@@ -280,28 +270,29 @@ export class RenderedThread extends HTMLElement {
     return messageDiv;
   }
 
-  renderTo_(
-      processedMessage: Message, container: HTMLElement,
-      shouldMinify: boolean) {
+  renderTo_(processedMessage: Message, container: HTMLElement, shouldMinify: boolean) {
     container.textContent = '';
 
     if (processedMessage.to) {
       this.appendAddresses_(
-          container, 'to',
-          shouldMinify ? Message.minifyAddressList(processedMessage.parsedTo) :
-                         processedMessage.to);
+        container,
+        'to',
+        shouldMinify ? Message.minifyAddressList(processedMessage.parsedTo) : processedMessage.to,
+      );
     }
     if (processedMessage.cc) {
       this.appendAddresses_(
-          container, 'cc',
-          shouldMinify ? Message.minifyAddressList(processedMessage.parsedCc) :
-                         processedMessage.cc);
+        container,
+        'cc',
+        shouldMinify ? Message.minifyAddressList(processedMessage.parsedCc) : processedMessage.cc,
+      );
     }
     if (processedMessage.bcc) {
       this.appendAddresses_(
-          container, 'bcc',
-          shouldMinify ? Message.minifyAddressList(processedMessage.parsedBcc) :
-                         processedMessage.bcc);
+        container,
+        'bcc',
+        shouldMinify ? Message.minifyAddressList(processedMessage.parsedBcc) : processedMessage.bcc,
+      );
     }
   }
 
@@ -321,9 +312,7 @@ export class RenderedThread extends HTMLElement {
     let today = new Date();
     if (today.getFullYear() != date.getFullYear()) {
       formatter = DIFFERENT_YEAR_FORMATTER;
-    } else if (
-        today.getMonth() != date.getMonth() ||
-        today.getDate() != date.getDate()) {
+    } else if (today.getMonth() != date.getMonth() || today.getDate() != date.getDate()) {
       formatter = DIFFERENT_DAY_FORMATTER;
     } else {
       formatter = SAME_DAY_FORMATTER;

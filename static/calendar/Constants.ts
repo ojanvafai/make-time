@@ -28,7 +28,9 @@ export enum EventType {
 }
 
 export const UNBOOKED_TYPES = [
-  EventType.UnbookedSmall, EventType.UnbookedMedium, EventType.UnbookedLarge
+  EventType.UnbookedSmall,
+  EventType.UnbookedMedium,
+  EventType.UnbookedLarge,
 ];
 
 // Event types that don't count against the total of time considered booked.
@@ -49,18 +51,18 @@ export const WORKING_DAY_END = 17;
 // human readable names come from
 // https://developers.google.com/apps-script/reference/calendar/event-color.
 // Don't reorder. The order of these needs to match what Calendar API returns!
-export const CALENDAR_ALLOWED_COLORS: {[property: string]: string} = {
+export const CALENDAR_ALLOWED_COLORS: { [property: string]: string } = {
   'Pale Blue': '#a4bdfc',
   'Pale Green': '#7ae7bf',
-  'Mauve': '#dbadff',
+  Mauve: '#dbadff',
   'Pale Red': '#ff887c',
-  'Yellow': '#fbd75b',
-  'Orange': '#ffb878',
-  'Cyan': '#46d6db',
-  'Gray': '#e1e1e1',
-  'Blue': '#5484ed',
-  'Green': '#51b749',
-  'Red': '#dc2127',
+  Yellow: '#fbd75b',
+  Orange: '#ffb878',
+  Cyan: '#46d6db',
+  Gray: '#e1e1e1',
+  Blue: '#5484ed',
+  Green: '#51b749',
+  Red: '#dc2127',
 };
 
 export const CALENDAR_HEX_COLORS = Object.values(CALENDAR_ALLOWED_COLORS);
@@ -72,7 +74,7 @@ function addData(type: EventType, color: string, index: number) {
     color: CALENDAR_ALLOWED_COLORS[color] || color,
     index: index,
   };
-};
+}
 
 addData(EventType.MeetingRecurring, 'Pale Blue', 12);
 addData(EventType.MeetingNonRecurring, 'Blue', 11);

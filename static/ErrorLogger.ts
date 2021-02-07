@@ -1,4 +1,4 @@
-import {createMktimeButton} from './Base.js';
+import { createMktimeButton } from './Base.js';
 
 class Logger extends HTMLElement {
   messageContainer_: HTMLDivElement;
@@ -39,15 +39,13 @@ class Logger extends HTMLElement {
   log(message: string, details?: string) {
     console.error(message);
 
-    if (!this.parentNode)
-      document.body.append(this);
+    if (!this.parentNode) document.body.append(this);
     let container = document.createElement('div');
     container.style.cssText = `
       border-bottom: 1px solid #000000bb;
       padding: 3px;
     `;
-    container.append(
-        `${this.messageContainer_.children.length + 1}: ${message}`);
+    container.append(`${this.messageContainer_.children.length + 1}: ${message}`);
 
     if (details) {
       let summary = document.createElement('summary');

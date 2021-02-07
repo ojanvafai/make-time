@@ -1,14 +1,21 @@
-import {AsyncOnce} from '../AsyncOnce.js';
-import {assert, defined, notNull} from '../Base.js';
-import {login} from '../BaseMain.js';
-import {Model} from '../models/Model.js';
-import {gapiFetch} from '../Net.js';
-import {BuiltInRules, CalendarRule, Settings} from '../Settings.js';
-import {TaskQueue} from '../TaskQueue.js'
+import { AsyncOnce } from '../AsyncOnce.js';
+import { assert, defined, notNull } from '../Base.js';
+import { login } from '../BaseMain.js';
+import { Model } from '../models/Model.js';
+import { gapiFetch } from '../Net.js';
+import { BuiltInRules, CalendarRule, Settings } from '../Settings.js';
+import { TaskQueue } from '../TaskQueue.js';
 
-import {Aggregate} from './Aggregate.js'
-import {CalendarEvent} from './CalendarEvent.js'
-import {CALENDAR_HEX_COLORS, CALENDAR_ID, CalendarSortListEntry, EventType, WORKING_DAY_END, WORKING_DAY_START} from './Constants.js'
+import { Aggregate } from './Aggregate.js';
+import { CalendarEvent } from './CalendarEvent.js';
+import {
+  CALENDAR_HEX_COLORS,
+  CALENDAR_ID,
+  CalendarSortListEntry,
+  EventType,
+  WORKING_DAY_END,
+  WORKING_DAY_START,
+} from './Constants.js';
 
 const SMALL_DURATION_MINS = 30;
 const MEDIUM_DURATION_MINS = 60;
@@ -26,7 +33,7 @@ function getStartOfWeek(date: Date): Date {
   x.setHours(0, 0, 0);
   x.setDate(x.getDate() - x.getDay());
   return x;
-};
+}
 
 function getDurationOverlappingWorkDay(start: Date, end: Date, day: Date) {
   const startOfDay = new Date(day);
@@ -37,10 +44,9 @@ function getDurationOverlappingWorkDay(start: Date, end: Date, day: Date) {
   const endTime = Math.min(endOfDay.getTime(), end.getTime());
 
   // No overlap.
-  if (endTime - startTime < 0)
-    return 0;
+  if (endTime - startTime < 0) return 0;
   return endTime - startTime;
-};
+}
 
 function aggregateByWeek(aggregates: Aggregate[], types: EventType[]) {
   const weekly: Aggregate[] = [];
@@ -55,19 +61,17 @@ function aggregateByWeek(aggregates: Aggregate[], types: EventType[]) {
       currentWeekStart = aggregateWeekStart;
     }
     for (let type of types) {
-      if (!minutesPerType.has(type))
-        minutesPerType.set(type, 0);
+      if (!minutesPerType.has(type)) minutesPerType.set(type, 0);
 
       let aggregateValue = aggregate.minutesPerType.get(type);
-      if (!aggregateValue)
-        aggregateValue = 0;
+      if (!aggregateValue) aggregateValue = 0;
 
       minutesPerType.set(type, minutesPerType.get(type)! + aggregateValue);
     }
   }
   weekly.push(new Aggregate(new Date(currentWeekStart), minutesPerType));
   return weekly;
-};
+}
 
 function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   enum EVENT_CHANGE {
@@ -77,13 +81,14 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   }
 
   interface EventChange {
-    ts: Date, type: EVENT_CHANGE, event: CalendarEvent|null,
+    ts: Date;
+    type: EVENT_CHANGE;
+    event: CalendarEvent | null;
   }
 
   const eventChanges: EventChange[] = [];
   for (let event of events) {
-    eventChanges.push(
-        {ts: event.start, type: EVENT_CHANGE.EVENT_START, event: event});
+    eventChanges.push({ ts: event.start, type: EVENT_CHANGE.EVENT_START, event: event });
     eventChanges.push({
       ts: new Date(event.start.getTime() + event.duration),
       type: EVENT_CHANGE.EVENT_END,
@@ -99,7 +104,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
     return a.ts.getTime() - b.ts.getTime();
   }
   // TODO - eliminate multiple sorts.
-  eventChanges.sort(sortEventChanges)
+  eventChanges.sort(sortEventChanges);
 
   // Insert event changes at the beginning and end of the work
   // day. Needed for multi-day events to work.
@@ -116,15 +121,13 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   };
 
   let addUnbookedDuration = (durationMs: number) => {
-    if (durationMs <= 0)
-      return;
+    if (durationMs <= 0) return;
     let unbookedDuration = durationMs / 60 / 1000;
     if (unbookedDuration < SMALL_DURATION_MINS)
       addDuration(EventType.UnbookedSmall, unbookedDuration);
     else if (unbookedDuration < MEDIUM_DURATION_MINS)
       addDuration(EventType.UnbookedMedium, unbookedDuration);
-    else
-      addDuration(EventType.UnbookedLarge, unbookedDuration);
+    else addDuration(EventType.UnbookedLarge, unbookedDuration);
   };
 
   let getMinutesPerType = (day: Date) => {
@@ -151,8 +154,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
 
   events.sort(sortEvents);
   for (let event of events) {
-    if (event.end < unbookedStart)
-      continue;
+    if (event.end < unbookedStart) continue;
 
     // Skip to the end of the event for events that span multiple days since
     // we're just looking for unbooked time.
@@ -160,7 +162,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
     tsDay.setHours(WORKING_DAY_START, 0, 0);
     if (tsDay.getTime() != currentDay.getTime()) {
       currentDay.setHours(WORKING_DAY_END, 0, 0);
-      let end = (event.start < currentDay) ? event.start : currentDay;
+      let end = event.start < currentDay ? event.start : currentDay;
       let duration = getDurationOverlappingWorkDay(unbookedStart, end, end);
       addUnbookedDuration(duration);
       currentDay = tsDay;
@@ -177,26 +179,26 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   }
 
   currentDay.setHours(WORKING_DAY_END, 0, 0);
-  let duration =
-      getDurationOverlappingWorkDay(unbookedStart, currentDay, currentDay);
+  let duration = getDurationOverlappingWorkDay(unbookedStart, currentDay, currentDay);
   addUnbookedDuration(duration);
 
   // TODO - insert a change at the beginning and end of each day
   // and handle empty event change regions.
-  for (const curDay = firstDay; curDay.getTime() <= lastDay.getTime();
-       curDay.setDate(curDay.getDate() + 1)) {
+  for (
+    const curDay = firstDay;
+    curDay.getTime() <= lastDay.getTime();
+    curDay.setDate(curDay.getDate() + 1)
+  ) {
     const dayStart = new Date(curDay);
     dayStart.setHours(WORKING_DAY_START, 0, 0);
     const dayEnd = new Date(curDay);
     dayEnd.setHours(WORKING_DAY_END, 0, 0);
 
-    eventChanges.push(
-        {ts: dayStart, type: EVENT_CHANGE.EVENT_WORKDAY, event: null})
-    eventChanges.push(
-        {ts: dayEnd, type: EVENT_CHANGE.EVENT_WORKDAY, event: null})
+    eventChanges.push({ ts: dayStart, type: EVENT_CHANGE.EVENT_WORKDAY, event: null });
+    eventChanges.push({ ts: dayEnd, type: EVENT_CHANGE.EVENT_WORKDAY, event: null });
   }
 
-  eventChanges.sort(sortEventChanges)
+  eventChanges.sort(sortEventChanges);
 
   const day = new Date(events[0].start);
   day.setHours(0, 0, 0);
@@ -209,36 +211,30 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   for (let eventChange of eventChanges) {
     let primaryInProgressEvents = Array.from(inProgressEvents);
     // OOO events take priority.
-    const ooo =
-        primaryInProgressEvents.filter(e => e.type === EventType.OutOfOffice);
+    const ooo = primaryInProgressEvents.filter((e) => e.type === EventType.OutOfOffice);
     if (ooo.length !== 0) {
       primaryInProgressEvents = ooo;
     } else {
       // Otherwise, prioritize short events.
-      const minInProgressDuration =
-          primaryInProgressEvents.reduce((min, event) => {
-            return Math.min(event.duration, min);
-          }, Infinity);
+      const minInProgressDuration = primaryInProgressEvents.reduce((min, event) => {
+        return Math.min(event.duration, min);
+      }, Infinity);
 
-      primaryInProgressEvents = primaryInProgressEvents.filter(
-          event => {return event.duration == minInProgressDuration})
+      primaryInProgressEvents = primaryInProgressEvents.filter((event) => {
+        return event.duration == minInProgressDuration;
+      });
     }
-    const durationMinutes =
-        getDurationOverlappingWorkDay(ts, eventChange.ts, day) / 60 / 1000;
+    const durationMinutes = getDurationOverlappingWorkDay(ts, eventChange.ts, day) / 60 / 1000;
 
     for (let inProgressEvent of primaryInProgressEvents) {
-      addDuration(
-          notNull(inProgressEvent.type),
-          durationMinutes / primaryInProgressEvents.length);
+      addDuration(notNull(inProgressEvent.type), durationMinutes / primaryInProgressEvents.length);
     }
 
     if (eventChange.type == EVENT_CHANGE.EVENT_START) {
-      if (eventChange.event === null)
-        throw ('Event start with null event.');
+      if (eventChange.event === null) throw 'Event start with null event.';
       inProgressEvents.add(eventChange.event);
     } else if (eventChange.type == EVENT_CHANGE.EVENT_END) {
-      if (eventChange.event === null)
-        throw ('Event end with null event.');
+      if (eventChange.event === null) throw 'Event end with null event.';
       inProgressEvents.delete(eventChange.event);
     }
 
@@ -249,8 +245,10 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
       if (day.getDay() != 0 && day.getDay() != 6) {
         // Fill in unbooked time. This can happen if a day has no events or
         // if events overlap the start/end of the day.
-        let totalMinutes = Array.from(minutesPerType!.values())
-                               .reduce((total, value) => total + value, 0);
+        let totalMinutes = Array.from(minutesPerType!.values()).reduce(
+          (total, value) => total + value,
+          0,
+        );
         if (totalMinutes < WHOLE_DAY_DURATION_MINS) {
           let durationMs = 60 * 1000 * (WHOLE_DAY_DURATION_MINS - totalMinutes);
           addUnbookedDuration(durationMs);
@@ -263,7 +261,7 @@ function eventsToAggregates(events: CalendarEvent[]): Aggregate[] {
   }
 
   return aggregates;
-};
+}
 
 export class Calendar extends Model {
   private ruleMetadata_?: CalendarSortListEntry[];
@@ -276,8 +274,7 @@ export class Calendar extends Model {
   private isColorizing_: boolean = false;
   private onReceiveEventsChunkResolves: ((cs: CalendarEvent[]) => void)[] = [];
 
-  constructor(
-      private settings_: Settings, private start_?: Date, private end_?: Date) {
+  constructor(private settings_: Settings, private start_?: Date, private end_?: Date) {
     super();
     this.setupAggregates_();
   }
@@ -295,20 +292,20 @@ export class Calendar extends Model {
     this.weekAggregates = new AsyncOnce<Aggregate[]>(async () => {
       let dayAggregates = await this.dayAggregates.do();
       return aggregateByWeek(
-          dayAggregates, defined(this.ruleMetadata_).map(x => x.label));
+        dayAggregates,
+        defined(this.ruleMetadata_).map((x) => x.label),
+      );
     });
   }
 
   getDayAggregates(): Promise<Aggregate[]> {
-    if (this.dayAggregates === null)
-      throw ('dayAggregates should never be null');
-    return new Promise(resolve => resolve(this.dayAggregates.do()));
+    if (this.dayAggregates === null) throw 'dayAggregates should never be null';
+    return new Promise((resolve) => resolve(this.dayAggregates.do()));
   }
 
   getWeekAggregates(): Promise<Aggregate[]> {
-    if (this.weekAggregates === null)
-      throw ('weekAggregates should never be null');
-    return new Promise(resolve => resolve(this.weekAggregates.do()));
+    if (this.weekAggregates === null) throw 'weekAggregates should never be null';
+    return new Promise((resolve) => resolve(this.weekAggregates.do()));
   }
 
   gotEventsChunk(events: CalendarEvent[]) {
@@ -318,9 +315,11 @@ export class Calendar extends Model {
     }
   }
 
-  getEventsChunk(): Promise<CalendarEvent[]>{return new Promise((resolve) => {
-    this.onReceiveEventsChunkResolves.push(resolve);
-  })}
+  getEventsChunk(): Promise<CalendarEvent[]> {
+    return new Promise((resolve) => {
+      this.onReceiveEventsChunkResolves.push(resolve);
+    });
+  }
 
   async getRules() {
     let rules: CalendarRule[] = await this.settings_.getCalendarFilters();
@@ -328,13 +327,12 @@ export class Calendar extends Model {
   }
 
   getEventsWithoutLocalRoom(officesCsv: string) {
-    let offices = officesCsv ? officesCsv.split(',').map(x => x.trim()) : [];
-    return this.events.filter(x => x.needsLocalRoom(offices));
+    let offices = officesCsv ? officesCsv.split(',').map((x) => x.trim()) : [];
+    return this.events.filter((x) => x.needsLocalRoom(offices));
   }
 
   private async initialFetch_() {
-    if (!this.fetchingEvents_)
-      return;
+    if (!this.fetchingEvents_) return;
 
     let startDate;
     let endDate;
@@ -350,20 +348,23 @@ export class Calendar extends Model {
       endDate.setDate(endDate.getDate() + days);
     }
 
-    await this.fetchEvents_(
-        (events: CalendarEvent[]) => this.gotEventsChunk(events),
-        {startDate, endDate});
+    await this.fetchEvents_((events: CalendarEvent[]) => this.gotEventsChunk(events), {
+      startDate,
+      endDate,
+    });
 
     this.events.sort((a, b) => a.start.getTime() - b.start.getTime());
     this.fetchingEvents_ = false;
   }
 
   private async fetchEvents_(
-      callback: (events: CalendarEvent[]) => void, options: {
-        startDate?: Date,
-        endDate?: Date,
-        nextSyncToken?: gapi.client.calendar.SyncToken,
-      }) {
+    callback: (events: CalendarEvent[]) => void,
+    options: {
+      startDate?: Date;
+      endDate?: Date;
+      nextSyncToken?: gapi.client.calendar.SyncToken;
+    },
+  ) {
     let pageToken = null;
     let pendingEvents: CalendarEvent[] = [];
     let rules = await this.getRules();
@@ -373,15 +374,12 @@ export class Calendar extends Model {
         calendarId: CALENDAR_ID,
         showDeleted: false,
         singleEvents: true,
-        maxResults: 2500,  // Max is 2500.
+        maxResults: 2500, // Max is 2500.
       };
 
-      if (options.startDate)
-        request.timeMin = options.startDate.toISOString();
-      if (options.endDate)
-        request.timeMax = options.endDate.toISOString();
-      if (pageToken)
-        request.pageToken = pageToken;
+      if (options.startDate) request.timeMin = options.startDate.toISOString();
+      if (options.endDate) request.timeMax = options.endDate.toISOString();
+      if (pageToken) request.pageToken = pageToken;
       if (options.nextSyncToken) {
         // Calendar API doens't allow setting showDeleted=false with a
         // syncToken.
@@ -391,51 +389,44 @@ export class Calendar extends Model {
 
       let response = await gapi.client.calendar.events.list(request);
       if (response.result.nextSyncToken) {
-        this.nextSyncToken_ =
-            response.result.nextSyncToken as gapi.client.calendar.SyncToken;
+        this.nextSyncToken_ = response.result.nextSyncToken as gapi.client.calendar.SyncToken;
       }
 
-      pendingEvents =
-          response.result.items.map(i => new CalendarEvent(i, rules))
-              .filter(e => !e.getShouldIgnore());
+      pendingEvents = response.result.items
+        .map((i) => new CalendarEvent(i, rules))
+        .filter((e) => !e.getShouldIgnore());
 
       callback(pendingEvents);
 
       pageToken = response.result.nextPageToken;
-      if (!pageToken)
-        break;
+      if (!pageToken) break;
     }
   }
 
   async updateEvents() {
-    if (!this.nextSyncToken_)
-      return;
+    if (!this.nextSyncToken_) return;
     // TODO: If we're not either colorizing or actually showing the calendar
     // right now, then we can early return here since we don't need to keep the
     // model up to date.
-    await this.fetchEvents_(
-        (events: CalendarEvent[]) => this.mergeNewEvents_(events),
-        {nextSyncToken: this.nextSyncToken_});
+    await this.fetchEvents_((events: CalendarEvent[]) => this.mergeNewEvents_(events), {
+      nextSyncToken: this.nextSyncToken_,
+    });
   }
 
   private async mergeNewEvents_(events: CalendarEvent[]) {
     for (let event of events) {
-      let index = this.events.findIndex(x => x.eventId === event.eventId);
+      let index = this.events.findIndex((x) => x.eventId === event.eventId);
       let isDeleted = event.status === 'cancelled';
       if (index === -1) {
-        if (!isDeleted)
-          this.events.push(event);
+        if (!isDeleted) this.events.push(event);
       } else {
-        if (isDeleted)
-          this.events.splice(index, 1);
-        else
-          this.events[index] = event;
+        if (isDeleted) this.events.splice(index, 1);
+        else this.events[index] = event;
       }
     }
 
     if (this.events.length) {
-      if (this.isColorizing_)
-        this.colorizeEvents_(events);
+      if (this.isColorizing_) this.colorizeEvents_(events);
 
       this.setupAggregates_();
       this.dispatchEvent(new EventListChangeEvent());
@@ -449,26 +440,24 @@ export class Calendar extends Model {
 
   private async colorizeEvents_(events: CalendarEvent[]) {
     let calendarSortData = await this.settings_.getCalendarSortData();
-    let eventTypeToColorId: {[property: string]: number} = {};
+    let eventTypeToColorId: { [property: string]: number } = {};
     for (let data of calendarSortData) {
-      eventTypeToColorId[data.label] =
-          CALENDAR_HEX_COLORS.indexOf(data.data.color) + 1;
+      eventTypeToColorId[data.label] = CALENDAR_HEX_COLORS.indexOf(data.data.color) + 1;
     }
 
     // Recurring events where you only have access to one of the events don't
     // let you modify the color by recurringEventId, so keep track of the
     // eventIds for each recurringEventId so we can handle them individually of
     // modifying the recurring event 404s.
-    let recurringToNonRecurring: {[property: string]: string[]} = {};
+    let recurringToNonRecurring: { [property: string]: string[] } = {};
 
-    let eventIdToColorId: {[property: string]: number} = {};
+    let eventIdToColorId: { [property: string]: number } = {};
     for (const event of events) {
       // Prefer recurringEventId so we modify the root for recurring events
       // instead of the instances. This is both 10x less network activity and a
       // better user experience.
       let id = event.recurringEventId || event.eventId;
-      if (eventIdToColorId[id])
-        continue;
+      if (eventIdToColorId[id]) continue;
 
       if (event.recurringEventId) {
         if (!recurringToNonRecurring[event.recurringEventId])
@@ -477,14 +466,12 @@ export class Calendar extends Model {
       }
 
       let targetColorId = defined(eventTypeToColorId[notNull(event.type)]);
-      if (event.colorId === targetColorId)
-        continue;
+      if (event.colorId === targetColorId) continue;
 
       eventIdToColorId[id] = targetColorId;
     }
 
-    let eventsToTryAgain =
-        await this.colorizeEventIds_(Object.entries(eventIdToColorId));
+    let eventsToTryAgain = await this.colorizeEventIds_(Object.entries(eventIdToColorId));
 
     let entriesToTry: [string, number][] = [];
     for (let failedEventId of eventsToTryAgain) {
@@ -514,13 +501,11 @@ export class Calendar extends Model {
             eventId: eventId,
             resource: {
               colorId: String(colorId),
-            }
+            },
           });
         } catch (e) {
-          if (e.status === 404)
-            toTryAgain.push(eventId);
-          else
-            console.log(`FAILED to make eventID:${eventId} ${colorId}`);
+          if (e.status === 404) toTryAgain.push(eventId);
+          else console.log(`FAILED to make eventID:${eventId} ${colorId}`);
         }
       });
     }
@@ -531,8 +516,7 @@ export class Calendar extends Model {
 
   async init() {
     // Don't init if we've already initted.
-    if (!this.fetchingEvents_)
-      return;
+    if (!this.fetchingEvents_) return;
     await login();
     this.ruleMetadata_ = await this.settings_.getCalendarSortData();
     await this.initialFetch_();
@@ -542,16 +526,13 @@ export class Calendar extends Model {
     return defined(this.ruleMetadata_);
   }
 
-  async * getEvents() {
-    for (const event of this.events)
-      yield event;
+  async *getEvents() {
+    for (const event of this.events) yield event;
 
     while (true) {
-      if (!this.fetchingEvents_)
-        return;
+      if (!this.fetchingEvents_) return;
       let events: CalendarEvent[] = await this.getEventsChunk();
-      for (const event of events)
-        yield event;
+      for (const event of events) yield event;
     }
   }
 }

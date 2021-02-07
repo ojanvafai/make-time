@@ -10,10 +10,9 @@ class Collection {
     return {
       collection: () => {
         return firebase.firestore().collection(0);
-      }, update: () => {
-
-      }
-    }
+      },
+      update: () => {},
+    };
   }
 }
 
@@ -21,14 +20,14 @@ class Firebase {
   constructor() {
     // This is weird - FieldValue lives on the method |firestore|.
     // @ts-ignore
-    this.firestore.FieldValue = {delete: () => {}};
+    this.firestore.FieldValue = { delete: () => {} };
   }
   firestore() {
     return this.firestore_;
   }
 
   auth() {
-    return {currentUser: {uid: 1}};
+    return { currentUser: { uid: 1 } };
   }
 
   update() {}
@@ -40,7 +39,7 @@ class Firestore {
   constructor() {}
   collection(_uid: Number): any {
     return this.collection_;
-  };
+  }
 
   private collection_ = new Collection();
 }

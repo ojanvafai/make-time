@@ -1,19 +1,24 @@
+import { Action, ActionGroup, registerActions } from '../Actions.js';
+import { assert, create, createMktimeButton, defined, Labels, parseAddressList } from '../Base.js';
+import { Dialog } from '../Dialog.js';
+import { MailProcessor } from '../MailProcessor.js';
+import { ThreadListModel } from '../models/ThreadListModel.js';
+import { QueueNames } from '../QueueNames.js';
+import { FilterRule, HeaderFilterRule, Settings } from '../Settings.js';
+import { UpdatedEvent } from '../Thread.js';
+import { ARCHIVE_ACTIONS } from '../ThreadActions.js';
 
-import {Action, ActionGroup, registerActions} from '../Actions.js';
-import {assert, create, createMktimeButton, defined, Labels, parseAddressList} from '../Base.js';
-import {Dialog} from '../Dialog.js';
-import {MailProcessor} from '../MailProcessor.js';
-import {ThreadListModel} from '../models/ThreadListModel.js';
-import {QueueNames} from '../QueueNames.js';
-import {FilterRule, HeaderFilterRule, Settings} from '../Settings.js';
-import {UpdatedEvent} from '../Thread.js';
-import {ARCHIVE_ACTIONS} from '../ThreadActions.js';
-
-import {AppShell} from './AppShell.js';
-import {FilterRuleComponent, LabelCreatedEvent} from './FilterRuleComponent.js';
-import {NEXT_ACTION, PREVIOUS_ACTION, ThreadListViewBase, VIEW_IN_GMAIL_ACTION, VIEW_THREADLIST_ACTION} from './ThreadListViewBase.js';
-import {RenderThreadEvent, ThreadRow} from './ThreadRow.js';
-import {SelectRowEvent, ThreadRowGroup, ThreadRowGroupRenderMode} from './ThreadRowGroup.js';
+import { AppShell } from './AppShell.js';
+import { FilterRuleComponent, LabelCreatedEvent } from './FilterRuleComponent.js';
+import {
+  NEXT_ACTION,
+  PREVIOUS_ACTION,
+  ThreadListViewBase,
+  VIEW_IN_GMAIL_ACTION,
+  VIEW_THREADLIST_ACTION,
+} from './ThreadListViewBase.js';
+import { RenderThreadEvent, ThreadRow } from './ThreadRow.js';
+import { SelectRowEvent, ThreadRowGroup, ThreadRowGroupRenderMode } from './ThreadRowGroup.js';
 
 let ADD_FILTER_ACTION = {
   name: `Add filter`,
@@ -42,8 +47,13 @@ export class UnfilteredView extends ThreadListViewBase {
   private shouldRenderFocusedRowMessages_!: boolean;
 
   // Use - as a heuristic for rare headers the user is unlikely to want.
-  private static HEADER_FILTER_MENU_EXCLUDES_ =
-      ['-', 'received', 'precedence', 'date', 'references'];
+  private static HEADER_FILTER_MENU_EXCLUDES_ = [
+    '-',
+    'received',
+    'precedence',
+    'date',
+    'references',
+  ];
   private static HEADER_FILTER_MENU_INCLUDES_ = ['list-id'];
   // Fields that contain email addresses and are handled specially by
   // MailProcessor need to inject different filter values.
@@ -54,25 +64,29 @@ export class UnfilteredView extends ThreadListViewBase {
     ...UnfilteredView.FROM_EMAIL_HEADERS_,
     'sender',
   ];
-  private static MKTIME_CUSTOM_FILTER_DIRECTIVES_:
-      ('label'|'subject'|'plaintext'|'htmlcontent')[] = [
-        'label',
-        'subject',
-        'plaintext',
-        'htmlcontent',
-      ];
+  private static MKTIME_CUSTOM_FILTER_DIRECTIVES_: (
+    | 'label'
+    | 'subject'
+    | 'plaintext'
+    | 'htmlcontent'
+  )[] = ['label', 'subject', 'plaintext', 'htmlcontent'];
   constructor(
-      model: ThreadListModel, appShell: AppShell, settings: Settings,
-      private getMailProcessor_?: () => Promise<MailProcessor>) {
+    model: ThreadListModel,
+    appShell: AppShell,
+    settings: Settings,
+    private getMailProcessor_?: () => Promise<MailProcessor>,
+  ) {
     super(model, appShell, settings);
 
     this.shouldRenderFocusedRowMessages_ = false;
 
     this.renderedThreadContainer_ = document.createElement('div');
-    this.renderedThreadContainer_.className =
-        'theme-max-width margin-auto relative';
+    this.renderedThreadContainer_.className = 'theme-max-width margin-auto relative';
     this.rowGroup_ = new ThreadRowGroup(
-        Labels.Fallback, 0, ThreadRowGroupRenderMode.UnfilteredStyle);
+      Labels.Fallback,
+      0,
+      ThreadRowGroupRenderMode.UnfilteredStyle,
+    );
     this.rowGroup_.style.backgroundColor = 'var(--nested-background-color)';
 
     // TODO: Do viewport handling for when there are many unfiltered.
@@ -91,10 +105,10 @@ export class UnfilteredView extends ThreadListViewBase {
     });
 
     this.helpText_ = document.createElement('div');
-    this.helpText_.className =
-        'text-size-small center theme-dim-text-color mx1-and-half';
+    this.helpText_.className = 'text-size-small center theme-dim-text-color mx1-and-half';
     this.helpText_.append(
-        `Add a filter rule to label this and future messages. You can edit it later from Settings.`);
+      `Add a filter rule to label this and future messages. You can edit it later from Settings.`,
+    );
 
     this.displayHelpText_();
     this.render();
@@ -111,15 +125,13 @@ export class UnfilteredView extends ThreadListViewBase {
   openFirstSelectedThreadInGmail_() {
     // Would prefer to open all the selected rows in gmail, but Chrome only
     // allows one popup per gesture.
-    if (!this.focusedRow_)
-      return;
+    if (!this.focusedRow_) return;
     this.openThreadInGmail(this.focusedRow_.thread);
   }
 
   private createLabelPicker_(labels: string[], callback: (e: Event) => void) {
     const labelPicker = document.createElement('div');
-    labelPicker.className =
-        'mx-half flex-expand-1 flex flex-wrap justify-center';
+    labelPicker.className = 'mx-half flex-expand-1 flex flex-wrap justify-center';
     for (const label of labels) {
       labelPicker.append(createMktimeButton(callback, label));
     }
@@ -129,19 +141,17 @@ export class UnfilteredView extends ThreadListViewBase {
   private async promptForLabel_() {
     const labels = await this.settings.getSortedLabels();
     return new Promise((resolve: (label?: string) => void) => {
-      let selectedLabel: string|undefined;
+      let selectedLabel: string | undefined;
       const selectLabel = (e: Event) => {
         selectedLabel = (e.target as HTMLElement).textContent;
         dialog.remove();
       };
 
-      const builtInLabels =
-          Object.values(Labels).filter(x => x !== Labels.Fallback) as string[];
-      const customLabels = labels.filter(x => !builtInLabels.includes(x));
+      const builtInLabels = Object.values(Labels).filter((x) => x !== Labels.Fallback) as string[];
+      const customLabels = labels.filter((x) => !builtInLabels.includes(x));
 
       const labelPicker = this.createLabelPicker_(customLabels, selectLabel);
-      const builtInLabelPicker =
-          this.createLabelPicker_(builtInLabels, selectLabel);
+      const builtInLabelPicker = this.createLabelPicker_(builtInLabels, selectLabel);
 
       let createNewLabelButton = createMktimeButton(() => {
         const queueNames = QueueNames.create();
@@ -157,7 +167,6 @@ export class UnfilteredView extends ThreadListViewBase {
       const customLabelsTitle = create('div', 'Custom labels');
       customLabelsTitle.style.marginTop = '12px';
 
-
       const dialogContents = document.createElement('div');
       dialogContents.style.cssText = `
         display: flex;
@@ -166,8 +175,11 @@ export class UnfilteredView extends ThreadListViewBase {
         overflow: auto;
       `;
       dialogContents.append(
-          create('div', 'Which label should this filter rule apply?'),
-          builtInLabelPicker, customLabelsTitle, labelPicker);
+        create('div', 'Which label should this filter rule apply?'),
+        builtInLabelPicker,
+        customLabelsTitle,
+        labelPicker,
+      );
 
       let cancelButton = createMktimeButton(() => dialog.remove(), 'cancel');
       const dialog = new Dialog(dialogContents, [cancelButton]);
@@ -197,10 +209,8 @@ export class UnfilteredView extends ThreadListViewBase {
     }
 
     const sortByNBame = (a: HeaderFilterRule, b: HeaderFilterRule) => {
-      if (a.name < b.name)
-        return -1;
-      if (b.name < a.name)
-        return 1;
+      if (a.name < b.name) return -1;
+      if (b.name < a.name) return 1;
       return 0;
     };
     let aHeaderRules = a.header.sort(sortByNBame);
@@ -211,32 +221,31 @@ export class UnfilteredView extends ThreadListViewBase {
       const bRule = bHeaderRules[i];
       if (aRule.name !== bRule.name || aRule.value !== bRule.value) {
         return false;
-        ;
       }
     }
     return true;
   }
 
-  private mergeFilterRule_(
-      existingFilterRules: FilterRule[], ruleJson: FilterRule) {
+  private mergeFilterRule_(existingFilterRules: FilterRule[], ruleJson: FilterRule) {
     const appendedVersion = [...existingFilterRules, ruleJson];
 
     for (let i = existingFilterRules.length - 1; i >= 0; i--) {
       // We can merge filter rules if they only differ on one directive and that
       // directive is one that takes comma separated lists.
       const currentRuleJson = existingFilterRules[i];
-      if (ruleJson.label !== currentRuleJson.label ||
-          ruleJson.matchallmessages !== currentRuleJson.matchallmessages ||
-          ruleJson.nolistid !== currentRuleJson.nolistid ||
-          ruleJson.nocc !== currentRuleJson.nocc) {
+      if (
+        ruleJson.label !== currentRuleJson.label ||
+        ruleJson.matchallmessages !== currentRuleJson.matchallmessages ||
+        ruleJson.nolistid !== currentRuleJson.nolistid ||
+        ruleJson.nocc !== currentRuleJson.nocc
+      ) {
         continue;
       }
 
       // Can only merge from and to since those are the only CSV directives.
       let differsOnFrom = ruleJson.from !== currentRuleJson.from;
       let differsOnTo = ruleJson.to !== currentRuleJson.to;
-      if (differsOnFrom && differsOnTo ||
-          !this.ruleJsonsMatch_(ruleJson, currentRuleJson)) {
+      if ((differsOnFrom && differsOnTo) || !this.ruleJsonsMatch_(ruleJson, currentRuleJson)) {
         continue;
       }
       if (differsOnTo) {
@@ -270,22 +279,22 @@ export class UnfilteredView extends ThreadListViewBase {
     ruleJson.label = newLabel;
 
     const mailProcessor = await defined(this.getMailProcessor_)();
-    const ruleMatches =
-        await mailProcessor.ruleMatchesMessages(ruleJson, thread.getMessages());
+    const ruleMatches = await mailProcessor.ruleMatchesMessages(ruleJson, thread.getMessages());
     if (!ruleMatches) {
-      alert('This filter rule doesn\'t match the current thread.');
+      alert("This filter rule doesn't match the current thread.");
       return;
     }
 
     this.disableActionToolbar();
     const existingFilterRules = await this.settings.getFilters();
-    await this.settings.writeFilters(
-        this.mergeFilterRule_(existingFilterRules, ruleJson));
+    await this.settings.writeFilters(this.mergeFilterRule_(existingFilterRules, ruleJson));
 
     const rowsToFilter = [];
     for (const row of this.getRows()) {
       const rowMatchesNewFilterRule = await mailProcessor.ruleMatchesMessages(
-          ruleJson, row.thread.getMessages());
+        ruleJson,
+        row.thread.getMessages(),
+      );
 
       if (rowMatchesNewFilterRule) {
         rowsToFilter.push(row);
@@ -311,23 +320,21 @@ export class UnfilteredView extends ThreadListViewBase {
     } else {
       // If a thread is still loading, then we have to wait for it's messages
       // to load in order to be able to setup the filter toolbar.
-      row.thread.addEventListener(
-          UpdatedEvent.NAME, () => this.populateFilterToolbar_(row),
-          {once: true});
+      row.thread.addEventListener(UpdatedEvent.NAME, () => this.populateFilterToolbar_(row), {
+        once: true,
+      });
     }
   }
 
   private populateFilterToolbar_(row: ThreadRow) {
     // Prefill the rule with the first sender of the first message.
     const firstMessage = row.thread.getMessages()[0];
-    const rule = {from: firstMessage.parsedFrom[0].address};
-    const filterRuleComponent =
-        new FilterRuleComponent(this.settings, rule, true);
+    const rule = { from: firstMessage.parsedFrom[0].address };
+    const filterRuleComponent = new FilterRuleComponent(this.settings, rule, true);
     filterRuleComponent.classList.add('m-half');
-    filterRuleComponent.addEventListener(LabelCreatedEvent.NAME, e => {
+    filterRuleComponent.addEventListener(LabelCreatedEvent.NAME, (e) => {
       const labelOption = (e as LabelCreatedEvent).labelOption;
-      filterRuleComponent.prependLabel(
-          labelOption.cloneNode(true) as HTMLOptionElement);
+      filterRuleComponent.prependLabel(labelOption.cloneNode(true) as HTMLOptionElement);
     });
     this.filterRuleComponent_ = filterRuleComponent;
 
@@ -337,10 +344,8 @@ export class UnfilteredView extends ThreadListViewBase {
 
     const headers = firstMessage.getHeaders();
     headers.sort((a, b) => {
-      if (a < b)
-        return -1;
-      if (a > b)
-        return 1;
+      if (a < b) return -1;
+      if (a > b) return 1;
       return 0;
     });
 
@@ -353,8 +358,7 @@ export class UnfilteredView extends ThreadListViewBase {
       const lowercaseName = name.toLowerCase();
 
       let value = header.value;
-      if (UnfilteredView.EMAIL_ADDRESS_HEADERS_.some(
-              x => lowercaseName.includes(x))) {
+      if (UnfilteredView.EMAIL_ADDRESS_HEADERS_.some((x) => lowercaseName.includes(x))) {
         value = parseAddressList(value)[0].address;
       }
 
@@ -377,8 +381,7 @@ export class UnfilteredView extends ThreadListViewBase {
       // form "List name"<list.id.com> where the quoted part is optional.
       if (lowercaseName === 'list-id') {
         let match = value.match(/<([^>]+)>$/);
-        if (match)
-          value = match[1];
+        if (match) value = match[1];
       }
 
       const addButton = create('span', '+');
@@ -397,17 +400,16 @@ export class UnfilteredView extends ThreadListViewBase {
 
       container.append(addButton, minusButton, nameContainer, value);
 
-      if (UnfilteredView.HEADER_FILTER_MENU_INCLUDES_.some(
-              x => lowercaseName.includes(x)) ||
-          !UnfilteredView.HEADER_FILTER_MENU_EXCLUDES_.some(
-              x => lowercaseName.includes(x))) {
+      if (
+        UnfilteredView.HEADER_FILTER_MENU_INCLUDES_.some((x) => lowercaseName.includes(x)) ||
+        !UnfilteredView.HEADER_FILTER_MENU_EXCLUDES_.some((x) => lowercaseName.includes(x))
+      ) {
         headerMenu.append(container);
       }
     }
 
     let container = document.createElement('div');
-    container.className =
-        'flex flex-column justify-center fill-available-width';
+    container.className = 'flex flex-column justify-center fill-available-width';
     container.append(filterRuleComponent, headerMenu);
     AppShell.addToFooter(container);
   }
@@ -425,8 +427,7 @@ export class UnfilteredView extends ThreadListViewBase {
 
     this.appShell.showBackArrow(shouldRender);
     this.rowGroup_.style.display = shouldRender ? 'none' : 'block';
-    this.renderedThreadContainer_.style.display =
-        shouldRender ? 'block' : 'none';
+    this.renderedThreadContainer_.style.display = shouldRender ? 'block' : 'none';
   }
 
   private setFocusedRow_(row: ThreadRow) {
@@ -454,9 +455,9 @@ export class UnfilteredView extends ThreadListViewBase {
 
     let rendered = row.rendered;
     assert(
-        !rendered.isAttached() ||
-            rendered.parentNode === this.renderedThreadContainer_,
-        'Tried to rerender already rendered thread. This should never happen.');
+      !rendered.isAttached() || rendered.parentNode === this.renderedThreadContainer_,
+      'Tried to rerender already rendered thread. This should never happen.',
+    );
     if (!rendered.isAttached()) {
       rendered.render();
       this.renderedThreadContainer_.append(rendered);
@@ -472,16 +473,14 @@ export class UnfilteredView extends ThreadListViewBase {
     const oldRows = this.getRows();
     const rows = [];
     const allThreads = this.model.getThreads(true);
-    let threads = allThreads.filter(x => !x.actionInProgress());
+    let threads = allThreads.filter((x) => !x.actionInProgress());
     for (let thread of threads) {
       // Skip already triaged threads with the unfiltered label.
-      if (!thread.forceTriage() ||
-          this.mergedGroupName(thread) !== Labels.Fallback) {
+      if (!thread.forceTriage() || this.mergedGroupName(thread) !== Labels.Fallback) {
         continue;
       }
       rows.push(this.getThreadRow(thread));
     }
-
 
     if (!rows.length) {
       this.routeToTodo_();
@@ -494,8 +493,7 @@ export class UnfilteredView extends ThreadListViewBase {
         // Focus the next row after the removed focused row or the last row if
         // there aren't any.
         const oldIndex = oldRows.indexOf(this.focusedRow_);
-        let newFocus =
-            oldRows.slice(oldIndex + 1).find(x => !rowsRemoved.includes(x));
+        let newFocus = oldRows.slice(oldIndex + 1).find((x) => !rowsRemoved.includes(x));
         this.setFocusedRow_(newFocus || rows[rows.length - 1]);
       }
     } else {
@@ -513,8 +511,7 @@ export class UnfilteredView extends ThreadListViewBase {
       row = this.focusedRow_;
     }
 
-    if (!row)
-      return;
+    if (!row) return;
 
     let rendered = row.rendered;
     rendered.render();
@@ -541,8 +538,8 @@ export class UnfilteredView extends ThreadListViewBase {
       case NEXT_ACTION:
       case PREVIOUS_ACTION:
         const focused = defined(this.focusedRow_);
-        const next = action === NEXT_ACTION ? focused.nextElementSibling :
-                                              focused.previousElementSibling;
+        const next =
+          action === NEXT_ACTION ? focused.nextElementSibling : focused.previousElementSibling;
         if (next) {
           this.setFocusedRow_(next as ThreadRow);
         }

@@ -18,14 +18,15 @@ const FOCUSABLE_ELEMENTS = [
 
 export class Dialog extends HTMLElement {
   private backdrop_: HTMLElement;
-  private oldActiveElement_: Element|null;
+  private oldActiveElement_: Element | null;
   private handleKeyEvent_: (e: KeyboardEvent) => void;
   private boundRetainFocus_: (e: FocusEvent) => void;
 
   constructor(
-      contents: Node|string, buttons: HTMLElement[],
-      positionRect?:
-          {top?: string, right?: string, bottom?: string, left?: string}) {
+    contents: Node | string,
+    buttons: HTMLElement[],
+    positionRect?: { top?: string; right?: string; bottom?: string; left?: string },
+  ) {
     super();
     this.style.cssText = `
       border: 1px solid var(--border-and-hover-color);
@@ -93,16 +94,14 @@ export class Dialog extends HTMLElement {
     document.body.removeEventListener('blur', this.boundRetainFocus_, true);
     document.body.style.overflow = '';
 
-    if (this.oldActiveElement_ &&
-        (this.oldActiveElement_ as HTMLElement).focus) {
-      (this.oldActiveElement_ as HTMLElement).focus()
+    if (this.oldActiveElement_ && (this.oldActiveElement_ as HTMLElement).focus) {
+      (this.oldActiveElement_ as HTMLElement).focus();
     }
     this.dispatchEvent(new CloseEvent());
   }
 
   private getFocusableNodes_() {
-    return this.querySelectorAll(FOCUSABLE_ELEMENTS.join(',')) as
-        NodeListOf<HTMLElement>;
+    return this.querySelectorAll(FOCUSABLE_ELEMENTS.join(',')) as NodeListOf<HTMLElement>;
   }
 
   private focusFirstNode_() {

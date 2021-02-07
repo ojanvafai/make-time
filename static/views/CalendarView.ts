@@ -1,16 +1,15 @@
-import {Action, registerActions} from '../Actions.js';
-import {Aggregate} from '../calendar/Aggregate.js';
-import {Calendar, EventListChangeEvent} from '../calendar/Calendar.js';
-import {Charter} from '../calendar/Charter.js';
-import {Dialog} from '../Dialog.js';
+import { Action, registerActions } from '../Actions.js';
+import { Aggregate } from '../calendar/Aggregate.js';
+import { Calendar, EventListChangeEvent } from '../calendar/Calendar.js';
+import { Charter } from '../calendar/Charter.js';
+import { Dialog } from '../Dialog.js';
 
-import {View} from './View.js'
+import { View } from './View.js';
 
 let COLORIZE_ACTION: Action = {
   name: 'Colorize Events',
   key: 'c',
-  description:
-      'Set the colors of events in your calendar to match the ones shown here.',
+  description: 'Set the colors of events in your calendar to match the ones shown here.',
 };
 let ACTIONS = [COLORIZE_ACTION];
 registerActions('Calendar', ACTIONS);
@@ -64,8 +63,7 @@ export class CalendarView extends View {
   }
 
   disconnectedCallback() {
-    this.model_.removeEventListener(
-        EventListChangeEvent.NAME, this.boundRender_);
+    this.model_.removeEventListener(EventListChangeEvent.NAME, this.boundRender_);
   }
 
   private async render_() {
@@ -76,7 +74,7 @@ export class CalendarView extends View {
     await this.plotlyLoadPromise_;
     this.loading_.remove();
 
-    await this.chartData_(charter, this.dayPlot_, days, 14)
+    await this.chartData_(charter, this.dayPlot_, days, 14);
 
     // Do this async so we show the day chart ASAP.
     setTimeout(async () => {
@@ -85,20 +83,17 @@ export class CalendarView extends View {
     });
   }
 
-  private async chartData_(
-      charter: Charter, container: Node, data: Aggregate[], buffer: number) {
+  private async chartData_(charter: Charter, container: Node, data: Aggregate[], buffer: number) {
     let startDate = new Date();
     startDate.setDate(startDate.getDate() - buffer);
     let endDate = new Date();
     endDate.setDate(endDate.getDate() + buffer);
-    await charter.chartData(
-        data, container, [startDate.getTime(), endDate.getTime()]);
+    await charter.chartData(data, container, [startDate.getTime(), endDate.getTime()]);
   }
 
   async takeAction(action: Action) {
     if (action === COLORIZE_ACTION) {
-      if (!confirm('This sets colors to all events on your calendar. Proceed?'))
-        return;
+      if (!confirm('This sets colors to all events on your calendar. Proceed?')) return;
       // Colorize is not safe to be called multiple times, so remove the button
       // after the first call, forcing the user to reload to call it again.
       this.setActions([]);

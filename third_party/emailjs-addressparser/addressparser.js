@@ -12,38 +12,38 @@
  * @param {String} str Address field
  * @return {Array} An array of address objects
  */
-export default function parse (str) {
-  const tokenizer = new Tokenizer(str)
-  const tokens = tokenizer.tokenize()
+export default function parse(str) {
+  const tokenizer = new Tokenizer(str);
+  const tokens = tokenizer.tokenize();
 
-  const addresses = []
-  let address = []
-  let parsedAddresses = []
+  const addresses = [];
+  let address = [];
+  let parsedAddresses = [];
 
   tokens.forEach(function (token) {
     if (token.type === 'operator' && (token.value === ',' || token.value === ';')) {
       if (address.length) {
-        addresses.push(address)
+        addresses.push(address);
       }
-      address = []
+      address = [];
     } else {
-      address.push(token)
+      address.push(token);
     }
-  })
+  });
 
   if (address.length) {
-    addresses.push(address)
+    addresses.push(address);
   }
 
   addresses.forEach(function (address) {
-    address = _handleAddress(address)
+    address = _handleAddress(address);
     if (address.length) {
-      parsedAddresses = parsedAddresses.concat(address)
+      parsedAddresses = parsedAddresses.concat(address);
     }
-  })
+  });
 
-  return parsedAddresses
-};
+  return parsedAddresses;
+}
 
 /**
  * Converts tokens for a single address into an address object
@@ -51,82 +51,82 @@ export default function parse (str) {
  * @param {Array} tokens Tokens object
  * @return {Object} Address object
  */
-function _handleAddress (tokens) {
-  let isGroup = false
-  let state = 'text'
-  let address
-  const addresses = []
+function _handleAddress(tokens) {
+  let isGroup = false;
+  let state = 'text';
+  let address;
+  const addresses = [];
   const data = {
     address: [],
     comment: [],
     group: [],
-    text: []
-  }
+    text: [],
+  };
 
   // Filter out <addresses>, (comments) and regular text
   for (let i = 0, len = tokens.length; i < len; i++) {
-    const token = tokens[i]
+    const token = tokens[i];
 
     if (token.type === 'operator') {
       switch (token.value) {
         case '<':
-          state = 'address'
-          break
+          state = 'address';
+          break;
         case '(':
-          state = 'comment'
-          break
+          state = 'comment';
+          break;
         case ':':
-          state = 'group'
-          isGroup = true
-          break
+          state = 'group';
+          isGroup = true;
+          break;
         default:
-          state = 'text'
+          state = 'text';
       }
     } else {
       if (token.value) {
-        data[state].push(token.value)
+        data[state].push(token.value);
       }
     }
   }
 
   // If there is no text but a comment, replace the two
   if (!data.text.length && data.comment.length) {
-    data.text = data.comment
-    data.comment = []
+    data.text = data.comment;
+    data.comment = [];
   }
 
   if (isGroup) {
     // http://tools.ietf.org/html/rfc2822#appendix-A.1.3
-    data.text = data.text.join(' ')
+    data.text = data.text.join(' ');
     addresses.push({
       name: data.text || (address && address.name),
-      group: data.group.length ? parse(data.group.join(',')) : []
-    })
+      group: data.group.length ? parse(data.group.join(',')) : [],
+    });
   } else {
     // If no address was found, try to detect one from regular text
     if (!data.address.length && data.text.length) {
       for (let i = data.text.length - 1; i >= 0; i--) {
         if (data.text[i].match(/^[^@\s]+@[^@\s]+$/)) {
-          data.address = data.text.splice(i, 1)
-          break
+          data.address = data.text.splice(i, 1);
+          break;
         }
       }
 
       var _regexHandler = function (address) {
         if (!data.address.length) {
-          data.address = [address.trim()]
-          return ' '
+          data.address = [address.trim()];
+          return ' ';
         } else {
-          return address
+          return address;
         }
-      }
+      };
 
       // still no address
       if (!data.address.length) {
         for (let i = data.text.length - 1; i >= 0; i--) {
-          data.text[i] = data.text[i].replace(/\s*\b[^@\s]+@[^@\s]+\b\s*/, _regexHandler).trim()
+          data.text[i] = data.text[i].replace(/\s*\b[^@\s]+@[^@\s]+\b\s*/, _regexHandler).trim();
           if (data.address.length) {
-            break
+            break;
           }
         }
       }
@@ -134,41 +134,41 @@ function _handleAddress (tokens) {
 
     // If there's still is no text but a comment exixts, replace the two
     if (!data.text.length && data.comment.length) {
-      data.text = data.comment
-      data.comment = []
+      data.text = data.comment;
+      data.comment = [];
     }
 
     // Keep only the first address occurence, push others to regular text
     if (data.address.length > 1) {
-      data.text = data.text.concat(data.address.splice(1))
+      data.text = data.text.concat(data.address.splice(1));
     }
 
     // Join values with spaces
-    data.text = data.text.join(' ')
-    data.address = data.address.join(' ')
+    data.text = data.text.join(' ');
+    data.address = data.address.join(' ');
 
     if (!data.address && isGroup) {
-      return []
+      return [];
     } else {
       address = {
         address: data.address || data.text || '',
-        name: data.text || data.address || ''
-      }
+        name: data.text || data.address || '',
+      };
 
       if (address.address === address.name) {
         if ((address.address || '').match(/@/)) {
-          address.name = ''
+          address.name = '';
         } else {
-          address.address = ''
+          address.address = '';
         }
       }
 
-      addresses.push(address)
+      addresses.push(address);
     }
   }
 
-  return addresses
-};
+  return addresses;
+}
 
 /*
  * Operator tokens and which tokens are expected to end the sequence
@@ -186,8 +186,8 @@ const OPERATORS = {
   // historically allowed the semicolon as a delimiter equivalent to the
   // comma in their UI, it makes sense to treat them the same as a comma
   // when used outside of a group.
-  ';': ''
-}
+  ';': '',
+};
 
 /**
  * Creates a Tokenizer object for tokenizing address field strings
@@ -196,13 +196,13 @@ const OPERATORS = {
  * @param {String} str Address field string
  */
 class Tokenizer {
-  constructor (str) {
-    this.str = (str || '').toString()
-    this.operatorCurrent = ''
-    this.operatorExpecting = ''
-    this.node = null
-    this.escaped = false
-    this.list = []
+  constructor(str) {
+    this.str = (str || '').toString();
+    this.operatorCurrent = '';
+    this.operatorExpecting = '';
+    this.node = null;
+    this.escaped = false;
+    this.list = [];
   }
 
   /**
@@ -210,22 +210,22 @@ class Tokenizer {
    *
    * @return {Array} An array of operator|text tokens
    */
-  tokenize () {
-    let chr
-    let list = []
+  tokenize() {
+    let chr;
+    let list = [];
     for (var i = 0, len = this.str.length; i < len; i++) {
-      chr = this.str.charAt(i)
-      this.checkChar(chr)
+      chr = this.str.charAt(i);
+      this.checkChar(chr);
     }
 
     this.list.forEach(function (node) {
-      node.value = (node.value || '').toString().trim()
+      node.value = (node.value || '').toString().trim();
       if (node.value) {
-        list.push(node)
+        list.push(node);
       }
-    })
+    });
 
-    return list
+    return list;
   }
 
   /**
@@ -233,49 +233,49 @@ class Tokenizer {
    *
    * @param {String} chr Character from the address field
    */
-  checkChar (chr) {
+  checkChar(chr) {
     if ((chr in OPERATORS || chr === '\\') && this.escaped) {
-      this.escaped = false
+      this.escaped = false;
     } else if (this.operatorExpecting && chr === this.operatorExpecting) {
       this.node = {
         type: 'operator',
-        value: chr
-      }
-      this.list.push(this.node)
-      this.node = null
-      this.operatorExpecting = ''
-      this.escaped = false
-      return
+        value: chr,
+      };
+      this.list.push(this.node);
+      this.node = null;
+      this.operatorExpecting = '';
+      this.escaped = false;
+      return;
     } else if (!this.operatorExpecting && chr in OPERATORS) {
       this.node = {
         type: 'operator',
-        value: chr
-      }
-      this.list.push(this.node)
-      this.node = null
-      this.operatorExpecting = OPERATORS[chr]
-      this.escaped = false
-      return
+        value: chr,
+      };
+      this.list.push(this.node);
+      this.node = null;
+      this.operatorExpecting = OPERATORS[chr];
+      this.escaped = false;
+      return;
     }
 
     if (!this.escaped && chr === '\\') {
-      this.escaped = true
-      return
+      this.escaped = true;
+      return;
     }
 
     if (!this.node) {
       this.node = {
         type: 'text',
-        value: ''
-      }
-      this.list.push(this.node)
+        value: '',
+      };
+      this.list.push(this.node);
     }
 
     if (this.escaped && chr !== '\\') {
-      this.node.value += '\\'
+      this.node.value += '\\';
     }
 
-    this.node.value += chr
-    this.escaped = false
+    this.node.value += chr;
+    this.escaped = false;
   }
 }

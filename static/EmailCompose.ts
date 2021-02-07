@@ -1,6 +1,6 @@
-import {Action, Actions, primaryModifierKey, Shortcut} from './Actions.js';
-import {AutoComplete, AutoCompleteEntry, EntrySelectedEvent} from './AutoComplete.js';
-import {notNull, ParsedAddress, sandboxedDom} from './Base.js';
+import { Action, Actions, primaryModifierKey, Shortcut } from './Actions.js';
+import { AutoComplete, AutoCompleteEntry, EntrySelectedEvent } from './AutoComplete.js';
+import { notNull, ParsedAddress, sandboxedDom } from './Base.js';
 
 const SEPARATOR = ' ';
 const EMAIL_CLASS_NAME = 'mk-email';
@@ -31,11 +31,11 @@ export class CancelEvent extends Event {
 }
 
 export class EmailCompose extends HTMLElement {
-  private autocompleteRange_: Range|null;
+  private autocompleteRange_: Range | null;
   private autoComplete_: AutoComplete;
-  private bubble_: HTMLElement|null;
+  private bubble_: HTMLElement | null;
   protected content: HTMLElement;
-  private placeholder_: string|undefined;
+  private placeholder_: string | undefined;
   private boundSelectionChange_: () => void;
   static EMAIL_CLASS_NAME: string;
 
@@ -50,9 +50,9 @@ export class EmailCompose extends HTMLElement {
     this.autocompleteRange_ = null;
 
     this.autoComplete_ = new AutoComplete();
-    this.autoComplete_.addEventListener(
-        EntrySelectedEvent.NAME,
-        (e) => this.submitAutocomplete_((<EntrySelectedEvent>e).entry));
+    this.autoComplete_.addEventListener(EntrySelectedEvent.NAME, (e) =>
+      this.submitAutocomplete_((<EntrySelectedEvent>e).entry),
+    );
     this.append(this.autoComplete_);
     this.hideAutocompleteMenu_();
 
@@ -98,17 +98,14 @@ export class EmailCompose extends HTMLElement {
 
   handleClick_(e: MouseEvent) {
     // The contentEditable=false on mailto links makes them clickable again.
-    if (this.getContainingLink_(e.target as Node))
-      e.preventDefault();
+    if (this.getContainingLink_(e.target as Node)) e.preventDefault();
   }
 
   bubbleIsFocused_() {
-    if (!this.bubble_)
-      return false;
+    if (!this.bubble_) return false;
     let node = document.activeElement;
     while (node) {
-      if (node === this.bubble_)
-        return true;
+      if (node === this.bubble_) return true;
       node = node.parentElement;
     }
     return false;
@@ -117,27 +114,22 @@ export class EmailCompose extends HTMLElement {
   isInsideContent_(node: Node) {
     let parent = node.parentNode;
     while (parent) {
-      if (parent === this.content)
-        return true;
+      if (parent === this.content) return true;
       parent = parent.parentNode;
     }
     return false;
   }
 
   handleSelectionChange_() {
-    if (this.bubbleIsFocused_())
-      return;
+    if (this.bubbleIsFocused_()) return;
 
-    if (this.bubble_)
-      this.bubble_.remove();
+    if (this.bubble_) this.bubble_.remove();
 
     let selection = notNull(window.getSelection());
-    if (selection.rangeCount === 0)
-      return;
+    if (selection.rangeCount === 0) return;
     let range = selection.getRangeAt(0);
     let link = this.getContainingLink_(range.commonAncestorContainer);
-    if (!link || !this.isInsideContent_(link))
-      return;
+    if (!link || !this.isInsideContent_(link)) return;
 
     this.showLinkBubble_(link);
   }
@@ -187,8 +179,7 @@ export class EmailCompose extends HTMLElement {
     this.bubble_.append('URL ', input, ' ', deleteButton);
     this.append(this.bubble_);
 
-    let position =
-        this.positionRelativeTo_(this.bubble_, link.getBoundingClientRect());
+    let position = this.positionRelativeTo_(this.bubble_, link.getBoundingClientRect());
     this.bubble_.style.top = `${position.top}px`;
     this.bubble_.style.left = `${position.left}px`;
   }
@@ -197,15 +188,15 @@ export class EmailCompose extends HTMLElement {
     let buffer = 4;
     let height = node.offsetHeight;
     let windowHeight = document.documentElement.offsetHeight;
-    let putAbove = windowHeight < (rect.bottom + buffer + height);
+    let putAbove = windowHeight < rect.bottom + buffer + height;
     let top = putAbove ? rect.top - buffer - height : rect.bottom + buffer;
 
     let width = node.offsetWidth;
     let windowWidth = document.documentElement.offsetWidth;
-    let shiftLeft = windowWidth < (rect.left + width)
+    let shiftLeft = windowWidth < rect.left + width;
     let left = shiftLeft ? windowWidth - width : rect.left;
 
-    return {top: top, left: left};
+    return { top: top, left: left };
   }
 
   async takeAction_(action: Action) {
@@ -241,8 +232,7 @@ export class EmailCompose extends HTMLElement {
         return;
 
       case 'Enter':
-        if (e.altKey || e.shiftKey)
-          return;
+        if (e.altKey || e.shiftKey) return;
 
         const key = primaryModifierKey(e);
         if (!key && this.updateIsAutocompleting()) {
@@ -275,10 +265,9 @@ export class EmailCompose extends HTMLElement {
     }
   }
 
-  private getContainingLink_(node: Node|null) {
+  private getContainingLink_(node: Node | null) {
     while (node) {
-      if (node.nodeName === 'A')
-        return node as HTMLAnchorElement;
+      if (node.nodeName === 'A') return node as HTMLAnchorElement;
       node = node.parentNode;
     }
     return null;
@@ -286,8 +275,7 @@ export class EmailCompose extends HTMLElement {
 
   private insertLink_() {
     let selection = notNull(window.getSelection());
-    if (selection.rangeCount === 0)
-      return;
+    if (selection.rangeCount === 0) return;
 
     let range = selection.getRangeAt(0);
     if (this.getContainingLink_(range.commonAncestorContainer)) {
@@ -320,8 +308,7 @@ export class EmailCompose extends HTMLElement {
 
   protected updateIsAutocompleting() {
     let isAutoCompleting = this.isStillAutoCompleting();
-    if (!isAutoCompleting)
-      this.cancelAutocomplete_();
+    if (!isAutoCompleting) this.cancelAutocomplete_();
     return isAutoCompleting;
   }
 
@@ -337,9 +324,10 @@ export class EmailCompose extends HTMLElement {
     // contacts as we always add a single fallback. If that candidate includes
     // a space, then we know the user isn't typing an email address and we
     // should cancel the autocomplete entirely.
-    if (candidates.length == 1 &&
-        (candidates[0].address.includes(' ') ||
-         candidates[0].name.includes(' '))) {
+    if (
+      candidates.length == 1 &&
+      (candidates[0].address.includes(' ') || candidates[0].name.includes(' '))
+    ) {
       this.cancelAutocomplete_();
       return;
     }
@@ -360,8 +348,7 @@ export class EmailCompose extends HTMLElement {
   }
 
   submitAutocomplete_(selectedItem?: AutoCompleteEntry) {
-    if (!selectedItem)
-      selectedItem = this.autoComplete_.selected();
+    if (!selectedItem) selectedItem = this.autoComplete_.selected();
     this.insertAddress(selectedItem);
 
     this.cancelAutocomplete_();
@@ -369,8 +356,7 @@ export class EmailCompose extends HTMLElement {
   }
 
   getEmails() {
-    let links = <NodeListOf<HTMLLinkElement>>this.content.querySelectorAll(
-        `a.${EMAIL_CLASS_NAME}`);
+    let links = <NodeListOf<HTMLLinkElement>>this.content.querySelectorAll(`a.${EMAIL_CLASS_NAME}`);
     let results: ParsedAddress[] = [];
     for (let link of links) {
       let name = link.textContent;
@@ -379,7 +365,7 @@ export class EmailCompose extends HTMLElement {
       let address = link.href.replace('mailto:', '');
       // TODO: This needs to use serializeAddress so it correclty quotes the
       // name if it has a comma.
-      results.push(name.includes('@') ? {name: '', address} : {name, address});
+      results.push(name.includes('@') ? { name: '', address } : { name, address });
     }
     return results;
   }
@@ -425,8 +411,7 @@ export class EmailCompose extends HTMLElement {
     this.content.append(...newContent.childNodes);
 
     this.updatePlaceholder_();
-    if (this.bubble_)
-      this.bubble_.remove();
+    if (this.bubble_) this.bubble_.remove();
   }
 
   get placeholder() {
@@ -463,12 +448,11 @@ export class EmailCompose extends HTMLElement {
   }
 
   prepareAutocomplete(inputEvent: InputEvent) {
-    if (inputEvent.data != '+')
-      return;
+    if (inputEvent.data != '+') return;
 
     // TODO: Only start auto complete at start of line or after a whitespace
     let cursor = this.cursor();
-    let container = <CharacterData|Element>cursor.startContainer;
+    let container = <CharacterData | Element>cursor.startContainer;
     let offset = cursor.startOffset;
     let nextChar = container.textContent.substring(offset, offset + 1);
     if (!nextChar || nextChar == ' ') {
@@ -497,8 +481,7 @@ export class EmailCompose extends HTMLElement {
   insertAddress(selectedItem: AutoCompleteEntry) {
     let autocompleteRange = notNull(this.autocompleteRange_);
     let range = this.cursor();
-    range.setStart(
-        autocompleteRange.startContainer, autocompleteRange.startOffset);
+    range.setStart(autocompleteRange.startContainer, autocompleteRange.startOffset);
 
     range.deleteContents();
 

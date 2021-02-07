@@ -1,5 +1,5 @@
-import {createMktimeButton, defined, isMobileUserAgent, isSafari, notNull} from './Base.js';
-import {View} from './views/View.js';
+import { createMktimeButton, defined, isMobileUserAgent, isSafari, notNull } from './Base.js';
+import { View } from './views/View.js';
 
 export enum ActionGroup {
   Filter = 'filter',
@@ -7,31 +7,30 @@ export enum ActionGroup {
   Priority = 'priority',
   Date = 'date',
   Other = 'other',
-  Reply = 'reply'
+  Reply = 'reply',
 }
 
 export interface Action {
-  name: string|HTMLElement|SVGElement;
+  name: string | HTMLElement | SVGElement;
   description: string;
-  key: Shortcut|string;
-  secondaryKey?: Shortcut|string;
+  key: Shortcut | string;
+  secondaryKey?: Shortcut | string;
   hidden?: boolean;
   repeatable?: boolean;
   actionGroup?: ActionGroup;
 }
 
 type SubActionRow = Action[];
-type GroupedActions = (Action|SubActionRow)[];
+type GroupedActions = (Action | SubActionRow)[];
 // TODO: Make this a proper class so it can have an iterator instead of needing
 // to know to use flat(2).
-export type ActionList = (Action|GroupedActions)[];
+export type ActionList = (Action | GroupedActions)[];
 
 interface ButtonWithAction extends HTMLButtonElement {
   action: Action;
 }
 
-const USES_META_FOR_CTRL =
-    ['iPhone', 'iPad', 'Mac'].find(x => navigator.platform.includes(x));
+const USES_META_FOR_CTRL = ['iPhone', 'iPad', 'Mac'].find((x) => navigator.platform.includes(x));
 const MARGIN = 4;
 
 export function primaryModifierKey(e: KeyboardEvent) {
@@ -40,22 +39,25 @@ export function primaryModifierKey(e: KeyboardEvent) {
 
 export class Shortcut {
   constructor(
-      public key: string, public ctrlMeta?: boolean, public shift?: boolean,
-      public code?: string) {}
+    public key: string,
+    public ctrlMeta?: boolean,
+    public shift?: boolean,
+    public code?: string,
+  ) {}
 
   toString() {
     let val = '';
-    if (this.ctrlMeta)
-      val += USES_META_FOR_CTRL ? '⌘+' : '^+';
-    if (this.shift)
-      val += '<shift>+';
+    if (this.ctrlMeta) val += USES_META_FOR_CTRL ? '⌘+' : '^+';
+    if (this.shift) val += '<shift>+';
     return val + humanReadableKeyName(this.key);
   }
 
   matches(e: KeyboardEvent) {
-    return (this.code ? this.code === e.code : this.key === e.key) &&
-        !!this.shift === e.shiftKey &&
-        !!this.ctrlMeta === primaryModifierKey(e)
+    return (
+      (this.code ? this.code === e.code : this.key === e.key) &&
+      !!this.shift === e.shiftKey &&
+      !!this.ctrlMeta === primaryModifierKey(e)
+    );
   }
 }
 
@@ -77,9 +79,8 @@ function humanReadableKeyName(key: string) {
   }
 }
 
-export function shortcutString(shortcut: Shortcut|string) {
-  if (typeof shortcut === 'string')
-    return humanReadableKeyName(shortcut);
+export function shortcutString(shortcut: Shortcut | string) {
+  if (typeof shortcut === 'string') return humanReadableKeyName(shortcut);
   return shortcut.toString();
 }
 
@@ -148,9 +149,8 @@ export class Actions extends HTMLElement {
     }
   }
 
-  private createButtonList_(
-      action: Action|GroupedActions, container: HTMLElement) {
-    let button: ButtonWithAction|null;
+  private createButtonList_(action: Action | GroupedActions, container: HTMLElement) {
+    let button: ButtonWithAction | null;
     if (Array.isArray(action)) {
       let actionList = action as Action[];
       button = this.createButton_(actionList[0]);
@@ -160,8 +160,7 @@ export class Actions extends HTMLElement {
         let updateMenuItemHover = (e: PointerEvent) => {
           // TODO: unify hover handling for menu and non-menu buttons.
           // Right now non-menu buttons are handled in global stylesheet.
-          if (!this.menu_)
-            return;
+          if (!this.menu_) return;
 
           let hitButton = this.hitButton_(e);
           this.updateTooltip_(hitButton ? hitButton.action : null, this.menu_);
@@ -169,7 +168,7 @@ export class Actions extends HTMLElement {
           for (let child of this.menu_.querySelectorAll('.mktime-button')) {
             let element = child as HTMLElement;
             element.style.backgroundColor =
-                element === hitButton ? 'var(--border-and-hover-color)' : '';
+              element === hitButton ? 'var(--border-and-hover-color)' : '';
           }
         };
 
@@ -191,8 +190,7 @@ export class Actions extends HTMLElement {
       button = this.createButton_(action);
     }
 
-    if (!button)
-      return;
+    if (!button) return;
 
     container.append(button);
 
@@ -216,18 +214,14 @@ export class Actions extends HTMLElement {
 
   private handlePointerUp_(button: ButtonWithAction, e: MouseEvent) {
     let hitButton = this.hitButton_(e);
-    if (hitButton &&
-        (hitButton === button ||
-         (this.menu_ && this.menu_.contains(hitButton)))) {
+    if (hitButton && (hitButton === button || (this.menu_ && this.menu_.contains(hitButton)))) {
       this.view_.takeAction(hitButton.action);
     }
 
-    if (this.menu_)
-      this.menu_.remove();
+    if (this.menu_) this.menu_.remove();
     this.menu_ = undefined;
 
-    if (this.tooltip_)
-      this.centerAbove_(this.tooltip_, button!);
+    if (this.tooltip_) this.centerAbove_(this.tooltip_, button!);
   }
 
   private hitButton_(e: MouseEvent) {
@@ -235,8 +229,7 @@ export class Actions extends HTMLElement {
     let buttonWithAction;
     while (hitElement && !buttonWithAction) {
       let asButtonWithAction = hitElement as ButtonWithAction;
-      if (asButtonWithAction.action)
-        return asButtonWithAction;
+      if (asButtonWithAction.action) return asButtonWithAction;
       hitElement = hitElement.parentNode;
     }
     return null;
@@ -255,8 +248,7 @@ export class Actions extends HTMLElement {
     document.body.append(this.menu_);
 
     for (let subActionList of actions) {
-      if (!Array.isArray(subActionList))
-        subActionList = [subActionList];
+      if (!Array.isArray(subActionList)) subActionList = [subActionList];
       const row = document.createElement('div');
       row.style.cssText = `
         display: flex;
@@ -281,33 +273,29 @@ export class Actions extends HTMLElement {
     // Put a bigger margin on mobile so that you can see the button under your
     // finger.
     this.centerAbove_(this.menu_, button, isMobileUserAgent() ? 20 : 0);
-    if (this.tooltip_)
-      this.centerAbove_(this.tooltip_, this.menu_);
+    if (this.tooltip_) this.centerAbove_(this.tooltip_, this.menu_);
   }
 
-  centerAbove_(
-      element: HTMLElement, relativeTo: HTMLElement,
-      extraBottomMargin?: number) {
+  centerAbove_(element: HTMLElement, relativeTo: HTMLElement, extraBottomMargin?: number) {
     let rect = relativeTo.getBoundingClientRect();
     let itemWidth = element.offsetWidth;
 
     let bottomMargin = MARGIN;
-    if (extraBottomMargin)
-      bottomMargin += extraBottomMargin;
+    if (extraBottomMargin) bottomMargin += extraBottomMargin;
 
     element.style.bottom = `${window.innerHeight - rect.top + bottomMargin}px`;
     // Center the menu over the reference, but keep it bound within the window.
-    element.style.left = `${
-        Math.max(
-            MARGIN,
-            Math.min(
-                window.innerWidth - itemWidth - MARGIN,
-                rect.left - (Math.max(0, (itemWidth - rect.width)) / 2)))}px`;
+    element.style.left = `${Math.max(
+      MARGIN,
+      Math.min(
+        window.innerWidth - itemWidth - MARGIN,
+        rect.left - Math.max(0, itemWidth - rect.width) / 2,
+      ),
+    )}px`;
   }
 
   createButton_(action: Action) {
-    if (action.hidden)
-      return null;
+    if (action.hidden) return null;
 
     let name = document.createElement('div');
     name.style.cssText = `
@@ -320,9 +308,11 @@ export class Actions extends HTMLElement {
       `;
     name.append(action.name);
 
-    let button =
-        createMktimeButton(undefined, shortcutString(action.key), name) as
-        ButtonWithAction;
+    let button = createMktimeButton(
+      undefined,
+      shortcutString(action.key),
+      name,
+    ) as ButtonWithAction;
     button.classList.add('action-button');
     button.action = action;
     button.onpointerleave = () => this.tooltip_!.remove();
@@ -332,13 +322,12 @@ export class Actions extends HTMLElement {
     };
     button.oncontextmenu = (e: Event) => e.preventDefault();
 
-    if (action.actionGroup)
-      button.classList.add(`group-${action.actionGroup}`);
+    if (action.actionGroup) button.classList.add(`group-${action.actionGroup}`);
 
     return button;
   }
 
-  private updateTooltip_(action: Action|null, relativeTo: HTMLElement) {
+  private updateTooltip_(action: Action | null, relativeTo: HTMLElement) {
     let tooltip = defined(this.tooltip_);
     if (!action) {
       tooltip.style.display = 'none';
@@ -367,12 +356,10 @@ export class Actions extends HTMLElement {
     this.updateTooltip_(action, this);
   }
 
-  static matchesEvent_(e: KeyboardEvent, shortcut?: string|Shortcut) {
-    if (!shortcut)
-      return false;
+  static matchesEvent_(e: KeyboardEvent, shortcut?: string | Shortcut) {
+    if (!shortcut) return false;
 
-    if (typeof shortcut === 'string')
-      shortcut = new Shortcut(shortcut);
+    if (typeof shortcut === 'string') shortcut = new Shortcut(shortcut);
     return shortcut.matches(e);
   }
 
@@ -381,19 +368,16 @@ export class Actions extends HTMLElement {
     // thread. This prevents accidents of archiving a lot of threads at once
     // when your stupid keyboard gets stuck holding the archive key down.
     // #sigh
-    if (!action.repeatable && e.repeat)
-      return false;
+    if (!action.repeatable && e.repeat) return false;
 
-    return this.matchesEvent_(e, action.key) ||
-        this.matchesEvent_(e, action.secondaryKey);
+    return this.matchesEvent_(e, action.key) || this.matchesEvent_(e, action.secondaryKey);
   }
 
   static getMatchingAction(e: KeyboardEvent, actions: ActionList) {
     for (let action of actions.flat()) {
       if (Array.isArray(action)) {
-        let match = action.find(x => this.matchesAction(e, x));
-        if (match)
-          return match;
+        let match = action.find((x) => this.matchesAction(e, x));
+        if (match) return match;
       } else if (this.matchesAction(e, action)) {
         return action;
       }
@@ -402,8 +386,9 @@ export class Actions extends HTMLElement {
   }
 
   async dispatchShortcut(e: KeyboardEvent) {
-    let action = Actions.getMatchingAction(e, this.actions_) ||
-        Actions.getMatchingAction(e, this.supplementalActions_);
+    let action =
+      Actions.getMatchingAction(e, this.actions_) ||
+      Actions.getMatchingAction(e, this.supplementalActions_);
     if (action) {
       e.preventDefault();
       await this.view_.takeAction(action);

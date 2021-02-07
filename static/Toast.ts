@@ -1,5 +1,5 @@
 export class Toast extends HTMLElement {
-  constructor(...message: (string|Node)[]) {
+  constructor(...message: (string | Node)[]) {
     super();
 
     this.style.cssText = `
@@ -33,15 +33,10 @@ export class Toast extends HTMLElement {
       setTimeout(() => this.remove(), 3500);
       return;
     }
-    let animation = this.animate(
-        [
-          {opacity: '0.85'},
-          {opacity: '0'},
-        ],
-        {
-          duration: 500,
-          delay: 3000,
-        });
+    let animation = this.animate([{ opacity: '0.85' }, { opacity: '0' }], {
+      duration: 500,
+      delay: 3000,
+    });
     animation.onfinish = () => this.remove();
   }
 }

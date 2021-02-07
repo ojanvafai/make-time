@@ -1,6 +1,6 @@
-import {Action, ActionList, Actions} from '../Actions.js';
+import { Action, ActionList, Actions } from '../Actions.js';
 
-import {AppShell} from './AppShell.js';
+import { AppShell } from './AppShell.js';
 
 export abstract class View extends HTMLElement {
   private actions_: Actions;
@@ -22,9 +22,8 @@ export abstract class View extends HTMLElement {
   visibilityChanged() {}
 
   async dispatchShortcut(e: KeyboardEvent) {
-    if (this.actions_)
-      await this.actions_.dispatchShortcut(e);
-  };
+    if (this.actions_) await this.actions_.dispatchShortcut(e);
+  }
 
   protected setActions(actions: ActionList, supplementalActions?: ActionList) {
     this.enableActionToolbar();

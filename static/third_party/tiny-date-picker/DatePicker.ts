@@ -1,4 +1,4 @@
-import {defined} from '../../Base.js';
+import { defined } from '../../Base.js';
 
 let dayPicker = {
   onKeyDown: dayPickerKeyDown,
@@ -12,7 +12,7 @@ let dayPicker = {
     'dp-cal-month': showMonthPicker,
     'dp-cal-year': showYearPicker,
   },
-  render: renderDayPicker
+  render: renderDayPicker,
 };
 
 function renderDayPicker(dp: any) {
@@ -27,69 +27,73 @@ function renderDayPicker(dp: any) {
   var today = now().getTime();
 
   return (
-      '<div class="dp-cal">' +
-      '<header class="dp-cal-header">' +
-      '<button tabindex="-1" type="button" class="dp-prev">Prev</button>' +
-      '<button tabindex="-1" type="button" class="dp-cal-month">' +
-      lang.months[hilightedMonth] + '</button>' +
-      '<button tabindex="-1" type="button" class="dp-cal-year">' +
-      hilightedDate.getFullYear() + '</button>' +
-      '<button tabindex="-1" type="button" class="dp-next">Next</button>' +
-      '</header>' +
-      '<div class="dp-days">' +
-      dayNames
-          .map(function(_name: string, i: number) {
-            return (
-                '<span class="dp-col-header">' +
-                dayNames[(i + dayOffset) % dayNames.length] + '</span>');
-          })
-          .join('') +
-      mapDays(
-          hilightedDate, dayOffset,
-          function(date: Date) {
-            var isNotInMonth = date.getMonth() !== hilightedMonth;
-            var isDisabled = !opts.inRange(date);
-            var isToday = date.getTime() === today;
-            var className = 'dp-day';
-            className += (isNotInMonth ? ' dp-edge-day' : '');
-            className += (datesEq(date, hilightedDate) ? ' dp-current' : '');
-            className += (datesEq(date, selectedDate) ? ' dp-selected' : '');
-            className += (isDisabled ? ' dp-day-disabled' : '');
-            className += (isToday ? ' dp-day-today' : '');
-            className += ' ' + opts.dateClass(date, dp);
+    '<div class="dp-cal">' +
+    '<header class="dp-cal-header">' +
+    '<button tabindex="-1" type="button" class="dp-prev">Prev</button>' +
+    '<button tabindex="-1" type="button" class="dp-cal-month">' +
+    lang.months[hilightedMonth] +
+    '</button>' +
+    '<button tabindex="-1" type="button" class="dp-cal-year">' +
+    hilightedDate.getFullYear() +
+    '</button>' +
+    '<button tabindex="-1" type="button" class="dp-next">Next</button>' +
+    '</header>' +
+    '<div class="dp-days">' +
+    dayNames
+      .map(function (_name: string, i: number) {
+        return (
+          '<span class="dp-col-header">' + dayNames[(i + dayOffset) % dayNames.length] + '</span>'
+        );
+      })
+      .join('') +
+    mapDays(hilightedDate, dayOffset, function (date: Date) {
+      var isNotInMonth = date.getMonth() !== hilightedMonth;
+      var isDisabled = !opts.inRange(date);
+      var isToday = date.getTime() === today;
+      var className = 'dp-day';
+      className += isNotInMonth ? ' dp-edge-day' : '';
+      className += datesEq(date, hilightedDate) ? ' dp-current' : '';
+      className += datesEq(date, selectedDate) ? ' dp-selected' : '';
+      className += isDisabled ? ' dp-day-disabled' : '';
+      className += isToday ? ' dp-day-today' : '';
+      className += ' ' + opts.dateClass(date, dp);
 
-            return (
-                '<button tabindex="-1" type="button" class="' + className +
-                '" data-date="' + date.getTime() + '">' + date.getDate() +
-                '</button>');
-          }) +
-      '</div>' +
-      // TODO: Reenable these once we support cancelling the date picker from
-      // triage actions.
-      // '<footer class="dp-cal-footer">' +
-      // '<button tabindex="-1" type="button" class="dp-today">' + lang.today +
-      // '</button>' +
-      // '<button tabindex="-1" type="button" class="dp-clear">' + lang.clear +
-      // '</button>' +
-      // '<button tabindex="-1" type="button" class="dp-close">' + lang.close +
-      // '</button>' +
-      // '</footer>' +
-      '</div>');
+      return (
+        '<button tabindex="-1" type="button" class="' +
+        className +
+        '" data-date="' +
+        date.getTime() +
+        '">' +
+        date.getDate() +
+        '</button>'
+      );
+    }) +
+    '</div>' +
+    // TODO: Reenable these once we support cancelling the date picker from
+    // triage actions.
+    // '<footer class="dp-cal-footer">' +
+    // '<button tabindex="-1" type="button" class="dp-today">' + lang.today +
+    // '</button>' +
+    // '<button tabindex="-1" type="button" class="dp-clear">' + lang.clear +
+    // '</button>' +
+    // '<button tabindex="-1" type="button" class="dp-close">' + lang.close +
+    // '</button>' +
+    // '</footer>' +
+    '</div>'
+  );
 }
 
 function dayPickerKeyDown(e: KeyboardEvent, dp: DatePickerState) {
   var key = e.keyCode;
-  var shiftBy = (key === Key.left) ?
-      -1 :
-      (key === Key.right) ? 1 :
-                            (key === Key.up) ? -7 : (key === Key.down) ? 7 : 0;
+  var shiftBy =
+    key === Key.left ? -1 : key === Key.right ? 1 : key === Key.up ? -7 : key === Key.down ? 7 : 0;
 
   if (key === Key.esc) {
     // TODO: Reenable this once we support cancelling the date picker from
     // triage actions. dp.close();
   } else if (shiftBy) {
     e.preventDefault();
-    dp.setState({hilightedDate: shiftDay(dp.state.hilightedDate, shiftBy)});
+    dp.setState({ hilightedDate: shiftDay(dp.state.hilightedDate, shiftBy) });
   }
 }
 
@@ -110,27 +114,26 @@ function close(_e: Event, dp: DatePickerState) {
 }
 
 function showMonthPicker(_e: Event, dp: DatePickerState) {
-  dp.setState({view: 'month'});
+  dp.setState({ view: 'month' });
 }
 
 function showYearPicker(_e: Event, dp: DatePickerState) {
-  dp.setState({view: 'year'});
+  dp.setState({ view: 'year' });
 }
 
 function gotoNextMonth(_e: Event, dp: DatePickerState) {
   var hilightedDate = dp.state.hilightedDate;
-  dp.setState({hilightedDate: shiftMonth(hilightedDate, 1)});
+  dp.setState({ hilightedDate: shiftMonth(hilightedDate, 1) });
 }
 
 function gotoPrevMonth(_e: Event, dp: DatePickerState) {
   var hilightedDate = dp.state.hilightedDate;
-  dp.setState({hilightedDate: shiftMonth(hilightedDate, -1)});
+  dp.setState({ hilightedDate: shiftMonth(hilightedDate, -1) });
 }
 
 function selectDay(e: Event, dp: DatePickerState) {
   dp.setState({
-    selectedDate: new Date(parseInt(
-        (e.target as HTMLElement).getAttribute('data-date') as string)),
+    selectedDate: new Date(parseInt((e.target as HTMLElement).getAttribute('data-date') as string)),
   });
 }
 
@@ -149,7 +152,7 @@ function mapDays(currentDate: Date, dayOffset: number, fn: any) {
 
   // We are going to have 6 weeks always displayed to keep a consistent
   // calendar size
-  for (var day = 0; day < (6 * 7); ++day) {
+  for (var day = 0; day < 6 * 7; ++day) {
     result += fn(iter);
     iter.setDate(iter.getDate() + 1);
   }
@@ -159,16 +162,16 @@ function mapDays(currentDate: Date, dayOffset: number, fn: any) {
 
 let monthPicker = {
   onKeyDown: monthPickerKeyDown,
-  onClick: {'dp-month': onChooseMonth},
-  render: renderMonthPicker
+  onClick: { 'dp-month': onChooseMonth },
+  render: renderMonthPicker,
 };
 
 function onChooseMonth(e: Event, dp: DatePickerState) {
   dp.setState({
     hilightedDate: setMonth(
-        dp.state.hilightedDate,
-        parseInt(
-            (e.target as HTMLElement).getAttribute('data-month') as string)),
+      dp.state.hilightedDate,
+      parseInt((e.target as HTMLElement).getAttribute('data-month') as string),
+    ),
     view: 'day',
   });
 }
@@ -181,26 +184,31 @@ function renderMonthPicker(dp: DatePickerState) {
   var currentMonth = currentDate.getMonth();
 
   return (
-      '<div class="dp-months">' +
-      months
-          .map(function(month: string, i: number) {
-            var className = 'dp-month';
-            className += (currentMonth === i ? ' dp-current' : '');
+    '<div class="dp-months">' +
+    months
+      .map(function (month: string, i: number) {
+        var className = 'dp-month';
+        className += currentMonth === i ? ' dp-current' : '';
 
-            return (
-                '<button tabindex="-1" type="button" class="' + className +
-                '" data-month="' + i + '">' + month + '</button>');
-          })
-          .join('') +
-      '</div>');
+        return (
+          '<button tabindex="-1" type="button" class="' +
+          className +
+          '" data-month="' +
+          i +
+          '">' +
+          month +
+          '</button>'
+        );
+      })
+      .join('') +
+    '</div>'
+  );
 }
 
 function monthPickerKeyDown(e: KeyboardEvent, dp: DatePickerState) {
   var key = e.keyCode;
-  var shiftBy = (key === Key.left) ?
-      -1 :
-      (key === Key.right) ? 1 :
-                            (key === Key.up) ? -3 : (key === Key.down) ? 3 : 0;
+  var shiftBy =
+    key === Key.left ? -1 : key === Key.right ? 1 : key === Key.up ? -3 : key === Key.down ? 3 : 0;
 
   if (key === Key.esc) {
     dp.setState({
@@ -208,16 +216,14 @@ function monthPickerKeyDown(e: KeyboardEvent, dp: DatePickerState) {
     });
   } else if (shiftBy) {
     e.preventDefault();
-    dp.setState(
-        {hilightedDate: shiftMonth(dp.state.hilightedDate, shiftBy, true)});
+    dp.setState({ hilightedDate: shiftMonth(dp.state.hilightedDate, shiftBy, true) });
   }
 }
-
 
 let yearPicker = {
   render: renderYearPicker,
   onKeyDown: yearPickerKeyDown,
-  onClick: {'dp-year': onChooseYear},
+  onClick: { 'dp-year': onChooseYear },
 };
 
 function renderYearPicker(dp: DatePickerState) {
@@ -225,23 +231,33 @@ function renderYearPicker(dp: DatePickerState) {
   var currentYear = state.hilightedDate.getFullYear();
   var selectedYear = state.selectedDate.getFullYear();
 
-  return ('<div class="dp-years">' + mapYears(dp, function(year: string) {
-            var className = 'dp-year';
-            className += (year === currentYear ? ' dp-current' : '');
-            className += (year === selectedYear ? ' dp-selected' : '');
+  return (
+    '<div class="dp-years">' +
+    mapYears(dp, function (year: string) {
+      var className = 'dp-year';
+      className += year === currentYear ? ' dp-current' : '';
+      className += year === selectedYear ? ' dp-selected' : '';
 
-            return (
-                '<button tabindex="-1" type="button" class="' + className +
-                '" data-year="' + year + '">' + year + '</button>');
-          }) + '</div>');
+      return (
+        '<button tabindex="-1" type="button" class="' +
+        className +
+        '" data-year="' +
+        year +
+        '">' +
+        year +
+        '</button>'
+      );
+    }) +
+    '</div>'
+  );
 }
 
 function onChooseYear(e: Event, dp: DatePickerState) {
   dp.setState({
     hilightedDate: setYear(
-        dp.state.hilightedDate,
-        parseInt(
-            (e.target as HTMLElement).getAttribute('data-year') as string)),
+      dp.state.hilightedDate,
+      parseInt((e.target as HTMLElement).getAttribute('data-year') as string),
+    ),
     view: 'day',
   });
 }
@@ -249,9 +265,8 @@ function onChooseYear(e: Event, dp: DatePickerState) {
 function yearPickerKeyDown(e: KeyboardEvent, dp: DatePickerState) {
   var key = e.keyCode;
   var opts = dp.opts;
-  var shiftBy = (key === Key.left || key === Key.up) ?
-      1 :
-      (key === Key.right || key === Key.down) ? -1 : 0;
+  var shiftBy =
+    key === Key.left || key === Key.up ? 1 : key === Key.right || key === Key.down ? -1 : 0;
 
   if (key === Key.esc) {
     dp.setState({
@@ -290,7 +305,7 @@ var Key = {
 function on(evt: string, el: HTMLElement, handler: (e: Event) => void) {
   el.addEventListener(evt, handler, true);
 
-  return function() {
+  return function () {
     el.removeEventListener(evt, handler, true);
   };
 }
@@ -356,13 +371,13 @@ function setMonth(dt: Date, month: number) {
 }
 
 function dateOrParse(parse: any) {
-  return function(dt: Date|string) {
+  return function (dt: Date | string) {
     return dropTime(typeof dt === 'string' ? parse(dt) : dt);
   };
 }
 
 function constrainDate(dt: Date, min: Date, max: Date) {
-  return (dt < min) ? min : (dt > max) ? max : dt;
+  return dt < min ? min : dt > max ? max : dt;
 }
 
 function dropTime(dt: Date) {
@@ -373,7 +388,7 @@ function dropTime(dt: Date) {
 
 function bufferFn(ms: number, fn: any) {
   var timeout: number;
-  return function() {
+  return function () {
     clearTimeout(timeout);
     timeout = window.setTimeout(fn, ms);
   };
@@ -425,15 +440,12 @@ interface DatePickerOptions {
   reference?: HTMLElement;
 }
 
-var views: {[property: string]:
-                any} = {day: dayPicker, year: yearPicker, month: monthPicker};
+var views: { [property: string]: any } = { day: dayPicker, year: yearPicker, month: monthPicker };
 
 function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
-  var detatchInputEvents:
-      any;  // A function that detaches all events from the input
-  var closing =
-      false;  // A hack to prevent calendar from re-opening when closing.
-  var selectedDate: Date;  // The currently selected date
+  var detatchInputEvents: any; // A function that detaches all events from the input
+  var closing = false; // A hack to prevent calendar from re-opening when closing.
+  var selectedDate: Date; // The currently selected date
   var dp = {
     // The root DOM element for the date picker, initialized on first open.
     el: undefined as undefined | HTMLElement,
@@ -443,15 +455,15 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
     state: initialState(),
     adjustPosition: noop,
 
-    attachToDom: function() {
+    attachToDom: function () {
       opts.appendTo.appendChild(dp.el);
     },
 
-    currentView: function() {
+    currentView: function () {
       return views[dp.state.view];
     },
 
-    open: function() {
+    open: function () {
       if (closing) {
         return;
       }
@@ -477,21 +489,22 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
       emit('open');
     },
 
-    isVisible: function() {
+    isVisible: function () {
       return !!dp.el && !!dp.el.parentNode;
     },
 
-    hasFocus: function() {
+    hasFocus: function () {
       var focused = document.activeElement;
-      return focused && dp.el && dp.el.contains(focused) &&
-          focused.className.indexOf('dp-focuser') < 0;
+      return (
+        focused && dp.el && dp.el.contains(focused) && focused.className.indexOf('dp-focuser') < 0
+      );
     },
 
-    shouldHide: function() {
+    shouldHide: function () {
       return dp.isVisible();
     },
 
-    close: function(isCancel?: boolean) {
+    close: function (isCancel?: boolean) {
       var el = dp.el;
 
       if (!dp.isVisible()) {
@@ -508,21 +521,20 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
       // When we close, the input often gains refocus, which
       // can then launch the date picker again, so we buffer
       // a bit and don't show the date picker within N ms of closing
-      setTimeout(function() {
+      setTimeout(function () {
         closing = false;
       }, 100);
 
-      if (isCancel)
-        emit('cancel');
+      if (isCancel) emit('cancel');
       emit('close');
     },
 
-    destroy: function() {
+    destroy: function () {
       dp.close();
       detatchInputEvents();
     },
 
-    render: function() {
+    render: function () {
       if (!dp.el) {
         return;
       }
@@ -540,7 +552,7 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
 
     // Conceptually similar to setState in React, updates
     // the view state and re-renders.
-    setState: function(state: DatePickerState) {
+    setState: function (state: DatePickerState) {
       for (var key in state) {
         // @ts-ignore
         dp.state[key] = state[key];
@@ -598,7 +610,7 @@ function attachContainerEvents(dp: DatePickerState) {
   el.ontouchstart = noop;
 
   function onClick(e: Event) {
-    (e.target as HTMLElement).className.split(' ').forEach(function(evt) {
+    (e.target as HTMLElement).className.split(' ').forEach(function (evt) {
       var handler = dp.currentView().onClick[evt];
       handler && handler(e, dp);
     });
@@ -610,14 +622,18 @@ function attachContainerEvents(dp: DatePickerState) {
   // do we return focus to the input. A possible other approach
   // would be to set context.redrawing = true on redraw and
   // set it to false in the blur event.
-  on('blur', calEl, bufferFn(150, function() {
-       if (!dp.hasFocus()) {
-         dp.close(true);
-       }
-     }));
+  on(
+    'blur',
+    calEl,
+    bufferFn(150, function () {
+      if (!dp.hasFocus()) {
+        dp.close(true);
+      }
+    }),
+  );
 
   // @ts-ignore
-  on('keydown', el, function(e: KeyboardEvent) {
+  on('keydown', el, function (e: KeyboardEvent) {
     if (e.keyCode === Key.enter) {
       onClick(e);
     } else {
@@ -628,9 +644,9 @@ function attachContainerEvents(dp: DatePickerState) {
   // If the user clicks in non-focusable space, but
   // still within the date picker, we don't want to
   // hide, so we need to hack some things...
-  on('mousedown', calEl, function(e) {
-    let target = (e.target as HTMLElement);
-    target.focus && target.focus();  // IE hack
+  on('mousedown', calEl, function (e) {
+    let target = e.target as HTMLElement;
+    target.focus && target.focus(); // IE hack
     if (document.activeElement !== e.target) {
       e.preventDefault();
       focusCurrent(dp);
@@ -659,7 +675,7 @@ function ModalMode(emit: (name: string) => void, opts: DatePickerOptions) {
 
 function DropdownMode(emit: (name: string) => void, opts: DatePickerOptions) {
   var dp = BaseMode(emit, opts);
-  dp.adjustPosition = function() {
+  dp.adjustPosition = function () {
     autoPosition(defined(opts.reference), dp);
   };
 
@@ -696,8 +712,7 @@ function adjustCalY(dp: DatePickerState, inputPos: ClientRect, win: Window) {
   var calHeight = cal.offsetHeight;
   var belowTop = inputTop + inputPos.height + 8;
   var aboveTop = inputTop - calHeight - 8;
-  var isAbove =
-      (aboveTop > 0 && belowTop + calHeight > scrollTop + win.innerHeight);
+  var isAbove = aboveTop > 0 && belowTop + calHeight > scrollTop + win.innerHeight;
   var top = isAbove ? aboveTop : belowTop;
 
   if (cal.classList) {
@@ -713,7 +728,7 @@ function PermanentMode(emit: (name: string) => void, opts: DatePickerOptions) {
   dp.close = noop;
   dp.shouldFocusOnRender = opts.shouldFocusOnRender;
 
-  dp.attachToDom = function() {
+  dp.attachToDom = function () {
     defined(opts.reference).appendChild(dp.el as HTMLElement);
   };
 
@@ -768,19 +783,19 @@ function defaults() {
     // initial value.
     hilightedDate: now(),
 
-    format: function(dt: Date) {
-      return (dt.getMonth() + 1) + '/' + dt.getDate() + '/' + dt.getFullYear();
+    format: function (dt: Date) {
+      return dt.getMonth() + 1 + '/' + dt.getDate() + '/' + dt.getFullYear();
     },
 
-    parse: function(str: string) {
+    parse: function (str: string) {
       var date = new Date(str);
       // @ts-ignore
       return isNaN(date) ? now() : date;
     },
 
-    dateClass: function() {},
+    dateClass: function () {},
 
-    inRange: function() {
+    inRange: function () {
       return true;
     },
 
@@ -789,9 +804,9 @@ function defaults() {
 }
 
 function makeInRangeFn(opts: DatePickerOptions) {
-  var inRange = opts.inRange;  // Cache this version, and return a variant
+  var inRange = opts.inRange; // Cache this version, and return a variant
 
-  return function(dt: Date, dp: DatePickerOptions) {
+  return function (dt: Date, dp: DatePickerOptions) {
     return inRange(dt, dp) && opts.min <= dt && opts.max >= dt;
   };
 }

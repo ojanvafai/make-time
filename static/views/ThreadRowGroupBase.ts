@@ -1,4 +1,4 @@
-import {ThreadRow} from './ThreadRow.js';
+import { ThreadRow } from './ThreadRow.js';
 
 // TODO: Make this inherit from an abstract base class shared with
 // ThreadRowGroup.
@@ -32,7 +32,7 @@ export abstract class ThreadRowGroupBase extends HTMLElement {
 
   abstract setInViewport(_inViewport: boolean): void;
   abstract getRows(): ThreadRow[];
-  abstract getFirstRow(): ThreadRow|null;
+  abstract getFirstRow(): ThreadRow | null;
   abstract setCollapsed(_collapsed: boolean, _force?: boolean): void;
   abstract setRows(rows: ThreadRow[]): ThreadRow[];
   abstract render(): ThreadRow[];

@@ -1,12 +1,19 @@
 import type * as firebase from 'firebase/app';
-import {compareDates, defined, notNull, setFaviconCount} from '../Base.js';
-import {firestoreUserCollection} from '../BaseMain.js';
-import {ServerStorage} from '../ServerStorage.js';
-import {Settings} from '../Settings.js';
-import {MUST_DO_PRIORITY_NAME, PINNED_PRIORITY_NAME, Priority, STUCK_LABEL_NAME, ThreadMetadataKeys, URGENT_PRIORITY_NAME} from '../Thread.js';
-import {Thread} from '../Thread.js';
+import { compareDates, defined, notNull, setFaviconCount } from '../Base.js';
+import { firestoreUserCollection } from '../BaseMain.js';
+import { ServerStorage } from '../ServerStorage.js';
+import { Settings } from '../Settings.js';
+import {
+  MUST_DO_PRIORITY_NAME,
+  PINNED_PRIORITY_NAME,
+  Priority,
+  STUCK_LABEL_NAME,
+  ThreadMetadataKeys,
+  URGENT_PRIORITY_NAME,
+} from '../Thread.js';
+import { Thread } from '../Thread.js';
 
-import {ThreadListChangedEvent, ThreadListModel} from './ThreadListModel.js';
+import { ThreadListChangedEvent, ThreadListModel } from './ThreadListModel.js';
 
 export const RETRIAGE_LABEL_NAME = 'Retriage';
 export const NO_OFFICES = 'none';
@@ -33,8 +40,8 @@ export class TodoModel extends ThreadListModel {
     // Fetch hasLabel first since that gets sorted at the top and is often what
     // the user wants to see first.
     this.setQueries(
-        metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true),
-        metadataCollection.where(ThreadMetadataKeys.hasPriority, '==', true),
+      metadataCollection.where(ThreadMetadataKeys.hasLabel, '==', true),
+      metadataCollection.where(ThreadMetadataKeys.hasPriority, '==', true),
     );
 
     threadsDoc.onSnapshot((snapshot) => {
@@ -42,11 +49,9 @@ export class TodoModel extends ThreadListModel {
       // changes since we modify the in memory data locally. The downside to
       // this is that we technically have a race if the sort order changes on a
       // different client at the same time as this one.
-      if (this.sortCount_ > 0)
-        this.sortCount_--;
+      if (this.sortCount_ > 0) this.sortCount_--;
 
-      if (this.sortCount_)
-        return;
+      if (this.sortCount_) return;
 
       this.threadsData_ = snapshot.data();
       this.handleSortChanged_();
@@ -54,13 +59,11 @@ export class TodoModel extends ThreadListModel {
   }
 
   postProcessThreads(threads: Thread[]) {
-    let faviconCount =
-        threads.reduce((accumulator: number, currentValue: Thread) => {
-          let priorityId = currentValue.getPriorityId();
-          let shouldCount =
-              priorityId === Priority.Pin || priorityId === Priority.MustDo;
-          return accumulator + (shouldCount ? 1 : 0);
-        }, 0);
+    let faviconCount = threads.reduce((accumulator: number, currentValue: Thread) => {
+      let priorityId = currentValue.getPriorityId();
+      let shouldCount = priorityId === Priority.Pin || priorityId === Priority.MustDo;
+      return accumulator + (shouldCount ? 1 : 0);
+    }, 0);
 
     // The favicon doesn't support showing 3 digets so cap at 99.
     faviconCount = Math.min(99, faviconCount);
@@ -83,26 +86,27 @@ export class TodoModel extends ThreadListModel {
       }
     } else {
       let priority = thread.getPriorityId();
-      if (!priority)
-        return false;
+      if (!priority) return false;
 
-      if (this.settings_.get(ServerStorage.KEYS.VACATION) &&
-          priority !== Priority.MustDo && priority !== Priority.Pin)
+      if (
+        this.settings_.get(ServerStorage.KEYS.VACATION) &&
+        priority !== Priority.MustDo &&
+        priority !== Priority.Pin
+      )
         return false;
     }
     return super.shouldShowThread(thread);
   }
 
   static getTriageGroupName(settings: Settings, thread: Thread) {
-    if (thread.isStuck())
-      return STUCK_LABEL_NAME;
+    if (thread.isStuck()) return STUCK_LABEL_NAME;
 
-    if (thread.needsRetriage())
-      return RETRIAGE_LABEL_NAME;
+    if (thread.needsRetriage()) return RETRIAGE_LABEL_NAME;
 
-    if (thread.isImportant() &&
-        settings.get(ServerStorage.KEYS.PRIORITY_INBOX) ===
-            Settings.SINGLE_GROUP) {
+    if (
+      thread.isImportant() &&
+      settings.get(ServerStorage.KEYS.PRIORITY_INBOX) === Settings.SINGLE_GROUP
+    ) {
       return IMPORTANT_NAME;
     }
 
@@ -130,21 +134,15 @@ export class TodoModel extends ThreadListModel {
   }
 
   pinnedCount() {
-    return this.getThreads()
-        .filter(x => x.getPriorityId() === Priority.Pin)
-        .length;
+    return this.getThreads().filter((x) => x.getPriorityId() === Priority.Pin).length;
   }
 
   mustDoCount() {
-    return this.getThreads()
-        .filter(x => x.getPriorityId() === Priority.MustDo)
-        .length;
+    return this.getThreads().filter((x) => x.getPriorityId() === Priority.MustDo).length;
   }
 
   urgentCount() {
-    return this.getThreads()
-        .filter(x => x.getPriorityId() === Priority.Urgent)
-        .length;
+    return this.getThreads().filter((x) => x.getPriorityId() === Priority.Urgent).length;
   }
 
   private getSortData_(priority: number) {
@@ -158,8 +156,7 @@ export class TodoModel extends ThreadListModel {
 
     if (aGroup === bGroup) {
       // Sort within retriage by priority first.
-      if (aGroup === RETRIAGE_LABEL_NAME &&
-          a.getPriorityId() !== b.getPriorityId()) {
+      if (aGroup === RETRIAGE_LABEL_NAME && a.getPriorityId() !== b.getPriorityId()) {
         // TODO: Assert these are defined and change Thread.comparePriorities to
         // required defined priorities once clients have updated.
         let aPriority = a.getPriorityId();
@@ -173,12 +170,11 @@ export class TodoModel extends ThreadListModel {
   }
 
   protected compareThreads(a: Thread, b: Thread) {
-    let aPinned = (a.getPriorityId() === Priority.Pin);
-    let bPinned = (b.getPriorityId() === Priority.Pin);
+    let aPinned = a.getPriorityId() === Priority.Pin;
+    let bPinned = b.getPriorityId() === Priority.Pin;
 
     // Pull pinned threads out first
-    if (aPinned !== bPinned)
-      return aPinned ? -1 : 1;
+    if (aPinned !== bPinned) return aPinned ? -1 : 1;
 
     if (a.forceTriage() || b.forceTriage()) {
       if (a.forceTriage() && b.forceTriage())
@@ -190,21 +186,17 @@ export class TodoModel extends ThreadListModel {
     let bPriority = defined(b.getPriorityId());
 
     // Sort by priority, then by manual sort order, then by date.
-    if (aPriority !== bPriority)
-      return Thread.comparePriorities(aPriority, bPriority);
+    if (aPriority !== bPriority) return Thread.comparePriorities(aPriority, bPriority);
 
-    if (a.isUnread() != b.isUnread())
-      return a.isUnread() ? -1 : 1;
+    if (a.isUnread() != b.isUnread()) return a.isUnread() ? -1 : 1;
 
     let sortData = this.getSortData_(aPriority);
     if (sortData) {
       let aIndex = sortData.indexOf(a.id);
       let bIndex = sortData.indexOf(b.id);
       if (aIndex !== -1 || bIndex !== -1) {
-        if (aIndex === -1)
-          return -1;
-        if (bIndex === -1)
-          return 1;
+        if (aIndex === -1) return -1;
+        if (bIndex === -1) return 1;
         return aIndex - bIndex;
       }
     }
@@ -219,7 +211,7 @@ export class TodoModel extends ThreadListModel {
   // TODO: only enable the sort buttons for priority group names and move this
   // into ThreadListModel.
   setSortOrder(threads: Thread[]) {
-    let threadIds = threads.map(x => x.id);
+    let threadIds = threads.map((x) => x.id);
 
     let update: any = {};
     let priorityId = defined(threads[0].getPriorityId());
@@ -236,6 +228,6 @@ export class TodoModel extends ThreadListModel {
     let threadsDoc = firestoreUserCollection().doc('threads');
     // TODO: Should probably debounce this so that holding down the sort key
     // doesn't result in a flurry of network activity.
-    threadsDoc.set(update, {merge: true})
+    threadsDoc.set(update, { merge: true });
   }
 }

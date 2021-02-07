@@ -1,7 +1,7 @@
-import {defined, parseAddressList, USER_ID} from './Base.js';
-import {FetchRequestParameters} from './Base.js';
-import {IDBKeyVal} from './idb-keyval.js';
-import {gapiFetch} from './Net.js';
+import { defined, parseAddressList, USER_ID } from './Base.js';
+import { FetchRequestParameters } from './Base.js';
+import { IDBKeyVal } from './idb-keyval.js';
+import { gapiFetch } from './Net.js';
 
 let CONTACT_STORAGE_KEY = 'contacts';
 let SEND_COUNT_STORAGE_KEY = 'send-counts';
@@ -55,31 +55,29 @@ export class Contacts {
 
   async fetchContactsFromDisk() {
     let contacts = await IDBKeyVal.getDefault().get(CONTACT_STORAGE_KEY);
-    if (contacts)
-      this.contacts_ = JSON.parse(contacts);
+    if (contacts) this.contacts_ = JSON.parse(contacts);
   }
 
   async fetchContactsFromNetwork() {
     // This is 450kb! Either cache this and fetch infrequently, or find a way of
     // getting the API to not send the data we don't need.
     let response = await fetch(
-        'https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=' +
-        gapi.auth.getToken().access_token + '&max-results=20000&v=3.0');
+      'https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=' +
+        gapi.auth.getToken().access_token +
+        '&max-results=20000&v=3.0',
+    );
 
     let contacts: Contact[] = [];
 
     let json = await response.json();
 
     // If a user has no contacts, then this field is undefined.
-    if (!json.feed.entry)
-      return contacts;
+    if (!json.feed.entry) return contacts;
 
     for (let entry of json.feed.entry) {
-      if (!entry.gd$email)
-        continue;
+      if (!entry.gd$email) continue;
       let contact = <Contact>{};
-      if (entry.title.$t)
-        contact.name = entry.title.$t;
+      if (entry.title.$t) contact.name = entry.title.$t;
       contact.emails = [];
       for (let email of entry.gd$email) {
         contact.emails.push(email.address);
@@ -90,29 +88,29 @@ export class Contacts {
     // Store the final contacts object instead of the data fetched off the
     // network since the latter is order of magnitude larger and can exceed
     // the allowed localStorage quota.
-    await IDBKeyVal.getDefault().set(
-        CONTACT_STORAGE_KEY, JSON.stringify(contacts));
+    await IDBKeyVal.getDefault().set(CONTACT_STORAGE_KEY, JSON.stringify(contacts));
     return contacts;
   }
 
   async fetchCountsFromDisk() {
     let counts = await IDBKeyVal.getDefault().get(SEND_COUNT_STORAGE_KEY);
-    if (counts)
-      this.sendCounts_ = new Map(JSON.parse(counts));
+    if (counts) this.sendCounts_ = new Map(JSON.parse(counts));
   }
 
   async fetchAddresses_(messageIds: string[]) {
     var batch = gapi.client.newBatch();
-    messageIds.forEach(
-        messageId => {batch.add(gapi.client.gmail.users.messages.get({
+    messageIds.forEach((messageId) => {
+      batch.add(
+        gapi.client.gmail.users.messages.get({
           userId: USER_ID,
           id: messageId,
           fields: 'id,payload/headers',
-        }))});
+        }),
+      );
+    });
 
     let result = (await batch).result;
-    let responses = Object.values(result) as
-        gapi.client.Response<gapi.client.gmail.Message>[];
+    let responses = Object.values(result) as gapi.client.Response<gapi.client.gmail.Message>[];
     let out = new Map();
     for (let response of responses) {
       let addresses = [];
@@ -123,8 +121,7 @@ export class Contacts {
         if (name === 'to' || name === 'cc' || name === 'bcc') {
           let emails = parseAddressList(defined(header.value));
           for (let email of emails) {
-            if (email.address)
-              addresses.push(email.address);
+            if (email.address) addresses.push(email.address);
           }
         }
       }
@@ -133,8 +130,7 @@ export class Contacts {
     return out;
   }
 
-  private async fetchSentMessages_(
-      forEachMessage: (message: gapi.client.gmail.Message) => void) {
+  private async fetchSentMessages_(forEachMessage: (message: gapi.client.gmail.Message) => void) {
     // Chats don't expose their bodies in the gmail API, so just skip them.
     let query = `in:sent AND -in:chats`;
 
@@ -145,59 +141,51 @@ export class Contacts {
       resultCountLeft -= maxForThisFetch;
 
       let requestParams = <FetchRequestParameters>{
-        'userId': USER_ID,
-        'q': query,
-        'maxResults': maxForThisFetch,
+        userId: USER_ID,
+        q: query,
+        maxResults: maxForThisFetch,
       };
 
-      if (opt_pageToken)
-        requestParams.pageToken = opt_pageToken;
+      if (opt_pageToken) requestParams.pageToken = opt_pageToken;
 
-      let resp =
-          await gapiFetch(gapi.client.gmail.users.messages.list, requestParams);
+      let resp = await gapiFetch(gapi.client.gmail.users.messages.list, requestParams);
       let messages = resp.result.messages || [];
       for (let message of messages) {
         await forEachMessage(message);
       }
 
-      if (resultCountLeft <= 0)
-        return;
+      if (resultCountLeft <= 0) return;
 
       let nextPageToken = resp.result.nextPageToken;
-      if (nextPageToken)
-        await getPageOfThreads(nextPageToken);
+      if (nextPageToken) await getPageOfThreads(nextPageToken);
     };
 
     await getPageOfThreads();
   }
 
   async fetchCountsFromNetwork_() {
-    let cacheData =
-        await IDBKeyVal.getDefault().get(MESSAGE_TO_EMAILS_STORAGE_KEY);
+    let cacheData = await IDBKeyVal.getDefault().get(MESSAGE_TO_EMAILS_STORAGE_KEY);
     let cache = cacheData ? new Map(JSON.parse(cacheData)) : new Map();
     let newCache = new Map();
 
     let counts = new Map();
 
-    let processAddresses =
-        (id: string, addresses: string) => {
-          newCache.set(id, addresses);
+    let processAddresses = (id: string, addresses: string) => {
+      newCache.set(id, addresses);
 
-          for (let address of addresses) {
-            let previous = counts.get(address);
-            let count = previous ? previous + 1 : 1;
-            counts.set(address, count);
-          }
-        }
+      for (let address of addresses) {
+        let previous = counts.get(address);
+        let count = previous ? previous + 1 : 1;
+        counts.set(address, count);
+      }
+    };
 
     let needsFetch: string[] = [];
     await this.fetchSentMessages_(async (message) => {
       let id = defined(message.id);
       let addresses = cache.get(id);
-      if (addresses)
-        processAddresses(id, addresses);
-      else
-        needsFetch.push(id);
+      if (addresses) processAddresses(id, addresses);
+      else needsFetch.push(id);
     });
 
     while (needsFetch.length) {
@@ -213,14 +201,12 @@ export class Contacts {
       }
     }
 
-    await IDBKeyVal.getDefault().set(
-        MESSAGE_TO_EMAILS_STORAGE_KEY, JSON.stringify([...newCache]));
+    await IDBKeyVal.getDefault().set(MESSAGE_TO_EMAILS_STORAGE_KEY, JSON.stringify([...newCache]));
 
     // Store the final contacts object instead of the data fetched off the
     // network since the latter is order of magnitude larger and can exceed
     // the allowed localStorage quota.
-    await IDBKeyVal.getDefault().set(
-        SEND_COUNT_STORAGE_KEY, JSON.stringify([...counts]));
+    await IDBKeyVal.getDefault().set(SEND_COUNT_STORAGE_KEY, JSON.stringify([...counts]));
 
     return counts;
   }
