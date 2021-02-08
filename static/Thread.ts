@@ -195,7 +195,7 @@ export const BACKLOG_PRIORITY_NAME = 'Backlog';
 export const STUCK_LABEL_NAME = 'Stuck';
 export const FALLBACK_LABEL_NAME = 'No label';
 
-const PrioritySortOrder = [
+export const PrioritySortOrder = [
   Priority.Pin,
   Priority.MustDo,
   Priority.Bookmark,
@@ -229,6 +229,17 @@ export function getPriorityName(id: Priority) {
       return UNKNOWN_PRIORITY_NAME;
   }
   throw new Error('This should never happen');
+}
+
+const priorityIdToNameMap = new Map();
+for (const id of PrioritySortOrder) {
+  if (id === undefined) continue;
+  const name = getPriorityName(id);
+  priorityIdToNameMap.set(name, id);
+}
+
+export function getPriorityIdForName(labelName: string) {
+  return priorityIdToNameMap.get(labelName);
 }
 
 export function getLabelName(queueNames: QueueNames, id?: number) {
@@ -338,14 +349,21 @@ export class Thread extends EventTargetPolyfill {
   // restore them.
   async updateMetadata(updates: ThreadMetadataUpdate) {
     this.includePushLabelsToGmail_(updates);
-    await this.getMetadataDocument_().update(updates);
-    this.dispatchEvent(new UpdatedEvent());
+    this.silentUpdateMetadata(updates);
     // TODO; This will set actionInProgess_ to false too early if we have two
     // metadata updates in progress at once. actionInProgress_ should actually
     // be a count that increments/decrements when it is set.
     if (this.actionInProgress_) {
       this.setActionInProgress(false);
     }
+  }
+
+  // When we are syncing data from gmail to mktime, we just want to update
+  // mktime and then rerender. We don't want to queue up pushing labels to gmail
+  // or show the user action in progress UI.
+  async silentUpdateMetadata(updates: ThreadMetadataUpdate) {
+    await Thread.metadataCollection().doc(this.id).update(updates);
+    this.dispatchEvent(new UpdatedEvent());
   }
 
   private static clearedMetadata_(): ThreadMetadataUpdate {
@@ -739,10 +757,6 @@ export class Thread extends EventTargetPolyfill {
 
   getSnippet() {
     return this.processed_.getSnippet();
-  }
-
-  getMetadataDocument_() {
-    return Thread.metadataCollection().doc(this.id);
   }
 
   static async fetchMetadata(id: string) {

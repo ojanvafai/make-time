@@ -27,10 +27,12 @@ import { TaskQueue } from './TaskQueue.js';
 import {
   BuiltInLabelIds,
   getLabelName,
+  getPriorityIdForName,
   getPriorityName,
   MessagesToDeleteKeys,
   MessagesToDeleteUpdate,
   Priority,
+  PrioritySortOrder,
   Thread,
   ThreadMetadata,
   ThreadMetadataKeys,
@@ -38,6 +40,7 @@ import {
 } from './Thread.js';
 import { AppShell } from './views/AppShell.js';
 
+const TM_LABEL = 'tm/keep';
 export let MAKE_TIME_LABEL_NAME = 'mktime';
 export let SOFT_MUTE_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/softmute`;
 export let LABEL_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/label`;
@@ -74,6 +77,7 @@ export class GmailLabelUpdate {
 
 export class MailProcessor {
   private makeTimeLabelId_?: string;
+  private tmLabelId_?: string;
   private queueNames_?: QueueNames;
 
   constructor(private settings_: Settings) {}
@@ -83,15 +87,20 @@ export class MailProcessor {
     let labels = await this.ensureLabelsExist_(
       await this.getAllMktimeGmailLabels_(),
       MAKE_TIME_LABEL_NAME,
+      TM_LABEL,
     );
     this.makeTimeLabelId_ = labels[0].id;
+    this.tmLabelId_ = labels[1].id;
     this.queueNames_ = QueueNames.create();
   }
 
   private async getAllMktimeGmailLabels_() {
     var response = await gapiFetch(gapi.client.gmail.users.labels.list, { userId: USER_ID });
     let labels = defined(response.result.labels);
-    return labels.filter((x) => defined(x.name).startsWith(MAKE_TIME_LABEL_NAME));
+    return labels.filter((x) => {
+      const name = defined(x.name);
+      return name.startsWith(MAKE_TIME_LABEL_NAME) || name === TM_LABEL;
+    });
   }
 
   private async ensureLabelsExist_(
@@ -428,6 +437,9 @@ export class MailProcessor {
       );
     }
 
+    // TODO: If there are already other priority labels on this thread, we
+    // should remove them here. That can happen when a user manually adds a
+    // second priority from within another email application.
     if (data.priorityId) {
       let priorityName = `${PRIORITY_LABEL_NAME}/${getPriorityName(data.priorityId)}`;
       await this.pushToAddLabelsAndRemoveFromRemovelabels_(
@@ -466,6 +478,17 @@ export class MailProcessor {
   }
 
   private async pullGmailUpdatesToMktime_() {
+    // This has to happen before processThread calls so that priorityIds are
+    // applied to threads before we apply filters and queue up stripping all
+    // priority ids and after removeGmailLabels_ above as those calls remove
+    // threads from the inbox.
+    // TODO: Don't hardcode tm/keep.
+    await this.forEachThread_(
+      `in:inbox in:${TM_LABEL}`,
+      (thread) => this.pullGmailLabelOnlyUpdatesToMktime_(defined(thread.id)),
+      'Updating labels...',
+    );
+
     // This has to happen after the removeGmailLabels_ calls above as those
     // calls remove threads from the inbox.
     await this.forEachThread_(
@@ -498,6 +521,52 @@ export class MailProcessor {
       'Removing messages archived from gmail...',
       true,
     );
+  }
+
+  private async pullGmailLabelOnlyUpdatesToMktime_(threadId: string) {
+    const allMktimeGmailLabels = await this.getAllMktimeGmailLabels_();
+
+    let thread = await this.getThread_(threadId);
+    let messages = thread.getMessages();
+    assert(messages.length, 'This should never happen. Please file a bug if you see this.');
+
+    let priorityPrefix = `${PRIORITY_LABEL_NAME}/`;
+    // In theory another application can put multiple priority IDs on a thread.
+    // Have the highest priority win.
+    let maxPriorityId;
+
+    const unionOfLabelIds = new Set(messages.flatMap((x) => x.getLabelIds()));
+    for (let labelId of unionOfLabelIds) {
+      const label = allMktimeGmailLabels.find((y) => labelId === y.id);
+      if (label === undefined) continue;
+
+      const name = defined(label.name);
+      if (!name.startsWith(priorityPrefix)) continue;
+
+      const priorityName = name.replace(priorityPrefix, '');
+      const priorityId = getPriorityIdForName(priorityName);
+      // Higher priorities are sorted to a *lower* sort index, so this
+      // if-statement looks backwards but isn't.
+      if (
+        maxPriorityId &&
+        PrioritySortOrder.indexOf(priorityId) >= PrioritySortOrder.indexOf(maxPriorityId)
+      ) {
+        continue;
+      }
+      maxPriorityId = priorityId;
+    }
+
+    if (maxPriorityId !== undefined) {
+      await thread.silentUpdateMetadata({ priorityId: maxPriorityId, hasPriority: true });
+    }
+    const addLabelIds = [defined(this.makeTimeLabelId_)];
+    const removeLabelIds = [defined(this.tmLabelId_)];
+    const update = new GmailLabelUpdate(
+      defined(thread.getMessageIds()),
+      addLabelIds,
+      removeLabelIds,
+    );
+    this.modifyGmailLabelsForThread_(threadId, update);
   }
 
   private async doInParallel_<T>(items: T[], callback: (t: T) => void) {
@@ -751,7 +820,7 @@ export class MailProcessor {
   async applyLabel_(thread: Thread, label: string, hasNewLabel: boolean) {
     let labelId = await defined(this.queueNames_).getId(label);
 
-    // If a thread already has a priority ID or blocked date and the label
+    // If a thread already has a priority ID or stuck date and the label
     // isn't changing, skip putting it back in the triage queue if the new
     // messages were sent myself or if some of the previous messages were
     // unread.
@@ -773,14 +842,14 @@ export class MailProcessor {
       // case of sending yourself a message and then immediately triaging it
       // from the compose view. But apply the new label still since we don't
       // want messages sent to yourself to not have any label.
-      if (newMessages.length === 0 && hasNewLabel) {
-        await thread.setOnlyLabel(label);
+      if (newMessages.length === 0) {
+        if (hasNewLabel) await thread.setOnlyLabel(label);
         return;
       }
 
       // If all the new messages are from me, then don't mark it as needing
       // triage.
-      if (newMessages.length === 0 || (!hasNewLabel && !allOldMessagesWereRead)) {
+      if (!hasNewLabel && !allOldMessagesWereRead) {
         // Push labels to gmail even if the label didn't change so that the
         // mktime label gets set on all the messages. This also helps ensure all
         // the messages on the thread have the same labels, so gmail doesn't
