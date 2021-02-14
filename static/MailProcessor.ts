@@ -557,7 +557,7 @@ export class MailProcessor {
     }
 
     if (maxPriorityId !== undefined) {
-      await thread.silentUpdateMetadata({ priorityId: maxPriorityId, hasPriority: true });
+      await thread.silentUpdateMetadata(thread.priorityUpdate(maxPriorityId));
     }
     const addLabelIds = [defined(this.makeTimeLabelId_)];
     const removeLabelIds = [defined(this.tmLabelId_)];

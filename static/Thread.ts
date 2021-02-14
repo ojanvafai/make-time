@@ -234,7 +234,12 @@ export function getPriorityName(id: Priority) {
 const priorityIdToNameMap = new Map();
 for (const id of PrioritySortOrder) {
   if (id === undefined) continue;
-  const name = getPriorityName(id);
+  // Gmail automatically replaces spaces in label names with dashes. There are
+  // probably other places we need to handle that as well, but a survey of the
+  // calling locations all looked fine as most uses of MUST_DO_PRIORITY_NAME are
+  // to actually be shown in mktime UI, so we want it to be a space or are used
+  // for doing queries to gmail, which will convert spaces to dashes for us.
+  const name = getPriorityName(id).replace(/\ /g, '-');
   priorityIdToNameMap.set(name, id);
 }
 
