@@ -4,7 +4,7 @@ import { firestoreUserCollection, login } from '../BaseMain.js';
 import { ThreadListModel, TriageResult } from '../models/ThreadListModel.js';
 import { TodoModel } from '../models/TodoModel.js';
 import { Settings } from '../Settings.js';
-import { STUCK_LABEL_NAME, Thread, ThreadMetadataKeys } from '../Thread.js';
+import { Thread, ThreadMetadataKeys } from '../Thread.js';
 
 import { AppShell } from './AppShell.js';
 import { ThreadListView } from './ThreadListView.js';
@@ -12,7 +12,6 @@ import { View } from './View.js';
 
 let FIRESTORE_KEYS = [
   ThreadMetadataKeys.retriageTimestamp,
-  ThreadMetadataKeys.blocked,
   ThreadMetadataKeys.throttled,
   ThreadMetadataKeys.queued,
   ThreadMetadataKeys.muted,
@@ -22,7 +21,6 @@ let FIRESTORE_KEYS = [
 
 let FIRESTORE_KEYS_TO_HUMAN_READABLE_NAME = Object.fromEntries([
   [ThreadMetadataKeys.retriageTimestamp, 'Recently modified'],
-  [ThreadMetadataKeys.blocked, STUCK_LABEL_NAME],
   [ThreadMetadataKeys.throttled, 'Throttled'],
   [ThreadMetadataKeys.queued, 'Queued'],
   [ThreadMetadataKeys.muted, 'Muted'],
@@ -39,10 +37,7 @@ class HiddenModel extends ThreadListModel {
 
     const queryKey = this.queryKey_();
     let query;
-    if (queryKey === ThreadMetadataKeys.blocked) {
-      // TODO: Exclude hasLabel threads
-      query = metadataCollection.orderBy(queryKey, 'asc');
-    } else if (queryKey === ThreadMetadataKeys.retriageTimestamp) {
+    if (queryKey === ThreadMetadataKeys.retriageTimestamp) {
       query = metadataCollection.orderBy(queryKey, 'desc').limit(50);
     } else {
       query = metadataCollection.where(queryKey, '==', true);
@@ -56,12 +51,7 @@ class HiddenModel extends ThreadListModel {
 
   compareThreads(a: Thread, b: Thread) {
     switch (this.queryKey_()) {
-      case ThreadMetadataKeys.blocked:
-        // Reverse sort by blocked date for the blocked view.
-        return compareDates(notNull(b.getStuckDate()), notNull(a.getStuckDate()));
-
       case ThreadMetadataKeys.retriageTimestamp:
-        // Reverse sort by blocked date for the blocked view.
         return compareDates(notNull(b.getLastModifiedDate()), notNull(a.getLastModifiedDate()));
 
       case ThreadMetadataKeys.throttled:
@@ -75,10 +65,6 @@ class HiddenModel extends ThreadListModel {
 
   protected shouldShowThread(thread: Thread) {
     switch (this.queryKey_()) {
-      case ThreadMetadataKeys.blocked:
-        if (this.queryKey_() === ThreadMetadataKeys.blocked && thread.needsTriage()) return false;
-        break;
-
       case ThreadMetadataKeys.retriageTimestamp:
         return true;
 
@@ -92,9 +78,6 @@ class HiddenModel extends ThreadListModel {
 
   getGroupName(thread: Thread) {
     switch (this.queryKey_()) {
-      case ThreadMetadataKeys.blocked:
-        return STUCK_LABEL_NAME;
-
       case ThreadMetadataKeys.throttled:
       case ThreadMetadataKeys.queued:
         return TodoModel.getTriageGroupName(this.settings_, thread);
@@ -135,10 +118,7 @@ export class HiddenView extends View {
     super();
 
     let container = document.createElement('div');
-    container.style.cssText = `
-      text-align: center;
-      margin-top: 4px;
-    `;
+    container.className = 'center mt-half';
     this.append(container);
 
     this.select_ = document.createElement('select');

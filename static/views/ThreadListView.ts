@@ -15,6 +15,7 @@ import {
   InProgressChangedEvent,
   MUST_DO_PRIORITY_NAME,
   PINNED_PRIORITY_NAME,
+  STUCK_LABEL_NAME,
   Thread,
   URGENT_PRIORITY_NAME,
 } from '../Thread.js';
@@ -578,12 +579,12 @@ export class ThreadListView extends ThreadListViewBase {
         // threads since it's useful to see multiple at the same time when
         // designing filter rules.
         let renderMode = ThreadRowGroupRenderMode.Default;
-        if (this.isTodoView_) {
-          if (isUntriaged) {
-            renderMode = ThreadRowGroupRenderMode.ShowOnlyHighlightedRows;
-          } else if (this.isTodoView_ && groupName === PINNED_PRIORITY_NAME) {
-            renderMode = ThreadRowGroupRenderMode.CardStyle;
-          }
+        if (this.isTodoView_ && isUntriaged) {
+          renderMode = ThreadRowGroupRenderMode.ShowOnlyHighlightedRows;
+        } else if (
+          this.isTodoView_ ? groupName === PINNED_PRIORITY_NAME : groupName === STUCK_LABEL_NAME
+        ) {
+          renderMode = ThreadRowGroupRenderMode.CardStyle;
         }
         const group = isUnfiltered
           ? new FallbackThreadRowGroup(Labels.Fallback)

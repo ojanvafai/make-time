@@ -34,6 +34,7 @@ import { ViewFiltersChanged as ViewFiltersChangedEvent } from './views/FilterDia
 import { HiddenView } from './views/HiddenView.js';
 import { KeyboardShortcutsDialog } from './views/KeyboardShortcutsDialog.js';
 import { SettingsView } from './views/SettingsView.js';
+import { StuckView } from './views/StuckView.js';
 import { ThreadListView } from './views/ThreadListView.js';
 import { UnfilteredView } from './views/UnfilteredView.js';
 import { View } from './views/View.js';
@@ -71,6 +72,7 @@ enum VIEW {
   Compose,
   Hidden,
   Settings,
+  Stuck,
   Todo,
   Unfiltered,
 }
@@ -106,6 +108,9 @@ router.add('/unfiltered', async (params) => {
 router.add('/hidden', async (_params) => {
   await setView(VIEW.Hidden);
 });
+router.add('/stuck', async (_params) => {
+  await setView(VIEW.Stuck);
+});
 router.add('/calendar', async (_parans) => {
   await setView(VIEW.Calendar);
 });
@@ -138,8 +143,7 @@ async function createModel(viewType: VIEW, params?: any) {
       return todoModel;
 
     case VIEW.Settings:
-      return null;
-
+    case VIEW.Stuck:
     case VIEW.Hidden:
       return null;
 
@@ -166,6 +170,9 @@ async function createView(viewType: VIEW, model: Model | null, params?: any) {
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
+
+    case VIEW.Stuck:
+      return new StuckView(appShell_, await getSettings());
 
     case VIEW.Hidden:
       return new HiddenView(appShell_, await getSettings());
@@ -240,7 +247,7 @@ async function setView(viewType: VIEW, params?: any, shouldHideToolbar?: boolean
   let thisViewGeneration = ++viewGeneration;
   appShell_.showToolbar(!shouldHideToolbar);
   appShell_.showFilterToggle(false);
-  // TODO: Make this work for VIEW.Hidden as well.
+  // TODO: Make this work for VIEW.Hidden and VIEW.Stuck as well.
   appShell_.showOverflowMenuButton(viewType === VIEW.Todo || viewType === VIEW.Unfiltered);
   appShell_.setQueryParameters(params);
 
