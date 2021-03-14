@@ -188,7 +188,9 @@ export class TodoModel extends ThreadListModel {
     // Sort by priority, then by manual sort order, then by date.
     if (aPriority !== bPriority) return Thread.comparePriorities(aPriority, bPriority);
 
-    if (a.isUnread() != b.isUnread()) return a.isUnread() ? -1 : 1;
+    // Sort unread items to the top of priority buckets except for pinned. Don't
+    // need to check bPinned since aPriority === bPriority by this point.
+    if (!aPinned && a.isUnread() != b.isUnread()) return a.isUnread() ? -1 : 1;
 
     let sortData = this.getSortData_(aPriority);
     if (sortData) {
