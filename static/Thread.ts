@@ -81,7 +81,7 @@ export interface ThreadMetadata {
   hasPriority?: boolean;
   queued?: boolean;
   throttled?: boolean;
-  blocked?: boolean | number;
+  blocked?: number;
   muted?: boolean;
   softMuted?: boolean;
   newMessagesSinceSoftMuted?: boolean;
@@ -112,7 +112,7 @@ export interface ThreadMetadataUpdate {
   hasPriority?: boolean | firebase.firestore.FieldValue;
   queued?: boolean | firebase.firestore.FieldValue;
   throttled?: boolean | firebase.firestore.FieldValue;
-  blocked?: boolean | number | firebase.firestore.FieldValue;
+  blocked?: number | firebase.firestore.FieldValue;
   muted?: boolean | firebase.firestore.FieldValue;
   softMuted?: boolean | firebase.firestore.FieldValue;
   newMessagesSinceSoftMuted?: boolean | firebase.firestore.FieldValue;
@@ -679,17 +679,7 @@ export class Thread extends EventTargetPolyfill {
   }
 
   getStuckDate() {
-    if (!this.isStuck()) return null;
-
-    let blocked = defined(this.metadata_.blocked);
-    // TODO: Remove this once blocked can no longer be a boolean.
-    if (blocked === true) {
-      let today = new Date();
-      today.setDate(today.getDate() + 1);
-      return today;
-    }
-    if (blocked === false) assert(false);
-    return new Date(blocked as number);
+    return this.metadata_.blocked ? new Date(this.metadata_.blocked) : null;
   }
 
   isImportant() {
