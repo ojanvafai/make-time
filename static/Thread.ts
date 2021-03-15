@@ -667,6 +667,10 @@ export class Thread extends EventTargetPolyfill {
     return new Date(this.metadata_.timestamp || 0);
   }
 
+  getRetriageDate() {
+    return new Date(defined(this.metadata_.retriageTimestamp));
+  }
+
   getLastModifiedDate() {
     // Fallback to the timestamp of the last message in the thread if for some
     // reason we don't have a retriageTimestamp (e.g. threads that are triaged

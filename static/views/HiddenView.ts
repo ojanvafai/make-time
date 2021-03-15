@@ -52,7 +52,7 @@ class HiddenModel extends ThreadListModel {
   compareThreads(a: Thread, b: Thread) {
     switch (this.queryKey_()) {
       case ThreadMetadataKeys.retriageTimestamp:
-        return compareDates(notNull(b.getLastModifiedDate()), notNull(a.getLastModifiedDate()));
+        return compareDates(notNull(b.getRetriageDate()), notNull(a.getRetriageDate()));
 
       case ThreadMetadataKeys.throttled:
       case ThreadMetadataKeys.queued:
