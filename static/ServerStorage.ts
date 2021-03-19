@@ -96,6 +96,11 @@ interface KeyTypes {
   ALLOWED_PIN_COUNT: string;
   ALLOWED_MUST_DO_COUNT: string;
   ALLOWED_URGENT_COUNT: string;
+  PIN_CADENCE: string;
+  BOOKMARK_CADENCE: string;
+  MUST_DO_CADENCE: string;
+  URGENT_CADENCE: string;
+  BACKLOG_CADENCE: string;
   LOCAL_OFFICES: string;
   LOG_MATCHING_RULES: string;
   REDACT_MESSAGES: string;
@@ -117,6 +122,11 @@ let keys: KeyTypes = {
   ALLOWED_PIN_COUNT: 'allowed_pin_count',
   ALLOWED_MUST_DO_COUNT: 'allowed_must_do_count',
   ALLOWED_URGENT_COUNT: 'allowed_urgent_count',
+  PIN_CADENCE: 'pin_cadence',
+  BOOKMARK_CADENCE: 'bookmark_cadence',
+  MUST_DO_CADENCE: 'must_do_cadence',
+  URGENT_CADENCE: 'urgent_cadence',
+  BACKLOG_CADENCE: 'backlog_cadence',
   LOCAL_OFFICES: 'local_offices',
   LOG_MATCHING_RULES: 'log_matching_rules',
   REDACT_MESSAGES: 'redact_messages',
@@ -136,6 +146,11 @@ let KEYS_TO_DISPATCH_UPDATE_EVENT = [
   keys.ALLOWED_PIN_COUNT,
   keys.ALLOWED_MUST_DO_COUNT,
   keys.ALLOWED_URGENT_COUNT,
+  keys.PIN_CADENCE,
+  keys.BOOKMARK_CADENCE,
+  keys.MUST_DO_CADENCE,
+  keys.URGENT_CADENCE,
+  keys.BACKLOG_CADENCE,
   keys.LOCAL_OFFICES,
   keys.LOG_MATCHING_RULES,
   keys.REDACT_MESSAGES,

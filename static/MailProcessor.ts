@@ -46,10 +46,15 @@ export let SOFT_MUTE_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/softmute`;
 export let LABEL_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/label`;
 export let PRIORITY_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/priority`;
 let MAX_RETRIAGE_COUNT = 10;
-let MUST_DO_RETRIAGE_FREQUENCY_DAYS = 2;
-let URGENT_RETRIAGE_FREQUENCY_DAYS = 7;
-let BACKLOG_RETRIAGE_FREQUENCY_DAYS = 28;
 let SOFT_MUTE_EXPIRATION_DAYS = 7;
+
+const priorityToRetriageSettingKey = new Map<number, string>([
+  [Priority.Pin, ServerStorage.KEYS.PIN_CADENCE],
+  [Priority.Bookmark, ServerStorage.KEYS.BOOKMARK_CADENCE],
+  [Priority.MustDo, ServerStorage.KEYS.MUST_DO_CADENCE],
+  [Priority.Urgent, ServerStorage.KEYS.URGENT_CADENCE],
+  [Priority.Backlog, ServerStorage.KEYS.BACKLOG_CADENCE],
+]);
 
 export class GmailLabelUpdate {
   constructor(
@@ -913,7 +918,13 @@ export class MailProcessor {
     );
   }
 
-  async dequeueRetriage_(priority: Priority, retriageDays: number) {
+  async dequeueRetriage_(priority: Priority) {
+    const retriageSettingKey = priorityToRetriageSettingKey.get(priority);
+    let retriageDays = Number(this.settings_.get(defined(retriageSettingKey)));
+    if (retriageDays === 0) {
+      return;
+    }
+
     let querySnapshot = await Thread.metadataCollection()
       .where(ThreadMetadataKeys.priorityId, '==', priority)
       .get();
@@ -962,9 +973,11 @@ export class MailProcessor {
       .where(ThreadMetadataKeys.needsRetriage, '==', true)
       .get();
     if (!needsRetriage.docs.length) {
-      await this.dequeueRetriage_(Priority.MustDo, MUST_DO_RETRIAGE_FREQUENCY_DAYS);
-      await this.dequeueRetriage_(Priority.Urgent, URGENT_RETRIAGE_FREQUENCY_DAYS);
-      await this.dequeueRetriage_(Priority.Backlog, BACKLOG_RETRIAGE_FREQUENCY_DAYS);
+      await this.dequeueRetriage_(Priority.Pin);
+      await this.dequeueRetriage_(Priority.Bookmark);
+      await this.dequeueRetriage_(Priority.MustDo);
+      await this.dequeueRetriage_(Priority.Urgent);
+      await this.dequeueRetriage_(Priority.Backlog);
     }
   }
 
@@ -1126,6 +1139,8 @@ export class MailProcessor {
   }
 
   private async processQueues_() {
+    await this.processRetriage_();
+
     let storage = await getServerStorage();
     await storage.fetch();
 

@@ -143,7 +143,7 @@ export class SettingsView extends View {
       input.toggleAttribute('setting');
       if (field.min !== undefined) input.min = String(field.min);
       if (field.max !== undefined) input.max = String(field.max);
-      if (field.default) input.placeholder = `default: ${field.default}`;
+      if (field.default !== undefined) input.placeholder = `default: ${field.default}`;
       if (field.type) input.type = field.type;
 
       if (field.type == 'checkbox') input.checked = settings.get(field.key);
