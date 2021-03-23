@@ -228,6 +228,13 @@ if (!window.requestIdleCallback) {
   window.requestIdleCallback = window.setTimeout;
 }
 
+export const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export function daysSinceEpoch(timestamp?: number): number {
+  const msSinceEpoch = timestamp ? new Date(timestamp).getTime() : Date.now();
+  return Math.ceil(msSinceEpoch / MS_PER_DAY);
+}
+
 let ASSERT_STRING = 'This should never happen.';
 
 export function notNull<T>(x: T | null, message?: string): T {

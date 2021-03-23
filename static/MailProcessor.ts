@@ -2,10 +2,12 @@ import * as firebase from 'firebase/app';
 
 import {
   assert,
+  daysSinceEpoch,
   deepEqual,
   defined,
   FetchRequestParameters,
   Labels,
+  MS_PER_DAY,
   ParsedAddress,
   USER_ID,
 } from './Base.js';
@@ -25,7 +27,6 @@ import {
 } from './Settings.js';
 import { TaskQueue } from './TaskQueue.js';
 import {
-  BuiltInLabelIds,
   getLabelName,
   getPriorityIdForName,
   getPriorityName,
@@ -33,6 +34,7 @@ import {
   MessagesToDeleteUpdate,
   Priority,
   PrioritySortOrder,
+  SOFT_MUTE_EXPIRATION_DAYS,
   Thread,
   ThreadMetadata,
   ThreadMetadataKeys,
@@ -45,8 +47,25 @@ export let MAKE_TIME_LABEL_NAME = 'mktime';
 export let SOFT_MUTE_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/softmute`;
 export let LABEL_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/label`;
 export let PRIORITY_LABEL_NAME = `${MAKE_TIME_LABEL_NAME}/priority`;
+const STUCK_PARENT_LABEL = `${MAKE_TIME_LABEL_NAME}/stuck`;
+const LAST_TRIAGED_PARENT_LABEL = `${MAKE_TIME_LABEL_NAME}/lastTriaged`;
+const NEEDS_RETRIAGE_LABEL = `${MAKE_TIME_LABEL_NAME}/needsRetriage`;
+const LAST_PROCESSED_RETRIAGE_LABEL = `${MAKE_TIME_LABEL_NAME}/lastProcessedRetriage`;
+const MUTE_PARENT_LABEL = `${MAKE_TIME_LABEL_NAME}/mute`;
+const LABELS_TO_DELETE_IF_EMPTY = [
+  STUCK_PARENT_LABEL,
+  LAST_TRIAGED_PARENT_LABEL,
+  MUTE_PARENT_LABEL,
+];
+const TOP_LEVEL_MKTIME_LABELS = [
+  LABEL_LABEL_NAME,
+  PRIORITY_LABEL_NAME,
+  NEEDS_RETRIAGE_LABEL,
+  LAST_PROCESSED_RETRIAGE_LABEL,
+  ...LABELS_TO_DELETE_IF_EMPTY,
+];
+
 let MAX_RETRIAGE_COUNT = 10;
-let SOFT_MUTE_EXPIRATION_DAYS = 7;
 
 const priorityToRetriageSettingKey = new Map<number, string>([
   [Priority.Pin, ServerStorage.KEYS.PIN_CADENCE],
@@ -133,6 +152,14 @@ export class MailProcessor {
   }
 
   async process() {
+    // This has to happen first so that priorityIds and queues are applied to
+    // threads before we apply filters and queue up stripping all priority ids.
+    await this.forEachThread_(
+      `in:inbox in:${TM_LABEL}`,
+      (thread) => this.pullGmailLabelOnlyUpdatesToMktime_(defined(thread.id)),
+      'Updating labels...',
+    );
+
     await this.processQueues_();
     await this.pushMktimeUpdatesToGmail_();
     await this.pullGmailUpdatesToMktime_();
@@ -352,6 +379,10 @@ export class MailProcessor {
     await doc.ref.update(clearFirestoreMetadataUpdate);
   }
 
+  private getParentLabel_(parentLabels: string[], labelName: string) {
+    return parentLabels.find((x) => labelName?.startsWith(`${x}/`));
+  }
+
   private async populateGmailLabelsToPush_(
     allMktimeGmailLabels: gapi.client.gmail.Label[],
     mktimeLabelId: string,
@@ -377,15 +408,12 @@ export class MailProcessor {
       }
     }
 
-    let labelPrefix = `${LABEL_LABEL_NAME}/`;
-    let priorityPrefix = `${PRIORITY_LABEL_NAME}/`;
     [...labelIdsAlreadyOnAnyMessage].map((x) => {
       const label = allMktimeGmailLabels.find((y) => x === y.id);
       if (!label) {
         return;
       }
-      let name = defined(label.name);
-      if (name.startsWith(labelPrefix) || name.startsWith(priorityPrefix)) {
+      if (this.getParentLabel_(TOP_LEVEL_MKTIME_LABELS, defined(label.name))) {
         gmailLabelUpdate.remove(defined(label.id));
       }
     });
@@ -403,11 +431,13 @@ export class MailProcessor {
         gmailLabelUpdate.remove(mktimeLabelId);
       }
       if (data.softMuted) {
-        await this.pushToAddLabelsAndRemoveFromRemovelabels_(
+        await this.addDaysSinceEpochLabel_(
           allMktimeGmailLabels,
           labelIdsAlreadyOnAnyMessage,
-          SOFT_MUTE_LABEL_NAME,
           gmailLabelUpdate,
+          // softMuted is a boolean that means 7 days since last triaged.
+          defined(data.retriageTimestamp) + 7 * MS_PER_DAY,
+          MUTE_PARENT_LABEL,
         );
       }
     } else {
@@ -454,6 +484,62 @@ export class MailProcessor {
         gmailLabelUpdate,
       );
     }
+
+    if (data.blocked) {
+      await this.addDaysSinceEpochLabel_(
+        allMktimeGmailLabels,
+        labelIdsAlreadyOnAnyMessage,
+        gmailLabelUpdate,
+        data.blocked,
+        STUCK_PARENT_LABEL,
+      );
+    }
+
+    // We used last triaged only to do retriage, so no need to store it for
+    // threads with no priority.
+    if (data.hasPriority && data.retriageTimestamp) {
+      await this.addDaysSinceEpochLabel_(
+        allMktimeGmailLabels,
+        labelIdsAlreadyOnAnyMessage,
+        gmailLabelUpdate,
+        data.retriageTimestamp,
+        LAST_TRIAGED_PARENT_LABEL,
+      );
+    }
+
+    if (data.hasPriority && data.retriageTimestamp) {
+      await this.addDaysSinceEpochLabel_(
+        allMktimeGmailLabels,
+        labelIdsAlreadyOnAnyMessage,
+        gmailLabelUpdate,
+        data.retriageTimestamp,
+        LAST_TRIAGED_PARENT_LABEL,
+      );
+    }
+
+    if (data.needsRetriage) {
+      await this.pushToAddLabelsAndRemoveFromRemovelabels_(
+        allMktimeGmailLabels,
+        labelIdsAlreadyOnAnyMessage,
+        NEEDS_RETRIAGE_LABEL,
+        gmailLabelUpdate,
+      );
+    }
+  }
+
+  private async addDaysSinceEpochLabel_(
+    allMktimeGmailLabels: gapi.client.gmail.Label[],
+    preExistingLabelIdsOnThread: Set<string>,
+    gmailLabelUpdate: GmailLabelUpdate,
+    timestamp: number,
+    labelPrefix: string,
+  ) {
+    await this.pushToAddLabelsAndRemoveFromRemovelabels_(
+      allMktimeGmailLabels,
+      preExistingLabelIdsOnThread,
+      `${labelPrefix}/${daysSinceEpoch(timestamp)}`,
+      gmailLabelUpdate,
+    );
   }
 
   private getLabelName_(labelId: number | undefined) {
@@ -466,8 +552,7 @@ export class MailProcessor {
     await this.ensureLabelsExist_(
       allMktimeGmailLabels,
       MAKE_TIME_LABEL_NAME,
-      LABEL_LABEL_NAME,
-      PRIORITY_LABEL_NAME,
+      ...TOP_LEVEL_MKTIME_LABELS,
     );
 
     const snapshot = await Thread.metadataCollection()
@@ -483,19 +568,6 @@ export class MailProcessor {
   }
 
   private async pullGmailUpdatesToMktime_() {
-    // This has to happen before processThread calls so that priorityIds are
-    // applied to threads before we apply filters and queue up stripping all
-    // priority ids and after removeGmailLabels_ above as those calls remove
-    // threads from the inbox.
-    // TODO: Don't hardcode tm/keep.
-    await this.forEachThread_(
-      `in:inbox in:${TM_LABEL}`,
-      (thread) => this.pullGmailLabelOnlyUpdatesToMktime_(defined(thread.id)),
-      'Updating labels...',
-    );
-
-    // This has to happen after the removeGmailLabels_ calls above as those
-    // calls remove threads from the inbox.
     await this.forEachThread_(
       'in:inbox -in:mktime',
       (thread) => this.processThread(defined(thread.id)),
@@ -528,6 +600,17 @@ export class MailProcessor {
     );
   }
 
+  private splitNameAtLastSlash_(name: string) {
+    const lastSlash = name.lastIndexOf('/');
+    if (lastSlash === -1) {
+      return [name];
+    }
+
+    const prefix = name.substring(0, lastSlash);
+    const value = name.substring(lastSlash + 1);
+    return [prefix, value];
+  }
+
   private async pullGmailLabelOnlyUpdatesToMktime_(threadId: string) {
     const allMktimeGmailLabels = await this.getAllMktimeGmailLabels_();
 
@@ -535,43 +618,118 @@ export class MailProcessor {
     let messages = thread.getMessages();
     assert(messages.length, 'This should never happen. Please file a bug if you see this.');
 
-    let priorityPrefix = `${PRIORITY_LABEL_NAME}/`;
-    // In theory another application can put multiple priority IDs on a thread.
-    // Have the highest priority win.
-    let maxPriorityId;
+    let mute = false;
+    let needsRetriage = false;
+    let priorityId: Priority | undefined;
+    let labelId;
+    let softMute;
+    let stuck;
+    let lastTriaged;
 
     const unionOfLabelIds = new Set(messages.flatMap((x) => x.getLabelIds()));
-    for (let labelId of unionOfLabelIds) {
-      const label = allMktimeGmailLabels.find((y) => labelId === y.id);
-      if (label === undefined) continue;
-
-      const name = defined(label.name);
-      if (!name.startsWith(priorityPrefix)) continue;
-
-      const priorityName = name.replace(priorityPrefix, '');
-      const priorityId = getPriorityIdForName(priorityName);
-      // Higher priorities are sorted to a *lower* sort index, so this
-      // if-statement looks backwards but isn't.
-      if (
-        maxPriorityId &&
-        PrioritySortOrder.indexOf(priorityId) >= PrioritySortOrder.indexOf(maxPriorityId)
-      ) {
+    for (let gmailLabelId of unionOfLabelIds) {
+      const gmailLabel = allMktimeGmailLabels.find((y) => gmailLabelId === y.id);
+      if (gmailLabel === undefined) {
         continue;
       }
-      maxPriorityId = priorityId;
+
+      const name = defined(gmailLabel.name);
+
+      // Mute parent label without a sublabel is a hard mute.
+      if (name === MUTE_PARENT_LABEL) {
+        mute = true;
+        continue;
+      } else if (name === NEEDS_RETRIAGE_LABEL) {
+        needsRetriage = true;
+        continue;
+      }
+
+      const [prefix, value] = this.splitNameAtLastSlash_(name);
+      if (!value) {
+        continue;
+      }
+
+      switch (prefix) {
+        case PRIORITY_LABEL_NAME:
+          const thisPriorityId = getPriorityIdForName(value);
+          if (thisPriorityId === undefined) {
+            ErrorLogger.log(`Unknown priority name: ${name}`);
+            continue;
+          }
+          // In theory another application can put multiple priority IDs on a
+          // thread. Have the highest priority win. Higher priorities are sorted
+          // to a *lower* sort index, so this if-statement looks backwards but
+          // isn't.
+          if (
+            !priorityId ||
+            PrioritySortOrder.indexOf(thisPriorityId) < PrioritySortOrder.indexOf(priorityId)
+          ) {
+            priorityId = thisPriorityId;
+          }
+          break;
+
+        case LABEL_LABEL_NAME:
+          labelId = await defined(this.queueNames_).getId(value);
+          break;
+
+        case MUTE_PARENT_LABEL:
+          // Mute label + daysSinceEpoch is soft mute.
+          softMute = Number(value);
+          break;
+
+        case STUCK_PARENT_LABEL:
+          stuck = Number(value) * MS_PER_DAY;
+          break;
+
+        case LAST_TRIAGED_PARENT_LABEL:
+          lastTriaged = Number(value) * MS_PER_DAY;
+          break;
+      }
     }
 
-    if (maxPriorityId !== undefined) {
-      await thread.silentUpdateMetadata(thread.priorityUpdate(maxPriorityId));
+    const update: ThreadMetadataUpdate = Thread.clearedMetadata();
+
+    // clearedMetadata doesn't clear labelId, but we want to if the label was removed.
+    update.labelId = labelId || firebase.firestore.FieldValue.delete();
+    // hasLabel controls whether the thread needs triage.
+    const allowInInbox = !stuck && !mute && !softMute;
+    update.hasLabel = allowInInbox && (needsRetriage || !priorityId);
+    update.hasPriority = allowInInbox && !!priorityId;
+    if (priorityId) {
+      update.priorityId = priorityId;
+    }
+
+    if (needsRetriage) {
+      Thread.applyNeedsRetriage(update);
+    }
+    if (mute) {
+      Thread.applyMuteToUpdate(update);
+    }
+    if (softMute) {
+      Thread.applySoftMute(update, softMute);
+    }
+    if (stuck) {
+      Thread.applyStuckDeadline(update, stuck);
+    }
+
+    // Not great, but fallback to the current time as the retriage timestamp if
+    // it's not set via a label.
+    Thread.applyRetriageTimestamp(update, lastTriaged || Date.now());
+
+    // If the thread is repeating and it's being removed from the inbox, mark it stuck for tomorrow.
+    if (thread.hasRepeat() && !stuck && !update.hasLabel && !update.hasPriority) {
+      stuck = Date.now() + MS_PER_DAY;
+    }
+
+    if (Object.keys(update).length > 0) {
+      await thread.silentUpdateMetadata(update);
     }
     const addLabelIds = [defined(this.makeTimeLabelId_)];
     const removeLabelIds = [defined(this.tmLabelId_)];
-    const update = new GmailLabelUpdate(
-      defined(thread.getMessageIds()),
-      addLabelIds,
-      removeLabelIds,
+    this.modifyGmailLabelsForThread_(
+      threadId,
+      new GmailLabelUpdate(defined(thread.getMessageIds()), addLabelIds, removeLabelIds),
     );
-    this.modifyGmailLabelsForThread_(threadId, update);
   }
 
   private async doInParallel_<T>(items: T[], callback: (t: T) => void) {
@@ -954,24 +1112,50 @@ export class MailProcessor {
       async (doc: firebase.firestore.QueryDocumentSnapshot) => {
         // Put the thread back in the triage queue (hasLabel) and denote
         // needsTriage so it is grouped with the other retriage threads.
-        let update: ThreadMetadataUpdate = {
-          hasLabel: true,
-          needsRetriage: true,
-        };
-        // TODO: Remove this once all clients have flushed all their
-        // threads that don't have labels.
-        if (!doc.data().labelId) update.labelId = BuiltInLabelIds.Fallback;
+        let update: ThreadMetadataUpdate = {};
+        Thread.applyNeedsRetriage(update);
         await doc.ref.update(update);
       },
     );
   }
 
   private async processRetriage_() {
-    // If there are still untriaged needsRetriage threads, then don't add
-    // more to the pile.
+    const lastProcessedRetriageValues = (await this.getAllMktimeGmailLabels_()).reduce(
+      (
+        filtered: { value: string; label: gapi.client.gmail.Label }[],
+        label: gapi.client.gmail.Label,
+      ) => {
+        const [prefix, value] = this.splitNameAtLastSlash_(defined(label.name));
+        if (prefix === LAST_PROCESSED_RETRIAGE_LABEL) {
+          filtered.push({ value, label });
+        }
+        return filtered;
+      },
+      [],
+    );
+
+    const today = daysSinceEpoch();
+    let haveAlreadyProcessedRetriageToday = false;
+    for (const value of lastProcessedRetriageValues) {
+      if (Number(value.value) === today) {
+        haveAlreadyProcessedRetriageToday = true;
+        continue;
+      }
+      await gapiFetch(gapi.client.gmail.users.labels.delete, {
+        id: value.label.id,
+        userId: USER_ID,
+      });
+    }
+
+    if (haveAlreadyProcessedRetriageToday) {
+      return;
+    }
+
     let needsRetriage = await Thread.metadataCollection()
       .where(ThreadMetadataKeys.needsRetriage, '==', true)
       .get();
+    // If there are still untriaged needsRetriage threads, then don't add more
+    // to the pile.
     if (!needsRetriage.docs.length) {
       await this.dequeueRetriage_(Priority.Pin);
       await this.dequeueRetriage_(Priority.Bookmark);
@@ -979,6 +1163,11 @@ export class MailProcessor {
       await this.dequeueRetriage_(Priority.Urgent);
       await this.dequeueRetriage_(Priority.Backlog);
     }
+
+    await this.ensureLabelsExist_(
+      await this.getAllMktimeGmailLabels_(),
+      `${LAST_PROCESSED_RETRIAGE_LABEL}/${daysSinceEpoch()}`,
+    );
   }
 
   async schedulePushGmailLabelsForAllHasLabelOrPriorityThreads() {
@@ -1029,9 +1218,16 @@ export class MailProcessor {
     // get processed. let time = new Date(now); time.setDate(time.getDate() +
     // SOFT_MUTE_EXPIRATION_DAYS); now = time.getTime();
 
+    const today = daysSinceEpoch();
     let muteExpired = querySnapshot.docs.filter((x) => {
-      let daysSinceLastTriaged = (now - x.data().retriageTimestamp) / oneDay;
-      return daysSinceLastTriaged > SOFT_MUTE_EXPIRATION_DAYS;
+      const data = x.data();
+      // TODO: Remove this once all clients have updated to process all their
+      // legacy gsoft mutes.
+      if (!data.softMuteDeadline) {
+        let daysSinceLastTriaged = (now - data.retriageTimestamp) / oneDay;
+        return daysSinceLastTriaged > SOFT_MUTE_EXPIRATION_DAYS;
+      }
+      return today >= data.softMuteDeadline;
     });
 
     await this.doInParallel_<firebase.firestore.QueryDocumentSnapshot>(
@@ -1044,6 +1240,7 @@ export class MailProcessor {
           update = {
             softMuted: firebase.firestore.FieldValue.delete(),
             newMessagesSinceSoftMuted: firebase.firestore.FieldValue.delete(),
+            softMuteDeadline: firebase.firestore.FieldValue.delete(),
             hasLabel: true,
             hasMessageIdsToPushToGmail: true,
             messageIdsToPushToGmail: firebase.firestore.FieldValue.arrayUnion(
@@ -1051,7 +1248,7 @@ export class MailProcessor {
             ),
           };
         } else {
-          update = Thread.baseArchiveUpdate();
+          update = Thread.clearedMetadata();
         }
 
         await doc.ref.update(update);
@@ -1059,11 +1256,38 @@ export class MailProcessor {
     );
   }
 
+  private async gcEmptyLabels_(labels: gapi.client.gmail.Label[]) {
+    const today = daysSinceEpoch();
+
+    for (const label of labels) {
+      const parentLabel = this.getParentLabel_(LABELS_TO_DELETE_IF_EMPTY, defined(label.name));
+      if (!parentLabel) {
+        continue;
+      }
+      const dayValue = label.name?.replace(`${parentLabel}/`, '');
+      // No point in processing labels that are today or later since we wouldn't
+      // have removed threads from them.
+      if (Number(dayValue) >= today) {
+        continue;
+      }
+
+      const payload = {
+        id: label.id,
+        userId: USER_ID,
+      };
+      let resp = await gapiFetch(gapi.client.gmail.users.labels.get, payload);
+      if (resp.result.threadsTotal === 0) {
+        await gapiFetch(gapi.client.gmail.users.labels.delete, payload);
+      }
+    }
+  }
+
   private async processSingleQueue_(queue: string) {
     if (queue === QueueSettings.DAILY) {
       await this.dequeueStuck_();
       await this.processRetriage_();
       await this.processSoftMute_();
+      await this.gcEmptyLabels_(await this.getAllMktimeGmailLabels_());
     }
 
     let queueDatas = this.settings_.getQueueSettings().entries();

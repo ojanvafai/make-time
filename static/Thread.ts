@@ -2,6 +2,7 @@ import * as firebase from 'firebase/app';
 
 import {
   assert,
+  daysSinceEpoch,
   defined,
   getCurrentWeekNumber,
   getPreviousWeekNumber,
@@ -85,6 +86,7 @@ export interface ThreadMetadata {
   muted?: boolean;
   softMuted?: boolean;
   newMessagesSinceSoftMuted?: boolean;
+  softMuteDeadline?: number;
   archivedByFilter?: boolean;
   // Timestamp any message in this thread was last marked read.
   lastMarkedReadTime?: number;
@@ -116,6 +118,7 @@ export interface ThreadMetadataUpdate {
   muted?: boolean | firebase.firestore.FieldValue;
   softMuted?: boolean | firebase.firestore.FieldValue;
   newMessagesSinceSoftMuted?: boolean | firebase.firestore.FieldValue;
+  softMuteDeadline?: number | firebase.firestore.FieldValue;
   archivedByFilter?: boolean | firebase.firestore.FieldValue;
   lastMarkedReadTime?: number | firebase.firestore.FieldValue;
   important?: boolean | firebase.firestore.FieldValue;
@@ -145,6 +148,7 @@ export enum ThreadMetadataKeys {
   muted = 'muted',
   softMuted = 'softMuted',
   newMessagesSinceSoftMuted = 'newMessagesSinceSoftMuted',
+  softMuteDeadline = 'softMuteDeadline',
   archivedByFilter = 'archivedByFilter',
   lastMarkedReadTime = 'readCountTimestamp',
   important = 'important',
@@ -185,6 +189,8 @@ export enum Priority {
 export enum RepeatType {
   Daily = 1,
 }
+
+export const SOFT_MUTE_EXPIRATION_DAYS = 7;
 
 export const UNKNOWN_PRIORITY_NAME = 'Unknown priority';
 export const BOOKMARK_PRIORITY_NAME = 'Bookmark';
@@ -231,7 +237,7 @@ export function getPriorityName(id: Priority) {
   throw new Error('This should never happen');
 }
 
-const priorityIdToNameMap = new Map();
+const priorityNameToIdMap: Map<string, Priority> = new Map();
 for (const id of PrioritySortOrder) {
   if (id === undefined) continue;
   // Gmail automatically replaces spaces in label names with dashes. There are
@@ -240,11 +246,11 @@ for (const id of PrioritySortOrder) {
   // to actually be shown in mktime UI, so we want it to be a space or are used
   // for doing queries to gmail, which will convert spaces to dashes for us.
   const name = getPriorityName(id).replace(/\ /g, '-');
-  priorityIdToNameMap.set(name, id);
+  priorityNameToIdMap.set(name, id);
 }
 
 export function getPriorityIdForName(labelName: string) {
-  return priorityIdToNameMap.get(labelName);
+  return priorityNameToIdMap.get(labelName);
 }
 
 export function getLabelName(queueNames: QueueNames, id?: number) {
@@ -371,13 +377,14 @@ export class Thread extends EventTargetPolyfill {
     this.dispatchEvent(new UpdatedEvent());
   }
 
-  private static clearedMetadata_(): ThreadMetadataUpdate {
+  static clearedMetadata(): ThreadMetadataUpdate {
     return {
       needsRetriage: firebase.firestore.FieldValue.delete(),
       blocked: firebase.firestore.FieldValue.delete(),
       muted: firebase.firestore.FieldValue.delete(),
       softMuted: firebase.firestore.FieldValue.delete(),
       newMessagesSinceSoftMuted: firebase.firestore.FieldValue.delete(),
+      softMuteDeadline: firebase.firestore.FieldValue.delete(),
       archivedByFilter: firebase.firestore.FieldValue.delete(),
       queued: firebase.firestore.FieldValue.delete(),
       throttled: firebase.firestore.FieldValue.delete(),
@@ -392,7 +399,7 @@ export class Thread extends EventTargetPolyfill {
   }
 
   static async clearMetadata(threadId: string) {
-    let update = this.clearedMetadata_();
+    let update = this.clearedMetadata();
     await Thread.metadataCollection().doc(threadId).update(update);
   }
 
@@ -419,12 +426,7 @@ export class Thread extends EventTargetPolyfill {
   }
 
   removeFromInboxMetadata_() {
-    return Thread.baseArchiveUpdate();
-  }
-
-  static baseArchiveUpdate() {
-    let update = Thread.clearedMetadata_();
-    return update;
+    return Thread.clearedMetadata();
   }
 
   archiveUpdate(archivedByFilter?: boolean) {
@@ -461,8 +463,12 @@ export class Thread extends EventTargetPolyfill {
     }
 
     let update = this.removeFromInboxMetadata_();
-    update.muted = true;
+    Thread.applyMuteToUpdate(update);
     return update;
+  }
+
+  static applyMuteToUpdate(update: ThreadMetadataUpdate) {
+    update.muted = true;
   }
 
   softMuteUpdate() {
@@ -472,8 +478,13 @@ export class Thread extends EventTargetPolyfill {
     }
 
     let update = this.keepInInboxMetadata_();
-    update.softMuted = true;
+    Thread.applySoftMute(update, daysSinceEpoch() + SOFT_MUTE_EXPIRATION_DAYS);
     return update;
+  }
+
+  static applySoftMute(update: ThreadMetadataUpdate, daysSinceEpoch: number) {
+    update.softMuted = true;
+    update.softMuteDeadline = daysSinceEpoch;
   }
 
   async softMute() {
@@ -489,12 +500,16 @@ export class Thread extends EventTargetPolyfill {
   }
 
   keepInInboxMetadata_() {
-    let update = Thread.clearedMetadata_();
+    let update = Thread.clearedMetadata();
     // Mark the last time this thread was triaged so we don't retriage it too
     // soon after that. This is also used as a last modified time in a number of
     // places.
-    update.retriageTimestamp = Date.now();
+    Thread.applyRetriageTimestamp(update, Date.now());
     return update;
+  }
+
+  static applyRetriageTimestamp(update: ThreadMetadataUpdate, timestamp: number) {
+    update.retriageTimestamp = timestamp;
   }
 
   private isMessageUnread_(message: Message) {
@@ -573,6 +588,11 @@ export class Thread extends EventTargetPolyfill {
     return update;
   }
 
+  static applyNeedsRetriage(update: ThreadMetadataUpdate) {
+    update.hasLabel = true;
+    update.needsRetriage = true;
+  }
+
   clearStuckUpdate() {
     let update: ThreadMetadataUpdate = {};
     update[ThreadMetadataKeys.blocked] = firebase.firestore.FieldValue.delete();
@@ -594,8 +614,12 @@ export class Thread extends EventTargetPolyfill {
 
   setDate(date: Date) {
     let update = this.keepInInboxMetadata_();
-    update[ThreadMetadataKeys.blocked] = date.getTime();
+    Thread.applyStuckDeadline(update, date.getTime());
     return update;
+  }
+
+  static applyStuckDeadline(update: ThreadMetadataUpdate, timestamp: number) {
+    update[ThreadMetadataKeys.blocked] = timestamp;
   }
 
   setDateDays_(days: number) {
@@ -918,7 +942,7 @@ export class Thread extends EventTargetPolyfill {
         // Intentionaly don't pass the removeFromInbox argument as we want to
         // leave the labelId on it should gmail decide to show the thread again
         // (not sure if that's even possible).
-        let update = Thread.clearedMetadata_();
+        let update = Thread.clearedMetadata();
         await Thread.metadataCollection().doc(this.id).update(update);
       }
       return null;
