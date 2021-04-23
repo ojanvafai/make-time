@@ -252,6 +252,13 @@ export class Settings extends EventTargetPolyfill {
       type: 'checkbox',
     },
     {
+      key: ServerStorage.KEYS.UNTRIAGED_SUMMARY,
+      name: 'Only show untriaged summary',
+      description: `In todo view, only show the count of untriaged threads with a link to the untriaged view.`,
+      default: false,
+      type: 'checkbox',
+    },
+    {
       key: ServerStorage.KEYS.PRIORITY_INBOX,
       name: 'Priority inbox',
       description: `Configure how important messages are grouped.`,

@@ -37,6 +37,7 @@ import { SettingsView } from './views/SettingsView.js';
 import { StuckView } from './views/StuckView.js';
 import { ThreadListView } from './views/ThreadListView.js';
 import { UnfilteredView } from './views/UnfilteredView.js';
+import { UntriagedView } from './views/UntriagedView.js';
 import { View } from './views/View.js';
 
 if (!isMobileUserAgent()) document.documentElement.classList.add('desktop');
@@ -75,6 +76,7 @@ enum VIEW {
   Stuck,
   Todo,
   Unfiltered,
+  Untriaged,
 }
 
 async function routeToCurrentLocation() {
@@ -104,6 +106,9 @@ router.add('/todo', async (params) => {
 });
 router.add('/unfiltered', async (params) => {
   await setView(VIEW.Unfiltered, params);
+});
+router.add('/untriaged', async (params) => {
+  await setView(VIEW.Untriaged, params);
 });
 router.add('/hidden', async (_params) => {
   await setView(VIEW.Hidden);
@@ -137,6 +142,7 @@ async function createModel(viewType: VIEW, params?: any) {
 
     case VIEW.Todo:
     case VIEW.Unfiltered:
+    case VIEW.Untriaged:
       let todoModel = await getTodoModel();
       todoModel.setOffices(params.offices);
       todoModel.setViewFilters(params.label, params.days);
@@ -167,6 +173,9 @@ async function createView(viewType: VIEW, model: Model | null, params?: any) {
 
     case VIEW.Unfiltered:
       return new UnfilteredView(<TodoModel>model, appShell_, await getSettings(), getMailProcessor);
+
+    case VIEW.Untriaged:
+      return new UntriagedView(<TodoModel>model, appShell_, await getSettings());
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());
@@ -248,7 +257,9 @@ async function setView(viewType: VIEW, params?: any, shouldHideToolbar?: boolean
   appShell_.showToolbar(!shouldHideToolbar);
   appShell_.showFilterToggle(false);
   // TODO: Make this work for VIEW.Hidden and VIEW.Stuck as well.
-  appShell_.showOverflowMenuButton(viewType === VIEW.Todo || viewType === VIEW.Unfiltered);
+  appShell_.showOverflowMenuButton(
+    viewType === VIEW.Todo || viewType === VIEW.Unfiltered || viewType === VIEW.Untriaged,
+  );
   appShell_.setQueryParameters(params);
 
   if (currentView_) currentView_.tearDown();

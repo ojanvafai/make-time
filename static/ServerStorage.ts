@@ -89,6 +89,7 @@ interface KeyTypes {
   LAST_DETHROTTLE_TIME: string;
   THEME: string;
   PUSH_LABELS_TO_GMAIL: string;
+  UNTRIAGED_SUMMARY: string;
   PRIORITY_INBOX: string;
   VACATION: string;
   TIMER_DURATION: string;
@@ -115,6 +116,7 @@ let keys: KeyTypes = {
   LAST_DETHROTTLE_TIME: 'last_dethrottle_time',
   THEME: 'theme',
   PUSH_LABELS_TO_GMAIL: 'push_labels_to_gmail',
+  UNTRIAGED_SUMMARY: 'untriaged_summary',
   PRIORITY_INBOX: 'priority_inbox',
   VACATION: 'vacation',
   TIMER_DURATION: 'timeout',

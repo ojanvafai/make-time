@@ -70,6 +70,10 @@ function humanReadableKeyName(key: string) {
       return '⬇';
     case 'ArrowUp':
       return '⬆';
+    case 'ArrowLeft':
+      return '⬅';
+    case 'ArrowRight':
+      return '⮕';
     case 'Escape':
       return '<esc>';
     case 'Enter':

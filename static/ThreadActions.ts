@@ -1,4 +1,4 @@
-import { Action, ActionGroup } from './Actions.js';
+import { Action, ActionGroup, Shortcut } from './Actions.js';
 import { assert } from './Base.js';
 import { TinyDatePicker } from './third_party/tiny-date-picker/DatePicker.js';
 import {
@@ -22,6 +22,34 @@ export let BOOKMARK_ACTION = {
   name: BOOKMARK_PRIORITY_NAME,
   description: `Bookmark to reference later.`,
   key: 'b',
+  actionGroup: ActionGroup.Priority,
+};
+
+export let UNTRIAGED_PIN_ACTION = {
+  name: PINNED_PRIORITY_NAME,
+  description: `Pin`,
+  key: new Shortcut('ArrowUp'),
+  actionGroup: ActionGroup.Priority,
+};
+
+export let UNTRIAGED_MUST_DO_ACTION = {
+  name: MUST_DO_PRIORITY_NAME,
+  description: `Empty daily`,
+  key: new Shortcut('ArrowRight'),
+  actionGroup: ActionGroup.Priority,
+};
+
+export let UNTRIAGED_MUTE_ACTION = {
+  name: `Mute ∞`,
+  description: `Mute`,
+  key: new Shortcut('ArrowDown'),
+  actionGroup: ActionGroup.Priority,
+};
+
+export let UNTRIAGED_ARCHIVE_ACTION = {
+  name: `Archive`,
+  description: `Archive`,
+  key: new Shortcut('ArrowLeft'),
   actionGroup: ActionGroup.Priority,
 };
 
@@ -140,11 +168,13 @@ export let BASE_THREAD_ACTIONS = [
 function destinationToPriority(destination: Action) {
   switch (destination) {
     case PIN_ACTION:
+    case UNTRIAGED_PIN_ACTION:
       return Priority.Pin;
 
     case BOOKMARK_ACTION:
       return Priority.Bookmark;
 
+    case UNTRIAGED_MUST_DO_ACTION:
     case MUST_DO_ACTION:
       return Priority.MustDo;
 
@@ -197,6 +227,7 @@ export function createUpdate(thread: Thread, destination: Action) {
       case REPEAT_ACTION:
         return thread.repeatUpdate();
 
+      case UNTRIAGED_ARCHIVE_ACTION:
       case ARCHIVE_ACTION:
         return thread.archiveUpdate();
 
@@ -218,6 +249,7 @@ export function createUpdate(thread: Thread, destination: Action) {
       case BLOCKED_30D_ACTION:
         return thread.stuckDaysUpdate(30);
 
+      case UNTRIAGED_MUTE_ACTION:
       case MUTE_ACTION:
         return thread.muteUpdate();
 

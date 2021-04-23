@@ -2486,8 +2486,14 @@ input.small {
     url('fonts/redacted-regular.otf') format('opentype'),
     url('fonts/redacted-regular.svg#filename') format('svg');
 }
+.card-shadow {
+  box-shadow: 0px 0px 8px var(--border-and-hover-color);
+}
 .thread-text-color {
   color: var(--thread-text-color);
+}
+.thread-background-color {
+  background-color: var(--thread-background-color);
 }
 .linkified-text a {
   color: var(--thread-text-color);
@@ -2497,6 +2503,9 @@ input.small {
 }
 .fill-available-width {
   width: -webkit-fill-available;
+}
+.fill-available-height {
+  height: -webkit-fill-available;
 }
 .theme-max-width {
   max-width: var(--max-width);

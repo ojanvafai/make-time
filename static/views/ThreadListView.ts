@@ -185,6 +185,7 @@ export class ThreadListView extends ThreadListViewBase {
   private lowPriorityContainer_: ThreadRowGroupList;
   private highPriorityContainer_: ThreadRowGroupList;
   private untriagedContainer_: ThreadRowGroupList;
+  private untriagedSummary_: HTMLElement;
   private unfilteredContainer_: ThreadRowGroupList;
   private nonLowPriorityWrapper_: HTMLElement;
   private hasHadAction_?: boolean;
@@ -290,6 +291,8 @@ export class ThreadListView extends ThreadListViewBase {
     this.unfilteredContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_.className = 'theme-main-background pb2';
+    this.untriagedSummary_ = document.createElement('div');
+    this.untriagedSummary_.className = 'center pb1 theme-main-background';
 
     this.nonLowPriorityWrapper_ = document.createElement('div');
     this.nonLowPriorityWrapper_.className =
@@ -297,6 +300,7 @@ export class ThreadListView extends ThreadListViewBase {
     this.nonLowPriorityWrapper_.append(
       this.unfilteredContainer_,
       this.untriagedContainer_,
+      this.untriagedSummary_,
       this.highPriorityContainer_,
     );
     this.rowGroupContainer_.append(this.nonLowPriorityWrapper_, this.lowPriorityContainer_);
@@ -569,6 +573,13 @@ export class ThreadListView extends ThreadListViewBase {
       const isUnfiltered = this.isTodoView_ && groupName === Labels.Fallback;
       const isUntriaged = !isHighPriority && !isLowPriority && !isUnfiltered;
 
+      if (
+        (isUnfiltered || isUntriaged) &&
+        this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)
+      ) {
+        continue;
+      }
+
       if (!isLowPriority) {
         hasOnlyLowPriorityThreads = false;
       }
@@ -661,12 +672,28 @@ export class ThreadListView extends ThreadListViewBase {
     const groupNames = new Set(threads.map((x) => this.mergedGroupName(x)));
     const hasOnlyLowPriorityThreads = this.ensureGroupExistenceAndOrder(groupMap, groupNames);
 
+    let untriagedCount = 0;
     for (let thread of threads) {
       let groupName = this.mergedGroupName(thread);
-      let entry = assert(groupMap.get(groupName));
+      const entry = groupMap.get(groupName);
+      if (!entry) {
+        untriagedCount++;
+        continue;
+      }
       let row = this.getThreadRow(thread);
       entry.rows.push(row);
       if (!this.hasHadAction_) entry.group.setCollapsed(true);
+    }
+
+    if (this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)) {
+      let a = document.createElement('a');
+      a.className = 'p2 inline-block';
+      a.href = '/untriaged';
+      a.append(`View ${untriagedCount} untriaged threads`);
+
+      this.untriagedSummary_.style.display = untriagedCount ? '' : 'none';
+      this.untriagedSummary_.textContent = '';
+      this.untriagedSummary_.append(a);
     }
 
     for (let entry of groupMap.values()) {

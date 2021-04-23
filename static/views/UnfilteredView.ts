@@ -81,7 +81,7 @@ export class UnfilteredView extends ThreadListViewBase {
     this.shouldRenderFocusedRowMessages_ = false;
 
     this.renderedThreadContainer_ = document.createElement('div');
-    this.renderedThreadContainer_.className = 'theme-max-width margin-auto relative';
+    this.renderedThreadContainer_.className = 'theme-max-width mx-auto relative';
     this.rowGroup_ = new ThreadRowGroup(
       Labels.Fallback,
       0,
@@ -523,7 +523,6 @@ export class UnfilteredView extends ThreadListViewBase {
 
   private routeToTodo_() {
     let a = document.createElement('a');
-    a.append(name);
     a.href = '/todo';
     this.append(a);
     a.click();
