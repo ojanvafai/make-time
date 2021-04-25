@@ -2489,6 +2489,9 @@ input.small {
 .card-shadow {
   box-shadow: 0px 0px 8px var(--border-and-hover-color);
 }
+.toolbar-shadow {
+  box-shadow: var(--border-and-hover-color) 0 0 4px;
+}
 .thread-text-color {
   color: var(--thread-text-color);
 }
@@ -2510,6 +2513,9 @@ input.small {
 .theme-max-width {
   max-width: var(--max-width);
 }
+.theme-text-color {
+  color: var(--text-color);
+}
 .theme-dim-text-color {
   color: var(--dim-text-color);
 }
@@ -2518,6 +2524,13 @@ input.small {
 }
 .theme-nested-background-color {
   background-color: var(--nested-background-color);
+}
+.overlay-background-color {
+  background-color: var(--overlay-background-color);
+}
+.overlay-border-and-shadow {
+  border: 1px solid var(--border-and-hover-color);
+  box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
 }
 /* Just style these here to minimize movement and flicker on load before the theme has loaded. */
 :root {

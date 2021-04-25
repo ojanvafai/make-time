@@ -29,16 +29,13 @@ export class Dialog extends HTMLElement {
   ) {
     super();
     this.style.cssText = `
-      border: 1px solid var(--border-and-hover-color);
-      box-shadow: 0px 0px 6px 0px var(--border-and-hover-color);
       max-width: calc(100% - 32px);
       max-height: calc(100% - 32px);
-      background-color: var(--overlay-background-color);
-      color: var(--text-color);
       overscroll-behavior: none;
     `;
 
-    this.className = 'p1 z4 fixed flex flex-column';
+    this.className =
+      'p1 z4 fixed flex flex-column overlay-background-color overlay-border-and-shadow theme-text-color';
     if (positionRect) {
       Object.assign(this.style, positionRect);
     } else {

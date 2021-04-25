@@ -8,12 +8,12 @@ export class RenderedCard extends HTMLElement {
   constructor(public thread: Thread) {
     super();
     this.className =
-      'left-align reading-max-width p2 break-word card-shadow flex flex-column mx-auto thread-background-color fill-available-height';
-    // TODO: Remove this super grody hack to get the cards to be something like
-    // availableHeight-40.
+      'absolute left-align reading-max-width p2 break-word card-shadow flex flex-column mx-auto thread-background-color';
     this.style.cssText = `
-      top: 60px;
-      height: calc(100vh - 200px);
+      top: 20px;
+      right: 20px;
+      bottom: 20px;
+      left: 20px;
     `;
     this.boundRender_ = this.handleThreadUpdated_.bind(this);
   }

@@ -61,11 +61,7 @@ export abstract class ThreadListViewBase extends View {
     protected settings: Settings,
   ) {
     super();
-
-    this.style.cssText = `
-      width: 100%;
-      margin: auto;
-    `;
+    this.className = 'block mx-auto absolute all-0 ';
 
     this.listeners_ = [];
     this.threadToRow_ = new WeakMap();

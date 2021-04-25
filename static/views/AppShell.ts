@@ -109,28 +109,19 @@ export class AppShell extends HTMLElement {
     `;
 
     let contentContainer = document.createElement('div');
-    contentContainer.className = 'flex-expand-1 overflow-auto';
+    contentContainer.className = 'flex flex-column flex-expand-1 overflow-auto';
 
     this.bodySubject_ = document.createElement('div');
     this.bodySubject_.className =
-      'mx-auto py2 px1 reading-max-width border-box strongest text-size-large quiet';
+      'py2 px1 reading-max-width border-box strongest text-size-large quiet hidden';
 
     this.content_ = document.createElement('div');
-    this.content_.className = 'flex-expand-1 fill-available-height';
+    this.content_.className = 'flex-expand-1 relative';
     contentContainer.append(this.bodySubject_, this.content_);
 
     AppShell.footer_ = document.createElement('div');
-    AppShell.footer_.className = 'toolbar';
-    AppShell.footer_.style.cssText = `
-      z-index: 1000;
-      position: sticky;
-      bottom: 0;
-      width: -webkit-fill-available;
-      box-shadow: var(--border-and-hover-color) 0 0 4px;
-      background-color: var(--nested-background-color);
-      /* Don't eat clicks in the transparent background of the footer. */
-      pointer-events: none;
-    `;
+    //  Don't eat clicks in the transparent background of the footer.
+    AppShell.footer_.className = 'toolbar theme-nested-background-color toolbar-shadow noevents';
     // iphones have a gutter for the swipe up gesture that gets pointerdown
     // events but not a pointer up. So move the toolbar up to avoid that.
     if (navigator.standalone) {
@@ -138,11 +129,8 @@ export class AppShell extends HTMLElement {
     }
 
     let toolbarWrapper = document.createElement('div');
-    toolbarWrapper.style.cssText = `
-      box-shadow: var(--border-and-hover-color) 0 0 4px;
-      background-color: var(--nested-background-color);
-      z-index: 20;
-    `;
+    toolbarWrapper.className = 'theme-nested-background-color toolbar-shadow';
+    toolbarWrapper.style.zIndex = '20';
     toolbarWrapper.append(this.toolbar_);
 
     this.mainContent_.append(toolbarWrapper, contentContainer, AppShell.footer_);
