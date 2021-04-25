@@ -1,12 +1,12 @@
 import { Action, ActionGroup, registerActions } from '../Actions.js';
-import { defined } from '../Base.js';
+import { createMktimeButton } from '../Base.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
 import { RenderedCard } from '../RenderedCard.js';
 import { Settings } from '../Settings.js';
 import {
   UNTRIAGED_ARCHIVE_ACTION,
   UNTRIAGED_MUST_DO_ACTION,
-  UNTRIAGED_MUTE_ACTION,
+  UNTRIAGED_STUCK_1D_ACTION,
   UNTRIAGED_PIN_ACTION,
 } from '../ThreadActions.js';
 
@@ -24,7 +24,7 @@ const TOOLBAR = [
   UNTRIAGED_ARCHIVE_ACTION,
   UNTRIAGED_PIN_ACTION,
   UNTRIAGED_MUST_DO_ACTION,
-  UNTRIAGED_MUTE_ACTION,
+  UNTRIAGED_STUCK_1D_ACTION,
   VIEW_IN_GMAIL_ACTION,
   UNDO_ACTION,
 ];
@@ -69,26 +69,44 @@ export class UntriagedView extends ThreadListViewBase {
       this.renderedThreadContainer_.append(this.currentCard_);
       await this.currentCard_.render();
     } else {
-      let a = document.createElement('a');
-      a.append('Go to todo view');
-      a.href = '/todo';
+      this.currentCard_ = undefined;
 
-      const allDoneContainer = document.createElement('div');
-      allDoneContainer.textContent = 'All done triaging.';
-      allDoneContainer.className = 'p2';
-      this.renderedThreadContainer_.append(allDoneContainer, a);
+      const allDoneLink = createMktimeButton(
+        this.routeToTodo_,
+        'All done triaging. Press any key or click here to go to todo view.',
+      );
+      // Use inline style because otherwise mktime button overrides the margin
+      // from the classname.
+      allDoneLink.style.margin = '20px auto';
+      this.renderedThreadContainer_.append(allDoneLink);
+    }
+  }
 
-      a.focus();
+  private routeToTodo_() {
+    let a = document.createElement('a');
+    a.href = '/todo';
+    a.click();
+  }
+
+  async dispatchShortcut(e: KeyboardEvent) {
+    if (this.currentCard_) {
+      super.dispatchShortcut(e);
+    } else {
+      this.routeToTodo_();
     }
   }
 
   async takeAction(action: Action) {
-    const thread = defined(this.currentCard_).thread;
-    if (!thread) {
+    if (!this.currentCard_) {
       return;
     }
 
+    const thread = this.currentCard_.thread;
     switch (action) {
+      case UNDO_ACTION:
+        this.model.undoLastAction();
+        return;
+
       case VIEW_IN_GMAIL_ACTION:
         this.openThreadInGmail(thread);
         return;

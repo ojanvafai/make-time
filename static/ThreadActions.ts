@@ -25,34 +25,6 @@ export let BOOKMARK_ACTION = {
   actionGroup: ActionGroup.Priority,
 };
 
-export let UNTRIAGED_PIN_ACTION = {
-  name: PINNED_PRIORITY_NAME,
-  description: `Pin`,
-  key: new Shortcut('ArrowUp'),
-  actionGroup: ActionGroup.Priority,
-};
-
-export let UNTRIAGED_MUST_DO_ACTION = {
-  name: MUST_DO_PRIORITY_NAME,
-  description: `Empty daily`,
-  key: new Shortcut('ArrowRight'),
-  actionGroup: ActionGroup.Priority,
-};
-
-export let UNTRIAGED_MUTE_ACTION = {
-  name: `Mute ∞`,
-  description: `Mute`,
-  key: new Shortcut('ArrowDown'),
-  actionGroup: ActionGroup.Priority,
-};
-
-export let UNTRIAGED_ARCHIVE_ACTION = {
-  name: `Archive`,
-  description: `Archive`,
-  key: new Shortcut('ArrowLeft'),
-  actionGroup: ActionGroup.Priority,
-};
-
 export let PIN_ACTION = {
   name: PINNED_PRIORITY_NAME,
   description: `Pins to the top at the top of todo.`,
@@ -151,6 +123,30 @@ let BLOCKED_NONE_ACTION = {
   actionGroup: ActionGroup.Date,
 };
 
+export let UNTRIAGED_PIN_ACTION = {
+  ...PIN_ACTION,
+  key: new Shortcut('ArrowUp'),
+  secondaryKey: PIN_ACTION.key,
+};
+
+export let UNTRIAGED_MUST_DO_ACTION = {
+  ...MUST_DO_ACTION,
+  key: new Shortcut('ArrowRight'),
+  secondaryKey: MUST_DO_ACTION.key,
+};
+
+export let UNTRIAGED_STUCK_1D_ACTION = {
+  ...BLOCKED_1D_ACTION,
+  key: new Shortcut('ArrowDown'),
+  secondaryKey: BLOCKED_1D_ACTION.key,
+};
+
+export let UNTRIAGED_ARCHIVE_ACTION = {
+  ...ARCHIVE_ACTION,
+  key: new Shortcut('ArrowLeft'),
+  secondaryKey: ARCHIVE_ACTION.key,
+};
+
 export const ARCHIVE_ACTIONS = [[ARCHIVE_ACTION, [SOFT_MUTE_ACTION, MUTE_ACTION]]];
 
 export let BLOCKED_ACTIONS = [
@@ -234,6 +230,7 @@ export function createUpdate(thread: Thread, destination: Action) {
       case BLOCKED_NONE_ACTION:
         return thread.clearStuckUpdate();
 
+      case UNTRIAGED_STUCK_1D_ACTION:
       case BLOCKED_1D_ACTION:
         return thread.stuckDaysUpdate(1);
 
@@ -249,7 +246,6 @@ export function createUpdate(thread: Thread, destination: Action) {
       case BLOCKED_30D_ACTION:
         return thread.stuckDaysUpdate(30);
 
-      case UNTRIAGED_MUTE_ACTION:
       case MUTE_ACTION:
         return thread.muteUpdate();
 
