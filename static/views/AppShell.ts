@@ -113,7 +113,7 @@ export class AppShell extends HTMLElement {
 
     this.bodySubject_ = document.createElement('div');
     this.bodySubject_.className =
-      'py2 px1 reading-max-width border-box strongest text-size-large quiet hidden';
+      'py2 px1 reading-max-width border-box strongest text-size-large quiet hidden self-center';
 
     this.content_ = document.createElement('div');
     this.content_.className = 'flex-expand-1 relative';
