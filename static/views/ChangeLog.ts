@@ -8,6 +8,22 @@ interface Entry {
 
 const CHANGES: Entry[] = [
   {
+    date: '4/25/21',
+    description: `Added a quick triage view. Quick triage shows email threads as unscrollable cards. It shows you the first and last messages in the thread only, and it only lets you take 4 hard coded triage actions denoted by the arrow keys. That way you can rapidly do those triage actions with muscle memory. The todo view keyboard shortcuts will work on this page as well even though that's not shown in the UI in case you have muscle memory around them.
+    
+For now, the old triage UI is still there, but may be removed depending on our experience with it in the wild. So let me know if you care about this. In the meantime there's now a setting to hide the old triage UI and just have the link to quick triage at the top of todo view to play with what it would look like to only have quick triage.
+
+Unfiltered handling has also be rolled into quick triage. Unfiltered was always a bit unweildy as it was and the forced filtering was excessively opinionated. For unfiltered threads, quick triage shows a "Filter" button that gives the familiar filtering UI. There's still some clear room for improvement here, but it's much less invasive at least. Will prioritize fixing things based off feedback.
+
+Eventually planning to:
+- Show a stack of cards so you can see how much you have left to triage.
+- Make swipe on mobile do the same behaviors as the arrow keys.
+- In todo view, show the untriaged threads if there are <3 threads and only show the link to quick triage if there are >=3. Basically, if there are only a couple threads, then quick triage can be more nuisance than benefit. This might be a good middle ground between totally deleting the old triage UI like the current setting does vs the current behavior of showing both that is clearly too cluttered.
+- Make the action for each of the directions configurable. For now, I just picked the ones that seemed most convenient. Feedback welcome on what set you'd prefer. If it's different from this, that might motivate making it configurable sooner rather than later.
+
+As always, experiences, ideas, feedback welcome.`,
+  },
+  {
     date: '8/9/20',
     description: `Added the backend for note to self. In the process identified and fixed a number of bugs in syncing labels to gmail.`,
   },
