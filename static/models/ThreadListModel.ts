@@ -48,7 +48,7 @@ export abstract class ThreadListModel extends Model {
     super();
 
     this.timerCountsDown = false;
-    this.resetUndoableActions_();
+    this.clearUndoStack();
 
     this.perSnapshotThreads_ = [];
     this.haveEverLoadedSnapshot_ = [];
@@ -248,14 +248,18 @@ export abstract class ThreadListModel extends Model {
     this.dispatchEvent(new ThreadListChangedEvent());
   }
 
-  resetUndoableActions_() {
+  clearUndoStack() {
     this.undoableActions_ = [];
   }
 
-  async markTriaged(destination: Action, threads: Thread[]) {
-    if (!threads.length) return;
+  hasUndoActions() {
+    return this.undoableActions_.length !== 0;
+  }
 
-    this.resetUndoableActions_();
+  async markTriaged(destination: Action, threads: Thread[]) {
+    if (!threads.length) return false;
+
+    this.clearUndoStack();
 
     // Need to pick the date first for actions that require the date picker
     // since we don't want to show the date picker once per thread.
@@ -263,7 +267,7 @@ export abstract class ThreadListModel extends Model {
     // Null means that this is a date action, but no date was selected.
     // TODO: Move this up so we avoid setting actionInProgress in the early
     // return case. Or return a bool that unsets actionInProgress?
-    if (date === null) return;
+    if (date === null) return false;
 
     let pending = [];
 
@@ -289,6 +293,7 @@ export abstract class ThreadListModel extends Model {
       await x.thread.updateMetadata(x.update);
       progress.incrementProgress();
     }
+    return true;
   }
 
   async handleUndoAction(action: TriageResult) {
@@ -306,7 +311,7 @@ export abstract class ThreadListModel extends Model {
     }
 
     let actions = this.undoableActions_;
-    this.resetUndoableActions_();
+    this.clearUndoStack();
 
     let progress = this.updateTitle(
       'ThreadListModel.undoLastAction_',

@@ -11,7 +11,9 @@ export abstract class View extends HTMLElement {
     this.actions_ = new Actions(this);
   }
 
-  async takeAction(_action: Action): Promise<void> {}
+  async takeAction(_action: Action): Promise<boolean> {
+    return false;
+  }
 
   tearDown() {}
   async init() {}
@@ -22,7 +24,7 @@ export abstract class View extends HTMLElement {
   visibilityChanged() {}
 
   async dispatchShortcut(e: KeyboardEvent) {
-    if (this.actions_) await this.actions_.dispatchShortcut(e);
+    return this.actions_ && (await this.actions_.dispatchShortcut(e));
   }
 
   protected setActions(actions: ActionList, supplementalActions?: ActionList) {

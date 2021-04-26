@@ -63,11 +63,11 @@ export class StuckView extends View {
   }
 
   async dispatchShortcut(e: KeyboardEvent) {
-    await defined(this.threadListView_).dispatchShortcut(e);
+    return await defined(this.threadListView_).dispatchShortcut(e);
   }
 
   async takeAction(action: Action) {
-    await defined(this.threadListView_).takeAction(action);
+    return await defined(this.threadListView_).takeAction(action);
   }
 }
 window.customElements.define('mt-stuck-view', StuckView);

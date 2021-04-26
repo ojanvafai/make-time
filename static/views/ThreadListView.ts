@@ -985,24 +985,24 @@ export class ThreadListView extends ThreadListViewBase {
 
     switch (action) {
       case OTHER_MENU_ACTION:
-        return;
+        return true;
 
       case UNDO_ACTION:
         this.model.undoLastAction();
-        return;
+        return true;
 
       case VIEW_IN_GMAIL_ACTION:
         this.openFirstSelectedThreadInGmail_();
-        return;
+        return true;
 
       case QUICK_REPLY_ACTION:
         await this.showQuickReply();
-        return;
+        return true;
 
       case MOVE_DOWN_ACTION:
       case MOVE_UP_ACTION:
         this.moveRow_(action);
-        return;
+        return true;
 
       case NEXT_FULL_ACTION:
       case PREVIOUS_FULL_ACTION:
@@ -1010,26 +1010,26 @@ export class ThreadListView extends ThreadListViewBase {
       case PREVIOUS_ACTION:
         if (this.renderedRow_) this.renderedRow_.rendered.moveFocus(action);
         else this.moveFocus_(action);
-        return;
+        return true;
 
       case TOGGLE_FOCUSED_ACTION:
         this.toggleFocused_();
-        return;
+        return true;
 
       case TOGGLE_GROUP_ACTION:
         this.toggleQueue_();
-        return;
+        return true;
 
       case VIEW_THREADLIST_ACTION:
         this.transitionToThreadList_(this.renderedRow_);
-        return;
+        return true;
 
       case VIEW_FOCUSED_ACTION:
         this.viewFocused_();
-        return;
+        return true;
 
       default:
-        await this.markTriaged_(action);
+        return await this.markTriaged_(action);
     }
   }
 
@@ -1107,7 +1107,7 @@ export class ThreadListView extends ThreadListViewBase {
       AppShell.addToFooter(toast);
     }
 
-    await this.model.markTriaged(destination, threads);
+    return await this.model.markTriaged(destination, threads);
   }
 
   private collectThreadsToTriage_(keepRows: boolean) {

@@ -339,22 +339,22 @@ export class ComposeView extends View {
   async takeAction(action: Action) {
     if (action == SEND) {
       await this.send_();
-      return;
+      return true;
     }
 
     if (action == CLOSE) {
       this.showSent_(false);
-      return;
+      return true;
     }
 
     if (action == HELP) {
       new HelpDialog(...(await getHelpText()));
-      return;
+      return true;
     }
 
     const sentActions = SENT_ACTIONS.flat(2);
     if (sentActions.includes(action)) {
-      if (!this.sentMessage_) return;
+      if (!this.sentMessage_) return false;
 
       // Disable the toolbar while updating the thread to give an indication
       // that the update is in progress.
@@ -387,10 +387,10 @@ export class ComposeView extends View {
       // Intentionally don't await processThread so the UI updates without
       // waiting for this.
       (await this.getMailProcessor_()).processThread(thread.id);
-      return;
+      return true;
     }
 
-    this.body_.takeAction_(action);
+    return this.body_.takeAction_(action);
   }
 }
 

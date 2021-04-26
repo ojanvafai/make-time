@@ -532,7 +532,7 @@ export class UnfilteredView extends ThreadListViewBase {
     switch (action) {
       case ADD_FILTER_ACTION:
         await this.saveFilterRule_();
-        return;
+        return true;
 
       case NEXT_ACTION:
       case PREVIOUS_ACTION:
@@ -542,18 +542,18 @@ export class UnfilteredView extends ThreadListViewBase {
         if (next) {
           this.setFocusedRow_(next as ThreadRow);
         }
-        break;
+        return true;
 
       case VIEW_IN_GMAIL_ACTION:
         this.openFirstSelectedThreadInGmail_();
-        return;
+        return true;
 
       case VIEW_THREADLIST_ACTION:
         this.setShouldRenderFocusedRowMessages_(false);
-        return;
+        return true;
 
       default:
-        await this.model.markTriaged(action, [assert(this.focusedRow_).thread]);
+        return await this.model.markTriaged(action, [assert(this.focusedRow_).thread]);
     }
   }
 }

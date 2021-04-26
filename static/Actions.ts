@@ -395,8 +395,9 @@ export class Actions extends HTMLElement {
       Actions.getMatchingAction(e, this.supplementalActions_);
     if (action) {
       e.preventDefault();
-      await this.view_.takeAction(action);
+      return await this.view_.takeAction(action);
     }
+    return false;
   }
 }
 window.customElements.define('mt-actions', Actions);

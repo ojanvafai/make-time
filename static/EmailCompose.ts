@@ -202,7 +202,7 @@ export class EmailCompose extends HTMLElement {
   async takeAction_(action: Action) {
     if (action == INSERT_LINK || action == INSERT_LINK_HIDDEN) {
       this.insertLink_();
-      return;
+      return true;
     }
 
     throw new Error(`Invalid action: ${JSON.stringify(action)}`);
