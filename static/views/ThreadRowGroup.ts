@@ -16,8 +16,7 @@ export class SelectRowEvent extends Event {
 export enum ThreadRowGroupRenderMode {
   Default,
   ShowOnlyHighlightedRows,
-  CardStyle,
-  UnfilteredStyle,
+  MinimalistRows,
 }
 
 export class ThreadRowGroup extends ThreadRowGroupBase {
@@ -45,9 +44,7 @@ export class ThreadRowGroup extends ThreadRowGroupBase {
   ) {
     super(name);
 
-    this.allowCollapsing_ =
-      mode_ !== ThreadRowGroupRenderMode.CardStyle &&
-      mode_ !== ThreadRowGroupRenderMode.UnfilteredStyle;
+    this.allowCollapsing_ = mode_ !== ThreadRowGroupRenderMode.MinimalistRows;
     this.collapsed_ = this.allowCollapsing_;
     this.manuallyCollapsed_ = false;
     this.wasInViewport_ = true;

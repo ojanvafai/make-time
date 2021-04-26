@@ -17,7 +17,6 @@ import {
 import { AppShell } from './AppShell.js';
 import { FilterRuleComponent, LabelCreatedEvent } from './FilterRuleComponent.js';
 import { ThreadListViewBase, VIEW_IN_GMAIL_ACTION } from './ThreadListViewBase.js';
-import { UnfilteredView } from './UnfilteredView.js';
 
 let UNDO_ACTION = {
   name: `Undo`,
@@ -44,6 +43,21 @@ const HAS_CURRENT_CARD_TOOLBAR = [
 registerActions('Untriaged', [...HAS_CURRENT_CARD_TOOLBAR, UNDO_ACTION, ADD_FILTER_ACTION]);
 
 const CENTERED_FILL_CONTAINER_CLASS = 'absolute all-0 flex items-center justify-center';
+
+// Use - as a heuristic for rare headers the user is unlikely to want.
+const HEADER_FILTER_MENU_EXCLUDES = ['-', 'received', 'precedence', 'date', 'references'];
+const HEADER_FILTER_MENU_INCLUDES = ['list-id'];
+// Fields that contain email addresses and are handled specially by
+// MailProcessor need to inject different filter values.
+const TO_EMAIL_HEADERS = ['to', 'cc', 'bcc'];
+const FROM_EMAIL_HEADERS = ['from'];
+const EMAIL_ADDRESS_HEADERS = [...TO_EMAIL_HEADERS, ...FROM_EMAIL_HEADERS, 'sender'];
+const MKTIME_CUSTOM_FILTER_DIRECTIVES: ('label' | 'subject' | 'plaintext' | 'htmlcontent')[] = [
+  'label',
+  'subject',
+  'plaintext',
+  'htmlcontent',
+];
 
 export class UntriagedView extends ThreadListViewBase {
   private renderedThreadContainer_: HTMLElement;
@@ -274,7 +288,7 @@ export class UntriagedView extends ThreadListViewBase {
   }
 
   private ruleJsonsMatch_(a: FilterRule, b: FilterRule) {
-    for (let directive of UnfilteredView.MKTIME_CUSTOM_FILTER_DIRECTIVES_) {
+    for (let directive of MKTIME_CUSTOM_FILTER_DIRECTIVES) {
       if (a[directive] !== b[directive]) {
         return false;
       }
@@ -376,7 +390,7 @@ export class UntriagedView extends ThreadListViewBase {
       const lowercaseName = name.toLowerCase();
 
       let value = header.value;
-      if (UnfilteredView.EMAIL_ADDRESS_HEADERS_.some((x) => lowercaseName.includes(x))) {
+      if (EMAIL_ADDRESS_HEADERS.some((x) => lowercaseName.includes(x))) {
         value = parseAddressList(value)[0].address;
       }
 
@@ -387,9 +401,9 @@ export class UntriagedView extends ThreadListViewBase {
       nameContainer.style.marginRight = '4px';
 
       let directiveName: string;
-      if (UnfilteredView.TO_EMAIL_HEADERS_.includes(lowercaseName)) {
+      if (TO_EMAIL_HEADERS.includes(lowercaseName)) {
         directiveName = 'to';
-      } else if (UnfilteredView.FROM_EMAIL_HEADERS_.includes(lowercaseName)) {
+      } else if (FROM_EMAIL_HEADERS.includes(lowercaseName)) {
         directiveName = 'from';
       } else {
         directiveName = `$${lowercaseName}`;
@@ -419,8 +433,8 @@ export class UntriagedView extends ThreadListViewBase {
       container.append(addButton, minusButton, nameContainer, value);
 
       if (
-        UnfilteredView.HEADER_FILTER_MENU_INCLUDES_.some((x) => lowercaseName.includes(x)) ||
-        !UnfilteredView.HEADER_FILTER_MENU_EXCLUDES_.some((x) => lowercaseName.includes(x))
+        HEADER_FILTER_MENU_INCLUDES.some((x) => lowercaseName.includes(x)) ||
+        !HEADER_FILTER_MENU_EXCLUDES.some((x) => lowercaseName.includes(x))
       ) {
         headerMenu.append(container);
       }

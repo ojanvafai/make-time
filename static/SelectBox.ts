@@ -1,4 +1,4 @@
-import { createCircle, createRect, createSvgContainer, isMobileUserAgent } from './Base.js';
+import { createRect, createSvgContainer, isMobileUserAgent } from './Base.js';
 
 export const ALL = 'all';
 export const SOME = 'some';
@@ -14,7 +14,6 @@ export class SelectChangedEvent extends Event {
 
 export class SelectBox extends HTMLElement {
   private hovered_: boolean;
-  private renderAsRadio_: boolean;
   private selected_!: string;
   private svg_: SVGElement;
 
@@ -31,7 +30,6 @@ export class SelectBox extends HTMLElement {
     `;
 
     this.hovered_ = false;
-    this.renderAsRadio_ = false;
     this.svg_ = createSvgContainer('0 0 24 24');
     this.svg_.style.cssText = `
       background: var(--inverted-text-color);
@@ -39,9 +37,10 @@ export class SelectBox extends HTMLElement {
       height: 20px;
       border: 2px solid;
       box-sizing: border-box;
+      border-radius: 3px;
     `;
+    this.svg_.append(createRect(5, 5, 14, 14));
     this.append(this.svg_);
-    this.updateRadioRendering_();
 
     // Prevent the default behavior of text selection on shift+click this is
     // used for range selections. Need to do it on mousedown unfortunately
@@ -66,20 +65,6 @@ export class SelectBox extends HTMLElement {
     });
 
     this.select(NONE);
-  }
-
-  setRenderAsRadio(renderAsRadio: boolean) {
-    if (this.renderAsRadio_ === renderAsRadio) {
-      return;
-    }
-    this.renderAsRadio_ = renderAsRadio;
-    this.updateRadioRendering_();
-  }
-
-  private updateRadioRendering_() {
-    this.svg_.textContent = '';
-    this.svg_.append(this.renderAsRadio_ ? createCircle(12, 12, 6) : createRect(5, 5, 14, 14));
-    this.svg_.style.borderRadius = `${this.renderAsRadio_ ? 10 : 3}px`;
   }
 
   setHovered(hovered: boolean) {

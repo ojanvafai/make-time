@@ -95,12 +95,7 @@ class RowState extends LabelState {
   count?: number;
   lastMessageId?: string;
 
-  constructor(
-    thread: Thread,
-    group: string,
-    public shouldHide: boolean,
-    public shouldHideCheckboxes: boolean,
-  ) {
+  constructor(thread: Thread, group: string, public shouldHide: boolean) {
     super(thread, group);
 
     // window.innerWidth makes more logical sense for this, but chrome has
@@ -134,8 +129,7 @@ class RowState extends LabelState {
       this.lastMessageId === other.lastMessageId &&
       this.isUnread === other.isUnread &&
       this.renderPinnedStyle === other.renderPinnedStyle &&
-      this.shouldHide === other.shouldHide &&
-      this.shouldHideCheckboxes === other.shouldHideCheckboxes
+      this.shouldHide === other.shouldHide
     );
   }
 }
@@ -284,8 +278,7 @@ export class ThreadRow extends HTMLElement {
 
     let shouldHide =
       this.mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows && !this.highlighted;
-    let shouldHideCheckboxes = this.mode_ === ThreadRowGroupRenderMode.UnfilteredStyle;
-    let state = new RowState(this.thread, group.name, shouldHide, shouldHideCheckboxes);
+    let state = new RowState(this.thread, group.name, shouldHide);
 
     // Keep track of the last state we used to render this row so we can avoid
     // rendering new frames when nothing has changed.
@@ -296,8 +289,6 @@ export class ThreadRow extends HTMLElement {
     if (state.shouldHide) {
       return;
     }
-
-    this.checkBox_.setRenderAsRadio(shouldHideCheckboxes);
 
     let labels = document.createElement('div');
     if (state.renderPinnedStyle) {

@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 import { Action, ActionGroup, registerActions, Shortcut } from '../Actions.js';
-import { assert, defined, Labels, notNull, stopInProgressScroll } from '../Base.js';
+import { assert, defined, notNull, stopInProgressScroll } from '../Base.js';
 import { firestoreUserCollection } from '../BaseMain.js';
 import { CalendarEvent, NO_ROOM_NEEDED } from '../calendar/CalendarEvent.js';
 import { INSERT_LINK_HIDDEN } from '../EmailCompose.js';
@@ -27,7 +27,6 @@ import { AppShell } from './AppShell.js';
 import { FocusRowEvent, LabelState, RenderThreadEvent, ThreadRow } from './ThreadRow.js';
 import { SelectRowEvent, ThreadRowGroup, ThreadRowGroupRenderMode } from './ThreadRowGroup.js';
 import { ThreadRowGroupList } from './ThreadRowGroupList.js';
-import { FallbackThreadRowGroup } from './FallbackThreadRowGroup.js';
 import { ThreadRowGroupBase } from './ThreadRowGroupBase.js';
 import {
   ThreadListViewBase,
@@ -186,7 +185,6 @@ export class ThreadListView extends ThreadListViewBase {
   private highPriorityContainer_: ThreadRowGroupList;
   private untriagedContainer_: ThreadRowGroupList;
   private untriagedSummary_: HTMLElement;
-  private unfilteredContainer_: ThreadRowGroupList;
   private nonLowPriorityWrapper_: HTMLElement;
   private hasHadAction_?: boolean;
   private reply_?: QuickReply | null;
@@ -288,7 +286,6 @@ export class ThreadListView extends ThreadListViewBase {
     this.highPriorityContainer_.className = 'mb2';
 
     this.lowPriorityContainer_ = new ThreadRowGroupList();
-    this.unfilteredContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_.className = 'theme-main-background pb2';
     this.untriagedSummary_ = document.createElement('div');
@@ -298,9 +295,8 @@ export class ThreadListView extends ThreadListViewBase {
     this.nonLowPriorityWrapper_.className =
       'flex flex-column relative theme-nested-background-color';
     this.nonLowPriorityWrapper_.append(
-      this.unfilteredContainer_,
-      this.untriagedContainer_,
       this.untriagedSummary_,
+      this.untriagedContainer_,
       this.highPriorityContainer_,
     );
     this.rowGroupContainer_.append(this.nonLowPriorityWrapper_, this.lowPriorityContainer_);
@@ -570,15 +566,7 @@ export class ThreadListView extends ThreadListViewBase {
       const isLowPriority =
         this.isTodoView_ &&
         [BOOKMARK_PRIORITY_NAME, URGENT_PRIORITY_NAME, BACKLOG_PRIORITY_NAME].includes(groupName);
-      const isUnfiltered = this.isTodoView_ && groupName === Labels.Fallback;
-      const isUntriaged = !isHighPriority && !isLowPriority && !isUnfiltered;
-
-      if (
-        (isUnfiltered || isUntriaged) &&
-        this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)
-      ) {
-        continue;
-      }
+      const isUntriaged = !isHighPriority && !isLowPriority;
 
       if (!isLowPriority) {
         hasOnlyLowPriorityThreads = false;
@@ -586,27 +574,19 @@ export class ThreadListView extends ThreadListViewBase {
 
       let entry = groupMap.get(groupName);
       if (!entry) {
-        // Don't elide rows in Hidden or other views and don't elide Fallback
-        // threads since it's useful to see multiple at the same time when
-        // designing filter rules.
         let renderMode = ThreadRowGroupRenderMode.Default;
         if (this.isTodoView_ && isUntriaged) {
           renderMode = ThreadRowGroupRenderMode.ShowOnlyHighlightedRows;
         } else if (
           this.isTodoView_ ? groupName === PINNED_PRIORITY_NAME : groupName === STUCK_LABEL_NAME
         ) {
-          renderMode = ThreadRowGroupRenderMode.CardStyle;
+          renderMode = ThreadRowGroupRenderMode.MinimalistRows;
         }
-        const group = isUnfiltered
-          ? new FallbackThreadRowGroup(Labels.Fallback)
-          : new ThreadRowGroup(groupName, this.model.allowedCount(groupName), renderMode);
+        const group = new ThreadRowGroup(groupName, this.model.allowedCount(groupName), renderMode);
 
         let previousGroup;
         let groupList;
-        if (isUnfiltered) {
-          previousGroup = null;
-          groupList = this.unfilteredContainer_;
-        } else if (isHighPriority) {
+        if (isHighPriority) {
           previousGroup = previousHighPriority && previousHighPriority.group;
           groupList = this.highPriorityContainer_;
         } else if (isLowPriority) {
@@ -655,7 +635,7 @@ export class ThreadListView extends ThreadListViewBase {
     let threads = allThreads.filter((x) => !x.actionInProgress());
     let newGroupNames = new Set(threads.map((x) => this.mergedGroupName(x)));
     let removedRows = [];
-    let oldGroups = [...this.unfilteredContainer_.getSubGroups(), ...this.getGroups()];
+    let oldGroups = this.getGroups();
     let groupMap: Map<string, ThreadRowGroupMetadata> = new Map();
     // Remove groups that no longer exist.
     for (let group of oldGroups) {
@@ -672,12 +652,10 @@ export class ThreadListView extends ThreadListViewBase {
     const groupNames = new Set(threads.map((x) => this.mergedGroupName(x)));
     const hasOnlyLowPriorityThreads = this.ensureGroupExistenceAndOrder(groupMap, groupNames);
 
-    let untriagedCount = 0;
     for (let thread of threads) {
       let groupName = this.mergedGroupName(thread);
       const entry = groupMap.get(groupName);
       if (!entry) {
-        untriagedCount++;
         continue;
       }
       let row = this.getThreadRow(thread);
@@ -685,20 +663,20 @@ export class ThreadListView extends ThreadListViewBase {
       if (!this.hasHadAction_) entry.group.setCollapsed(true);
     }
 
-    if (this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)) {
-      let a = document.createElement('a');
-      a.className = 'p2 inline-block';
-      a.href = '/untriaged';
-      a.append(`View ${untriagedCount} untriaged threads`);
-
-      this.untriagedSummary_.style.display = untriagedCount ? '' : 'none';
-      this.untriagedSummary_.textContent = '';
-      this.untriagedSummary_.append(a);
-    }
-
     for (let entry of groupMap.values()) {
       if (!entry.rows.length) entry.group.remove();
       else removedRows.push(...entry.group.setRows(entry.rows));
+    }
+
+    const untriagedCount = this.untriagedContainer_.querySelectorAll('mt-thread-row').length;
+    this.untriagedSummary_.style.display = untriagedCount ? '' : 'none';
+    if (untriagedCount !== 0) {
+      let a = document.createElement('a');
+      a.className = 'p2 inline-block';
+      a.href = '/untriaged';
+      a.append(`Quick triage ${untriagedCount} untriaged threads`);
+      this.untriagedSummary_.textContent = '';
+      this.untriagedSummary_.append(a);
     }
 
     this.handleRowsRemoved_(removedRows, oldRows, oldRenderedRowGroupList);
@@ -734,8 +712,23 @@ export class ThreadListView extends ThreadListViewBase {
       }
     }
 
+    this.updateThreadRowGroupListDisplay_(
+      this.untriagedContainer_,
+      this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY),
+    );
+    this.updateThreadRowGroupListDisplay_(this.highPriorityContainer_);
+    this.updateThreadRowGroupListDisplay_(this.lowPriorityContainer_);
+
     // Do this async so it doesn't block putting up the frame.
     setTimeout(() => this.prerender_());
+  }
+
+  private updateThreadRowGroupListDisplay_(
+    threadRowGroupList: ThreadRowGroupList,
+    forceHide?: boolean,
+  ) {
+    threadRowGroupList.style.display =
+      forceHide || threadRowGroupList.childElementCount === 0 ? 'none' : '';
   }
 
   private updatePendingArea_(threads: Thread[]) {
@@ -744,8 +737,6 @@ export class ThreadListView extends ThreadListViewBase {
     );
     for (let thread of threads) {
       let row = this.getThreadRow(thread);
-      // If the threads were triaged in UnfilteredView, we don't want them to
-      // render like UnfilteredView theads in the ThreadListView.
       row.setRenderMode(ThreadRowGroupRenderMode.Default);
       if (oldPending.has(row)) {
         oldPending.delete(row);
