@@ -360,7 +360,7 @@ export class Thread extends EventTargetPolyfill {
   // restore them.
   async updateMetadata(updates: ThreadMetadataUpdate) {
     this.includePushLabelsToGmail_(updates);
-    this.silentUpdateMetadata(updates);
+    await this.silentUpdateMetadata(updates);
     // TODO; This will set actionInProgess_ to false too early if we have two
     // metadata updates in progress at once. actionInProgress_ should actually
     // be a count that increments/decrements when it is set.

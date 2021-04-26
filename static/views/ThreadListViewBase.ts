@@ -67,6 +67,13 @@ export abstract class ThreadListViewBase extends View {
     this.threadToRow_ = new WeakMap();
     this.hasQueuedFrame_ = false;
 
+    // TODO: Instead of clearing the undo stack here, extract undo out of
+    // ThreadListModel into a dedicated components that ThreadListViewBase and
+    // others instantiate in their constructors. Don't want the undo stack to
+    // try to undo the last action in the previous view just because that view
+    // also uses the same ThreadListModel.
+    model.clearUndoStack();
+
     this.listen(this.model, ThreadListChangedEvent.NAME, () => this.render());
   }
 

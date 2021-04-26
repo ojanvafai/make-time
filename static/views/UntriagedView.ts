@@ -1,8 +1,12 @@
 import { Action, ActionGroup, registerActions } from '../Actions.js';
-import { assert, createMktimeButton, defined, Labels } from '../Base.js';
+import { assert, create, createMktimeButton, defined, Labels, parseAddressList } from '../Base.js';
+import { Dialog } from '../Dialog.js';
+import { MailProcessor } from '../MailProcessor.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
+import { QueueNames } from '../QueueNames.js';
 import { RenderedCard } from '../RenderedCard.js';
-import { Settings } from '../Settings.js';
+import { FilterRule, HeaderFilterRule, Settings } from '../Settings.js';
+import { Thread } from '../Thread.js';
 import {
   UNTRIAGED_ARCHIVE_ACTION,
   UNTRIAGED_MUST_DO_ACTION,
@@ -11,7 +15,9 @@ import {
 } from '../ThreadActions.js';
 
 import { AppShell } from './AppShell.js';
+import { FilterRuleComponent, LabelCreatedEvent } from './FilterRuleComponent.js';
 import { ThreadListViewBase, VIEW_IN_GMAIL_ACTION } from './ThreadListViewBase.js';
+import { UnfilteredView } from './UnfilteredView.js';
 
 let UNDO_ACTION = {
   name: `Undo`,
@@ -21,8 +27,8 @@ let UNDO_ACTION = {
 };
 
 let ADD_FILTER_ACTION = {
-  name: `Add filter`,
-  description: `Adds the filter rule above with a label you choose.`,
+  name: `Filter`,
+  description: `Add a new filter rule for this thread.`,
   key: 'f',
   actionGroup: ActionGroup.Filter,
 };
@@ -43,8 +49,15 @@ export class UntriagedView extends ThreadListViewBase {
   private renderedThreadContainer_: HTMLElement;
   private currentCard_?: RenderedCard;
   private threadAlreadyTriagedDialog_?: HTMLElement;
+  private filterRuleComponent_?: FilterRuleComponent;
+  private filterSaveButton_?: HTMLButtonElement;
 
-  constructor(model: ThreadListModel, appShell: AppShell, settings: Settings) {
+  constructor(
+    model: ThreadListModel,
+    appShell: AppShell,
+    settings: Settings,
+    private getMailProcessor_: () => Promise<MailProcessor>,
+  ) {
     super(model, appShell, settings);
 
     this.renderedThreadContainer_ = document.createElement('div');
@@ -58,12 +71,6 @@ export class UntriagedView extends ThreadListViewBase {
     return [];
   }
 
-  tearDown() {
-    // Don't want the undo stack to try to undo the last action in Untriaged if
-    // we switch to Todo.
-    this.model.clearUndoStack();
-  }
-
   private updateViewContents_(element: HTMLElement) {
     this.clearAlreadyTriagedThreadState_();
     this.renderedThreadContainer_.textContent = '';
@@ -75,7 +82,7 @@ export class UntriagedView extends ThreadListViewBase {
     if (this.currentCard_) {
       actions = [...HAS_CURRENT_CARD_TOOLBAR];
       if (this.mergedGroupName(this.currentCard_.thread) === Labels.Fallback) {
-        // actions.push(ADD_FILTER_ACTION);
+        actions.push(ADD_FILTER_ACTION);
       }
     }
     if (this.model.hasUndoActions()) {
@@ -163,11 +170,295 @@ export class UntriagedView extends ThreadListViewBase {
     return true;
   }
 
+  private createLabelPicker_(labels: string[], callback: (e: Event) => void) {
+    const labelPicker = document.createElement('div');
+    labelPicker.className = 'mx-half flex-expand-1 flex flex-wrap justify-center';
+    for (const label of labels) {
+      labelPicker.append(createMktimeButton(callback, label));
+    }
+    return labelPicker;
+  }
+
+  private async promptForLabel_() {
+    const labels = await this.settings.getSortedLabels();
+    return new Promise((resolve: (label?: string) => void) => {
+      let selectedLabel: string | undefined;
+      const selectLabel = (e: Event) => {
+        selectedLabel = (e.target as HTMLElement).textContent;
+        dialog.remove();
+      };
+
+      const builtInLabels = Object.values(Labels).filter((x) => x !== Labels.Fallback) as string[];
+      const customLabels = labels.filter((x) => !builtInLabels.includes(x));
+
+      const labelPicker = this.createLabelPicker_(customLabels, selectLabel);
+      const builtInLabelPicker = this.createLabelPicker_(builtInLabels, selectLabel);
+
+      let createNewLabelButton = createMktimeButton(() => {
+        const queueNames = QueueNames.create();
+        selectedLabel = queueNames.promptForNewLabel();
+        if (selectedLabel) {
+          this.settings.addLabel(selectedLabel);
+        }
+        dialog.remove();
+      }, 'create new label');
+
+      builtInLabelPicker.append(createNewLabelButton);
+
+      const customLabelsTitle = create('div', 'Custom labels');
+      customLabelsTitle.style.marginTop = '12px';
+
+      const dialogContents = document.createElement('div');
+      dialogContents.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow: auto;
+      `;
+      dialogContents.append(
+        create('div', 'Which label should this filter rule apply?'),
+        builtInLabelPicker,
+        customLabelsTitle,
+        labelPicker,
+      );
+
+      let cancelButton = createMktimeButton(() => dialog.remove(), 'cancel');
+      const dialog = new Dialog(dialogContents, [cancelButton]);
+      dialog.style.margin = '32px auto';
+      dialog.style.maxWidth = '450px';
+      dialog.addEventListener('close', () => {
+        resolve(selectedLabel);
+      });
+    });
+  }
+
+  private async saveFilterRule_() {
+    // Save this off before any awaits to avoid races using it later
+    const focusedRow = defined(this.currentCard_);
+    const thread = focusedRow.thread;
+    const ruleJson = defined(this.filterRuleComponent_).getJson();
+    if (!ruleJson) {
+      // We should already have shown the user an alert here since this
+      // happens when they use an invalid field.
+      return;
+    }
+    const newLabel = await this.promptForLabel_();
+    if (!newLabel) {
+      return;
+    }
+    ruleJson.label = newLabel;
+
+    const mailProcessor = await defined(this.getMailProcessor_)();
+    const ruleMatches = await mailProcessor.ruleMatchesMessages(ruleJson, thread.getMessages());
+    if (!ruleMatches) {
+      alert("This filter rule doesn't match the current thread.");
+      return;
+    }
+
+    const saveButton = assert(this.filterSaveButton_);
+    saveButton.textContent = 'Saving filter...';
+    saveButton.disabled = true;
+
+    try {
+      const existingFilterRules = await this.settings.getFilters();
+      await this.settings.writeFilters(this.mergeFilterRule_(existingFilterRules, ruleJson));
+      console.log('applyFiltered');
+      await mailProcessor.applyFilters(thread);
+      console.log('done applyFiltered');
+      this.updateToolbar_();
+      console.log('updateToolbar');
+    } catch (e) {
+      saveButton.textContent = 'Retry saving filter';
+      saveButton.disabled = false;
+    }
+  }
+
+  private ruleJsonsMatch_(a: FilterRule, b: FilterRule) {
+    for (let directive of UnfilteredView.MKTIME_CUSTOM_FILTER_DIRECTIVES_) {
+      if (a[directive] !== b[directive]) {
+        return false;
+      }
+    }
+
+    // Both need to either have headers or both not.
+    const aCount = a.header ? a.header.length : 0;
+    const bCount = b.header ? b.header.length : 0;
+    if (aCount !== bCount) {
+      return false;
+    }
+    if (!a.header || !b.header) {
+      return true;
+    }
+
+    const sortByNBame = (a: HeaderFilterRule, b: HeaderFilterRule) => {
+      if (a.name < b.name) return -1;
+      if (b.name < a.name) return 1;
+      return 0;
+    };
+    let aHeaderRules = a.header.sort(sortByNBame);
+    let bHeaderRules = b.header.sort(sortByNBame);
+
+    for (let i = 0; i < aHeaderRules.length; i++) {
+      const aRule = aHeaderRules[i];
+      const bRule = bHeaderRules[i];
+      if (aRule.name !== bRule.name || aRule.value !== bRule.value) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private mergeFilterRule_(existingFilterRules: FilterRule[], ruleJson: FilterRule) {
+    const appendedVersion = [...existingFilterRules, ruleJson];
+
+    for (let i = existingFilterRules.length - 1; i >= 0; i--) {
+      // We can merge filter rules if they only differ on one directive and that
+      // directive is one that takes comma separated lists.
+      const currentRuleJson = existingFilterRules[i];
+      if (
+        ruleJson.label !== currentRuleJson.label ||
+        ruleJson.matchallmessages !== currentRuleJson.matchallmessages ||
+        ruleJson.nolistid !== currentRuleJson.nolistid ||
+        ruleJson.nocc !== currentRuleJson.nocc
+      ) {
+        continue;
+      }
+
+      // Can only merge from and to since those are the only CSV directives.
+      let differsOnFrom = ruleJson.from !== currentRuleJson.from;
+      let differsOnTo = ruleJson.to !== currentRuleJson.to;
+      if ((differsOnFrom && differsOnTo) || !this.ruleJsonsMatch_(ruleJson, currentRuleJson)) {
+        continue;
+      }
+      if (differsOnTo) {
+        currentRuleJson.to += `,${ruleJson.to}`;
+      } else if (differsOnFrom) {
+        currentRuleJson.from += `,${ruleJson.from}`;
+      }
+      // If !differsOnTo && !differsOnFrom, then this rule is identical to an
+      // existing one and there's nothing to do.
+      return existingFilterRules;
+    }
+
+    // If there's no spot to merge the rule, append it to the end.
+    return appendedVersion;
+  }
+
+  private populateFilterToolbar_(thread: Thread) {
+    // Prefill the rule with the first sender of the first message.
+    const firstMessage = thread.getMessages()[0];
+    const rule = { from: firstMessage.parsedFrom[0].address };
+    const filterRuleComponent = new FilterRuleComponent(this.settings, rule, true);
+    filterRuleComponent.classList.add('m-half');
+    filterRuleComponent.addEventListener(LabelCreatedEvent.NAME, (e) => {
+      const labelOption = (e as LabelCreatedEvent).labelOption;
+      filterRuleComponent.prependLabel(labelOption.cloneNode(true) as HTMLOptionElement);
+    });
+    this.filterRuleComponent_ = filterRuleComponent;
+
+    const headerMenu = document.createElement('div');
+    headerMenu.className = 'overflow-auto';
+    headerMenu.style.maxHeight = '15vh';
+
+    const headers = firstMessage.getHeaders();
+    headers.sort((a, b) => {
+      if (a < b) return -1;
+      if (a > b) return 1;
+      return 0;
+    });
+
+    for (const header of headers) {
+      if (!header.value) {
+        continue;
+      }
+
+      const name = header.name ?? '';
+      const lowercaseName = name.toLowerCase();
+
+      let value = header.value;
+      if (UnfilteredView.EMAIL_ADDRESS_HEADERS_.some((x) => lowercaseName.includes(x))) {
+        value = parseAddressList(value)[0].address;
+      }
+
+      const container = document.createElement('label');
+      container.className = 'truncate flex items-center m-half flex-expand-1 ';
+      const nameContainer = document.createElement('b');
+      nameContainer.append(`${name}:`);
+      nameContainer.style.marginRight = '4px';
+
+      let directiveName: string;
+      if (UnfilteredView.TO_EMAIL_HEADERS_.includes(lowercaseName)) {
+        directiveName = 'to';
+      } else if (UnfilteredView.FROM_EMAIL_HEADERS_.includes(lowercaseName)) {
+        directiveName = 'from';
+      } else {
+        directiveName = `$${lowercaseName}`;
+      }
+
+      // Extract out the actual list-id from the header. List-ids are of the
+      // form "List name"<list.id.com> where the quoted part is optional.
+      if (lowercaseName === 'list-id') {
+        let match = value.match(/<([^>]+)>$/);
+        if (match) value = match[1];
+      }
+
+      const addButton = create('span', '+');
+      addButton.classList.add('row-button');
+      addButton.setAttribute('title', 'Add to filter rule');
+      addButton.onclick = () => {
+        filterRuleComponent.add(directiveName, value);
+      };
+
+      const minusButton = create('span', '-');
+      minusButton.classList.add('row-button');
+      minusButton.setAttribute('title', 'Remove from filter rule');
+      minusButton.onclick = () => {
+        filterRuleComponent.delete(directiveName);
+      };
+
+      container.append(addButton, minusButton, nameContainer, value);
+
+      if (
+        UnfilteredView.HEADER_FILTER_MENU_INCLUDES_.some((x) => lowercaseName.includes(x)) ||
+        !UnfilteredView.HEADER_FILTER_MENU_EXCLUDES_.some((x) => lowercaseName.includes(x))
+      ) {
+        headerMenu.append(container);
+      }
+    }
+
+    this.filterSaveButton_ = createMktimeButton(
+      () => this.saveFilterRule_(),
+      'Save and apply filter',
+    );
+
+    let container = document.createElement('div');
+    container.className = 'flex flex-column justify-center fill-available-width p1';
+    container.append(
+      this.smallText_('Configure the filter below and then click the save button'),
+      filterRuleComponent,
+      this.filterSaveButton_,
+      this.smallText_('(Optional) use the buttons below to build the filter rule you want'),
+      headerMenu,
+    );
+    AppShell.addToFooter(container);
+  }
+
+  private smallText_(text: string) {
+    const div = document.createElement('div');
+    div.className = 'small quiet m-half center';
+    div.append(text);
+    return div;
+  }
+
   async takeAction(action: Action) {
     // The toolbar should be disabled when this dialog is up.
     assert(!this.threadAlreadyTriagedDialog_);
 
     switch (action) {
+      case ADD_FILTER_ACTION:
+        this.populateFilterToolbar_(assert(this.currentCard_).thread);
+        return true;
+
       case UNDO_ACTION:
         this.clearCurrentCard_();
         this.model.undoLastAction();

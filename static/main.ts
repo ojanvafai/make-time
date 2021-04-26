@@ -175,7 +175,7 @@ async function createView(viewType: VIEW, model: Model | null, params?: any) {
       return new UnfilteredView(<TodoModel>model, appShell_, await getSettings(), getMailProcessor);
 
     case VIEW.Untriaged:
-      return new UntriagedView(<TodoModel>model, appShell_, await getSettings());
+      return new UntriagedView(<TodoModel>model, appShell_, await getSettings(), getMailProcessor);
 
     case VIEW.Settings:
       return new SettingsView(await getSettings());

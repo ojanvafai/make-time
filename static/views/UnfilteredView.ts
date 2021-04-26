@@ -47,29 +47,23 @@ export class UnfilteredView extends ThreadListViewBase {
   private shouldRenderFocusedRowMessages_!: boolean;
 
   // Use - as a heuristic for rare headers the user is unlikely to want.
-  private static HEADER_FILTER_MENU_EXCLUDES_ = [
-    '-',
-    'received',
-    'precedence',
-    'date',
-    'references',
-  ];
-  private static HEADER_FILTER_MENU_INCLUDES_ = ['list-id'];
+  static HEADER_FILTER_MENU_EXCLUDES_ = ['-', 'received', 'precedence', 'date', 'references'];
+  static HEADER_FILTER_MENU_INCLUDES_ = ['list-id'];
   // Fields that contain email addresses and are handled specially by
   // MailProcessor need to inject different filter values.
-  private static TO_EMAIL_HEADERS_ = ['to', 'cc', 'bcc'];
-  private static FROM_EMAIL_HEADERS_ = ['from'];
-  private static EMAIL_ADDRESS_HEADERS_ = [
+  static TO_EMAIL_HEADERS_ = ['to', 'cc', 'bcc'];
+  static FROM_EMAIL_HEADERS_ = ['from'];
+  static EMAIL_ADDRESS_HEADERS_ = [
     ...UnfilteredView.TO_EMAIL_HEADERS_,
     ...UnfilteredView.FROM_EMAIL_HEADERS_,
     'sender',
   ];
-  private static MKTIME_CUSTOM_FILTER_DIRECTIVES_: (
-    | 'label'
-    | 'subject'
-    | 'plaintext'
-    | 'htmlcontent'
-  )[] = ['label', 'subject', 'plaintext', 'htmlcontent'];
+  static MKTIME_CUSTOM_FILTER_DIRECTIVES_: ('label' | 'subject' | 'plaintext' | 'htmlcontent')[] = [
+    'label',
+    'subject',
+    'plaintext',
+    'htmlcontent',
+  ];
   constructor(
     model: ThreadListModel,
     appShell: AppShell,

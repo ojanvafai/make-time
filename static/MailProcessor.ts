@@ -1043,7 +1043,7 @@ export class MailProcessor {
       queueSettings.throttle === ThrottleOption.throttle &&
       this.settings_.get(ServerStorage.KEYS.THROTTLE_DURATION) != 0;
 
-    thread.applyAndPushLabel(labelId, shouldQueue, shouldThrottle);
+    await thread.applyAndPushLabel(labelId, shouldQueue, shouldThrottle);
   }
 
   async dequeue(query: firebase.firestore.Query) {
