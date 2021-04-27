@@ -180,8 +180,38 @@ export class UntriagedView extends ThreadListViewBase {
     if (this.clearAlreadyTriagedThreadState_()) {
       return true;
     }
-    this.routeToTodo_();
+    if (!this.currentCard_) {
+      this.routeToTodo_();
+    }
     return true;
+  }
+
+  async takeAction(action: Action) {
+    // The toolbar should be disabled when this dialog is up.
+    assert(!this.threadAlreadyTriagedDialog_);
+
+    switch (action) {
+      case ADD_FILTER_ACTION:
+        this.populateFilterToolbar_(assert(this.currentCard_).thread);
+        return true;
+
+      case UNDO_ACTION:
+        this.clearCurrentCard_();
+        this.model.undoLastAction();
+        return true;
+
+      case VIEW_IN_GMAIL_ACTION:
+        if (this.currentCard_) {
+          this.openThreadInGmail(this.currentCard_.thread);
+        }
+        return true;
+
+      default:
+        const thread = assert(this.currentCard_).thread;
+        this.clearCurrentCard_();
+        // TODO: Have the triage action animate the card off the screen
+        return await this.model.markTriaged(action, [thread]);
+    }
   }
 
   private createLabelPicker_(labels: string[], callback: (e: Event) => void) {
@@ -462,34 +492,6 @@ export class UntriagedView extends ThreadListViewBase {
     div.className = 'small quiet m-half center';
     div.append(text);
     return div;
-  }
-
-  async takeAction(action: Action) {
-    // The toolbar should be disabled when this dialog is up.
-    assert(!this.threadAlreadyTriagedDialog_);
-
-    switch (action) {
-      case ADD_FILTER_ACTION:
-        this.populateFilterToolbar_(assert(this.currentCard_).thread);
-        return true;
-
-      case UNDO_ACTION:
-        this.clearCurrentCard_();
-        this.model.undoLastAction();
-        return true;
-
-      case VIEW_IN_GMAIL_ACTION:
-        if (this.currentCard_) {
-          this.openThreadInGmail(this.currentCard_.thread);
-        }
-        return true;
-
-      default:
-        const thread = assert(this.currentCard_).thread;
-        this.clearCurrentCard_();
-        // TODO: Have the triage action animate the card off the screen
-        return await this.model.markTriaged(action, [thread]);
-    }
   }
 }
 window.customElements.define('mt-untriaged-view', UntriagedView);
