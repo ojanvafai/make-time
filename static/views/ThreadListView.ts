@@ -575,13 +575,18 @@ export class ThreadListView extends ThreadListViewBase {
       let entry = groupMap.get(groupName);
       if (!entry) {
         let renderMode = ThreadRowGroupRenderMode.Default;
-        if (this.isTodoView_ && isUntriaged) {
-          renderMode = ThreadRowGroupRenderMode.ShowOnlyHighlightedRows;
-        } else if (
-          this.isTodoView_ ? groupName === PINNED_PRIORITY_NAME : groupName === STUCK_LABEL_NAME
-        ) {
+        if (this.isTodoView_) {
+          if (isUntriaged && !this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)) {
+            renderMode = ThreadRowGroupRenderMode.ShowOnlyHighlightedRows;
+          } else if (groupName === PINNED_PRIORITY_NAME) {
+            renderMode = ThreadRowGroupRenderMode.MinimalistRows;
+          } else if (isUntriaged && this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)) {
+            renderMode = ThreadRowGroupRenderMode.ShowMinimalistOnlyHighlightedRows;
+          }
+        } else if (groupName === STUCK_LABEL_NAME) {
           renderMode = ThreadRowGroupRenderMode.MinimalistRows;
         }
+
         const group = new ThreadRowGroup(groupName, this.model.allowedCount(groupName), renderMode);
 
         let previousGroup;
@@ -668,7 +673,7 @@ export class ThreadListView extends ThreadListViewBase {
       else removedRows.push(...entry.group.setRows(entry.rows));
     }
 
-    const untriagedCount = this.untriagedContainer_.querySelectorAll('mt-thread-row').length;
+    const untriagedCount = this.untriagedContainer_.getRows().length;
     this.untriagedSummary_.style.display = untriagedCount ? '' : 'none';
     if (untriagedCount !== 0) {
       let a = document.createElement('a');
@@ -712,10 +717,7 @@ export class ThreadListView extends ThreadListViewBase {
       }
     }
 
-    this.updateThreadRowGroupListDisplay_(
-      this.untriagedContainer_,
-      this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY),
-    );
+    this.updateThreadRowGroupListDisplay_(this.untriagedContainer_);
     this.updateThreadRowGroupListDisplay_(this.highPriorityContainer_);
     this.updateThreadRowGroupListDisplay_(this.lowPriorityContainer_);
 
@@ -723,12 +725,8 @@ export class ThreadListView extends ThreadListViewBase {
     setTimeout(() => this.prerender_());
   }
 
-  private updateThreadRowGroupListDisplay_(
-    threadRowGroupList: ThreadRowGroupList,
-    forceHide?: boolean,
-  ) {
-    threadRowGroupList.style.display =
-      forceHide || threadRowGroupList.childElementCount === 0 ? 'none' : '';
+  private updateThreadRowGroupListDisplay_(threadRowGroupList: ThreadRowGroupList) {
+    threadRowGroupList.style.display = threadRowGroupList.childElementCount === 0 ? 'none' : '';
   }
 
   private updatePendingArea_(threads: Thread[]) {

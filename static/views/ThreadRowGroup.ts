@@ -17,6 +17,7 @@ export enum ThreadRowGroupRenderMode {
   Default,
   ShowOnlyHighlightedRows,
   MinimalistRows,
+  ShowMinimalistOnlyHighlightedRows,
 }
 
 export class ThreadRowGroup extends ThreadRowGroupBase {
@@ -44,7 +45,9 @@ export class ThreadRowGroup extends ThreadRowGroupBase {
   ) {
     super(name);
 
-    this.allowCollapsing_ = mode_ !== ThreadRowGroupRenderMode.MinimalistRows;
+    this.allowCollapsing_ =
+      mode_ !== ThreadRowGroupRenderMode.MinimalistRows &&
+      mode_ !== ThreadRowGroupRenderMode.ShowMinimalistOnlyHighlightedRows;
     this.collapsed_ = this.allowCollapsing_;
     this.manuallyCollapsed_ = false;
     this.wasInViewport_ = true;
@@ -64,7 +67,10 @@ export class ThreadRowGroup extends ThreadRowGroupBase {
     this.placeholder_.style.backgroundColor = 'var(--nested-background-color)';
     this.append(this.rowContainer_, this.placeholder_);
 
-    if (mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows) {
+    if (
+      mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows ||
+      mode_ === ThreadRowGroupRenderMode.ShowMinimalistOnlyHighlightedRows
+    ) {
       this.tickmarks_ = document.createElement('datalist');
       this.slider_ = document.createElement('input');
       this.append(this.slider_, this.tickmarks_);
@@ -272,10 +278,14 @@ export class ThreadRowGroup extends ThreadRowGroupBase {
       this.wasInViewport_ = this.inViewport_;
     }
 
-    const effectiveMode =
-      this.mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows && this.rows_.length <= 2
-        ? ThreadRowGroupRenderMode.Default
+    let effectiveMode =
+      this.mode_ === ThreadRowGroupRenderMode.ShowMinimalistOnlyHighlightedRows
+        ? ThreadRowGroupRenderMode.ShowOnlyHighlightedRows
         : this.mode_;
+    if (this.mode_ === ThreadRowGroupRenderMode.ShowOnlyHighlightedRows && this.rows_.length <= 2) {
+      effectiveMode = ThreadRowGroupRenderMode.Default;
+    }
+
     this.wasCollapsed_ = this.collapsed_;
     if (this.expander_) {
       this.expander_.textContent = '';
