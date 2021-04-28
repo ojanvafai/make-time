@@ -129,8 +129,9 @@ export class UntriagedView extends ThreadListViewBase {
       this.clearCurrentCard_();
 
       const contents = document.createElement('div');
-      contents.className = `${CENTERED_FILL_CONTAINER_CLASS} theme-text-color p1`;
-      contents.append('All done triaging. Press any key or click anywhere to go to todo view.');
+      contents.className = `${CENTERED_FILL_CONTAINER_CLASS} theme-text-color p1 center mx-auto pre-wrap`;
+      contents.style.maxWidth = '250px';
+      contents.append('All done triaging.\n\nPress any key or click anywhere to go to todo view.');
       contents.onclick = () => this.routeToTodo_();
       this.updateViewContents_(contents);
       this.updateToolbar_();
