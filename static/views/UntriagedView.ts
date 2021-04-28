@@ -130,7 +130,8 @@ export class UntriagedView extends ThreadListViewBase {
     // TODO: Make swiping the cards work on mobile and with two fingers on desktop trackpad.
     if (!this.currentCard_) {
       const thread = threads[0];
-      this.currentCard_ = new RenderedCard(thread);
+      const labelSelectTemplate = await this.settings.getLabelSelectTemplate();
+      this.currentCard_ = new RenderedCard(thread, labelSelectTemplate);
       this.updateViewContents_(this.currentCard_);
       await this.currentCard_.render();
       this.updateToolbar_();

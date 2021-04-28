@@ -1,11 +1,12 @@
 import { Message } from './Message.js';
 import { RenderedMessage } from './RenderedMessage.js';
 import { Thread, UpdatedEvent } from './Thread.js';
+import { LabelState, ThreadRow } from './views/ThreadRow.js';
 
 export class RenderedCard extends HTMLElement {
   private boundRender_: () => void;
 
-  constructor(public thread: Thread) {
+  constructor(public thread: Thread, private labelSelectTemplate_: HTMLSelectElement) {
     super();
     this.className =
       'absolute left-align reading-max-width p2 break-word card-shadow flex flex-column mx-auto thread-background-color';
@@ -45,9 +46,15 @@ export class RenderedCard extends HTMLElement {
 
     this.textContent = '';
 
+    let labelContainer = document.createElement('div');
+    labelContainer.className = 'ml2';
+    let labelState = new LabelState(this.thread, '');
+    ThreadRow.appendLabels(labelContainer, labelState, this.thread, this.labelSelectTemplate_);
+    this.append(labelContainer);
+
     const subject = document.createElement('div');
-    subject.className = 'strongest p1';
-    subject.textContent = this.thread.getSubject();
+    subject.className = 'strongest p1 flex items-center';
+    subject.append(this.thread.getSubject(), labelContainer);
     this.append(subject, await this.renderMessage_(messages[0]));
 
     if (messages.length > 1) {

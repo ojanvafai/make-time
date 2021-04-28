@@ -289,7 +289,7 @@ export class ThreadListView extends ThreadListViewBase {
     this.untriagedContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_.className = 'theme-main-background pb2';
 
-    this.untriagedButton_ = createMktimeButton(() => {}, 'ojan');
+    this.untriagedButton_ = createMktimeButton(() => this.routeToUntriaged_(), 'ojan');
     const untriagedWrapper = document.createElement('div');
     untriagedWrapper.className = 'theme-main-background flex justify-center';
     untriagedWrapper.append(this.untriagedButton_);
@@ -337,6 +337,13 @@ export class ThreadListView extends ThreadListViewBase {
     });
 
     this.transitionToThreadList_(null);
+  }
+
+  private routeToUntriaged_() {
+    let a = document.createElement('a');
+    a.href = '/untriaged';
+    this.append(a);
+    a.click();
   }
 
   private handleInProgressChanged_() {
