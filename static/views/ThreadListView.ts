@@ -688,8 +688,9 @@ export class ThreadListView extends ThreadListViewBase {
     }
 
     const untriagedCount = this.untriagedContainer_.getRows().length;
-    this.untriagedButton_.style.display = untriagedCount ? '' : 'none';
-    if (untriagedCount !== 0) {
+    const showUntriagedButton = untriagedCount > 2;
+    this.untriagedButton_.style.display = showUntriagedButton ? '' : 'none';
+    if (showUntriagedButton) {
       this.untriagedButton_.textContent = `Quick triage ${untriagedCount} untriaged threads`;
     }
 
