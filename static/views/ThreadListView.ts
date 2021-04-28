@@ -34,6 +34,7 @@ import {
   VIEW_THREADLIST_ACTION,
   PREVIOUS_ACTION,
   NEXT_ACTION,
+  OTHER_MENU_ACTION,
 } from './ThreadListViewBase.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): ThreadRow | null => {
@@ -129,13 +130,6 @@ let MOVE_DOWN_ACTION = {
   key: ']',
   secondaryKey: new Shortcut('ArrowDown', true, false),
   repeatable: true,
-  actionGroup: ActionGroup.Other,
-};
-
-const OTHER_MENU_ACTION = {
-  name: 'other',
-  description: `Other buttons`,
-  key: '...', // Intentionally a noop.
   actionGroup: ActionGroup.Other,
 };
 

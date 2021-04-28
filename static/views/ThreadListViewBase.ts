@@ -1,4 +1,4 @@
-import { shortcutString } from '../Actions.js';
+import { shortcutString, ActionGroup } from '../Actions.js';
 import { collapseArrow, defined, expandArrow, linkify, notNull } from '../Base.js';
 import { login } from '../BaseMain.js';
 import { ThreadListChangedEvent, ThreadListModel } from '../models/ThreadListModel.js';
@@ -48,6 +48,13 @@ export const PREVIOUS_ACTION = {
   secondaryKey: 'ArrowUp',
   hidden: true,
   repeatable: true,
+};
+
+export const OTHER_MENU_ACTION = {
+  name: 'other',
+  description: `Other buttons`,
+  key: '...', // Intentionally a noop.
+  actionGroup: ActionGroup.Other,
 };
 
 export abstract class ThreadListViewBase extends View {

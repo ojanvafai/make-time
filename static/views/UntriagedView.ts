@@ -1,4 +1,4 @@
-import { Action, ActionGroup, registerActions } from '../Actions.js';
+import { Action, ActionGroup, registerActions, ActionList } from '../Actions.js';
 import { assert, create, createMktimeButton, defined, Labels, parseAddressList } from '../Base.js';
 import { Dialog } from '../Dialog.js';
 import { MailProcessor } from '../MailProcessor.js';
@@ -16,7 +16,11 @@ import {
 
 import { AppShell } from './AppShell.js';
 import { FilterRuleComponent, LabelCreatedEvent } from './FilterRuleComponent.js';
-import { ThreadListViewBase, VIEW_IN_GMAIL_ACTION } from './ThreadListViewBase.js';
+import {
+  ThreadListViewBase,
+  VIEW_IN_GMAIL_ACTION,
+  OTHER_MENU_ACTION,
+} from './ThreadListViewBase.js';
 
 let UNDO_ACTION = {
   name: `Undo`,
@@ -29,7 +33,7 @@ let ADD_FILTER_ACTION = {
   name: `Filter`,
   description: `Add a new filter rule for this thread.`,
   key: 'f',
-  actionGroup: ActionGroup.Filter,
+  actionGroup: ActionGroup.Other,
 };
 
 const HAS_CURRENT_CARD_TOOLBAR = [
@@ -92,15 +96,23 @@ export class UntriagedView extends ThreadListViewBase {
   }
 
   private updateToolbar_() {
-    let actions: Action[] = [];
+    let actions: ActionList = [];
+    const otherMenuActions = [];
+
     if (this.currentCard_) {
       actions = [...HAS_CURRENT_CARD_TOOLBAR];
-      if (this.mergedGroupName(this.currentCard_.thread) === Labels.Fallback) {
-        actions.push(ADD_FILTER_ACTION);
+      if (this.currentCard_.thread.getLabel() === Labels.Fallback) {
+        otherMenuActions.push(ADD_FILTER_ACTION);
       }
     }
     if (this.model.hasUndoActions()) {
-      actions.push(UNDO_ACTION);
+      otherMenuActions.push(UNDO_ACTION);
+    }
+
+    if (otherMenuActions.length === 1) {
+      actions.push(otherMenuActions[0]);
+    } else if (otherMenuActions.length > 1) {
+      actions.push([OTHER_MENU_ACTION, otherMenuActions]);
     }
     this.setActions(actions);
   }

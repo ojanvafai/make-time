@@ -2,7 +2,6 @@ import { createMktimeButton, defined, isMobileUserAgent, isSafari, notNull } fro
 import { View } from './views/View.js';
 
 export enum ActionGroup {
-  Filter = 'filter',
   Ignore = 'ignore',
   Priority = 'priority',
   Date = 'date',
