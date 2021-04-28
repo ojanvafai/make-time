@@ -10,6 +10,7 @@ import { AppShell } from './AppShell.js';
 import { ThreadRow } from './ThreadRow.js';
 import { ThreadRowGroupBase } from './ThreadRowGroupBase.js';
 import { View } from './View.js';
+import { ServerStorage } from '../ServerStorage.js';
 
 interface ListenerData {
   target: EventTarget;
@@ -224,6 +225,9 @@ export abstract class ThreadListViewBase extends View {
   }
 
   protected mergedGroupName(thread: Thread) {
+    if (thread.forceTriage() && this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)) {
+      return 'Untriaged';
+    }
     let originalGroupName = this.model.getGroupName(thread);
     return (
       this.settings.getQueueSettings().getMappedGroupName(originalGroupName) || originalGroupName

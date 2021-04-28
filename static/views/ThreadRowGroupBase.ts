@@ -6,12 +6,10 @@ export abstract class ThreadRowGroupBase extends HTMLElement {
   constructor(public name: string) {
     super();
     this.style.cssText = `
-      display: block;
       border-radius: 3px;
-      margin: auto;
       max-width: var(--max-width);
-      position: relative;
     `;
+    this.className = 'mx-auto block relative';
   }
 
   protected createGroupNameContainer() {

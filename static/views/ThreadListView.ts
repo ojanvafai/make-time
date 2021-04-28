@@ -1,6 +1,6 @@
 import type * as firebase from 'firebase/app';
 import { Action, ActionGroup, registerActions, Shortcut } from '../Actions.js';
-import { assert, defined, notNull, stopInProgressScroll } from '../Base.js';
+import { assert, defined, notNull, stopInProgressScroll, createMktimeButton } from '../Base.js';
 import { firestoreUserCollection } from '../BaseMain.js';
 import { CalendarEvent, NO_ROOM_NEEDED } from '../calendar/CalendarEvent.js';
 import { INSERT_LINK_HIDDEN } from '../EmailCompose.js';
@@ -184,7 +184,7 @@ export class ThreadListView extends ThreadListViewBase {
   private lowPriorityContainer_: ThreadRowGroupList;
   private highPriorityContainer_: ThreadRowGroupList;
   private untriagedContainer_: ThreadRowGroupList;
-  private untriagedSummary_: HTMLElement;
+  private untriagedButton_: HTMLElement;
   private nonLowPriorityWrapper_: HTMLElement;
   private hasHadAction_?: boolean;
   private reply_?: QuickReply | null;
@@ -288,15 +288,18 @@ export class ThreadListView extends ThreadListViewBase {
     this.lowPriorityContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_ = new ThreadRowGroupList();
     this.untriagedContainer_.className = 'theme-main-background pb2';
-    this.untriagedSummary_ = document.createElement('div');
-    this.untriagedSummary_.className = 'center pb1 theme-main-background';
+
+    this.untriagedButton_ = createMktimeButton(() => {}, 'ojan');
+    const untriagedWrapper = document.createElement('div');
+    untriagedWrapper.className = 'theme-main-background flex justify-center';
+    untriagedWrapper.append(this.untriagedButton_);
 
     this.nonLowPriorityWrapper_ = document.createElement('div');
     this.nonLowPriorityWrapper_.className =
       'flex flex-column relative theme-nested-background-color';
     this.nonLowPriorityWrapper_.append(
-      this.untriagedSummary_,
       this.untriagedContainer_,
+      untriagedWrapper,
       this.highPriorityContainer_,
     );
     this.rowGroupContainer_.append(this.nonLowPriorityWrapper_, this.lowPriorityContainer_);
@@ -575,15 +578,11 @@ export class ThreadListView extends ThreadListViewBase {
       let entry = groupMap.get(groupName);
       if (!entry) {
         let renderMode = ThreadRowGroupRenderMode.Default;
-        if (this.isTodoView_) {
-          if (isUntriaged && !this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)) {
-            renderMode = ThreadRowGroupRenderMode.ShowOnlyHighlightedRows;
-          } else if (groupName === PINNED_PRIORITY_NAME) {
-            renderMode = ThreadRowGroupRenderMode.MinimalistRows;
-          } else if (isUntriaged && this.settings.get(ServerStorage.KEYS.UNTRIAGED_SUMMARY)) {
-            renderMode = ThreadRowGroupRenderMode.ShowMinimalistOnlyHighlightedRows;
-          }
-        } else if (groupName === STUCK_LABEL_NAME) {
+        if (this.isTodoView_ && isUntriaged) {
+          renderMode = ThreadRowGroupRenderMode.ShowOnlyHighlightedRows;
+        } else if (
+          this.isTodoView_ ? groupName === PINNED_PRIORITY_NAME : groupName === STUCK_LABEL_NAME
+        ) {
           renderMode = ThreadRowGroupRenderMode.MinimalistRows;
         }
 
@@ -606,8 +605,11 @@ export class ThreadListView extends ThreadListViewBase {
         if (
           previousGroup ? group.previousSibling !== previousGroup : group !== groupList.firstChild
         ) {
-          if (previousGroup) previousGroup.after(group);
-          else groupList.prepend(group);
+          if (previousGroup) {
+            previousGroup.after(group);
+          } else {
+            groupList.prepend(group);
+          }
         }
 
         entry = { group, rows: [] };
@@ -665,23 +667,23 @@ export class ThreadListView extends ThreadListViewBase {
       }
       let row = this.getThreadRow(thread);
       entry.rows.push(row);
-      if (!this.hasHadAction_) entry.group.setCollapsed(true);
+      if (!this.hasHadAction_) {
+        entry.group.setCollapsed(true);
+      }
     }
 
     for (let entry of groupMap.values()) {
-      if (!entry.rows.length) entry.group.remove();
-      else removedRows.push(...entry.group.setRows(entry.rows));
+      if (!entry.rows.length) {
+        entry.group.remove();
+      } else {
+        removedRows.push(...entry.group.setRows(entry.rows));
+      }
     }
 
     const untriagedCount = this.untriagedContainer_.getRows().length;
-    this.untriagedSummary_.style.display = untriagedCount ? '' : 'none';
+    this.untriagedButton_.style.display = untriagedCount ? '' : 'none';
     if (untriagedCount !== 0) {
-      let a = document.createElement('a');
-      a.className = 'p2 inline-block';
-      a.href = '/untriaged';
-      a.append(`Quick triage ${untriagedCount} untriaged threads`);
-      this.untriagedSummary_.textContent = '';
-      this.untriagedSummary_.append(a);
+      this.untriagedButton_.textContent = `Quick triage ${untriagedCount} untriaged threads`;
     }
 
     this.handleRowsRemoved_(removedRows, oldRows, oldRenderedRowGroupList);
@@ -693,8 +695,11 @@ export class ThreadListView extends ThreadListViewBase {
     this.updatePendingArea_(threadsInPending);
 
     if (this.undoRow_) {
-      if (this.renderedRow_) this.setRenderedRow_(this.undoRow_);
-      else this.setFocus_(this.undoRow_);
+      if (this.renderedRow_) {
+        this.setRenderedRow_(this.undoRow_);
+      } else {
+        this.setFocus_(this.undoRow_);
+      }
       this.undoRow_ = null;
     }
 
