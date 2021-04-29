@@ -32,7 +32,7 @@ export class FilterRuleComponent extends HTMLElement {
   private noCc_: HTMLInputElement;
   private editor_: HTMLElement;
 
-  constructor(private settings_: Settings, private rule_: any, excludeLabelPicker?: boolean) {
+  constructor(private settings_: Settings, private rule_: any) {
     super();
     this.style.cssText = `
       flex: 1;
@@ -55,9 +55,7 @@ export class FilterRuleComponent extends HTMLElement {
       this.attachLabel_('No CCs', this.noCc_),
     );
     this.append(topRow, this.editor_);
-    if (!excludeLabelPicker) {
-      this.prependLabelPicker_(topRow);
-    }
+    this.prependLabelPicker_(topRow);
   }
 
   private attachLabel_(label: string, checkbox: HTMLInputElement) {
