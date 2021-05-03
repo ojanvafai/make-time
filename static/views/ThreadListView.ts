@@ -1,5 +1,5 @@
 import type * as firebase from 'firebase/app';
-import { Action, ActionGroup, registerActions, Shortcut } from '../Actions.js';
+import { Action, ActionGroup, registerActions, Shortcut, cloneAndDisable } from '../Actions.js';
 import {
   assert,
   defined,
@@ -510,19 +510,15 @@ export class ThreadListView extends ThreadListViewBase {
     let includeSortActions = this.isTodoView_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
 
-    let otherMenuActions = [];
-    if (currentRow.thread.getLabel() === Labels.Fallback) {
-      otherMenuActions.push(ADD_FILTER_ACTION);
-    }
-    if (this.model.hasUndoActions()) {
-      otherMenuActions.push(UNDO_ACTION);
-    }
+    let otherMenuActions = [
+      currentRow.thread.getLabel() === Labels.Fallback
+        ? ADD_FILTER_ACTION
+        : cloneAndDisable(ADD_FILTER_ACTION),
+      this.model.hasUndoActions() ? UNDO_ACTION : cloneAndDisable(UNDO_ACTION),
+      ...sortActions,
+    ];
 
-    this.setActions([
-      ...BASE_ACTIONS,
-      ...viewSpecific,
-      [OTHER_MENU_ACTION, [...otherMenuActions, ...sortActions]],
-    ]);
+    this.setActions([...BASE_ACTIONS, ...viewSpecific, [OTHER_MENU_ACTION, otherMenuActions]]);
 
     if (this.renderedRow_) this.addTimer_();
   }

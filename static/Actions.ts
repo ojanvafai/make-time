@@ -17,6 +17,7 @@ export interface Action {
   hidden?: boolean;
   repeatable?: boolean;
   actionGroup?: ActionGroup;
+  disabled?: boolean;
 }
 
 type SubActionRow = Action[];
@@ -96,6 +97,12 @@ export function getActions() {
   return actions_;
 }
 
+export function cloneAndDisable(action: Action) {
+  const clone = { ...action };
+  clone.disabled = true;
+  return clone;
+}
+
 export class Actions extends HTMLElement {
   private actions_: ActionList;
   private supplementalActions_: ActionList;
@@ -110,13 +117,15 @@ export class Actions extends HTMLElement {
   }
 
   enable() {
-    this.style.pointerEvents = '';
-    this.style.opacity = '';
+    this.classList.remove('quieter', 'noevents');
   }
 
   disable() {
-    this.style.pointerEvents = 'none';
-    this.style.opacity = '0.6';
+    this.disableElement_(this);
+  }
+
+  private disableElement_(element: HTMLElement) {
+    element.classList.add('quieter', 'noevents');
   }
 
   setActions(actions: ActionList, supplementalActions?: ActionList) {
@@ -326,6 +335,10 @@ export class Actions extends HTMLElement {
     button.oncontextmenu = (e: Event) => e.preventDefault();
 
     if (action.actionGroup) button.classList.add(`group-${action.actionGroup}`);
+
+    if (action.disabled) {
+      this.disableElement_(button);
+    }
 
     return button;
   }

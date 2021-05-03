@@ -1,4 +1,4 @@
-import { Action, registerActions, ActionList } from '../Actions.js';
+import { Action, registerActions, ActionList, cloneAndDisable } from '../Actions.js';
 import { assert, createMktimeButton, defined, Labels } from '../Base.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
@@ -64,24 +64,23 @@ export class UntriagedView extends ThreadListViewBase {
   }
 
   private updateToolbar_() {
-    let actions: ActionList = [];
-    const otherMenuActions = [];
+    let actions: ActionList;
 
     if (this.currentCard_) {
       actions = [...HAS_CURRENT_CARD_TOOLBAR];
-      if (this.currentCard_.thread.getLabel() === Labels.Fallback) {
-        otherMenuActions.push(ADD_FILTER_ACTION);
-      }
-    }
-    if (this.model.hasUndoActions()) {
-      otherMenuActions.push(UNDO_ACTION);
+      const otherMenuActions = [
+        this.model.hasUndoActions() ? UNDO_ACTION : cloneAndDisable(UNDO_ACTION),
+      ];
+      otherMenuActions.push(
+        this.currentCard_.thread.getLabel() === Labels.Fallback
+          ? ADD_FILTER_ACTION
+          : cloneAndDisable(ADD_FILTER_ACTION),
+      );
+      actions = [...HAS_CURRENT_CARD_TOOLBAR, [OTHER_MENU_ACTION, otherMenuActions]];
+    } else {
+      actions = this.model.hasUndoActions() ? [UNDO_ACTION] : [];
     }
 
-    if (otherMenuActions.length === 1) {
-      actions.push(otherMenuActions[0]);
-    } else if (otherMenuActions.length > 1) {
-      actions.push([OTHER_MENU_ACTION, otherMenuActions]);
-    }
     this.setActions(actions);
   }
 
