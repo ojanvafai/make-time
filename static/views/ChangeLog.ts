@@ -8,6 +8,13 @@ interface Entry {
 
 const CHANGES: Entry[] = [
   {
+    date: '5/2/21',
+    description: `- Add filter action now opens a modal instead of an inline UX
+- enable the add filter action in todo view for unfiltered threads
+- right align labels in the untriages view
+- Disable buttons instead of eliding them so that the toolbar doesn't move around depending on what actions are available`,
+  },
+  {
     date: '4/25/21',
     description: `Added a quick triage view. Quick triage shows email threads as unscrollable cards. It shows you the first and last messages in the thread only, and it only lets you take 4 hard coded triage actions denoted by the arrow keys. That way you can rapidly do those triage actions with muscle memory. The todo view keyboard shortcuts will work on this page as well even though that's not shown in the UI in case you have muscle memory around them.
     
