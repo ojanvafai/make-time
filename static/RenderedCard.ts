@@ -53,7 +53,7 @@ export class RenderedCard extends HTMLElement {
     this.append(labelContainer);
 
     const subject = document.createElement('div');
-    subject.className = 'strongest p1 flex items-center';
+    subject.className = 'strongest p1 flex items-center justify-between';
     subject.append(this.thread.getSubject(), labelContainer);
     this.append(subject, await this.renderMessage_(messages[0]));
 
