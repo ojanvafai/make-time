@@ -6,6 +6,7 @@ import { Settings } from '../Settings.js';
 
 import { SettingsView } from './SettingsView.js';
 import { View } from './View.js';
+import { LabelSelect } from '../LabelSelect.js';
 
 const DAYS_TO_SHOW_SETTING = {
   key: 'days',
@@ -143,7 +144,7 @@ export class FilterDialogView extends View {
   }
 
   private async appendLabelSelect_() {
-    let select = await this.settings_.getLabelSelect();
+    let select = new LabelSelect();
     let none = document.createElement('option');
     none.selected = true;
     select.prepend(none);

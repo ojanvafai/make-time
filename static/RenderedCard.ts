@@ -6,7 +6,7 @@ import { LabelState, ThreadRow } from './views/ThreadRow.js';
 export class RenderedCard extends HTMLElement {
   private boundRender_: () => void;
 
-  constructor(public thread: Thread, private labelSelectTemplate_: HTMLSelectElement) {
+  constructor(public thread: Thread) {
     super();
     this.className =
       'absolute left-align reading-max-width p2 break-word card-shadow flex flex-column mx-auto thread-background-color';
@@ -49,7 +49,7 @@ export class RenderedCard extends HTMLElement {
     let labelContainer = document.createElement('div');
     labelContainer.className = 'ml2';
     let labelState = new LabelState(this.thread, '');
-    ThreadRow.appendLabels(labelContainer, labelState, this.thread, this.labelSelectTemplate_);
+    ThreadRow.appendLabels(labelContainer, labelState, this.thread);
     this.append(labelContainer);
 
     const subject = document.createElement('div');

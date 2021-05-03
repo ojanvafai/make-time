@@ -1,7 +1,6 @@
 import type * as firebase from 'firebase/app';
 
-import { AsyncOnce } from './AsyncOnce.js';
-import { assert, defined, Labels } from './Base.js';
+import { assert, defined } from './Base.js';
 import { firestoreUserCollection } from './BaseMain.js';
 import {
   AllCalendarSortDatas,
@@ -11,7 +10,6 @@ import {
   EventType,
   UNBOOKED_TYPES,
 } from './calendar/Constants.js';
-import { QueueNames } from './QueueNames.js';
 import { QueueSettings } from './QueueSettings.js';
 import { ServerStorage, StorageUpdates } from './ServerStorage.js';
 import { THEMES } from './Themes.js';
@@ -217,8 +215,6 @@ export class FiltersChangedEvent extends Event {
 export class Settings extends EventTargetPolyfill {
   private filters_?: firebase.firestore.DocumentSnapshot;
   private queueSettings_?: QueueSettings;
-  private labelSelect_?: HTMLSelectElement;
-  private labelSelectCreator_?: AsyncOnce<HTMLSelectElement>;
 
   static CALENDAR_RULE_DIRECTIVES = ['title'];
   private static CALENDAR_RULE_FIELDS_ = ['label'].concat(
@@ -501,54 +497,5 @@ export class Settings extends EventTargetPolyfill {
       labels.add(defined(rule.label));
     }
     return labels;
-  }
-
-  async getSortedLabels() {
-    let queueNames = QueueNames.create();
-    let labels = await queueNames.getAllNames();
-    labels.sort((a, b) => {
-      if (a === Labels.Archive) {
-        return -1;
-      }
-      if (b === Labels.Archive) {
-        return 1;
-      }
-      if (a < b) {
-        return -1;
-      }
-      if (a > b) {
-        return 1;
-      }
-      return 0;
-    });
-    return labels;
-  }
-
-  async getLabelSelectTemplate() {
-    if (!this.labelSelectCreator_) {
-      this.labelSelectCreator_ = new AsyncOnce(async () => {
-        const labels = await this.getSortedLabels();
-        this.labelSelect_ = document.createElement('select');
-        for (let label of labels) {
-          let option = document.createElement('option');
-          option.append(label);
-          this.labelSelect_.append(option);
-        }
-        return this.labelSelect_;
-      });
-    }
-    return await this.labelSelectCreator_.do();
-  }
-
-  async getLabelSelect() {
-    return (await this.getLabelSelectTemplate()).cloneNode(true) as HTMLSelectElement;
-  }
-
-  addLabel(label: string) {
-    let option = document.createElement('option');
-    option.append(label);
-    let select = assert(this.labelSelect_);
-    select.prepend(option.cloneNode(true));
-    return option;
   }
 }

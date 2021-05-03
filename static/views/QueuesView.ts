@@ -136,7 +136,8 @@ export class QueuesView extends HTMLElement {
 
     scrollable.append(this.immediate_, this.daily_, this.weekly_, this.monthly_);
 
-    let labels = (await this.queueNames_.getAllNames()).filter((x) => x !== Labels.Archive);
+    await this.queueNames_.fetch();
+    let labels = (await this.queueNames_.getCachedNames()).filter((x) => x !== Labels.Archive);
     let queueDatas = this.settings_.getQueueSettings().getSorted(labels);
     for (let queueData of queueDatas) {
       this.appendRow_(queueData);

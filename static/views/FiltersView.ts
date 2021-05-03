@@ -3,7 +3,7 @@ import { create, createMktimeButton, defined, Labels } from '../Base.js';
 import { Dialog } from '../Dialog.js';
 import { FilterRule, Settings } from '../Settings.js';
 
-import { FilterRuleComponent, LabelCreatedEvent } from './FilterRuleComponent.js';
+import { FilterRuleComponent } from './FilterRuleComponent.js';
 import { HelpDialog } from './HelpDialog.js';
 
 export const HELP_TEXT = [
@@ -63,17 +63,7 @@ export class FiltersView extends HTMLElement {
     `;
 
     this.addEventListener('keydown', (e) => this.handleKeyDown_(e));
-    this.addEventListener(LabelCreatedEvent.NAME, (e) => {
-      this.handleLabelCreated_((e as LabelCreatedEvent).labelOption);
-    });
     this.render_();
-  }
-
-  private handleLabelCreated_(labelOption: HTMLOptionElement) {
-    const filterRuleComponents = this.getFilterRuleComponents_();
-    for (let rule of filterRuleComponents) {
-      rule.prependLabel(labelOption.cloneNode(true) as HTMLOptionElement);
-    }
   }
 
   handleKeyDown_(e: KeyboardEvent) {
@@ -250,7 +240,7 @@ export class FiltersView extends HTMLElement {
         `;
     buttonContainer.append(topButtons, bottomButtons);
 
-    let filterRuleComponent = new FilterRuleComponent(this.settings_, rule);
+    let filterRuleComponent = new FilterRuleComponent(rule);
     row.append(buttonContainer, filterRuleComponent);
 
     return row;

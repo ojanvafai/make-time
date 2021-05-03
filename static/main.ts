@@ -163,7 +163,13 @@ async function createView(viewType: VIEW, model: Model | null, params?: any) {
       return new ComposeView(model as ComposeModel, params, getMailProcessor);
 
     case VIEW.Todo:
-      return new ThreadListView(<TodoModel>model, appShell_, await getSettings(), true);
+      return new ThreadListView(
+        <TodoModel>model,
+        appShell_,
+        await getSettings(),
+        true,
+        getMailProcessor,
+      );
 
     case VIEW.Untriaged:
       return new UntriagedView(<TodoModel>model, appShell_, await getSettings(), getMailProcessor);

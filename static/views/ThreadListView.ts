@@ -1,6 +1,13 @@
 import type * as firebase from 'firebase/app';
 import { Action, ActionGroup, registerActions, Shortcut } from '../Actions.js';
-import { assert, defined, notNull, stopInProgressScroll, createMktimeButton } from '../Base.js';
+import {
+  assert,
+  defined,
+  notNull,
+  stopInProgressScroll,
+  createMktimeButton,
+  Labels,
+} from '../Base.js';
 import { firestoreUserCollection } from '../BaseMain.js';
 import { CalendarEvent, NO_ROOM_NEEDED } from '../calendar/CalendarEvent.js';
 import { INSERT_LINK_HIDDEN } from '../EmailCompose.js';
@@ -35,7 +42,11 @@ import {
   PREVIOUS_ACTION,
   NEXT_ACTION,
   OTHER_MENU_ACTION,
+  ADD_FILTER_ACTION,
+  UNDO_ACTION,
 } from './ThreadListViewBase.js';
+import { AddFilterDialog } from './AddFilterDialog.js';
+import { MailProcessor } from '../MailProcessor.js';
 
 let rowAtOffset = (rows: ThreadRow[], anchorRow: ThreadRow, offset: number): ThreadRow | null => {
   if (offset != -1 && offset != 1) throw `getRowFromRelativeOffset called with offset of ${offset}`;
@@ -106,13 +117,6 @@ let VIEW_FOCUSED_ACTION = {
   description: `View the focused email.`,
   key: 'Enter',
   hidden: true,
-};
-
-let UNDO_ACTION = {
-  name: `Undo`,
-  description: `Undoes the last action taken.`,
-  key: 'u',
-  actionGroup: ActionGroup.Other,
 };
 
 let MOVE_UP_ACTION = {
@@ -191,6 +195,7 @@ export class ThreadListView extends ThreadListViewBase {
     appShell: AppShell,
     settings: Settings,
     private isTodoView_: boolean,
+    private getMailProcessor_?: () => Promise<MailProcessor>,
   ) {
     super(model, appShell, settings);
 
@@ -471,11 +476,17 @@ export class ThreadListView extends ThreadListViewBase {
     this.appShell.showBackArrow(false);
   }
 
+  private firstSelectedRow_() {
+    return this.renderedRow_ || this.getRows().find((x) => x.selected);
+  }
+
   openFirstSelectedThreadInGmail_() {
     // Would prefer to open all the selected rows in gmail, but Chrome only
     // allows one popup per gesture.
-    let row = this.renderedRow_ || this.getRows().find((x) => x.selected);
-    if (!row) return;
+    let row = this.firstSelectedRow_();
+    if (!row) {
+      return;
+    }
     this.openThreadInGmail(row.thread);
   }
 
@@ -498,10 +509,19 @@ export class ThreadListView extends ThreadListViewBase {
     let viewSpecific = this.renderedRow_ ? RENDER_ONE_ACTIONS : RENDER_ALL_ACTIONS;
     let includeSortActions = this.isTodoView_ && !this.renderedRow_;
     let sortActions = includeSortActions ? SORT_ACTIONS : [];
+
+    let otherMenuActions = [];
+    if (currentRow.thread.getLabel() === Labels.Fallback) {
+      otherMenuActions.push(ADD_FILTER_ACTION);
+    }
+    if (this.model.hasUndoActions()) {
+      otherMenuActions.push(UNDO_ACTION);
+    }
+
     this.setActions([
       ...BASE_ACTIONS,
       ...viewSpecific,
-      [OTHER_MENU_ACTION, [UNDO_ACTION, ...sortActions]],
+      [OTHER_MENU_ACTION, [...otherMenuActions, ...sortActions]],
     ]);
 
     if (this.renderedRow_) this.addTimer_();
@@ -983,6 +1003,20 @@ export class ThreadListView extends ThreadListViewBase {
       case OTHER_MENU_ACTION:
         return true;
 
+      case ADD_FILTER_ACTION:
+        let row = this.firstSelectedRow_();
+        if (!row) {
+          return false;
+        }
+        new AddFilterDialog(
+          this.settings,
+          row.thread,
+          this.getAllUnfilteredUntriagedThreads(),
+          defined(this.getMailProcessor_),
+          () => this.updateActions_(),
+        );
+        return true;
+
       case UNDO_ACTION:
         this.model.undoLastAction();
         return true;
@@ -1190,12 +1224,7 @@ export class ThreadListView extends ThreadListViewBase {
 
     let labelContainer = document.createElement('div');
     let labelState = new LabelState(renderedRow.thread, '');
-    ThreadRow.appendLabels(
-      labelContainer,
-      labelState,
-      renderedRow.thread,
-      defined(this.getLabelSelectTemplate()),
-    );
+    ThreadRow.appendLabels(labelContainer, labelState, renderedRow.thread);
 
     this.setThreadSubject(renderedRow.thread, labelContainer);
 

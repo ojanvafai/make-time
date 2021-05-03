@@ -23,8 +23,7 @@ export class QueueNames extends EventTargetPolyfill {
     return firestoreUserCollection().doc('NameIds');
   }
 
-  async getAllNames() {
-    await this.fetch();
+  getCachedNames() {
     let nameIds = defined(QueueNames.nameIds_);
     let names = Object.keys(nameIds).filter((x) => x !== Labels.Fallback);
     let builtIns = Object.values(Labels) as string[];
@@ -46,7 +45,7 @@ export class QueueNames extends EventTargetPolyfill {
     }
   }
 
-  promptForNewLabel() {
+  async promptForNewLabel() {
     let newLabel = prompt(`Type the new label name`);
     if (!newLabel) return;
 
@@ -54,7 +53,7 @@ export class QueueNames extends EventTargetPolyfill {
     if (!newLabel) return;
 
     // Ensure the new label is stored in the QueueNames map in firestore.
-    this.getId(newLabel);
+    await this.getId(newLabel);
     return newLabel;
   }
 
@@ -127,6 +126,11 @@ export class QueueNames extends EventTargetPolyfill {
         data.lastId = newId;
         data.map[name] = newId;
         transaction.update(docRef, data);
+        // This gets called async in the onSnapshot handler above, but callers
+        // need this to be up to date at the end of the getId call, so do it
+        // here even though it's redundant. We need to keep the other once in
+        // case the user updates queuenames on a different client.
+        this.setNameIds_(data);
         return newId;
       });
     });

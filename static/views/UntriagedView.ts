@@ -1,4 +1,4 @@
-import { Action, ActionGroup, registerActions, ActionList } from '../Actions.js';
+import { Action, registerActions, ActionList } from '../Actions.js';
 import { assert, createMktimeButton, defined, Labels } from '../Base.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
@@ -16,22 +16,10 @@ import {
   ThreadListViewBase,
   VIEW_IN_GMAIL_ACTION,
   OTHER_MENU_ACTION,
+  UNDO_ACTION,
+  ADD_FILTER_ACTION,
 } from './ThreadListViewBase.js';
 import { AddFilterDialog } from './AddFilterDialog.js';
-
-let UNDO_ACTION = {
-  name: `Undo`,
-  description: `Undoes the last action taken.`,
-  key: 'u',
-  actionGroup: ActionGroup.Other,
-};
-
-let ADD_FILTER_ACTION = {
-  name: `Filter`,
-  description: `Add a new filter rule for this thread.`,
-  key: 'f',
-  actionGroup: ActionGroup.Other,
-};
 
 const HAS_CURRENT_CARD_TOOLBAR = [
   UNTRIAGED_ARCHIVE_ACTION,
@@ -123,8 +111,7 @@ export class UntriagedView extends ThreadListViewBase {
     // TODO: Make swiping the cards work on mobile and with two fingers on desktop trackpad.
     if (!this.currentCard_) {
       const thread = threads[0];
-      const labelSelectTemplate = await this.settings.getLabelSelectTemplate();
-      this.currentCard_ = new RenderedCard(thread, labelSelectTemplate);
+      this.currentCard_ = new RenderedCard(thread);
       this.updateViewContents_(this.currentCard_);
       await this.currentCard_.render();
       this.updateToolbar_();
@@ -192,6 +179,7 @@ export class UntriagedView extends ThreadListViewBase {
         new AddFilterDialog(
           this.settings,
           assert(this.currentCard_).thread,
+          this.getAllUnfilteredUntriagedThreads(),
           this.getMailProcessor_,
           () => this.updateToolbar_(),
         );

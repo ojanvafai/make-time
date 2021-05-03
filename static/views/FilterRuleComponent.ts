@@ -1,6 +1,5 @@
 import { primaryModifierKey } from '../Actions.js';
 import { assert, defined, notNull } from '../Base.js';
-import { QueueNames } from '../QueueNames.js';
 import {
   FilterRule,
   HEADER_FILTER_PREFIX,
@@ -9,30 +8,24 @@ import {
   setFilterStringField,
   Settings,
 } from '../Settings.js';
+import { LabelSelect } from '../LabelSelect.js';
 
 const CSV_FIELDS = ['from', 'to'];
 const CURSOR_SENTINEL = '!!!!!!!!';
 const DIRECTIVE_SEPARATOR_ = ':';
 const QUERY_SEPARATOR_ = '&&';
 
-export class LabelCreatedEvent extends Event {
-  static NAME = 'label-created';
-  constructor(public labelOption: HTMLOptionElement) {
-    super(LabelCreatedEvent.NAME, { bubbles: true });
-  }
-}
-
 export class FilterRuleComponent extends HTMLElement {
   // TODO: Stop using an element for maintaining cursor position. Do what
   // AddressCompose does with Ranges instead.
   private cursorSentinelElement_?: HTMLElement;
-  private label_?: HTMLSelectElement;
+  private label_?: LabelSelect;
   private matchAll_: HTMLInputElement;
   private noListId_: HTMLInputElement;
   private noCc_: HTMLInputElement;
   private editor_: HTMLElement;
 
-  constructor(private settings_: Settings, private rule_: any) {
+  constructor(private rule_: any) {
     super();
     this.style.cssText = `
       flex: 1;
@@ -79,7 +72,7 @@ export class FilterRuleComponent extends HTMLElement {
       return;
     }
     if (this.label_) {
-      rule.label = this.getSelectedLabel();
+      rule.label = defined(this.getSelectedLabel());
     }
     if (this.getMatchAll()) {
       rule.matchallmessages = true;
@@ -111,39 +104,13 @@ export class FilterRuleComponent extends HTMLElement {
   }
 
   private async createLabelPicker_() {
-    // Add a "new label" option that prompts and then adds that option to all
-    // the filter rows.
-    let label = await this.settings_.getLabelSelect();
+    let label = new LabelSelect();
     label.style.cssText = `
       margin-right: 16px;
       margin-bottom: 4px;
     `;
     this.label_ = label;
-
-    let option = document.createElement('option');
-    option.append('Create new...');
-    label.append(option);
-
-    for (let option of label.options) {
-      if (option.value === this.rule_.label) {
-        option.selected = true;
-        break;
-      }
-    }
-    label.addEventListener('change', () => {
-      // The last item is the "Create new" label option.
-      if (label.selectedIndex !== label.options.length - 1) return;
-      const queueNames = QueueNames.create();
-      const newLabel = queueNames.promptForNewLabel();
-      if (!newLabel) {
-        return;
-      }
-      const option = this.settings_.addLabel(newLabel);
-      this.dispatchEvent(new LabelCreatedEvent(option));
-      // createLabel_ prepends the new label as the first item.
-      label.selectedIndex = 0;
-    });
-
+    this.label_.selectLabel(this.rule_.label);
     return label;
   }
 
@@ -165,7 +132,7 @@ export class FilterRuleComponent extends HTMLElement {
     return this.noCc_.checked;
   }
   getSelectedLabel() {
-    return assert(this.label_).selectedOptions[0].value;
+    return assert(this.label_).getSelectedLabel();
   }
 
   add(name: string, value: string) {
@@ -181,10 +148,6 @@ export class FilterRuleComponent extends HTMLElement {
     callback(parsed);
     this.editor_.textContent = '';
     this.appendQueryParts_(this.editor_, parsed);
-  }
-
-  prependLabel(option: HTMLOptionElement) {
-    assert(this.label_).prepend(option);
   }
 
   private createCheckbox_(checked: boolean) {

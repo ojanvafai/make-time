@@ -1,5 +1,5 @@
 import { shortcutString, ActionGroup } from '../Actions.js';
-import { collapseArrow, defined, expandArrow, linkify, notNull } from '../Base.js';
+import { collapseArrow, defined, expandArrow, linkify, notNull, Labels } from '../Base.js';
 import { login } from '../BaseMain.js';
 import { ThreadListChangedEvent, ThreadListModel } from '../models/ThreadListModel.js';
 import { Settings } from '../Settings.js';
@@ -57,11 +57,24 @@ export const OTHER_MENU_ACTION = {
   actionGroup: ActionGroup.Other,
 };
 
+export const ADD_FILTER_ACTION = {
+  name: `Filter`,
+  description: `Add a new filter rule for this thread.`,
+  key: 'f',
+  actionGroup: ActionGroup.Other,
+};
+
+export const UNDO_ACTION = {
+  name: `Undo`,
+  description: `Undoes the last action taken.`,
+  key: 'u',
+  actionGroup: ActionGroup.Other,
+};
+
 export abstract class ThreadListViewBase extends View {
   private listeners_: ListenerData[];
   private threadToRow_: WeakMap<Thread, ThreadRow>;
   private hasQueuedFrame_: boolean;
-  private labelSelectTemplate_?: HTMLSelectElement;
 
   constructor(
     protected model: ThreadListModel,
@@ -88,7 +101,7 @@ export abstract class ThreadListViewBase extends View {
   protected getThreadRow(thread: Thread) {
     let row = this.threadToRow_.get(thread);
     if (!row) {
-      row = new ThreadRow(thread, defined(this.labelSelectTemplate_));
+      row = new ThreadRow(thread);
       this.threadToRow_.set(thread, row);
     }
     return row;
@@ -216,15 +229,9 @@ export abstract class ThreadListViewBase extends View {
     return rows.flat();
   }
 
-  protected getLabelSelectTemplate() {
-    return defined(this.labelSelectTemplate_);
-  }
-
   protected async render() {
     if (this.hasQueuedFrame_) return;
     this.hasQueuedFrame_ = true;
-    if (!this.labelSelectTemplate_)
-      this.labelSelectTemplate_ = await this.settings.getLabelSelectTemplate();
     requestAnimationFrame(() => {
       this.hasQueuedFrame_ = false;
       this.renderFrame();
@@ -239,5 +246,11 @@ export abstract class ThreadListViewBase extends View {
     return (
       this.settings.getQueueSettings().getMappedGroupName(originalGroupName) || originalGroupName
     );
+  }
+
+  protected getAllUnfilteredUntriagedThreads() {
+    const allThreads = this.model.getThreads(true);
+    const threads = allThreads.filter((x) => x.forceTriage() && !x.actionInProgress());
+    return threads.filter((x) => x.getLabel() === Labels.Fallback);
   }
 }

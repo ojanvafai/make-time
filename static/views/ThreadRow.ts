@@ -5,6 +5,7 @@ import { InProgressChangedEvent, Priority, Thread, UpdatedEvent } from '../Threa
 
 import { SelectRowEvent, ThreadRowGroupRenderMode } from './ThreadRowGroup.js';
 import { ThreadRowGroupBase } from './ThreadRowGroupBase.js';
+import { LabelSelect, LabelSelectedEvent } from '../LabelSelect.js';
 
 let DIFFERENT_YEAR_FORMATTER = new Intl.DateTimeFormat(undefined, {
   year: 'numeric',
@@ -147,7 +148,7 @@ export class ThreadRow extends HTMLElement {
   private static lastHeightIsSmallScreen_: boolean;
   private static lastHeight_: number;
 
-  constructor(public thread: Thread, private labelSelectTemplate_: HTMLSelectElement) {
+  constructor(public thread: Thread) {
     super();
 
     this.style.cssText = `
@@ -297,7 +298,7 @@ export class ThreadRow extends HTMLElement {
       pinned.append('📌');
       labels.append(pinned);
     }
-    ThreadRow.appendLabels(labels, state, this.thread, this.labelSelectTemplate_);
+    ThreadRow.appendLabels(labels, state, this.thread);
 
     let justSubject = document.createElement('span');
     justSubject.append(state.subject);
@@ -417,12 +418,7 @@ export class ThreadRow extends HTMLElement {
     `;
   }
 
-  static appendLabels(
-    container: HTMLElement,
-    state: LabelState,
-    thread: Thread,
-    labelSelect: HTMLSelectElement,
-  ) {
+  static appendLabels(container: HTMLElement, state: LabelState, thread: Thread) {
     // TODO: Make this a date picker for changing the blocked date.
     if (state.blocked) {
       let blockedString = `Stuck: ${DAY_MONTH_FORMATTER.format(state.blocked)}`;
@@ -437,37 +433,16 @@ export class ThreadRow extends HTMLElement {
     }
 
     if (state.label && state.group !== state.label) {
-      let label = this.createSelectChip_(state.label);
+      let label = new LabelSelect();
+      label.selectLabel(state.label);
 
       // Clicks on the select shouldn't also be clicks on the row.
       label.addEventListener('click', (e) => {
         e.stopPropagation();
       });
 
-      label.addEventListener('pointerdown', () => {
-        if (label.children.length > 1) return;
-
-        let cloned = labelSelect.cloneNode(true) as HTMLSelectElement;
-        label.append(...cloned.children);
-
-        (label.children[0] as HTMLOptionElement).selected = true;
-      });
-
-      // Remove the extra items so the select shrinks back down to the width
-      // of the currently selected one.
-      let removeUnselected = () => {
-        let toRemove = Array.from(label.children) as HTMLOptionElement[];
-        for (let element of toRemove) {
-          if (!element.selected) element.remove();
-        }
-      };
-
-      label.addEventListener('blur', () => removeUnselected());
-
-      label.addEventListener('change', async () => {
-        let newLabel = label.selectedOptions[0].value;
-        removeUnselected();
-        await thread.setOnlyLabel(newLabel);
+      label.addEventListener(LabelSelectedEvent.NAME, (e: Event) => {
+        thread.setOnlyLabel((e as LabelSelectedEvent).name);
       });
 
       container.append(label);
@@ -479,17 +454,6 @@ export class ThreadRow extends HTMLElement {
       repeat.style.marginRight = '4px';
       container.append(repeat);
     }
-  }
-
-  private static createSelectChip_(text: string) {
-    let label = document.createElement('select');
-    this.styleLabel_(label);
-
-    let option = new Option();
-    option.append(text);
-    label.append(option);
-
-    return label;
   }
 
   private static createLabel_(text: string) {
