@@ -66,13 +66,13 @@ function humanReadableKeyName(key: string) {
       return '<space>';
     // TODO: Replace the unicode characters with SVGs.
     case 'ArrowDown':
-      return '⬇';
+      return '⇩';
     case 'ArrowUp':
-      return '⬆';
+      return '⇧';
     case 'ArrowLeft':
-      return '⬅';
+      return '⇦';
     case 'ArrowRight':
-      return '⮕';
+      return '⇨';
     case 'Escape':
       return '<esc>';
     case 'Enter':
