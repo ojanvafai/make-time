@@ -1,5 +1,5 @@
 import { Action, registerActions, ActionList, cloneAndDisable, Shortcut } from '../Actions.js';
-import { assert, createMktimeButton, defined, Labels, assertNotReached } from '../Base.js';
+import { assert, createMktimeButton, defined, Labels, assertNotReached, notNull } from '../Base.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
 import { RenderedCard } from '../RenderedCard.js';
@@ -32,6 +32,9 @@ interface DirectionalAction extends Action {
   originalAction: Action;
 }
 
+const MIN_OFFSET_TO_DRAG = 10;
+const MIN_OFFSET_FOR_ACTION = 200;
+
 export class UntriagedView extends ThreadListViewBase {
   private renderedThreadContainer_: HTMLElement;
   private currentCard_?: RenderedCard;
@@ -50,14 +53,12 @@ export class UntriagedView extends ThreadListViewBase {
     this.renderedThreadContainer_.className = 'theme-max-width mx-auto absolute all-0';
     this.append(this.renderedThreadContainer_);
 
-    // TODO: Don't hard code the directions and make them user configurable.
     this.triageActions_ = [
       this.wrapAction_(Direction.ArrowLeft, ARCHIVE_ACTION),
       this.wrapAction_(Direction.ArrowUp, PIN_ACTION),
       this.wrapAction_(Direction.ArrowDown, BLOCKED_1D_ACTION),
       this.wrapAction_(Direction.ArrowRight, MUST_DO_ACTION),
     ];
-
     this.render();
   }
 
@@ -126,12 +127,10 @@ export class UntriagedView extends ThreadListViewBase {
       return;
     }
 
-    // TODO: Render the top N card shells so it looks like a stack of cards.
-    // TODO: Prerender the next card's message contents
-    // TODO: Make swiping the cards work on mobile and with two fingers on desktop trackpad.
     if (!this.currentCard_) {
       const thread = threads[0];
       this.currentCard_ = new RenderedCard(thread);
+      this.setupDragHandlers_(this.currentCard_);
       this.updateViewContents_(this.currentCard_);
       await this.currentCard_.render();
       this.updateToolbar_();
@@ -149,6 +148,58 @@ export class UntriagedView extends ThreadListViewBase {
       this.renderedThreadContainer_.append(this.threadAlreadyTriagedDialog_);
       this.updateToolbar_();
     }
+  }
+
+  private setupDragHandlers_(card: RenderedCard) {
+    let isHorizontalDrag: boolean | null = null;
+    let dragStartOffset: { x: number; y: number } | null = null;
+
+    const distancedFromDragStart = (e: PointerEvent, getHorizontalDistance: boolean) => {
+      const start = notNull(dragStartOffset);
+      return getHorizontalDistance ? e.pageX - start.x : e.pageY - start.y;
+    };
+
+    card.addEventListener('pointerdown', (e) => {
+      dragStartOffset = { x: e.pageX, y: e.pageY };
+      card.setPointerCapture(e.pointerId);
+    });
+
+    card.addEventListener('pointermove', (e) => {
+      if (!dragStartOffset) {
+        return;
+      }
+      if (isHorizontalDrag === null) {
+        const x = Math.abs(distancedFromDragStart(e, true));
+        const y = Math.abs(distancedFromDragStart(e, false));
+        if (x > MIN_OFFSET_TO_DRAG || y > MIN_OFFSET_TO_DRAG) {
+          isHorizontalDrag = x > y;
+        } else {
+          return;
+        }
+      }
+      const axis = isHorizontalDrag ? 'X' : 'Y';
+      card.style.transform = `translate${axis}(${distancedFromDragStart(e, isHorizontalDrag)}px)`;
+    });
+
+    card.addEventListener('pointerup', (e) => {
+      if (isHorizontalDrag !== null) {
+        const distance = distancedFromDragStart(e, isHorizontalDrag);
+        if (Math.abs(distance) > MIN_OFFSET_FOR_ACTION) {
+          const direction = isHorizontalDrag
+            ? distance > 0
+              ? Direction.ArrowRight
+              : Direction.ArrowLeft
+            : distance > 0
+            ? Direction.ArrowDown
+            : Direction.ArrowUp;
+          this.takeDirectionalAction_(direction);
+        } else {
+          card.style.transform = ``;
+        }
+      }
+      isHorizontalDrag = null;
+      dragStartOffset = null;
+    });
   }
 
   private routeToTodo_() {
@@ -220,6 +271,14 @@ export class UntriagedView extends ThreadListViewBase {
     card.style.transform = `${axis}(${offset}px)`;
   }
 
+  private async takeDirectionalAction_(direction: Direction) {
+    const action = assert(this.triageActions_.find((x) => x.direction === direction));
+    this.animateCurrentCardOffscreen_(action);
+    const thread = defined(this.currentCard_).thread;
+    this.clearCurrentCard_();
+    return await this.model.markTriaged(action.originalAction, [thread]);
+  }
+
   async takeAction(action: Action) {
     // The toolbar should be disabled when this dialog is up.
     assert(!this.threadAlreadyTriagedDialog_);
@@ -250,11 +309,7 @@ export class UntriagedView extends ThreadListViewBase {
         return true;
 
       default:
-        const directionalAction = action as DirectionalAction;
-        this.animateCurrentCardOffscreen_(directionalAction);
-        const thread = defined(this.currentCard_).thread;
-        this.clearCurrentCard_();
-        return await this.model.markTriaged(directionalAction.originalAction, [thread]);
+        return await this.takeDirectionalAction_((action as DirectionalAction).direction);
     }
   }
 }
