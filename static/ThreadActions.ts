@@ -1,4 +1,4 @@
-import { Action, ActionGroup, Shortcut } from './Actions.js';
+import { Action, ActionGroup } from './Actions.js';
 import { assert } from './Base.js';
 import { TinyDatePicker } from './third_party/tiny-date-picker/DatePicker.js';
 import {
@@ -74,7 +74,7 @@ export let REPEAT_ACTION = {
   actionGroup: ActionGroup.Date,
 };
 
-let BLOCKED_1D_ACTION = {
+export let BLOCKED_1D_ACTION = {
   name: '1 day',
   description: `Block on action from someone else. Shows up tomorrow to retriage.`,
   key: '5',
@@ -123,30 +123,6 @@ let BLOCKED_NONE_ACTION = {
   actionGroup: ActionGroup.Date,
 };
 
-export let UNTRIAGED_PIN_ACTION = {
-  ...PIN_ACTION,
-  key: new Shortcut('ArrowUp'),
-  secondaryKey: PIN_ACTION.key,
-};
-
-export let UNTRIAGED_MUST_DO_ACTION = {
-  ...MUST_DO_ACTION,
-  key: new Shortcut('ArrowRight'),
-  secondaryKey: MUST_DO_ACTION.key,
-};
-
-export let UNTRIAGED_STUCK_1D_ACTION = {
-  ...BLOCKED_1D_ACTION,
-  key: new Shortcut('ArrowDown'),
-  secondaryKey: BLOCKED_1D_ACTION.key,
-};
-
-export let UNTRIAGED_ARCHIVE_ACTION = {
-  ...ARCHIVE_ACTION,
-  key: new Shortcut('ArrowLeft'),
-  secondaryKey: ARCHIVE_ACTION.key,
-};
-
 export const ARCHIVE_ACTIONS = [[ARCHIVE_ACTION, [SOFT_MUTE_ACTION, MUTE_ACTION]]];
 
 export let BLOCKED_ACTIONS = [
@@ -164,13 +140,11 @@ export let BASE_THREAD_ACTIONS = [
 function destinationToPriority(destination: Action) {
   switch (destination) {
     case PIN_ACTION:
-    case UNTRIAGED_PIN_ACTION:
       return Priority.Pin;
 
     case BOOKMARK_ACTION:
       return Priority.Bookmark;
 
-    case UNTRIAGED_MUST_DO_ACTION:
     case MUST_DO_ACTION:
       return Priority.MustDo;
 
@@ -223,14 +197,12 @@ export function createUpdate(thread: Thread, destination: Action) {
       case REPEAT_ACTION:
         return thread.repeatUpdate();
 
-      case UNTRIAGED_ARCHIVE_ACTION:
       case ARCHIVE_ACTION:
         return thread.archiveUpdate();
 
       case BLOCKED_NONE_ACTION:
         return thread.clearStuckUpdate();
 
-      case UNTRIAGED_STUCK_1D_ACTION:
       case BLOCKED_1D_ACTION:
         return thread.stuckDaysUpdate(1);
 

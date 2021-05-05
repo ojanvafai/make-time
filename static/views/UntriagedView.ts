@@ -1,15 +1,10 @@
-import { Action, registerActions, ActionList, cloneAndDisable } from '../Actions.js';
-import { assert, createMktimeButton, defined, Labels } from '../Base.js';
+import { Action, registerActions, ActionList, cloneAndDisable, Shortcut } from '../Actions.js';
+import { assert, createMktimeButton, defined, Labels, assertNotReached } from '../Base.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
 import { RenderedCard } from '../RenderedCard.js';
 import { Settings } from '../Settings.js';
-import {
-  UNTRIAGED_ARCHIVE_ACTION,
-  UNTRIAGED_MUST_DO_ACTION,
-  UNTRIAGED_STUCK_1D_ACTION,
-  UNTRIAGED_PIN_ACTION,
-} from '../ThreadActions.js';
+import { MUST_DO_ACTION, ARCHIVE_ACTION, PIN_ACTION, BLOCKED_1D_ACTION } from '../ThreadActions.js';
 
 import { AppShell } from './AppShell.js';
 import {
@@ -21,22 +16,27 @@ import {
 } from './ThreadListViewBase.js';
 import { AddFilterDialog } from './AddFilterDialog.js';
 
-const HAS_CURRENT_CARD_TOOLBAR = [
-  UNTRIAGED_ARCHIVE_ACTION,
-  UNTRIAGED_PIN_ACTION,
-  UNTRIAGED_MUST_DO_ACTION,
-  UNTRIAGED_STUCK_1D_ACTION,
-  VIEW_IN_GMAIL_ACTION,
-];
-
-registerActions('Untriaged', [...HAS_CURRENT_CARD_TOOLBAR, UNDO_ACTION, ADD_FILTER_ACTION]);
+registerActions('Untriaged', [UNDO_ACTION, ADD_FILTER_ACTION]);
 
 const CENTERED_FILL_CONTAINER_CLASS = 'absolute all-0 flex items-center justify-center';
+
+enum Direction {
+  ArrowUp = 'ArrowUp',
+  ArrowRight = 'ArrowRight',
+  ArrowDown = 'ArrowDown',
+  ArrowLeft = 'ArrowLeft',
+}
+
+interface DirectionalAction extends Action {
+  direction: Direction;
+  originalAction: Action;
+}
 
 export class UntriagedView extends ThreadListViewBase {
   private renderedThreadContainer_: HTMLElement;
   private currentCard_?: RenderedCard;
   private threadAlreadyTriagedDialog_?: HTMLElement;
+  private triageActions_: DirectionalAction[];
 
   constructor(
     model: ThreadListModel,
@@ -50,7 +50,25 @@ export class UntriagedView extends ThreadListViewBase {
     this.renderedThreadContainer_.className = 'theme-max-width mx-auto absolute all-0';
     this.append(this.renderedThreadContainer_);
 
+    // TODO: Don't hard code the directions and make them user configurable.
+    this.triageActions_ = [
+      this.wrapAction_(Direction.ArrowLeft, ARCHIVE_ACTION),
+      this.wrapAction_(Direction.ArrowUp, PIN_ACTION),
+      this.wrapAction_(Direction.ArrowDown, BLOCKED_1D_ACTION),
+      this.wrapAction_(Direction.ArrowRight, MUST_DO_ACTION),
+    ];
+
     this.render();
+  }
+
+  private wrapAction_(direction: Direction, action: Action) {
+    return {
+      ...action,
+      key: new Shortcut(direction),
+      secondaryKey: action.key,
+      direction: direction,
+      originalAction: action,
+    };
   }
 
   protected getGroups() {
@@ -67,7 +85,6 @@ export class UntriagedView extends ThreadListViewBase {
     let actions: ActionList;
 
     if (this.currentCard_) {
-      actions = [...HAS_CURRENT_CARD_TOOLBAR];
       const otherMenuActions = [
         this.model.hasUndoActions() ? UNDO_ACTION : cloneAndDisable(UNDO_ACTION),
       ];
@@ -76,7 +93,11 @@ export class UntriagedView extends ThreadListViewBase {
           ? ADD_FILTER_ACTION
           : cloneAndDisable(ADD_FILTER_ACTION),
       );
-      actions = [...HAS_CURRENT_CARD_TOOLBAR, [OTHER_MENU_ACTION, otherMenuActions]];
+      actions = [
+        ...this.triageActions_,
+        VIEW_IN_GMAIL_ACTION,
+        [OTHER_MENU_ACTION, otherMenuActions],
+      ];
     } else {
       actions = this.model.hasUndoActions() ? [UNDO_ACTION] : [];
     }
@@ -166,6 +187,39 @@ export class UntriagedView extends ThreadListViewBase {
     return true;
   }
 
+  private animateCurrentCardOffscreen_(action: DirectionalAction) {
+    let axis;
+    let offset;
+    switch (action.direction) {
+      case Direction.ArrowUp:
+        axis = 'translateY';
+        offset = -window.innerHeight;
+        break;
+
+      case Direction.ArrowRight:
+        axis = 'translateX';
+        offset = window.innerWidth;
+        break;
+
+      case Direction.ArrowDown:
+        axis = 'translateY';
+        offset = window.innerHeight;
+        break;
+
+      case Direction.ArrowLeft:
+        axis = 'translateX';
+        offset = -window.innerWidth;
+        break;
+
+      default:
+        assertNotReached();
+    }
+
+    const card = defined(this.currentCard_);
+    card.style.transition = 'transform 0.3s';
+    card.style.transform = `${axis}(${offset}px)`;
+  }
+
   async takeAction(action: Action) {
     // The toolbar should be disabled when this dialog is up.
     assert(!this.threadAlreadyTriagedDialog_);
@@ -196,10 +250,11 @@ export class UntriagedView extends ThreadListViewBase {
         return true;
 
       default:
-        const thread = assert(this.currentCard_).thread;
+        const directionalAction = action as DirectionalAction;
+        this.animateCurrentCardOffscreen_(directionalAction);
+        const thread = defined(this.currentCard_).thread;
         this.clearCurrentCard_();
-        // TODO: Have the triage action animate the card off the screen
-        return await this.model.markTriaged(action, [thread]);
+        return await this.model.markTriaged(directionalAction.originalAction, [thread]);
     }
   }
 }

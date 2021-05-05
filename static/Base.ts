@@ -252,6 +252,10 @@ export function definedAndNotNull<T>(x: T | null | undefined, message?: string):
   return x;
 }
 
+export function assertNotReached(): never {
+  throw new Error('assert not reached');
+}
+
 export function assert<T>(x: T | null | undefined, message?: string): T {
   if (!x) throw new Error(message || ASSERT_STRING);
   return x;
