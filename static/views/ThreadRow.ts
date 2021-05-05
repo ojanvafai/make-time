@@ -433,19 +433,15 @@ export class ThreadRow extends HTMLElement {
     }
 
     if (state.label && state.group !== state.label) {
-      let label = new LabelSelect();
+      let label = new LabelSelect(state.label);
       label.classList.add('mr1');
-      label.selectLabel(state.label);
-
       // Clicks on the select shouldn't also be clicks on the row.
       label.addEventListener('click', (e) => {
         e.stopPropagation();
       });
-
       label.addEventListener(LabelSelectedEvent.NAME, (e: Event) => {
         thread.setOnlyLabel((e as LabelSelectedEvent).name);
       });
-
       container.append(label);
     }
 

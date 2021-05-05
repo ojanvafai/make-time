@@ -104,13 +104,12 @@ export class FilterRuleComponent extends HTMLElement {
   }
 
   private async createLabelPicker_() {
-    let label = new LabelSelect();
+    let label = new LabelSelect(this.rule_.label);
     label.style.cssText = `
       margin-right: 16px;
       margin-bottom: 4px;
     `;
     this.label_ = label;
-    this.label_.selectLabel(this.rule_.label);
     return label;
   }
 

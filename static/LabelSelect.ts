@@ -15,15 +15,18 @@ export class LabelSelectedEvent extends Event {
   }
 }
 
+const PICK_LABEL_TEXT = 'Pick a label';
+
 export class LabelSelect extends HTMLElement {
   private select_: HTMLSelectElement;
-  private selectedLabel_?: string;
   private queueNames_: QueueNames;
+  private isOpen_: boolean;
 
-  constructor() {
+  constructor(private selectedLabel_?: string) {
     super();
 
     this.queueNames_ = QueueNames.create();
+    this.isOpen_ = false;
 
     this.select_ = document.createElement('select');
     this.append(this.select_);
@@ -39,15 +42,14 @@ export class LabelSelect extends HTMLElement {
       } else {
         this.selectedLabel_ = this.select_.selectedOptions[0].value;
       }
-      this.renderOptions_();
+      this.setIsOpen_(false);
       this.dispatchEvent(new LabelSelectedEvent(this.selectedLabel_));
     });
 
-    this.select_.addEventListener('pointerdown', () => {
-      this.renderOptions_();
-    });
+    this.select_.addEventListener('pointerdown', () => this.setIsOpen_(true));
+    this.select_.addEventListener('blur', () => this.setIsOpen_(false));
 
-    this.renderOptions_();
+    this.renderOptions_(false);
   }
 
   async init() {
@@ -62,13 +64,44 @@ export class LabelSelect extends HTMLElement {
     return this.selectedLabel_;
   }
 
-  selectLabel(label: string) {
-    this.selectedLabel_ = label;
-    this.renderOptions_();
+  private setIsOpen_(isOpen: boolean) {
+    this.isOpen_ = isOpen;
+    if (isOpen) {
+      this.setFixedWidth_();
+    } else {
+      this.select_.style.width = '';
+      // Need to remove all the other options so that the width will be set to
+      // just the one option.
+      this.renderOptions_(true);
+    }
+    this.renderOptions_(false);
   }
 
-  private renderOptions_() {
+  // Set the width of the select to the width of the currently selected option
+  // so that it doesn't expand out and cause things to move around when we put
+  // in the whole set of options upon opening the select.
+  private setFixedWidth_() {
+    if (this.select_.offsetWidth) {
+      this.select_.style.width = `${this.select_.offsetWidth}px`;
+    }
+  }
+
+  private renderOptions_(pretendClosed: boolean) {
+    this.select_.textContent = '';
+
     let labels = this.queueNames_.getCachedNames();
+
+    if (pretendClosed || !this.isOpen_) {
+      this.select_.append(
+        new Option(
+          this.selectedLabel_ && labels.includes(this.selectedLabel_)
+            ? this.selectedLabel_
+            : PICK_LABEL_TEXT,
+        ),
+      );
+      return;
+    }
+
     labels.sort((a, b) => {
       if (a === Labels.Archive) {
         return -1;
@@ -88,7 +121,7 @@ export class LabelSelect extends HTMLElement {
     const builtInLabels = Object.values(Labels) as string[];
     const customLabels = labels.filter((x) => !builtInLabels.includes(x));
     const allLabels = [
-      { name: 'Pick a label', disabled: true },
+      { name: PICK_LABEL_TEXT, disabled: true },
       'Create new label',
       { name: '', disabled: true },
       { name: 'Built-in labels', disabled: true },
@@ -97,8 +130,6 @@ export class LabelSelect extends HTMLElement {
       { name: 'Custom labels', disabled: true },
       ...customLabels,
     ];
-
-    this.select_.textContent = '';
 
     for (let label of allLabels) {
       let option = document.createElement('option');
