@@ -33,7 +33,7 @@ interface DirectionalAction extends Action {
 }
 
 const MIN_OFFSET_TO_DRAG = 10;
-const MIN_OFFSET_FOR_ACTION = 200;
+const MIN_OFFSET_FOR_ACTION = 100;
 
 export class UntriagedView extends ThreadListViewBase {
   private renderedThreadContainer_: HTMLElement;
