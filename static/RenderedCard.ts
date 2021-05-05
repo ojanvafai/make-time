@@ -9,7 +9,7 @@ export class RenderedCard extends HTMLElement {
   constructor(public thread: Thread) {
     super();
     this.className =
-      'absolute left-align reading-max-width p2 break-word card-shadow flex flex-column mx-auto thread-background-color no-user-select';
+      'absolute left-align reading-max-width p2 break-word card-shadow flex flex-column mx-auto thread-background-color no-user-select no-touch';
     this.style.cssText = `
       top: 20px;
       right: 20px;
