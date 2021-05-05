@@ -292,6 +292,7 @@ export class ThreadRow extends HTMLElement {
     }
 
     let labels = document.createElement('div');
+    labels.className = 'mr1';
     if (state.renderPinnedStyle) {
       let pinned = document.createElement('span');
       pinned.title = 'Pinned';
@@ -434,7 +435,6 @@ export class ThreadRow extends HTMLElement {
 
     if (state.label && state.group !== state.label) {
       let label = new LabelSelect(state.label);
-      label.classList.add('mr1');
       // Clicks on the select shouldn't also be clicks on the row.
       label.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -448,7 +448,7 @@ export class ThreadRow extends HTMLElement {
     if (state.hasRepeat) {
       let repeat = document.createElement('span');
       repeat.textContent = '\u{1F501}';
-      repeat.style.marginRight = '4px';
+      repeat.style.marginLeft = '4px';
       container.append(repeat);
     }
   }
