@@ -41,11 +41,6 @@ import { View } from './views/View.js';
 
 if (!isMobileUserAgent()) document.documentElement.classList.add('desktop');
 
-// Safari on iOS needs this to prevent rubberband scrolling and other bugs with
-// cards getting stuck on drags in untriaged view.
-document.documentElement.classList.add('overflow-hidden');
-document.body.classList.add('overflow-hidden');
-
 // Run this as early as possible to minimize flash of white on reload.
 Themes.apply();
 
