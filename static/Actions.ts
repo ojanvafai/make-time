@@ -384,8 +384,12 @@ export class Actions extends HTMLElement {
     // thread. This prevents accidents of archiving a lot of threads at once
     // when your stupid keyboard gets stuck holding the archive key down.
     // #sigh
-    if (!action.repeatable && e.repeat) return false;
-
+    if (!action.repeatable && e.repeat) {
+      return false;
+    }
+    if (action.disabled) {
+      return false;
+    }
     return this.matchesEvent_(e, action.key) || this.matchesEvent_(e, action.secondaryKey);
   }
 
