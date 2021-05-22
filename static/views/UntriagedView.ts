@@ -138,8 +138,8 @@ export class UntriagedView extends ThreadListViewBase {
 
     if (
       this.currentCard_ &&
-      !threads.includes(this.currentCard_.thread) &&
-      !this.threadAlreadyTriagedDialog_
+      !this.threadAlreadyTriagedDialog_ &&
+      !threads.includes(this.currentCard_.thread)
     ) {
       this.renderAlreadyTriaged_();
       return;
@@ -227,8 +227,15 @@ export class UntriagedView extends ThreadListViewBase {
     const newCards = [];
     for (const thread of threads) {
       const oldCard = this.cards_.find((x) => x.thread === thread);
+
       if (oldCard) {
-        newCards.push(oldCard);
+        // There's a race between when we start the animation and finish the
+        // triage. In that interim, if new threads come in, avoid adding it back
+        // to the stack of cards since we don't want it to get set back to
+        // this.currentCard_.
+        if (!this.cardsAnimatingOffScreen_.includes(oldCard)) {
+          newCards.push(oldCard);
+        }
         continue;
       }
       const card = new RenderedCard(thread);
