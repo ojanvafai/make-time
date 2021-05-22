@@ -52,6 +52,7 @@ export class UntriagedView extends ThreadListViewBase {
   private currentCard_?: RenderedCard;
   private threadAlreadyTriagedDialog_?: HTMLElement;
   private triageActions_: DirectionalAction[];
+  private isTriageComplete_?: boolean;
 
   constructor(
     model: ThreadListModel,
@@ -133,8 +134,10 @@ export class UntriagedView extends ThreadListViewBase {
     if (!threads.length) {
       this.clearCurrentCard_();
       this.renderTriageComplete_();
+      this.isTriageComplete_ = true;
       return;
     }
+    this.isTriageComplete_ = false;
 
     if (
       this.currentCard_ &&
@@ -203,7 +206,6 @@ export class UntriagedView extends ThreadListViewBase {
     contents.className = `${CENTERED_FILL_CONTAINER_CLASS} theme-text-color p1 center mx-auto pre-wrap`;
     contents.style.maxWidth = '250px';
     contents.append('All done triaging.\n\nPress any key or click anywhere to go to todo view.');
-    contents.onclick = () => this.routeToTodo_();
     this.updateViewContents_(contents);
     this.updateToolbar_();
   }
@@ -245,18 +247,16 @@ export class UntriagedView extends ThreadListViewBase {
   }
 
   private removeStaleCards_() {
-    const cardsToRemove = Array.from(this.renderedCardContainer_.children).filter((child) => {
-      const card = child as RenderedCard;
-      return (
-        !this.cards_.includes(card) &&
-        !this.cardsAnimatingOffScreen_.includes(card) &&
-        this.currentCard_ !== card
-      );
-    });
-
-    for (const card of cardsToRemove) {
-      card.remove();
-    }
+    Array.from(this.renderedCardContainer_.children)
+      .filter((child) => {
+        const card = child as RenderedCard;
+        return (
+          !this.cards_.includes(card) &&
+          !this.cardsAnimatingOffScreen_.includes(card) &&
+          this.currentCard_ !== card
+        );
+      })
+      .forEach((card) => card.remove());
   }
 
   private setupDragHandlers_() {
@@ -269,6 +269,10 @@ export class UntriagedView extends ThreadListViewBase {
     };
 
     this.addEventListener('pointerdown', (e) => {
+      if (this.isTriageComplete_) {
+        this.routeToTodo_();
+        return;
+      }
       dragStartOffset = { x: e.pageX, y: e.pageY };
       this.setPointerCapture(e.pointerId);
     });
@@ -385,6 +389,7 @@ export class UntriagedView extends ThreadListViewBase {
       default:
         assertNotReached();
     }
+
     const endTransform = `${axis}(${offset}px)`;
     card.animate([{ transform: endTransform }], {
       duration: 300,
