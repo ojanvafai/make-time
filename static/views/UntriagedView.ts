@@ -23,6 +23,7 @@ import {
   ADD_FILTER_ACTION,
 } from './ThreadListViewBase.js';
 import { AddFilterDialog } from './AddFilterDialog.js';
+import { Thread } from '../Thread.js';
 
 registerActions('Untriaged', [UNDO_ACTION, ADD_FILTER_ACTION]);
 
@@ -131,14 +132,7 @@ export class UntriagedView extends ThreadListViewBase {
 
     if (!threads.length) {
       this.clearCurrentCard_();
-
-      const contents = document.createElement('div');
-      contents.className = `${CENTERED_FILL_CONTAINER_CLASS} theme-text-color p1 center mx-auto pre-wrap`;
-      contents.style.maxWidth = '250px';
-      contents.append('All done triaging.\n\nPress any key or click anywhere to go to todo view.');
-      contents.onclick = () => this.routeToTodo_();
-      this.updateViewContents_(contents);
-      this.updateToolbar_();
+      this.renderTriageComplete_();
       return;
     }
 
@@ -147,33 +141,11 @@ export class UntriagedView extends ThreadListViewBase {
       !threads.includes(this.currentCard_.thread) &&
       !this.threadAlreadyTriagedDialog_
     ) {
-      this.threadAlreadyTriagedDialog_ = document.createElement('div');
-      const contents = document.createElement('div');
-      contents.className =
-        'overlay-background-color overlay-border-and-shadow theme-text-color p2 m4 center flex flex-column';
-      contents.append(
-        'This thread has already been triaged elsewhere. Press any key to go to next thread.',
-        createMktimeButton(() => this.clearAlreadyTriagedThreadState_(), 'Go to next thread'),
-      );
-      this.threadAlreadyTriagedDialog_.append(contents);
-      this.threadAlreadyTriagedDialog_.className = `${CENTERED_FILL_CONTAINER_CLASS} darken2`;
-      this.renderedThreadContainer_.append(this.threadAlreadyTriagedDialog_);
-      this.updateToolbar_();
+      this.renderAlreadyTriaged_();
       return;
     }
 
-    const newCards = [];
-    for (const thread of threads) {
-      const oldCard = this.cards_.find((x) => x.thread === thread);
-      if (oldCard) {
-        newCards.push(oldCard);
-        continue;
-      }
-      const card = new RenderedCard(thread);
-      newCards.push(card);
-    }
-    this.cards_ = newCards;
-
+    this.cards_ = this.createCards_(threads);
     if (!this.currentCard_) {
       this.currentCard_ = this.cards_[0];
       // Ensure currentCard_ stays visually above other cards since we force it
@@ -181,21 +153,15 @@ export class UntriagedView extends ThreadListViewBase {
       this.currentCard_.style.zIndex = '1';
     }
 
-    const cardsToRemove = Array.from(this.renderedCardContainer_.children).filter((child) => {
-      const card = child as RenderedCard;
-      return (
-        !this.cards_.includes(card) &&
-        !this.cardsAnimatingOffScreen_.includes(card) &&
-        this.currentCard_ !== card
-      );
-    });
-
-    for (const card of cardsToRemove) {
-      card.remove();
+    this.removeStaleCards_();
+    this.renderTopOfDeck_(this.currentCard_);
+    if (!this.renderedCardContainer_.parentNode) {
+      this.updateViewContents_(this.renderedCardContainer_);
     }
+    this.updateToolbar_();
+  }
 
-    newCards.slice(0, 3).forEach((card) => card.render());
-
+  private renderTopOfDeck_(currentCard: RenderedCard) {
     for (let i = 0; i < Math.min(10, this.cards_.length); i++) {
       const card = this.cards_[i];
       // Only render the top 3 cards as a performance optimization. Also, don't
@@ -209,7 +175,7 @@ export class UntriagedView extends ThreadListViewBase {
       }
       // Render this.currentCard_ in case it's not in the top 3 anymore but got
       // new messages.
-      this.currentCard_.render();
+      currentCard.render();
       if (this.currentCard_ === card && this.currentCard_.parentNode) {
         continue;
       }
@@ -230,12 +196,60 @@ export class UntriagedView extends ThreadListViewBase {
       // default z-index.
       this.renderedCardContainer_.prepend(card);
     }
+  }
 
-    if (!this.renderedCardContainer_.parentNode) {
-      this.updateViewContents_(this.renderedCardContainer_);
-    }
-
+  private renderTriageComplete_() {
+    const contents = document.createElement('div');
+    contents.className = `${CENTERED_FILL_CONTAINER_CLASS} theme-text-color p1 center mx-auto pre-wrap`;
+    contents.style.maxWidth = '250px';
+    contents.append('All done triaging.\n\nPress any key or click anywhere to go to todo view.');
+    contents.onclick = () => this.routeToTodo_();
+    this.updateViewContents_(contents);
     this.updateToolbar_();
+  }
+
+  private renderAlreadyTriaged_() {
+    this.threadAlreadyTriagedDialog_ = document.createElement('div');
+    const contents = document.createElement('div');
+    contents.className =
+      'overlay-background-color overlay-border-and-shadow theme-text-color p2 m4 center flex flex-column';
+    contents.append(
+      'This thread has already been triaged elsewhere. Press any key to go to next thread.',
+      createMktimeButton(() => this.clearAlreadyTriagedThreadState_(), 'Go to next thread'),
+    );
+    this.threadAlreadyTriagedDialog_.append(contents);
+    this.threadAlreadyTriagedDialog_.className = `${CENTERED_FILL_CONTAINER_CLASS} darken2`;
+    this.renderedThreadContainer_.append(this.threadAlreadyTriagedDialog_);
+    this.updateToolbar_();
+  }
+
+  private createCards_(threads: Thread[]) {
+    const newCards = [];
+    for (const thread of threads) {
+      const oldCard = this.cards_.find((x) => x.thread === thread);
+      if (oldCard) {
+        newCards.push(oldCard);
+        continue;
+      }
+      const card = new RenderedCard(thread);
+      newCards.push(card);
+    }
+    return newCards;
+  }
+
+  private removeStaleCards_() {
+    const cardsToRemove = Array.from(this.renderedCardContainer_.children).filter((child) => {
+      const card = child as RenderedCard;
+      return (
+        !this.cards_.includes(card) &&
+        !this.cardsAnimatingOffScreen_.includes(card) &&
+        this.currentCard_ !== card
+      );
+    });
+
+    for (const card of cardsToRemove) {
+      card.remove();
+    }
   }
 
   private setupDragHandlers_() {
