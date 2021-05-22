@@ -2491,7 +2491,7 @@ input.small {
     url('fonts/redacted-regular.svg#filename') format('svg');
 }
 .card-shadow {
-  box-shadow: 0px 0px 8px var(--border-and-hover-color);
+  box-shadow: 0px 0px 2px var(--border-and-hover-color);
 }
 .toolbar-shadow {
   box-shadow: var(--border-and-hover-color) 0 0 4px;

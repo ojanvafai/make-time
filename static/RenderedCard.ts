@@ -7,16 +7,19 @@ import { create } from './Base.js';
 export class RenderedCard extends HTMLElement {
   private boundRender_: () => void;
   private noPointerEventsContainer_: HTMLElement;
+  private lastRenderedMessageId_?: string;
 
   constructor(public thread: Thread) {
     super();
     this.className =
       'absolute left-align reading-max-width p2 break-word card-shadow mx-auto thread-background-color';
+
+    const horizontalOffset = 20 - 2 * (Math.random() - 0.5);
     this.style.cssText = `
       top: 20px;
-      right: 20px;
+      right: ${horizontalOffset}px;
       bottom: 20px;
-      left: 20px;
+      left: ${horizontalOffset}px;
     `;
     // Sigh. Safari does not support overscroll-behavior and on iOS needs this
     // to prevent rubberband scrolling when in fullscreen/hide-toolbar mode. In
@@ -53,11 +56,34 @@ export class RenderedCard extends HTMLElement {
     return rendered;
   }
 
+  setShouldRotate(shouldRotate: boolean) {
+    // Only take action if there is a rotate to avoid overriding the transforms
+    // set by dragging. This works because we should always have cleared the
+    // rotation before we get to starting dragging since we disableRotation on
+    // the top two cards.
+    const isAlreadyRotated = this.style.transform.includes('rotate');
+    if (shouldRotate && !isAlreadyRotated) {
+      const angle = 2 * (Math.random() - 0.5);
+      this.style.transform = `rotate(${angle}deg)`;
+    } else if (!shouldRotate && isAlreadyRotated) {
+      this.style.transform = '';
+    }
+  }
+
   async render() {
     const messages = this.thread.getMessages();
     if (!messages.length) {
       return;
     }
+
+    // Early return if if the rendering of this card is still up to date (i.e.
+    // the lastRenderedMessage_ matches the last Message on the thread.
+    // Do this before any awaits so that subsequent calls to render before the awaits have finished will early retursn.
+    const lastMessageId = messages[messages.length - 1].id;
+    if (this.lastRenderedMessageId_ === lastMessageId) {
+      return;
+    }
+    this.lastRenderedMessageId_ = lastMessageId;
 
     const container = this.noPointerEventsContainer_;
     container.textContent = '';
@@ -75,7 +101,7 @@ export class RenderedCard extends HTMLElement {
 
     if (messages.length > 1) {
       const divider = document.createElement('div');
-      divider.className = 'p1 border-top border-bottom center';
+      divider.className = 'p1 border-top border-bottom text-darken3 center';
       divider.textContent = messages.length > 2 ? `${messages.length - 2} more messages` : '\xA0';
       container.append(divider, await this.renderMessage_(messages[messages.length - 1]));
     }

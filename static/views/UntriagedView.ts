@@ -1,5 +1,13 @@
 import { Action, registerActions, ActionList, cloneAndDisable, Shortcut } from '../Actions.js';
-import { assert, createMktimeButton, defined, Labels, assertNotReached, notNull } from '../Base.js';
+import {
+  assert,
+  createMktimeButton,
+  defined,
+  Labels,
+  assertNotReached,
+  notNull,
+  create,
+} from '../Base.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
 import { RenderedCard } from '../RenderedCard.js';
@@ -37,6 +45,9 @@ const MIN_OFFSET_FOR_ACTION = 100;
 
 export class UntriagedView extends ThreadListViewBase {
   private renderedThreadContainer_: HTMLElement;
+  private renderedCardContainer_: HTMLElement;
+  private cards_: RenderedCard[];
+  private cardsAnimatingOffScreen_: RenderedCard[];
   private currentCard_?: RenderedCard;
   private threadAlreadyTriagedDialog_?: HTMLElement;
   private triageActions_: DirectionalAction[];
@@ -49,9 +60,14 @@ export class UntriagedView extends ThreadListViewBase {
   ) {
     super(model, appShell, settings);
 
-    this.renderedThreadContainer_ = document.createElement('div');
+    this.renderedThreadContainer_ = create('div');
     this.renderedThreadContainer_.className = 'theme-max-width mx-auto absolute all-0';
     this.append(this.renderedThreadContainer_);
+    this.renderedCardContainer_ = create('div');
+    this.cards_ = [];
+    this.cardsAnimatingOffScreen_ = [];
+
+    this.setupDragHandlers_();
 
     this.triageActions_ = [
       this.wrapAction_(Direction.ArrowLeft, ARCHIVE_ACTION),
@@ -77,7 +93,6 @@ export class UntriagedView extends ThreadListViewBase {
   }
 
   private updateViewContents_(element: HTMLElement) {
-    this.clearAlreadyTriagedThreadState_();
     this.renderedThreadContainer_.textContent = '';
     this.renderedThreadContainer_.append(element);
   }
@@ -127,14 +142,11 @@ export class UntriagedView extends ThreadListViewBase {
       return;
     }
 
-    if (!this.currentCard_) {
-      const thread = threads[0];
-      this.currentCard_ = new RenderedCard(thread);
-      this.setupDragHandlers_(this.currentCard_);
-      this.updateViewContents_(this.currentCard_);
-      await this.currentCard_.render();
-      this.updateToolbar_();
-    } else if (!threads.includes(this.currentCard_.thread) && !this.threadAlreadyTriagedDialog_) {
+    if (
+      this.currentCard_ &&
+      !threads.includes(this.currentCard_.thread) &&
+      !this.threadAlreadyTriagedDialog_
+    ) {
       this.threadAlreadyTriagedDialog_ = document.createElement('div');
       const contents = document.createElement('div');
       contents.className =
@@ -147,10 +159,86 @@ export class UntriagedView extends ThreadListViewBase {
       this.threadAlreadyTriagedDialog_.className = `${CENTERED_FILL_CONTAINER_CLASS} darken2`;
       this.renderedThreadContainer_.append(this.threadAlreadyTriagedDialog_);
       this.updateToolbar_();
+      return;
     }
+
+    const newCards = [];
+    for (const thread of threads) {
+      const oldCard = this.cards_.find((x) => x.thread === thread);
+      if (oldCard) {
+        newCards.push(oldCard);
+        continue;
+      }
+      const card = new RenderedCard(thread);
+      newCards.push(card);
+    }
+    this.cards_ = newCards;
+
+    if (!this.currentCard_) {
+      this.currentCard_ = this.cards_[0];
+      // Ensure currentCard_ stays visually above other cards since we force it
+      // to persist even if new cards come in.
+      this.currentCard_.style.zIndex = '1';
+    }
+
+    const cardsToRemove = Array.from(this.renderedCardContainer_.children).filter((child) => {
+      const card = child as RenderedCard;
+      return (
+        !this.cards_.includes(card) &&
+        !this.cardsAnimatingOffScreen_.includes(card) &&
+        this.currentCard_ !== card
+      );
+    });
+
+    for (const card of cardsToRemove) {
+      card.remove();
+    }
+
+    newCards.slice(0, 3).forEach((card) => card.render());
+
+    for (let i = 0; i < Math.min(10, this.cards_.length); i++) {
+      const card = this.cards_[i];
+      // Only render the top 3 cards as a performance optimization. Also, don't
+      // rotate the top 3 cards since we want them to render text and lines
+      // axis-aligned.
+      if (i < 3) {
+        card.render();
+        card.setShouldRotate(false);
+      } else {
+        card.setShouldRotate(true);
+      }
+      // Render this.currentCard_ in case it's not in the top 3 anymore but got
+      // new messages.
+      this.currentCard_.render();
+      if (this.currentCard_ === card && this.currentCard_.parentNode) {
+        continue;
+      }
+
+      // As a performance optimization don't reappend the card if it's already
+      // in the right order in the DOM. In particular, if its the first card and
+      // already at the end of the container, or it's not the first card but
+      // it's next sibling is the previously appended card.
+      if (
+        i === 0
+          ? this.renderedCardContainer_.lastElementChild === card
+          : card.nextSibling === this.cards_[i - 1]
+      ) {
+        continue;
+      }
+      // The deck is ordered such that the top card of the deck is the last
+      // child since later children will render on top of earlier ones with
+      // default z-index.
+      this.renderedCardContainer_.prepend(card);
+    }
+
+    if (!this.renderedCardContainer_.parentNode) {
+      this.updateViewContents_(this.renderedCardContainer_);
+    }
+
+    this.updateToolbar_();
   }
 
-  private setupDragHandlers_(card: RenderedCard) {
+  private setupDragHandlers_() {
     let isHorizontalDrag: boolean | null = null;
     let dragStartOffset: { x: number; y: number } | null = null;
 
@@ -159,12 +247,12 @@ export class UntriagedView extends ThreadListViewBase {
       return getHorizontalDistance ? e.pageX - start.x : e.pageY - start.y;
     };
 
-    card.addEventListener('pointerdown', (e) => {
+    this.addEventListener('pointerdown', (e) => {
       dragStartOffset = { x: e.pageX, y: e.pageY };
-      card.setPointerCapture(e.pointerId);
+      this.setPointerCapture(e.pointerId);
     });
 
-    card.addEventListener('pointermove', (e) => {
+    this.addEventListener('pointermove', (e) => {
       if (!dragStartOffset) {
         return;
       }
@@ -178,11 +266,15 @@ export class UntriagedView extends ThreadListViewBase {
         }
       }
       const axis = isHorizontalDrag ? 'X' : 'Y';
-      card.style.transform = `translate${axis}(${distancedFromDragStart(e, isHorizontalDrag)}px)`;
+      defined(this.currentCard_).style.transform = `translate${axis}(${distancedFromDragStart(
+        e,
+        isHorizontalDrag,
+      )}px)`;
     });
 
-    card.addEventListener('pointerup', (e) => {
+    this.addEventListener('pointerup', (e) => {
       if (isHorizontalDrag !== null) {
+        const card = defined(this.currentCard_);
         const distance = distancedFromDragStart(e, isHorizontalDrag);
         if (Math.abs(distance) > MIN_OFFSET_FOR_ACTION) {
           const direction = isHorizontalDrag
@@ -194,7 +286,9 @@ export class UntriagedView extends ThreadListViewBase {
             : Direction.ArrowUp;
           this.takeDirectionalAction_(direction);
         } else {
-          card.style.transform = ``;
+          card.animate([{ transform: 'translate(0px)' }], {
+            duration: 300,
+          }).onfinish = () => (card.style.transform = '');
         }
       }
       isHorizontalDrag = null;
@@ -211,6 +305,11 @@ export class UntriagedView extends ThreadListViewBase {
 
   private clearCurrentCard_() {
     this.currentCard_ = undefined;
+  }
+
+  private putCurrentCardBackInStack_() {
+    defined(this.currentCard_).style.zIndex = '';
+    this.clearCurrentCard_();
   }
 
   private clearAlreadyTriagedThreadState_() {
@@ -238,7 +337,7 @@ export class UntriagedView extends ThreadListViewBase {
     return true;
   }
 
-  private animateCurrentCardOffscreen_(action: DirectionalAction) {
+  private animateCardOffscreen_(card: RenderedCard, action: DirectionalAction) {
     let axis;
     let offset;
     switch (action.direction) {
@@ -265,18 +364,20 @@ export class UntriagedView extends ThreadListViewBase {
       default:
         assertNotReached();
     }
+    const endTransform = `${axis}(${offset}px)`;
+    card.animate([{ transform: endTransform }], {
+      duration: 300,
+    }).onfinish = () => (card.style.transform = endTransform);
 
-    const card = defined(this.currentCard_);
-    card.style.transition = 'transform 0.3s';
-    card.style.transform = `${axis}(${offset}px)`;
+    this.cardsAnimatingOffScreen_.push(card);
   }
 
   private async takeDirectionalAction_(direction: Direction) {
-    const action = assert(this.triageActions_.find((x) => x.direction === direction));
-    this.animateCurrentCardOffscreen_(action);
-    const thread = defined(this.currentCard_).thread;
+    const card = defined(this.currentCard_);
     this.clearCurrentCard_();
-    return await this.model.markTriaged(action.originalAction, [thread]);
+    const action = assert(this.triageActions_.find((x) => x.direction === direction));
+    this.animateCardOffscreen_(card, action);
+    return await this.model.markTriaged(action.originalAction, [card.thread]);
   }
 
   async takeAction(action: Action) {
@@ -290,7 +391,7 @@ export class UntriagedView extends ThreadListViewBase {
       case ADD_FILTER_ACTION:
         new AddFilterDialog(
           this.settings,
-          assert(this.currentCard_).thread,
+          defined(this.currentCard_).thread,
           this.getAllUnfilteredUntriagedThreads(),
           this.getMailProcessor_,
           () => this.updateToolbar_(),
@@ -298,7 +399,7 @@ export class UntriagedView extends ThreadListViewBase {
         return true;
 
       case UNDO_ACTION:
-        this.clearCurrentCard_();
+        this.putCurrentCardBackInStack_();
         this.model.undoLastAction();
         return true;
 
