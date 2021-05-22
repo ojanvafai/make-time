@@ -624,17 +624,32 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible') await update();
 });
 
-document.body.addEventListener('keydown', async (e) => {
-  if (!getView()) return;
-
-  if (isEditable(<Element>e.target)) return;
-
+function preHandleKeyEvent(e: KeyboardEvent) {
+  if (!getView()) {
+    return true;
+  }
+  if (isEditable(<Element>e.target)) {
+    return true;
+  }
   if (e.key == '?') {
     new KeyboardShortcutsDialog();
+    return true;
+  }
+  return false;
+}
+
+document.body.addEventListener('keydown', async (e) => {
+  if (preHandleKeyEvent(e)) {
     return;
   }
-
   if (getView().dispatchShortcut && !e.altKey) await getView().dispatchShortcut(e);
+});
+
+document.body.addEventListener('keyup', async (e) => {
+  if (preHandleKeyEvent(e)) {
+    return;
+  }
+  await getView().handleKeyUp(e);
 });
 
 window.addEventListener('resize', () => {

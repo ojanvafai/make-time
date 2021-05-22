@@ -30,10 +30,10 @@ export class RenderedCard extends HTMLElement {
     // doesn't work and so that nested scrollers don't scroll. The latter is
     // especially important on iOS to get decent dragging behavior.
     this.noPointerEventsContainer_ = create('div');
-    this.noPointerEventsContainer_.className =
-      'flex flex-column no-user-select noevents absolute all-0';
+    this.noPointerEventsContainer_.className = 'flex flex-column no-user-select absolute all-0';
     this.append(this.noPointerEventsContainer_);
 
+    this.setShouldAllowPointerEvents(false);
     this.boundRender_ = this.handleThreadUpdated_.bind(this);
   }
 
@@ -68,6 +68,14 @@ export class RenderedCard extends HTMLElement {
     } else if (!shouldRotate && isAlreadyRotated) {
       this.style.transform = '';
     }
+  }
+
+  setShouldAllowPointerEvents(shouldAllow: boolean) {
+    this.noPointerEventsContainer_.classList.toggle('noevents', !shouldAllow);
+  }
+
+  areInternalPointerEventsAllowed() {
+    return !this.noPointerEventsContainer_.classList.contains('noevents');
   }
 
   async render() {

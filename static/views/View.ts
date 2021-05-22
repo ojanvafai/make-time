@@ -27,6 +27,8 @@ export abstract class View extends HTMLElement {
     return this.actions_ && (await this.actions_.dispatchShortcut(e));
   }
 
+  async handleKeyUp(_e: KeyboardEvent) {}
+
   protected setActions(actions: ActionList, supplementalActions?: ActionList) {
     this.enableActionToolbar();
     this.actions_.setActions(actions, supplementalActions);

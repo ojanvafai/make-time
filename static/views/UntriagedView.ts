@@ -44,6 +44,10 @@ interface DirectionalAction extends Action {
 const MIN_OFFSET_TO_DRAG = 10;
 const MIN_OFFSET_FOR_ACTION = 100;
 
+function shouldAllowLinkCLicks(e: KeyboardEvent | PointerEvent) {
+  return e.metaKey || e.ctrlKey || e.shiftKey;
+}
+
 export class UntriagedView extends ThreadListViewBase {
   private renderedThreadContainer_: HTMLElement;
   private renderedCardContainer_: HTMLElement;
@@ -78,6 +82,13 @@ export class UntriagedView extends ThreadListViewBase {
       this.wrapAction_(Direction.ArrowRight, MUST_DO_ACTION),
     ];
     this.render();
+  }
+
+  private updateShouldAllowClicks_(e: KeyboardEvent) {
+    if (!this.currentCard_) {
+      return;
+    }
+    this.currentCard_.setShouldAllowPointerEvents(shouldAllowLinkCLicks(e));
   }
 
   private wrapAction_(direction: Direction, action: Action) {
@@ -269,6 +280,12 @@ export class UntriagedView extends ThreadListViewBase {
     };
 
     this.addEventListener('pointerdown', (e) => {
+      if (!this.currentCard_) {
+        return;
+      }
+      if (this.currentCard_.areInternalPointerEventsAllowed()) {
+        return;
+      }
       if (this.isTriageComplete_) {
         this.routeToTodo_();
         return;
@@ -281,6 +298,12 @@ export class UntriagedView extends ThreadListViewBase {
       if (!dragStartOffset) {
         return;
       }
+      if (!this.currentCard_) {
+        return;
+      }
+      if (this.currentCard_.areInternalPointerEventsAllowed()) {
+        return;
+      }
       if (isHorizontalDrag === null) {
         const x = Math.abs(distancedFromDragStart(e, true));
         const y = Math.abs(distancedFromDragStart(e, false));
@@ -291,15 +314,22 @@ export class UntriagedView extends ThreadListViewBase {
         }
       }
       const axis = isHorizontalDrag ? 'X' : 'Y';
-      defined(this.currentCard_).style.transform = `translate${axis}(${distancedFromDragStart(
+      this.currentCard_.style.transform = `translate${axis}(${distancedFromDragStart(
         e,
         isHorizontalDrag,
       )}px)`;
     });
 
     this.addEventListener('pointerup', (e) => {
+      if (!this.currentCard_) {
+        return;
+      }
+      const card = this.currentCard_;
+      if (card.areInternalPointerEventsAllowed()) {
+        return;
+      }
+
       if (isHorizontalDrag !== null) {
-        const card = defined(this.currentCard_);
         const distance = distancedFromDragStart(e, isHorizontalDrag);
         if (Math.abs(distance) > MIN_OFFSET_FOR_ACTION) {
           const direction = isHorizontalDrag
@@ -359,7 +389,12 @@ export class UntriagedView extends ThreadListViewBase {
     if (!this.currentCard_) {
       this.routeToTodo_();
     }
+    this.updateShouldAllowClicks_(e);
     return true;
+  }
+
+  async handleKeyUp(e: KeyboardEvent) {
+    this.updateShouldAllowClicks_(e);
   }
 
   private animateCardOffscreen_(card: RenderedCard, action: DirectionalAction) {
