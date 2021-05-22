@@ -128,9 +128,7 @@ export class HiddenView extends View {
       option.value = entry[0];
       this.select_.append(option);
     }
-    this.select_.addEventListener('change', () => this.handleSelectChange_());
-
-    container.append(this.select_);
+    this.select_.addEventListener('change', () => this.render_());
   }
 
   async init() {
@@ -150,14 +148,13 @@ export class HiddenView extends View {
     // arguments.
     this.threadListView_ = new ThreadListView(model, this.appShell_, this.settings_, false);
     this.append(this.threadListView_);
-  }
 
-  async handleSelectChange_() {
-    this.render_();
+    this.appShell_.setToolbarSubject(this.select_);
   }
 
   async goBack() {
     await defined(this.threadListView_).goBack();
+    this.appShell_.setToolbarSubject(this.select_);
   }
 
   async dispatchShortcut(e: KeyboardEvent) {

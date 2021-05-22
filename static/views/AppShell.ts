@@ -346,7 +346,12 @@ export class AppShell extends HTMLElement {
     this.bodySubject_.append(subject instanceof Node ? subject.cloneNode(true) : subject);
 
     subject.classList.add('truncate-block-1-line', 'flex-expand-1', 'mr1');
-    this.toolbarSubject_.append(subject, ...extraToolbarItems);
+    this.setToolbarSubject(subject, ...extraToolbarItems);
+  }
+
+  setToolbarSubject(...items: (string | HTMLElement)[]) {
+    this.toolbarSubject_.textContent = '';
+    this.toolbarSubject_.append(...items);
   }
 
   get contentScrollTop() {
