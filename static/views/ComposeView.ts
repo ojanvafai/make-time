@@ -9,7 +9,7 @@ import {
   serializeAddress,
 } from '../Base.js';
 import { login } from '../BaseMain.js';
-import { EmailCompose, INSERT_LINK } from '../EmailCompose.js';
+import { EmailCompose, INSERT_LINK, SubmitEvent } from '../EmailCompose.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ComposeModel } from '../models/ComposeModel.js';
 import { SendAs } from '../SendAs.js';
@@ -128,6 +128,7 @@ export class ComposeView extends View {
 
     this.body_.addEventListener('email-added', () => this.handleUpdates_());
     this.body_.addEventListener('input', this.debounceHandleUpdates_.bind(this));
+    this.body_.addEventListener(SubmitEvent.NAME, () => this.takeAction(SEND));
     this.append(this.body_);
 
     this.inlineTo_ = new AddressCompose(true);
@@ -293,6 +294,8 @@ export class ComposeView extends View {
       this.sentToolbar_.setActions(SENT_ACTIONS);
       notNull(this.sent_.parentNode).append(this.sentToolbar_);
     }
+    // Blur the EmailCompose so that it doesn't capture key presses for the sentToolbar.
+    this.body_.blur();
 
     this.to_.value = this.params_.to && !this.autoSend_ ? this.params_.to : '';
     this.clearInlineTo_();

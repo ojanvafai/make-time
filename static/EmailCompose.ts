@@ -39,7 +39,7 @@ export class EmailCompose extends HTMLElement {
   private boundSelectionChange_: () => void;
   static EMAIL_CLASS_NAME: string;
 
-  constructor(private enableMetaEnterToSend_?: boolean) {
+  constructor() {
     super();
 
     this.style.cssText = `
@@ -234,11 +234,11 @@ export class EmailCompose extends HTMLElement {
       case 'Enter':
         if (e.altKey || e.shiftKey) return;
 
-        const key = primaryModifierKey(e);
-        if (!key && this.updateIsAutocompleting()) {
+        const modifierKey = primaryModifierKey(e);
+        if (!modifierKey && this.updateIsAutocompleting()) {
           this.submitAutocomplete_();
           e.preventDefault();
-        } else if (this.enableMetaEnterToSend_ && key) {
+        } else if (modifierKey) {
           this.dispatchEvent(new SubmitEvent());
           e.preventDefault();
         }
@@ -425,6 +425,10 @@ export class EmailCompose extends HTMLElement {
 
   focus() {
     return this.content.focus();
+  }
+
+  blur() {
+    return this.content.blur();
   }
 
   getAutocompleteRange() {
