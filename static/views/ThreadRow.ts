@@ -178,9 +178,11 @@ export class ThreadRow extends HTMLElement {
       display: flex;
     `;
     this.messageDetails_.addEventListener('click', (e) => {
-      // If the user is selecting the subject line in the row, have that
-      // prevent rendering the thread so they can copy-paste the subject.
-      if (!this.threadRowContainsSelection_())
+      // If the user is selecting the subject line in the row, have that prevent
+      // rendering the thread so they can copy-paste the subject. If the click
+      // is inside a link, prevent the threadrow action since the link click
+      // will open a new tab and we don't want to do both.
+      if (!this.threadRowContainsSelection_() && !(e.target as Element).closest('a'))
         this.dispatchEvent(new RenderThreadEvent(e.shiftKey));
     });
     this.append(this.messageDetails_);
