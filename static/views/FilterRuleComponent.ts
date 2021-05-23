@@ -72,7 +72,12 @@ export class FilterRuleComponent extends HTMLElement {
       return;
     }
     if (this.label_) {
-      rule.label = defined(this.getSelectedLabel());
+      const label = this.getSelectedLabel();
+      if (label === undefined) {
+        alert('Pick a label to apply.');
+        return;
+      }
+      rule.label = label;
     }
     if (this.getMatchAll()) {
       rule.matchallmessages = true;
