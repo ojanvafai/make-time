@@ -502,7 +502,7 @@ export class ThreadListView extends ThreadListViewBase {
 
     const currentRow = this.renderedRow_ ?? this.focusedRow_;
     if (!currentRow) {
-      this.setActions([]);
+      this.setActions(this.model.hasUndoActions() ? [UNDO_ACTION] : []);
       return;
     }
 
