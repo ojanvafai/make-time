@@ -71,7 +71,10 @@ export class AddFilterDialog extends HTMLElement {
 
       let value = header.value;
       if (EMAIL_ADDRESS_HEADERS.some((x) => lowercaseName.includes(x))) {
-        value = parseAddressList(value)[0].address;
+        const address = parseAddressList(value)[0];
+        if (address) {
+          value = address.address;
+        }
       }
 
       const container = document.createElement('label');
