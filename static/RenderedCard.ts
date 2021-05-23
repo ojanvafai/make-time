@@ -2,14 +2,22 @@ import { Message } from './Message.js';
 import { RenderedMessage } from './RenderedMessage.js';
 import { Thread, UpdatedEvent } from './Thread.js';
 import { LabelState, ThreadRow } from './views/ThreadRow.js';
-import { create } from './Base.js';
+import { create, defined } from './Base.js';
+
+export enum Edge {
+  top,
+  right,
+  bottom,
+  left,
+}
 
 export class RenderedCard extends HTMLElement {
   private boundRender_: () => void;
   private noPointerEventsContainer_: HTMLElement;
   private lastRenderedMessageId_?: string;
+  private anchoredToolbars_?: HTMLElement[];
 
-  constructor(public thread: Thread) {
+  constructor(public thread: Thread, private triageActionNames_: Map<Edge, string>) {
     super();
     this.className =
       'absolute left-align reading-max-width p2 break-word card-shadow mx-auto thread-background-color';
@@ -35,6 +43,72 @@ export class RenderedCard extends HTMLElement {
 
     this.setShouldAllowPointerEvents(false);
     this.boundRender_ = this.handleThreadUpdated_.bind(this);
+  }
+
+  private appendAnchoredToolbarButtons_() {
+    if (this.anchoredToolbars_) {
+      return this.anchoredToolbars_;
+    }
+
+    const createToolbar = () => {
+      const toolbar = document.createElement('div');
+      toolbar.className = 'absolute justify-center items-center flex all-0 no-user-select noevents';
+      toolbar.style.transition = 'opacity ease-out 0.5s';
+      toolbar.style.opacity = '0';
+      return toolbar;
+    };
+
+    const createButton = (edge: Edge) => {
+      const button = document.createElement('div');
+      button.className = 'justify-center items-center flex';
+      button.style.cssText = `
+        width: 50px;
+        height: 50px;
+        background-color: var(--inverted-overlay-background-color);
+        color: var(--inverted-text-color);
+        border-radius: 25px;
+        box-shadow: 0px 0px 4px var(--border-and-hover-color);
+        text-align: center;
+      `;
+      button.append(defined(this.triageActionNames_.get(edge)));
+      return button;
+    };
+
+    const toolbarOffset = `75px`;
+    const topToolbar = createToolbar();
+    topToolbar.append(createButton(Edge.top));
+    topToolbar.style.bottom = 'auto';
+    topToolbar.style.top = `-${toolbarOffset}`;
+
+    const rightToolbar = createToolbar();
+    rightToolbar.append(createButton(Edge.right));
+    rightToolbar.style.left = 'auto';
+    rightToolbar.style.right = `-${toolbarOffset}`;
+
+    const bottomToolbar = createToolbar();
+    bottomToolbar.append(createButton(Edge.bottom));
+    bottomToolbar.style.top = 'auto';
+    bottomToolbar.style.bottom = `-${toolbarOffset}`;
+
+    const leftToolbar = createToolbar();
+    leftToolbar.append(createButton(Edge.left));
+    leftToolbar.style.right = 'auto';
+    leftToolbar.style.left = `-${toolbarOffset}`;
+
+    this.anchoredToolbars_ = [topToolbar, rightToolbar, bottomToolbar, leftToolbar];
+    this.append(...this.anchoredToolbars_);
+    return this.anchoredToolbars_;
+  }
+
+  setShouldShowToolbarButton(edge?: Edge) {
+    const toolbars = this.appendAnchoredToolbarButtons_();
+    // Do this on the next animation frame in case we just appended the toolbars
+    // since we need a style recalc to happen for the transition to trigger.
+    requestAnimationFrame(() => {
+      for (let i = 0; i < toolbars.length; i++) {
+        toolbars[i].style.opacity = i === edge ? '1' : '0';
+      }
+    });
   }
 
   connectedCallback() {
@@ -110,7 +184,11 @@ export class RenderedCard extends HTMLElement {
     if (messages.length > 1) {
       const divider = document.createElement('div');
       divider.className = 'p1 border-top border-bottom text-darken3 center';
-      divider.textContent = messages.length > 2 ? `${messages.length - 2} more messages` : '\xA0';
+      const extraMessageCount = messages.length - 2;
+      divider.textContent =
+        extraMessageCount > 0
+          ? `${extraMessageCount} more message${extraMessageCount > 1 ? 's' : ''}`
+          : '\xA0';
       container.append(divider, await this.renderMessage_(messages[messages.length - 1]));
     }
   }

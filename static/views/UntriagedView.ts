@@ -10,7 +10,7 @@ import {
 } from '../Base.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
-import { RenderedCard } from '../RenderedCard.js';
+import { RenderedCard, Edge } from '../RenderedCard.js';
 import { Settings } from '../Settings.js';
 import { MUST_DO_ACTION, ARCHIVE_ACTION, PIN_ACTION, BLOCKED_1D_ACTION } from '../ThreadActions.js';
 
@@ -236,8 +236,37 @@ export class UntriagedView extends ThreadListViewBase {
     this.updateToolbar_();
   }
 
+  private toolbarActionDirectionToEdge_(action: DirectionalAction) {
+    let edge;
+    switch (action.direction) {
+      case Direction.ArrowUp:
+        edge = Edge.bottom;
+        break;
+
+      case Direction.ArrowRight:
+        edge = Edge.left;
+        break;
+
+      case Direction.ArrowDown:
+        edge = Edge.top;
+        break;
+
+      case Direction.ArrowLeft:
+        edge = Edge.right;
+        break;
+
+      default:
+        assertNotReached();
+    }
+    return edge;
+  }
+
   private createCards_(threads: Thread[]) {
     const newCards = [];
+    const triageActionNames = new Map(
+      this.triageActions_.map((x) => [this.toolbarActionDirectionToEdge_(x), x.name as string]),
+    );
+
     for (const thread of threads) {
       const oldCard = this.cards_.find((x) => x.thread === thread);
 
@@ -251,7 +280,7 @@ export class UntriagedView extends ThreadListViewBase {
         }
         continue;
       }
-      const card = new RenderedCard(thread);
+      const card = new RenderedCard(thread, triageActionNames);
       newCards.push(card);
     }
     return newCards;
@@ -280,14 +309,14 @@ export class UntriagedView extends ThreadListViewBase {
     };
 
     this.addEventListener('pointerdown', (e) => {
+      if (this.isTriageComplete_) {
+        this.routeToTodo_();
+        return;
+      }
       if (!this.currentCard_) {
         return;
       }
       if (this.currentCard_.areInternalPointerEventsAllowed()) {
-        return;
-      }
-      if (this.isTriageComplete_) {
-        this.routeToTodo_();
         return;
       }
       dragStartOffset = { x: e.pageX, y: e.pageY };
@@ -313,11 +342,20 @@ export class UntriagedView extends ThreadListViewBase {
           return;
         }
       }
+
       const axis = isHorizontalDrag ? 'X' : 'Y';
-      this.currentCard_.style.transform = `translate${axis}(${distancedFromDragStart(
-        e,
-        isHorizontalDrag,
-      )}px)`;
+      const offset = distancedFromDragStart(e, isHorizontalDrag);
+      this.currentCard_.setShouldShowToolbarButton(
+        isHorizontalDrag
+          ? offset > 0
+            ? Edge.left
+            : Edge.right
+          : offset > 0
+          ? Edge.top
+          : Edge.bottom,
+      );
+      const transform = `translate${axis}(${offset}px)`;
+      this.currentCard_.style.transform = transform;
     });
 
     this.addEventListener('pointerup', (e) => {
@@ -341,6 +379,7 @@ export class UntriagedView extends ThreadListViewBase {
             : Direction.ArrowUp;
           this.takeDirectionalAction_(direction);
         } else {
+          this.currentCard_.setShouldShowToolbarButton();
           card.animate([{ transform: 'translate(0px)' }], {
             duration: 300,
           }).onfinish = () => (card.style.transform = '');
@@ -363,8 +402,10 @@ export class UntriagedView extends ThreadListViewBase {
   }
 
   private putCurrentCardBackInStack_() {
-    defined(this.currentCard_).style.zIndex = '';
-    this.clearCurrentCard_();
+    if (this.currentCard_) {
+      this.currentCard_.style.zIndex = '';
+      this.clearCurrentCard_();
+    }
   }
 
   private clearAlreadyTriagedThreadState_() {
