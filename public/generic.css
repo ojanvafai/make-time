@@ -2793,6 +2793,7 @@ blockquote {
 }
 .all-done {
   position: static;
+  display: block !important;
 }
 .all-done:after {
   content: '٩( ′ㅂ`)و\A\A All done for the day.';
