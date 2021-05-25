@@ -63,6 +63,7 @@ export class UntriagedView extends ThreadListViewBase {
     this.renderedThreadContainer_.className = 'theme-max-width mx-auto absolute all-0';
     this.append(this.renderedThreadContainer_);
     this.renderedCardContainer_ = create('div');
+    this.renderedThreadContainer_.append(this.renderedCardContainer_);
     this.cards_ = [];
     this.cardsAnimatingOffScreen_ = [];
 
@@ -98,11 +99,6 @@ export class UntriagedView extends ThreadListViewBase {
     return [];
   }
 
-  private updateViewContents_(element: HTMLElement) {
-    this.renderedThreadContainer_.textContent = '';
-    this.renderedThreadContainer_.append(element);
-  }
-
   private updateToolbar_() {
     let actions: ActionList;
 
@@ -131,13 +127,16 @@ export class UntriagedView extends ThreadListViewBase {
     if (!this.model.hasFetchedThreads()) {
       return;
     }
+    // Don't show this until threads have loaded for the first time to avoid a
+    // flicker on load.
+    this.classList.add('untriaged-view-background');
 
     const allThreads = this.model.getThreads(true);
     let threads = allThreads.filter((x) => x.forceTriage() && !x.actionInProgress());
 
     if (!threads.length) {
       this.clearCurrentCard_();
-      this.renderTriageComplete_();
+      this.updateToolbar_();
       this.isTriageComplete_ = true;
       return;
     }
@@ -162,9 +161,6 @@ export class UntriagedView extends ThreadListViewBase {
 
     this.removeStaleCards_();
     this.renderTopOfDeck_(this.currentCard_);
-    if (!this.renderedCardContainer_.parentNode) {
-      this.updateViewContents_(this.renderedCardContainer_);
-    }
     this.updateToolbar_();
   }
 
@@ -200,15 +196,6 @@ export class UntriagedView extends ThreadListViewBase {
       // default z-index.
       this.renderedCardContainer_.prepend(card);
     }
-  }
-
-  private renderTriageComplete_() {
-    const contents = document.createElement('div');
-    contents.className = `${CENTERED_FILL_CONTAINER_CLASS} theme-text-color p1 center mx-auto pre-wrap`;
-    contents.style.maxWidth = '250px';
-    contents.append('All done triaging.\n\nPress any key or click anywhere to go to todo view.');
-    this.updateViewContents_(contents);
-    this.updateToolbar_();
   }
 
   private renderAlreadyTriaged_() {

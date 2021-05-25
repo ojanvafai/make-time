@@ -34,8 +34,7 @@ export class RenderedCard extends HTMLElement {
 
   constructor(public thread: Thread, private triageActionNames_: DirectionAndName[]) {
     super();
-    this.className =
-      'absolute left-align reading-max-width p2 break-word mx-auto all-0';
+    this.className = 'absolute left-align reading-max-width p2 break-word mx-auto all-0';
 
     // Sigh. Safari does not support overscroll-behavior and on iOS needs this
     // to prevent rubberband scrolling when in fullscreen/hide-toolbar mode. In

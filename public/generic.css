@@ -2610,6 +2610,23 @@ body {
   display: flex;
   padding: 12px;
 }
+.untriaged-view-background::after {
+  content: 'All done triaging. Press any key or click anywhere to go to todo view.';
+  max-width: 250px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  text-align: center;
+  color: var(--text-color);
+  padding: 0.5rem;
+  white-space: pre-wrap;
+  margin: 0 auto;
+}
 input[type='checkbox'],
 input[type='radio'] {
   width: 18px;
