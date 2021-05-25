@@ -848,7 +848,7 @@ a.text-lighten4.understroke.link.active,
   white-space: nowrap;
 }
 .break-word {
-  word-wrap: break-word;
+  word-break: break-word;
 }
 .pre-wrap,
 pre.pre-wrap {

@@ -10,7 +10,7 @@ import {
 } from '../Base.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
-import { RenderedCard, Edge } from '../RenderedCard.js';
+import { RenderedCard, Direction } from '../RenderedCard.js';
 import { Settings } from '../Settings.js';
 import { MUST_DO_ACTION, ARCHIVE_ACTION, PIN_ACTION, BLOCKED_1D_ACTION } from '../ThreadActions.js';
 
@@ -28,13 +28,6 @@ import { Thread } from '../Thread.js';
 registerActions('Untriaged', [UNDO_ACTION, ADD_FILTER_ACTION]);
 
 const CENTERED_FILL_CONTAINER_CLASS = 'absolute all-0 flex items-center justify-center';
-
-enum Direction {
-  ArrowUp = 'ArrowUp',
-  ArrowRight = 'ArrowRight',
-  ArrowDown = 'ArrowDown',
-  ArrowLeft = 'ArrowLeft',
-}
 
 interface DirectionalAction extends Action {
   direction: Direction;
@@ -76,10 +69,10 @@ export class UntriagedView extends ThreadListViewBase {
     this.setupDragHandlers_();
 
     this.triageActions_ = [
-      this.wrapAction_(Direction.ArrowLeft, ARCHIVE_ACTION),
-      this.wrapAction_(Direction.ArrowUp, PIN_ACTION),
-      this.wrapAction_(Direction.ArrowDown, BLOCKED_1D_ACTION),
-      this.wrapAction_(Direction.ArrowRight, MUST_DO_ACTION),
+      this.wrapAction_(Direction.left, ARCHIVE_ACTION),
+      this.wrapAction_(Direction.up, PIN_ACTION),
+      this.wrapAction_(Direction.down, BLOCKED_1D_ACTION),
+      this.wrapAction_(Direction.right, MUST_DO_ACTION),
     ];
     this.render();
   }
@@ -183,9 +176,6 @@ export class UntriagedView extends ThreadListViewBase {
       // axis-aligned.
       if (i < 3) {
         card.render();
-        card.setShouldRotate(false);
-      } else {
-        card.setShouldRotate(true);
       }
       // Render this.currentCard_ in case it's not in the top 3 anymore but got
       // new messages.
@@ -236,37 +226,8 @@ export class UntriagedView extends ThreadListViewBase {
     this.updateToolbar_();
   }
 
-  private toolbarActionDirectionToEdge_(action: DirectionalAction) {
-    let edge;
-    switch (action.direction) {
-      case Direction.ArrowUp:
-        edge = Edge.bottom;
-        break;
-
-      case Direction.ArrowRight:
-        edge = Edge.left;
-        break;
-
-      case Direction.ArrowDown:
-        edge = Edge.top;
-        break;
-
-      case Direction.ArrowLeft:
-        edge = Edge.right;
-        break;
-
-      default:
-        assertNotReached();
-    }
-    return edge;
-  }
-
   private createCards_(threads: Thread[]) {
     const newCards = [];
-    const triageActionNames = new Map(
-      this.triageActions_.map((x) => [this.toolbarActionDirectionToEdge_(x), x.name as string]),
-    );
-
     for (const thread of threads) {
       const oldCard = this.cards_.find((x) => x.thread === thread);
 
@@ -280,7 +241,7 @@ export class UntriagedView extends ThreadListViewBase {
         }
         continue;
       }
-      const card = new RenderedCard(thread, triageActionNames);
+      const card = new RenderedCard(thread, this.triageActions_);
       newCards.push(card);
     }
     return newCards;
@@ -306,6 +267,20 @@ export class UntriagedView extends ThreadListViewBase {
     const distancedFromDragStart = (e: PointerEvent, getHorizontalDistance: boolean) => {
       const start = notNull(dragStartOffset);
       return getHorizontalDistance ? e.pageX - start.x : e.pageY - start.y;
+    };
+
+    const directionForDrag = (e: PointerEvent, isHorizontalDrag: boolean) => {
+      const distance = distancedFromDragStart(e, isHorizontalDrag);
+      if (Math.abs(distance) <= MIN_OFFSET_FOR_ACTION) {
+        return;
+      }
+      return isHorizontalDrag
+        ? distance > 0
+          ? Direction.right
+          : Direction.left
+        : distance > 0
+        ? Direction.down
+        : Direction.up;
     };
 
     this.addEventListener('pointerdown', (e) => {
@@ -345,17 +320,9 @@ export class UntriagedView extends ThreadListViewBase {
 
       const axis = isHorizontalDrag ? 'X' : 'Y';
       const offset = distancedFromDragStart(e, isHorizontalDrag);
-      this.currentCard_.setShouldShowToolbarButton(
-        isHorizontalDrag
-          ? offset > 0
-            ? Edge.left
-            : Edge.right
-          : offset > 0
-          ? Edge.top
-          : Edge.bottom,
-      );
       const transform = `translate${axis}(${offset}px)`;
       this.currentCard_.style.transform = transform;
+      this.currentCard_.setShouldShowToolbarButton(directionForDrag(e, isHorizontalDrag));
     });
 
     this.addEventListener('pointerup', (e) => {
@@ -368,15 +335,8 @@ export class UntriagedView extends ThreadListViewBase {
       }
 
       if (isHorizontalDrag !== null) {
-        const distance = distancedFromDragStart(e, isHorizontalDrag);
-        if (Math.abs(distance) > MIN_OFFSET_FOR_ACTION) {
-          const direction = isHorizontalDrag
-            ? distance > 0
-              ? Direction.ArrowRight
-              : Direction.ArrowLeft
-            : distance > 0
-            ? Direction.ArrowDown
-            : Direction.ArrowUp;
+        const direction = directionForDrag(e, isHorizontalDrag);
+        if (direction) {
           this.takeDirectionalAction_(direction);
         } else {
           this.currentCard_.setShouldShowToolbarButton();
@@ -442,22 +402,22 @@ export class UntriagedView extends ThreadListViewBase {
     let axis;
     let offset;
     switch (action.direction) {
-      case Direction.ArrowUp:
+      case Direction.up:
         axis = 'translateY';
         offset = -window.innerHeight;
         break;
 
-      case Direction.ArrowRight:
+      case Direction.right:
         axis = 'translateX';
         offset = window.innerWidth;
         break;
 
-      case Direction.ArrowDown:
+      case Direction.down:
         axis = 'translateY';
         offset = window.innerHeight;
         break;
 
-      case Direction.ArrowLeft:
+      case Direction.left:
         axis = 'translateX';
         offset = -window.innerWidth;
         break;
@@ -472,6 +432,7 @@ export class UntriagedView extends ThreadListViewBase {
     }).onfinish = () => (card.style.transform = endTransform);
 
     this.cardsAnimatingOffScreen_.push(card);
+    card.setShouldShowToolbarButton(action.direction, true);
   }
 
   private async takeDirectionalAction_(direction: Direction) {
