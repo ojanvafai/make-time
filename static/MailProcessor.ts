@@ -99,41 +99,58 @@ export class GmailLabelUpdate {
   }
 }
 
+interface LabelIdAndName {
+  id?: string;
+  name?: string;
+}
+
 export class MailProcessor {
   private makeTimeLabelId_?: string;
   private tmLabelId_?: string;
   private queueNames_?: QueueNames;
+  private mktimeGmailLabels_?: LabelIdAndName[];
 
   constructor(private settings_: Settings) {}
 
   async init() {
-    if (this.makeTimeLabelId_) return;
-    let labels = await this.ensureLabelsExist_(
-      await this.getAllMktimeGmailLabels_(),
-      MAKE_TIME_LABEL_NAME,
-      TM_LABEL,
-    );
+    const labels = await this.ensureLabelsExist_(MAKE_TIME_LABEL_NAME, TM_LABEL);
     this.makeTimeLabelId_ = labels[0].id;
     this.tmLabelId_ = labels[1].id;
     this.queueNames_ = QueueNames.create();
   }
 
-  private async getAllMktimeGmailLabels_() {
-    var response = await gapiFetch(gapi.client.gmail.users.labels.list, { userId: USER_ID });
-    let labels = defined(response.result.labels);
-    return labels.filter((x) => {
-      const name = defined(x.name);
-      return name.startsWith(MAKE_TIME_LABEL_NAME) || name === TM_LABEL;
-    });
+  private async getAllMktimeGmailLabels_(forceFetch?: boolean): Promise<LabelIdAndName[]> {
+    if (forceFetch || !this.mktimeGmailLabels_) {
+      var response = await gapiFetch(gapi.client.gmail.users.labels.list, {
+        userId: USER_ID,
+        // This only cuts 10% of the bytes, but may as well only fetch the fields
+        // we actually need.
+        fields: 'labels(id,name)',
+      });
+      let labels = defined(response.result.labels);
+      this.mktimeGmailLabels_ = labels.filter((x) => {
+        const name = defined(x.name);
+        return name.startsWith(MAKE_TIME_LABEL_NAME) || name === TM_LABEL;
+      });
+    }
+    return this.mktimeGmailLabels_;
   }
 
-  private async ensureLabelsExist_(
-    allMktimeGmailLabels: gapi.client.gmail.Label[],
-    ...labelNames: string[]
-  ) {
+  private async getMktimeGmailLabelIfExists_({ name, id }: { name?: string; id?: string }) {
+    const getMatchingLabel = async (forceFetch?: boolean) => {
+      return (await this.getAllMktimeGmailLabels_(forceFetch)).find(
+        (x: LabelIdAndName) => x.name === name || x.id === id,
+      );
+    };
+    // Try to grab the label without a network fetch first. Fallback to network
+    // fetch if it's not found.
+    return (await getMatchingLabel()) || (await getMatchingLabel(true));
+  }
+
+  private async ensureLabelsExist_(...labelNames: string[]) {
     let result = [];
     for (let labelName of labelNames) {
-      let label = allMktimeGmailLabels.find((x) => x.name === labelName);
+      let label = await this.getMktimeGmailLabelIfExists_({ name: labelName });
       if (!label) {
         let resp = await gapiFetch(gapi.client.gmail.users.labels.create, {
           name: labelName,
@@ -142,9 +159,7 @@ export class MailProcessor {
           userId: USER_ID,
         });
         label = resp.result;
-        // Push to the array passed in so that callers have an updated label
-        // list.
-        allMktimeGmailLabels.push(label);
+        defined(this.mktimeGmailLabels_).push(label);
       }
       result.push(label);
     }
@@ -301,16 +316,14 @@ export class MailProcessor {
   }
 
   private async pushToAddLabelsAndRemoveFromRemovelabels_(
-    allMktimeGmailLabels: gapi.client.gmail.Label[],
     preExistingLabelIdsOnThread: Set<string>,
     labelName: string,
     gmailLabelUpdate: GmailLabelUpdate,
   ) {
     labelName = this.spacesToDashes_(labelName);
-    let gmailLabel = allMktimeGmailLabels.find((x) => x.name === labelName);
-
+    let gmailLabel = await this.getMktimeGmailLabelIfExists_({ name: labelName });
     if (!gmailLabel) {
-      const newLabels = await this.ensureLabelsExist_(allMktimeGmailLabels, labelName);
+      const newLabels = await this.ensureLabelsExist_(labelName);
       gmailLabel = newLabels[0];
     }
 
@@ -321,10 +334,7 @@ export class MailProcessor {
     }
   }
 
-  private async pushMktimeUpdatesToGmailForSingleThread_(
-    allMktimeGmailLabels: gapi.client.gmail.Label[],
-    doc: firebase.firestore.DocumentSnapshot,
-  ) {
+  private async pushMktimeUpdatesToGmailForSingleThread_(doc: firebase.firestore.DocumentSnapshot) {
     const data = doc.data() as ThreadMetadata | undefined;
     if (!data) {
       console.error('Tried to push gmail updates for a document that has no data.');
@@ -341,7 +351,6 @@ export class MailProcessor {
       fields: 'messages(id, labelIds)',
     });
     await this.populateGmailLabelsToPush_(
-      allMktimeGmailLabels,
       defined(this.makeTimeLabelId_),
       resp.result.messages,
       data,
@@ -384,7 +393,6 @@ export class MailProcessor {
   }
 
   private async populateGmailLabelsToPush_(
-    allMktimeGmailLabels: gapi.client.gmail.Label[],
     mktimeLabelId: string,
     allMessages: gapi.client.gmail.Message[] | undefined,
     data: ThreadMetadata,
@@ -408,15 +416,17 @@ export class MailProcessor {
       }
     }
 
-    [...labelIdsAlreadyOnAnyMessage].map((x) => {
-      const label = allMktimeGmailLabels.find((y) => x === y.id);
-      if (!label) {
-        return;
-      }
-      if (this.getParentLabel_(TOP_LEVEL_MKTIME_LABELS, defined(label.name))) {
-        gmailLabelUpdate.remove(defined(label.id));
-      }
-    });
+    await Promise.all(
+      [...labelIdsAlreadyOnAnyMessage].map(async (x) => {
+        const label = await this.getMktimeGmailLabelIfExists_({ id: x });
+        if (!label) {
+          return;
+        }
+        if (this.getParentLabel_(TOP_LEVEL_MKTIME_LABELS, defined(label.name))) {
+          gmailLabelUpdate.remove(defined(label.id));
+        }
+      }),
+    );
 
     // ******************************************
     // Anything that changes the fields we read off DocumentData needs to
@@ -432,7 +442,6 @@ export class MailProcessor {
       }
       if (data.softMuted) {
         await this.addDaysSinceEpochLabel_(
-          allMktimeGmailLabels,
           labelIdsAlreadyOnAnyMessage,
           gmailLabelUpdate,
           // softMuted is a boolean that means 7 days since last triaged.
@@ -465,7 +474,6 @@ export class MailProcessor {
     if (hasLabelOrPriority) {
       let labelName = `${LABEL_LABEL_NAME}/${this.getLabelName_(data.labelId)}`;
       await this.pushToAddLabelsAndRemoveFromRemovelabels_(
-        allMktimeGmailLabels,
         labelIdsAlreadyOnAnyMessage,
         labelName,
         gmailLabelUpdate,
@@ -478,7 +486,6 @@ export class MailProcessor {
     if (data.priorityId) {
       let priorityName = `${PRIORITY_LABEL_NAME}/${getPriorityName(data.priorityId)}`;
       await this.pushToAddLabelsAndRemoveFromRemovelabels_(
-        allMktimeGmailLabels,
         labelIdsAlreadyOnAnyMessage,
         priorityName,
         gmailLabelUpdate,
@@ -487,7 +494,6 @@ export class MailProcessor {
 
     if (data.blocked) {
       await this.addDaysSinceEpochLabel_(
-        allMktimeGmailLabels,
         labelIdsAlreadyOnAnyMessage,
         gmailLabelUpdate,
         data.blocked,
@@ -499,7 +505,6 @@ export class MailProcessor {
     // threads with no priority.
     if (data.hasPriority && data.retriageTimestamp) {
       await this.addDaysSinceEpochLabel_(
-        allMktimeGmailLabels,
         labelIdsAlreadyOnAnyMessage,
         gmailLabelUpdate,
         data.retriageTimestamp,
@@ -509,7 +514,6 @@ export class MailProcessor {
 
     if (data.hasPriority && data.retriageTimestamp) {
       await this.addDaysSinceEpochLabel_(
-        allMktimeGmailLabels,
         labelIdsAlreadyOnAnyMessage,
         gmailLabelUpdate,
         data.retriageTimestamp,
@@ -519,7 +523,6 @@ export class MailProcessor {
 
     if (data.needsRetriage) {
       await this.pushToAddLabelsAndRemoveFromRemovelabels_(
-        allMktimeGmailLabels,
         labelIdsAlreadyOnAnyMessage,
         NEEDS_RETRIAGE_LABEL,
         gmailLabelUpdate,
@@ -528,14 +531,12 @@ export class MailProcessor {
   }
 
   private async addDaysSinceEpochLabel_(
-    allMktimeGmailLabels: gapi.client.gmail.Label[],
     preExistingLabelIdsOnThread: Set<string>,
     gmailLabelUpdate: GmailLabelUpdate,
     timestamp: number,
     labelPrefix: string,
   ) {
     await this.pushToAddLabelsAndRemoveFromRemovelabels_(
-      allMktimeGmailLabels,
       preExistingLabelIdsOnThread,
       `${labelPrefix}/${daysSinceEpoch(timestamp)}`,
       gmailLabelUpdate,
@@ -547,13 +548,8 @@ export class MailProcessor {
   }
 
   private async pushMktimeUpdatesToGmail_() {
-    const allMktimeGmailLabels = await this.getAllMktimeGmailLabels_();
     // Ensure parent labels exist first.
-    await this.ensureLabelsExist_(
-      allMktimeGmailLabels,
-      MAKE_TIME_LABEL_NAME,
-      ...TOP_LEVEL_MKTIME_LABELS,
-    );
+    await this.ensureLabelsExist_(MAKE_TIME_LABEL_NAME, ...TOP_LEVEL_MKTIME_LABELS);
 
     const snapshot = await Thread.metadataCollection()
       .where(ThreadMetadataKeys.hasMessageIdsToPushToGmail, '==', true)
@@ -562,7 +558,7 @@ export class MailProcessor {
     await this.doInParallel_<firebase.firestore.DocumentSnapshot>(
       snapshot.docs,
       async (doc: firebase.firestore.DocumentSnapshot) => {
-        await this.pushMktimeUpdatesToGmailForSingleThread_(allMktimeGmailLabels, doc);
+        await this.pushMktimeUpdatesToGmailForSingleThread_(doc);
       },
     );
   }
@@ -612,8 +608,6 @@ export class MailProcessor {
   }
 
   private async pullGmailLabelOnlyUpdatesToMktime_(threadId: string) {
-    const allMktimeGmailLabels = await this.getAllMktimeGmailLabels_();
-
     let thread = await this.getThread_(threadId);
     let messages = thread.getMessages();
     assert(messages.length, 'This should never happen. Please file a bug if you see this.');
@@ -628,7 +622,7 @@ export class MailProcessor {
 
     const unionOfLabelIds = new Set(messages.flatMap((x) => x.getLabelIds()));
     for (let gmailLabelId of unionOfLabelIds) {
-      const gmailLabel = allMktimeGmailLabels.find((y) => gmailLabelId === y.id);
+      const gmailLabel = await this.getMktimeGmailLabelIfExists_({ id: gmailLabelId });
       if (gmailLabel === undefined) {
         continue;
       }
@@ -1119,8 +1113,8 @@ export class MailProcessor {
     );
   }
 
-  private async processRetriage_() {
-    const lastProcessedRetriageValues = (await this.getAllMktimeGmailLabels_()).reduce(
+  private async processRetriage_(allMktimeGmailLabels: LabelIdAndName[]) {
+    const lastProcessedRetriageValues = allMktimeGmailLabels.reduce(
       (
         filtered: { value: string; label: gapi.client.gmail.Label }[],
         label: gapi.client.gmail.Label,
@@ -1164,10 +1158,7 @@ export class MailProcessor {
       await this.dequeueRetriage_(Priority.Backlog);
     }
 
-    await this.ensureLabelsExist_(
-      await this.getAllMktimeGmailLabels_(),
-      `${LAST_PROCESSED_RETRIAGE_LABEL}/${daysSinceEpoch()}`,
-    );
+    await this.ensureLabelsExist_(`${LAST_PROCESSED_RETRIAGE_LABEL}/${daysSinceEpoch()}`);
   }
 
   async schedulePushGmailLabelsForAllHasLabelOrPriorityThreads() {
@@ -1256,9 +1247,8 @@ export class MailProcessor {
     );
   }
 
-  private async gcEmptyLabels_(labels: gapi.client.gmail.Label[]) {
+  private async gcEmptyLabels_(labels: LabelIdAndName[]) {
     const today = daysSinceEpoch();
-
     for (const label of labels) {
       const parentLabel = this.getParentLabel_(LABELS_TO_DELETE_IF_EMPTY, defined(label.name));
       if (!parentLabel) {
@@ -1284,10 +1274,15 @@ export class MailProcessor {
 
   private async processSingleQueue_(queue: string) {
     if (queue === QueueSettings.DAILY) {
+      // Always fetch fresh labels for this so we can be sure we're GC'ing
+      // properly and knowing that we get the freshest retriage labels. This is
+      // only once a day so it's not a big deal.
+      const labels = await this.getAllMktimeGmailLabels_(true);
+
       await this.dequeueStuck_();
-      await this.processRetriage_();
+      await this.processRetriage_(labels);
       await this.processSoftMute_();
-      await this.gcEmptyLabels_(await this.getAllMktimeGmailLabels_());
+      await this.gcEmptyLabels_(labels);
     }
 
     let queueDatas = this.settings_.getQueueSettings().entries();
@@ -1363,8 +1358,6 @@ export class MailProcessor {
   }
 
   private async processQueues_() {
-    await this.processRetriage_();
-
     let storage = await getServerStorage();
     await storage.fetch();
 
