@@ -45,7 +45,7 @@ export class UntriagedView extends ThreadListViewBase {
   private renderedThreadContainer_: HTMLElement;
   private renderedCardContainer_: HTMLElement;
   private cards_: RenderedCard[];
-  private cardsAnimatingOffScreen_: RenderedCard[];
+  private cardsAnimatingOffScreen_: Set<RenderedCard>;
   private currentCard_?: RenderedCard;
   private threadAlreadyTriagedDialog_?: HTMLElement;
   private triageActions_: DirectionalAction[];
@@ -65,7 +65,7 @@ export class UntriagedView extends ThreadListViewBase {
     this.renderedCardContainer_ = create('div');
     this.renderedThreadContainer_.append(this.renderedCardContainer_);
     this.cards_ = [];
-    this.cardsAnimatingOffScreen_ = [];
+    this.cardsAnimatingOffScreen_ = new Set();
 
     this.setupDragHandlers_();
 
@@ -223,7 +223,7 @@ export class UntriagedView extends ThreadListViewBase {
         // triage. In that interim, if new threads come in, avoid adding it back
         // to the stack of cards since we don't want it to get set back to
         // this.currentCard_.
-        if (!this.cardsAnimatingOffScreen_.includes(oldCard)) {
+        if (!this.cardsAnimatingOffScreen_.has(oldCard)) {
           newCards.push(oldCard);
         }
         continue;
@@ -240,7 +240,7 @@ export class UntriagedView extends ThreadListViewBase {
         const card = child as RenderedCard;
         return (
           !this.cards_.includes(card) &&
-          !this.cardsAnimatingOffScreen_.includes(card) &&
+          !this.cardsAnimatingOffScreen_.has(card) &&
           this.currentCard_ !== card
         );
       })
@@ -416,9 +416,13 @@ export class UntriagedView extends ThreadListViewBase {
     const endTransform = `${axis}(${offset}px)`;
     card.animate([{ transform: endTransform }], {
       duration: 300,
-    }).onfinish = () => (card.style.transform = endTransform);
+    }).onfinish = () => {
+      this.cardsAnimatingOffScreen_.delete(card);
+      card.style.transform = endTransform;
+      card.remove();
+    };
 
-    this.cardsAnimatingOffScreen_.push(card);
+    this.cardsAnimatingOffScreen_.add(card);
     card.setShouldShowToolbarButton(action.direction, true);
   }
 

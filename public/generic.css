@@ -2614,6 +2614,7 @@ body {
   content: 'All done triaging. Press any key or click anywhere to go to todo view.';
   max-width: 250px;
   position: absolute;
+  z-index: -1;
   top: 0;
   right: 0;
   bottom: 0;
