@@ -59,31 +59,59 @@ export class Contacts {
   }
 
   async fetchContactsFromNetwork() {
-    // This is 450kb! Either cache this and fetch infrequently, or find a way of
-    // getting the API to not send the data we don't need.
-    let response = await fetch(
-      'https://www.google.com/m8/feeds/contacts/default/thin?alt=json&access_token=' +
-        gapi.auth.getToken().access_token +
-        '&max-results=20000&v=3.0',
-    );
-
+    // TODO: Use nextSyncToken to do more frequent incremental contact syncing.
     let contacts: Contact[] = [];
 
-    let json = await response.json();
+    const appendContacts = (connections: gapi.client.people.Person[]) => {
+      contacts = [
+        ...contacts,
+        ...connections
+          .filter((x) => x.emailAddresses)
+          .map(
+            (x): Contact => {
+              return {
+                // TODO: Include all the names, not just the first one.
+                name: x.names?.find((y) => y.displayName)?.displayName ?? '',
+                emails: x.emailAddresses!.filter((y) => y.value).map((y) => y.value!),
+              };
+            },
+          ),
+      ];
+    };
 
-    // If a user has no contacts, then this field is undefined.
-    if (!json.feed.entry) return contacts;
-
-    for (let entry of json.feed.entry) {
-      if (!entry.gd$email) continue;
-      let contact = <Contact>{};
-      if (entry.title.$t) contact.name = entry.title.$t;
-      contact.emails = [];
-      for (let email of entry.gd$email) {
-        contact.emails.push(email.address);
+    const fetchAllPages = async (
+      callback: (
+        nextPageToken?: string,
+      ) => Promise<[gapi.client.people.Person[] | undefined, string | undefined]>,
+      nextPageToken?: string,
+    ) => {
+      const [connections, nextNextPageToken] = await callback(nextPageToken);
+      if (connections) {
+        appendContacts(connections);
       }
-      contacts.push(contact);
-    }
+      if (nextNextPageToken) {
+        await fetchAllPages(callback, nextNextPageToken);
+      }
+    };
+
+    await fetchAllPages(async (pageToken?: string) => {
+      let response = await gapiFetch(gapi.client.people.people.connections.list, {
+        resourceName: 'people/me',
+        pageSize: 1000,
+        personFields: 'names,emailAddresses',
+        pageToken,
+      });
+      return [response.result.connections, response.result.nextPageToken];
+    });
+
+    await fetchAllPages(async (pageToken?: string) => {
+      let response = await gapiFetch(gapi.client.people.otherContacts.list, {
+        pageSize: 1000,
+        readMask: 'names,emailAddresses',
+        pageToken,
+      });
+      return [response.result.otherContacts, response.result.nextPageToken];
+    });
 
     // Store the final contacts object instead of the data fetched off the
     // network since the latter is order of magnitude larger and can exceed

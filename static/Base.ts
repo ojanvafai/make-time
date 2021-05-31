@@ -213,6 +213,8 @@ export function sandboxedDom(html: string) {
 export let SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.google.com/m8/feeds',
+  'https://www.googleapis.com/auth/contacts.readonly',
+  'https://www.googleapis.com/auth/contacts.other.readonly',
   'https://www.googleapis.com/auth/calendar.events',
   'profile',
 ];

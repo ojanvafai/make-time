@@ -28,6 +28,7 @@
     "@types/gapi.client": "^1.0.3",
     "@types/gapi.client.drive": "^3.0.8",
     "@types/gapi.client.gmail": "^1.0.2",
+    "@types/gapi.client.people": "^1.0.3",
     "@types/jest": "^26.0.4",
     "babel-jest": "^26.1.0",
     "clang-format": "^1.4.0",
