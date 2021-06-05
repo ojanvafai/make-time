@@ -8,6 +8,10 @@ interface Entry {
 
 const CHANGES: Entry[] = [
   {
+    date: '6/6/21',
+    description: `mk-time.web.app now works. No need to use mk-time.firebaseapp.com anymore.`,
+  },
+  {
     date: '6/5/21',
     description: `- Attempt to fix login so you don't get logged out after being away for a while.
 - Allow manual sorting of threads to override sorting unread threads to the top.`,

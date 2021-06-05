@@ -107,10 +107,22 @@ function showLoggedOutDialog(showErrorText: boolean) {
       ? `Something went wrong loading MakeTime and you need to reload. This usually happens if you're not connected to the internet when loading MakeTime or get logged out.`
       : 'You have been logged out.',
   );
+  const reconnectButton = createMktimeButton(async () => {
+    reconnectButton.textContent = 'reconnecting...';
+    let didSucceed;
+    try {
+      didSucceed = await attemptLogin();
+    } catch (e) {
+      didSucceed = false;
+    }
+    if (!didSucceed) {
+      reconnectButton.textContent = 'Reconnect failed';
+    }
+  }, 'Reconnect now');
   loginDialog_ = new Dialog({
     contents: container,
     buttons: [
-      createMktimeButton(() => attemptLogin(), 'Try to reconnect'),
+      reconnectButton,
       createMktimeButton(() => redirectToSignInPage(), 'Go to login page'),
     ],
     preventManualClosing: true,
@@ -121,7 +133,7 @@ export async function attemptLogin() {
   // skiplogin=1 is just to do some performance testing of compose view on
   // webpagetest without having it redirect to the google login page
   if (window.location.search.includes('skiplogin=1')) {
-    return;
+    return true;
   }
 
   try {
@@ -139,14 +151,16 @@ export async function attemptLogin() {
 
         loginDialog_?.remove();
         loginDialog_ = null;
-        progress.incrementProgress();
 
         resolve();
       });
     });
+
+    progress.incrementProgress();
+    return true;
   } catch (e) {
     showLoggedOutDialog(true);
     console.log(e);
-    return;
+    return false;
   }
 }

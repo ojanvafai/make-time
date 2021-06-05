@@ -2,7 +2,7 @@ export let apiKey: string;
 export let clientId: string;
 export let firebaseConfig: { apiKey: string; authDomain: string; projectId: string };
 let isGoogle =
-  location.toString().includes(':8000/') || location.toString().includes('https://com-mktime');
+  location.toString().includes(':8000/') || location.toString().startsWith('https://com-mktime');
 
 if (isGoogle) {
   apiKey = 'AIzaSyCcuBNlI6FgtgiLub2ihGInrNwDc3_UZSY';
@@ -16,10 +16,11 @@ if (isGoogle) {
   apiKey = 'AIzaSyDFj2KpiXCNYnmp7VxKz5wpjJ4RquGB8qA';
   firebaseConfig = {
     apiKey,
-    authDomain: 'mk-time.firebaseapp.com',
+    authDomain:
+      location.origin === 'https://mk-time.web.app' ? 'mk-time.web.app' : 'mk-time.firebaseapp.com',
     projectId: 'mk-time',
   };
-  clientId = '475495334695-0i3hbt50i5lj8blad3j7bj8j4fco8edo.apps.googleusercontent.com';
+  clientId = '475495334695-9jmbss57hov9s9k8r1t6pe2ncbserr0c.apps.googleusercontent.com';
 }
 
 // Array of API discovery doc URLs for APIs used by the quickstart
