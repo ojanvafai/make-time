@@ -1,6 +1,6 @@
 import { Action } from '../Actions.js';
 import { compareDates, defined, notNull } from '../Base.js';
-import { firestoreUserCollection, login } from '../BaseMain.js';
+import { firestoreUserCollection, initialLogin } from '../BaseMain.js';
 import { ThreadListModel } from '../models/ThreadListModel.js';
 import { Settings } from '../Settings.js';
 import { STUCK_LABEL_NAME, Thread, ThreadMetadataKeys } from '../Thread.js';
@@ -44,7 +44,7 @@ export class StuckView extends View {
   }
 
   async init() {
-    await login();
+    await initialLogin();
     this.render_();
   }
 

@@ -1,11 +1,6 @@
-import {
-  createMktimeButton,
-  defined,
-  getCurrentWeekNumber,
-  isMobileUserAgent,
-  redirectToSignInPage,
-} from './Base.js';
+import { createMktimeButton, defined, getCurrentWeekNumber, isMobileUserAgent } from './Base.js';
 import { firestore, getServerStorage, getSettings } from './BaseMain.js';
+import { attemptLogin } from './Login.js';
 import { Calendar } from './calendar/Calendar.js';
 import { Contacts } from './Contacts.js';
 import { Dialog } from './Dialog.js';
@@ -419,10 +414,13 @@ function reloadSoon() {
     'A new version of maketime is available. This window will reload in 60 seconds.',
   );
 
-  dialog = new Dialog(container, [
-    createMktimeButton(() => reload(), 'reload now'),
-    createMktimeButton(() => dialog.remove(), 'close'),
-  ]);
+  dialog = new Dialog({
+    contents: container,
+    buttons: [
+      createMktimeButton(() => reload(), 'reload now'),
+      createMktimeButton(() => dialog.remove(), 'close'),
+    ],
+  });
 
   setTimeout(() => reload(), 60000);
 }
@@ -700,7 +698,9 @@ function processErrorMessage(reason: any) {
 window.addEventListener('unhandledrejection', (e) => {
   let reason = e.reason;
   // 401 means the credentials are invalid and you probably need to 2 factor.
-  if (reason && reason.status == 401) redirectToSignInPage();
+  if (reason && reason.status == 401) {
+    attemptLogin();
+  }
 
   // Plain stringify will skip a bunch of things, so manually list out
   // everything we might care about. Add to this list over time as we find

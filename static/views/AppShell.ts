@@ -242,9 +242,13 @@ export class AppShell extends HTMLElement {
     let buttonContainer = document.createElement('div');
     this.dispatchEvent(new OverflowMenuOpenEvent(buttonContainer));
 
-    this.overflowMenu_ = new Dialog(document.createElement('div'), [buttonContainer], {
-      right: `${window.innerWidth - rect.right}px`,
-      top: `${rect.bottom}px`,
+    this.overflowMenu_ = new Dialog({
+      contents: document.createElement('div'),
+      buttons: [buttonContainer],
+      positionRect: {
+        right: `${window.innerWidth - rect.right}px`,
+        top: `${rect.bottom}px`,
+      },
     });
     this.overflowMenu_.addEventListener('close', () => (this.overflowMenu_ = undefined));
   }

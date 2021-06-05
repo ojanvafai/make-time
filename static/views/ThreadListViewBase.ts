@@ -1,6 +1,6 @@
 import { shortcutString, ActionGroup } from '../Actions.js';
 import { collapseArrow, defined, expandArrow, linkify, notNull, Labels } from '../Base.js';
-import { login } from '../BaseMain.js';
+import { initialLogin } from '../BaseMain.js';
 import { ThreadListChangedEvent, ThreadListModel } from '../models/ThreadListModel.js';
 import { Settings } from '../Settings.js';
 import { Themes } from '../Themes.js';
@@ -166,7 +166,7 @@ export abstract class ThreadListViewBase extends View {
   }
 
   async init() {
-    await login();
+    await initialLogin();
     await this.model.loadFromDisk();
     await this.model.update();
   }

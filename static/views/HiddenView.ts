@@ -1,6 +1,6 @@
 import { Action } from '../Actions.js';
 import { compareDates, defined, notNull } from '../Base.js';
-import { firestoreUserCollection, login } from '../BaseMain.js';
+import { firestoreUserCollection, initialLogin } from '../BaseMain.js';
 import { ThreadListModel, TriageResult } from '../models/ThreadListModel.js';
 import { TodoModel } from '../models/TodoModel.js';
 import { Settings } from '../Settings.js';
@@ -132,7 +132,7 @@ export class HiddenView extends View {
   }
 
   async init() {
-    await login();
+    await initialLogin();
     this.render_();
   }
 

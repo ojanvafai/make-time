@@ -1,4 +1,4 @@
-import { redirectToSignInPage } from './Base.js';
+import { attemptLogin } from './Login.js';
 
 let queuedRequests_: ((value?: {} | PromiseLike<{}> | undefined) => void)[] = [];
 let TEN_SECONDS = 10 * 1000;
@@ -37,7 +37,9 @@ export async function gapiFetch<T>(
       return response;
     } catch (e) {
       // For auth errors, reload the page so it redirects to the login screen.
-      if (e.status === 401) redirectToSignInPage();
+      if (e.status === 401) {
+        await attemptLogin();
+      }
       // Don't retry 404s as they should never work on retry.
       if (e.status === 404) throw e;
       console.log('Response failed.');

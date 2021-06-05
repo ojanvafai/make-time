@@ -59,7 +59,11 @@ export class FilterDialogView extends View {
     this.saveButton_ = createMktimeButton(() => this.save_(), 'save');
     this.saveButton_.disabled = true;
 
-    this.dialog_ = new Dialog(this, [cancel, this.saveButton_], positionRect);
+    this.dialog_ = new Dialog({
+      contents: this,
+      buttons: [cancel, this.saveButton_],
+      positionRect,
+    });
   }
 
   static containsFilterParameter(params?: { [property: string]: string }) {

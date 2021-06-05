@@ -22,11 +22,17 @@ export class Dialog extends HTMLElement {
   private handleKeyEvent_: (e: KeyboardEvent) => void;
   private boundRetainFocus_: (e: FocusEvent) => void;
 
-  constructor(
-    contents: Node | string,
-    buttons: HTMLElement[],
-    positionRect?: { top?: string; right?: string; bottom?: string; left?: string },
-  ) {
+  constructor({
+    contents,
+    buttons,
+    positionRect,
+    preventManualClosing,
+  }: {
+    contents: Node | string;
+    buttons?: HTMLElement[];
+    positionRect?: { top?: string; right?: string; bottom?: string; left?: string };
+    preventManualClosing?: boolean;
+  }) {
     super();
     this.style.cssText = `
       max-width: calc(100% - 32px);
@@ -46,21 +52,6 @@ export class Dialog extends HTMLElement {
 
     this.backdrop_ = document.createElement('div');
     this.backdrop_.className = 'z3 fixed all-0 darken2';
-    this.backdrop_.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      this.remove();
-    });
-
-    const contentContainer = document.createElement('div');
-    contentContainer.className = 'overflow-auto';
-    contentContainer.append(contents);
-
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'flex justify-end';
-    this.append(contentContainer, buttonContainer);
-    if (buttons.length) {
-      buttonContainer.append(...buttons);
-    }
 
     this.handleKeyEvent_ = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -69,12 +60,30 @@ export class Dialog extends HTMLElement {
       e.stopPropagation();
     };
 
+    if (!preventManualClosing) {
+      this.backdrop_.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        this.remove();
+      });
+      this.addEventListener('keydown', this.handleKeyEvent_);
+    }
+
+    const contentContainer = document.createElement('div');
+    contentContainer.className = 'overflow-auto';
+    contentContainer.append(contents);
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'flex justify-end';
+    this.append(contentContainer, buttonContainer);
+    if (buttons && buttons.length) {
+      buttonContainer.append(...buttons);
+    }
+
     this.boundRetainFocus_ = (e: FocusEvent) => this.retainFocus_(e);
 
     this.oldActiveElement_ = document.activeElement;
 
     this.setAttribute('aria-hidden', 'false');
-    this.addEventListener('keydown', this.handleKeyEvent_);
     document.body.addEventListener('blur', this.boundRetainFocus_, true);
     document.body.style.overflow = 'hidden';
 

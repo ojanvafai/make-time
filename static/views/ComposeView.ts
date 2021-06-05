@@ -3,12 +3,11 @@ import { AddressCompose } from '../AddressCompose.js';
 import {
   createLink,
   defined,
-  getMyEmail,
   isMobileUserAgent,
   notNull,
   serializeAddress,
 } from '../Base.js';
-import { login } from '../BaseMain.js';
+import { initialLogin } from '../BaseMain.js';
 import { EmailCompose, INSERT_LINK, SubmitEvent } from '../EmailCompose.js';
 import { MailProcessor } from '../MailProcessor.js';
 import { ComposeModel } from '../models/ComposeModel.js';
@@ -18,6 +17,7 @@ import { BASE_THREAD_ACTIONS, takeAction } from '../ThreadActions.js';
 
 import { HelpDialog } from './HelpDialog.js';
 import { View } from './View.js';
+import { getMyEmail } from '../Login.js';
 
 let SEND: Action = {
   name: 'Send',
@@ -170,7 +170,7 @@ export class ComposeView extends View {
       this.focusFirstEmpty_();
     }
 
-    await login();
+    await initialLogin();
 
     if (this.autoSend_) {
       this.handleUpdates_(true);

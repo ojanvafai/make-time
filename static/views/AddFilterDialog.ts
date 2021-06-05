@@ -48,7 +48,7 @@ export class AddFilterDialog extends HTMLElement {
       'Save and apply filter',
     );
     const closeButton = createMktimeButton(() => this.dialog_.remove(), 'close');
-    this.dialog_ = new Dialog(this, [closeButton, this.filterSaveButton_]);
+    this.dialog_ = new Dialog({ contents: this, buttons: [closeButton, this.filterSaveButton_] });
   }
 
   private createHeaderMenu_(headers: gapi.client.gmail.MessagePartHeader[]) {

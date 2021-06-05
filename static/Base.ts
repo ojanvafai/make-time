@@ -1,8 +1,4 @@
-import * as firebase from 'firebase/app';
-
 import emailJsParseAddressList from '../third_party/emailjs-addressparser/addressparser.js';
-
-import { gapiFetch } from './Net.js';
 
 export const USER_ID = 'me';
 
@@ -209,22 +205,6 @@ export function sandboxedDom(html: string) {
   return div;
 }
 
-// Authorization scopes required by the Google API.
-export let SCOPES = [
-  'https://www.googleapis.com/auth/gmail.modify',
-  'https://www.google.com/m8/feeds',
-  'https://www.googleapis.com/auth/contacts.readonly',
-  'https://www.googleapis.com/auth/contacts.other.readonly',
-  'https://www.googleapis.com/auth/calendar.events',
-  'profile',
-];
-
-export function redirectToSignInPage() {
-  var provider = new firebase.auth.GoogleAuthProvider();
-  SCOPES.forEach((x) => provider.addScope(x));
-  firebase.auth().signInWithRedirect(provider);
-}
-
 if (!window.requestIdleCallback) {
   // @ts-ignore
   window.requestIdleCallback = window.setTimeout;
@@ -313,35 +293,6 @@ function getWeekNumber(date: Date) {
   return Math.ceil(
     ((date.getTime() - januaryFirst.getTime()) / msInDay + januaryFirst.getDay()) / 7,
   );
-}
-
-let myEmail_: string;
-export async function getMyEmail() {
-  if (!myEmail_) {
-    let response = await gapiFetch(gapi.client.gmail.users.getProfile, {
-      userId: USER_ID,
-    });
-    myEmail_ = assert(
-      response.result.emailAddress,
-      `This google account doesn't have an associated email address.`,
-    );
-  }
-  return myEmail_;
-}
-
-let displayName_: string;
-export async function getPrimaryAccountDisplayName() {
-  if (!displayName_) {
-    // @ts-ignore TODO: pull in types for people api.
-    let resp = await gapiFetch(gapi.client.people.people.get, {
-      resourceName: 'people/me',
-      personFields: 'names',
-    });
-    // @ts-ignore TODO: Use a proper type.
-    let names: any[] = resp.result.names;
-    displayName_ = names.find((x) => x.metadata.primary).displayName;
-  }
-  return displayName_;
 }
 
 export interface ParsedAddress {

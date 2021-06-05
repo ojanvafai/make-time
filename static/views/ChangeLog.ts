@@ -8,6 +8,11 @@ interface Entry {
 
 const CHANGES: Entry[] = [
   {
+    date: '6/5/21',
+    description: `- Attempt to fix login so you don't get logged out after being away for a while.
+- Allow manual sorting of threads to override sorting unread threads to the top.`,
+  },
+  {
     date: '5/2/21',
     description: `- Add filter action now opens a modal instead of an inline UX
 - enable the add filter action in todo view for unfiltered threads
@@ -122,6 +127,6 @@ export function renderChangeLog() {
   }
 
   const closeButton = createMktimeButton(() => dialog.remove(), 'close');
-  const dialog = new Dialog(container, [closeButton]);
+  const dialog = new Dialog({contents: container, buttons:  [closeButton]});
   dialog.addEventListener('close', writeLastShownDate);
 }

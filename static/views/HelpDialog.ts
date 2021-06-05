@@ -21,7 +21,7 @@ export class HelpDialog extends HTMLElement {
     container.append(help);
 
     const closeButton = createMktimeButton(() => dialog.remove(), 'close');
-    const dialog = new Dialog(container, [closeButton]);
+    const dialog = new Dialog({contents: container, buttons: [closeButton]});
   }
 }
 window.customElements.define('mt-help-dialog', HelpDialog);

@@ -1,6 +1,6 @@
 import { AsyncOnce } from '../AsyncOnce.js';
 import { assert, defined, notNull } from '../Base.js';
-import { login } from '../BaseMain.js';
+import { initialLogin } from '../BaseMain.js';
 import { Model } from '../models/Model.js';
 import { gapiFetch } from '../Net.js';
 import { BuiltInRules, CalendarRule, Settings } from '../Settings.js';
@@ -517,7 +517,7 @@ export class Calendar extends Model {
   async init() {
     // Don't init if we've already initted.
     if (!this.fetchingEvents_) return;
-    await login();
+    await initialLogin();
     this.ruleMetadata_ = await this.settings_.getCalendarSortData();
     await this.initialFetch_();
   }

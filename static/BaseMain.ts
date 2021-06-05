@@ -1,168 +1,38 @@
-// TODO: This file probably shouldn't exist. It's a holdover from early
-// spaghetti code that was extracted out to remove circular dependencies between
-// modules. It's not trivial to detangle though. It's mostly reused functions
-// that have to know about Threads and things like that.
+// TODO: This file needs a better name. It's the foundational things like
+// firebase and settings that belong in main.js, but we don't want the circular
+// dependencies of main depending on things, which in turn depend on main.
 
 import 'firebase/auth';
 import 'firebase/firestore';
 // This should come before the firebase imports above, but esbuild makes it not
 // necessary and clang-format refuses to allow sorting it correctly.
 import * as firebase from 'firebase/app';
-
-import { AsyncOnce } from './AsyncOnce.js';
-import {
-  assert,
-  create,
-  createLink,
-  createWithStyle,
-  notNull,
-  redirectToSignInPage,
-  SCOPES,
-} from './Base.js';
-import { ErrorLogger } from './ErrorLogger.js';
-import { QueueNames } from './QueueNames.js';
-import { ServerStorage, StorageUpdates } from './ServerStorage.js';
-import { Settings } from './Settings.js';
-import { AppShell } from './views/AppShell.js';
-import { HelpDialog } from './views/HelpDialog.js';
+import { notNull, create, createWithStyle, createLink, assert } from './Base';
+import { AsyncOnce } from './AsyncOnce';
+import { attemptLogin } from './Login';
+import { StorageUpdates, ServerStorage } from './ServerStorage';
+import { QueueNames } from './QueueNames';
+import { Settings } from './Settings';
+import { HelpDialog } from './views/HelpDialog';
+import { firebaseConfig } from './Config';
 
 let storage_ = new ServerStorage();
 let settings_: Settings;
-
-// Client ID and API key from the Developer Console
-let apiKey: string;
-let clientId: string;
-let firebaseConfig: { apiKey: string; authDomain: string; projectId: string };
-let isGoogle =
-  location.toString().includes(':8000/') || location.toString().includes('https://com-mktime');
-
-if (isGoogle) {
-  apiKey = 'AIzaSyCcuBNlI6FgtgiLub2ihGInrNwDc3_UZSY';
-  firebaseConfig = {
-    apiKey,
-    authDomain: 'com-mktime.firebaseapp.com',
-    projectId: 'google.com:mktime',
-  };
-  clientId = '800053010416-p1p6n47o6ovdm04329v9p8mskl618kuj.apps.googleusercontent.com';
-} else {
-  apiKey = 'AIzaSyDFj2KpiXCNYnmp7VxKz5wpjJ4RquGB8qA';
-  firebaseConfig = {
-    apiKey,
-    authDomain: 'mk-time.firebaseapp.com',
-    projectId: 'mk-time',
-  };
-  clientId = '475495334695-0i3hbt50i5lj8blad3j7bj8j4fco8edo.apps.googleusercontent.com';
-}
-
-// Array of API discovery doc URLs for APIs used by the quickstart
-let DISCOVERY_DOCS = [
-  'https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest',
-  'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
-  'https://people.googleapis.com/$discovery/rest?version=v1',
-];
-
-let isSignedIn_ = false;
-
-export async function getSettings() {
-  await login();
-  return settings_;
-}
-
-// Intentionally don't fetch here so that the onload sequence can listen to
-// events on ServerStorage without forcing a login.
-export async function getServerStorage() {
-  return storage_;
-}
-
-function showPleaseReload() {
-  ErrorLogger.log(
-    `Something went wrong loading MakeTime and you need to reload. This usually happens if you're not connected to the internet when loading MakeTime.`,
-  );
-}
-
-function loadGapi() {
-  return new Promise((resolve) => {
-    gapi.load('client:auth2', () => resolve());
-  });
-}
-
 let loginOnce_: AsyncOnce<void>;
+let firestore_: firebase.firestore.Firestore;
 
-export async function login() {
-  if (!loginOnce_) loginOnce_ = new AsyncOnce<void>(login_);
-  await loginOnce_.do();
-}
-
-// From https://firebase.google.com/docs/auth/web/google-signin. Unlike that
-// code we redirect to the login page instead of signing in with the googleUser
-// credentials since the latter can only be done in a popup.
-function isUserEqual(googleUser: gapi.auth2.GoogleUser, firebaseUser: firebase.User | null) {
-  if (firebaseUser) {
-    var providerData = firebaseUser.providerData;
-    for (var i = 0; i < providerData.length; i++) {
-      let data = notNull(providerData[i]);
-      if (
-        data.providerId === firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
-        data.uid === googleUser.getBasicProfile().getId()
-      ) {
-        // We don't need to reauth the Firebase connection.
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-async function login_() {
-  // skiplogin=1 is just to do some performance testing of compose view on
-  // webpagetest without having it redirect to the google login page
-  if (isSignedIn_ || window.location.search.includes('skiplogin=1')) return;
-
-  // Ensure that we're not initializing firebase more than once.
-  assert(!firebase.apps.length);
-
-  try {
-    let progress = AppShell.updateLoaderTitle('login', 1, 'Logging in...');
-    let googleUser = await loginToGapi();
-    await firebase.initializeApp(firebaseConfig);
-    await enablePersistence();
-
-    await new Promise((resolve) => {
-      let unsubscribe = firebase.auth().onAuthStateChanged(async (firebaseUser) => {
-        unsubscribe();
-
-        if (!firebaseUser || !isUserEqual(googleUser, firebaseUser)) redirectToSignInPage();
-
-        // Do this before fetching data out of firestore to make the app
-        // feel faster by hiding the login text sooner.
-        progress.incrementProgress();
-
-        await initializeStorage();
-        resolve();
-      });
+export async function initialLogin() {
+  if (!loginOnce_) {
+    loginOnce_ = new AsyncOnce<void>(async () => {
+      // Ensure that we're not initializing firebase more than once.
+      assert(!firebase.apps.length);
+      await firebase.initializeApp(firebaseConfig);
+      await enablePersistence();
+      await attemptLogin();
+      await initializeStorage();
     });
-  } catch (e) {
-    showPleaseReload();
-    console.log(e);
-    return;
   }
-}
-
-async function loginToGapi() {
-  await loadGapi();
-  await gapi.client.init({
-    apiKey,
-    discoveryDocs: DISCOVERY_DOCS,
-    clientId: clientId,
-    scope: SCOPES.join(' '),
-  });
-
-  if (await gapi.auth2.getAuthInstance().isSignedIn.get())
-    return gapi.auth2.getAuthInstance().currentUser.get();
-  return await gapi.auth2.getAuthInstance().signIn(
-    // @ts-ignore ux_mode isn't in the types for this method.
-    { ux_mode: 'redirect', redirect_uri: window.location.origin },
-  );
+  await loginOnce_.do();
 }
 
 async function enablePersistence() {
@@ -173,6 +43,17 @@ async function enablePersistence() {
     // doesn't work on some browsers.
     console.log(e);
   }
+}
+
+export async function getSettings() {
+  await initialLogin();
+  return settings_;
+}
+
+// Intentionally don't fetch here so that the onload sequence can listen to
+// events on ServerStorage without forcing a login.
+export async function getServerStorage() {
+  return storage_;
 }
 
 async function initializeStorage() {
@@ -190,7 +71,6 @@ async function initializeStorage() {
   }
 }
 
-let firestore_: firebase.firestore.Firestore;
 export function firestore() {
   if (!firestore_) {
     firestore_ = firebase.firestore();

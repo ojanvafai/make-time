@@ -1,4 +1,5 @@
-import { getPrimaryAccountDisplayName, ParsedAddress, serializeAddress, USER_ID } from './Base.js';
+import { ParsedAddress, serializeAddress, USER_ID } from './Base.js';
+import { getPrimaryAccountDisplayName } from './Login.js';
 import { Base64 } from './base64.js';
 import { gapiFetch } from './Net.js';
 

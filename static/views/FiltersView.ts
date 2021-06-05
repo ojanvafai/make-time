@@ -144,7 +144,7 @@ export class FiltersView extends HTMLElement {
     helpButton.style.cssText = `margin-right: auto`;
     let cancel = createMktimeButton(() => this.cancel_(), 'cancel');
     let save = createMktimeButton(() => this.save_(), 'save');
-    this.dialog_ = new Dialog(this, [helpButton, cancel, save]);
+    this.dialog_ = new Dialog({ contents: this, buttons: [helpButton, cancel, save] });
   }
 
   createUnfileredRule_() {

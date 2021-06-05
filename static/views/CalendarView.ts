@@ -97,7 +97,7 @@ export class CalendarView extends View {
       // Colorize is not safe to be called multiple times, so remove the button
       // after the first call, forcing the user to reload to call it again.
       this.setActions([]);
-      let dialog = new Dialog('Colorizing...this takes a while.', []);
+      let dialog = new Dialog({ contents: 'Colorizing...this takes a while.' });
       await this.model_.colorizeEvents();
       dialog.remove();
       return true;
