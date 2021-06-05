@@ -188,10 +188,8 @@ export class TodoModel extends ThreadListModel {
     // Sort by priority, then by manual sort order, then by date.
     if (aPriority !== bPriority) return Thread.comparePriorities(aPriority, bPriority);
 
-    // Sort unread items to the top of priority buckets except for pinned. Don't
-    // need to check bPinned since aPriority === bPriority by this point.
-    if (!aPinned && a.isUnread() != b.isUnread()) return a.isUnread() ? -1 : 1;
-
+    // Intentionally put manual sort as higher priority than read state so that
+    // you can manually sort unread items into the list of read items below.
     let sortData = this.getSortData_(aPriority);
     if (sortData) {
       let aIndex = sortData.indexOf(a.id);
@@ -202,6 +200,10 @@ export class TodoModel extends ThreadListModel {
         return aIndex - bIndex;
       }
     }
+
+    // Sort unread items to the top of priority buckets except for pinned. Don't
+    // need to check bPinned since aPriority === bPriority by this point.
+    if (!aPinned && a.isUnread() != b.isUnread()) return a.isUnread() ? -1 : 1;
 
     return compareDates(a.getLastModifiedDate(), b.getLastModifiedDate());
   }
