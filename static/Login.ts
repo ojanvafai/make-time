@@ -5,7 +5,6 @@ import 'firebase/firestore';
 import * as firebase from 'firebase/app';
 
 import { AppShell } from './views/AppShell.js';
-import { ErrorLogger } from './ErrorLogger.js';
 import { Dialog } from './Dialog.js';
 import { assert, createMktimeButton, notNull, USER_ID } from './Base.js';
 import { gapiFetch } from './Net.js';
@@ -44,12 +43,6 @@ function redirectToSignInPage() {
   var provider = new firebase.auth.GoogleAuthProvider();
   SCOPES.forEach((x) => provider.addScope(x));
   firebase.auth().signInWithRedirect(provider);
-}
-
-function showPleaseReload() {
-  ErrorLogger.log(
-    `Something went wrong loading MakeTime and you need to reload. This usually happens if you're not connected to the internet when loading MakeTime.`,
-  );
 }
 
 function loadGapi() {
@@ -104,12 +97,16 @@ async function loginToGapi() {
 
 let loginDialog_: Dialog | null;
 
-function showLoggedOutDialog() {
+function showLoggedOutDialog(showErrorText: boolean) {
   if (loginDialog_) {
     return;
   }
   let container = document.createElement('div');
-  container.append('You have been logged out.');
+  container.append(
+    showErrorText
+      ? `Something went wrong loading MakeTime and you need to reload. This usually happens if you're not connected to the internet when loading MakeTime or get logged out.`
+      : 'You have been logged out.',
+  );
   loginDialog_ = new Dialog({
     contents: container,
     buttons: [
@@ -136,7 +133,7 @@ export async function attemptLogin() {
         unsubscribe();
 
         if (!firebaseUser || !isUserEqual(googleUser, firebaseUser)) {
-          showLoggedOutDialog();
+          showLoggedOutDialog(false);
           return;
         }
 
@@ -148,7 +145,7 @@ export async function attemptLogin() {
       });
     });
   } catch (e) {
-    showPleaseReload();
+    showLoggedOutDialog(true);
     console.log(e);
     return;
   }
