@@ -27,14 +27,12 @@ export async function getMyEmail() {
 let displayName_: string;
 export async function getPrimaryAccountDisplayName() {
   if (!displayName_) {
-    // @ts-ignore TODO: pull in types for people api.
     let resp = await gapiFetch(gapi.client.people.people.get, {
       resourceName: 'people/me',
       personFields: 'names',
     });
-    // @ts-ignore TODO: Use a proper type.
-    let names: any[] = resp.result.names;
-    displayName_ = names.find((x) => x.metadata.primary).displayName;
+    let names: gapi.client.people.Name[] = resp.result.names!;
+    displayName_ = names.find((x) => x.metadata!.primary)!.displayName!;
   }
   return displayName_;
 }

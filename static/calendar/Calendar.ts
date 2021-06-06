@@ -495,7 +495,7 @@ export class Calendar extends Model {
         let eventId = entry[0];
         let colorId = entry[1];
         try {
-          // @ts-ignore
+          // @ts-expect-error For some reason patch isn't on events.
           const response = await gapiFetch(gapi.client.calendar.events.patch, {
             calendarId: CALENDAR_ID,
             eventId: eventId,

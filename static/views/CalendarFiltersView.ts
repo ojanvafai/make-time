@@ -332,10 +332,13 @@ export class CalendarFiltersView extends HTMLElement {
     this.appendCell_(container, label);
 
     let queryParts: any = {};
-    for (let field in rule) {
-      if (!Settings.CALENDAR_RULE_DIRECTIVES.includes(field)) continue;
-      // @ts-ignore Not quite sure how to handle rule[field] in a typesafe way.
-      queryParts[field] = rule[field];
+    if (rule) {
+      for (const [field, value] of Object.entries(rule)) {
+        if (!Settings.CALENDAR_RULE_DIRECTIVES.includes(field)) {
+          continue;
+        }
+        queryParts[field] = value;
+      }
     }
 
     let editor = this.createQueryEditor_(queryParts, isBuiltIn);

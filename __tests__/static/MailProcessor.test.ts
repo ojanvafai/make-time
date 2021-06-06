@@ -1,4 +1,3 @@
-// @ts-ignore TS errors importing this in jest, but it still functions.
 import MockFirebase from '../../node_modules/mock-cloud-firestore';
 import { EventTargetPolyfill } from '../../static/EventTargetPolyfill.js';
 import {

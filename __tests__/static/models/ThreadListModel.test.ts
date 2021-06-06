@@ -21,7 +21,7 @@ test('tautology', async () => {
 //   fs.appendFileSync('./debug.log', util.format(d) + '\n');
 // };
 
-// // @ts-ignore
+// // @ts-expect-error
 // window.requestIdleCallback = window.setTimeout;
 
 // class ThreadFactory {

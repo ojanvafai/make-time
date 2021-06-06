@@ -206,8 +206,9 @@ export function sandboxedDom(html: string) {
 }
 
 if (!window.requestIdleCallback) {
-  // @ts-ignore
-  window.requestIdleCallback = window.setTimeout;
+  window.requestIdleCallback = (callback: (_deadline: any) => void, _opts?: any | undefined) => {
+    setTimeout(callback);
+  };
 }
 
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;

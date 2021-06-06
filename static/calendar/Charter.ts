@@ -73,7 +73,7 @@ export class Charter {
 
     data.reverse();
 
-    // @ts-ignore
+    // @ts-expect-error: TypeScript doesn't know about Plotly
     Plotly.newPlot(node, data, {
       barmode: 'stack',
       yaxis: { title: 'Hours' },

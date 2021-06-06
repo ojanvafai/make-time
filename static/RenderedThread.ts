@@ -7,10 +7,11 @@ import { NEXT_ACTION, PREVIOUS_ACTION } from './views/ThreadListViewBase.js';
 
 // Kinda gross that we need to expose the typescript output directory in the
 // code. :(
-// @ts-ignore
-if (CSS && CSS.paintWorklet)
-  // @ts-ignore
+// @ts-expect-error TypeScript doesn't know about paintWorklet
+if (CSS && CSS.paintWorklet) {
+  // @ts-expect-error TypeScript doesn't know about paintWorklet
   CSS.paintWorklet.addModule('./gen/HeaderFocusPainter.js');
+}
 
 export class RenderedThread extends HTMLElement {
   private spinner_?: HTMLElement;

@@ -479,7 +479,7 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
 
       // selectedDate =
       //     constrainDate(dp.computeSelectedDate(), opts.min, opts.max);
-      // @ts-ignore
+      // @ts-expect-error typescript doesn't know about higlightedDate
       dp.state.hilightedDate = selectedDate || opts.hilightedDate;
       dp.state.view = 'day';
 
@@ -554,7 +554,7 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
     // the view state and re-renders.
     setState: function (state: DatePickerState) {
       for (var key in state) {
-        // @ts-ignore
+        // @ts-expect-error
         dp.state[key] = state[key];
       }
 
@@ -581,7 +581,7 @@ function BaseMode(emit: (name: string) => void, opts: DatePickerOptions) {
 
         if (dt) {
           selectedDate = new Date(dt);
-          // @ts-ignore
+          // @ts-expect-error typescript doesn't know about higlightedDate
           dp.state.hilightedDate = selectedDate;
         } else {
           selectedDate = dt;
@@ -632,9 +632,8 @@ function attachContainerEvents(dp: DatePickerState) {
     }),
   );
 
-  // @ts-ignore
-  on('keydown', el, function (e: KeyboardEvent) {
-    if (e.keyCode === Key.enter) {
+  on('keydown', el, function (e: Event) {
+    if ((e as KeyboardEvent).keyCode === Key.enter) {
       onClick(e);
     } else {
       dp.currentView().onKeyDown(e, dp);
@@ -789,8 +788,7 @@ function defaults() {
 
     parse: function (str: string) {
       var date = new Date(str);
-      // @ts-ignore
-      return isNaN(date) ? now() : date;
+      return isNaN(date.getTime()) ? now() : date;
     },
 
     dateClass: function () {},

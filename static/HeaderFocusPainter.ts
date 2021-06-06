@@ -13,5 +13,5 @@ class HeaderFocusPainter {
   }
 }
 
-// @ts-ignore Typescript doesn't know about PaintWorklet. :(
+// @ts-expect-error Typescript doesn't know about PaintWorklet. :(
 registerPaint('header-focus', HeaderFocusPainter);

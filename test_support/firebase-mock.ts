@@ -18,8 +18,7 @@ class Collection {
 
 class Firebase {
   constructor() {
-    // This is weird - FieldValue lives on the method |firestore|.
-    // @ts-ignore
+    // @ts-expect-error This is weird - FieldValue lives on the method |firestore|
     this.firestore.FieldValue = { delete: () => {} };
   }
   firestore() {
