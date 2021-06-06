@@ -13,14 +13,13 @@ if (isGoogle) {
   };
   clientId = '800053010416-p1p6n47o6ovdm04329v9p8mskl618kuj.apps.googleusercontent.com';
 } else {
-  apiKey = 'AIzaSyDFj2KpiXCNYnmp7VxKz5wpjJ4RquGB8qA';
+  apiKey = 'AIzaSyDNUVmcTxYTdm14mI4A4EWgIet6694Hx7Y';
   firebaseConfig = {
     apiKey,
-    authDomain:
-      location.origin === 'https://mk-time.web.app' ? 'mk-time.web.app' : 'mk-time.firebaseapp.com',
-    projectId: 'mk-time',
+    authDomain: 'mk-time-2.web.app',
+    projectId: 'mk-time-2',
   };
-  clientId = '475495334695-9jmbss57hov9s9k8r1t6pe2ncbserr0c.apps.googleusercontent.com';
+  clientId = '760935821606-j39mvmrjo1oa46plf526a9plu0iq3kpg.apps.googleusercontent.com';
 }
 
 // Array of API discovery doc URLs for APIs used by the quickstart
@@ -33,7 +32,6 @@ export let DISCOVERY_DOCS = [
 // Authorization scopes required by the Google API.
 export let SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',
-  'https://www.google.com/m8/feeds',
   'https://www.googleapis.com/auth/contacts.readonly',
   'https://www.googleapis.com/auth/contacts.other.readonly',
   'https://www.googleapis.com/auth/calendar.events',

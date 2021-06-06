@@ -1,12 +1,16 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function allowedToRead(requestUserId, userId) {
+      return requestUserId == userId ||
+        (requestUserId == 'IXqAy9z163RP3E6xlUtRaiCIGu02' && userId == 'x4mf0jrcFzSHUrysfe0lmNCorBW2');
+    }
     // Allow user access to only their own data.
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if allowedToRead(request.auth.uid, userId);
     }
     match /{userId}/{document=**} {
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if allowedToRead(request.auth.uid, userId);
     }
     match /global/version {
       allow read;

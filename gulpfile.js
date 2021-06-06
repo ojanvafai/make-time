@@ -6,7 +6,7 @@ const rimraf = require('rimraf');
 const argv = require('yargs').argv;
 
 const OUT_DIR = './public/gen';
-const DEFAULT_PROJECT = 'mk-time';
+const DEFAULT_PROJECT = 'mk-time-2';
 
 task('delete', (callback) => {
   const rimraf = require('rimraf');
