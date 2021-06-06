@@ -5,6 +5,7 @@ service cloud.firestore {
       return requestUserId == userId ||
         (requestUserId == 'IXqAy9z163RP3E6xlUtRaiCIGu02' && userId == 'x4mf0jrcFzSHUrysfe0lmNCorBW2') ||
         (requestUserId == 'yMnqhT0Ai3UTmCSVpP3WY2EZW3M2' && userId == 'zfeIBcTalCeVP0ujWnn2coEK1F63') ||
+        (requestUserId == 'Fbml0XiSZmPYJ3lfYEioTqGmiGK2' && userId == 'Fd0gpzdUzgeyde9fdp4udKzp3Af2') ||
         (requestUserId == '31Nqv4E2juTweNiisBN5pCRhzsl2' && userId == '9C8Tn8SGdjWJzUEXMm8UWXCzOMa2');
     }
     // Allow user access to only their own data.
