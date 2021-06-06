@@ -1,7 +1,7 @@
 import type * as firebase from 'firebase/app';
 
 import { notNull, deepEqual } from './Base.js';
-import { firebaseAuth, firestore } from './BaseMain.js';
+import { firebaseAuth, firestore, currentUserId } from './BaseMain.js';
 import { EventTargetPolyfill } from './EventTargetPolyfill.js';
 
 export interface StorageUpdates {
@@ -61,13 +61,12 @@ export class ServerStorage extends EventTargetPolyfill {
 
   getDocument_() {
     let db = firestore();
-    let uid = notNull(firebaseAuth().currentUser).uid;
     // TODO: Migrate this over to db.collection(uid).doc('user') so all the data
     // for this user can be under a single collection, which will allow us to
     // query all the data for example. It also means we don't need to add a new
     // security rule for each new document we want to add for a user. When doing
     // this, update firestore.rules to remove the users collection.
-    return db.collection('users').doc(uid);
+    return db.collection('users').doc(currentUserId());
   }
 
   get(key: string) {

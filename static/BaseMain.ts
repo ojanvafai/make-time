@@ -88,10 +88,14 @@ const newIdToLegacyId: { [property: string]: string } = {
   yMnqhT0Ai3UTmCSVpP3WY2EZW3M2: 'zfeIBcTalCeVP0ujWnn2coEK1F63',
 };
 
+export function currentUserId() {
+  let uid = notNull(firebaseAuth().currentUser).uid;
+  return newIdToLegacyId[uid] || uid;
+}
+
 export function firestoreUserCollection() {
   let db = firestore();
-  let uid = notNull(firebaseAuth().currentUser).uid;
-  return db.collection(newIdToLegacyId[uid] || uid);
+  return db.collection(currentUserId());
 }
 
 export function showHelp() {
