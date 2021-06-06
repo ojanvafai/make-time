@@ -84,6 +84,8 @@ export function firebaseAuth() {
 
 const newIdToLegacyId: { [property: string]: string } = {
   IXqAy9z163RP3E6xlUtRaiCIGu02: 'x4mf0jrcFzSHUrysfe0lmNCorBW2',
+  '31Nqv4E2juTweNiisBN5pCRhzsl2': '9C8Tn8SGdjWJzUEXMm8UWXCzOMa2',
+  yMnqhT0Ai3UTmCSVpP3WY2EZW3M2: 'zfeIBcTalCeVP0ujWnn2coEK1F63',
 };
 
 export function firestoreUserCollection() {
