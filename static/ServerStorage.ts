@@ -1,7 +1,7 @@
 import type * as firebase from 'firebase/app';
 
-import { notNull, deepEqual } from './Base.js';
-import { firebaseAuth, firestore, currentUserId } from './BaseMain.js';
+import { deepEqual } from './Base.js';
+import { firestore, currentUserId, firestoreUserCollection } from './BaseMain.js';
 import { EventTargetPolyfill } from './EventTargetPolyfill.js';
 
 export interface StorageUpdates {
@@ -15,6 +15,8 @@ export class PushLabelsToGmailUpdateEventName extends Event {
     super(PushLabelsToGmailUpdateEventName.NAME);
   }
 }
+
+const SERVER_STORAGE_DOC_NAME = 'ServerStorage';
 
 export class ServerStorage extends EventTargetPolyfill {
   private data_?: firebase.firestore.DocumentSnapshot;
@@ -32,8 +34,15 @@ export class ServerStorage extends EventTargetPolyfill {
     this.data_ = await doc.get();
 
     if (!this.data_.exists) {
-      await doc.set({});
-      this.data_ = await doc.get();
+      // TODO: Remove legacy support once everyone is migrated as well as the security.rules bits.
+      const legacyDoc = firestore().collection('users').doc(currentUserId());
+      this.data_ = await legacyDoc.get();
+      if (this.data_.exists) {
+        doc.set(this.data_.data()!);
+      } else {
+        await doc.set({});
+        this.data_ = await doc.get();
+      }
     }
 
     doc.onSnapshot((snapshot) => {
@@ -60,13 +69,7 @@ export class ServerStorage extends EventTargetPolyfill {
   }
 
   getDocument_() {
-    let db = firestore();
-    // TODO: Migrate this over to db.collection(uid).doc('user') so all the data
-    // for this user can be under a single collection, which will allow us to
-    // query all the data for example. It also means we don't need to add a new
-    // security rule for each new document we want to add for a user. When doing
-    // this, update firestore.rules to remove the users collection.
-    return db.collection('users').doc(currentUserId());
+    return firestoreUserCollection().doc(SERVER_STORAGE_DOC_NAME);
   }
 
   get(key: string) {
