@@ -1341,7 +1341,7 @@ export class MailProcessor {
 
   private async processThrottled_() {
     let storage = await getServerStorage();
-    await storage.fetch();
+    await storage.init();
     let lastDethrottleTime = storage.get(ServerStorage.KEYS.LAST_DETHROTTLE_TIME);
 
     let msPerHour = 1000 * 60 * 60;
@@ -1359,7 +1359,7 @@ export class MailProcessor {
 
   private async processQueues_() {
     let storage = await getServerStorage();
-    await storage.fetch();
+    await storage.init();
 
     let lastDequeueTime = storage.get(ServerStorage.KEYS.LAST_DEQUEUE_TIME);
     // Leaving in for easy manual testing of dequeuing code. Delete if this

@@ -57,7 +57,7 @@ export async function getServerStorage() {
 }
 
 async function initializeStorage() {
-  await Promise.all([storage_.fetch(), QueueNames.create().fetch()]);
+  await Promise.all([storage_.init(), QueueNames.create().fetch()]);
 
   // This has to happen after storage_.fetch().
   settings_ = new Settings(storage_);

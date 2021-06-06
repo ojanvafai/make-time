@@ -26,8 +26,7 @@ export class ServerStorage extends EventTargetPolyfill {
     super();
   }
 
-  // TODO: Rename to init.
-  async fetch() {
+  async init() {
     if (this.data_) return;
 
     let doc = this.getDocument_();
