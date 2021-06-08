@@ -697,8 +697,12 @@ function processErrorMessage(reason: any) {
 
 window.addEventListener('unhandledrejection', (e) => {
   let reason = e.reason;
-  // 401 means the credentials are invalid and you probably need to 2 factor.
-  if (reason && reason.status == 401) {
+  // 401 means the credentials are invalid and you probably need to get a fresh
+  // auth token.
+  if (
+    reason?.status == 401 &&
+    !reason?.result?.error?.message?.startsWith('Request had invalid authentication credentials.')
+  ) {
     attemptLogin();
   }
 

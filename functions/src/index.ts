@@ -7,7 +7,7 @@ const bucket = 'gs://mk-time-2-backup';
 
 exports.scheduledFirestoreExport = functions.pubsub
   .schedule('every 24 hours')
-  .onRun((context: any) => {
+  .onRun((_context: any) => {
     const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT;
     const databaseName = client.databasePath(projectId, '(default)');
 
