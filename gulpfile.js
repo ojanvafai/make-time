@@ -112,9 +112,17 @@ const execAndPipe = (command) => {
   };
 };
 
-task('deploy-firebase', (cb) => {
+task('deploy-firebase-no-functions', (cb) => {
   const project = argv.project || DEFAULT_PROJECT;
-  const output = execAndPipe(`${FIREBASE_PATH} deploy --project ${project}`);
+  // Don't deploy functions by default since it takes so long.
+  const output = execAndPipe(`${FIREBASE_PATH} deploy --project ${project} --except functions`);
+  output(cb);
+});
+
+task('deploy-firebase-functions', (cb) => {
+  const project = argv.project || DEFAULT_PROJECT;
+  // Don't deploy functions by default since it takes so long.
+  const output = execAndPipe(`${FIREBASE_PATH} deploy --project ${project} --only functions`);
   output(cb);
 });
 
@@ -141,4 +149,5 @@ task('bundle', () => {
 task('serve', parallel(['serve-firebase', 'bundle', 'tsc']));
 task('install', execAndPipe('npm install --no-fund'));
 task('install-and-serve', series(['install', 'serve']));
-task('deploy', series('bundle-once', 'deploy-firebase'));
+task('deploy', series('bundle-once', 'deploy-firebase-no-functions'));
+task('deploy-all', series('bundle-once', 'deploy-firebase-no-functions', 'deploy-firebase-functions'));
