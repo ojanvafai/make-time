@@ -582,7 +582,18 @@ export class MailProcessor {
         // Do one last fetch to ensure a new message hasn't come in that puts
         // the thread back in the inbox, then clear metadata.
         if (!(await this.refetchIsInInbox_(id))) {
-          await Thread.clearMetadata(id);
+          try {
+            await Thread.clearMetadata(id);
+          } catch (e) {
+            // Thread.clearMetadata throws a not-found error if the document
+            // isn't in firestore, which can happen if the user manually removes
+            // it from the inbox and a different firestore client had originally
+            // processed it (e.g. when migrationg from one firestore project to
+            // another.
+            if (e.code !== 'not-found') {
+              throw e;
+            }
+          }
           await this.modifyLabelsOnWholeThread_(id, [], [defined(this.makeTimeLabelId_)]);
         } else {
           // If one of the messages is in the inbox, move them all to the inbox
