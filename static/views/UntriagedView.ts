@@ -208,7 +208,7 @@ export class UntriagedView extends ThreadListViewBase {
       createMktimeButton(() => this.clearAlreadyTriagedThreadState_(), 'Go to next thread'),
     );
     this.threadAlreadyTriagedDialog_.append(contents);
-    this.threadAlreadyTriagedDialog_.className = `${CENTERED_FILL_CONTAINER_CLASS} darken2`;
+    this.threadAlreadyTriagedDialog_.className = `${CENTERED_FILL_CONTAINER_CLASS} darken2 z2`;
     this.renderedThreadContainer_.append(this.threadAlreadyTriagedDialog_);
     this.updateToolbar_();
   }
