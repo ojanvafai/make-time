@@ -27,8 +27,6 @@ import { Thread } from '../Thread.js';
 
 registerActions('Untriaged', [UNDO_ACTION, ADD_FILTER_ACTION]);
 
-const CENTERED_FILL_CONTAINER_CLASS = 'absolute all-0 flex items-center justify-center';
-
 interface DirectionalAction extends Action {
   direction: Direction;
   originalAction: Action;
@@ -208,7 +206,7 @@ export class UntriagedView extends ThreadListViewBase {
       createMktimeButton(() => this.clearAlreadyTriagedThreadState_(), 'Go to next thread'),
     );
     this.threadAlreadyTriagedDialog_.append(contents);
-    this.threadAlreadyTriagedDialog_.className = `${CENTERED_FILL_CONTAINER_CLASS} darken2 z2`;
+    this.threadAlreadyTriagedDialog_.className = `fixed all-0 flex items-center justify-center darken2 z2`;
     this.renderedThreadContainer_.append(this.threadAlreadyTriagedDialog_);
     this.updateToolbar_();
   }
@@ -275,10 +273,7 @@ export class UntriagedView extends ThreadListViewBase {
         this.routeToTodo_();
         return;
       }
-      if (!this.currentCard_) {
-        return;
-      }
-      if (this.currentCard_.areInternalPointerEventsAllowed()) {
+      if (!this.arePointerEventsEnabled()) {
         return;
       }
       dragStartOffset = { x: e.pageX, y: e.pageY };
@@ -289,10 +284,7 @@ export class UntriagedView extends ThreadListViewBase {
       if (!dragStartOffset) {
         return;
       }
-      if (!this.currentCard_) {
-        return;
-      }
-      if (this.currentCard_.areInternalPointerEventsAllowed()) {
+      if (!this.arePointerEventsEnabled()) {
         return;
       }
       if (isHorizontalDrag === null) {
@@ -308,25 +300,22 @@ export class UntriagedView extends ThreadListViewBase {
       const axis = isHorizontalDrag ? 'X' : 'Y';
       const offset = distancedFromDragStart(e, isHorizontalDrag);
       const transform = `translate${axis}(${offset}px)`;
-      this.currentCard_.style.transform = transform;
-      this.currentCard_.setShouldShowToolbarButton(directionForDrag(e, isHorizontalDrag));
+      const card = defined(this.currentCard_);
+      card.style.transform = transform;
+      card.setShouldShowToolbarButton(directionForDrag(e, isHorizontalDrag));
     });
 
     this.addEventListener('pointerup', (e) => {
-      if (!this.currentCard_) {
+      if (!this.arePointerEventsEnabled()) {
         return;
       }
-      const card = this.currentCard_;
-      if (card.areInternalPointerEventsAllowed()) {
-        return;
-      }
-
       if (isHorizontalDrag !== null) {
         const direction = directionForDrag(e, isHorizontalDrag);
         if (direction) {
           this.takeDirectionalAction_(direction);
         } else {
-          this.currentCard_.setShouldShowToolbarButton();
+          const card = defined(this.currentCard_);
+          card.setShouldShowToolbarButton();
           card.animate([{ transform: 'translate(0px)' }], {
             duration: 300,
           }).onfinish = () => (card.style.transform = '');
@@ -335,6 +324,14 @@ export class UntriagedView extends ThreadListViewBase {
       isHorizontalDrag = null;
       dragStartOffset = null;
     });
+  }
+
+  private arePointerEventsEnabled() {
+    return (
+      !this.threadAlreadyTriagedDialog_ &&
+      this.currentCard_ &&
+      !this.currentCard_.areInternalPointerEventsAllowed()
+    );
   }
 
   private routeToTodo_() {
